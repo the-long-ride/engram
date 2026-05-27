@@ -1,0 +1,82 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile, rm, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+import { installSkillset, skillsetTargets } from '../dist/core/skillset.js';
+import { runEngram, tempWorkspace } from './helpers.mjs';
+
+test('skillset installer writes all supported agent adapter files', async () => {
+  const { cwd } = await tempWorkspace('engram-skillset-');
+  const results = await installSkillset(cwd, 'all');
+  const writtenTargets = [...new Set(results.map((result) => result.target))].sort();
+  assert.deepEqual(writtenTargets, skillsetTargets().sort());
+  assert.ok(results.every((result) => result.action === 'written'));
+  assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /\/engram load \[query\]/);
+  const mcpConfig = await readFile(path.join(cwd, '.mcp.json'), 'utf8');
+  assert.match(mcpConfig, /engram-mcp/);
+  assert.equal(JSON.parse(mcpConfig).mcpServers.engram.command, 'npx');
+  assert.match(await readFile(path.join(cwd, '.agents/skills/engram/SKILL.md'), 'utf8'), /Engram Memory Skill/);
+  assert.match(await readFile(path.join(cwd, '.claude/skills/engram/SKILL.md'), 'utf8'), /name: engram/);
+  assert.match(await readFile(path.join(cwd, '.cursor/commands/engram.md'), 'utf8'), /Engram Slash Command/);
+  assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /\/engram \{\{args\}\}/);
+  const opencodeConfig = await readFile(path.join(cwd, 'opencode.json'), 'utf8');
+  assert.match(opencodeConfig, /\.opencode\/engram\.md/);
+  assert.deepEqual(JSON.parse(opencodeConfig).instructions, ['.opencode/engram.md']);
+  assert.match(await readFile(path.join(cwd, '.opencode/engram.md'), 'utf8'), /Slash Command Surface/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('skillset installer skips human-authored files unless forced', async () => {
+  const { cwd } = await tempWorkspace('engram-skillset-');
+  const file = path.join(cwd, 'AGENTS.md');
+  await writeFile(file, '# Human agent instructions\n');
+  const skipped = await installSkillset(cwd, 'agents-md');
+  assert.equal(skipped[0].action, 'skipped');
+  assert.match(await readFile(file, 'utf8'), /Human agent instructions/);
+  const forced = await installSkillset(cwd, 'agents-md', true);
+  assert.equal(forced[0].action, 'written');
+  assert.match(await readFile(file, 'utf8'), /Engram Agent Skillset/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('cli installs a single skillset target', async () => {
+  const { cwd, env } = await tempWorkspace('engram-skillset-cli-');
+  const result = await runEngram(cwd, env, ['install-skillset', 'gemini']);
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /WRITTEN gemini: GEMINI.md/);
+  assert.match(await readFile(path.join(cwd, 'GEMINI.md'), 'utf8'), /Engram Agent Skillset/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('cli installs open-code alias and antigravity skill files', async () => {
+  const { cwd, env } = await tempWorkspace('engram-skillset-cli-');
+  const opencode = await runEngram(cwd, env, ['install-skillset', 'open-code']);
+  assert.equal(opencode.code, 0, opencode.stderr);
+  assert.match(opencode.stdout, /WRITTEN open-code: opencode\.json/);
+  assert.match(opencode.stdout, /WRITTEN open-code: \.opencode\/engram\.md/);
+  const antigravity = await runEngram(cwd, env, ['install-skillset', 'antigravity-cli']);
+  assert.equal(antigravity.code, 0, antigravity.stderr);
+  assert.match(antigravity.stdout, /WRITTEN antigravity-cli: \.agents\/skills\/engram\/SKILL\.md/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('cli installs codex alias as AGENTS.md skillset file', async () => {
+  const { cwd, env } = await tempWorkspace('engram-skillset-cli-');
+  const result = await runEngram(cwd, env, ['install-skillset', 'codex']);
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /WRITTEN codex: AGENTS\.md/);
+  assert.match(result.stdout, /WRITTEN codex: \.agents\/skills\/engram\/SKILL\.md/);
+  assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /\/engram save knowledge \[text\]/);
+  assert.match(await readFile(path.join(cwd, '.agents/skills/engram/SKILL.md'), 'utf8'), /\/engram install-skillset/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('cli installs slash command adapters', async () => {
+  const { cwd, env } = await tempWorkspace('engram-skillset-cli-');
+  const result = await runEngram(cwd, env, ['install-skillset', 'slash']);
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /WRITTEN slash: \.claude\/skills\/engram\/SKILL\.md/);
+  assert.match(result.stdout, /WRITTEN slash: \.cursor\/commands\/engram\.md/);
+  assert.match(result.stdout, /WRITTEN slash: \.gemini\/commands\/engram\.toml/);
+  await rm(cwd, { recursive: true, force: true });
+});

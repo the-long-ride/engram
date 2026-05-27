@@ -4,6 +4,7 @@ import { getContext } from '../core/context.js';
 import { isIgnored } from '../core/ignore.js';
 import { readText, writeJson, writeText } from '../core/fsx.js';
 import { findConflicts, resolveConflicts } from '../core/conflict.js';
+import { installSkillset, skillsetTargets } from '../core/skillset.js';
 
 /** Inspect or update ignore patterns. */
 export async function cmdIgnore(args: string[]): Promise<string> {
@@ -59,4 +60,12 @@ export async function cmdTeamDashboard(): Promise<string> {
     return acc;
   }, {});
   return Object.entries(byAuthor).map(([author, count]) => `${author}: ${count} memories`).join('\n') || 'No team memory yet';
+}
+
+/** Install agent-host instruction files for Engram skillset integration. */
+export async function cmdInstallSkillset(args: string[], flags: Record<string, any> = {}): Promise<string> {
+  if (args[0] === 'list') return skillsetTargets().join('\n');
+  const target = args[0] ?? 'all';
+  const results = await installSkillset(process.cwd(), target, Boolean(flags.force));
+  return results.map((r) => `${r.action.toUpperCase()} ${r.target}: ${r.file}`).join('\n');
 }

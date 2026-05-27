@@ -30,6 +30,7 @@ export function renderHelp(): string {
 - engram set-role <role...>
 - engram resolve-conflicts [--dry-run|--auto]
 - engram install-hooks
+- engram install-skillset [all|slash|codex|agents-md|copilot|claude|cursor|gemini|cline|windsurf|antigravity-cli|opencode|mcp]
 - engram sync
 - engram propose <memory-file>
 - engram team-dashboard

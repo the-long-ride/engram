@@ -1,0 +1,5 @@
+{
+  "tags": ["react-native", "mobile"],
+  "roles": ["mobile"],
+  "live_sync": { "enabled": true, "targets": ["agents-md"] }
+}

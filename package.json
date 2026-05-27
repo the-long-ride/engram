@@ -1,0 +1,39 @@
+{
+  "name": "@the-long-ride/engram",
+  "version": "0.8.0",
+  "description": "Portable, human-approved memory for AI agents.",
+  "type": "module",
+  "license": "GPL-3.0-only",
+  "author": "the-long-ride",
+  "bin": {
+    "engram": "./dist/bin/engram.js",
+    "engram-mcp": "./dist/bin/engram-mcp.js"
+  },
+  "files": [
+    "dist",
+    "prompts",
+    "templates",
+    "README.md",
+    "GUIDELINE.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run build && node --test tests/*.test.mjs",
+    "test:core": "npm run build && node --test tests/core.test.mjs tests/safety.test.mjs",
+    "test:cli": "npm run build && node --test tests/cli.test.mjs",
+    "test:mcp": "npm run build && node --test tests/mcp.test.mjs",
+    "coverage": "npm run build && node --experimental-test-coverage --test tests/*.test.mjs",
+    "debug:cli": "npm run build && node --inspect-brk dist/bin/engram.js",
+    "lint:lines": "node scripts/check-lines.mjs",
+    "pack:dry-run": "npm pack --dry-run --ignore-scripts",
+    "prepack": "npm run typecheck && npm test && npm run lint:lines"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}

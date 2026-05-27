@@ -1,0 +1,5 @@
+{
+  "tags": ["nextjs", "saas", "frontend"],
+  "roles": ["frontend", "backend"],
+  "live_sync": { "enabled": true, "targets": ["agents-md", "claude-md", "cursorrules"] }
+}

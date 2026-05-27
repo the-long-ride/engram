@@ -17,6 +17,8 @@ npm run lint:lines
 - `src/core` holds config, schema, indexes, routing, security, and storage.
 - `src/commands` holds thin command handlers.
 - `src/bin` exposes `engram` and `engram-mcp`.
+- `src/core/skillset.ts` renders agent instruction, MCP, and slash-command
+  adapters.
 - `prompts` contains agent-facing prompt templates.
 - `templates` contains generated `.engram/` starter files.
 
@@ -26,6 +28,14 @@ npm run lint:lines
 - Add a short file summary and concise function summaries.
 - Do not add runtime dependencies unless they remove real operational risk.
 - Never bypass the A/B/C approval gate on write paths.
+- `engram save knowledge` may omit text only for agent-assisted capture. The
+  command must collect generated knowledge first, then show the normal approval
+  preview before writing.
+- Slash-command adapters are routers. Keep `/engram <args>` mapped to the same
+  CLI or MCP flow, never to a hidden write path.
+- When adding or renaming a CLI command, update `src/core/help.ts`,
+  `src/core/skillset.ts`, `docs/SKILLSET_CONTRACT.md`, and skillset tests
+  together.
 - Never stage workspace code. `resolve-conflicts` may stage only `.engram` files
   after an explicit human command.
 - Preserve archived memory; move superseded files, do not delete them.
@@ -64,6 +74,7 @@ export ENGRAM_GLOBAL_DIR="$PWD/.tmp-engram-global"
 npm run build
 node ./dist/bin/engram.js init
 node ./dist/bin/engram.js save rule --scope workspace "Use pnpm for installs"
+node ./dist/bin/engram.js save knowledge --scope workspace
 ```
 
 On PowerShell, set the env var with:

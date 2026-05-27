@@ -11,10 +11,12 @@
   },
   "files": [
     "dist",
+    "docs",
     "prompts",
     "templates",
     "README.md",
     "GUIDELINE.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "scripts": {

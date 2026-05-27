@@ -35,3 +35,7 @@ Thumbs.db
 tmp/
 temp/
 .cache/
+
+# Documentation
+engram-blueprint-v8.md
+report.md

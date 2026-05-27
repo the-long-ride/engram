@@ -47,8 +47,13 @@ merging, no ambiguity, no hidden platform state.
 ```bash
 npx @the-long-ride/engram init
 npx @the-long-ride/engram save rule "Use pnpm for package management."
+npx @the-long-ride/engram save knowledge
 npx @the-long-ride/engram load "package setup"
 ```
+
+`engram save knowledge` can be run without text by an AI agent. Engram asks the
+agent to summarize durable knowledge from its current work, then shows the
+normal A/B/C approval preview before anything is written.
 
 ## What Is Included
 
@@ -56,15 +61,49 @@ Engram ships a deterministic CLI, MCP wrapper, cached help, memory schema,
 indexing, routing, safety guards, import/export, live-sync renderers, conflict
 previews, health checks, and prompt templates for agent-assisted workflows.
 
+Engram can also install itself as an agent skillset:
+
+```bash
+engram install-skillset all
+```
+
+This creates host-specific instruction files for AGENTS.md-compatible agents,
+OpenAI Codex, GitHub Copilot, Claude, Cursor, Gemini CLI, Cline, Windsurf,
+Antigravity CLI, OpenCode, and MCP-capable clients without overwriting existing
+human-authored files. It also installs `/engram` slash-command adapters for
+slash-capable hosts.
+
+For targeted setup:
+
+```bash
+engram install-skillset codex
+engram install-skillset slash
+engram install-skillset antigravity-cli
+engram install-skillset opencode
+```
+
+After that, a human can ask an agent to run Engram with slash-style requests:
+
+```text
+/engram load "deployment workflow"
+/engram save knowledge
+/engram verify
+```
+
+The slash adapter routes to the same CLI or MCP flow. It does not bypass the
+normal human approval gate for writes.
+
 Core commands include:
 
 ```bash
 engram init
 engram save rule "Never commit secrets."
+engram save knowledge
 engram load "deployment workflow"
 engram verify
 engram health
 engram export --format agents-md
+engram install-skillset all
 engram-mcp
 ```
 

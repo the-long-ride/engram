@@ -17,6 +17,11 @@
   `engram_search`, `engram_verify`, and `engram_status`. `engram_save` returns a
   proposal only and never writes silently.
 - Added prompt assets and starter templates from the blueprint direction.
+- Added agent skillset adapters for OpenAI Codex, AGENTS.md-compatible agents,
+  GitHub Copilot, Claude, Cursor, Gemini CLI, Cline, Windsurf, Antigravity CLI,
+  OpenCode, and MCP-capable clients.
+- Added agent-assisted `engram save knowledge` with no inline text. It collects
+  generated knowledge first and still requires A/B/C approval before writing.
 - Added `README.md`, `GUIDELINE.md`, `LICENSE`, tests, line-count checks, and npm
   publish guidance.
 
@@ -68,11 +73,9 @@
 - `npm run typecheck` passed.
 - `npm run build` passed.
 - `npm run lint:lines` passed, confirming all code files are <= 200 lines.
-- `npm test` passed: 15 tests across core helpers, CLI workflows, MCP behavior,
-  safety guards, tamper detection, and scoped conflict resolution.
-- `npm pack --dry-run` passed and produced a publishable package preview with 108
+- `npm test` passed: 21 tests across core helpers, CLI workflows, MCP behavior,
+  safety guards, tamper detection, skillset adapters, and scoped conflict
+  resolution.
+- `npm run coverage` passed with 88.18% line coverage.
+- `npm pack --dry-run` passed and produced a publishable package preview with 114
   files and both binaries included.
-
-Note: `npm test` and `npm pack --dry-run` needed sandbox escalation on this
-machine because Node's test runner spawns subprocesses and the default sandbox
-returned `spawn EPERM`.

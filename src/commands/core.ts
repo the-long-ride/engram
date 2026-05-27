@@ -7,7 +7,7 @@ import { writeScopes } from '../core/config.js';
 import { renderHelp } from '../core/help.js';
 import { readText, writeText } from '../core/fsx.js';
 import { draftMemory } from '../core/memory-template.js';
-import { applyApprovalEdit, requestApproval } from '../core/approval.js';
+import { applyApprovalEdit, requestApproval, requestGeneratedKnowledgeApproval } from '../core/approval.js';
 import { verifyRoot } from '../core/hash.js';
 import { route, loadEntries } from '../core/routing.js';
 import type { MemoryType, Scope } from '../core/types.js';
@@ -39,20 +39,33 @@ export async function cmdUpdateHelp(): Promise<string> {
 export async function cmdSave(args: string[], flags: Record<string, any>): Promise<string> {
   const maybeType = args[0] as MemoryType | undefined;
   const type: MemoryType = ['rule', 'skill', 'knowledge'].includes(maybeType ?? '') ? maybeType as MemoryType : 'knowledge';
-  const text = (type === maybeType ? args.slice(1) : args).join(' ').trim();
-  if (!text) throw new Error('save requires memory text');
+  let text = (type === maybeType ? args.slice(1) : args).join(' ').trim();
   const ctx = await getContext();
   const scopes = flags.scope ? [flags.scope as Scope] : writeScopes(ctx.config.scope);
-  const draft = draftMemory({ text, type, scope: scopes[0], author: await resolveAuthor() });
-  const approval = await requestApproval(`Type: ${type}\nScope: ${scopes.join(', ')}\nFile: ${draft.file}\n\n${draft.content}`);
+  const author = await resolveAuthor();
+  let approval;
+  if (!text && maybeType === 'knowledge') {
+    const captured = await requestGeneratedKnowledgeApproval((generated) => previewSave(generated, type, scopes, author));
+    if (!captured) return 'Discarded. No file written.';
+    text = captured.text;
+    approval = captured.approval;
+  } else {
+    if (!text) throw new Error('save requires memory text');
+    approval = await requestApproval(previewSave(text, type, scopes, author));
+  }
   if (!approval.accepted) return 'Discarded. No file written.';
   const written = [];
   for (const scope of scopes) {
-    const scoped = draftMemory({ text, type, scope, author: await resolveAuthor() });
+    const scoped = draftMemory({ text, type, scope, author });
     const content = applyApprovalEdit(scoped.content, approval.edits);
     written.push(await writeApprovedMemory({ cwd: process.cwd(), scope, file: scoped.file, content, message: `add ${type}: ${scoped.id}` }));
   }
   return `Saved -> ${written.join(', ')}`;
+}
+
+function previewSave(text: string, type: MemoryType, scopes: Scope[], author: string): string {
+  const draft = draftMemory({ text, type, scope: scopes[0], author });
+  return `Type: ${type}\nScope: ${scopes.join(', ')}\nFile: ${draft.file}\n\n${draft.content}`;
 }
 
 /** Load routed memory for a query. */

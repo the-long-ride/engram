@@ -32,3 +32,18 @@ test('export, health, search, stats, and conflict dry-run work', async () => {
   assert.match((await runEngram(cwd, env, ['resolve-conflicts', '--dry-run'])).stdout, /UNRELATED|CONTRADICT|EXTEND|DUPLICATE/);
   await rm(cwd, { recursive: true, force: true });
 });
+
+test('save knowledge without text asks for generated agent knowledge', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['init']);
+  const input = 'Engram supports agent-generated knowledge capture when no text is provided.\nA\n';
+  const saved = await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace'], input);
+  assert.equal(saved.code, 0, saved.stderr);
+  assert.match(saved.stdout, /KNOWLEDGE TEXT NEEDED/);
+  assert.match(saved.stdout, /Saved/);
+  assert.match((await runEngram(cwd, env, ['search', 'agent-generated'])).stdout, /agent-generated-knowledge/);
+  const empty = await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace'], '\n');
+  assert.equal(empty.code, 0, empty.stderr);
+  assert.match(empty.stdout, /Discarded/);
+  await rm(cwd, { recursive: true, force: true });
+});

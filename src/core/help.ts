@@ -11,7 +11,9 @@ export function renderHelp(): string {
 - engram update-help
 
 ## Memory Commands
-- engram save [rule|skill|knowledge] <text>
+- engram save rule <text>
+- engram save skill <text>
+- engram save knowledge [text]
 - engram load [query]
 - engram dry-run [query]
 - engram search <query>

@@ -1,0 +1,100 @@
+/** Deterministic merge-conflict discovery and scoped auto-resolution. */
+import path from 'node:path';
+import { CHANGELOG_FILE, ENGRAM_DIR, HASH_FILE, INDEX_FILE } from './constants.js';
+import { listFiles, readText } from './fsx.js';
+import { writeApprovedMemory } from './storage.js';
+import { git } from './git.js';
+
+export type Conflict = { file: string; kind: 'EXTEND' | 'CONTRADICT' | 'DUPLICATE' | 'UNRELATED'; summary: string };
+export type ConflictResult = Conflict & { resolved: boolean; staged: boolean; decision: string };
+
+/** Find conflicted memory files and classify with conservative heuristics. */
+export async function findConflicts(cwd: string): Promise<Conflict[]> {
+  const root = path.join(cwd, ENGRAM_DIR);
+  const files = (await listFiles(root)).filter((file) => file.endsWith('.md'));
+  const out: Conflict[] = [];
+  for (const file of files) {
+    const text = await readText(file);
+    if (!text.includes('<<<<<<<')) continue;
+    const kind = classifyConflict(text);
+    out.push({ file: path.relative(root, file).replace(/\\/g, '/'), kind, summary: summaryFor(kind) });
+  }
+  return out;
+}
+
+/** Classify conflict text without attempting unsafe semantic resolution. */
+export function classifyConflict(text: string): Conflict['kind'] {
+  if (/updated:\s*(\d{4}-\d{2}-\d{2})[\s\S]*updated:\s*(\d{4}-\d{2}-\d{2})/.test(text)) return 'DUPLICATE';
+  if (/must not|forbidden|never/i.test(text) && /must|always|required/i.test(text)) return 'CONTRADICT';
+  if ((text.match(/^## /gm) ?? []).length > 3) return 'EXTEND';
+  return 'UNRELATED';
+}
+
+/** Resolve all conflicted .engram Markdown files, optionally as preview only. */
+export async function resolveConflicts(cwd: string, dryRun = false): Promise<ConflictResult[]> {
+  const root = path.join(cwd, ENGRAM_DIR);
+  const conflicts = await findConflicts(cwd);
+  const results: ConflictResult[] = [];
+  const changed: string[] = [];
+  for (const conflict of conflicts) {
+    const source = await readText(path.join(root, conflict.file));
+    const resolution = resolveConflictText(source);
+    if (!dryRun) {
+      await writeApprovedMemory({ cwd, scope: 'workspace', file: conflict.file, content: resolution.text, message: `resolve conflict: ${conflict.file}` });
+      changed.push(conflict.file);
+    }
+    results.push({ ...conflict, resolved: true, staged: false, decision: resolution.decision });
+  }
+  const staged = dryRun ? false : await stageResolved(cwd, changed);
+  return results.map((result) => ({ ...result, staged }));
+}
+
+/** Resolve every two-sided conflict block in a file. */
+export function resolveConflictText(text: string): { text: string; decision: string } {
+  const decisions: string[] = [];
+  const resolved = text.replace(/<<<<<<<[^\n]*\r?\n([\s\S]*?)\r?\n=======\r?\n([\s\S]*?)\r?\n>>>>>>>[^\n]*(?:\r?\n)?/g, (_all, ours, theirs) => {
+    const decision = chooseChunk(String(ours), String(theirs));
+    decisions.push(decision.reason);
+    return decision.text.endsWith('\n') ? decision.text : `${decision.text}\n`;
+  });
+  return { text: resolved, decision: decisions.join('; ') || 'no conflict blocks changed' };
+}
+
+function chooseChunk(ours: string, theirs: string): { text: string; reason: string } {
+  if (ours.trim() === theirs.trim()) return { text: ours, reason: 'kept identical content' };
+  const newer = chooseNewer(ours, theirs);
+  if (newer) return newer;
+  if (isContradictory(ours, theirs)) return { text: ours, reason: 'kept ours for unresolved contradiction' };
+  return { text: mergeUnique(ours, theirs), reason: 'merged unique lines from both sides' };
+}
+
+function chooseNewer(ours: string, theirs: string): { text: string; reason: string } | undefined {
+  const od = Date.parse(ours.match(/updated:\s*(\d{4}-\d{2}-\d{2})/)?.[1] ?? '');
+  const td = Date.parse(theirs.match(/updated:\s*(\d{4}-\d{2}-\d{2})/)?.[1] ?? '');
+  if (!od || !td || od === td) return undefined;
+  return td > od ? { text: theirs, reason: 'kept theirs with newer updated date' } : { text: ours, reason: 'kept ours with newer updated date' };
+}
+
+function isContradictory(ours: string, theirs: string): boolean {
+  const combined = `${ours}\n${theirs}`;
+  return /must not|forbidden|never/i.test(combined) && /must|always|required/i.test(combined);
+}
+
+function mergeUnique(ours: string, theirs: string): string {
+  const lines = [...ours.split(/\r?\n/), ...theirs.split(/\r?\n/)];
+  return [...new Set(lines)].join('\n').replace(/\n{3,}/g, '\n\n');
+}
+
+async function stageResolved(cwd: string, files: string[]): Promise<boolean> {
+  if (!files.length) return false;
+  const metadata = [INDEX_FILE, HASH_FILE, CHANGELOG_FILE];
+  const paths = [...files, ...metadata].map((file) => path.join(ENGRAM_DIR, file).replace(/\\/g, '/'));
+  try { await git(['-C', cwd, 'add', '--', ...paths]); return true; } catch { return false; }
+}
+
+function summaryFor(kind: Conflict['kind']): string {
+  if (kind === 'CONTRADICT') return 'Auto-resolves by deterministic Engram policy.';
+  if (kind === 'EXTEND') return 'Auto-resolves by merging unique lines.';
+  if (kind === 'DUPLICATE') return 'Likely duplicate; choose newer updated date.';
+  return 'Likely separate memories; split after review.';
+}

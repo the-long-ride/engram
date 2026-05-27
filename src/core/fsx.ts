@@ -1,0 +1,58 @@
+/** File-system helpers with path containment checks for safer writes. */
+import fs from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import path from 'node:path';
+
+/** Return true when a path exists. */
+export async function exists(file: string): Promise<boolean> {
+  try { await fs.access(file); return true; } catch { return false; }
+}
+
+/** Create a directory tree if it is missing. */
+export async function ensureDir(dir: string): Promise<void> {
+  await fs.mkdir(dir, { recursive: true });
+}
+
+/** Read JSON, returning a fallback for missing or invalid files. */
+export async function readJson<T>(file: string, fallback: T): Promise<T> {
+  try { return JSON.parse(await fs.readFile(file, 'utf8')) as T; } catch { return fallback; }
+}
+
+/** Write pretty JSON with a final newline. */
+export async function writeJson(file: string, value: unknown): Promise<void> {
+  await ensureDir(path.dirname(file));
+  await fs.writeFile(file, `${JSON.stringify(value, null, 2)}\n`);
+}
+
+/** Write text, creating parent folders first. */
+export async function writeText(file: string, text: string): Promise<void> {
+  await ensureDir(path.dirname(file));
+  await fs.writeFile(file, text.endsWith('\n') ? text : `${text}\n`);
+}
+
+/** Read text with an empty fallback. */
+export async function readText(file: string): Promise<string> {
+  try { return await fs.readFile(file, 'utf8'); } catch { return ''; }
+}
+
+/** Recursively list files under a directory, ignoring missing roots. */
+export async function listFiles(dir: string): Promise<string[]> {
+  if (!existsSync(dir)) return [];
+  const out: string[] = [];
+  for (const entry of await fs.readdir(dir, { withFileTypes: true })) {
+    const file = path.join(dir, entry.name);
+    if (entry.isDirectory()) out.push(...await listFiles(file));
+    if (entry.isFile()) out.push(file);
+  }
+  return out;
+}
+
+/** Resolve a target and ensure it stays inside the root. */
+export function inside(root: string, target: string): string {
+  const base = path.resolve(root);
+  const full = path.resolve(base, target);
+  if (full !== base && !full.startsWith(base + path.sep)) {
+    throw new Error(`Path escapes root: ${target}`);
+  }
+  return full;
+}

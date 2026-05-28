@@ -9,6 +9,10 @@ import { cmdIgnore, cmdInstallHooks, cmdInstallSkillset, cmdPropose, cmdResolveC
 export async function runCli(argv: string[]): Promise<string> {
   const parsed = parseArgs(argv);
   const { command, rest, flags } = parsed;
+  if (flags.help || flags.h || command === '-h' || command === '--help' || rest.includes('-h') || rest.includes('--help')) {
+    const topic = (command !== '-h' && command !== '--help' && command !== 'help') ? command : rest.find((arg) => arg !== '-h' && arg !== '--help');
+    return cmdHelp(topic);
+  }
   if (flags.version || command === '--version' || command === 'version') return VERSION;
   switch (command) {
     case 'init': return cmdInit(flags);

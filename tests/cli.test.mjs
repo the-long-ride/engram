@@ -10,6 +10,9 @@ test('init, help, save reject, save accept, load, verify, audit', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
   assert.equal((await runEngram(cwd, env, ['init'])).code, 0);
   assert.match((await runEngram(cwd, env, ['help'])).stdout, /Memory Commands/);
+  assert.match((await runEngram(cwd, env, ['-h'])).stdout, /Memory Commands/);
+  assert.match((await runEngram(cwd, env, ['--help'])).stdout, /Memory Commands/);
+  assert.match((await runEngram(cwd, env, ['save', '-h'])).stdout, /engram save rule/);
   assert.match((await runEngram(cwd, env, ['save', 'rule', 'Use pnpm for installs'], 'C\n')).stdout, /Discarded/);
   const saved = await runEngram(cwd, env, ['save', 'rule', '--scope', 'workspace', 'Use pnpm for installs'], 'A\n');
   assert.equal(saved.code, 0, saved.stderr);
@@ -83,8 +86,9 @@ test('init prepares global git and entry reports detected branch', async () => {
   assert.equal(spawnSync('git', ['-C', env.ENGRAM_GLOBAL_DIR, 'checkout', '-b', 'team'], { encoding: 'utf8' }).status, 0);
   const entry = await runEngram(cwd, env, ['entry']);
   assert.equal(entry.code, 0, entry.stderr);
-  assert.match(entry.stdout, /config\.global_git\.branch=main/);
-  assert.match(entry.stdout, /global_git_detected\.branch=team/);
+  const cleanStdout = entry.stdout.replace(/\x1b\[[0-9;]*m/g, '');
+  assert.match(cleanStdout, /config\.global_git\.branch:\s*main/);
+  assert.match(cleanStdout, /global_git_detected\.branch:\s*team/);
   await rm(cwd, { recursive: true, force: true });
 });
 

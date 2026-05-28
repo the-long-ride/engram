@@ -6,7 +6,7 @@ import { HELP_FILE } from '../core/constants.js';
 import { initWorkspace, resolveAuthor, syncGlobalMemoryGit, writeApprovedMemory } from '../core/storage.js';
 import { getContext, loadSummary } from '../core/context.js';
 import { defaultConfig, scopeRoots, writeScopes } from '../core/config.js';
-import { renderHelp } from '../core/help.js';
+import { renderHelp, renderHelpTerminal } from '../core/help.js';
 import { readText, writeText } from '../core/fsx.js';
 import { applyApprovalEdit, requestApproval, requestGeneratedKnowledgeApproval } from '../core/approval.js';
 import { verifyRoot } from '../core/hash.js';
@@ -35,13 +35,7 @@ export async function cmdInit(flags: Record<string, any>): Promise<string> {
 
 /** Show cached help or refresh it. */
 export async function cmdHelp(topic = ''): Promise<string> {
-  const ctx = await getContext();
-  const file = path.join(ctx.roots.workspace, HELP_FILE);
-  const help = await readText(file) || renderHelp();
-  if (!topic) return help;
-  const parts = help.split(/^## /m);
-  const hit = parts.find((part) => part.toLowerCase().startsWith(topic.toLowerCase()));
-  return hit ? `## ${hit}` : help;
+  return renderHelpTerminal(topic);
 }
 
 /** Regenerate workspace HELP.md. */

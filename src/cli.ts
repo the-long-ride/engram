@@ -1,7 +1,7 @@
 /** Engram CLI dispatcher. Commands stay thin and delegate to core modules. */
 import { parseArgs } from './cli/args.js';
 import { VERSION } from './core/constants.js';
-import { cmdAudit, cmdHelp, cmdInit, cmdLoad, cmdRebuildIndex, cmdSave, cmdUpdateHelp, cmdVerify } from './commands/core.js';
+import { cmdAudit, cmdCompletion, cmdHelp, cmdInit, cmdLoad, cmdRebuildIndex, cmdSave, cmdUpdateHelp, cmdVerify } from './commands/core.js';
 import { cmdDeduplicate, cmdEntry, cmdExport, cmdHealth, cmdImport, cmdQuality, cmdSearch, cmdStats, cmdSync } from './commands/ops.js';
 import { cmdIgnore, cmdInstallHooks, cmdInstallSkillset, cmdPropose, cmdResolveConflicts, cmdSetRole, cmdSetRuleVariant, cmdTeamDashboard } from './commands/admin.js';
 
@@ -18,6 +18,7 @@ export async function runCli(argv: string[]): Promise<string> {
     case 'init': return cmdInit(flags);
     case 'help': return cmdHelp(rest[0]);
     case 'update-help': return cmdUpdateHelp();
+    case 'completion': return cmdCompletion(rest[0]);
     case 'save': return cmdSave(rest, flags);
     case 'load': return cmdLoad(rest, flags);
     case 'dry-run': return dryRun(rest, flags);

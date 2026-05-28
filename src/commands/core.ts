@@ -7,6 +7,7 @@ import { initWorkspace, resolveAuthor, syncGlobalMemoryGit, writeApprovedMemory 
 import { getContext, loadSummary } from '../core/context.js';
 import { defaultConfig, loadConfig, scopeRoots, writeScopes } from '../core/config.js';
 import { renderHelp, renderHelpTerminal } from '../core/help.js';
+import { completionScript } from '../core/command-registry.js';
 import { readText, writeText } from '../core/fsx.js';
 import { applyApprovalEdit, requestApproval, requestGeneratedKnowledgeApproval } from '../core/approval.js';
 import { verifyRoot } from '../core/hash.js';
@@ -44,6 +45,12 @@ export async function cmdUpdateHelp(): Promise<string> {
   const ctx = await getContext();
   await writeText(path.join(ctx.roots.workspace, HELP_FILE), renderHelp());
   return 'engram: HELP.md refreshed';
+}
+
+/** Generate shell completion support for Tab suggestions. */
+export async function cmdCompletion(shell = 'bash'): Promise<string> {
+  if (shell !== 'bash' && shell !== 'zsh') throw new Error('completion supports bash or zsh');
+  return completionScript(shell);
 }
 
 /** Draft, approve, and write a memory. */

@@ -23,6 +23,21 @@ test('init, help, save reject, save accept, load, verify, audit', async () => {
   await rm(cwd, { recursive: true, force: true });
 });
 
+test('completion emits shell helper with command suggestions', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  const bash = await runEngram(cwd, env, ['completion']);
+  assert.equal(bash.code, 0, bash.stderr);
+  assert.match(bash.stdout, /complete -F _engram engram/);
+  assert.match(bash.stdout, /compgen -W "\$commands"/);
+  assert.match(bash.stdout, /COMP_WORDS/);
+  assert.match(bash.stdout, /local commands="[^"]*\bsave\b[^"]*"/);
+  assert.doesNotMatch(bash.stdout, /local commands="[^"]*save rule/);
+  const zsh = await runEngram(cwd, env, ['completion', 'zsh']);
+  assert.equal(zsh.code, 0, zsh.stderr);
+  assert.match(zsh.stdout, /#compdef engram/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
 test('export, health, search, stats, and conflict dry-run work', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
   await runEngram(cwd, env, ['init']);

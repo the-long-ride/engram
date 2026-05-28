@@ -97,6 +97,24 @@ variants are enabled, new or updated rule memories include light, balanced, and
 strict versions, and `engram load`, `engram export`, and `engram sync` emit only
 the selected variant.
 
+## Shell Completion
+
+Engram can print shell completion scripts for Tab suggestions. Source the script
+in a matching shell session:
+
+```bash
+source <(engram completion bash)
+```
+
+For zsh:
+
+```zsh
+source <(engram completion zsh)
+```
+
+`engram completion` prints the completion script; it does not install shell
+startup files by itself.
+
 ## What Is Included
 
 Engram ships a deterministic CLI, MCP-style JSON-lines wrapper, cached help,
@@ -142,6 +160,7 @@ Core commands include:
 ```bash
 engram init
 engram entry
+engram completion bash
 engram save rule "Never commit secrets."
 engram save knowledge
 engram load "deployment workflow"

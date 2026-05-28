@@ -1,12 +1,12 @@
 /** Runtime entry report for resolved Engram flags and paths. */
 import { VERSION } from './constants.js';
-import { loadConfig, scopeRoots } from './config.js';
+import { loadConfig, scopeRootsForConfig } from './config.js';
 import { globalGitInfo } from '../vcs/git.js';
 
 /** Print all resolved options currently applied by Engram. */
 export async function renderEntry(cwd = process.cwd()): Promise<string> {
   const config = await loadConfig(cwd);
-  const roots = scopeRoots(cwd);
+  const roots = scopeRootsForConfig(cwd, config);
   const info = await globalGitInfo(roots.global, config.global_git);
   const rows = flatten({
     version: VERSION,

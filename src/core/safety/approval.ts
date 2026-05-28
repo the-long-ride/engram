@@ -52,6 +52,20 @@ export async function requestGeneratedSelectionApproval(
   return { text, approval };
 }
 
+/** Ask for generated autosave text without a second approval prompt. */
+export async function requestGeneratedSelectionText(options: GeneratedMemoryOptions = {}): Promise<string | undefined> {
+  writeGeneratedPrompt(options);
+  if (!input.isTTY) {
+    output.write('Memory: ');
+    const text = (await readPipe()).trim();
+    return text || undefined;
+  }
+  const rl = createInterface({ input, output });
+  const text = (await rl.question('Memory: ')).trim();
+  rl.close();
+  return text || undefined;
+}
+
 async function requestGeneratedKnowledgePipe(
   renderPreview: PreviewRenderer
 ): Promise<{ text: string; approval: Approval } | undefined> {

@@ -1,7 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { rm } from 'node:fs/promises';
-import { parseMemory, validateMemoryRaw } from '../dist/core/memory/schema.js';
+import {
+  effectiveMemoryLines,
+  parseMemory,
+  RULE_EFFECTIVE_LINE_HARD_LIMIT,
+  RULE_EFFECTIVE_LINE_TARGET,
+  validateMemoryRaw
+} from '../dist/core/memory/schema.js';
+import { parseArgs } from '../dist/cli/args.js';
 import { HELP_DATA, commandAliases } from '../dist/core/cli/command-registry.js';
 import { COMMAND_TOPICS } from '../dist/core/cli/help-topics.js';
 import { isIgnored } from '../dist/core/safety/ignore.js';
@@ -105,6 +112,94 @@ pnpm install
 `)), /ordered/);
 });
 
+const MEMORY_BASE_EFFECTIVE_LINES = 6;
+
+function limitMemory({ type = 'rule', contentLines = 1, extraFrontmatter = '', blankPadding = '', contentPrefix = '' } = {}) {
+  return `---
+id: long-memory
+type: ${type}
+scope: workspace
+tags: [limits]
+author: dev@example.com
+confidence: high
+${extraFrontmatter}---
+# Long Memory
+
+## Context
+
+${blankPadding}- Context line.
+
+## Content
+
+${contentPrefix}${Array.from({ length: contentLines }, (_, index) => `- Rule line ${index + 1}`).join('\n')}
+
+## Example
+
+engram verify
+`;
+}
+
+test('effective memory line counting ignores metadata and blanks only', () => {
+  const raw = limitMemory({
+    contentLines: 2,
+    extraFrontmatter: 'role: [backend]\nowner: platform\nupdated: 2026-05-29\n',
+    blankPadding: '\n\n\n',
+    contentPrefix: 'owner: platform\n'
+  });
+  const expected = MEMORY_BASE_EFFECTIVE_LINES + 3;
+  assert.equal(effectiveMemoryLines(raw), expected);
+  assert.equal(effectiveMemoryLines(raw.replace(/\n/g, '\r\n')), expected);
+});
+
+test('rule memory hard limit uses counted lines and applies only to rules', () => {
+  const maxContentLines = RULE_EFFECTIVE_LINE_HARD_LIMIT - MEMORY_BASE_EFFECTIVE_LINES;
+  assert.equal(effectiveMemoryLines(limitMemory({ contentLines: maxContentLines })), RULE_EFFECTIVE_LINE_HARD_LIMIT);
+  assert.doesNotThrow(() => validateMemoryRaw(limitMemory({ contentLines: maxContentLines })));
+  assert.throws(() => validateMemoryRaw(limitMemory({ contentLines: maxContentLines + 1 })), /75-line hard limit/);
+  assert.doesNotThrow(() => validateMemoryRaw(limitMemory({
+    contentLines: maxContentLines,
+    extraFrontmatter: Array.from({ length: 30 }, (_, index) => `property_${index}: metadata`).join('\n') + '\n',
+    blankPadding: '\n\n\n'
+  })));
+  assert.doesNotThrow(() => validateMemoryRaw(limitMemory({ type: 'skill', contentLines: 90 })));
+  assert.doesNotThrow(() => validateMemoryRaw(limitMemory({ type: 'knowledge', contentLines: 90 })));
+});
+
+test('quality scoring warns when rule content exceeds target lines', () => {
+  const memory = (type, contentLines, extraFrontmatter = '') => `---
+id: quality-memory
+type: ${type}
+scope: workspace
+tags: [limits]
+author: dev@example.com
+confidence: high
+${extraFrontmatter}
+---
+# Quality Memory
+
+## Context
+
+- Context line.
+
+## Content
+
+${Array.from({ length: contentLines }, (_, index) => `- Line ${index + 1}`).join('\n')}
+
+## Example
+
+engram verify
+`;
+  const targetContentLines = RULE_EFFECTIVE_LINE_TARGET - MEMORY_BASE_EFFECTIVE_LINES;
+  assert.doesNotMatch(scoreMemory(memory('rule', targetContentLines)).issues.join('\n'), /50-line target/);
+  assert.doesNotMatch(scoreMemory(memory(
+    'rule',
+    targetContentLines,
+    Array.from({ length: 30 }, (_, index) => `property_${index}: metadata`).join('\n')
+  )).issues.join('\n'), /50-line target/);
+  assert.match(scoreMemory(memory('rule', targetContentLines + 1)).issues.join('\n'), /50-line target/);
+  assert.doesNotMatch(scoreMemory(memory('knowledge', 90)).issues.join('\n'), /50-line target/);
+});
+
 test('command registry has topic help and stable aliases', () => {
   const seenAliases = new Map();
   for (const item of HELP_DATA.flatMap((section) => section.commands)) {
@@ -117,6 +212,15 @@ test('command registry has topic help and stable aliases', () => {
   }
   assert.equal(commandAliases().s, 'save');
   assert.equal(commandAliases()['-v'], '--version');
+});
+
+test('argument parser preserves positional text after known boolean flags', () => {
+  const autosave = parseArgs(['autosave', '--accept-all', 'TYPE: rule | TEXT: Always test releases.']);
+  assert.equal(autosave.flags['accept-all'], true);
+  assert.deepEqual(autosave.rest, ['TYPE: rule | TEXT: Always test releases.']);
+  const load = parseArgs(['load', '--all', 'deployment workflow']);
+  assert.equal(load.flags.all, true);
+  assert.deepEqual(load.rest, ['deployment workflow']);
 });
 
 test('ignore matcher supports common patterns', () => {

@@ -1,7 +1,7 @@
 /** Ignore-rule loading and glob matching for .engramignore/.gitignore. */
 import path from 'node:path';
 import type { EngramConfig } from '../runtime/types.js';
-import { scopeRoots } from '../runtime/config.js';
+import { scopeRootsForConfig } from '../runtime/config.js';
 import { readText } from '../system/fsx.js';
 
 export type IgnoreSet = { patterns: string[]; hiddenCount: number };
@@ -17,7 +17,7 @@ export async function loadIgnore(cwd: string, config: EngramConfig): Promise<Ign
     patterns.push(...parseIgnore(await readText(path.join(cwd, config.ignore.gitignore_path))));
   }
   if (config.ignore.global_engramignore) {
-    patterns.push(...parseIgnore(await readText(path.join(scopeRoots(cwd).global, '.engramignore'))));
+    patterns.push(...parseIgnore(await readText(path.join(scopeRootsForConfig(cwd, config).global, '.engramignore'))));
   }
   return { patterns: [...new Set(patterns)], hiddenCount: 0 };
 }

@@ -16,9 +16,12 @@ test('skillset installer writes all supported agent adapter files', async () => 
   assert.match(mcpConfig, /engram-mcp/);
   assert.equal(JSON.parse(mcpConfig).mcpServers.engram.command, 'npx');
   assert.match(await readFile(path.join(cwd, '.agents/skills/engram/SKILL.md'), 'utf8'), /compact replies/);
+  assert.match(await readFile(path.join(cwd, '.agents/skills/engram/SKILL.md'), 'utf8'), /autosave --accept-all/);
   assert.match(await readFile(path.join(cwd, '.claude/skills/engram/SKILL.md'), 'utf8'), /any `engram` CLI arguments/);
+  assert.match(await readFile(path.join(cwd, '.claude/skills/engram/SKILL.md'), 'utf8'), /Never add `--accept-all` yourself/);
   assert.match(await readFile(path.join(cwd, '.cursor/commands/engram.md'), 'utf8'), /Engram Slash Command/);
   assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /\/engram \{\{args\}\}/);
+  assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /autosave --accept-all/);
   const opencodeConfig = await readFile(path.join(cwd, 'opencode.json'), 'utf8');
   assert.match(opencodeConfig, /\.opencode\/engram\.md/);
   assert.deepEqual(JSON.parse(opencodeConfig).instructions, ['.opencode/engram.md']);

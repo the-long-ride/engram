@@ -1,5 +1,5 @@
 /** Guarded memory reads used by load, export, and sync. */
-import { defaultConfig, scopeRoots } from '../runtime/config.js';
+import { defaultConfig, scopeRootsForConfig } from '../runtime/config.js';
 import { inside, readText } from '../system/fsx.js';
 import { verifyMemoryHash } from './hash.js';
 import { renderMemoryForConfig } from '../memory/rule-variants.js';
@@ -22,7 +22,7 @@ export async function readGuardedMemory(
   config: EngramConfig = defaultConfig(),
   options: GuardedReadOptions = {}
 ): Promise<GuardedRead> {
-  const roots = scopeRoots(cwd);
+  const roots = scopeRootsForConfig(cwd, config);
   const root = roots[entry.scope as Scope];
   const raw = await readText(inside(root, entry.file));
   const verify = options.verifyHashes !== false ? await verifyMemoryHash(root, entry.file, raw) : { ok: true };

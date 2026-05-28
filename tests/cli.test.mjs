@@ -10,6 +10,8 @@ test('init, help, save reject, save accept, load, verify, audit', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
   const init = await runEngram(cwd, env, ['init']);
   assert.equal(init.code, 0, init.stderr);
+  assert.ok(init.stdout.startsWith('███████╗███╗   ██╗'));
+  assert.match(init.stdout, /SYNTHETIC MEMORY \/\/ NEURAL ARCHIVE :: @the-long-ride with <3/);
   assert.match(init.stdout, /skillset: written AGENTS\.md, \.agents\/skills\/engram\/SKILL\.md/);
   assert.match((await runEngram(cwd, env, ['help'])).stdout, /Memory Commands/);
   assert.match((await runEngram(cwd, env, ['-h'])).stdout, /Memory Commands/);
@@ -19,6 +21,7 @@ test('init, help, save reject, save accept, load, verify, audit', async () => {
   assert.match((await runEngram(cwd, env, ['-h'])).stdout, /short: engram -v/);
   assert.match((await runEngram(cwd, env, ['help', 'set-rule-variant'])).stdout, /lower-tier models/);
   assert.match((await runEngram(cwd, env, ['help', 'set-role'])).stdout, /frontend-only memory/);
+  assert.match((await runEngram(cwd, env, ['help', 'autosave'])).stdout, /--accept-all/);
   assert.match((await runEngram(cwd, env, ['-h', 'roles'])).stdout, /role: \[\.\.\.\]/);
   assert.match((await runEngram(cwd, env, ['autosave', '-h'])).stdout, /one candidate per line/);
   assert.match((await runEngram(cwd, env, ['h', 'save'])).stdout, /engram save/);
@@ -265,6 +268,42 @@ test('autosave can read a transcript file and save selected candidates only', as
   await rm(cwd, { recursive: true, force: true });
 });
 
+test('autosave accept-all writes every transcript candidate without approval prompt', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['init']);
+  const transcript = path.join(cwd, 'session.md');
+  await writeFile(transcript, [
+    'TYPE: rule | TEXT: Always run smoke tests before release.',
+    'TYPE: knowledge | TEXT: The release dashboard lives in Grafana.',
+    ''
+  ].join('\n'));
+  const saved = await runEngram(cwd, env, [
+    'autosave', '--scope', 'workspace', '--file', transcript, '--accept-all'
+  ]);
+  assert.equal(saved.code, 0, saved.stderr);
+  assert.match(saved.stdout, /Accepted all autosave candidates/);
+  assert.doesNotMatch(saved.stdout, /Reply: A/);
+  assert.match((await runEngram(cwd, env, ['stats'])).stdout, /Total: 2/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('autosave accept-all saves generated candidates without final approval line', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['init']);
+  const input = [
+    'TYPE: rule | TEXT: Always update Engram skillsets after changing slash behavior.',
+    'TYPE: knowledge | TEXT: Slash autosave accept-all is explicit human approval.',
+    ''
+  ].join('\n');
+  const saved = await runEngram(cwd, env, ['autosave', '--scope', 'workspace', '--accept-all'], input);
+  assert.equal(saved.code, 0, saved.stderr);
+  assert.match(saved.stdout, /MEMORY CANDIDATE NEEDED/);
+  assert.match(saved.stdout, /Accepted all autosave candidates/);
+  assert.doesNotMatch(saved.stdout, /A 1,3/);
+  assert.match((await runEngram(cwd, env, ['stats'])).stdout, /Total: 2/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
 test('generated memories use standard markdown spacing and links', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
   await runEngram(cwd, env, ['init']);
@@ -314,6 +353,21 @@ test('init prepares global git and entry reports detected branch', async () => {
   assert.match(cleanStdout, /config\.global_git\.branch:\s*main/);
   assert.match(cleanStdout, /global_git_detected\.branch:\s*team/);
   assert.doesNotMatch(cleanStdout, /pattern_mining|pr_workflow|encryption/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('init can persist a custom global memory path', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  const customEnv = { ...env };
+  delete customEnv.ENGRAM_GLOBAL_DIR;
+  const globalPath = path.join(cwd, 'shared-engram');
+  const init = await runEngram(cwd, customEnv, ['init', '--global-path', globalPath, '--no-skillset']);
+  assert.equal(init.code, 0, init.stderr);
+  assert.match(init.stdout, new RegExp(globalPath.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')));
+  const config = JSON.parse(await readFile(path.join(cwd, '.engram', 'engram.config.json'), 'utf8'));
+  assert.equal(config.global_path, globalPath);
+  const entry = await runEngram(cwd, customEnv, ['entry']);
+  assert.match(entry.stdout.replace(/\x1b\[[0-9;]*m/g, ''), new RegExp(`roots\\.global:\\s*${globalPath.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')}`));
   await rm(cwd, { recursive: true, force: true });
 });
 

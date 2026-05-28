@@ -5,11 +5,12 @@ import { stdin as input, stdout as output } from 'node:process';
 import { HELP_FILE } from '../core/runtime/constants.js';
 import { initWorkspace, resolveAuthor, syncGlobalMemoryGit, writeApprovedMemory } from '../core/memory/storage.js';
 import { getContext, loadSummary } from '../core/memory/context.js';
-import { defaultConfig, loadConfig, scopeRoots, writeScopes } from '../core/runtime/config.js';
+import { defaultConfig, defaultGlobalPath, loadConfig, scopeRootsForConfig, writeScopes } from '../core/runtime/config.js';
 import { renderHelp, renderHelpTerminal } from '../core/cli/help.js';
+import { INIT_WORDMARK } from '../core/cli/banner.js';
 import { completionScript } from '../core/cli/command-registry.js';
 import { readText, writeText } from '../core/system/fsx.js';
-import { applyApprovalEdit, requestApproval, requestGeneratedMemoryApproval, requestGeneratedSelectionApproval, requestSelectionApproval } from '../core/safety/approval.js';
+import { applyApprovalEdit, requestApproval, requestGeneratedMemoryApproval, requestGeneratedSelectionApproval, requestGeneratedSelectionText, requestSelectionApproval, type SelectionApproval } from '../core/safety/approval.js';
 import { verifyRoot } from '../core/safety/hash.js';
 import { route, loadEntries, visibleEntries } from '../core/memory/routing.js';
 import { configureGlobalRemote, globalGitInfo, isValidGitRemoteUrl, normalizeBranchName } from '../core/vcs/git.js';
@@ -20,22 +21,52 @@ import { installSkillset, type InstallResult } from '../core/integrations/skills
 import { autosaveGuidance, generatedMemoryGuidance, inferMemoryType, normalizeMemoryType, parseMemoryCandidate, parseMemoryCandidates } from '../core/memory/memory-candidate.js';
 import type { MemoryType, Scope } from '../core/runtime/types.js';
 
+type SubmodulePlan = { lines?: string[]; branch: string; remoteUrl: string; enabled: boolean };
+type GlobalRemotePlan = { lines?: string[]; branch: string; remoteUrl: string };
+
 /** Initialize workspace memory. */
 export async function cmdInit(flags: Record<string, any>): Promise<string> {
-  const config = (await loadConfig()).global_git;
-  const requestedBranch = typeof flags['global-branch'] === 'string' ? flags['global-branch'] : config.branch;
+  const prelude = initWordmarkPrelude();
+  const loaded = await loadConfig();
+  const requestedBranch = typeof flags['global-branch'] === 'string' ? flags['global-branch'] : loaded.global_git.branch;
   const branch = normalizeBranchName(requestedBranch);
-  const lines = await initWorkspace(process.cwd(), Boolean(flags.force), branch);
+  const submodule = await planWorkspaceSubmodule(flags);
+  const globalPath = await resolveGlobalPath(flags, loaded.global_path);
+  const config = { ...loaded, global_path: globalPath, global_git: { ...loaded.global_git, branch } };
+  const roots = scopeRootsForConfig(process.cwd(), config);
+  const globalRemote = await planGlobalRemote(flags, roots.global, branch, config.global_git);
+  const lines = await initWorkspace(process.cwd(), Boolean(flags.force), branch, globalPath);
+  lines.push(...await applyWorkspaceSubmodule(submodule));
+  lines.push(...await applyGlobalRemote(globalRemote, roots.global, config.global_git));
   lines.push(...await maybeInstallDefaultSkillset(flags));
-  lines.push(...await maybeConfigureWorkspaceSubmodule(flags));
-  const remote = typeof flags['global-remote'] === 'string' ? flags['global-remote'].trim() : '';
-  if (remote) {
-    lines.push(...await configureGlobalRemote(scopeRoots().global, remote, branch, config.remote));
-    lines.push(...await syncGlobalMemoryGit(process.cwd()));
-  } else {
-    lines.push(...await maybeConfigureGlobalRemote(branch));
+  return `${prelude}${lines.join('\n')}`;
+}
+
+function initWordmarkPrelude(): string {
+  if (process.stdout.isTTY) {
+    output.write(`${INIT_WORDMARK}\n`);
+    return '';
   }
-  return lines.join('\n');
+  return `${INIT_WORDMARK}\n`;
+}
+
+async function resolveGlobalPath(flags: Record<string, any>, current = ''): Promise<string> {
+  const flagged = typeof flags['global-path'] === 'string' ? flags['global-path'].trim() : '';
+  if (flagged) return normalizeGlobalPath(flagged);
+  const fallback = current || defaultGlobalPath();
+  if (!process.stdin.isTTY || !process.stdout.isTTY) return fallback;
+  const rl = createInterface({ input, output });
+  try {
+    const answer = (await rl.question(`Global Engram path [${fallback}]: `)).trim();
+    return normalizeGlobalPath(answer || fallback);
+  } finally {
+    rl.close();
+  }
+}
+
+function normalizeGlobalPath(value: string): string {
+  if (!value.trim()) return defaultGlobalPath();
+  return path.resolve(value.trim());
 }
 
 async function maybeInstallDefaultSkillset(flags: Record<string, any>): Promise<string[]> {
@@ -115,26 +146,35 @@ export async function cmdAutosave(args: string[], flags: Record<string, any> = {
   const scopes = flags.scope ? [flags.scope as Scope] : writeScopes(ctx.config.scope);
   const author = await resolveAuthor();
   const role = rolesFromFlags(flags);
+  const acceptAll = flags['accept-all'] === true;
   let text = await autosaveInput(args, flags);
   let plans: SavePlan[] = [];
-  let approval;
+  let approval: SelectionApproval | undefined = acceptAll ? { accepted: true } : undefined;
   if (!text) {
-    const captured = await requestGeneratedSelectionApproval(async (generated) => {
-      text = generated;
-      plans = await planAutosaveCandidates(ctx, generated, scopes, author, role);
-      return previewSavePlans(plans);
-    }, { guidance: autosaveGuidance() });
-    if (!captured) return 'Discarded. No file written.';
-    approval = captured.approval;
+    if (acceptAll) {
+      text = await requestGeneratedSelectionText({ guidance: autosaveGuidance() }) ?? '';
+      if (!text) return 'Discarded. No file written.';
+    }
+    else {
+      const captured = await requestGeneratedSelectionApproval(async (generated) => {
+        text = generated;
+        plans = await planAutosaveCandidates(ctx, generated, scopes, author, role);
+        return previewSavePlans(plans);
+      }, { guidance: autosaveGuidance() });
+      if (!captured) return 'Discarded. No file written.';
+      approval = captured.approval;
+    }
   } else {
     plans = await planAutosaveCandidates(ctx, text, scopes, author, role);
-    approval = await requestSelectionApproval(previewSavePlans(plans));
+    if (!acceptAll) approval = await requestSelectionApproval(previewSavePlans(plans));
   }
+  if (acceptAll && text && !plans.length) plans = await planAutosaveCandidates(ctx, text, scopes, author, role);
   if (!plans.length) return 'No memory candidates detected.';
-  if (!approval.accepted) return 'Discarded. No file written.';
+  if (!approval?.accepted) return 'Discarded. No file written.';
   if (approval.selected?.length) plans = plans.filter((plan) => plan.candidateIndex === undefined || approval.selected?.includes(plan.candidateIndex));
   if (!plans.length) return 'Discarded. No selected candidates written.';
-  return writeSavePlans(plans, approval.edits);
+  const saved = await writeSavePlans(plans, approval.edits);
+  return acceptAll ? `Accepted all autosave candidates (--accept-all).\n${saved}` : saved;
 }
 
 async function planAutosaveCandidates(ctx: Awaited<ReturnType<typeof getContext>>, text: string, scopes: Scope[], author: string, role?: string[]): Promise<SavePlan[]> {
@@ -229,49 +269,61 @@ export async function cmdAudit(flags: Record<string, any>): Promise<string> {
   return entries.map((e) => `${e.scope} ${e.type} ${e.id} ${e.updated} ${e.author}`).join('\n') || 'engram: no matching memories';
 }
 
-async function maybeConfigureGlobalRemote(branch: string): Promise<string[]> {
-  const root = scopeRoots().global;
-  const config = defaultConfig().global_git;
+async function planGlobalRemote(flags: Record<string, any>, root: string, branch: string, config: ReturnType<typeof defaultConfig>['global_git']): Promise<GlobalRemotePlan> {
+  const remote = typeof flags['global-remote'] === 'string' ? flags['global-remote'].trim() : '';
+  if (remote) {
+    if (!isValidGitRemoteUrl(remote)) throw new Error('invalid global remote URL');
+    return { branch, remoteUrl: remote };
+  }
   const info = await globalGitInfo(root, { ...config, branch });
-  if (info.remoteUrl) return [];
+  if (info.remoteUrl) return { branch: info.branch || branch, remoteUrl: '' };
   if (!process.stdin.isTTY || !process.stdout.isTTY) {
-    return [
+    return { branch, remoteUrl: '', lines: [
       'global git: no origin remote configured',
       `To share global memory, run: engram init --global-remote <git-url> --global-branch ${branch}`
-    ];
+    ] };
   }
   const rl = createInterface({ input, output });
   try {
     const yes = (await rl.question('Add a Git origin remote for shared global memory? [y/N] ')).trim();
-    if (!/^y(es)?$/i.test(yes)) return ['global git: skipped origin remote setup'];
+    if (!/^y(es)?$/i.test(yes)) return { branch, remoteUrl: '', lines: ['global git: skipped origin remote setup'] };
     const remoteUrl = await promptRemoteUrl(rl);
     const chosen = (await rl.question(`Branch [${info.branch || branch}]: `)).trim() || info.branch || branch;
-    normalizeBranchName(chosen);
-    const lines = await configureGlobalRemote(root, remoteUrl, chosen, config.remote);
-    return [...lines, ...await syncGlobalMemoryGit(process.cwd())];
+    return { branch: normalizeBranchName(chosen), remoteUrl };
   } finally {
     rl.close();
   }
 }
 
-async function maybeConfigureWorkspaceSubmodule(flags: Record<string, any>): Promise<string[]> {
+async function applyGlobalRemote(plan: GlobalRemotePlan, root: string, config: ReturnType<typeof defaultConfig>['global_git']): Promise<string[]> {
+  if (!plan.remoteUrl) return plan.lines ?? [];
+  const lines = await configureGlobalRemote(root, plan.remoteUrl, plan.branch, config.remote);
+  return [...lines, ...await syncGlobalMemoryGit(process.cwd())];
+}
+
+async function planWorkspaceSubmodule(flags: Record<string, any>): Promise<SubmodulePlan> {
   const branch = normalizeBranchName(typeof flags['submodule-branch'] === 'string' ? flags['submodule-branch'] : 'main');
   const remoteUrl = typeof flags['submodule-remote'] === 'string' ? flags['submodule-remote'].trim() : '';
   if (remoteUrl && !isValidGitRemoteUrl(remoteUrl)) throw new Error('invalid submodule remote URL');
-  if (flags['no-submodule']) return ['workspace submodule: skipped'];
-  if (flags.submodule || remoteUrl) return configureWorkspaceSubmodule(process.cwd(), { branch, remoteUrl });
+  if (flags['no-submodule']) return { branch, remoteUrl: '', enabled: false, lines: ['workspace submodule: skipped'] };
+  if (flags.submodule || remoteUrl) return { branch, remoteUrl, enabled: true };
   if (!process.stdin.isTTY || !process.stdout.isTTY) {
-    return ['workspace submodule: skipped (run engram init --submodule to enable)'];
+    return { branch, remoteUrl: '', enabled: false, lines: ['workspace submodule: skipped (run engram init --submodule to enable)'] };
   }
   const rl = createInterface({ input, output });
   try {
-    const yes = (await rl.question('Add .engram as a Git submodule? [y/N] ')).trim();
-    if (!/^y(es)?$/i.test(yes)) return ['workspace submodule: skipped'];
+    const yes = (await rl.question('Add ./.engram at this folder as a Git submodule? [y/N] ')).trim();
+    if (!/^y(es)?$/i.test(yes)) return { branch, remoteUrl: '', enabled: false, lines: ['workspace submodule: skipped'] };
     const chosenRemote = await promptOptionalRemoteUrl(rl, 'Submodule origin URL (optional): ');
-    return configureWorkspaceSubmodule(process.cwd(), { branch, remoteUrl: chosenRemote });
+    return { branch, remoteUrl: chosenRemote, enabled: true };
   } finally {
     rl.close();
   }
+}
+
+async function applyWorkspaceSubmodule(plan: SubmodulePlan): Promise<string[]> {
+  if (!plan.enabled) return plan.lines ?? [];
+  return configureWorkspaceSubmodule(process.cwd(), { branch: plan.branch, remoteUrl: plan.remoteUrl });
 }
 
 async function promptRemoteUrl(rl: { question(query: string): Promise<string> }): Promise<string> {

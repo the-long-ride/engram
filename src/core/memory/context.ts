@@ -1,6 +1,6 @@
 /** Shared command context: config, roots, ignore rules, and merged index. */
 import type { EngramConfig, MemoryIndex } from '../runtime/types.js';
-import { loadConfig, scopeRoots } from '../runtime/config.js';
+import { loadConfig, scopeRoots, scopeRootsForConfig } from '../runtime/config.js';
 import { isIgnored, loadIgnore } from '../safety/ignore.js';
 import { loadIndex, mergeIndexes, rebuildIndex } from './index.js';
 import { exists, inside } from '../system/fsx.js';
@@ -19,7 +19,7 @@ export type ContextOptions = { rebuild?: boolean };
 /** Load current config and merged index, rebuilding indexes when present. */
 export async function getContext(cwd = process.cwd(), options: ContextOptions = {}): Promise<EngramContext> {
   const config = await loadConfig(cwd);
-  const roots = scopeRoots(cwd);
+  const roots = scopeRootsForConfig(cwd, config);
   const ignore = await loadIgnore(cwd, config);
   const workspace = await readIndex(roots.workspace, 'workspace', ignore.patterns, Boolean(options.rebuild));
   const global = await readIndex(roots.global, 'global', ignore.patterns, Boolean(options.rebuild));

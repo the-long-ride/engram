@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { CHANGELOG_FILE, DEFAULT_IGNORE, ENGRAM_DIR, HASH_FILE, HELP_FILE, INDEX_FILE, MEMORY_DIRS, README_FILE } from '../runtime/constants.js';
 import type { EngramConfig, Scope } from '../runtime/types.js';
-import { defaultConfig, loadConfig, mergeConfig, scopeRoots } from '../runtime/config.js';
+import { defaultConfig, loadConfig, mergeConfig, scopeRootsForConfig } from '../runtime/config.js';
 import { ensureDir, exists, inside, listFiles, readJson, readText, writeJson, writeText } from '../system/fsx.js';
 import { renderHelp, renderMemoryReadme } from '../cli/help.js';
 import { emptyIndex, rebuildIndex } from './index.js';
@@ -16,11 +16,11 @@ import { resolveConflictsInRoot } from '../vcs/conflict.js';
 type ReconcileResult = { dirs: number; files: number; config: boolean; migrated: number; index: boolean };
 
 /** Initialize a workspace .engram folder. */
-export async function initWorkspace(cwd: string, force = false, branch = 'main'): Promise<string[]> {
+export async function initWorkspace(cwd: string, force = false, branch = 'main', globalPath = ''): Promise<string[]> {
   const root = path.join(cwd, ENGRAM_DIR);
-  const roots = scopeRoots(cwd);
   const existing = await loadConfig(cwd);
-  const config = { ...existing, version: defaultConfig().version, global_git: { ...existing.global_git, branch } };
+  const config = { ...existing, version: defaultConfig().version, global_path: globalPath || existing.global_path, global_git: { ...existing.global_git, branch } };
+  const roots = scopeRootsForConfig(cwd, config);
   const lines: string[] = [];
   const workspaceExisted = await exists(root);
   const globalExisted = await exists(roots.global);
@@ -68,7 +68,8 @@ export async function createScope(root: string, config: EngramConfig, scope: Sco
 export async function writeApprovedMemory(input: {
   cwd: string; scope: Scope; file: string; content: string; message: string;
 }): Promise<string> {
-  const roots = scopeRoots(input.cwd);
+  const config = await loadConfig(input.cwd);
+  const roots = scopeRootsForConfig(input.cwd, config);
   const root = roots[input.scope];
   const sensitive = scanSensitive(input.content);
   if (sensitive.length) throw new Error(`Sensitive data blocked on line ${sensitive[0].line}: ${sensitive[0].reason}`);
@@ -76,7 +77,7 @@ export async function writeApprovedMemory(input: {
   if (injection.length) throw new Error(`Injection pattern blocked on line ${injection[0].line}`);
   validateMemoryRaw(input.content);
   const full = inside(root, input.file);
-  const globalGit = input.scope === 'global' ? (await loadConfig(input.cwd)).global_git : undefined;
+  const globalGit = input.scope === 'global' ? config.global_git : undefined;
   if (globalGit) await pullGlobalGit(root, globalGit, () => resolveGlobalConflicts(root));
   await writeText(full, input.content);
   await updateHash(root, input.file, input.content);
@@ -88,8 +89,9 @@ export async function writeApprovedMemory(input: {
 
 /** Pull, resolve, commit, and push the global memory Git repo. */
 export async function syncGlobalMemoryGit(cwd: string): Promise<string[]> {
-  const roots = scopeRoots(cwd);
-  const config = (await loadConfig(cwd)).global_git;
+  const loaded = await loadConfig(cwd);
+  const config = loaded.global_git;
+  const roots = scopeRootsForConfig(cwd, loaded);
   const rows = [
     ...await pullGlobalGit(roots.global, config, () => resolveGlobalConflicts(roots.global)),
     ...await gitCommitGlobal(roots.global, 'sync global memory', config, () => resolveGlobalConflicts(roots.global))

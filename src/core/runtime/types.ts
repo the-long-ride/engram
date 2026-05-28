@@ -7,6 +7,7 @@ export type RuleVariant = 'light' | 'balanced' | 'strict';
 export type EngramConfig = {
   version: string;
   enabled: boolean;
+  global_path: string;
   scope: 'both' | Scope;
   update: 'auto' | 'manual';
   read: 'auto' | 'manual' | 'off';

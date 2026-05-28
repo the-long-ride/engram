@@ -5,11 +5,17 @@ import { ENGRAM_DIR, VERSION } from './constants.js';
 import type { EngramConfig, Scope } from './types.js';
 import { readJson } from '../system/fsx.js';
 
+/** Return the OS-specific default global memory path. */
+export function defaultGlobalPath(): string {
+  return path.join(homedir(), 'Documents', 'engram');
+}
+
 /** Return the default config written during init. */
 export function defaultConfig(): EngramConfig {
   return {
     version: VERSION,
     enabled: true,
+    global_path: defaultGlobalPath(),
     scope: 'both',
     update: 'auto',
     read: 'auto',
@@ -32,7 +38,13 @@ export function defaultConfig(): EngramConfig {
 
 /** Resolve workspace and global memory roots. */
 export function scopeRoots(cwd = process.cwd()): Record<Scope, string> {
-  const globalRoot = process.env.ENGRAM_GLOBAL_DIR || path.join(homedir(), 'Documents', 'engram');
+  const globalRoot = process.env.ENGRAM_GLOBAL_DIR || defaultGlobalPath();
+  return { workspace: path.join(cwd, ENGRAM_DIR), global: globalRoot };
+}
+
+/** Resolve roots using a loaded config, with ENGRAM_GLOBAL_DIR as override. */
+export function scopeRootsForConfig(cwd: string, config: EngramConfig): Record<Scope, string> {
+  const globalRoot = process.env.ENGRAM_GLOBAL_DIR || config.global_path || defaultGlobalPath();
   return { workspace: path.join(cwd, ENGRAM_DIR), global: globalRoot };
 }
 

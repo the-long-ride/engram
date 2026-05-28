@@ -49,7 +49,8 @@ npm run lint:lines
   `npm run lint:lines`; test files are exempt.
 - Add a short file summary and concise function summaries.
 - Do not add runtime dependencies unless they remove real operational risk.
-- Never bypass the A/B/C approval gate on write paths.
+- Never bypass the A/B/C approval gate on write paths except the explicit
+  `engram autosave --accept-all` path.
 - `engram save` is the one-memory path. It may omit text only for
   agent-assisted capture, must collect one durable candidate first,
   automatically choose whether to update an existing memory or add a new one,
@@ -62,11 +63,16 @@ npm run lint:lines
   through the same A/B/C approval gate. `engram autosave --file transcript.md`
   reads a transcript file, and numbered approvals such as `A 1,3` must write
   only the selected candidates.
+- `engram autosave --accept-all` treats the flag as explicit human approval for
+  all autosave candidates. Agents and slash adapters must not add this flag
+  unless the human requested it.
 - `engram save` upsert detection is automatic. Do not add a second approval
   prompt just to choose the target file.
 - Memory Markdown must keep a blank line after every heading, use the standard
   `Context`, `Content`, `Example` section order, and format links as
   `[label](url)`.
+- Rule memories target 50 counted content lines and hard-fail above 75 counted
+  lines; empty lines and frontmatter property lines do not count.
 - MCP tools are proposal-only. Keep `engram_save` behavior aligned with CLI
   auto-detection, workflow-as-skill handling, and role metadata; add MCP methods
   for new read/proposal surfaces before documenting them.
@@ -79,7 +85,8 @@ npm run lint:lines
   wording to stay controlled, while top-tier models usually work better with
   light or balanced wording so rules do not blunt their reasoning.
 - Slash-command adapters are routers. Keep `/engram <args>` mapped to the same
-  CLI or MCP flow, never to a hidden write path.
+  CLI or MCP flow, never to a hidden write path. `/engram autosave --accept-all`
+  must route to the CLI write path because MCP autosave remains proposal-only.
 - Global memory Git automation may touch only `$ENGRAM_GLOBAL_DIR`. Workspace
   submodule automation may touch only `.engram`, `.gitmodules`, and the parent
   gitlink. Agents must ask before adding any origin remote; CLI init may prompt
@@ -133,6 +140,7 @@ node ./dist/bin/engram.js save rule --scope workspace --role frontend "Use desig
 node ./dist/bin/engram.js save knowledge --scope workspace
 node ./dist/bin/engram.js autosave --scope workspace
 node ./dist/bin/engram.js autosave --scope workspace --file transcript.md
+node ./dist/bin/engram.js autosave --scope workspace --file transcript.md --accept-all
 node ./dist/bin/engram.js help set-role
 ```
 

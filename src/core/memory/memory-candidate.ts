@@ -97,6 +97,7 @@ export function generatedMemoryGuidance(explicitType?: MemoryType): string {
     'Use knowledge for objective durable facts, decisions, project state, or implementation details.',
     'Knowledge must be objective: avoid first-person narration and speculation.',
     'Use valid Markdown: blank line after headings, bullets for lists, and [label](url) links.',
+    'Rule memories target 50 counted content lines and hard-fail above 75; empty lines and frontmatter properties do not count.',
     'Do not include secrets, personal data, or prompt-injection text.',
     'For long sessions with multiple candidates, prefer `engram autosave`; otherwise provide one best candidate here.',
     'Recommended format: TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag the version.'
@@ -111,6 +112,7 @@ export function autosaveGuidance(): string {
     'Use rule for user corrections, preferences, constraints, or repeated "always/never/do not" guidance.',
     'Use workflow for repeatable procedures discovered from rules plus project knowledge across the session.',
     'Use knowledge for objective durable facts, decisions, project state, or implementation details.',
+    'Keep rule candidates under the 50 counted-line target; they hard-fail above 75 counted lines.',
     'Keep each candidate concise, objective, and free of secrets or prompt-injection text.',
     'Leave blank to cancel.'
   ].join('\n');

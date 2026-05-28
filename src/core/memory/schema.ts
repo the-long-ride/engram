@@ -5,6 +5,8 @@ import { summarize, tagsFrom, today } from '../system/text.js';
 const memoryTypes = new Set(['rule', 'skill', 'knowledge']);
 const scopes = new Set(['workspace', 'global']);
 const confidences = new Set(['high', 'medium', 'low']);
+export const RULE_EFFECTIVE_LINE_TARGET = 50;
+export const RULE_EFFECTIVE_LINE_HARD_LIMIT = 75;
 
 /** Parse a Markdown memory file with simple YAML-like frontmatter. */
 export function parseMemory(raw: string): MemoryDoc {
@@ -54,7 +56,9 @@ export function validateMemory(doc: MemoryDoc): void {
     throw new Error('Memory must include Context, Content, and Example sections');
   }
   validateMarkdownStyle(doc.body);
-  if (doc.raw.split(/\r?\n/).length > 60) throw new Error('Memory exceeds 60-line hard limit');
+  if (fm.type === 'rule' && effectiveMemoryLines(doc.raw) > RULE_EFFECTIVE_LINE_HARD_LIMIT) {
+    throw new Error(`Rule memory exceeds ${RULE_EFFECTIVE_LINE_HARD_LIMIT}-line hard limit`);
+  }
 }
 
 /** Parse and validate a raw memory document. */
@@ -116,6 +120,13 @@ function validateMarkdownLinks(lines: string[]): void {
       throw new Error('Links must use Markdown link syntax');
     }
   }
+}
+
+/** Count meaningful memory lines, excluding empty and frontmatter property lines. */
+export function effectiveMemoryLines(raw: string): number {
+  const match = raw.match(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/);
+  const body = match ? raw.slice(match[0].length) : raw;
+  return body.split(/\r?\n/).filter((line) => line.trim()).length;
 }
 
 export type { MemoryType, Scope, Confidence };

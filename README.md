@@ -30,8 +30,16 @@ fallback. If both scopes contain the same topic, the workspace version wins. No
 merging, no ambiguity, no hidden platform state.
 
 Global memory is also a Git repository. `engram init` creates or reuses the
-global folder, runs `git init` there, and defaults to the `main` branch. To share
-it with a team or across devices, add an origin during init:
+global folder, runs `git init` there, and defaults to the `main` branch. During
+interactive init, Engram asks whether to make `./.engram` a submodule, which
+global memory path to use, and whether to add a shared global Git origin. To set
+the global path non-interactively:
+
+```bash
+engram init --global-path ~/Documents/engram
+```
+
+To share global memory with a team or across devices, add an origin during init:
 
 ```bash
 engram init --global-remote https://github.com/example/team-engram.git
@@ -86,6 +94,7 @@ npx @the-long-ride/engram save workflow "When releasing, run tests, update the c
 npx @the-long-ride/engram save knowledge
 npx @the-long-ride/engram autosave
 npx @the-long-ride/engram autosave --file transcript.md
+npx @the-long-ride/engram autosave --file transcript.md --accept-all
 npx @the-long-ride/engram load "package setup"
 ```
 
@@ -102,7 +111,9 @@ It asks the agent to brainstorm multiple `TYPE: ... | TEXT: ...` candidates and
 then previews all proposed adds/updates behind the same A/B/C approval gate. If
 you stay with normal `engram save`, it captures the best single memory. Autosave
 also accepts `--file transcript.md`, and the approval prompt can accept selected
-candidate numbers with replies such as `A 1,3`.
+candidate numbers with replies such as `A 1,3`. Use
+`engram autosave --accept-all` only when the human explicitly wants every
+agent-recommended candidate saved without a second A/B/C reply.
 
 Use `--role` or `--roles` when saving role-specific memory:
 
@@ -189,11 +200,14 @@ After that, a human can ask an agent to run Engram with slash-style requests:
 ```text
 /engram load "deployment workflow"
 /engram save knowledge
+/engram autosave --accept-all
 /engram verify
 ```
 
 The slash adapter routes to the same CLI or MCP flow. It does not bypass the
-normal human approval gate for writes.
+normal human approval gate for writes, except that
+`/engram autosave --accept-all` treats the flag as explicit approval for every
+agent-recommended autosave candidate.
 
 Core commands include:
 
@@ -212,6 +226,7 @@ engram save workflow "When deploying, run tests, build, then verify health."
 engram save knowledge
 engram autosave
 engram autosave --file transcript.md
+engram autosave --file transcript.md --accept-all
 engram load "deployment workflow"
 engram set-rule-variant strict
 engram verify

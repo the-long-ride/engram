@@ -24,7 +24,7 @@ export function defaultConfig(): EngramConfig {
     live_sync: { enabled: false, targets: ['agents-md', 'claude-md', 'cursorrules'] },
     global_git: { enabled: true, remote: 'origin', branch: 'main', auto_sync: true, auto_resolve: true },
     rule_variants: { enabled: false, active: 'balanced' },
-    pattern_mining: { enabled: true, threshold: 3, lookback_sessions: 20 },
+    pattern_mining: { enabled: false, threshold: 3, lookback_sessions: 20 },
     pr_workflow: { enabled: false, target_branch: 'main' },
     encryption: { enabled: false, scope: 'global', key_source: 'portable-file' }
   };

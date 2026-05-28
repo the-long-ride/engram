@@ -47,11 +47,11 @@ export async function requestApproval(preview: string): Promise<Approval> {
 
 function writeApprovalPreview(preview: string): void {
   output.write(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nENGRAM — MEMORY PROPOSED\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
-  output.write(`${preview}\n\nA — Accept and save as-is\nB — Accept with edits\nC — Reject and discard\n`);
+  output.write(`${preview}\n\nA — Accept and save as-is\nB — Accept with note\nC — Reject and discard\n`);
 }
 
 async function readApproval(rl: { question(query: string): Promise<string> }): Promise<Approval> {
-  const answer = (await rl.question('Reply: A / B <your edit> / C: ')).trim();
+  const answer = (await rl.question('Reply: A / B <your note> / C: ')).trim();
   return parseApproval(answer);
 }
 
@@ -67,8 +67,8 @@ async function readPipe(): Promise<string> {
   return Buffer.concat(chunks).toString('utf8');
 }
 
-/** Apply simple human edit text as an extra content note. */
+/** Apply simple human note text as an extra content note. */
 export function applyApprovalEdit(content: string, edit?: string): string {
   if (!edit) return content;
-  return `${content.trimEnd()}\n\n## Human Edit\n${edit}\n`;
+  return `${content.trimEnd()}\n\n## Human Note\n${edit}\n`;
 }

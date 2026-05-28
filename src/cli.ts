@@ -1,7 +1,7 @@
 /** Engram CLI dispatcher. Commands stay thin and delegate to core modules. */
 import { parseArgs } from './cli/args.js';
 import { VERSION } from './core/constants.js';
-import { cmdAudit, cmdHelp, cmdInit, cmdLoad, cmdSave, cmdUpdateHelp, cmdVerify } from './commands/core.js';
+import { cmdAudit, cmdHelp, cmdInit, cmdLoad, cmdRebuildIndex, cmdSave, cmdUpdateHelp, cmdVerify } from './commands/core.js';
 import { cmdDeduplicate, cmdEntry, cmdExport, cmdHealth, cmdImport, cmdQuality, cmdSearch, cmdStats, cmdSync } from './commands/ops.js';
 import { cmdIgnore, cmdInstallHooks, cmdInstallSkillset, cmdPropose, cmdResolveConflicts, cmdSetRole, cmdSetRuleVariant, cmdTeamDashboard } from './commands/admin.js';
 
@@ -19,14 +19,15 @@ export async function runCli(argv: string[]): Promise<string> {
     case 'help': return cmdHelp(rest[0]);
     case 'update-help': return cmdUpdateHelp();
     case 'save': return cmdSave(rest, flags);
-    case 'load': return cmdLoad(rest, true);
-    case 'dry-run': return dryRun(rest);
+    case 'load': return cmdLoad(rest, flags);
+    case 'dry-run': return dryRun(rest, flags);
     case 'verify': return cmdVerify(rest[0]);
+    case 'rebuild-index': return cmdRebuildIndex(rest[0]);
     case 'audit': return cmdAudit(flags);
     case 'health': return cmdHealth();
     case 'entry': return cmdEntry();
     case 'quality-check': return cmdQuality();
-    case 'deduplicate': return cmdDeduplicate();
+    case 'deduplicate': return cmdDeduplicate(flags);
     case 'export': return cmdExport(flags);
     case 'import': return cmdImport(rest);
     case 'search': return cmdSearch(rest);
@@ -45,11 +46,12 @@ export async function runCli(argv: string[]): Promise<string> {
 }
 
 /** Dry-run routing without printing full memory content. */
-async function dryRun(args: string[]): Promise<string> {
+async function dryRun(args: string[], flags: Record<string, string | boolean>): Promise<string> {
   const { getContext } = await import('./core/context.js');
   const { route } = await import('./core/routing.js');
   const ctx = await getContext();
-  const entries = route(ctx.index, args.join(' ') || 'current session', ctx.config, true);
+  const all = flags.all === true;
+  const entries = route(ctx.index, args.join(' ') || 'current session', ctx.config, all, { all, ignorePatterns: ctx.ignorePatterns });
   return entries.map((entry) => `${entry.scope}:${entry.file}`).join('\n') || 'No routed memories';
 }
 

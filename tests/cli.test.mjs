@@ -38,6 +38,61 @@ test('export, health, search, stats, and conflict dry-run work', async () => {
   await rm(cwd, { recursive: true, force: true });
 });
 
+test('ignored memory stays hidden from search, export, and stats', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Visible React memory'], 'A\n');
+  await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Hidden leakcheck memory'], 'A\n');
+  await writeFile(path.join(cwd, '.engramignore'), 'knowledge/hidden-leakcheck-memory.md\n');
+  assert.match((await runEngram(cwd, env, ['search', 'leakcheck'])).stdout, /No matches/);
+  assert.doesNotMatch((await runEngram(cwd, env, ['export', '--format', 'agents-md'])).stdout, /Hidden leakcheck/);
+  assert.match((await runEngram(cwd, env, ['stats'])).stdout, /Total: 1/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('live sync respects enabled flag and writes configured target when enabled', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Cursor sync memory'], 'A\n');
+  const disabled = await runEngram(cwd, env, ['sync']);
+  assert.equal(disabled.code, 0, disabled.stderr);
+  assert.match(disabled.stdout, /Live sync disabled/);
+  await assert.rejects(readFile(path.join(cwd, '.cursor', 'rules', 'engram.mdc'), 'utf8'));
+
+  const configPath = path.join(cwd, '.engram', 'engram.config.json');
+  const config = JSON.parse(await readFile(configPath, 'utf8'));
+  config.live_sync = { enabled: true, targets: ['cursorrules'] };
+  await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`);
+  const enabled = await runEngram(cwd, env, ['sync']);
+  assert.equal(enabled.code, 0, enabled.stderr);
+  assert.match(enabled.stdout, /\.cursor\/rules\/engram\.mdc/);
+  assert.match(await readFile(path.join(cwd, '.cursor', 'rules', 'engram.mdc'), 'utf8'), /Cursor Rules/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('unsupported public flags fail instead of silently degrading', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['init']);
+  assert.equal((await runEngram(cwd, env, ['export', '--format', 'bogus'])).code, 1);
+  assert.equal((await runEngram(cwd, env, ['deduplicate', '--semantic'])).code, 1);
+  assert.equal((await runEngram(cwd, env, ['resolve-conflicts', '--auto'])).code, 1);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('install-hooks preserves human-authored hooks', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  assert.equal(initGit(cwd).status, 0);
+  const hook = path.join(cwd, '.git', 'hooks', 'post-merge');
+  await writeFile(hook, '#!/bin/sh\n# human hook\n');
+  const result = await runEngram(cwd, env, ['install-hooks']);
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /SKIPPED post-merge/);
+  assert.match(result.stdout, /WRITTEN pre-commit/);
+  assert.match(await readFile(hook, 'utf8'), /human hook/);
+  assert.match(await readFile(path.join(cwd, '.git', 'hooks', 'pre-commit'), 'utf8'), /^#!\/bin\/sh/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
 test('save knowledge without text asks for generated agent knowledge', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
   await runEngram(cwd, env, ['init']);

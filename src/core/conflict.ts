@@ -6,6 +6,8 @@ import { updateHash } from './hash.js';
 import { rebuildIndex } from './index.js';
 import { git } from './git.js';
 import type { Scope } from './types.js';
+import { scanInjection, scanSensitive } from './security.js';
+import { validateMemoryRaw } from './schema.js';
 
 export type Conflict = { file: string; kind: 'EXTEND' | 'CONTRADICT' | 'DUPLICATE' | 'UNRELATED'; summary: string };
 export type ConflictResult = Conflict & { resolved: boolean; staged: boolean; decision: string };
@@ -51,8 +53,17 @@ export async function resolveConflictsInRoot(root: string, scope: Scope, dryRun 
   const results: ConflictResult[] = [];
   const changed: string[] = [];
   for (const conflict of conflicts) {
+    if (conflict.kind === 'CONTRADICT') {
+      results.push({ ...conflict, resolved: false, staged: false, decision: 'needs human review for contradiction' });
+      continue;
+    }
     const source = await readText(path.join(root, conflict.file));
     const resolution = resolveConflictText(source);
+    const validation = validateResolvedMemory(resolution.text);
+    if (validation) {
+      results.push({ ...conflict, resolved: false, staged: false, decision: validation });
+      continue;
+    }
     if (!dryRun) {
       await writeText(path.join(root, conflict.file), resolution.text);
       await updateHash(root, conflict.file, resolution.text);
@@ -118,8 +129,21 @@ async function appendConflictChangelog(root: string, files: string[]): Promise<v
 }
 
 function summaryFor(kind: Conflict['kind']): string {
-  if (kind === 'CONTRADICT') return 'Auto-resolves by deterministic Engram policy.';
+  if (kind === 'CONTRADICT') return 'Requires human review; contradictory memories are not auto-resolved.';
   if (kind === 'EXTEND') return 'Auto-resolves by merging unique lines.';
   if (kind === 'DUPLICATE') return 'Likely duplicate; choose newer updated date.';
   return 'Likely separate memories; split after review.';
+}
+
+function validateResolvedMemory(text: string): string {
+  try {
+    const sensitive = scanSensitive(text);
+    if (sensitive.length) return `blocked sensitive data on line ${sensitive[0].line}`;
+    const injection = scanInjection(text);
+    if (injection.length) return `blocked prompt injection on line ${injection[0].line}`;
+    validateMemoryRaw(text);
+    return '';
+  } catch (error: any) {
+    return `needs human review: ${error.message}`;
+  }
 }

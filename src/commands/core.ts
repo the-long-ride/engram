@@ -5,20 +5,21 @@ import { stdin as input, stdout as output } from 'node:process';
 import { HELP_FILE } from '../core/constants.js';
 import { initWorkspace, resolveAuthor, syncGlobalMemoryGit, writeApprovedMemory } from '../core/storage.js';
 import { getContext, loadSummary } from '../core/context.js';
-import { defaultConfig, scopeRoots, writeScopes } from '../core/config.js';
+import { defaultConfig, loadConfig, scopeRoots, writeScopes } from '../core/config.js';
 import { renderHelp, renderHelpTerminal } from '../core/help.js';
 import { readText, writeText } from '../core/fsx.js';
 import { applyApprovalEdit, requestApproval, requestGeneratedKnowledgeApproval } from '../core/approval.js';
 import { verifyRoot } from '../core/hash.js';
-import { route, loadEntries } from '../core/routing.js';
+import { route, loadEntries, visibleEntries } from '../core/routing.js';
 import { configureGlobalRemote, globalGitInfo, isValidGitRemoteUrl, normalizeBranchName } from '../core/git.js';
-import { planMemorySave, previewSavePlans } from '../core/save-plan.js';
+import { planMemorySave, previewSavePlans, type SavePlan } from '../core/save-plan.js';
 import { configureWorkspaceSubmodule } from '../core/submodule.js';
+import { rebuildIndex } from '../core/index.js';
 import type { MemoryType, Scope } from '../core/types.js';
 
 /** Initialize workspace memory. */
 export async function cmdInit(flags: Record<string, any>): Promise<string> {
-  const config = defaultConfig().global_git;
+  const config = (await loadConfig()).global_git;
   const requestedBranch = typeof flags['global-branch'] === 'string' ? flags['global-branch'] : config.branch;
   const branch = normalizeBranchName(requestedBranch);
   const lines = await initWorkspace(process.cwd(), Boolean(flags.force), branch);
@@ -54,17 +55,21 @@ export async function cmdSave(args: string[], flags: Record<string, any>): Promi
   const scopes = flags.scope ? [flags.scope as Scope] : writeScopes(ctx.config.scope);
   const author = await resolveAuthor();
   let approval;
+  let plans: SavePlan[] = [];
   if (!text && maybeType === 'knowledge') {
-    const captured = await requestGeneratedKnowledgeApproval(async (generated) => previewSave(generated, type, scopes, author, ctx));
+    const captured = await requestGeneratedKnowledgeApproval(async (generated) => {
+      plans = await planMemorySave({ ctx, text: generated, type, scopes, author });
+      return previewSavePlans(plans);
+    });
     if (!captured) return 'Discarded. No file written.';
     text = captured.text;
     approval = captured.approval;
   } else {
     if (!text) throw new Error('save requires memory text');
-    approval = await requestApproval(await previewSave(text, type, scopes, author, ctx));
+    plans = await planMemorySave({ ctx, text, type, scopes, author });
+    approval = await requestApproval(previewSavePlans(plans));
   }
   if (!approval.accepted) return 'Discarded. No file written.';
-  const plans = await planMemorySave({ ctx, text, type, scopes, author });
   const written = [];
   for (const plan of plans) {
     const content = applyApprovalEdit(plan.content, approval.edits);
@@ -73,19 +78,28 @@ export async function cmdSave(args: string[], flags: Record<string, any>): Promi
   return `Saved -> ${written.join(', ')}`;
 }
 
-async function previewSave(text: string, type: MemoryType, scopes: Scope[], author: string, ctx: Awaited<ReturnType<typeof getContext>>): Promise<string> {
-  return previewSavePlans(await planMemorySave({ ctx, text, type, scopes, author }));
-}
-
 /** Load routed memory for a query. */
-export async function cmdLoad(args: string[], manual = true): Promise<string> {
+export async function cmdLoad(args: string[], flags: Record<string, any> = {}): Promise<string> {
   const ctx = await getContext();
   if (!ctx.config.enabled || ctx.config.read === 'off') return '';
   const query = args.join(' ') || 'current session';
-  const entries = route(ctx.index, query, ctx.config, manual);
+  const all = flags.all === true;
+  const entries = route(ctx.index, query, ctx.config, all, { all, ignorePatterns: ctx.ignorePatterns });
   const loaded = await loadEntries(process.cwd(), entries, ctx.config);
   const summary = loadSummary(entries, ctx.hiddenCount);
   return `${summary}\n\n${loaded.map((row) => row.flagged ? `SKIPPED ${row.entry.file}: ${row.flagged}` : row.content).join('\n\n')}`.trim();
+}
+
+/** Explicitly rebuild one or both indexes from memory files. */
+export async function cmdRebuildIndex(scope?: string): Promise<string> {
+  const ctx = await getContext();
+  const scopes = scope === 'workspace' || scope === 'global' ? [scope] : ['workspace', 'global'];
+  const rows = [];
+  for (const current of scopes) {
+    const index = await rebuildIndex(ctx.roots[current as Scope], current as Scope, ctx.ignorePatterns);
+    rows.push(`${current}: ${index.entries.length} indexed`);
+  }
+  return `engram: rebuilt indexes\n${rows.join('\n')}`;
 }
 
 /** Verify hashes for one or both scopes. */
@@ -100,7 +114,7 @@ export async function cmdVerify(scope?: string): Promise<string> {
 /** Show audit rows, with simple filters. */
 export async function cmdAudit(flags: Record<string, any>): Promise<string> {
   const ctx = await getContext();
-  let entries = ctx.index.entries;
+  let entries = visibleEntries(ctx.index.entries, ctx.config, Boolean(flags['low-confidence']), ctx.ignorePatterns);
   if (flags.author) entries = entries.filter((e) => e.author === flags.author);
   if (flags['low-confidence']) entries = entries.filter((e) => e.confidence === 'low');
   if (flags.stale) entries = entries.filter((e) => Date.now() - Date.parse(e.updated) > 180 * 864e5);

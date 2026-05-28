@@ -1,6 +1,7 @@
 /** Small deterministic text helpers for IDs, tags, and lexical scoring. */
 export function slugify(input: string): string {
-  return input.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80) || 'memory';
+  const slug = input.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80);
+  return slug || `memory-${shortHash(input)}`;
 }
 
 /** Split comma/list text into clean tags. */
@@ -32,4 +33,13 @@ export function lexicalScore(query: string, candidate: string): number {
 export function summarize(text: string, max = 140): string {
   const clean = text.replace(/^---[\s\S]*?---/, '').replace(/[#>*`-]/g, '').replace(/\s+/g, ' ').trim();
   return clean.length > max ? `${clean.slice(0, max - 1)}...` : clean;
+}
+
+function shortHash(input: string): string {
+  let hash = 2166136261;
+  for (let i = 0; i < input.length; i += 1) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(36).slice(0, 8);
 }

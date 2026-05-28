@@ -3,7 +3,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { HASH_FILE } from './constants.js';
 import type { HashStore, Scope } from './types.js';
-import { listFiles, readJson, readText, writeJson } from './fsx.js';
+import { inside, listFiles, readJson, readText, writeJson } from './fsx.js';
 
 /** Compute a SHA-256 hex digest. */
 export function sha256(text: string): string {
@@ -20,6 +20,15 @@ export async function updateHash(root: string, relFile: string, content: string)
   const hashes = await loadHashes(root);
   hashes[relFile.replace(/\\/g, '/')] = sha256(content);
   await writeJson(path.join(root, HASH_FILE), hashes);
+}
+
+/** Verify one memory file against the stored hash without trusting its content. */
+export async function verifyMemoryHash(root: string, relFile: string, content?: string): Promise<{ ok: boolean; reason?: string }> {
+  const normalized = relFile.replace(/\\/g, '/');
+  const expected = (await loadHashes(root))[normalized];
+  if (!expected) return { ok: false, reason: 'missing hash' };
+  const current = sha256(content ?? await readText(inside(root, normalized)));
+  return expected === current ? { ok: true } : { ok: false, reason: 'hash mismatch' };
 }
 
 /** Verify every Markdown memory file under a root. */

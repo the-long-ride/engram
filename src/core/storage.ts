@@ -8,6 +8,7 @@ import { renderHelp, renderMemoryReadme } from './help.js';
 import { emptyIndex, rebuildIndex } from './index.js';
 import { updateHash } from './hash.js';
 import { scanInjection, scanSensitive } from './security.js';
+import { validateMemoryRaw } from './schema.js';
 import { ensureGlobalGit, gitCommitGlobal, gitUserEmail, pullGlobalGit } from './git.js';
 import { resolveConflictsInRoot } from './conflict.js';
 
@@ -17,7 +18,11 @@ export async function initWorkspace(cwd: string, force = false, branch = 'main')
   const roots = scopeRoots(cwd);
   const config = { ...defaultConfig(), global_git: { ...defaultConfig().global_git, branch } };
   const lines: string[] = [];
-  if (await exists(root) && !force) lines.push(`engram already initialized at ${root}`);
+  if (await exists(root) && !force) {
+    lines.push(`engram already initialized at ${root}`);
+    const existing = await loadConfig(cwd);
+    await writeJson(path.join(root, 'engram.config.json'), { ...existing, global_git: { ...existing.global_git, branch } });
+  }
   else {
     await createScope(root, config, true, true);
     lines.push(`engram initialized at ${root}`);
@@ -54,6 +59,7 @@ export async function writeApprovedMemory(input: {
   if (sensitive.length) throw new Error(`Sensitive data blocked on line ${sensitive[0].line}: ${sensitive[0].reason}`);
   const injection = scanInjection(input.content);
   if (injection.length) throw new Error(`Injection pattern blocked on line ${injection[0].line}`);
+  validateMemoryRaw(input.content);
   const full = inside(root, input.file);
   const globalGit = input.scope === 'global' ? (await loadConfig(input.cwd)).global_git : undefined;
   if (globalGit) await pullGlobalGit(root, globalGit, () => resolveGlobalConflicts(root));

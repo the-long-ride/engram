@@ -15,6 +15,8 @@ test('mcp status and save proposal do not write silently', async () => {
   assert.match(status.result, /Memory health/);
   const proposal = await handleMcp({ id: 2, method: 'engram_save', params: { text: 'Use Vitest', type: 'rule' } });
   assert.match(proposal.result, /Human approval required/);
+  const empty = await handleMcp({ id: 3, method: 'engram_save', params: { text: '' } });
+  assert.match(empty.error.message, /non-empty text/);
   process.chdir(previous);
   await rm(cwd, { recursive: true, force: true });
 });

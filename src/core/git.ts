@@ -1,6 +1,8 @@
 /** Small Git integration helpers. Workspace Git is intentionally untouched. */
 import { execFile } from 'node:child_process';
-import { ensureDir } from './fsx.js';
+import path from 'node:path';
+import { CHANGELOG_FILE, HASH_FILE, HELP_FILE, INDEX_FILE, MEMORY_DIRS, README_FILE } from './constants.js';
+import { ensureDir, exists } from './fsx.js';
 import type { EngramConfig } from './types.js';
 
 type GlobalGitConfig = EngramConfig['global_git'];
@@ -52,7 +54,7 @@ export async function pullGlobalGit(
   const branch = await ensureGlobalGit(root, config.branch);
   const remote = config.remote || 'origin';
   if (!(await remoteUrl(root, remote))) return [`global git: no ${remote} remote configured`];
-  await git(['-C', root, 'add', '.']);
+  await gitAddEngramOwned(root);
   await commitGlobal(root, 'save pending global memory changes').catch(() => undefined);
   try {
     await git(['-C', root, 'pull', '--no-rebase', '--no-edit', '--allow-unrelated-histories', remote, branch]);
@@ -61,7 +63,7 @@ export async function pullGlobalGit(
     if (missingRemoteRef(error)) return [`global git: remote ${remote}/${branch} not ready`];
     const resolved = config.auto_resolve ? await onResolve() : 0;
     if (!resolved) throw error;
-    await git(['-C', root, 'add', '.']);
+    await gitAddEngramOwned(root);
     if (!await commitGlobal(root, 'resolve global memory conflicts')) {
       throw new Error('global git conflict resolution needs manual review');
     }
@@ -78,7 +80,7 @@ export async function gitCommitGlobal(
 ): Promise<string[]> {
   if (!config.enabled) return ['global git: disabled'];
   const branch = await ensureGlobalGit(root, config.branch);
-  await git(['-C', root, 'add', '.']);
+  await gitAddEngramOwned(root);
   const committed = await commitGlobal(root, message);
   if (!config.auto_sync) return [committed ? `global git: committed ${branch}` : 'global git: no local changes'];
   return pushGlobalGit(root, branch, config, onResolve);
@@ -163,6 +165,21 @@ async function commitGlobal(root: string, message: string): Promise<boolean> {
     'commit', '-m', `[engram] ${message}`
   ]);
   return true;
+}
+
+async function gitAddEngramOwned(root: string): Promise<void> {
+  const candidates = [
+    ...MEMORY_DIRS,
+    INDEX_FILE,
+    HASH_FILE,
+    CHANGELOG_FILE,
+    HELP_FILE,
+    README_FILE,
+    'engram.config.json'
+  ];
+  const owned = [];
+  for (const item of candidates) if (await exists(path.join(root, item))) owned.push(item);
+  if (owned.length) await git(['-C', root, 'add', '--all', '--', ...owned]);
 }
 
 async function currentBranch(root: string, fallback: string): Promise<string> {

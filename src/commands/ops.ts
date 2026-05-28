@@ -1,51 +1,62 @@
 /** Operational commands: health, search, quality, export, import, stats, sync. */
 import path from 'node:path';
-import { getContext, entryPath } from '../core/context.js';
+import { getContext } from '../core/context.js';
 import { health, scoreMemory } from '../core/quality.js';
 import { duplicatePairs, searchEntries, stats } from '../core/search.js';
-import { exportBundle, renderFormat, writeSyncTarget } from '../core/exporter.js';
-import { readJson, readText, writeText } from '../core/fsx.js';
+import { assertFormat, exportBundle, renderFormat, writeSyncTarget } from '../core/exporter.js';
+import { readJson } from '../core/fsx.js';
 import { syncGlobalMemoryGit, writeApprovedMemory } from '../core/storage.js';
 import { requestApproval } from '../core/approval.js';
 import { renderEntry } from '../core/entry.js';
+import { visibleEntries } from '../core/routing.js';
+import { readGuardedMemory } from '../core/safe-read.js';
 
 /** Return memory health summary. */
 export async function cmdHealth(): Promise<string> {
   const ctx = await getContext();
-  return health(ctx.index.entries);
+  return health(visibleEntries(ctx.index.entries, ctx.config, false, ctx.ignorePatterns));
 }
 
 /** Search the merged index. */
 export async function cmdSearch(args: string[]): Promise<string> {
   const ctx = await getContext();
-  return searchEntries(ctx.index.entries, args.join(' ')).map((e) => `${e.scope}:${e.file} - ${e.summary}`).join('\n') || 'No matches';
+  const entries = visibleEntries(ctx.index.entries, ctx.config, true, ctx.ignorePatterns);
+  return searchEntries(entries, args.join(' ')).map((e) => `${e.scope}:${e.file} - ${e.summary}`).join('\n') || 'No matches';
 }
 
 /** Score every indexed memory. */
 export async function cmdQuality(): Promise<string> {
   const ctx = await getContext();
+  const entries = visibleEntries(ctx.index.entries, ctx.config, false, ctx.ignorePatterns);
   const rows = [];
-  for (const entry of ctx.index.entries) {
-    const result = scoreMemory(await readText(entryPath(ctx, entry.scope, entry.file)));
+  for (const entry of entries) {
+    const row = await readGuardedMemory(process.cwd(), entry, ctx.config, { render: false });
+    if (row.flagged) {
+      rows.push(`${entry.file} skipped: ${row.flagged}`);
+      continue;
+    }
+    const result = scoreMemory(row.content);
     rows.push(`${entry.file} ${result.score}/100 ${result.issues.join(', ') || '-'}`);
   }
   return rows.join('\n') || 'No memories';
 }
 
 /** Show likely duplicate pairs. */
-export async function cmdDeduplicate(): Promise<string> {
+export async function cmdDeduplicate(flags: Record<string, any> = {}): Promise<string> {
+  if (flags.semantic) throw new Error('deduplicate --semantic is not supported yet');
   const ctx = await getContext();
-  const pairs = duplicatePairs(ctx.index.entries);
+  const pairs = duplicatePairs(visibleEntries(ctx.index.entries, ctx.config, false, ctx.ignorePatterns));
   return pairs.map(([a, b, s]) => `${Math.round(s * 100)}% ${a.file} <-> ${b.file}`).join('\n') || 'No duplicate candidates';
 }
 
 /** Export to agent formats or a JSON bundle. */
 export async function cmdExport(flags: Record<string, any>): Promise<string> {
   const ctx = await getContext();
+  const entries = visibleEntries(ctx.index.entries, ctx.config, false, ctx.ignorePatterns);
   const format = flags.format as string | undefined;
-  if (format) return renderFormat(process.cwd(), ctx.index.entries, format);
+  if (format) return renderFormat(process.cwd(), entries, format);
   const out = flags.out as string || path.join(process.cwd(), `engram-bundle-${new Date().toISOString().slice(0, 10)}.json`);
-  await exportBundle(process.cwd(), ctx.index.entries, out);
+  await exportBundle(process.cwd(), entries, out);
   return `Exported -> ${out}`;
 }
 
@@ -67,7 +78,7 @@ export async function cmdImport(args: string[]): Promise<string> {
 /** Print index counts. */
 export async function cmdStats(): Promise<string> {
   const ctx = await getContext();
-  return stats(ctx.index.entries);
+  return stats(visibleEntries(ctx.index.entries, ctx.config, false, ctx.ignorePatterns));
 }
 
 /** Print resolved flags and global Git state. */
@@ -77,9 +88,14 @@ export async function cmdEntry(): Promise<string> {
 
 /** Render live-sync targets once. */
 export async function cmdSync(): Promise<string> {
-  const ctx = await getContext();
-  const targets = ctx.config.live_sync.targets;
+  const before = await getContext();
+  const targets = before.config.live_sync.targets;
+  for (const target of targets) assertFormat(target);
+  const syncRows = await syncGlobalMemoryGit(process.cwd());
+  if (!before.config.live_sync.enabled) return `${syncRows.join('\n')}\nLive sync disabled`;
+  const ctx = await getContext(process.cwd(), { rebuild: true });
+  const entries = visibleEntries(ctx.index.entries, ctx.config, false, ctx.ignorePatterns);
   const written = [];
-  for (const target of targets) written.push(await writeSyncTarget(process.cwd(), target, await renderFormat(process.cwd(), ctx.index.entries, target)));
-  return `${(await syncGlobalMemoryGit(process.cwd())).join('\n')}\nSynced: ${written.join(', ')}`;
+  for (const target of targets) written.push(await writeSyncTarget(process.cwd(), target, await renderFormat(process.cwd(), entries, target)));
+  return `${syncRows.join('\n')}\nSynced: ${written.join(', ')}`;
 }

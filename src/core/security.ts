@@ -48,12 +48,27 @@ export function redactSensitive(text: string): string {
 export function scanInjection(text: string): ScanFinding[] {
   const findings: ScanFinding[] = [];
   text.split(/\r?\n/).forEach((line, index) => {
+    const normalized = normalizeMarkdownCommandLine(line);
     for (const pattern of injectionPatterns) {
-      if (pattern.test(line.trim())) {
+      if (pattern.test(normalized)) {
         findings.push({ line: index + 1, reason: 'prompt injection pattern', value: line.trim(), kind: 'injection' });
         break;
       }
     }
   });
   return findings;
+}
+
+function normalizeMarkdownCommandLine(line: string): string {
+  let text = line.trim();
+  for (;;) {
+    const next = text
+      .replace(/^>\s*/, '')
+      .replace(/^#{1,6}\s+/, '')
+      .replace(/^[-*+]\s+(?:\[[ xX]\]\s*)?/, '')
+      .replace(/^\d+[.)]\s+/, '')
+      .trim();
+    if (next === text) return text;
+    text = next;
+  }
 }

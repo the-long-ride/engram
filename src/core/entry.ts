@@ -112,35 +112,35 @@ export async function renderEntry(cwd = process.cwd()): Promise<string> {
       command: "engram set-rule-variant <variant>",
     },
     'config.pattern_mining.enabled': {
-      note: "Enables local rule suggestions based on past activities",
+      note: "Experimental placeholder; pattern mining is not active in this release",
       command: "Edit manually in engram.config.json",
     },
     'config.pattern_mining.threshold': {
-      note: "Minimum frequency of pattern hits to recommend a rule",
+      note: "Experimental placeholder for future pattern mining",
       command: "Edit manually in engram.config.json",
     },
     'config.pattern_mining.lookback_sessions': {
-      note: "Number of past sessions evaluated for pattern mining",
+      note: "Experimental placeholder for future pattern mining",
       command: "Edit manually in engram.config.json",
     },
     'config.pr_workflow.enabled': {
-      note: "Toggles context checks/comments built for PR reviews",
+      note: "Experimental placeholder; PR workflow adapters are not active in this release",
       command: "Edit manually in engram.config.json",
     },
     'config.pr_workflow.target_branch': {
-      note: "Base target branch used for comparing PR changes",
+      note: "Experimental placeholder for future PR workflow adapters",
       command: "Edit manually in engram.config.json",
     },
     'config.encryption.enabled': {
-      note: "Toggles AES-256-GCM encryption on stored memory records",
+      note: "Experimental placeholder; storage encryption is not active in this release",
       command: "Edit manually in engram.config.json",
     },
     'config.encryption.scope': {
-      note: "Target scope for database encryption (workspace, global, both)",
+      note: "Experimental placeholder for future storage encryption",
       command: "Edit manually in engram.config.json",
     },
     'config.encryption.key_source': {
-      note: "Resolves encryption key source mechanism (e.g. portable-file)",
+      note: "Experimental placeholder for future storage encryption",
       command: "Edit manually in engram.config.json",
     },
     'global_git_detected.repo': {

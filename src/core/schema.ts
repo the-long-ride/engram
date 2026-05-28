@@ -56,6 +56,11 @@ export function validateMemory(doc: MemoryDoc): void {
   if (doc.raw.split(/\r?\n/).length > 60) throw new Error('Memory exceeds 60-line hard limit');
 }
 
+/** Parse and validate a raw memory document. */
+export function validateMemoryRaw(raw: string): void {
+  validateMemory(parseMemory(raw));
+}
+
 /** Render frontmatter in the package-supported subset. */
 export function frontmatter(data: Record<string, any>): string {
   const lines = Object.entries(data).map(([k, v]) => `${k}: ${formatValue(v)}`);

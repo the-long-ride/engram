@@ -1,10 +1,11 @@
 /** Automatic save upsert planning for approved memory writes. */
 import type { EngramContext } from './context.js';
 import { entryPath } from './context.js';
-import { readText } from './fsx.js';
+import { exists, readText } from './fsx.js';
 import { draftMemory, updateMemory } from './memory-template.js';
 import type { MemoryEntry, MemoryType, Scope } from './types.js';
 import { lexicalScore, slugify, words } from './text.js';
+import { sha256 } from './hash.js';
 
 export type SavePlan = {
   action: 'add' | 'update';
@@ -29,7 +30,8 @@ export async function planMemorySave(input: {
       plans.push({ action: 'update', scope, file: match.entry.file, id: match.entry.id, content, matchScore: match.score, message: `update ${input.type}: ${match.entry.id}` });
     } else {
       const draft = draftMemory({ text: input.text, type: input.type, scope, author: input.author }, options);
-      plans.push({ action: 'add', scope, file: draft.file, id: draft.id, content: draft.content, message: `add ${input.type}: ${draft.id}` });
+      const unique = await avoidCollision(input.ctx, scope, draft, input.text);
+      plans.push({ action: 'add', scope, file: unique.file, id: unique.id, content: unique.content, message: `add ${input.type}: ${unique.id}` });
     }
   }
   return plans;
@@ -62,4 +64,25 @@ function kind(file: string): MemoryType {
   if (file.startsWith('rules/')) return 'rule';
   if (file.startsWith('skills/')) return 'skill';
   return 'knowledge';
+}
+
+async function avoidCollision(
+  ctx: EngramContext,
+  scope: Scope,
+  draft: { file: string; id: string; content: string },
+  text: string
+): Promise<{ file: string; id: string; content: string }> {
+  if (!(await exists(entryPath(ctx, scope, draft.file)))) return draft;
+  const dir = draft.file.split('/')[0];
+  const base = draft.id;
+  const suffix = sha256(text).slice(0, 8);
+  let id = `${base}-${suffix}`;
+  let file = `${dir}/${id}.md`;
+  let counter = 2;
+  while (await exists(entryPath(ctx, scope, file))) {
+    id = `${base}-${suffix}-${counter}`;
+    file = `${dir}/${id}.md`;
+    counter += 1;
+  }
+  return { file, id, content: draft.content.replace(/^id:\s*.+$/m, `id: ${id}`) };
 }

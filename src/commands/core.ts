@@ -1,20 +1,34 @@
 /** Core user-facing commands: init, help, save, load, verify, and audit. */
 import path from 'node:path';
+import { createInterface } from 'node:readline/promises';
+import { stdin as input, stdout as output } from 'node:process';
 import { HELP_FILE } from '../core/constants.js';
-import { initWorkspace, resolveAuthor, writeApprovedMemory } from '../core/storage.js';
+import { initWorkspace, resolveAuthor, syncGlobalMemoryGit, writeApprovedMemory } from '../core/storage.js';
 import { getContext, loadSummary } from '../core/context.js';
-import { writeScopes } from '../core/config.js';
+import { defaultConfig, scopeRoots, writeScopes } from '../core/config.js';
 import { renderHelp } from '../core/help.js';
 import { readText, writeText } from '../core/fsx.js';
 import { draftMemory } from '../core/memory-template.js';
 import { applyApprovalEdit, requestApproval, requestGeneratedKnowledgeApproval } from '../core/approval.js';
 import { verifyRoot } from '../core/hash.js';
 import { route, loadEntries } from '../core/routing.js';
+import { configureGlobalRemote, globalGitInfo, isValidGitRemoteUrl, normalizeBranchName } from '../core/git.js';
 import type { MemoryType, Scope } from '../core/types.js';
 
 /** Initialize workspace memory. */
 export async function cmdInit(flags: Record<string, any>): Promise<string> {
-  return (await initWorkspace(process.cwd(), Boolean(flags.force))).join('\n');
+  const config = defaultConfig().global_git;
+  const requestedBranch = typeof flags['global-branch'] === 'string' ? flags['global-branch'] : config.branch;
+  const branch = normalizeBranchName(requestedBranch);
+  const lines = await initWorkspace(process.cwd(), Boolean(flags.force), branch);
+  const remote = typeof flags['global-remote'] === 'string' ? flags['global-remote'].trim() : '';
+  if (remote) {
+    lines.push(...await configureGlobalRemote(scopeRoots().global, remote, branch, config.remote));
+    lines.push(...await syncGlobalMemoryGit(process.cwd()));
+  } else {
+    lines.push(...await maybeConfigureGlobalRemote(branch));
+  }
+  return lines.join('\n');
 }
 
 /** Show cached help or refresh it. */
@@ -96,4 +110,37 @@ export async function cmdAudit(flags: Record<string, any>): Promise<string> {
   if (flags['low-confidence']) entries = entries.filter((e) => e.confidence === 'low');
   if (flags.stale) entries = entries.filter((e) => Date.now() - Date.parse(e.updated) > 180 * 864e5);
   return entries.map((e) => `${e.scope} ${e.type} ${e.id} ${e.updated} ${e.author}`).join('\n') || 'engram: no matching memories';
+}
+
+async function maybeConfigureGlobalRemote(branch: string): Promise<string[]> {
+  const root = scopeRoots().global;
+  const config = defaultConfig().global_git;
+  const info = await globalGitInfo(root, { ...config, branch });
+  if (info.remoteUrl) return [];
+  if (!process.stdin.isTTY || !process.stdout.isTTY) {
+    return [
+      'global git: no origin remote configured',
+      `To share global memory, run: engram init --global-remote <git-url> --global-branch ${branch}`
+    ];
+  }
+  const rl = createInterface({ input, output });
+  try {
+    const yes = (await rl.question('Add a Git origin remote for shared global memory? [y/N] ')).trim();
+    if (!/^y(es)?$/i.test(yes)) return ['global git: skipped origin remote setup'];
+    const remoteUrl = await promptRemoteUrl(rl);
+    const chosen = (await rl.question(`Branch [${info.branch || branch}]: `)).trim() || info.branch || branch;
+    normalizeBranchName(chosen);
+    const lines = await configureGlobalRemote(root, remoteUrl, chosen, config.remote);
+    return [...lines, ...await syncGlobalMemoryGit(process.cwd())];
+  } finally {
+    rl.close();
+  }
+}
+
+async function promptRemoteUrl(rl: { question(query: string): Promise<string> }): Promise<string> {
+  for (;;) {
+    const remoteUrl = (await rl.question('Remote origin URL: ')).trim();
+    if (isValidGitRemoteUrl(remoteUrl)) return remoteUrl;
+    output.write('Invalid Git remote URL. Paste an https, ssh, git, file, or git@host:path URL.\n');
+  }
 }

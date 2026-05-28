@@ -2,7 +2,7 @@
 import { parseArgs } from './cli/args.js';
 import { VERSION } from './core/constants.js';
 import { cmdAudit, cmdHelp, cmdInit, cmdLoad, cmdSave, cmdUpdateHelp, cmdVerify } from './commands/core.js';
-import { cmdDeduplicate, cmdExport, cmdHealth, cmdImport, cmdQuality, cmdSearch, cmdStats, cmdSync } from './commands/ops.js';
+import { cmdDeduplicate, cmdEntry, cmdExport, cmdHealth, cmdImport, cmdQuality, cmdSearch, cmdStats, cmdSync } from './commands/ops.js';
 import { cmdIgnore, cmdInstallHooks, cmdInstallSkillset, cmdPropose, cmdResolveConflicts, cmdSetRole, cmdTeamDashboard } from './commands/admin.js';
 
 /** Execute a CLI invocation and return printable output. */
@@ -20,6 +20,7 @@ export async function runCli(argv: string[]): Promise<string> {
     case 'verify': return cmdVerify(rest[0]);
     case 'audit': return cmdAudit(flags);
     case 'health': return cmdHealth();
+    case 'entry': return cmdEntry();
     case 'quality-check': return cmdQuality();
     case 'deduplicate': return cmdDeduplicate();
     case 'export': return cmdExport(flags);

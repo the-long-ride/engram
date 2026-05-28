@@ -5,8 +5,9 @@ import { health, scoreMemory } from '../core/quality.js';
 import { duplicatePairs, searchEntries, stats } from '../core/search.js';
 import { exportBundle, renderFormat, writeSyncTarget } from '../core/exporter.js';
 import { readJson, readText, writeText } from '../core/fsx.js';
-import { writeApprovedMemory } from '../core/storage.js';
+import { syncGlobalMemoryGit, writeApprovedMemory } from '../core/storage.js';
 import { requestApproval } from '../core/approval.js';
+import { renderEntry } from '../core/entry.js';
 
 /** Return memory health summary. */
 export async function cmdHealth(): Promise<string> {
@@ -69,11 +70,16 @@ export async function cmdStats(): Promise<string> {
   return stats(ctx.index.entries);
 }
 
+/** Print resolved flags and global Git state. */
+export async function cmdEntry(): Promise<string> {
+  return renderEntry(process.cwd());
+}
+
 /** Render live-sync targets once. */
 export async function cmdSync(): Promise<string> {
   const ctx = await getContext();
   const targets = ctx.config.live_sync.targets;
   const written = [];
   for (const target of targets) written.push(await writeSyncTarget(process.cwd(), target, await renderFormat(process.cwd(), ctx.index.entries, target)));
-  return `Synced: ${written.join(', ')}`;
+  return `${(await syncGlobalMemoryGit(process.cwd())).join('\n')}\nSynced: ${written.join(', ')}`;
 }

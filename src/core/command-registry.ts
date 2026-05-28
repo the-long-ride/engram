@@ -18,7 +18,9 @@ export const HELP_DATA: HelpSection[] = [
     commands: [
       { command: 'engram save rule <text>', purpose: 'Draft and save a rule memory after user approval' },
       { command: 'engram save skill <text>', purpose: 'Draft and save a skill memory after user approval' },
+      { command: 'engram save workflow <text>', purpose: 'Draft and save a repeatable workflow as a skill memory' },
       { command: 'engram save knowledge [text]', purpose: 'Draft and save a knowledge memory (agent summary or text)' },
+      { command: 'engram save [text]', purpose: 'Auto-detect rule, workflow, skill, or knowledge memory from text' },
       { command: 'engram load [--all] [query]', purpose: 'Route and load relevant memories into the agent context' },
       { command: 'engram dry-run [--all] [query]', purpose: 'Preview routed memory file paths without printing their content' },
       { command: 'engram search <query>', purpose: 'Perform a search across visible indexed memories' },
@@ -72,7 +74,7 @@ export function commandNames(): string[] {
 /** Return a shell completion script for the current command surface. */
 export function completionScript(shell: 'bash' | 'zsh' = 'bash'): string {
   const commands = commandNames().join(' ');
-  const saveTypes = ['rule', 'skill', 'knowledge'].join(' ');
+  const saveTypes = ['rule', 'skill', 'workflow', 'knowledge'].join(' ');
   const scopes = ['workspace', 'global'].join(' ');
   const formats = ['agents-md', 'claude-md', 'cursorrules'].join(' ');
   const shells = ['bash', 'zsh'].join(' ');

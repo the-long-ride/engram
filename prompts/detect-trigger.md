@@ -8,4 +8,9 @@ Return `NO_TRIGGER` or:
 
 `TRIGGER: <tech-stack|decision|correction|preference|project|gap|custom> | <summary>`
 
+Classify corrections, preferences, constraints, or repeated "always/never/do not"
+guidance as rule candidates. Classify repeatable procedures that emerge over a
+long interaction as workflow/skill candidates. Classify durable facts and
+decisions as objective knowledge candidates.
+
 Be conservative. Do not flag content already captured in memory.

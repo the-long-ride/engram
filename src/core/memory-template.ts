@@ -67,12 +67,15 @@ function renderMemory(input: {
 # ${input.title}
 
 ## Context
+
 Approved from a human/agent conversation on ${now}; content is written as objective durable memory.
 
 ## Content
+
 ${input.bodyText ?? bulletize(input.text)}
 ${variantSection(input, options)}
 ## Example
+
 Use this memory when a future task touches: ${input.tags.slice(0, 3).join(', ') || 'this topic'}.
 `;
 }
@@ -82,8 +85,12 @@ function bulletize(text: string): string {
 }
 
 function plainBullets(text: string): string[] {
+  const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  if (lines.length > 1 && lines.some((line) => /^([-*]|\d+[.)])\s+/.test(line))) {
+    return lines.map((line) => `- ${formatInlineMarkdown(line.replace(/^([-*]|\d+[.)])\s+/, '').trim())}`).slice(0, 8);
+  }
   const parts = text.split(/(?<=[.!?])\s+/).filter(Boolean).slice(0, 5);
-  return parts.map((part) => `- ${part.replace(/^\W+/, '').trim()}`);
+  return parts.map((part) => `- ${formatInlineMarkdown(part.replace(/^\W+/, '').trim())}`);
 }
 
 function contentBullets(body: string): string[] {
@@ -100,11 +107,17 @@ function variantSection(input: {
   const fallback = variants.balanced ?? variants.light ?? variants.strict ?? '';
   return `
 ## Rule Variants
+
 ### Light
+
 ${variants.light ?? fallback}
+
 ### Balanced
+
 ${variants.balanced ?? fallback}
+
 ### Strict
+
 ${variants.strict ?? fallback}
 
 `;
@@ -116,4 +129,14 @@ function dirFor(type: MemoryType): string {
 
 function unique(values: string[]): string[] {
   return [...new Set(values.map((value) => value.trim()).filter(Boolean))].slice(0, 8);
+}
+
+function formatInlineMarkdown(text: string): string {
+  return text.replace(/(^|\s)((?:https?:\/\/|www\.)[^\s<>)]+)/gi, (_, prefix: string, rawUrl: string) => {
+    const trailing = rawUrl.match(/[.,!?;:]+$/)?.[0] ?? '';
+    const cleanUrl = trailing ? rawUrl.slice(0, -trailing.length) : rawUrl;
+    const href = cleanUrl.startsWith('www.') ? `https://${cleanUrl}` : cleanUrl;
+    const label = cleanUrl.replace(/^https?:\/\//i, '');
+    return `${prefix}[${label}](${href})${trailing}`;
+  });
 }

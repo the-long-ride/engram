@@ -123,6 +123,48 @@ test('save knowledge without text asks for generated agent knowledge', async () 
   await rm(cwd, { recursive: true, force: true });
 });
 
+test('save auto-detects rules and workflow candidates', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['init']);
+  const rule = await runEngram(cwd, env, ['save', '--scope', 'workspace', 'Always use pnpm for installs'], 'A\n');
+  assert.equal(rule.code, 0, rule.stderr);
+  assert.match(rule.stdout, /Type: rule/);
+  assert.match(rule.stdout, /rules\/always-use-pnpm-for-installs\.md/);
+
+  const workflow = await runEngram(cwd, env, [
+    'save', 'workflow', '--scope', 'workspace',
+    'When releasing, first run tests. Then update the changelog. Finally tag the version.'
+  ], 'A\n');
+  assert.equal(workflow.code, 0, workflow.stderr);
+  assert.match(workflow.stdout, /Type: skill/);
+  assert.match(workflow.stdout, /skills\/skill-when-releasing-first-run-tests-then-update-the-changelog\.md/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('save can parse agent-brainstormed workflow candidates', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['init']);
+  const input = 'TYPE: workflow\nTEXT: When deploying, first run tests. Then verify health.\nA\n';
+  const saved = await runEngram(cwd, env, ['save', '--scope', 'workspace'], input);
+  assert.equal(saved.code, 0, saved.stderr);
+  assert.match(saved.stdout, /MEMORY CANDIDATE NEEDED/);
+  assert.match(saved.stdout, /Type: skill/);
+  assert.match(saved.stdout, /skills\/when-deploying-first-run-tests-then-verify-health\.md/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('generated memories use standard markdown spacing and links', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['init']);
+  const saved = await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Docs live at www.google.com.'], 'A\n');
+  assert.equal(saved.code, 0, saved.stderr);
+  const content = await readFile(path.join(cwd, '.engram', 'knowledge', 'docs-live-at-www-google-com.md'), 'utf8');
+  assert.match(content, /## Context\r?\n\r?\nApproved/);
+  assert.match(content, /## Content\r?\n\r?\n- Docs live at \[www\.google\.com\]\(https:\/\/www\.google\.com\)\./);
+  assert.match(content, /## Example\r?\n\r?\nUse this memory/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
 test('save automatically updates matching memory instead of duplicating it', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
   await runEngram(cwd, env, ['init']);

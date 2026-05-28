@@ -4,17 +4,27 @@ import { stdin as input, stdout as output } from 'node:process';
 
 export type Approval = { accepted: boolean; edits?: string; redacted?: boolean };
 type PreviewRenderer = (text: string) => string | Promise<string>;
+type GeneratedMemoryOptions = { explicitType?: string; guidance?: string };
 
 /** Ask for generated knowledge, then approve the rendered memory preview. */
 export async function requestGeneratedKnowledgeApproval(
   renderPreview: PreviewRenderer
 ): Promise<{ text: string; approval: Approval } | undefined> {
-  output.write(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nENGRAM — KNOWLEDGE TEXT NEEDED\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
-  output.write('No knowledge text was provided. If you are an AI agent, summarize durable knowledge from the work you just completed.\n');
-  output.write('Write one concise memory candidate, or leave blank to cancel.\n');
+  return requestGeneratedMemoryApproval(renderPreview, { explicitType: 'knowledge' });
+}
+
+/** Ask an agent or human to brainstorm missing memory text, then approve it. */
+export async function requestGeneratedMemoryApproval(
+  renderPreview: PreviewRenderer,
+  options: GeneratedMemoryOptions = {}
+): Promise<{ text: string; approval: Approval } | undefined> {
+  const title = options.explicitType === 'knowledge' ? 'KNOWLEDGE TEXT NEEDED' : 'MEMORY CANDIDATE NEEDED';
+  output.write(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nENGRAM — ${title}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
+  output.write(options.guidance ?? 'Write one concise memory candidate, or leave blank to cancel.\n');
+  output.write('\n');
   if (!input.isTTY) return requestGeneratedKnowledgePipe(renderPreview);
   const rl = createInterface({ input, output });
-  const text = (await rl.question('Knowledge: ')).trim();
+  const text = (await rl.question('Memory: ')).trim();
   if (!text) {
     rl.close();
     return undefined;
@@ -28,12 +38,11 @@ export async function requestGeneratedKnowledgeApproval(
 async function requestGeneratedKnowledgePipe(
   renderPreview: PreviewRenderer
 ): Promise<{ text: string; approval: Approval } | undefined> {
-  output.write('Knowledge: ');
-  const lines = (await readPipe()).split(/\r?\n/);
-  const text = (lines.shift() ?? '').trim();
+  output.write('Memory: ');
+  const { text, approvalLine } = splitPipedGeneratedInput(await readPipe());
   if (!text) return undefined;
   writeApprovalPreview(await renderPreview(text));
-  return { text, approval: parseApproval(lines.find((line) => line.trim()) ?? '') };
+  return { text, approval: parseApproval(approvalLine) };
 }
 
 /** Show the blueprint-style approval prompt and parse A/B/C. */
@@ -67,8 +76,21 @@ async function readPipe(): Promise<string> {
   return Buffer.concat(chunks).toString('utf8');
 }
 
+function splitPipedGeneratedInput(raw: string): { text: string; approvalLine: string } {
+  const lines = raw.split(/\r?\n/);
+  let approvalIndex = -1;
+  for (let i = lines.length - 1; i >= 0; i -= 1) {
+    if (!lines[i].trim()) continue;
+    approvalIndex = i;
+    break;
+  }
+  const approvalLine = approvalIndex >= 0 ? lines[approvalIndex].trim() : '';
+  const textLines = approvalIndex >= 0 ? lines.slice(0, approvalIndex) : lines;
+  return { text: textLines.join('\n').trim(), approvalLine };
+}
+
 /** Apply simple human note text as an extra content note. */
 export function applyApprovalEdit(content: string, edit?: string): string {
   if (!edit) return content;
-  return `${content.trimEnd()}\n\n## Human Note\n${edit}\n`;
+  return `${content.trimEnd()}\n\n## Human Note\n\n${edit}\n`;
 }

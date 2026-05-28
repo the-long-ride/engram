@@ -74,14 +74,18 @@ Engram initializes `.engram` on `main`, creates the first submodule commit as
 ```bash
 npx @the-long-ride/engram init
 npx @the-long-ride/engram save rule "Use pnpm for package management."
+npx @the-long-ride/engram save workflow "When releasing, run tests, update the changelog, then tag the version."
 npx @the-long-ride/engram save knowledge
 npx @the-long-ride/engram load "package setup"
 ```
 
-`engram save knowledge` can be run without text by an AI agent. Engram asks the
-agent to summarize durable knowledge from its current work in objective wording,
-then automatically chooses whether to update a matching memory or create a new
-one. The normal A/B/C approval preview still appears before anything is written.
+`engram save` can be run without text by an AI agent. Engram asks the agent to
+brainstorm one durable candidate, classify it as a rule, workflow/skill, or
+knowledge, then chooses whether to update a matching memory or create a new one.
+Knowledge should be objective facts and decisions. Rules usually come from human
+corrections or preferences. Workflows are saved as skill memories when a longer
+interaction reveals a repeatable process. The normal A/B/C approval preview
+still appears before anything is written.
 
 Rule output can be tuned per agent/model:
 
@@ -162,6 +166,7 @@ engram init
 engram entry
 engram completion bash
 engram save rule "Never commit secrets."
+engram save workflow "When deploying, run tests, build, then verify health."
 engram save knowledge
 engram load "deployment workflow"
 engram set-rule-variant strict

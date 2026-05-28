@@ -9,13 +9,14 @@ import { defaultConfig, loadConfig, scopeRoots, writeScopes } from '../core/conf
 import { renderHelp, renderHelpTerminal } from '../core/help.js';
 import { completionScript } from '../core/command-registry.js';
 import { readText, writeText } from '../core/fsx.js';
-import { applyApprovalEdit, requestApproval, requestGeneratedKnowledgeApproval } from '../core/approval.js';
+import { applyApprovalEdit, requestApproval, requestGeneratedMemoryApproval } from '../core/approval.js';
 import { verifyRoot } from '../core/hash.js';
 import { route, loadEntries, visibleEntries } from '../core/routing.js';
 import { configureGlobalRemote, globalGitInfo, isValidGitRemoteUrl, normalizeBranchName } from '../core/git.js';
 import { planMemorySave, previewSavePlans, type SavePlan } from '../core/save-plan.js';
 import { configureWorkspaceSubmodule } from '../core/submodule.js';
 import { rebuildIndex } from '../core/index.js';
+import { generatedMemoryGuidance, inferMemoryType, normalizeMemoryType, parseMemoryCandidate } from '../core/memory-candidate.js';
 import type { MemoryType, Scope } from '../core/types.js';
 
 /** Initialize workspace memory. */
@@ -55,24 +56,28 @@ export async function cmdCompletion(shell = 'bash'): Promise<string> {
 
 /** Draft, approve, and write a memory. */
 export async function cmdSave(args: string[], flags: Record<string, any>): Promise<string> {
-  const maybeType = args[0] as MemoryType | undefined;
-  const type: MemoryType = ['rule', 'skill', 'knowledge'].includes(maybeType ?? '') ? maybeType as MemoryType : 'knowledge';
-  let text = (type === maybeType ? args.slice(1) : args).join(' ').trim();
+  const explicitType = normalizeMemoryType(args[0]);
+  let type: MemoryType = explicitType ?? inferMemoryType(args.join(' '));
+  let text = (explicitType ? args.slice(1) : args).join(' ').trim();
   const ctx = await getContext();
   const scopes = flags.scope ? [flags.scope as Scope] : writeScopes(ctx.config.scope);
   const author = await resolveAuthor();
   let approval;
   let plans: SavePlan[] = [];
-  if (!text && maybeType === 'knowledge') {
-    const captured = await requestGeneratedKnowledgeApproval(async (generated) => {
-      plans = await planMemorySave({ ctx, text: generated, type, scopes, author });
+  if (!text) {
+    const captured = await requestGeneratedMemoryApproval(async (generated) => {
+      const candidate = parseMemoryCandidate(generated, { explicitType });
+      type = candidate.type;
+      text = candidate.text;
+      plans = await planMemorySave({ ctx, text, type, scopes, author });
       return previewSavePlans(plans);
-    });
+    }, { explicitType, guidance: generatedMemoryGuidance(explicitType) });
     if (!captured) return 'Discarded. No file written.';
-    text = captured.text;
     approval = captured.approval;
   } else {
-    if (!text) throw new Error('save requires memory text');
+    const candidate = parseMemoryCandidate(text, { explicitType });
+    type = candidate.type;
+    text = candidate.text;
     plans = await planMemorySave({ ctx, text, type, scopes, author });
     approval = await requestApproval(previewSavePlans(plans));
   }

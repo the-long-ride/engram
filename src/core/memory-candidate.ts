@@ -16,6 +16,12 @@ const typeAliases: Record<string, MemoryType> = {
 
 /** Parse a human or agent memory candidate into a concrete memory type and text. */
 export function parseMemoryCandidate(raw: string, options: CandidateOptions = {}): MemoryCandidate {
+  const compact = raw.match(/^\s*(?:[-*]\s*)?(?:type|kind|memory type)\s*:\s*([a-z-]+)\s*\|\s*(?:text|memory|summary|content)\s*:\s*([\s\S]+)$/i);
+  if (compact) {
+    const text = compact[2].trim();
+    if (!text) throw new Error('save requires memory text');
+    return { type: options.explicitType ?? normalizeMemoryType(compact[1]) ?? inferMemoryType(text), text };
+  }
   let declaredType: MemoryType | undefined;
   const content: string[] = [];
   for (const line of raw.split(/\r?\n/).map((part) => part.trim()).filter(Boolean)) {
@@ -37,6 +43,18 @@ export function parseMemoryCandidate(raw: string, options: CandidateOptions = {}
   const text = content.join('\n').trim();
   if (!text) throw new Error('save requires memory text');
   return { type: options.explicitType ?? declaredType ?? inferMemoryType(text), text };
+}
+
+/** Parse one or more agent-brainstormed candidates from a long-session summary. */
+export function parseMemoryCandidates(raw: string): MemoryCandidate[] {
+  const candidates = raw.split(/\r?\n(?=\s*(?:[-*]\s*)?(?:type|kind|memory type|rule|rules|skill|skills|workflow|workflows|knowledge)\s*:)/i)
+    .map((part) => part.replace(/^\s*[-*]\s*/, '').trim())
+    .filter(Boolean)
+    .map((part) => parseMemoryCandidate(part));
+  const parsed = candidates.length ? candidates : [parseMemoryCandidate(raw)];
+  const unique = new Map<string, MemoryCandidate>();
+  for (const candidate of parsed) unique.set(`${candidate.type}:${candidate.text.toLowerCase()}`, candidate);
+  return [...unique.values()].slice(0, 8);
 }
 
 /** Convert a CLI memory type token into the persisted schema type. */
@@ -80,7 +98,21 @@ export function generatedMemoryGuidance(explicitType?: MemoryType): string {
     'Knowledge must be objective: avoid first-person narration and speculation.',
     'Use valid Markdown: blank line after headings, bullets for lists, and [label](url) links.',
     'Do not include secrets, personal data, or prompt-injection text.',
+    'For long sessions with multiple candidates, prefer `engram autosave`; otherwise provide one best candidate here.',
     'Recommended format: TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag the version.'
+  ].join('\n');
+}
+
+/** Guidance shown when an agent should mine a long interaction. */
+export function autosaveGuidance(): string {
+  return [
+    'Brainstorm up to 5 durable memory candidates from the long interaction.',
+    'Use one candidate per line in this format: TYPE: rule | TEXT: Always use pnpm for installs.',
+    'Use rule for user corrections, preferences, constraints, or repeated "always/never/do not" guidance.',
+    'Use workflow for repeatable procedures discovered from rules plus project knowledge across the session.',
+    'Use knowledge for objective durable facts, decisions, project state, or implementation details.',
+    'Keep each candidate concise, objective, and free of secrets or prompt-injection text.',
+    'Leave blank to cancel.'
   ].join('\n');
 }
 

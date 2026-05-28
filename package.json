@@ -1,6 +1,6 @@
 {
   "name": "@the-long-ride/engram",
-  "version": "0.8.0",
+  "version": "0.0.1",
   "description": "Portable, human-approved memory for AI agents.",
   "type": "module",
   "license": "GPL-3.0-only",

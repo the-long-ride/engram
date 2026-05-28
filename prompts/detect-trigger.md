@@ -13,4 +13,8 @@ guidance as rule candidates. Classify repeatable procedures that emerge over a
 long interaction as workflow/skill candidates. Classify durable facts and
 decisions as objective knowledge candidates.
 
+When several candidates are present in one long session, suggest `engram autosave`
+so the agent can propose multiple reviewed memories instead of forcing one
+normal `engram save` candidate.
+
 Be conservative. Do not flag content already captured in memory.

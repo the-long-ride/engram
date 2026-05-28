@@ -1,25 +1,28 @@
 /** Engram CLI dispatcher. Commands stay thin and delegate to core modules. */
 import { parseArgs } from './cli/args.js';
 import { VERSION } from './core/constants.js';
-import { cmdAudit, cmdCompletion, cmdHelp, cmdInit, cmdLoad, cmdRebuildIndex, cmdSave, cmdUpdateHelp, cmdVerify } from './commands/core.js';
+import { canonicalCommand } from './core/command-registry.js';
+import { cmdAudit, cmdAutosave, cmdCompletion, cmdHelp, cmdInit, cmdLoad, cmdRebuildIndex, cmdSave, cmdUpdateHelp, cmdVerify } from './commands/core.js';
 import { cmdDeduplicate, cmdEntry, cmdExport, cmdHealth, cmdImport, cmdQuality, cmdSearch, cmdStats, cmdSync } from './commands/ops.js';
 import { cmdIgnore, cmdInstallHooks, cmdInstallSkillset, cmdPropose, cmdResolveConflicts, cmdSetRole, cmdSetRuleVariant, cmdTeamDashboard } from './commands/admin.js';
 
 /** Execute a CLI invocation and return printable output. */
 export async function runCli(argv: string[]): Promise<string> {
   const parsed = parseArgs(argv);
-  const { command, rest, flags } = parsed;
+  const command = canonicalCommand(parsed.command);
+  const { rest, flags } = parsed;
   if (flags.help || flags.h || command === '-h' || command === '--help' || rest.includes('-h') || rest.includes('--help')) {
     const topic = (command !== '-h' && command !== '--help' && command !== 'help') ? command : rest.find((arg) => arg !== '-h' && arg !== '--help');
     return cmdHelp(topic);
   }
-  if (flags.version || command === '--version' || command === 'version') return VERSION;
+  if (flags.version || flags.v || command === '--version' || command === '-v' || command === 'version') return VERSION;
   switch (command) {
     case 'init': return cmdInit(flags);
     case 'help': return cmdHelp(rest[0]);
     case 'update-help': return cmdUpdateHelp();
     case 'completion': return cmdCompletion(rest[0]);
     case 'save': return cmdSave(rest, flags);
+    case 'autosave': return cmdAutosave(rest, flags);
     case 'load': return cmdLoad(rest, flags);
     case 'dry-run': return dryRun(rest, flags);
     case 'verify': return cmdVerify(rest[0]);

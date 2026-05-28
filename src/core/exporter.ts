@@ -1,6 +1,6 @@
 /** Interop export/import and generated-agent-file rendering. */
 import path from 'node:path';
-import { GENERATED_HEADER } from './constants.js';
+import { GENERATED_HEADER, VERSION } from './constants.js';
 import type { MemoryEntry } from './types.js';
 import { readText, writeJson, writeText } from './fsx.js';
 import { loadConfig } from './config.js';
@@ -31,7 +31,7 @@ export async function exportBundle(cwd: string, entries: MemoryEntry[], outFile:
     const row = await readGuardedMemory(cwd, entry, config, { render: false });
     if (!row.flagged) memories.push({ entry, content: row.content });
   }
-  await writeJson(outFile, { version: '0.8', exported_at: new Date().toISOString(), memories });
+  await writeJson(outFile, { version: VERSION, exported_at: new Date().toISOString(), memories });
 }
 
 /** Write live-sync targets without touching non-generated files. */

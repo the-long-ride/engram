@@ -1,52 +1,54 @@
 /** Canonical user-facing command metadata shared by help and skillsets. */
-export interface CommandHelp { command: string; purpose: string; }
+export interface CommandHelp { command: string; purpose: string; alias?: string; }
 export interface HelpSection { title: string; commands: CommandHelp[]; }
 
 export const HELP_DATA: HelpSection[] = [
   {
     title: 'Meta Commands',
     commands: [
-      { command: 'engram init [--force] [--submodule] [--submodule-remote <git-url>] [--global-remote <git-url>] [--global-branch main]', purpose: 'Initialize workspace memory and optional global Git repository remote' },
-      { command: 'engram help [topic]', purpose: 'Show this help menu or specific topic details' },
-      { command: 'engram update-help', purpose: 'Regenerate workspace HELP.md file' },
-      { command: 'engram entry', purpose: 'Show runtime configurations and global Git repository status' },
-      { command: 'engram completion [bash|zsh]', purpose: 'Generate shell completion support for Tab suggestions' }
+      { command: 'engram --version', alias: '-v', purpose: 'Show the installed Engram version' },
+      { command: 'engram init [--force] [--submodule] [--submodule-remote <git-url>] [--global-remote <git-url>] [--global-branch main]', alias: 'i', purpose: 'Initialize workspace memory and optional global Git repository remote' },
+      { command: 'engram help [topic]', alias: 'h', purpose: 'Show this help menu or specific topic details' },
+      { command: 'engram update-help', alias: 'uh', purpose: 'Regenerate workspace HELP.md file' },
+      { command: 'engram entry', alias: 'e', purpose: 'Show runtime configurations and global Git repository status' },
+      { command: 'engram completion [bash|zsh]', alias: 'c', purpose: 'Generate shell completion support for Tab suggestions' }
     ]
   },
   {
     title: 'Memory Commands',
     commands: [
-      { command: 'engram save rule <text>', purpose: 'Draft and save a rule memory after user approval' },
-      { command: 'engram save skill <text>', purpose: 'Draft and save a skill memory after user approval' },
-      { command: 'engram save workflow <text>', purpose: 'Draft and save a repeatable workflow as a skill memory' },
-      { command: 'engram save knowledge [text]', purpose: 'Draft and save a knowledge memory (agent summary or text)' },
-      { command: 'engram save [text]', purpose: 'Auto-detect rule, workflow, skill, or knowledge memory from text' },
-      { command: 'engram load [--all] [query]', purpose: 'Route and load relevant memories into the agent context' },
-      { command: 'engram dry-run [--all] [query]', purpose: 'Preview routed memory file paths without printing their content' },
-      { command: 'engram search <query>', purpose: 'Perform a search across visible indexed memories' },
-      { command: 'engram verify [workspace|global]', purpose: 'Verify memory file integrity and hashes' },
-      { command: 'engram rebuild-index [workspace|global]', purpose: 'Explicitly rebuild memory indexes from Markdown files' },
-      { command: 'engram audit [--author email] [--stale] [--low-confidence]', purpose: 'Show audit rows for visible memories with optional filters' }
+      { command: 'engram save rule <text>', alias: 's', purpose: 'Draft and save a rule memory after user approval' },
+      { command: 'engram save skill <text>', alias: 's', purpose: 'Draft and save a skill memory after user approval' },
+      { command: 'engram save workflow <text>', alias: 's', purpose: 'Draft and save a repeatable workflow as a skill memory' },
+      { command: 'engram save knowledge [text]', alias: 's', purpose: 'Draft and save a knowledge memory (agent summary or text)' },
+      { command: 'engram save [text]', alias: 's', purpose: 'Auto-detect rule, workflow, skill, or knowledge memory from text' },
+      { command: 'engram autosave [session-summary]', alias: 'as', purpose: 'Propose multiple memories from a long session before approval' },
+      { command: 'engram load [--all] [query]', alias: 'l', purpose: 'Route and load relevant memories into the agent context' },
+      { command: 'engram dry-run [--all] [query]', alias: 'dr', purpose: 'Preview routed memory file paths without printing their content' },
+      { command: 'engram search <query>', alias: 'f', purpose: 'Perform a search across visible indexed memories' },
+      { command: 'engram verify [workspace|global]', alias: 'vf', purpose: 'Verify memory file integrity and hashes' },
+      { command: 'engram rebuild-index [workspace|global]', alias: 'ri', purpose: 'Explicitly rebuild memory indexes from Markdown files' },
+      { command: 'engram audit [--author email] [--stale] [--low-confidence]', alias: 'a', purpose: 'Show audit rows for visible memories with optional filters' }
     ]
   },
   {
     title: 'Operations',
     commands: [
-      { command: 'engram health', purpose: 'Analyze and report visible memory health metrics' },
-      { command: 'engram quality-check', purpose: 'Evaluate quality score and potential issues for visible memories' },
-      { command: 'engram stats', purpose: 'Show total count and statistics of visible indexed memories' },
-      { command: 'engram deduplicate', purpose: 'Detect and report similar or duplicate visible memory entries' },
-      { command: 'engram export [--format agents-md|claude-md|cursorrules]', purpose: 'Export visible memory to a specific format or JSON bundle' },
-      { command: 'engram import <bundle.json>', purpose: 'Import a memory bundle through the approval gate' },
-      { command: 'engram ignore status|check <path>|add <pattern>', purpose: 'Manage ignore rules and query file match status' },
-      { command: 'engram set-role <role...>', purpose: 'Configure active developer roles for context routing' },
-      { command: 'engram set-rule-variant off|light|balanced|strict|status', purpose: 'Configure rule variant strictness level' },
-      { command: 'engram resolve-conflicts [--dry-run]', purpose: 'Preview or resolve Git conflicts in memory files' },
-      { command: 'engram install-hooks', purpose: 'Install local Git hooks for Engram integrity checks' },
-      { command: 'engram install-skillset [all|list|target] [--force]', purpose: 'Generate agent skillset instruction files and slash adapters' },
-      { command: 'engram sync', purpose: 'Sync global memory with Git remote and refresh enabled live-sync targets' },
-      { command: 'engram propose <memory-file>', purpose: 'Propose changes to a memory file for review' },
-      { command: 'engram team-dashboard', purpose: 'Show team memory ownership, quality, and coverage stats' }
+      { command: 'engram health', alias: 'he', purpose: 'Analyze and report visible memory health metrics' },
+      { command: 'engram quality-check', alias: 'qc', purpose: 'Evaluate quality score and potential issues for visible memories' },
+      { command: 'engram stats', alias: 'st', purpose: 'Show total count and statistics of visible indexed memories' },
+      { command: 'engram deduplicate', alias: 'dd', purpose: 'Detect and report similar or duplicate visible memory entries' },
+      { command: 'engram export [--format agents-md|claude-md|cursorrules]', alias: 'x', purpose: 'Export visible memory to a specific format or JSON bundle' },
+      { command: 'engram import <bundle.json>', alias: 'im', purpose: 'Import a memory bundle through the approval gate' },
+      { command: 'engram ignore status|check <path>|add <pattern>', alias: 'ig', purpose: 'Manage ignore rules and query file match status' },
+      { command: 'engram set-role <role...>', alias: 'sr', purpose: 'Configure active developer roles for context routing' },
+      { command: 'engram set-rule-variant off|light|balanced|strict|status', alias: 'rv', purpose: 'Tune rule strictness: strict helps lower-tier models stay controlled, while top-tier models often work better with light or balanced so strict wording does not limit their reasoning' },
+      { command: 'engram resolve-conflicts [--dry-run]', alias: 'rc', purpose: 'Preview or resolve Git conflicts in memory files' },
+      { command: 'engram install-hooks', alias: 'ih', purpose: 'Install local Git hooks for Engram integrity checks' },
+      { command: 'engram install-skillset [all|list|target] [--force]', alias: 'is', purpose: 'Generate agent skillset instruction files and slash adapters' },
+      { command: 'engram sync', alias: 'sy', purpose: 'Sync global memory with Git remote and refresh enabled live-sync targets' },
+      { command: 'engram propose <memory-file>', alias: 'p', purpose: 'Propose changes to a memory file for review' },
+      { command: 'engram team-dashboard', alias: 'td', purpose: 'Show team memory ownership, quality, and coverage stats' }
     ]
   }
 ];
@@ -64,11 +66,30 @@ export function slashCommandSurface(): string {
     .join('\n');
 }
 
+/** Map short user-facing command aliases to canonical top-level commands. */
+export function commandAliases(): Record<string, string> {
+  const aliases: Record<string, string> = {};
+  for (const item of HELP_DATA.flatMap((section) => section.commands)) {
+    if (!item.alias) continue;
+    const command = item.command.replace(/^engram\s+/, '').trim().split(/\s+/u)[0];
+    aliases[item.alias] = command;
+  }
+  return aliases;
+}
+
+/** Normalize short aliases before command dispatch. */
+export function canonicalCommand(command: string): string {
+  return commandAliases()[command] ?? command;
+}
+
 /** Return the top-level command names for shell completion. */
 export function commandNames(): string[] {
   const names = HELP_DATA.flatMap((section) => section.commands)
     .map((item) => item.command.replace(/^engram\s+/, '').trim().split(/\s+/u)[0]);
-  return [...new Set(names)];
+  const aliases = HELP_DATA.flatMap((section) => section.commands)
+    .map((item) => item.alias)
+    .filter((alias): alias is string => Boolean(alias));
+  return [...new Set([...names, ...aliases])];
 }
 
 /** Return a shell completion script for the current command surface. */
@@ -96,37 +117,40 @@ export function completionScript(shell: 'bash' | 'zsh' = 'bash'): string {
       '    return',
       '  fi',
       '  case $words[2] in',
-      '    init)',
+      '    init|i)',
       '      _arguments "--force" "--submodule" "--submodule-remote=[git-url]" "--global-remote=[git-url]" "--global-branch=[branch]"',
       '      ;;',
-      '    completion)',
+      '    completion|c)',
       `      _arguments "1:shell:(${shells})"`,
       '      ;;',
-      '    save)',
+      '    save|s)',
       `      _arguments "--scope[write scope]:scope:(${scopes})" "1:memory type:(${saveTypes})"`,
       '      ;;',
-      '    load|dry-run)',
+      '    autosave|as)',
+      '      _arguments "--scope[write scope]:scope:(workspace global)" "1:session summary: "',
+      '      ;;',
+      '    load|l|dry-run|dr)',
       '      _arguments "--all" "1:query: "',
       '      ;;',
-      '    search|propose)',
+      '    search|f|propose|p)',
       '      _arguments "1:query: "',
       '      ;;',
-      '    verify|rebuild-index)',
+      '    verify|vf|rebuild-index|ri)',
       `      _arguments "1:scope:(${scopes})"`,
       '      ;;',
-      '    export)',
+      '    export|x)',
       `      _arguments "--format[output format]:format:(${formats})"`,
       '      ;;',
-      '    ignore)',
+      '    ignore|ig)',
       `      _arguments "1:action:(${ignoreActions})"`,
       '      ;;',
-      '    set-rule-variant)',
+      '    set-rule-variant|rv)',
       `      _arguments "1:variant:(${ruleVariants})"`,
       '      ;;',
-      '    resolve-conflicts)',
+      '    resolve-conflicts|rc)',
       '      _arguments "--dry-run"',
       '      ;;',
-      '    install-skillset)',
+      '    install-skillset|is)',
       `      _arguments "--force" "1:target:(${skillsetTargets})"`,
       '      ;;',
       '  esac',
@@ -164,49 +188,53 @@ export function completionScript(shell: 'bash' | 'zsh' = 'bash'): string {
     '      ;;',
     '  esac',
     '  case "${words[1]}" in',
-    '    init)',
+    '    init|i)',
     '      COMPREPLY=( $(compgen -W "--force --submodule --submodule-remote --global-remote --global-branch" -- "$cur") )',
     '      return',
     '      ;;',
-    '    completion)',
+    '    completion|c)',
     '      if [[ $cword -eq 2 ]]; then COMPREPLY=( $(compgen -W "$shells" -- "$cur") ); return; fi',
     '      COMPREPLY=()',
     '      return',
     '      ;;',
-    '    save)',
+    '    save|s)',
     '      if [[ $cword -eq 2 ]]; then COMPREPLY=( $(compgen -W "$save_types --scope" -- "$cur") ); return; fi',
     '      COMPREPLY=()',
     '      return',
     '      ;;',
-    '    load|dry-run)',
+    '    autosave|as)',
+    '      COMPREPLY=( $(compgen -W "--scope" -- "$cur") )',
+    '      return',
+    '      ;;',
+    '    load|l|dry-run|dr)',
     '      COMPREPLY=( $(compgen -W "--all" -- "$cur") )',
     '      return',
     '      ;;',
-    '    verify|rebuild-index)',
+    '    verify|vf|rebuild-index|ri)',
     '      if [[ $cword -eq 2 ]]; then COMPREPLY=( $(compgen -W "$scopes" -- "$cur") ); return; fi',
     '      COMPREPLY=()',
     '      return',
     '      ;;',
-    '    export)',
+    '    export|x)',
     '      COMPREPLY=( $(compgen -W "--format" -- "$cur") )',
     '      return',
     '      ;;',
-    '    ignore)',
+    '    ignore|ig)',
     '      if [[ $cword -eq 2 ]]; then COMPREPLY=( $(compgen -W "$ignore_actions" -- "$cur") ); return; fi',
     '      COMPREPLY=()',
     '      return',
     '      ;;',
-    '    set-rule-variant)',
+    '    set-rule-variant|rv)',
     '      if [[ $cword -eq 2 ]]; then COMPREPLY=( $(compgen -W "$rule_variants" -- "$cur") ); return; fi',
     '      COMPREPLY=()',
     '      return',
     '      ;;',
-    '    resolve-conflicts)',
+    '    resolve-conflicts|rc)',
     '      COMPREPLY=( $(compgen -W "--dry-run" -- "$cur") )',
     '      return',
     '      ;;',
-    '    install-skillset)',
-    '      if [[ $prev == install-skillset ]]; then COMPREPLY=( $(compgen -W "$skillset_targets --force" -- "$cur") ); return; fi',
+    '    install-skillset|is)',
+    '      if [[ $prev == install-skillset || $prev == is ]]; then COMPREPLY=( $(compgen -W "$skillset_targets --force" -- "$cur") ); return; fi',
     '      COMPREPLY=( $(compgen -W "--force" -- "$cur") )',
     '      return',
     '      ;;',

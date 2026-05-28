@@ -12,6 +12,14 @@ test('init, help, save reject, save accept, load, verify, audit', async () => {
   assert.match((await runEngram(cwd, env, ['help'])).stdout, /Memory Commands/);
   assert.match((await runEngram(cwd, env, ['-h'])).stdout, /Memory Commands/);
   assert.match((await runEngram(cwd, env, ['--help'])).stdout, /Memory Commands/);
+  assert.equal((await runEngram(cwd, env, ['-v'])).stdout.trim(), (await runEngram(cwd, env, ['--version'])).stdout.trim());
+  assert.match((await runEngram(cwd, env, ['-h'])).stdout, /engram --version/);
+  assert.match((await runEngram(cwd, env, ['-h'])).stdout, /short: engram -v/);
+  assert.match((await runEngram(cwd, env, ['help', 'set-rule-variant'])).stdout, /lower-tier models/);
+  assert.match((await runEngram(cwd, env, ['help', 'set-role'])).stdout, /frontend-only memory/);
+  assert.match((await runEngram(cwd, env, ['-h', 'roles'])).stdout, /role: \[\.\.\.\]/);
+  assert.match((await runEngram(cwd, env, ['autosave', '-h'])).stdout, /one candidate per line/);
+  assert.match((await runEngram(cwd, env, ['h', 'save'])).stdout, /engram save/);
   assert.match((await runEngram(cwd, env, ['save', '-h'])).stdout, /engram save rule/);
   assert.match((await runEngram(cwd, env, ['save', 'rule', 'Use pnpm for installs'], 'C\n')).stdout, /Discarded/);
   const saved = await runEngram(cwd, env, ['save', 'rule', '--scope', 'workspace', 'Use pnpm for installs'], 'A\n');
@@ -20,6 +28,16 @@ test('init, help, save reject, save accept, load, verify, audit', async () => {
   assert.match((await runEngram(cwd, env, ['load', 'pnpm installs'])).stdout, /Use pnpm/);
   assert.match((await runEngram(cwd, env, ['verify'])).stdout, /OK workspace/);
   assert.match((await runEngram(cwd, env, ['audit'])).stdout, /use-pnpm-for-installs/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('short command aliases dispatch to canonical commands', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  assert.equal((await runEngram(cwd, env, ['i'])).code, 0);
+  const saved = await runEngram(cwd, env, ['s', 'rule', '--scope', 'workspace', 'Alias save rule'], 'A\n');
+  assert.equal(saved.code, 0, saved.stderr);
+  assert.match((await runEngram(cwd, env, ['l', 'alias save'])).stdout, /Alias save rule/);
+  assert.match((await runEngram(cwd, env, ['vf'])).stdout, /OK workspace/);
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -150,6 +168,24 @@ test('save can parse agent-brainstormed workflow candidates', async () => {
   assert.match(saved.stdout, /MEMORY CANDIDATE NEEDED/);
   assert.match(saved.stdout, /Type: skill/);
   assert.match(saved.stdout, /skills\/when-deploying-first-run-tests-then-verify-health\.md/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('autosave proposes multiple agent-brainstormed memories', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['init']);
+  const input = [
+    'TYPE: rule | TEXT: Always run tests before release.',
+    'TYPE: workflow | TEXT: When releasing, first run tests. Then update changelog.',
+    'A',
+    ''
+  ].join('\n');
+  const saved = await runEngram(cwd, env, ['autosave', '--scope', 'workspace'], input);
+  assert.equal(saved.code, 0, saved.stderr);
+  assert.match(saved.stdout, /MEMORY CANDIDATE NEEDED/);
+  assert.match(saved.stdout, /Type: rule/);
+  assert.match(saved.stdout, /Type: skill/);
+  assert.match((await runEngram(cwd, env, ['stats'])).stdout, /Total: 2/);
   await rm(cwd, { recursive: true, force: true });
 });
 

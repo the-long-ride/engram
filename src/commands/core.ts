@@ -16,7 +16,7 @@ import { configureGlobalRemote, globalGitInfo, isValidGitRemoteUrl, normalizeBra
 import { planMemorySave, previewSavePlans, type SavePlan } from '../core/save-plan.js';
 import { configureWorkspaceSubmodule } from '../core/submodule.js';
 import { rebuildIndex } from '../core/index.js';
-import { generatedMemoryGuidance, inferMemoryType, normalizeMemoryType, parseMemoryCandidate } from '../core/memory-candidate.js';
+import { autosaveGuidance, generatedMemoryGuidance, inferMemoryType, normalizeMemoryType, parseMemoryCandidate, parseMemoryCandidates } from '../core/memory-candidate.js';
 import type { MemoryType, Scope } from '../core/types.js';
 
 /** Initialize workspace memory. */
@@ -59,6 +59,7 @@ export async function cmdSave(args: string[], flags: Record<string, any>): Promi
   const explicitType = normalizeMemoryType(args[0]);
   let type: MemoryType = explicitType ?? inferMemoryType(args.join(' '));
   let text = (explicitType ? args.slice(1) : args).join(' ').trim();
+  if (!explicitType && await shouldSwitchToAutosave(text)) return cmdAutosave([text], flags);
   const ctx = await getContext();
   const scopes = flags.scope ? [flags.scope as Scope] : writeScopes(ctx.config.scope);
   const author = await resolveAuthor();
@@ -82,12 +83,64 @@ export async function cmdSave(args: string[], flags: Record<string, any>): Promi
     approval = await requestApproval(previewSavePlans(plans));
   }
   if (!approval.accepted) return 'Discarded. No file written.';
+  return writeSavePlans(plans, approval.edits);
+}
+
+/** Propose multiple memories from a long session summary or agent brainstorm. */
+export async function cmdAutosave(args: string[], flags: Record<string, any> = {}): Promise<string> {
+  const ctx = await getContext();
+  const scopes = flags.scope ? [flags.scope as Scope] : writeScopes(ctx.config.scope);
+  const author = await resolveAuthor();
+  let text = args.join(' ').trim();
+  let plans: SavePlan[] = [];
+  let approval;
+  if (!text) {
+    const captured = await requestGeneratedMemoryApproval(async (generated) => {
+      text = generated;
+      plans = await planAutosaveCandidates(ctx, generated, scopes, author);
+      return previewSavePlans(plans);
+    }, { guidance: autosaveGuidance() });
+    if (!captured) return 'Discarded. No file written.';
+    approval = captured.approval;
+  } else {
+    plans = await planAutosaveCandidates(ctx, text, scopes, author);
+    approval = await requestApproval(previewSavePlans(plans));
+  }
+  if (!plans.length) return 'No memory candidates detected.';
+  if (!approval.accepted) return 'Discarded. No file written.';
+  return writeSavePlans(plans, approval.edits);
+}
+
+async function planAutosaveCandidates(ctx: Awaited<ReturnType<typeof getContext>>, text: string, scopes: Scope[], author: string): Promise<SavePlan[]> {
+  const plans: SavePlan[] = [];
+  for (const candidate of parseMemoryCandidates(text)) {
+    plans.push(...await planMemorySave({ ctx, text: candidate.text, type: candidate.type, scopes, author }));
+  }
+  return plans;
+}
+
+async function writeSavePlans(plans: SavePlan[], edits?: string): Promise<string> {
   const written = [];
   for (const plan of plans) {
-    const content = applyApprovalEdit(plan.content, approval.edits);
+    const content = applyApprovalEdit(plan.content, edits);
     written.push(await writeApprovedMemory({ cwd: process.cwd(), scope: plan.scope, file: plan.file, content, message: plan.message }));
   }
   return `Saved -> ${written.join(', ')}`;
+}
+
+async function shouldSwitchToAutosave(text: string): Promise<boolean> {
+  if (!text || !process.stdin.isTTY || !process.stdout.isTTY || !looksLikeLongSession(text)) return false;
+  const rl = createInterface({ input, output });
+  try {
+    const answer = (await rl.question('This looks like a long session. Use engram autosave to propose multiple memories? [y/N] ')).trim();
+    return /^y(es)?$/i.test(answer);
+  } finally {
+    rl.close();
+  }
+}
+
+function looksLikeLongSession(text: string): boolean {
+  return text.length > 800 || text.split(/\r?\n/).filter(Boolean).length >= 8;
 }
 
 /** Load routed memory for a query. */

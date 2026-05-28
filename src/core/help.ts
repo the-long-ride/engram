@@ -1,6 +1,7 @@
 /** Cached help generation used by init and the help command. */
 import { VERSION } from './constants.js';
 import { HELP_DATA, commandPrefixes, type HelpSection } from './command-registry.js';
+import { detailForTopic, type CommandTopicHelp } from './help-topics.js';
 
 const COMMAND_PREFIXES = commandPrefixes();
 
@@ -23,22 +24,28 @@ export function renderHelp(): string {
   let md = `# Engram Help v${VERSION}\n\n`;
   for (const sec of HELP_DATA) {
     md += `## ${sec.title}\n`;
-    for (const cmd of sec.commands) md += `- ${cmd.command}: ${cmd.purpose}\n`;
+    for (const cmd of sec.commands) {
+      const alias = cmd.alias ? ` (short: \`engram ${cmd.alias}\`)` : '';
+      md += `- ${cmd.command}${alias}: ${cmd.purpose}\n`;
+    }
     md += `\n`;
   }
+  md += `Run \`engram help <topic>\` for command examples and use cases.\n\n`;
   md += `Every write path requires A/B/C approval before files are changed. Save automatically updates the best matching existing memory, or adds a new memory when no match is found.\n`;
   return md;
 }
 
 /** Render beautifully colored terminal help menu. */
 export function renderHelpTerminal(topic = ''): string {
+  const detail = topic ? detailForTopic(topic) : undefined;
+  if (detail) return renderTopicHelpTerminal(detail);
   let sections = HELP_DATA;
   if (topic) {
     const lower = topic.toLowerCase();
     sections = HELP_DATA.map(sec => {
       if (sec.title.toLowerCase().includes(lower)) return sec;
       const filtered = sec.commands.filter(cmd =>
-        cmd.command.toLowerCase().includes(lower) || cmd.purpose.toLowerCase().includes(lower)
+        cmd.command.toLowerCase().includes(lower) || cmd.purpose.toLowerCase().includes(lower) || cmd.alias === lower
       );
       return filtered.length ? { title: sec.title, commands: filtered } : null;
     }).filter((sec): sec is HelpSection => sec !== null);
@@ -50,10 +57,24 @@ export function renderHelpTerminal(topic = ''): string {
     lines.push(`\x1b[1;37m## ${sec.title}\x1b[0m`);
     for (const cmd of sec.commands) {
       lines.push(`- ${highlightUsage(cmd.command)}: \x1b[90m${cmd.purpose}\x1b[0m`);
+      if (cmd.alias) lines.push(`  \x1b[90mshort: engram ${cmd.alias}\x1b[0m`);
     }
     lines.push('');
   }
-  lines.push('\x1b[2;37mEvery write path requires A/B/C approval before files are changed. Save automatically updates the best matching existing memory, or adds a new memory when no match is found.\x1b[0m');
+  lines.push('\x1b[2;37mRun `engram help <topic>` for command examples and use cases. Every write path requires A/B/C approval before files are changed.\x1b[0m');
+  return lines.join('\n');
+}
+
+function renderTopicHelpTerminal(detail: CommandTopicHelp): string {
+  const lines = [`\x1b[1m# ${detail.title}\x1b[0m`, '', `\x1b[90m${detail.summary}\x1b[0m`, ''];
+  lines.push('\x1b[1;37m## Use Cases\x1b[0m');
+  for (const item of detail.useCases) lines.push(`- ${item}`);
+  lines.push('', '\x1b[1;37m## Examples\x1b[0m');
+  for (const example of detail.examples) lines.push(`- \x1b[1;36m${example}\x1b[0m`);
+  if (detail.notes?.length) {
+    lines.push('', '\x1b[1;37m## Notes\x1b[0m');
+    for (const note of detail.notes) lines.push(`- \x1b[90m${note}\x1b[0m`);
+  }
   return lines.join('\n');
 }
 

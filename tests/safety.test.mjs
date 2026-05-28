@@ -92,7 +92,7 @@ test('routing filters ignored, low-confidence, and role-scoped entries safely', 
     entry('low-auto', 'low', false, ['backend']),
     entry('frontend-only', 'high', false, ['frontend'])
   ];
-  const index = { version: '0.8', last_updated: 'now', entries };
+  const index = { version: '0.0.1', last_updated: 'now', entries };
   assert.deepEqual(prefilter(index, config).map((item) => item.id), ['visible']);
   assert.deepEqual(route(index, 'visible backend', config).map((item) => item.id), ['visible']);
   assert.ok(prefilter(index, config, true).some((item) => item.id === 'low-auto'));

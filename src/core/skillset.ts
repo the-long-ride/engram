@@ -95,6 +95,7 @@ Engram is the memory layer for this workspace. Use it to load relevant project m
 - After \`engram init\`, suggest adding a global Git origin if \`engram entry\` shows none; ask for the URL before running \`engram init --global-remote <url>\`.
 - Before storing memory, propose it with \`engram save <rule|skill|workflow|knowledge> "<text>"\`; Engram automatically updates a matching memory or creates a new one.
 - If the human asks for \`engram save\` with no text, brainstorm one durable candidate, classify corrections/preferences as rules, repeatable procedures as workflows/skills, and objective facts as knowledge.
+- If a session is long or contains multiple possible memories, suggest \`engram autosave\`; if the human declines, continue with the best single \`engram save\` candidate.
 - If the human asks for \`engram save knowledge\` with no text, provide a concise, objective summary of durable knowledge from your current work when prompted.
 - Use \`engram set-rule-variant light|balanced|strict\` when the human wants agent rule output tuned for a model; \`off\` uses balanced rule wording by default.
 - Never bypass the human A/B/C approval step for memory writes.

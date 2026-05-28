@@ -76,6 +76,7 @@ npx @the-long-ride/engram init
 npx @the-long-ride/engram save rule "Use pnpm for package management."
 npx @the-long-ride/engram save workflow "When releasing, run tests, update the changelog, then tag the version."
 npx @the-long-ride/engram save knowledge
+npx @the-long-ride/engram autosave
 npx @the-long-ride/engram load "package setup"
 ```
 
@@ -86,6 +87,11 @@ Knowledge should be objective facts and decisions. Rules usually come from human
 corrections or preferences. Workflows are saved as skill memories when a longer
 interaction reveals a repeatable process. The normal A/B/C approval preview
 still appears before anything is written.
+
+For long sessions with several possible memories, use `engram autosave` instead.
+It asks the agent to brainstorm multiple `TYPE: ... | TEXT: ...` candidates and
+then previews all proposed adds/updates behind the same A/B/C approval gate. If
+you stay with normal `engram save`, it captures the best single memory.
 
 Rule output can be tuned per agent/model:
 
@@ -162,12 +168,15 @@ normal human approval gate for writes.
 Core commands include:
 
 ```bash
+engram --version
+engram -v
 engram init
 engram entry
 engram completion bash
 engram save rule "Never commit secrets."
 engram save workflow "When deploying, run tests, build, then verify health."
 engram save knowledge
+engram autosave
 engram load "deployment workflow"
 engram set-rule-variant strict
 engram verify
@@ -176,6 +185,9 @@ engram export --format agents-md
 engram install-skillset all
 engram-mcp
 ```
+
+Run `engram -h` to see every command and its short alias, such as `engram s`
+for `engram save` and `engram vf` for `engram verify`.
 
 Every memory write is reviewed before it touches disk. Sensitive content is
 blocked, prompt-injection patterns are skipped, and hashes are checked so changes

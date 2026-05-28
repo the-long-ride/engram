@@ -1,16 +1,22 @@
 /** Deterministic merge-conflict discovery and scoped auto-resolution. */
 import path from 'node:path';
 import { CHANGELOG_FILE, ENGRAM_DIR, HASH_FILE, INDEX_FILE } from './constants.js';
-import { listFiles, readText } from './fsx.js';
-import { writeApprovedMemory } from './storage.js';
+import { listFiles, readText, writeText } from './fsx.js';
+import { updateHash } from './hash.js';
+import { rebuildIndex } from './index.js';
 import { git } from './git.js';
+import type { Scope } from './types.js';
 
 export type Conflict = { file: string; kind: 'EXTEND' | 'CONTRADICT' | 'DUPLICATE' | 'UNRELATED'; summary: string };
 export type ConflictResult = Conflict & { resolved: boolean; staged: boolean; decision: string };
 
 /** Find conflicted memory files and classify with conservative heuristics. */
 export async function findConflicts(cwd: string): Promise<Conflict[]> {
-  const root = path.join(cwd, ENGRAM_DIR);
+  return findConflictsInRoot(path.join(cwd, ENGRAM_DIR));
+}
+
+/** Find conflicted memory files under any Engram scope root. */
+export async function findConflictsInRoot(root: string): Promise<Conflict[]> {
   const files = (await listFiles(root)).filter((file) => file.endsWith('.md'));
   const out: Conflict[] = [];
   for (const file of files) {
@@ -33,20 +39,32 @@ export function classifyConflict(text: string): Conflict['kind'] {
 /** Resolve all conflicted .engram Markdown files, optionally as preview only. */
 export async function resolveConflicts(cwd: string, dryRun = false): Promise<ConflictResult[]> {
   const root = path.join(cwd, ENGRAM_DIR);
-  const conflicts = await findConflicts(cwd);
+  const results = await resolveConflictsInRoot(root, 'workspace', dryRun);
+  const changed = results.filter((row) => row.resolved).map((row) => row.file);
+  const staged = dryRun ? false : await stageResolved(cwd, changed);
+  return results.map((result) => ({ ...result, staged }));
+}
+
+/** Resolve conflicted memory files inside a scope root. */
+export async function resolveConflictsInRoot(root: string, scope: Scope, dryRun = false): Promise<ConflictResult[]> {
+  const conflicts = await findConflictsInRoot(root);
   const results: ConflictResult[] = [];
   const changed: string[] = [];
   for (const conflict of conflicts) {
     const source = await readText(path.join(root, conflict.file));
     const resolution = resolveConflictText(source);
     if (!dryRun) {
-      await writeApprovedMemory({ cwd, scope: 'workspace', file: conflict.file, content: resolution.text, message: `resolve conflict: ${conflict.file}` });
+      await writeText(path.join(root, conflict.file), resolution.text);
+      await updateHash(root, conflict.file, resolution.text);
       changed.push(conflict.file);
     }
     results.push({ ...conflict, resolved: true, staged: false, decision: resolution.decision });
   }
-  const staged = dryRun ? false : await stageResolved(cwd, changed);
-  return results.map((result) => ({ ...result, staged }));
+  if (!dryRun && changed.length) {
+    await rebuildIndex(root, scope);
+    await appendConflictChangelog(root, changed);
+  }
+  return results;
 }
 
 /** Resolve every two-sided conflict block in a file. */
@@ -90,6 +108,13 @@ async function stageResolved(cwd: string, files: string[]): Promise<boolean> {
   const metadata = [INDEX_FILE, HASH_FILE, CHANGELOG_FILE];
   const paths = [...files, ...metadata].map((file) => path.join(ENGRAM_DIR, file).replace(/\\/g, '/'));
   try { await git(['-C', cwd, 'add', '--', ...paths]); return true; } catch { return false; }
+}
+
+async function appendConflictChangelog(root: string, files: string[]): Promise<void> {
+  const target = path.join(root, CHANGELOG_FILE);
+  const current = await readText(target);
+  const lines = files.map((file) => `- ${new Date().toISOString()} ${file}: resolve conflict: ${file}`);
+  await writeText(target, `${current.trimEnd()}\n${lines.join('\n')}\n`);
 }
 
 function summaryFor(kind: Conflict['kind']): string {

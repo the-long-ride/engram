@@ -2,34 +2,45 @@
 import path from 'node:path';
 import { CHANGELOG_FILE, DEFAULT_IGNORE, ENGRAM_DIR, HASH_FILE, HELP_FILE, INDEX_FILE, MEMORY_DIRS, README_FILE } from './constants.js';
 import type { EngramConfig, Scope } from './types.js';
-import { defaultConfig, scopeRoots } from './config.js';
+import { defaultConfig, loadConfig, scopeRoots } from './config.js';
 import { ensureDir, exists, inside, readText, writeJson, writeText } from './fsx.js';
 import { renderHelp, renderMemoryReadme } from './help.js';
 import { emptyIndex, rebuildIndex } from './index.js';
 import { updateHash } from './hash.js';
 import { scanInjection, scanSensitive } from './security.js';
-import { gitCommitGlobal, gitUserEmail } from './git.js';
+import { ensureGlobalGit, gitCommitGlobal, gitUserEmail, pullGlobalGit } from './git.js';
+import { resolveConflictsInRoot } from './conflict.js';
 
 /** Initialize a workspace .engram folder. */
-export async function initWorkspace(cwd: string, force = false): Promise<string[]> {
+export async function initWorkspace(cwd: string, force = false, branch = 'main'): Promise<string[]> {
   const root = path.join(cwd, ENGRAM_DIR);
-  if (await exists(root) && !force) return [`engram already initialized at ${root}`];
-  await createScope(root, defaultConfig(), true);
+  const roots = scopeRoots(cwd);
+  const config = { ...defaultConfig(), global_git: { ...defaultConfig().global_git, branch } };
+  const lines: string[] = [];
+  if (await exists(root) && !force) lines.push(`engram already initialized at ${root}`);
+  else {
+    await createScope(root, config, true, true);
+    lines.push(`engram initialized at ${root}`);
+  }
   const ignoreFile = path.join(cwd, '.engramignore');
   if (!(await exists(ignoreFile)) || force) await writeText(ignoreFile, DEFAULT_IGNORE);
-  return [`engram initialized at ${root}`];
+  await createScope(roots.global, config, false, false);
+  const detected = await ensureGlobalGit(roots.global, branch);
+  await gitCommitGlobal(roots.global, 'initialize global memory', config.global_git, () => resolveGlobalConflicts(roots.global));
+  lines.push(`engram global ready at ${roots.global} (git branch: ${detected})`);
+  return lines;
 }
 
 /** Create the standard scope files and folders. */
-export async function createScope(root: string, config: EngramConfig, workspace: boolean): Promise<void> {
+export async function createScope(root: string, config: EngramConfig, workspace: boolean, force = true): Promise<void> {
   await ensureDir(root);
   for (const dir of MEMORY_DIRS) await ensureDir(path.join(root, dir));
-  await writeJson(path.join(root, 'engram.config.json'), config);
-  await writeJson(path.join(root, INDEX_FILE), emptyIndex());
-  await writeJson(path.join(root, HASH_FILE), {});
-  await writeText(path.join(root, HELP_FILE), renderHelp());
-  await writeText(path.join(root, README_FILE), renderMemoryReadme());
-  await writeText(path.join(root, CHANGELOG_FILE), `# Engram Changelog\n\n`);
+  await writeJsonIfNeeded(path.join(root, 'engram.config.json'), config, force);
+  await writeJsonIfNeeded(path.join(root, INDEX_FILE), emptyIndex(), force);
+  await writeJsonIfNeeded(path.join(root, HASH_FILE), {}, force);
+  await writeTextIfNeeded(path.join(root, HELP_FILE), renderHelp(), force);
+  await writeTextIfNeeded(path.join(root, README_FILE), renderMemoryReadme(), force);
+  await writeTextIfNeeded(path.join(root, CHANGELOG_FILE), `# Engram Changelog\n\n`, force);
   void workspace;
 }
 
@@ -44,12 +55,25 @@ export async function writeApprovedMemory(input: {
   const injection = scanInjection(input.content);
   if (injection.length) throw new Error(`Injection pattern blocked on line ${injection[0].line}`);
   const full = inside(root, input.file);
+  const globalGit = input.scope === 'global' ? (await loadConfig(input.cwd)).global_git : undefined;
+  if (globalGit) await pullGlobalGit(root, globalGit, () => resolveGlobalConflicts(root));
   await writeText(full, input.content);
   await updateHash(root, input.file, input.content);
   await rebuildIndex(root, input.scope);
   await appendChangelog(root, input.file, input.message);
-  if (input.scope === 'global') await gitCommitGlobal(root, input.message);
+  if (globalGit) await gitCommitGlobal(root, input.message, globalGit, () => resolveGlobalConflicts(root));
   return full;
+}
+
+/** Pull, resolve, commit, and push the global memory Git repo. */
+export async function syncGlobalMemoryGit(cwd: string): Promise<string[]> {
+  const roots = scopeRoots(cwd);
+  const config = (await loadConfig(cwd)).global_git;
+  const rows = [
+    ...await pullGlobalGit(roots.global, config, () => resolveGlobalConflicts(roots.global)),
+    ...await gitCommitGlobal(roots.global, 'sync global memory', config, () => resolveGlobalConflicts(roots.global))
+  ];
+  return [...new Set(rows)];
 }
 
 /** Append an audit-friendly changelog line. */
@@ -63,4 +87,17 @@ export async function appendChangelog(root: string, file: string, message: strin
 /** Return the author email used in memory frontmatter. */
 export async function resolveAuthor(): Promise<string> {
   return await gitUserEmail().catch(() => process.env.USER || 'unknown');
+}
+
+async function resolveGlobalConflicts(root: string): Promise<number> {
+  const results = await resolveConflictsInRoot(root, 'global');
+  return results.filter((row) => row.resolved).length;
+}
+
+async function writeJsonIfNeeded(file: string, value: unknown, force: boolean): Promise<void> {
+  if (force || !(await exists(file))) await writeJson(file, value);
+}
+
+async function writeTextIfNeeded(file: string, value: string, force: boolean): Promise<void> {
+  if (force || !(await exists(file))) await writeText(file, value);
 }

@@ -37,8 +37,8 @@ temp/
 .cache/
 
 # Documentation
-engram-blueprint-v8.md
-report.md
+*blueprint-*.md
+*report*.md
 TODO.md
 
 # agents

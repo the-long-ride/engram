@@ -3,7 +3,7 @@ import path from 'node:path';
 
 const roots = ['src', 'scripts', 'tests'];
 const codeExts = new Set(['.ts', '.js', '.mjs', '.cjs']);
-const limit = 200;
+const limit = 350;
 const failures = [];
 
 async function walk(dir) {

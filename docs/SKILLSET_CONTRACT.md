@@ -1,7 +1,7 @@
 # Engram Skillset Contract
 
 Engram is a portable memory skillset for AI agents. Hosts can integrate it by
-calling the CLI, registering the MCP server, or loading generated instruction
+calling the CLI, registering the MCP-style JSON-lines wrapper, or loading generated instruction
 files such as Codex-compatible `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, Copilot
 instructions, Antigravity `SKILL.md` files, and OpenCode custom instruction
 files. Hosts that support custom slash commands can also load generated
@@ -44,11 +44,14 @@ and collect explicit human approval before invoking a CLI write flow.
 | --- | --- |
 | `engram init [--submodule] [--global-remote <git-url>]` | Create memory roots, optionally create `.engram` as a submodule, and initialize global memory Git |
 | `engram entry` | Print resolved flags, paths, and detected global Git state |
-| `engram load "<task>"` | Load relevant memory |
+| `engram load [--all] "<task>"` | Load relevant memory; `--all` is the explicit broad-load mode |
+| `engram search "<query>"` | Search visible memory by query |
 | `engram save rule "<text>"` | Propose and write after A/B/C approval |
 | `engram set-rule-variant light|balanced|strict|off` | Configure compact rule output for agents |
 | `engram verify` | Check hash integrity |
+| `engram rebuild-index [workspace|global]` | Explicitly rebuild memory indexes |
 | `engram resolve-conflicts` | Resolve and stage only `.engram/` conflicts |
+| `engram stats` | Show visible memory counts |
 | `engram install-skillset all` | Install agent-host instruction files |
 | `engram install-skillset slash` | Install slash-command adapters |
 | `engram sync` | Sync global memory Git and refresh live-sync targets |
@@ -57,7 +60,7 @@ and collect explicit human approval before invoking a CLI write flow.
 
 `/engram` adapters must expose the whole Engram command surface by passing the
 arguments after `/engram` to the Engram CLI. For read and proposal commands,
-hosts may prefer MCP tools:
+hosts may prefer MCP-style tools:
 
 | Slash request | Preferred route |
 | --- | --- |

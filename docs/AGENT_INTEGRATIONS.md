@@ -5,7 +5,8 @@ Engram supports two integration layers:
 - **Skill files:** generated instructions for agents that read project context.
 - **Slash adapters:** generated `/engram` command prompts for agents that
   support project slash commands or Agent Skills.
-- **MCP tools:** a shared tool interface for agents that support MCP.
+- **MCP-style tools:** a JSON-lines wrapper for agents that can register
+  external tool processes.
 
 Run:
 
@@ -30,7 +31,7 @@ Use `--force` only when replacing generated Engram adapter files intentionally.
 | `windsurf` | `.windsurfrules` | Windsurf workspace rules |
 | `antigravity-cli` | `.agents/skills/engram/SKILL.md` | Antigravity CLI workspace skill |
 | `opencode` | `opencode.json`, `.opencode/engram.md` | OpenCode custom instructions |
-| `mcp` | `.mcp.json` | MCP server registration |
+| `mcp` | `.mcp.json` | MCP-style JSON-lines wrapper registration |
 | `slash` | `.claude/skills/engram/SKILL.md`, `.cursor/commands/engram.md`, `.gemini/commands/engram.toml` | Native `/engram` slash adapters |
 
 Aliases: `codex` installs the `agents-md` adapter plus the Agent Skill file,
@@ -75,7 +76,7 @@ Aliases: `codex` installs the `agents-md` adapter plus the Agent Skill file,
    Before working, load Engram memory for this task.
    ```
 
-4. If the host supports MCP, register `.mcp.json` or equivalent host config.
+4. If the host supports external tool processes, register `.mcp.json` or equivalent host config.
 
 5. If the host supports custom slash commands, type:
 
@@ -103,9 +104,9 @@ command to name Codex directly. The Codex alias also writes
 `.agents/skills/engram/SKILL.md`, so agents that discover Agent Skills can route
 Engram as an invokable skill.
 
-Claude Code and Cursor support MCP server configuration, so Engram should be
-registered as an MCP server when available. The `slash` target also writes
-Claude and Cursor project-level command files for `/engram`.
+Claude Code and Cursor support external tool configuration, so Engram can be
+registered through `.mcp.json` where that wrapper is accepted. The `slash`
+target also writes Claude and Cursor project-level command files for `/engram`.
 
 Gemini CLI searches for `GEMINI.md` files as context. The `slash` target writes
 `.gemini/commands/engram.toml` so `/engram <args>` becomes a project custom

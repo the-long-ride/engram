@@ -4,7 +4,7 @@
 
 **Engram grows with you & your teams, across agents, projects, and devices.**
 
-Engram is a portable, file-system-based memory skill set for AI agents. It lets agents detect, generate, and persist structured knowledge - rules, skills, and project context - from real human-agent work without relying on any agent's private memory or proprietary storage.
+Engram is a portable, file-system-based memory management system for AI agents. It lets agents detect, generate, and persist structured knowledge - rules, skills, and project context - from real human-agent work without relying on any agent's private memory or proprietary storage.
 
 All memory is plain Markdown. That means humans can read it, teams can review it in Git, and any AI agent can use it as external context, even without installing Engram directly.
 
@@ -99,9 +99,11 @@ the selected variant.
 
 ## What Is Included
 
-Engram ships a deterministic CLI, MCP wrapper, cached help, memory schema,
-indexing, routing, safety guards, import/export, live-sync renderers, conflict
-previews, health checks, and prompt templates for agent-assisted workflows.
+Engram ships a deterministic CLI, MCP-style JSON-lines wrapper, cached help,
+memory schema, indexing, routing, safety guards, import/export, live-sync
+renderers, conflict previews, and health checks. Prompt templates, pattern
+mining, encryption, and PR workflow ideas are design assets until wired into
+runtime commands.
 
 Engram can also install itself as an agent skillset:
 

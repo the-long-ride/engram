@@ -4,6 +4,7 @@ import { scopeRoots } from './config.js';
 import { inside, readText } from './fsx.js';
 import { scanInjection } from './security.js';
 import { lexicalScore } from './text.js';
+import { renderMemoryForConfig } from './rule-variants.js';
 
 /** Filter index entries before scoring. */
 export function prefilter(index: MemoryIndex, config: EngramConfig, manual = false): MemoryEntry[] {
@@ -25,14 +26,14 @@ export function route(index: MemoryIndex, query: string, config: EngramConfig, m
 }
 
 /** Load routed files and quarantine prompt-injection matches by skipping them. */
-export async function loadEntries(cwd: string, entries: MemoryEntry[]): Promise<Array<{ entry: MemoryEntry; content: string; flagged?: string }>> {
+export async function loadEntries(cwd: string, entries: MemoryEntry[], config: EngramConfig): Promise<Array<{ entry: MemoryEntry; content: string; flagged?: string }>> {
   const roots = scopeRoots(cwd);
   const loaded = [];
   for (const entry of entries) {
     const root = roots[entry.scope as Scope];
     const content = await readText(inside(root, entry.file));
     const injection = scanInjection(content);
-    loaded.push({ entry, content: injection.length ? '' : content, flagged: injection[0]?.value });
+    loaded.push({ entry, content: injection.length ? '' : renderMemoryForConfig(content, entry, config), flagged: injection[0]?.value });
   }
   return loaded;
 }

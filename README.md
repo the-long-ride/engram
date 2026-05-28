@@ -13,6 +13,7 @@ All memory is plain Markdown. That means humans can read it, teams can review it
 - **Agent-agnostic:** any agent can read Markdown memory, even without a plugin.
 - **Human-approved:** every write goes through an A/B/C review gate.
 - **Workspace-first:** project memory wins; global memory follows you elsewhere.
+- **Adaptive rules:** rule memories can render as light, balanced, or strict.
 - **Safe by default:** ignore rules, secret scans, injection checks, and hashes.
 - **Git-friendly:** memory is reviewable, portable, auditable, and recoverable.
 - **npx-ready:** install nothing globally: `npx @the-long-ride/engram init`.
@@ -42,6 +43,18 @@ the currently checked-out global branch when it saves or syncs, so a user can
 switch the single supported branch outside Engram and `engram entry` will show
 the detected branch.
 
+Workspace memory can also be made into a local `.engram` Git submodule. In an
+interactive terminal, `engram init` asks before doing this. Non-interactive
+flows can opt in explicitly:
+
+```bash
+engram init --submodule --submodule-remote https://github.com/example/project-engram.git
+```
+
+Engram initializes `.engram` on `main`, creates the first submodule commit as
+`Initialize engram`, validates any provided remote URL, and stages only
+`.gitmodules` plus the `.engram` gitlink in the parent repository.
+
 ## Why Files, Not Agent Brain?
 
 | Property | Engram files | Agent memory |
@@ -66,8 +79,23 @@ npx @the-long-ride/engram load "package setup"
 ```
 
 `engram save knowledge` can be run without text by an AI agent. Engram asks the
-agent to summarize durable knowledge from its current work, then shows the
-normal A/B/C approval preview before anything is written.
+agent to summarize durable knowledge from its current work in objective wording,
+then automatically chooses whether to update a matching memory or create a new
+one. The normal A/B/C approval preview still appears before anything is written.
+
+Rule output can be tuned per agent/model:
+
+```bash
+engram set-rule-variant light
+engram set-rule-variant balanced
+engram set-rule-variant strict
+engram set-rule-variant off
+```
+
+When rule variants are off, Engram renders balanced rule wording by default. When
+variants are enabled, new or updated rule memories include light, balanced, and
+strict versions, and `engram load`, `engram export`, and `engram sync` emit only
+the selected variant.
 
 ## What Is Included
 
@@ -115,6 +143,7 @@ engram entry
 engram save rule "Never commit secrets."
 engram save knowledge
 engram load "deployment workflow"
+engram set-rule-variant strict
 engram verify
 engram health
 engram export --format agents-md

@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { rm, writeFile, mkdir } from 'node:fs/promises';
+import { rm, writeFile, mkdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
-import { runEngram, tempWorkspace } from './helpers.mjs';
+import { initGit, runEngram, tempWorkspace } from './helpers.mjs';
 
 test('init, help, save reject, save accept, load, verify, audit', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
@@ -50,6 +50,30 @@ test('save knowledge without text asks for generated agent knowledge', async () 
   await rm(cwd, { recursive: true, force: true });
 });
 
+test('save automatically updates matching memory instead of duplicating it', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Frontend uses React and pnpm'], 'A\n');
+  const updated = await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'React frontend uses pnpm workspace scripts'], 'A\n');
+  assert.equal(updated.code, 0, updated.stderr);
+  assert.match(updated.stdout, /Saved/);
+  assert.match((await runEngram(cwd, env, ['stats'])).stdout, /Total: 1/);
+  assert.match(await readFile(path.join(cwd, '.engram', 'knowledge', 'frontend-uses-react-and-pnpm.md'), 'utf8'), /workspace scripts/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('rule variants render the active compact variant', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['init']);
+  assert.match((await runEngram(cwd, env, ['set-rule-variant', 'strict'])).stdout, /strict/);
+  await runEngram(cwd, env, ['save', 'rule', '--scope', 'workspace', 'Use pnpm for package management'], 'A\n');
+  const loaded = await runEngram(cwd, env, ['load', 'pnpm package']);
+  assert.equal(loaded.code, 0, loaded.stderr);
+  assert.match(loaded.stdout, /mandatory/);
+  assert.doesNotMatch(loaded.stdout, /### Light/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
 test('init prepares global git and entry reports detected branch', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
   const init = await runEngram(cwd, env, ['init']);
@@ -61,6 +85,17 @@ test('init prepares global git and entry reports detected branch', async () => {
   assert.equal(entry.code, 0, entry.stderr);
   assert.match(entry.stdout, /config\.global_git\.branch=main/);
   assert.match(entry.stdout, /global_git_detected\.branch=team/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('init can create .engram as a local submodule', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  assert.equal(initGit(cwd).status, 0);
+  const init = await runEngram(cwd, env, ['init', '--submodule']);
+  assert.equal(init.code, 0, init.stderr);
+  assert.match(init.stdout, /workspace submodule: branch main/);
+  assert.match(spawnSync('git', ['-C', path.join(cwd, '.engram'), 'log', '--format=%s', '-1'], { encoding: 'utf8' }).stdout, /Initialize engram/);
+  assert.match(spawnSync('git', ['-C', cwd, 'ls-files', '-s', '--', '.engram'], { encoding: 'utf8' }).stdout, /^160000 /);
   await rm(cwd, { recursive: true, force: true });
 });
 

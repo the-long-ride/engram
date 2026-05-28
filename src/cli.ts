@@ -3,7 +3,7 @@ import { parseArgs } from './cli/args.js';
 import { VERSION } from './core/constants.js';
 import { cmdAudit, cmdHelp, cmdInit, cmdLoad, cmdSave, cmdUpdateHelp, cmdVerify } from './commands/core.js';
 import { cmdDeduplicate, cmdEntry, cmdExport, cmdHealth, cmdImport, cmdQuality, cmdSearch, cmdStats, cmdSync } from './commands/ops.js';
-import { cmdIgnore, cmdInstallHooks, cmdInstallSkillset, cmdPropose, cmdResolveConflicts, cmdSetRole, cmdTeamDashboard } from './commands/admin.js';
+import { cmdIgnore, cmdInstallHooks, cmdInstallSkillset, cmdPropose, cmdResolveConflicts, cmdSetRole, cmdSetRuleVariant, cmdTeamDashboard } from './commands/admin.js';
 
 /** Execute a CLI invocation and return printable output. */
 export async function runCli(argv: string[]): Promise<string> {
@@ -29,6 +29,7 @@ export async function runCli(argv: string[]): Promise<string> {
     case 'stats': return cmdStats();
     case 'ignore': return cmdIgnore(rest);
     case 'set-role': return cmdSetRole(rest);
+    case 'set-rule-variant': return cmdSetRuleVariant(rest);
     case 'resolve-conflicts': return cmdResolveConflicts(flags);
     case 'install-hooks': return cmdInstallHooks();
     case 'install-skillset': return cmdInstallSkillset(rest, flags);

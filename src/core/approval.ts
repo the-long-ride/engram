@@ -3,10 +3,11 @@ import { createInterface } from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
 
 export type Approval = { accepted: boolean; edits?: string; redacted?: boolean };
+type PreviewRenderer = (text: string) => string | Promise<string>;
 
 /** Ask for generated knowledge, then approve the rendered memory preview. */
 export async function requestGeneratedKnowledgeApproval(
-  renderPreview: (text: string) => string
+  renderPreview: PreviewRenderer
 ): Promise<{ text: string; approval: Approval } | undefined> {
   output.write(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nENGRAM — KNOWLEDGE TEXT NEEDED\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
   output.write('No knowledge text was provided. If you are an AI agent, summarize durable knowledge from the work you just completed.\n');
@@ -18,20 +19,20 @@ export async function requestGeneratedKnowledgeApproval(
     rl.close();
     return undefined;
   }
-  writeApprovalPreview(renderPreview(text));
+  writeApprovalPreview(await renderPreview(text));
   const approval = await readApproval(rl);
   rl.close();
   return { text, approval };
 }
 
 async function requestGeneratedKnowledgePipe(
-  renderPreview: (text: string) => string
+  renderPreview: PreviewRenderer
 ): Promise<{ text: string; approval: Approval } | undefined> {
   output.write('Knowledge: ');
   const lines = (await readPipe()).split(/\r?\n/);
   const text = (lines.shift() ?? '').trim();
   if (!text) return undefined;
-  writeApprovalPreview(renderPreview(text));
+  writeApprovalPreview(await renderPreview(text));
   return { text, approval: parseApproval(lines.find((line) => line.trim()) ?? '') };
 }
 

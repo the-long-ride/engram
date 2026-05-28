@@ -2,6 +2,7 @@
 export type MemoryType = 'rule' | 'skill' | 'knowledge';
 export type Scope = 'workspace' | 'global';
 export type Confidence = 'high' | 'medium' | 'low';
+export type RuleVariant = 'light' | 'balanced' | 'strict';
 
 export type EngramConfig = {
   version: string;
@@ -13,6 +14,7 @@ export type EngramConfig = {
   roles: string[];
   live_sync: { enabled: boolean; targets: string[] };
   global_git: { enabled: boolean; remote: string; branch: string; auto_sync: boolean; auto_resolve: boolean };
+  rule_variants: { enabled: boolean; active: RuleVariant };
   pattern_mining: { enabled: boolean; threshold: number; lookback_sessions: number };
   pr_workflow: { enabled: boolean; provider?: string; repo?: string; target_branch: string };
   encryption: { enabled: boolean; scope: Scope; key_source: string };

@@ -6,7 +6,7 @@ export function renderHelp(): string {
   return `# Engram Help v${VERSION}
 
 ## Meta Commands
-- engram init [--force] [--global-remote <git-url>] [--global-branch main]
+- engram init [--force] [--submodule] [--submodule-remote <git-url>] [--global-remote <git-url>] [--global-branch main]
 - engram help [topic]
 - engram update-help
 - engram entry
@@ -29,6 +29,7 @@ export function renderHelp(): string {
 - engram import <bundle.json>
 - engram ignore status|check <path>|add <pattern>
 - engram set-role <role...>
+- engram set-rule-variant off|light|balanced|strict|status
 - engram resolve-conflicts [--dry-run|--auto]
 - engram install-hooks
 - engram install-skillset [all|slash|codex|agents-md|copilot|claude|cursor|gemini|cline|windsurf|antigravity-cli|opencode|mcp]
@@ -36,7 +37,7 @@ export function renderHelp(): string {
 - engram propose <memory-file>
 - engram team-dashboard
 
-Every write path requires A/B/C approval before files are changed.
+Every write path requires A/B/C approval before files are changed. Save automatically updates the best matching existing memory, or adds a new memory when no match is found.
 `;
 }
 

@@ -8,11 +8,12 @@ import { getContext, loadSummary } from '../core/context.js';
 import { defaultConfig, scopeRoots, writeScopes } from '../core/config.js';
 import { renderHelp } from '../core/help.js';
 import { readText, writeText } from '../core/fsx.js';
-import { draftMemory } from '../core/memory-template.js';
 import { applyApprovalEdit, requestApproval, requestGeneratedKnowledgeApproval } from '../core/approval.js';
 import { verifyRoot } from '../core/hash.js';
 import { route, loadEntries } from '../core/routing.js';
 import { configureGlobalRemote, globalGitInfo, isValidGitRemoteUrl, normalizeBranchName } from '../core/git.js';
+import { planMemorySave, previewSavePlans } from '../core/save-plan.js';
+import { configureWorkspaceSubmodule } from '../core/submodule.js';
 import type { MemoryType, Scope } from '../core/types.js';
 
 /** Initialize workspace memory. */
@@ -21,6 +22,7 @@ export async function cmdInit(flags: Record<string, any>): Promise<string> {
   const requestedBranch = typeof flags['global-branch'] === 'string' ? flags['global-branch'] : config.branch;
   const branch = normalizeBranchName(requestedBranch);
   const lines = await initWorkspace(process.cwd(), Boolean(flags.force), branch);
+  lines.push(...await maybeConfigureWorkspaceSubmodule(flags));
   const remote = typeof flags['global-remote'] === 'string' ? flags['global-remote'].trim() : '';
   if (remote) {
     lines.push(...await configureGlobalRemote(scopeRoots().global, remote, branch, config.remote));
@@ -59,27 +61,26 @@ export async function cmdSave(args: string[], flags: Record<string, any>): Promi
   const author = await resolveAuthor();
   let approval;
   if (!text && maybeType === 'knowledge') {
-    const captured = await requestGeneratedKnowledgeApproval((generated) => previewSave(generated, type, scopes, author));
+    const captured = await requestGeneratedKnowledgeApproval(async (generated) => previewSave(generated, type, scopes, author, ctx));
     if (!captured) return 'Discarded. No file written.';
     text = captured.text;
     approval = captured.approval;
   } else {
     if (!text) throw new Error('save requires memory text');
-    approval = await requestApproval(previewSave(text, type, scopes, author));
+    approval = await requestApproval(await previewSave(text, type, scopes, author, ctx));
   }
   if (!approval.accepted) return 'Discarded. No file written.';
+  const plans = await planMemorySave({ ctx, text, type, scopes, author });
   const written = [];
-  for (const scope of scopes) {
-    const scoped = draftMemory({ text, type, scope, author });
-    const content = applyApprovalEdit(scoped.content, approval.edits);
-    written.push(await writeApprovedMemory({ cwd: process.cwd(), scope, file: scoped.file, content, message: `add ${type}: ${scoped.id}` }));
+  for (const plan of plans) {
+    const content = applyApprovalEdit(plan.content, approval.edits);
+    written.push(await writeApprovedMemory({ cwd: process.cwd(), scope: plan.scope, file: plan.file, content, message: plan.message }));
   }
   return `Saved -> ${written.join(', ')}`;
 }
 
-function previewSave(text: string, type: MemoryType, scopes: Scope[], author: string): string {
-  const draft = draftMemory({ text, type, scope: scopes[0], author });
-  return `Type: ${type}\nScope: ${scopes.join(', ')}\nFile: ${draft.file}\n\n${draft.content}`;
+async function previewSave(text: string, type: MemoryType, scopes: Scope[], author: string, ctx: Awaited<ReturnType<typeof getContext>>): Promise<string> {
+  return previewSavePlans(await planMemorySave({ ctx, text, type, scopes, author }));
 }
 
 /** Load routed memory for a query. */
@@ -88,7 +89,7 @@ export async function cmdLoad(args: string[], manual = true): Promise<string> {
   if (!ctx.config.enabled || ctx.config.read === 'off') return '';
   const query = args.join(' ') || 'current session';
   const entries = route(ctx.index, query, ctx.config, manual);
-  const loaded = await loadEntries(process.cwd(), entries);
+  const loaded = await loadEntries(process.cwd(), entries, ctx.config);
   const summary = loadSummary(entries, ctx.hiddenCount);
   return `${summary}\n\n${loaded.map((row) => row.flagged ? `SKIPPED ${row.entry.file}: ${row.flagged}` : row.content).join('\n\n')}`.trim();
 }
@@ -137,10 +138,38 @@ async function maybeConfigureGlobalRemote(branch: string): Promise<string[]> {
   }
 }
 
+async function maybeConfigureWorkspaceSubmodule(flags: Record<string, any>): Promise<string[]> {
+  const branch = normalizeBranchName(typeof flags['submodule-branch'] === 'string' ? flags['submodule-branch'] : 'main');
+  const remoteUrl = typeof flags['submodule-remote'] === 'string' ? flags['submodule-remote'].trim() : '';
+  if (remoteUrl && !isValidGitRemoteUrl(remoteUrl)) throw new Error('invalid submodule remote URL');
+  if (flags['no-submodule']) return ['workspace submodule: skipped'];
+  if (flags.submodule || remoteUrl) return configureWorkspaceSubmodule(process.cwd(), { branch, remoteUrl });
+  if (!process.stdin.isTTY || !process.stdout.isTTY) {
+    return ['workspace submodule: skipped (run engram init --submodule to enable)'];
+  }
+  const rl = createInterface({ input, output });
+  try {
+    const yes = (await rl.question('Add .engram as a Git submodule? [y/N] ')).trim();
+    if (!/^y(es)?$/i.test(yes)) return ['workspace submodule: skipped'];
+    const chosenRemote = await promptOptionalRemoteUrl(rl, 'Submodule origin URL (optional): ');
+    return configureWorkspaceSubmodule(process.cwd(), { branch, remoteUrl: chosenRemote });
+  } finally {
+    rl.close();
+  }
+}
+
 async function promptRemoteUrl(rl: { question(query: string): Promise<string> }): Promise<string> {
   for (;;) {
     const remoteUrl = (await rl.question('Remote origin URL: ')).trim();
     if (isValidGitRemoteUrl(remoteUrl)) return remoteUrl;
     output.write('Invalid Git remote URL. Paste an https, ssh, git, file, or git@host:path URL.\n');
+  }
+}
+
+async function promptOptionalRemoteUrl(rl: { question(query: string): Promise<string> }, question: string): Promise<string> {
+  for (;;) {
+    const remoteUrl = (await rl.question(question)).trim();
+    if (!remoteUrl || isValidGitRemoteUrl(remoteUrl)) return remoteUrl;
+    output.write('Invalid Git remote URL. Paste an https, ssh, git, file, or git@host:path URL, or leave blank.\n');
   }
 }

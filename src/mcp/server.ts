@@ -2,7 +2,8 @@
 import { createInterface } from 'node:readline';
 import { cmdLoad, cmdVerify } from '../commands/core.js';
 import { cmdHealth, cmdSearch } from '../commands/ops.js';
-import { draftMemory } from '../core/memory-template.js';
+import { getContext } from '../core/context.js';
+import { planMemorySave, previewSavePlans } from '../core/save-plan.js';
 import { resolveAuthor } from '../core/storage.js';
 
 /** Handle one MCP-like request object. */
@@ -23,13 +24,16 @@ export async function handleMcp(request: any): Promise<any> {
 
 /** Return a proposal only; MCP never writes memory silently. */
 async function saveProposal(args: any): Promise<string> {
-  const draft = draftMemory({
+  const ctx = await getContext();
+  const scope = args.scope ?? 'workspace';
+  const plans = await planMemorySave({
+    ctx,
     text: args.text ?? '',
     type: args.type ?? 'knowledge',
-    scope: args.scope ?? 'workspace',
+    scopes: [scope],
     author: await resolveAuthor()
   });
-  return `ENGRAM SAVE PROPOSAL\nFile: ${draft.file}\n\n${draft.content}\n\nHuman approval required before writing.`;
+  return `ENGRAM SAVE PROPOSAL\n${previewSavePlans(plans)}\n\nHuman approval required before writing.`;
 }
 
 /** Run a JSON-lines stdio server. */

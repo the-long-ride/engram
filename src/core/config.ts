@@ -23,6 +23,7 @@ export function defaultConfig(): EngramConfig {
     roles: [],
     live_sync: { enabled: false, targets: ['agents-md', 'claude-md', 'cursorrules'] },
     global_git: { enabled: true, remote: 'origin', branch: 'main', auto_sync: true, auto_resolve: true },
+    rule_variants: { enabled: false, active: 'balanced' },
     pattern_mining: { enabled: true, threshold: 3, lookback_sessions: 20 },
     pr_workflow: { enabled: false, target_branch: 'main' },
     encryption: { enabled: false, scope: 'global', key_source: 'portable-file' }
@@ -51,6 +52,7 @@ export function mergeConfig(base: EngramConfig, found: Partial<EngramConfig>): E
     ignore: { ...base.ignore, ...(found.ignore ?? {}) },
     live_sync: { ...base.live_sync, ...(found.live_sync ?? {}) },
     global_git: { ...base.global_git, ...(found.global_git ?? {}) },
+    rule_variants: { ...base.rule_variants, ...(found.rule_variants ?? {}) },
     pattern_mining: { ...base.pattern_mining, ...(found.pattern_mining ?? {}) },
     pr_workflow: { ...base.pr_workflow, ...(found.pr_workflow ?? {}) },
     encryption: { ...base.encryption, ...(found.encryption ?? {}) }

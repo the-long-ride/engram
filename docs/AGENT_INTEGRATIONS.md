@@ -50,6 +50,17 @@ Aliases: `codex` installs the `agents-md` adapter plus the Agent Skill file,
    engram init
    ```
 
+   If the human wants `.engram` tracked as a separate repository, ask whether to
+   create a local submodule. When they approve, run:
+
+   ```bash
+   engram init --submodule
+   ```
+
+   Add `--submodule-remote <git-url>` only after the human provides a URL.
+   Engram validates the URL, initializes the submodule on `main`, and creates the
+   first submodule commit as `Initialize engram`.
+
    If `engram entry` shows no `global_git_detected.remote_url`, ask the human
    whether global memory should be shared through Git. When they provide a URL,
    run:
@@ -72,8 +83,14 @@ Aliases: `codex` installs the `agents-md` adapter plus the Agent Skill file,
    /engram load deployment workflow
    /engram entry
    /engram save knowledge
+   /engram set-rule-variant strict
    /engram verify
    ```
+
+   `engram save` automatically updates a matching memory or creates a new one.
+   Agents should make generated knowledge objective and durable. Rule variant
+   mode is useful when a model needs lighter or stricter instruction wording;
+   when off, Engram renders balanced rule wording by default.
 
 ## Notes By Host
 

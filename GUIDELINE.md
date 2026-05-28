@@ -19,7 +19,10 @@ npm run lint:lines
 - `src/bin` exposes `engram` and `engram-mcp`.
 - `src/core/git.ts` owns global memory Git init, branch detection, remote setup,
   pull, commit, push, and retry-on-merge handling. Workspace Git remains
-  untouched except for the explicit `resolve-conflicts` command.
+  untouched except for explicit `.engram` submodule setup and
+  `resolve-conflicts`.
+- `src/core/submodule.ts` owns opt-in workspace `.engram` submodule creation and
+  may stage only `.gitmodules` plus the `.engram` gitlink after human opt-in.
 - `src/core/skillset.ts` renders agent instruction, MCP, and slash-command
   adapters.
 - `prompts` contains agent-facing prompt templates.
@@ -32,18 +35,26 @@ npm run lint:lines
 - Do not add runtime dependencies unless they remove real operational risk.
 - Never bypass the A/B/C approval gate on write paths.
 - `engram save knowledge` may omit text only for agent-assisted capture. The
-  command must collect generated knowledge first, then show the normal approval
-  preview before writing.
+  command must collect objective generated knowledge first, automatically choose
+  whether to update an existing memory or add a new one, then show the normal
+  approval preview before writing.
+- `engram save` upsert detection is automatic. Do not add a second approval
+  prompt just to choose the target file.
+- Rule variant mode is opt-in. Generate light/balanced/strict rule variants only
+  for newly saved or updated rules while the mode is enabled; never bulk-rewrite
+  old memories just to add variants.
 - Slash-command adapters are routers. Keep `/engram <args>` mapped to the same
   CLI or MCP flow, never to a hidden write path.
-- Global memory Git automation may touch only `$ENGRAM_GLOBAL_DIR`. Agents must
-  ask before adding an origin remote; CLI init may prompt for it, and non-TTY
-  runs should print the `--global-remote` command instead.
+- Global memory Git automation may touch only `$ENGRAM_GLOBAL_DIR`. Workspace
+  submodule automation may touch only `.engram`, `.gitmodules`, and the parent
+  gitlink. Agents must ask before adding any origin remote; CLI init may prompt
+  for it, and non-TTY runs should print the explicit command instead.
 - When adding or renaming a CLI command, update `src/core/help.ts`,
   `src/core/skillset.ts`, `docs/SKILLSET_CONTRACT.md`, and skillset tests
   together.
 - Never stage workspace code. `resolve-conflicts` may stage only `.engram` files
-  after an explicit human command.
+  after an explicit human command; submodule setup may stage only `.gitmodules`
+  and the `.engram` gitlink.
 - Preserve archived memory; move superseded files, do not delete them.
 
 ## Debugging

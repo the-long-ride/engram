@@ -5,6 +5,7 @@ import { isIgnored } from '../core/ignore.js';
 import { readText, writeJson, writeText } from '../core/fsx.js';
 import { findConflicts, resolveConflicts } from '../core/conflict.js';
 import { installSkillset, skillsetTargets } from '../core/skillset.js';
+import type { RuleVariant } from '../core/types.js';
 
 /** Inspect or update ignore patterns. */
 export async function cmdIgnore(args: string[]): Promise<string> {
@@ -25,6 +26,22 @@ export async function cmdSetRole(args: string[]): Promise<string> {
   ctx.config.roles = args;
   await writeJson(path.join(ctx.roots.workspace, 'engram.config.json'), ctx.config);
   return `Roles: ${args.join(', ') || '(none)'}`;
+}
+
+/** Enable, disable, or inspect rule variant rendering. */
+export async function cmdSetRuleVariant(args: string[]): Promise<string> {
+  const ctx = await getContext();
+  const value = (args[0] ?? 'status').toLowerCase();
+  if (value === 'status') return ruleVariantStatus(ctx.config.rule_variants);
+  if (['off', 'disable', 'disabled'].includes(value)) {
+    ctx.config.rule_variants = { enabled: false, active: 'balanced' };
+  } else if (isRuleVariant(value)) {
+    ctx.config.rule_variants = { enabled: true, active: value };
+  } else {
+    throw new Error('set-rule-variant expects off, light, balanced, strict, or status');
+  }
+  await writeJson(path.join(ctx.roots.workspace, 'engram.config.json'), ctx.config);
+  return ruleVariantStatus(ctx.config.rule_variants);
 }
 
 /** Resolve or preview .engram-only merge conflicts. */
@@ -68,4 +85,12 @@ export async function cmdInstallSkillset(args: string[], flags: Record<string, a
   const target = args[0] ?? 'all';
   const results = await installSkillset(process.cwd(), target, Boolean(flags.force));
   return results.map((r) => `${r.action.toUpperCase()} ${r.target}: ${r.file}`).join('\n');
+}
+
+function isRuleVariant(value: string): value is RuleVariant {
+  return ['light', 'balanced', 'strict'].includes(value);
+}
+
+function ruleVariantStatus(config: { enabled: boolean; active: RuleVariant }): string {
+  return `Rule variants: ${config.enabled ? config.active : 'off (balanced default)'}`;
 }

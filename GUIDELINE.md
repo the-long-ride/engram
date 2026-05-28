@@ -17,6 +17,12 @@ npm run lint:lines
 - `src/core` holds config, schema, indexes, routing, security, and storage.
 - `src/commands` holds thin command handlers.
 - `src/bin` exposes `engram` and `engram-mcp`.
+- `src/core/command-registry.ts` owns the canonical CLI surface, command
+  aliases, completion data, and slash-command surface.
+- `src/core/help.ts` renders compact overview help; `src/core/help-topics.ts`
+  renders detailed `engram help <topic>` examples and use cases.
+- `src/core/memory-candidate.ts` owns save/autosave memory type detection and
+  agent-facing brainstorming guidance.
 - `src/core/git.ts` owns global memory Git init, branch detection, remote setup,
   pull, commit, push, and retry-on-merge handling. Workspace Git remains
   untouched except for explicit `.engram` submodule setup and
@@ -30,27 +36,47 @@ npm run lint:lines
 
 ## Coding Rules
 
-- Keep every code file under 200 lines.
+- Keep every code file under 350 lines, matching `npm run lint:lines`.
 - Add a short file summary and concise function summaries.
 - Do not add runtime dependencies unless they remove real operational risk.
 - Never bypass the A/B/C approval gate on write paths.
-- `engram save knowledge` may omit text only for agent-assisted capture. The
-  command must collect objective generated knowledge first, automatically choose
-  whether to update an existing memory or add a new one, then show the normal
-  approval preview before writing.
+- `engram save` is the one-memory path. It may omit text only for
+  agent-assisted capture, must collect one durable candidate first,
+  automatically choose whether to update an existing memory or add a new one,
+  then show the normal approval preview before writing.
+- `engram save --role <role>` and `--roles <a,b>` attach role frontmatter to
+  the proposed memory. Updates must merge new roles with existing roles instead
+  of replacing them.
+- `engram autosave` is the long-session path. It may propose multiple
+  `TYPE: ... | TEXT: ...` candidates, but every proposed add/update still goes
+  through the same A/B/C approval gate. `engram autosave --file transcript.md`
+  reads a transcript file, and numbered approvals such as `A 1,3` must write
+  only the selected candidates.
 - `engram save` upsert detection is automatic. Do not add a second approval
   prompt just to choose the target file.
+- Memory Markdown must keep a blank line after every heading, use the standard
+  `Context`, `Content`, `Example` section order, and format links as
+  `[label](url)`.
+- MCP tools are proposal-only. Keep `engram_save` behavior aligned with CLI
+  auto-detection, workflow-as-skill handling, and role metadata; add MCP methods
+  for new read/proposal surfaces before documenting them.
+- Command aliases must dispatch through `canonicalCommand` and be documented in
+  both compact help and detailed topic help.
 - Rule variant mode is opt-in. Generate light/balanced/strict rule variants only
   for newly saved or updated rules while the mode is enabled; never bulk-rewrite
   old memories just to add variants.
+- `engram set-rule-variant` exists because lower-tier models often need strict
+  wording to stay controlled, while top-tier models usually work better with
+  light or balanced wording so rules do not blunt their reasoning.
 - Slash-command adapters are routers. Keep `/engram <args>` mapped to the same
   CLI or MCP flow, never to a hidden write path.
 - Global memory Git automation may touch only `$ENGRAM_GLOBAL_DIR`. Workspace
   submodule automation may touch only `.engram`, `.gitmodules`, and the parent
   gitlink. Agents must ask before adding any origin remote; CLI init may prompt
   for it, and non-TTY runs should print the explicit command instead.
-- When adding or renaming a CLI command, update `src/core/help.ts`,
-  `src/core/skillset.ts`, `docs/SKILLSET_CONTRACT.md`, and skillset tests
+- When adding or renaming a CLI command, update `src/core/command-registry.ts`,
+  `src/core/help-topics.ts`, `src/core/skillset.ts`,
+  `docs/SKILLSET_CONTRACT.md`, README examples, and command/skillset tests
   together.
 - Never stage workspace code. `resolve-conflicts` may stage only `.engram` files
   after an explicit human command; submodule setup may stage only `.gitmodules`
@@ -92,7 +118,11 @@ npm run build
 node ./dist/bin/engram.js init
 node ./dist/bin/engram.js entry
 node ./dist/bin/engram.js save rule --scope workspace "Use pnpm for installs"
+node ./dist/bin/engram.js save rule --scope workspace --role frontend "Use design tokens"
 node ./dist/bin/engram.js save knowledge --scope workspace
+node ./dist/bin/engram.js autosave --scope workspace
+node ./dist/bin/engram.js autosave --scope workspace --file transcript.md
+node ./dist/bin/engram.js help set-role
 ```
 
 On PowerShell, set the env var with:

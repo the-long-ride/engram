@@ -12,6 +12,7 @@ export function draftMemory(input: {
   type: MemoryType;
   scope: Scope;
   author: string;
+  role?: string[];
 }, options: MemoryDraftOptions = {}): { file: string; id: string; content: string; tags: string[] } {
   const title = titleFor(input.text, input.type);
   const id = slugify(title);
@@ -26,6 +27,7 @@ export function updateMemory(raw: string, input: {
   type: MemoryType;
   scope: Scope;
   author: string;
+  role?: string[];
 }, options: MemoryDraftOptions = {}): string {
   const doc = parseMemory(raw);
   const tags = unique([...(doc.frontmatter.tags ?? []), ...tagsFrom(input.text)]);
@@ -38,7 +40,7 @@ export function updateMemory(raw: string, input: {
     title: doc.title,
     tags,
     created: String(doc.frontmatter.created ?? today()),
-    role: doc.frontmatter.role,
+    role: input.role?.length ? unique([...(doc.frontmatter.role ?? []), ...input.role]) : doc.frontmatter.role,
     bodyText: bullets.join('\n'),
     variantText: text,
     variants
@@ -64,7 +66,7 @@ function renderMemory(input: {
   if (input.role?.length) metadata.role = input.role;
   const meta = frontmatter(metadata);
   return `${meta}
-# ${input.title}
+# ${formatInlineMarkdown(input.title)}
 
 ## Context
 

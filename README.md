@@ -74,9 +74,11 @@ Engram initializes `.engram` on `main`, creates the first submodule commit as
 ```bash
 npx @the-long-ride/engram init
 npx @the-long-ride/engram save rule "Use pnpm for package management."
+npx @the-long-ride/engram save rule --role frontend "Use design tokens for spacing."
 npx @the-long-ride/engram save workflow "When releasing, run tests, update the changelog, then tag the version."
 npx @the-long-ride/engram save knowledge
 npx @the-long-ride/engram autosave
+npx @the-long-ride/engram autosave --file transcript.md
 npx @the-long-ride/engram load "package setup"
 ```
 
@@ -91,7 +93,16 @@ still appears before anything is written.
 For long sessions with several possible memories, use `engram autosave` instead.
 It asks the agent to brainstorm multiple `TYPE: ... | TEXT: ...` candidates and
 then previews all proposed adds/updates behind the same A/B/C approval gate. If
-you stay with normal `engram save`, it captures the best single memory.
+you stay with normal `engram save`, it captures the best single memory. Autosave
+also accepts `--file transcript.md`, and the approval prompt can accept selected
+candidate numbers with replies such as `A 1,3`.
+
+Use `--role` or `--roles` when saving role-specific memory:
+
+```bash
+engram save knowledge --role backend "The API validates sessions in middleware."
+engram autosave --role frontend --file ui-session.md
+```
 
 Rule output can be tuned per agent/model:
 
@@ -120,6 +131,12 @@ For zsh:
 
 ```zsh
 source <(engram completion zsh)
+```
+
+For PowerShell:
+
+```powershell
+engram completion powershell | Invoke-Expression
 ```
 
 `engram completion` prints the completion script; it does not install shell
@@ -173,10 +190,13 @@ engram -v
 engram init
 engram entry
 engram completion bash
+engram completion powershell
 engram save rule "Never commit secrets."
+engram save rule --role frontend "Use design tokens."
 engram save workflow "When deploying, run tests, build, then verify health."
 engram save knowledge
 engram autosave
+engram autosave --file transcript.md
 engram load "deployment workflow"
 engram set-rule-variant strict
 engram verify

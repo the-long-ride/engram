@@ -15,21 +15,22 @@ export type SavePlan = {
   content: string;
   message: string;
   matchScore?: number;
+  candidateIndex?: number;
 };
 
 /** Choose whether each scope should add a new memory or update an existing one. */
 export async function planMemorySave(input: {
-  ctx: EngramContext; text: string; type: MemoryType; scopes: Scope[]; author: string;
+  ctx: EngramContext; text: string; type: MemoryType; scopes: Scope[]; author: string; role?: string[];
 }): Promise<SavePlan[]> {
   const plans: SavePlan[] = [];
   const options = { ruleVariants: input.ctx.config.rule_variants.enabled };
   for (const scope of input.scopes) {
     const match = await bestMatch(input.ctx, input.text, input.type, scope);
     if (match) {
-      const content = updateMemory(match.raw, { text: input.text, type: input.type, scope, author: input.author }, options);
+      const content = updateMemory(match.raw, { text: input.text, type: input.type, scope, author: input.author, role: input.role }, options);
       plans.push({ action: 'update', scope, file: match.entry.file, id: match.entry.id, content, matchScore: match.score, message: `update ${input.type}: ${match.entry.id}` });
     } else {
-      const draft = draftMemory({ text: input.text, type: input.type, scope, author: input.author }, options);
+      const draft = draftMemory({ text: input.text, type: input.type, scope, author: input.author, role: input.role }, options);
       const unique = await avoidCollision(input.ctx, scope, draft, input.text);
       plans.push({ action: 'add', scope, file: unique.file, id: unique.id, content: unique.content, message: `add ${input.type}: ${unique.id}` });
     }
@@ -41,7 +42,8 @@ export async function planMemorySave(input: {
 export function previewSavePlans(plans: SavePlan[]): string {
   return plans.map((plan) => {
     const score = plan.matchScore === undefined ? '' : `\nMatch score: ${plan.matchScore.toFixed(2)}`;
-    return `Action: ${plan.action === 'update' ? 'Update existing memory' : 'Add new memory'}\nType: ${kind(plan.file)}\nScope: ${plan.scope}\nFile: ${plan.file}${score}\n\n${plan.content}`;
+    const candidate = plan.candidateIndex === undefined ? '' : `Candidate: ${plan.candidateIndex}\n`;
+    return `${candidate}Action: ${plan.action === 'update' ? 'Update existing memory' : 'Add new memory'}\nType: ${kind(plan.file)}\nScope: ${plan.scope}\nFile: ${plan.file}${score}\n\n${plan.content}`;
   }).join('\n\n---\n\n');
 }
 

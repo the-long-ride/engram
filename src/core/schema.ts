@@ -53,6 +53,7 @@ export function validateMemory(doc: MemoryDoc): void {
   if (!doc.body.includes('## Context') || !doc.body.includes('## Content') || !doc.body.includes('## Example')) {
     throw new Error('Memory must include Context, Content, and Example sections');
   }
+  validateMarkdownStyle(doc.body);
   if (doc.raw.split(/\r?\n/).length > 60) throw new Error('Memory exceeds 60-line hard limit');
 }
 
@@ -78,6 +79,43 @@ function formatValue(value: any): string {
 
 function requireText(value: unknown, field: string): void {
   if (!value || typeof value !== 'string') throw new Error(`Missing ${field}`);
+}
+
+function validateMarkdownStyle(body: string): void {
+  const lines = body.split(/\r?\n/);
+  validateHeadingSpacing(lines);
+  validateSectionOrder(body);
+  validateMarkdownLinks(lines);
+}
+
+function validateHeadingSpacing(lines: string[]): void {
+  for (let index = 0; index < lines.length; index += 1) {
+    if (!/^#{1,6}\s+\S/.test(lines[index])) continue;
+    const next = lines[index + 1];
+    if (next !== undefined && next.trim() !== '') throw new Error('Markdown heading must be followed by a blank line');
+  }
+}
+
+function validateSectionOrder(body: string): void {
+  const context = body.indexOf('## Context');
+  const content = body.indexOf('## Content');
+  const example = body.indexOf('## Example');
+  if (!(context < content && content < example)) throw new Error('Memory sections must be ordered: Context, Content, Example');
+}
+
+function validateMarkdownLinks(lines: string[]): void {
+  let fenced = false;
+  for (const line of lines) {
+    if (/^\s*```/.test(line)) {
+      fenced = !fenced;
+      continue;
+    }
+    if (fenced) continue;
+    const withoutLinks = line.replace(/\[[^\]]+\]\((?:https?:\/\/|www\.)[^)]+\)/gi, '');
+    if (/(^|[\s(])(?:https?:\/\/|www\.)[^\s<>)]+/i.test(withoutLinks)) {
+      throw new Error('Links must use Markdown link syntax');
+    }
+  }
 }
 
 export type { MemoryType, Scope, Confidence };

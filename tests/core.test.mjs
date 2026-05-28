@@ -1,7 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { rm } from 'node:fs/promises';
-import { parseMemory } from '../dist/core/schema.js';
+import { parseMemory, validateMemoryRaw } from '../dist/core/schema.js';
+import { HELP_DATA, commandAliases } from '../dist/core/command-registry.js';
+import { COMMAND_TOPICS } from '../dist/core/help-topics.js';
 import { isIgnored } from '../dist/core/ignore.js';
 import { scanInjection, scanSensitive, redactSensitive } from '../dist/core/security.js';
 import { sha256 } from '../dist/core/hash.js';
@@ -20,16 +22,101 @@ confidence: high
 # Use pnpm
 
 ## Context
+
 Project package manager.
 
 ## Content
+
 - Use pnpm.
 
 ## Example
+
 pnpm install
 `);
   assert.equal(doc.frontmatter.id, 'use-pnpm');
   assert.equal(doc.title, 'Use pnpm');
+});
+
+test('schema validator enforces standard memory Markdown', () => {
+  const memory = (body) => `---
+id: use-pnpm
+type: rule
+scope: workspace
+tags: [node]
+author: dev@example.com
+confidence: high
+---
+${body}
+`;
+  assert.doesNotThrow(() => validateMemoryRaw(memory(`# Use pnpm
+
+## Context
+
+Project package manager.
+
+## Content
+
+- Use [pnpm](https://pnpm.io).
+
+## Example
+
+pnpm install
+`)));
+  assert.throws(() => validateMemoryRaw(memory(`# Bad
+## Context
+
+Missing blank line after title.
+
+## Content
+
+- Use pnpm.
+
+## Example
+
+pnpm install
+`)), /heading must be followed/i);
+  assert.throws(() => validateMemoryRaw(memory(`# Bad Link
+
+## Context
+
+Project package manager.
+
+## Content
+
+- Read https://pnpm.io.
+
+## Example
+
+pnpm install
+`)), /Markdown link syntax/);
+  assert.throws(() => validateMemoryRaw(memory(`# Bad Order
+
+## Content
+
+- Use pnpm.
+
+## Context
+
+Project package manager.
+
+## Example
+
+pnpm install
+`)), /ordered/);
+});
+
+test('command registry has topic help and stable aliases', () => {
+  const seenAliases = new Map();
+  for (const item of HELP_DATA.flatMap((section) => section.commands)) {
+    const command = item.command.replace(/^engram\s+/, '').trim().split(/\s+/u)[0];
+    assert.ok(COMMAND_TOPICS[command], `missing topic help for ${command}`);
+    if (!item.alias) continue;
+    const previous = seenAliases.get(item.alias);
+    assert.ok(!previous || previous === command, `alias ${item.alias} maps to both ${previous} and ${command}`);
+    seenAliases.set(item.alias, command);
+  }
+  assert.equal(commandAliases().s, 'save');
+  assert.equal(commandAliases()['-v'], '--version');
 });
 
 test('ignore matcher supports common patterns', () => {
@@ -53,12 +140,15 @@ test('hash and quality helpers are deterministic', () => {
   const result = scoreMemory(`# A
 
 ## Context
+
 Specific.
 
 ## Content
+
 - Always use tests.
 
 ## Example
+
 npm test
 `);
   assert.ok(result.score >= 70);

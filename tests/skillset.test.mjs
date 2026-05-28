@@ -66,7 +66,7 @@ test('cli installs codex alias as AGENTS.md skillset file', async () => {
   assert.equal(result.code, 0, result.stderr);
   assert.match(result.stdout, /WRITTEN codex: AGENTS\.md/);
   assert.match(result.stdout, /WRITTEN codex: \.agents\/skills\/engram\/SKILL\.md/);
-  assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /\/engram save knowledge \[text\]/);
+  assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /\/engram save knowledge \[--role role\] \[text\]/);
   assert.match(await readFile(path.join(cwd, '.agents/skills/engram/SKILL.md'), 'utf8'), /\/engram install-skillset/);
   await rm(cwd, { recursive: true, force: true });
 });

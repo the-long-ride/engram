@@ -19,7 +19,7 @@ export async function renderEntry(cwd = process.cwd()): Promise<string> {
       remote_url: redactRemote(info.remoteUrl) || '<none>',
       dirty: info.dirty
     }
-  });
+  }).filter(([key]) => !hiddenConfigRow(key));
 
   const METADATA: Record<string, { note: string; command?: string }> = {
     version: {
@@ -200,4 +200,8 @@ function flatten(value: any, prefix = ''): Array<[string, string]> {
 
 function redactRemote(value: string): string {
   return value.replace(/:\/\/[^/@]+@/, '://<credentials>@');
+}
+
+function hiddenConfigRow(key: string): boolean {
+  return ['config.pattern_mining', 'config.pr_workflow', 'config.encryption'].some((prefix) => key.startsWith(prefix));
 }

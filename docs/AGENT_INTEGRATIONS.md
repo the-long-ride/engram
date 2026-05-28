@@ -84,14 +84,55 @@ Aliases: `codex` installs the `agents-md` adapter plus the Agent Skill file,
    /engram load deployment workflow
    /engram entry
    /engram save knowledge
+   /engram autosave
+   /engram help set-role
    /engram set-rule-variant strict
    /engram verify
    ```
 
-   `engram save` automatically updates a matching memory or creates a new one.
-   Agents should make generated knowledge objective and durable. Rule variant
-   mode is useful when a model needs lighter or stricter instruction wording;
-   when off, Engram renders balanced rule wording by default.
+   `engram save` captures the best single memory candidate, automatically
+   updates a matching memory or creates a new one, and always shows the A/B/C
+   approval gate before writing. For long sessions with several possible rules,
+   knowledge facts, or workflows, agents should suggest `engram autosave`; if
+   the human declines, continue with the best single `engram save` candidate.
+   For transcripts or long summaries already on disk, use
+   `engram autosave --file transcript.md`. The autosave approval prompt supports
+   selected candidate replies such as `A 1,3`.
+
+   Generated knowledge should be objective and durable. Corrections and
+   preferences become rules. Repeatable procedures become workflows/skills.
+   Save role-specific memory with `engram save --role frontend ...` or
+   `engram autosave --role backend ...`. Role routing can be tuned with
+   `engram set-role frontend`, `engram set-role backend security`, or
+   `engram set-role` to clear active roles.
+
+   Rule variant mode is useful when a model needs lighter or stricter
+   instruction wording. Strict helps lower-tier models stay controlled; stronger
+   models usually benefit from light or balanced wording so rules do not limit
+   their reasoning. When variants are off, Engram renders balanced rule wording
+   by default.
+
+## Command Discovery
+
+Run `engram -h` for the compact command surface. Run `engram help <topic>` or
+`engram -h <topic>` for command-specific examples and use cases:
+
+```bash
+engram help autosave
+engram help set-role
+engram -h set-rule-variant
+```
+
+All commands listed in help include short aliases. Aliases must route to the same
+CLI behavior and approval gates as their canonical commands.
+
+Shell completion scripts are available for bash, zsh, and PowerShell:
+
+```bash
+engram completion bash
+engram completion zsh
+engram completion powershell
+```
 
 ## Notes By Host
 
@@ -107,6 +148,9 @@ Engram as an invokable skill.
 Claude Code and Cursor support external tool configuration, so Engram can be
 registered through `.mcp.json` where that wrapper is accepted. The `slash`
 target also writes Claude and Cursor project-level command files for `/engram`.
+MCP hosts should treat `engram_save` and `engram_autosave` as proposal-only
+tools; they must still route final writes through the human-visible CLI approval
+flow.
 
 Gemini CLI searches for `GEMINI.md` files as context. The `slash` target writes
 `.gemini/commands/engram.toml` so `/engram <args>` becomes a project custom

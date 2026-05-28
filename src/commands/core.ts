@@ -9,7 +9,7 @@ import { defaultConfig, loadConfig, scopeRoots, writeScopes } from '../core/conf
 import { renderHelp, renderHelpTerminal } from '../core/help.js';
 import { completionScript } from '../core/command-registry.js';
 import { readText, writeText } from '../core/fsx.js';
-import { applyApprovalEdit, requestApproval, requestGeneratedMemoryApproval } from '../core/approval.js';
+import { applyApprovalEdit, requestApproval, requestGeneratedMemoryApproval, requestGeneratedSelectionApproval, requestSelectionApproval } from '../core/approval.js';
 import { verifyRoot } from '../core/hash.js';
 import { route, loadEntries, visibleEntries } from '../core/routing.js';
 import { configureGlobalRemote, globalGitInfo, isValidGitRemoteUrl, normalizeBranchName } from '../core/git.js';
@@ -50,7 +50,7 @@ export async function cmdUpdateHelp(): Promise<string> {
 
 /** Generate shell completion support for Tab suggestions. */
 export async function cmdCompletion(shell = 'bash'): Promise<string> {
-  if (shell !== 'bash' && shell !== 'zsh') throw new Error('completion supports bash or zsh');
+  if (shell !== 'bash' && shell !== 'zsh' && shell !== 'powershell') throw new Error('completion supports bash, zsh, or powershell');
   return completionScript(shell);
 }
 
@@ -63,6 +63,7 @@ export async function cmdSave(args: string[], flags: Record<string, any>): Promi
   const ctx = await getContext();
   const scopes = flags.scope ? [flags.scope as Scope] : writeScopes(ctx.config.scope);
   const author = await resolveAuthor();
+  const role = rolesFromFlags(flags);
   let approval;
   let plans: SavePlan[] = [];
   if (!text) {
@@ -70,7 +71,7 @@ export async function cmdSave(args: string[], flags: Record<string, any>): Promi
       const candidate = parseMemoryCandidate(generated, { explicitType });
       type = candidate.type;
       text = candidate.text;
-      plans = await planMemorySave({ ctx, text, type, scopes, author });
+      plans = await planMemorySave({ ctx, text, type, scopes, author, role });
       return previewSavePlans(plans);
     }, { explicitType, guidance: generatedMemoryGuidance(explicitType) });
     if (!captured) return 'Discarded. No file written.';
@@ -79,7 +80,7 @@ export async function cmdSave(args: string[], flags: Record<string, any>): Promi
     const candidate = parseMemoryCandidate(text, { explicitType });
     type = candidate.type;
     text = candidate.text;
-    plans = await planMemorySave({ ctx, text, type, scopes, author });
+    plans = await planMemorySave({ ctx, text, type, scopes, author, role });
     approval = await requestApproval(previewSavePlans(plans));
   }
   if (!approval.accepted) return 'Discarded. No file written.';
@@ -91,32 +92,46 @@ export async function cmdAutosave(args: string[], flags: Record<string, any> = {
   const ctx = await getContext();
   const scopes = flags.scope ? [flags.scope as Scope] : writeScopes(ctx.config.scope);
   const author = await resolveAuthor();
-  let text = args.join(' ').trim();
+  const role = rolesFromFlags(flags);
+  let text = await autosaveInput(args, flags);
   let plans: SavePlan[] = [];
   let approval;
   if (!text) {
-    const captured = await requestGeneratedMemoryApproval(async (generated) => {
+    const captured = await requestGeneratedSelectionApproval(async (generated) => {
       text = generated;
-      plans = await planAutosaveCandidates(ctx, generated, scopes, author);
+      plans = await planAutosaveCandidates(ctx, generated, scopes, author, role);
       return previewSavePlans(plans);
     }, { guidance: autosaveGuidance() });
     if (!captured) return 'Discarded. No file written.';
     approval = captured.approval;
   } else {
-    plans = await planAutosaveCandidates(ctx, text, scopes, author);
-    approval = await requestApproval(previewSavePlans(plans));
+    plans = await planAutosaveCandidates(ctx, text, scopes, author, role);
+    approval = await requestSelectionApproval(previewSavePlans(plans));
   }
   if (!plans.length) return 'No memory candidates detected.';
   if (!approval.accepted) return 'Discarded. No file written.';
+  if (approval.selected?.length) plans = plans.filter((plan) => plan.candidateIndex === undefined || approval.selected?.includes(plan.candidateIndex));
+  if (!plans.length) return 'Discarded. No selected candidates written.';
   return writeSavePlans(plans, approval.edits);
 }
 
-async function planAutosaveCandidates(ctx: Awaited<ReturnType<typeof getContext>>, text: string, scopes: Scope[], author: string): Promise<SavePlan[]> {
+async function planAutosaveCandidates(ctx: Awaited<ReturnType<typeof getContext>>, text: string, scopes: Scope[], author: string, role?: string[]): Promise<SavePlan[]> {
   const plans: SavePlan[] = [];
+  let candidateIndex = 1;
   for (const candidate of parseMemoryCandidates(text)) {
-    plans.push(...await planMemorySave({ ctx, text: candidate.text, type: candidate.type, scopes, author }));
+    const candidatePlans = await planMemorySave({ ctx, text: candidate.text, type: candidate.type, scopes, author, role });
+    plans.push(...candidatePlans.map((plan) => ({ ...plan, candidateIndex })));
+    candidateIndex += 1;
   }
   return plans;
+}
+
+async function autosaveInput(args: string[], flags: Record<string, any>): Promise<string> {
+  const file = typeof flags.file === 'string' ? flags.file : typeof flags.f === 'string' ? flags.f : '';
+  const inline = args.join(' ').trim();
+  if (!file) return inline;
+  if (inline) throw new Error('autosave accepts either --file or inline text, not both');
+  return readText(path.resolve(file));
 }
 
 async function writeSavePlans(plans: SavePlan[], edits?: string): Promise<string> {
@@ -141,6 +156,12 @@ async function shouldSwitchToAutosave(text: string): Promise<boolean> {
 
 function looksLikeLongSession(text: string): boolean {
   return text.length > 800 || text.split(/\r?\n/).filter(Boolean).length >= 8;
+}
+
+function rolesFromFlags(flags: Record<string, any>): string[] | undefined {
+  const value = typeof flags.role === 'string' ? flags.role : typeof flags.roles === 'string' ? flags.roles : '';
+  const roles = value.split(',').map((role) => role.trim()).filter(Boolean);
+  return roles.length ? roles : undefined;
 }
 
 /** Load routed memory for a query. */

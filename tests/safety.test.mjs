@@ -21,12 +21,15 @@ confidence: high
 # ${title}
 
 ## Context
+
 Safety regression test.
 
 ## Content
+
 - Keep memory writes contained.
 
 ## Example
+
 engram verify
 `;
 }

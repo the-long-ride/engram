@@ -14,6 +14,15 @@ files. Hosts that support custom slash commands can also load generated
 - Never write memory silently.
 - Treat `engram_save` and `engram save` as proposal flows with human approval.
   Engram may automatically choose update-vs-new before presenting the preview.
+- Treat `engram autosave` as the explicit long-session proposal flow. It may
+  propose multiple rule, knowledge, and workflow/skill candidates, but it must
+  still require human approval before writing. Numbered approvals such as
+  `A 1,3` write only the selected candidates.
+- Preserve role metadata passed through `--role`, `--roles`, or MCP `role`
+  arguments so role-based routing can include or skip memories later.
+- Validate memory Markdown before writing: headings need a following blank line,
+  required sections stay in Context/Content/Example order, and URLs use
+  `[label](url)` syntax.
 - Run sensitive-data and prompt-injection guards before writing or loading.
 - Verify hashes before trusting memory files.
 - Stage only `.engram/` files during `engram resolve-conflicts`.
@@ -24,6 +33,8 @@ files. Hosts that support custom slash commands can also load generated
   when variant mode is off, use balanced wording.
 - Treat `/engram <args>` as a human-visible router to `engram <args>` or the
   matching MCP read/proposal tool.
+- Keep short aliases equivalent to their canonical commands. Aliases are
+  convenience only; they must not change safety behavior.
 
 ## Tool Contract
 
@@ -34,19 +45,24 @@ files. Hosts that support custom slash commands can also load generated
 | `engram_verify` | Check memory hashes | No |
 | `engram_status` | Return health and counts | No |
 | `engram_save` | Return a memory proposal for human review | No |
+| `engram_autosave` | Return multiple numbered memory proposals for human review | No |
 
-The MCP save tool intentionally does not write. A host must display the proposal
-and collect explicit human approval before invoking a CLI write flow.
+The MCP save/autosave tools intentionally do not write. A host must display the
+proposal and collect explicit human approval before invoking a CLI write flow.
 
 ## CLI Contract
 
 | Command | Purpose |
 | --- | --- |
 | `engram init [--submodule] [--global-remote <git-url>]` | Create memory roots, optionally create `.engram` as a submodule, and initialize global memory Git |
+| `engram --version` / `engram -v` | Print the installed CLI version |
+| `engram help [topic]` | Show compact help or detailed command-specific examples and use cases |
 | `engram entry` | Print resolved flags, paths, and detected global Git state |
 | `engram load [--all] "<task>"` | Load relevant memory; `--all` is the explicit broad-load mode |
 | `engram search "<query>"` | Search visible memory by query |
-| `engram save rule "<text>"` | Propose and write after A/B/C approval |
+| `engram save [rule|skill|workflow|knowledge] [--role role] "<text>"` | Propose one memory and write after A/B/C approval |
+| `engram autosave [--file transcript.md] [--role role] [session-summary]` | Propose multiple memories from a long session and write only after numbered A/B/C approval |
+| `engram set-role <role...>` | Configure active developer roles for routing role-scoped memory |
 | `engram set-rule-variant light|balanced|strict|off` | Configure compact rule output for agents |
 | `engram verify` | Check hash integrity |
 | `engram rebuild-index [workspace|global]` | Explicitly rebuild memory indexes |
@@ -69,6 +85,7 @@ hosts may prefer MCP-style tools:
 | `/engram verify [scope]` | `engram_verify` or `engram verify [scope]` |
 | `/engram health` | `engram_status` or `engram health` |
 | `/engram save ...` | `engram_save` proposal or CLI approval flow |
+| `/engram autosave ...` | `engram_autosave` proposal or CLI approval flow |
 | `/engram <other command>` | `engram <other command>` CLI flow |
 
 The slash adapter must not write memory by itself. It only asks the agent to run

@@ -50,9 +50,15 @@ test('completion emits shell helper with command suggestions', async () => {
   assert.match(bash.stdout, /COMP_WORDS/);
   assert.match(bash.stdout, /local commands="[^"]*\bsave\b[^"]*"/);
   assert.doesNotMatch(bash.stdout, /local commands="[^"]*save rule/);
+  assert.match(bash.stdout, /--file --scope --role --roles/);
   const zsh = await runEngram(cwd, env, ['completion', 'zsh']);
   assert.equal(zsh.code, 0, zsh.stderr);
   assert.match(zsh.stdout, /#compdef engram/);
+  assert.match(zsh.stdout, /--file\[read session summary file\]/);
+  const powershell = await runEngram(cwd, env, ['completion', 'powershell']);
+  assert.equal(powershell.code, 0, powershell.stderr);
+  assert.match(powershell.stdout, /Register-ArgumentCompleter/);
+  assert.match(powershell.stdout, /\$engramAutosaveArgs/);
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -159,6 +165,26 @@ test('save auto-detects rules and workflow candidates', async () => {
   await rm(cwd, { recursive: true, force: true });
 });
 
+test('save stores role metadata for routing', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['init']);
+  const saved = await runEngram(cwd, env, [
+    'save', 'rule', '--scope', 'workspace', '--role', 'frontend',
+    'Use design tokens for UI spacing'
+  ], 'A\n');
+  assert.equal(saved.code, 0, saved.stderr);
+  const file = path.join(cwd, '.engram', 'rules', 'use-design-tokens-for-ui-spacing.md');
+  assert.match(await readFile(file, 'utf8'), /role: \[frontend\]/);
+  const updated = await runEngram(cwd, env, [
+    'save', 'rule', '--scope', 'workspace', '--role', 'backend',
+    'Use design tokens for responsive UI spacing'
+  ], 'A\n');
+  assert.equal(updated.code, 0, updated.stderr);
+  assert.match((await runEngram(cwd, env, ['stats'])).stdout, /Total: 1/);
+  assert.match(await readFile(file, 'utf8'), /role: \[frontend, backend\]/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
 test('save can parse agent-brainstormed workflow candidates', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
   await runEngram(cwd, env, ['init']);
@@ -186,6 +212,27 @@ test('autosave proposes multiple agent-brainstormed memories', async () => {
   assert.match(saved.stdout, /Type: rule/);
   assert.match(saved.stdout, /Type: skill/);
   assert.match((await runEngram(cwd, env, ['stats'])).stdout, /Total: 2/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('autosave can read a transcript file and save selected candidates only', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['init']);
+  const transcript = path.join(cwd, 'session.md');
+  await writeFile(transcript, [
+    'TYPE: rule | TEXT: Always run release tests before tagging.',
+    'TYPE: knowledge | TEXT: Release notes live in CHANGELOG.md.',
+    ''
+  ].join('\n'));
+  const saved = await runEngram(cwd, env, [
+    'autosave', '--scope', 'workspace', '--file', transcript, '--role', 'release'
+  ], 'A 1\n');
+  assert.equal(saved.code, 0, saved.stderr);
+  assert.match(saved.stdout, /A 1,3/);
+  assert.match((await runEngram(cwd, env, ['stats'])).stdout, /Total: 1/);
+  const content = await readFile(path.join(cwd, '.engram', 'rules', 'always-run-release-tests-before-tagging.md'), 'utf8');
+  assert.match(content, /role: \[release\]/);
+  assert.doesNotMatch((await runEngram(cwd, env, ['search', 'Release notes'])).stdout, /release-notes/);
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -237,6 +284,7 @@ test('init prepares global git and entry reports detected branch', async () => {
   const cleanStdout = entry.stdout.replace(/\x1b\[[0-9;]*m/g, '');
   assert.match(cleanStdout, /config\.global_git\.branch:\s*main/);
   assert.match(cleanStdout, /global_git_detected\.branch:\s*team/);
+  assert.doesNotMatch(cleanStdout, /pattern_mining|pr_workflow|encryption/);
   await rm(cwd, { recursive: true, force: true });
 });
 

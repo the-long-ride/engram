@@ -8,21 +8,21 @@ export const HELP_DATA: HelpSection[] = [
     commands: [
       { command: 'engram --version', alias: '-v', purpose: 'Show the installed Engram version' },
       { command: 'engram init [--force] [--submodule] [--submodule-remote <git-url>] [--global-remote <git-url>] [--global-branch main]', alias: 'i', purpose: 'Initialize workspace memory and optional global Git repository remote' },
-      { command: 'engram help [topic]', alias: 'h', purpose: 'Show this help menu or specific topic details' },
+      { command: 'engram help [topic]', alias: 'h', purpose: 'Show this help menu or specific topic details & example use-cases' },
       { command: 'engram update-help', alias: 'uh', purpose: 'Regenerate workspace HELP.md file' },
       { command: 'engram entry', alias: 'e', purpose: 'Show runtime configurations and global Git repository status' },
-      { command: 'engram completion [bash|zsh]', alias: 'c', purpose: 'Generate shell completion support for Tab suggestions' }
+      { command: 'engram completion [bash|zsh|powershell]', alias: 'c', purpose: 'Generate shell completion support for Tab suggestions' }
     ]
   },
   {
     title: 'Memory Commands',
     commands: [
-      { command: 'engram save rule <text>', alias: 's', purpose: 'Draft and save a rule memory after user approval' },
-      { command: 'engram save skill <text>', alias: 's', purpose: 'Draft and save a skill memory after user approval' },
-      { command: 'engram save workflow <text>', alias: 's', purpose: 'Draft and save a repeatable workflow as a skill memory' },
-      { command: 'engram save knowledge [text]', alias: 's', purpose: 'Draft and save a knowledge memory (agent summary or text)' },
-      { command: 'engram save [text]', alias: 's', purpose: 'Auto-detect rule, workflow, skill, or knowledge memory from text' },
-      { command: 'engram autosave [session-summary]', alias: 'as', purpose: 'Propose multiple memories from a long session before approval' },
+      { command: 'engram save rule [--role role] <text>', alias: 's', purpose: 'Draft and save a rule memory after user approval' },
+      { command: 'engram save skill [--role role] <text>', alias: 's', purpose: 'Draft and save a skill memory after user approval' },
+      { command: 'engram save workflow [--role role] <text>', alias: 's', purpose: 'Draft and save a repeatable workflow as a skill memory' },
+      { command: 'engram save knowledge [--role role] [text]', alias: 's', purpose: 'Draft and save a knowledge memory (agent summary or text)' },
+      { command: 'engram save [--role role] [text]', alias: 's', purpose: 'Auto-detect rule, workflow, skill, or knowledge memory from text' },
+      { command: 'engram autosave [--file transcript.md] [--role role] [session-summary]', alias: 'as', purpose: 'Propose multiple memories from a long session before approval' },
       { command: 'engram load [--all] [query]', alias: 'l', purpose: 'Route and load relevant memories into the agent context' },
       { command: 'engram dry-run [--all] [query]', alias: 'dr', purpose: 'Preview routed memory file paths without printing their content' },
       { command: 'engram search <query>', alias: 'f', purpose: 'Perform a search across visible indexed memories' },
@@ -93,12 +93,12 @@ export function commandNames(): string[] {
 }
 
 /** Return a shell completion script for the current command surface. */
-export function completionScript(shell: 'bash' | 'zsh' = 'bash'): string {
+export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'): string {
   const commands = commandNames().join(' ');
   const saveTypes = ['rule', 'skill', 'workflow', 'knowledge'].join(' ');
   const scopes = ['workspace', 'global'].join(' ');
   const formats = ['agents-md', 'claude-md', 'cursorrules'].join(' ');
-  const shells = ['bash', 'zsh'].join(' ');
+  const shells = ['bash', 'zsh', 'powershell'].join(' ');
   const ruleVariants = ['off', 'light', 'balanced', 'strict', 'status'].join(' ');
   const ignoreActions = ['status', 'check', 'add'].join(' ');
   const skillsetTargets = [
@@ -124,10 +124,10 @@ export function completionScript(shell: 'bash' | 'zsh' = 'bash'): string {
       `      _arguments "1:shell:(${shells})"`,
       '      ;;',
       '    save|s)',
-      `      _arguments "--scope[write scope]:scope:(${scopes})" "1:memory type:(${saveTypes})"`,
+      `      _arguments "--scope[write scope]:scope:(${scopes})" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "1:memory type:(${saveTypes})"`,
       '      ;;',
       '    autosave|as)',
-      '      _arguments "--scope[write scope]:scope:(workspace global)" "1:session summary: "',
+      '      _arguments "--file[read session summary file]:file:_files" "--scope[write scope]:scope:(workspace global)" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "1:session summary: "',
       '      ;;',
       '    load|l|dry-run|dr)',
       '      _arguments "--all" "1:query: "',
@@ -158,6 +158,42 @@ export function completionScript(shell: 'bash' | 'zsh' = 'bash'): string {
       'compdef _engram engram'
     ].join('\n');
   }
+  if (shell === 'powershell') {
+    return [
+      '$engramCommands = @(',
+      commandNames().map((command) => `  '${command}'`).join(',\n'),
+      ')',
+      '$engramSaveTypes = @(\'rule\', \'skill\', \'workflow\', \'knowledge\', \'--scope\', \'--role\', \'--roles\')',
+      '$engramAutosaveArgs = @(\'--file\', \'--scope\', \'--role\', \'--roles\')',
+      '$engramScopes = @(\'workspace\', \'global\')',
+      '$engramRuleVariants = @(\'off\', \'light\', \'balanced\', \'strict\', \'status\')',
+      'Register-ArgumentCompleter -Native -CommandName engram -ScriptBlock {',
+      '  param($wordToComplete, $commandAst, $cursorPosition)',
+      '  $words = @($commandAst.CommandElements | ForEach-Object { $_.ToString() })',
+      '  $command = if ($words.Count -ge 2) { $words[1] } else { "" }',
+      '  $previous = if ($words.Count -ge 2) { $words[$words.Count - 2] } else { "" }',
+      '  $choices = switch ($previous) {',
+      '    "--scope" { $engramScopes; break }',
+      '    "--format" { @(\'agents-md\', \'claude-md\', \'cursorrules\'); break }',
+      '    "--file" { break }',
+      '    "--role" { break }',
+      '    "--roles" { break }',
+      '    default {',
+      '      switch ($command) {',
+      '        { $_ -in @(\'save\', \'s\') } { $engramSaveTypes; break }',
+      '        { $_ -in @(\'autosave\', \'as\') } { $engramAutosaveArgs; break }',
+      '        { $_ -in @(\'set-rule-variant\', \'rv\') } { $engramRuleVariants; break }',
+      '        { $_ -in @(\'verify\', \'vf\', \'rebuild-index\', \'ri\') } { $engramScopes; break }',
+      '        default { $engramCommands }',
+      '      }',
+      '    }',
+      '  }',
+      '  $choices | Where-Object { $_ -like "$wordToComplete*" } | ForEach-Object {',
+      '    [System.Management.Automation.CompletionResult]::new($_, $_, "ParameterValue", $_)',
+      '  }',
+      '}'
+    ].join('\n');
+  }
   return [
     '_engram() {',
     '  local cur prev words cword',
@@ -186,6 +222,14 @@ export function completionScript(shell: 'bash' | 'zsh' = 'bash'): string {
     '      COMPREPLY=( $(compgen -W "$scopes" -- "$cur") )',
     '      return',
     '      ;;',
+    '    --file)',
+    '      COMPREPLY=( $(compgen -f -- "$cur") )',
+    '      return',
+    '      ;;',
+    '    --role|--roles)',
+    '      COMPREPLY=()',
+    '      return',
+    '      ;;',
     '  esac',
     '  case "${words[1]}" in',
     '    init|i)',
@@ -198,12 +242,12 @@ export function completionScript(shell: 'bash' | 'zsh' = 'bash'): string {
     '      return',
     '      ;;',
     '    save|s)',
-    '      if [[ $cword -eq 2 ]]; then COMPREPLY=( $(compgen -W "$save_types --scope" -- "$cur") ); return; fi',
-    '      COMPREPLY=()',
+    '      if [[ $cword -eq 2 ]]; then COMPREPLY=( $(compgen -W "$save_types --scope --role --roles" -- "$cur") ); return; fi',
+    '      COMPREPLY=( $(compgen -W "--scope --role --roles" -- "$cur") )',
     '      return',
     '      ;;',
     '    autosave|as)',
-    '      COMPREPLY=( $(compgen -W "--scope" -- "$cur") )',
+    '      COMPREPLY=( $(compgen -W "--file --scope --role --roles" -- "$cur") )',
     '      return',
     '      ;;',
     '    load|l|dry-run|dr)',

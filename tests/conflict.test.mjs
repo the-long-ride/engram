@@ -35,9 +35,11 @@ confidence: high
 # Merge Rule
 
 ## Context
+
 Conflict resolver regression test.
 
 ## Content
+
 <<<<<<< ours
 - Use Engram memory as the source of truth.
 =======
@@ -45,6 +47,7 @@ Conflict resolver regression test.
 >>>>>>> theirs
 
 ## Example
+
 engram resolve-conflicts
 `;
 }

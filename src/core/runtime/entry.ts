@@ -1,7 +1,7 @@
 /** Runtime entry report for resolved Engram flags and paths. */
 import { VERSION } from './constants.js';
 import { loadConfig, scopeRoots } from './config.js';
-import { globalGitInfo } from './git.js';
+import { globalGitInfo } from '../vcs/git.js';
 
 /** Print all resolved options currently applied by Engram. */
 export async function renderEntry(cwd = process.cwd()): Promise<string> {

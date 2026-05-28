@@ -14,22 +14,31 @@ npm run lint:lines
 
 ## Architecture
 
-- `src/core` holds config, schema, indexes, routing, security, and storage.
+- `src/core` is grouped by responsibility:
+  - `runtime`: config, constants, types, and runtime entry reporting.
+  - `memory`: schema, indexing, routing, save planning, and storage.
+  - `safety`: approval prompts, integrity hashes, ignore rules, safe reads, and
+    security scans.
+  - `vcs`: Git, submodule, and conflict-resolution helpers.
+  - `cli`: command registry, help rendering, and detailed help topics.
+  - `integrations`: export and agent skillset renderers.
+  - `analysis`: search, stats, dedupe, health, and quality scoring.
+  - `system`: small filesystem and text utilities.
 - `src/commands` holds thin command handlers.
 - `src/bin` exposes `engram` and `engram-mcp`.
-- `src/core/command-registry.ts` owns the canonical CLI surface, command
+- `src/core/cli/command-registry.ts` owns the canonical CLI surface, command
   aliases, completion data, and slash-command surface.
-- `src/core/help.ts` renders compact overview help; `src/core/help-topics.ts`
+- `src/core/cli/help.ts` renders compact overview help; `src/core/cli/help-topics.ts`
   renders detailed `engram help <topic>` examples and use cases.
-- `src/core/memory-candidate.ts` owns save/autosave memory type detection and
-  agent-facing brainstorming guidance.
-- `src/core/git.ts` owns global memory Git init, branch detection, remote setup,
-  pull, commit, push, and retry-on-merge handling. Workspace Git remains
+- `src/core/memory/memory-candidate.ts` owns save/autosave memory type detection
+  and agent-facing brainstorming guidance.
+- `src/core/vcs/git.ts` owns global memory Git init, branch detection, remote
+  setup, pull, commit, push, and retry-on-merge handling. Workspace Git remains
   untouched except for explicit `.engram` submodule setup and
   `resolve-conflicts`.
-- `src/core/submodule.ts` owns opt-in workspace `.engram` submodule creation and
-  may stage only `.gitmodules` plus the `.engram` gitlink after human opt-in.
-- `src/core/skillset.ts` renders agent instruction, MCP, and slash-command
+- `src/core/vcs/submodule.ts` owns opt-in workspace `.engram` submodule creation
+  and may stage only `.gitmodules` plus the `.engram` gitlink after human opt-in.
+- `src/core/integrations/skillset.ts` renders agent instruction, MCP, and slash-command
   adapters.
 - `prompts` contains agent-facing prompt templates.
 - `templates` contains generated `.engram/` starter files.
@@ -74,8 +83,9 @@ npm run lint:lines
   submodule automation may touch only `.engram`, `.gitmodules`, and the parent
   gitlink. Agents must ask before adding any origin remote; CLI init may prompt
   for it, and non-TTY runs should print the explicit command instead.
-- When adding or renaming a CLI command, update `src/core/command-registry.ts`,
-  `src/core/help-topics.ts`, `src/core/skillset.ts`,
+- When adding or renaming a CLI command, update
+  `src/core/cli/command-registry.ts`, `src/core/cli/help-topics.ts`,
+  `src/core/integrations/skillset.ts`,
   `docs/SKILLSET_CONTRACT.md`, README examples, and command/skillset tests
   together.
 - Never stage workspace code. `resolve-conflicts` may stage only `.engram` files

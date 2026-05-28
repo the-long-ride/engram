@@ -1,6 +1,6 @@
 /** Deterministic memory quality and health scoring. */
-import type { MemoryEntry } from './types.js';
-import { parseMemory } from './schema.js';
+import type { MemoryEntry } from '../runtime/types.js';
+import { parseMemory } from '../memory/schema.js';
 
 /** Score one memory on specificity, completeness, and freshness. */
 export function scoreMemory(raw: string): { score: number; issues: string[] } {

@@ -2,11 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { defaultConfig } from '../dist/core/config.js';
-import { writeApprovedMemory, initWorkspace } from '../dist/core/storage.js';
-import { loadEntries, prefilter, route } from '../dist/core/routing.js';
-import { writeSyncTarget } from '../dist/core/exporter.js';
-import { updateHash } from '../dist/core/hash.js';
+import { defaultConfig } from '../dist/core/runtime/config.js';
+import { writeApprovedMemory, initWorkspace } from '../dist/core/memory/storage.js';
+import { loadEntries, prefilter, route } from '../dist/core/memory/routing.js';
+import { writeSyncTarget } from '../dist/core/integrations/exporter.js';
+import { updateHash } from '../dist/core/safety/hash.js';
 import { tempWorkspace } from './helpers.mjs';
 
 function memory(title = 'Safe Memory') {

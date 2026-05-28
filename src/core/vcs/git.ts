@@ -1,9 +1,9 @@
 /** Small Git integration helpers. Workspace Git is intentionally untouched. */
 import { execFile } from 'node:child_process';
 import path from 'node:path';
-import { CHANGELOG_FILE, HASH_FILE, HELP_FILE, INDEX_FILE, MEMORY_DIRS, README_FILE } from './constants.js';
-import { ensureDir, exists } from './fsx.js';
-import type { EngramConfig } from './types.js';
+import { CHANGELOG_FILE, HASH_FILE, HELP_FILE, INDEX_FILE, MEMORY_DIRS, README_FILE } from '../runtime/constants.js';
+import { ensureDir, exists } from '../system/fsx.js';
+import type { EngramConfig } from '../runtime/types.js';
 
 type GlobalGitConfig = EngramConfig['global_git'];
 export type GlobalGitInfo = {

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { installSkillset, skillsetTargets } from '../dist/core/skillset.js';
+import { installSkillset, skillsetTargets } from '../dist/core/integrations/skillset.js';
 import { runEngram, tempWorkspace } from './helpers.mjs';
 
 test('skillset installer writes all supported agent adapter files', async () => {

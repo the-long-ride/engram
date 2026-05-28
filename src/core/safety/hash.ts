@@ -1,9 +1,9 @@
 /** SHA-256 memory integrity helpers. */
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-import { HASH_FILE } from './constants.js';
-import type { HashStore, Scope } from './types.js';
-import { inside, listFiles, readJson, readText, writeJson } from './fsx.js';
+import { HASH_FILE } from '../runtime/constants.js';
+import type { HashStore, Scope } from '../runtime/types.js';
+import { inside, listFiles, readJson, readText, writeJson } from '../system/fsx.js';
 
 /** Compute a SHA-256 hex digest. */
 export function sha256(text: string): string {

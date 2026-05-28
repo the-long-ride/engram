@@ -1,5 +1,5 @@
 /** Write-time sensitive scans and read-time prompt-injection guard. */
-import type { ScanFinding } from './types.js';
+import type { ScanFinding } from '../runtime/types.js';
 
 const sensitivePatterns: Array<[string, string, RegExp, string]> = [
   ['api-key', 'API key pattern', /sk-[A-Za-z0-9]{20,}|ghp_[A-Za-z0-9]{20,}/g, '<api-key>'],

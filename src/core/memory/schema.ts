@@ -1,6 +1,6 @@
 /** Memory Markdown frontmatter parser and validator. */
-import type { MemoryDoc, MemoryEntry, MemoryType, Scope, Confidence } from './types.js';
-import { summarize, tagsFrom, today } from './text.js';
+import type { MemoryDoc, MemoryEntry, MemoryType, Scope, Confidence } from '../runtime/types.js';
+import { summarize, tagsFrom, today } from '../system/text.js';
 
 const memoryTypes = new Set(['rule', 'skill', 'knowledge']);
 const scopes = new Set(['workspace', 'global']);

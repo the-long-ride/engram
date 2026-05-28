@@ -1,9 +1,9 @@
 /** Shared command context: config, roots, ignore rules, and merged index. */
-import type { EngramConfig, MemoryIndex } from './types.js';
-import { loadConfig, scopeRoots } from './config.js';
-import { isIgnored, loadIgnore } from './ignore.js';
+import type { EngramConfig, MemoryIndex } from '../runtime/types.js';
+import { loadConfig, scopeRoots } from '../runtime/config.js';
+import { isIgnored, loadIgnore } from '../safety/ignore.js';
 import { loadIndex, mergeIndexes, rebuildIndex } from './index.js';
-import { exists, inside } from './fsx.js';
+import { exists, inside } from '../system/fsx.js';
 
 export type EngramContext = {
   cwd: string;

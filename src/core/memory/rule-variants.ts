@@ -1,5 +1,5 @@
 /** Rule variant extraction and compact rendering helpers. */
-import type { EngramConfig, MemoryEntry, RuleVariant } from './types.js';
+import type { EngramConfig, MemoryEntry, RuleVariant } from '../runtime/types.js';
 
 const headings: Record<RuleVariant, string> = {
   light: 'Light',

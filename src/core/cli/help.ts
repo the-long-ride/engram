@@ -1,5 +1,5 @@
 /** Cached help generation used by init and the help command. */
-import { VERSION } from './constants.js';
+import { VERSION } from '../runtime/constants.js';
 import { HELP_DATA, commandPrefixes, type HelpSection } from './command-registry.js';
 import { detailForTopic, type CommandTopicHelp } from './help-topics.js';
 

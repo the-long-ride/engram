@@ -1,11 +1,11 @@
 /** Automatic save upsert planning for approved memory writes. */
 import type { EngramContext } from './context.js';
 import { entryPath } from './context.js';
-import { exists, readText } from './fsx.js';
+import { exists, readText } from '../system/fsx.js';
 import { draftMemory, updateMemory } from './memory-template.js';
-import type { MemoryEntry, MemoryType, Scope } from './types.js';
-import { lexicalScore, slugify, words } from './text.js';
-import { sha256 } from './hash.js';
+import type { MemoryEntry, MemoryType, Scope } from '../runtime/types.js';
+import { lexicalScore, slugify, words } from '../system/text.js';
+import { sha256 } from '../safety/hash.js';
 
 export type SavePlan = {
   action: 'add' | 'update';

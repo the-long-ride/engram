@@ -2,11 +2,11 @@
 import { createInterface } from 'node:readline';
 import { cmdLoad, cmdVerify } from '../commands/core.js';
 import { cmdHealth, cmdSearch } from '../commands/ops.js';
-import { getContext } from '../core/context.js';
-import { planMemorySave, previewSavePlans } from '../core/save-plan.js';
-import { resolveAuthor } from '../core/storage.js';
-import { normalizeMemoryType, parseMemoryCandidate, parseMemoryCandidates } from '../core/memory-candidate.js';
-import type { Scope } from '../core/types.js';
+import { getContext } from '../core/memory/context.js';
+import { planMemorySave, previewSavePlans } from '../core/memory/save-plan.js';
+import { resolveAuthor } from '../core/memory/storage.js';
+import { normalizeMemoryType, parseMemoryCandidate, parseMemoryCandidates } from '../core/memory/memory-candidate.js';
+import type { Scope } from '../core/runtime/types.js';
 
 /** Handle one MCP-like request object. */
 export async function handleMcp(request: any): Promise<any> {

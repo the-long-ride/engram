@@ -1,14 +1,14 @@
 /** Admin and roadmap commands: ignore, roles, conflicts, hooks, proposals, dashboard. */
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { getContext } from '../core/context.js';
-import { isIgnored } from '../core/ignore.js';
-import { ensureDir, readText, writeJson, writeText } from '../core/fsx.js';
-import { findConflicts, resolveConflicts } from '../core/conflict.js';
-import { installSkillset, skillsetTargets } from '../core/skillset.js';
-import { visibleEntries } from '../core/routing.js';
-import { git } from '../core/git.js';
-import type { RuleVariant } from '../core/types.js';
+import { getContext } from '../core/memory/context.js';
+import { isIgnored } from '../core/safety/ignore.js';
+import { ensureDir, readText, writeJson, writeText } from '../core/system/fsx.js';
+import { findConflicts, resolveConflicts } from '../core/vcs/conflict.js';
+import { installSkillset, skillsetTargets } from '../core/integrations/skillset.js';
+import { visibleEntries } from '../core/memory/routing.js';
+import { git } from '../core/vcs/git.js';
+import type { RuleVariant } from '../core/runtime/types.js';
 
 /** Inspect or update ignore patterns. */
 export async function cmdIgnore(args: string[]): Promise<string> {

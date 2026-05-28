@@ -1,7 +1,7 @@
 /** Optional workspace .engram Git submodule setup. */
 import path from 'node:path';
-import { ENGRAM_DIR } from './constants.js';
-import { ensureDir, exists } from './fsx.js';
+import { ENGRAM_DIR } from '../runtime/constants.js';
+import { ensureDir, exists } from '../system/fsx.js';
 import { git, isValidGitRemoteUrl, normalizeBranchName } from './git.js';
 
 export type WorkspaceSubmoduleOptions = { branch?: string; remoteUrl?: string };

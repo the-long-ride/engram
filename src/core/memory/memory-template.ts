@@ -1,8 +1,8 @@
 /** Deterministic memory drafting for manual saves. */
-import type { MemoryType, Scope } from './types.js';
+import type { MemoryType, Scope } from '../runtime/types.js';
 import { frontmatter, parseMemory } from './schema.js';
 import { defaultRuleVariants, extractRuleVariants } from './rule-variants.js';
-import { slugify, tagsFrom, today } from './text.js';
+import { slugify, tagsFrom, today } from '../system/text.js';
 
 export type MemoryDraftOptions = { ruleVariants?: boolean };
 

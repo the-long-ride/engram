@@ -1,5 +1,5 @@
 /** Memory type detection helpers for agent-brainstormed save candidates. */
-import type { MemoryType } from './types.js';
+import type { MemoryType } from '../runtime/types.js';
 
 export type MemoryCandidate = { type: MemoryType; text: string };
 type CandidateOptions = { explicitType?: MemoryType };

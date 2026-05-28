@@ -2,22 +2,22 @@
 import path from 'node:path';
 import { createInterface } from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
-import { HELP_FILE } from '../core/constants.js';
-import { initWorkspace, resolveAuthor, syncGlobalMemoryGit, writeApprovedMemory } from '../core/storage.js';
-import { getContext, loadSummary } from '../core/context.js';
-import { defaultConfig, loadConfig, scopeRoots, writeScopes } from '../core/config.js';
-import { renderHelp, renderHelpTerminal } from '../core/help.js';
-import { completionScript } from '../core/command-registry.js';
-import { readText, writeText } from '../core/fsx.js';
-import { applyApprovalEdit, requestApproval, requestGeneratedMemoryApproval, requestGeneratedSelectionApproval, requestSelectionApproval } from '../core/approval.js';
-import { verifyRoot } from '../core/hash.js';
-import { route, loadEntries, visibleEntries } from '../core/routing.js';
-import { configureGlobalRemote, globalGitInfo, isValidGitRemoteUrl, normalizeBranchName } from '../core/git.js';
-import { planMemorySave, previewSavePlans, type SavePlan } from '../core/save-plan.js';
-import { configureWorkspaceSubmodule } from '../core/submodule.js';
-import { rebuildIndex } from '../core/index.js';
-import { autosaveGuidance, generatedMemoryGuidance, inferMemoryType, normalizeMemoryType, parseMemoryCandidate, parseMemoryCandidates } from '../core/memory-candidate.js';
-import type { MemoryType, Scope } from '../core/types.js';
+import { HELP_FILE } from '../core/runtime/constants.js';
+import { initWorkspace, resolveAuthor, syncGlobalMemoryGit, writeApprovedMemory } from '../core/memory/storage.js';
+import { getContext, loadSummary } from '../core/memory/context.js';
+import { defaultConfig, loadConfig, scopeRoots, writeScopes } from '../core/runtime/config.js';
+import { renderHelp, renderHelpTerminal } from '../core/cli/help.js';
+import { completionScript } from '../core/cli/command-registry.js';
+import { readText, writeText } from '../core/system/fsx.js';
+import { applyApprovalEdit, requestApproval, requestGeneratedMemoryApproval, requestGeneratedSelectionApproval, requestSelectionApproval } from '../core/safety/approval.js';
+import { verifyRoot } from '../core/safety/hash.js';
+import { route, loadEntries, visibleEntries } from '../core/memory/routing.js';
+import { configureGlobalRemote, globalGitInfo, isValidGitRemoteUrl, normalizeBranchName } from '../core/vcs/git.js';
+import { planMemorySave, previewSavePlans, type SavePlan } from '../core/memory/save-plan.js';
+import { configureWorkspaceSubmodule } from '../core/vcs/submodule.js';
+import { rebuildIndex } from '../core/memory/index.js';
+import { autosaveGuidance, generatedMemoryGuidance, inferMemoryType, normalizeMemoryType, parseMemoryCandidate, parseMemoryCandidates } from '../core/memory/memory-candidate.js';
+import type { MemoryType, Scope } from '../core/runtime/types.js';
 
 /** Initialize workspace memory. */
 export async function cmdInit(flags: Record<string, any>): Promise<string> {

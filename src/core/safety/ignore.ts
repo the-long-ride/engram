@@ -1,8 +1,8 @@
 /** Ignore-rule loading and glob matching for .engramignore/.gitignore. */
 import path from 'node:path';
-import type { EngramConfig } from './types.js';
-import { scopeRoots } from './config.js';
-import { readText } from './fsx.js';
+import type { EngramConfig } from '../runtime/types.js';
+import { scopeRoots } from '../runtime/config.js';
+import { readText } from '../system/fsx.js';
 
 export type IgnoreSet = { patterns: string[]; hiddenCount: number };
 

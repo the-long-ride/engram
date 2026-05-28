@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { rm } from 'node:fs/promises';
-import { parseMemory, validateMemoryRaw } from '../dist/core/schema.js';
-import { HELP_DATA, commandAliases } from '../dist/core/command-registry.js';
-import { COMMAND_TOPICS } from '../dist/core/help-topics.js';
-import { isIgnored } from '../dist/core/ignore.js';
-import { scanInjection, scanSensitive, redactSensitive } from '../dist/core/security.js';
-import { sha256 } from '../dist/core/hash.js';
-import { scoreMemory } from '../dist/core/quality.js';
+import { parseMemory, validateMemoryRaw } from '../dist/core/memory/schema.js';
+import { HELP_DATA, commandAliases } from '../dist/core/cli/command-registry.js';
+import { COMMAND_TOPICS } from '../dist/core/cli/help-topics.js';
+import { isIgnored } from '../dist/core/safety/ignore.js';
+import { scanInjection, scanSensitive, redactSensitive } from '../dist/core/safety/security.js';
+import { sha256 } from '../dist/core/safety/hash.js';
+import { scoreMemory } from '../dist/core/analysis/quality.js';
 import { tempWorkspace } from './helpers.mjs';
 
 test('schema parser reads required frontmatter and sections', () => {

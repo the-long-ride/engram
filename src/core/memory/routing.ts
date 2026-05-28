@@ -1,8 +1,8 @@
 /** Deterministic routing and load helpers for relevant memory selection. */
-import type { EngramConfig, MemoryEntry, MemoryIndex } from './types.js';
-import { readGuardedMemory } from './safe-read.js';
-import { isIgnored } from './ignore.js';
-import { lexicalScore } from './text.js';
+import type { EngramConfig, MemoryEntry, MemoryIndex } from '../runtime/types.js';
+import { readGuardedMemory } from '../safety/safe-read.js';
+import { isIgnored } from '../safety/ignore.js';
+import { lexicalScore } from '../system/text.js';
 
 type RouteOptions = { all?: boolean; ignorePatterns?: string[] };
 

@@ -1,13 +1,13 @@
 /** Deterministic merge-conflict discovery and scoped auto-resolution. */
 import path from 'node:path';
-import { CHANGELOG_FILE, ENGRAM_DIR, HASH_FILE, INDEX_FILE } from './constants.js';
-import { listFiles, readText, writeText } from './fsx.js';
-import { updateHash } from './hash.js';
-import { rebuildIndex } from './index.js';
+import { CHANGELOG_FILE, ENGRAM_DIR, HASH_FILE, INDEX_FILE } from '../runtime/constants.js';
+import { listFiles, readText, writeText } from '../system/fsx.js';
+import { updateHash } from '../safety/hash.js';
+import { rebuildIndex } from '../memory/index.js';
 import { git } from './git.js';
-import type { Scope } from './types.js';
-import { scanInjection, scanSensitive } from './security.js';
-import { validateMemoryRaw } from './schema.js';
+import type { Scope } from '../runtime/types.js';
+import { scanInjection, scanSensitive } from '../safety/security.js';
+import { validateMemoryRaw } from '../memory/schema.js';
 
 export type Conflict = { file: string; kind: 'EXTEND' | 'CONTRADICT' | 'DUPLICATE' | 'UNRELATED'; summary: string };
 export type ConflictResult = Conflict & { resolved: boolean; staged: boolean; decision: string };

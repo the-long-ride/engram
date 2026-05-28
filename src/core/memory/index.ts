@@ -1,10 +1,10 @@
 /** JSON index rebuild, read, write, and workspace/global merge logic. */
 import path from 'node:path';
-import { INDEX_FILE, VERSION } from './constants.js';
-import type { MemoryEntry, MemoryIndex, Scope } from './types.js';
-import { listFiles, readJson, readText, writeJson } from './fsx.js';
+import { INDEX_FILE, VERSION } from '../runtime/constants.js';
+import type { MemoryEntry, MemoryIndex, Scope } from '../runtime/types.js';
+import { listFiles, readJson, readText, writeJson } from '../system/fsx.js';
 import { entryFromMemory } from './schema.js';
-import { isIgnored } from './ignore.js';
+import { isIgnored } from '../safety/ignore.js';
 
 /** Empty index with current schema version. */
 export function emptyIndex(): MemoryIndex {

@@ -1,6 +1,6 @@
 /** Search, stats, and duplicate detection helpers. */
-import type { MemoryEntry } from './types.js';
-import { lexicalScore, words } from './text.js';
+import type { MemoryEntry } from '../runtime/types.js';
+import { lexicalScore, words } from '../system/text.js';
 
 /** Return entries ranked by lexical match. */
 export function searchEntries(entries: MemoryEntry[], query: string): MemoryEntry[] {

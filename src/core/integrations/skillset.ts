@@ -1,7 +1,7 @@
 /** Agent-host adapter files that let Engram behave as a portable skillset. */
 import path from 'node:path';
-import { ensureDir, readText, writeText } from './fsx.js';
-import { slashCommandSurface } from './command-registry.js';
+import { ensureDir, readText, writeText } from '../system/fsx.js';
+import { slashCommandSurface } from '../cli/command-registry.js';
 
 export type SkillsetTarget =
   | 'agents-md' | 'copilot' | 'claude' | 'cursor' | 'gemini'

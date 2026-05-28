@@ -3,7 +3,7 @@ import path from 'node:path';
 import { homedir } from 'node:os';
 import { ENGRAM_DIR, VERSION } from './constants.js';
 import type { EngramConfig, Scope } from './types.js';
-import { readJson } from './fsx.js';
+import { readJson } from '../system/fsx.js';
 
 /** Return the default config written during init. */
 export function defaultConfig(): EngramConfig {

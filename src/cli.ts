@@ -1,7 +1,7 @@
 /** Engram CLI dispatcher. Commands stay thin and delegate to core modules. */
 import { parseArgs } from './cli/args.js';
-import { VERSION } from './core/constants.js';
-import { canonicalCommand } from './core/command-registry.js';
+import { VERSION } from './core/runtime/constants.js';
+import { canonicalCommand } from './core/cli/command-registry.js';
 import { cmdAudit, cmdAutosave, cmdCompletion, cmdHelp, cmdInit, cmdLoad, cmdRebuildIndex, cmdSave, cmdUpdateHelp, cmdVerify } from './commands/core.js';
 import { cmdDeduplicate, cmdEntry, cmdExport, cmdHealth, cmdImport, cmdQuality, cmdSearch, cmdStats, cmdSync } from './commands/ops.js';
 import { cmdIgnore, cmdInstallHooks, cmdInstallSkillset, cmdPropose, cmdResolveConflicts, cmdSetRole, cmdSetRuleVariant, cmdTeamDashboard } from './commands/admin.js';
@@ -51,8 +51,8 @@ export async function runCli(argv: string[]): Promise<string> {
 
 /** Dry-run routing without printing full memory content. */
 async function dryRun(args: string[], flags: Record<string, string | boolean>): Promise<string> {
-  const { getContext } = await import('./core/context.js');
-  const { route } = await import('./core/routing.js');
+  const { getContext } = await import('./core/memory/context.js');
+  const { route } = await import('./core/memory/routing.js');
   const ctx = await getContext();
   const all = flags.all === true;
   const entries = route(ctx.index, args.join(' ') || 'current session', ctx.config, all, { all, ignorePatterns: ctx.ignorePatterns });

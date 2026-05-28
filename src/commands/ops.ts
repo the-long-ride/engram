@@ -1,15 +1,15 @@
 /** Operational commands: health, search, quality, export, import, stats, sync. */
 import path from 'node:path';
-import { getContext } from '../core/context.js';
-import { health, scoreMemory } from '../core/quality.js';
-import { duplicatePairs, searchEntries, stats } from '../core/search.js';
-import { assertFormat, exportBundle, renderFormat, writeSyncTarget } from '../core/exporter.js';
-import { readJson } from '../core/fsx.js';
-import { syncGlobalMemoryGit, writeApprovedMemory } from '../core/storage.js';
-import { requestApproval } from '../core/approval.js';
-import { renderEntry } from '../core/entry.js';
-import { visibleEntries } from '../core/routing.js';
-import { readGuardedMemory } from '../core/safe-read.js';
+import { getContext } from '../core/memory/context.js';
+import { health, scoreMemory } from '../core/analysis/quality.js';
+import { duplicatePairs, searchEntries, stats } from '../core/analysis/search.js';
+import { assertFormat, exportBundle, renderFormat, writeSyncTarget } from '../core/integrations/exporter.js';
+import { readJson } from '../core/system/fsx.js';
+import { syncGlobalMemoryGit, writeApprovedMemory } from '../core/memory/storage.js';
+import { requestApproval } from '../core/safety/approval.js';
+import { renderEntry } from '../core/runtime/entry.js';
+import { visibleEntries } from '../core/memory/routing.js';
+import { readGuardedMemory } from '../core/safety/safe-read.js';
 
 /** Return memory health summary. */
 export async function cmdHealth(): Promise<string> {

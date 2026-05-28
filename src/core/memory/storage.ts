@@ -1,16 +1,16 @@
 /** Workspace/global storage setup and approved memory writes. */
 import path from 'node:path';
-import { CHANGELOG_FILE, DEFAULT_IGNORE, ENGRAM_DIR, HASH_FILE, HELP_FILE, INDEX_FILE, MEMORY_DIRS, README_FILE } from './constants.js';
-import type { EngramConfig, Scope } from './types.js';
-import { defaultConfig, loadConfig, scopeRoots } from './config.js';
-import { ensureDir, exists, inside, readText, writeJson, writeText } from './fsx.js';
-import { renderHelp, renderMemoryReadme } from './help.js';
+import { CHANGELOG_FILE, DEFAULT_IGNORE, ENGRAM_DIR, HASH_FILE, HELP_FILE, INDEX_FILE, MEMORY_DIRS, README_FILE } from '../runtime/constants.js';
+import type { EngramConfig, Scope } from '../runtime/types.js';
+import { defaultConfig, loadConfig, scopeRoots } from '../runtime/config.js';
+import { ensureDir, exists, inside, readText, writeJson, writeText } from '../system/fsx.js';
+import { renderHelp, renderMemoryReadme } from '../cli/help.js';
 import { emptyIndex, rebuildIndex } from './index.js';
-import { updateHash } from './hash.js';
-import { scanInjection, scanSensitive } from './security.js';
+import { updateHash } from '../safety/hash.js';
+import { scanInjection, scanSensitive } from '../safety/security.js';
 import { validateMemoryRaw } from './schema.js';
-import { ensureGlobalGit, gitCommitGlobal, gitUserEmail, pullGlobalGit } from './git.js';
-import { resolveConflictsInRoot } from './conflict.js';
+import { ensureGlobalGit, gitCommitGlobal, gitUserEmail, pullGlobalGit } from '../vcs/git.js';
+import { resolveConflictsInRoot } from '../vcs/conflict.js';
 
 /** Initialize a workspace .engram folder. */
 export async function initWorkspace(cwd: string, force = false, branch = 'main'): Promise<string[]> {

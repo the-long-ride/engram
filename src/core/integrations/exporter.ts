@@ -1,10 +1,10 @@
 /** Interop export/import and generated-agent-file rendering. */
 import path from 'node:path';
-import { GENERATED_HEADER, VERSION } from './constants.js';
-import type { MemoryEntry } from './types.js';
-import { readText, writeJson, writeText } from './fsx.js';
-import { loadConfig } from './config.js';
-import { readGuardedMemory } from './safe-read.js';
+import { GENERATED_HEADER, VERSION } from '../runtime/constants.js';
+import type { MemoryEntry } from '../runtime/types.js';
+import { readText, writeJson, writeText } from '../system/fsx.js';
+import { loadConfig } from '../runtime/config.js';
+import { readGuardedMemory } from '../safety/safe-read.js';
 
 const formats = new Set(['agents-md', 'claude-md', 'cursorrules']);
 

@@ -1,10 +1,10 @@
 /** Guarded memory reads used by load, export, and sync. */
-import { defaultConfig, scopeRoots } from './config.js';
-import { inside, readText } from './fsx.js';
+import { defaultConfig, scopeRoots } from '../runtime/config.js';
+import { inside, readText } from '../system/fsx.js';
 import { verifyMemoryHash } from './hash.js';
-import { renderMemoryForConfig } from './rule-variants.js';
+import { renderMemoryForConfig } from '../memory/rule-variants.js';
 import { scanInjection, scanSensitive } from './security.js';
-import type { EngramConfig, MemoryEntry, Scope } from './types.js';
+import type { EngramConfig, MemoryEntry, Scope } from '../runtime/types.js';
 
 export type GuardedRead = { entry: MemoryEntry; content: string; flagged?: string };
 

@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { rm, writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { spawnSync } from 'node:child_process';
 import { runEngram, tempWorkspace } from './helpers.mjs';
 
 test('init, help, save reject, save accept, load, verify, audit', async () => {
@@ -46,4 +48,38 @@ test('save knowledge without text asks for generated agent knowledge', async () 
   assert.equal(empty.code, 0, empty.stderr);
   assert.match(empty.stdout, /Discarded/);
   await rm(cwd, { recursive: true, force: true });
+});
+
+test('init prepares global git and entry reports detected branch', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  const init = await runEngram(cwd, env, ['init']);
+  assert.equal(init.code, 0, init.stderr);
+  const repo = spawnSync('git', ['-C', env.ENGRAM_GLOBAL_DIR, 'rev-parse', '--is-inside-work-tree'], { encoding: 'utf8' });
+  assert.equal(repo.stdout.trim(), 'true');
+  assert.equal(spawnSync('git', ['-C', env.ENGRAM_GLOBAL_DIR, 'checkout', '-b', 'team'], { encoding: 'utf8' }).status, 0);
+  const entry = await runEngram(cwd, env, ['entry']);
+  assert.equal(entry.code, 0, entry.stderr);
+  assert.match(entry.stdout, /config\.global_git\.branch=main/);
+  assert.match(entry.stdout, /global_git_detected\.branch=team/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('global remote flag validates URL and save pushes global memory', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  const bad = await runEngram(cwd, env, ['init', '--global-remote', 'not-a-url']);
+  assert.equal(bad.code, 1);
+  assert.match(bad.stderr, /invalid global remote URL/);
+  await rm(cwd, { recursive: true, force: true });
+
+  const fresh = await tempWorkspace('engram-cli-');
+  const remote = path.join(fresh.cwd, 'remote.git');
+  assert.equal(spawnSync('git', ['init', '--bare', remote], { encoding: 'utf8' }).status, 0);
+  const init = await runEngram(fresh.cwd, fresh.env, ['init', '--global-remote', pathToFileURL(remote).href]);
+  assert.equal(init.code, 0, init.stderr);
+  assert.match(init.stdout, /global git: origin ->/);
+  const saved = await runEngram(fresh.cwd, fresh.env, ['save', 'rule', '--scope', 'global', 'Share team memory defaults'], 'A\n');
+  assert.equal(saved.code, 0, saved.stderr);
+  const log = spawnSync('git', ['--git-dir', remote, 'log', '--oneline', '--all'], { encoding: 'utf8' }).stdout;
+  assert.match(log, /add rule: share-team-memory-defaults/);
+  await rm(fresh.cwd, { recursive: true, force: true });
 });

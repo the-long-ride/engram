@@ -12,6 +12,7 @@ export type EngramConfig = {
   ignore: IgnoreConfig;
   roles: string[];
   live_sync: { enabled: boolean; targets: string[] };
+  global_git: { enabled: boolean; remote: string; branch: string; auto_sync: boolean; auto_resolve: boolean };
   pattern_mining: { enabled: boolean; threshold: number; lookback_sessions: number };
   pr_workflow: { enabled: boolean; provider?: string; repo?: string; target_branch: string };
   encryption: { enabled: boolean; scope: Scope; key_source: string };

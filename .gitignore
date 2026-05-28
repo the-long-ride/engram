@@ -40,3 +40,8 @@ temp/
 engram-blueprint-v8.md
 report.md
 TODO.md
+
+# agents
+AGENTS.md
+.agents/**/*
+.github/**/*

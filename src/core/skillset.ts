@@ -1,6 +1,7 @@
 /** Agent-host adapter files that let Engram behave as a portable skillset. */
 import path from 'node:path';
 import { ensureDir, readText, writeText } from './fsx.js';
+import { slashCommandSurface } from './command-registry.js';
 
 export type SkillsetTarget =
   | 'agents-md' | 'copilot' | 'claude' | 'cursor' | 'gemini'
@@ -28,18 +29,6 @@ const targets: Record<SkillsetTarget, string[]> = {
   mcp: ['.mcp.json'],
   slash: ['.claude/skills/engram/SKILL.md', '.cursor/commands/engram.md', '.gemini/commands/engram.toml']
 };
-
-const commandSurface = [
-  'init [--force] [--submodule] [--submodule-remote <git-url>] [--global-remote <git-url>] [--global-branch main]', 'help [topic]', 'update-help', 'entry', 'load [query]', 'dry-run [query]',
-  'save rule <text>', 'save skill <text>', 'save knowledge [text]', 'search <query>',
-  'verify [workspace|global]', 'audit [--author email] [--stale] [--low-confidence]',
-  'health', 'quality-check', 'deduplicate [--semantic]',
-  'export [--format agents-md|claude-md|cursorrules]', 'import <bundle.json>',
-  'ignore status|check <path>|add <pattern>', 'set-role <role...>', 'set-rule-variant off|light|balanced|strict|status',
-  'resolve-conflicts [--dry-run|--auto]', 'install-hooks',
-  'install-skillset [all|list|target] [--force]', 'sync', 'propose <memory-file>',
-  'team-dashboard'
-];
 
 /** Return supported skillset adapter names. */
 export function skillsetTargets(): SkillsetTarget[] {
@@ -163,10 +152,6 @@ Never bypass Engram's human approval gate. For writes, remote setup, conflict re
 
 ${slashCommandSurface()}
 `;
-}
-
-function slashCommandSurface(): string {
-  return commandSurface.map((command) => `- \`/engram ${command}\` -> \`engram ${command}\``).join('\n');
 }
 
 function mcpConfig(): string {

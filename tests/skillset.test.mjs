@@ -11,7 +11,7 @@ test('skillset installer writes all supported agent adapter files', async () => 
   const writtenTargets = [...new Set(results.map((result) => result.target))].sort();
   assert.deepEqual(writtenTargets, skillsetTargets().sort());
   assert.ok(results.every((result) => result.action === 'written'));
-  assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /\/engram load \[query\]/);
+  assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /\/engram load \[--all\] \[query\]/);
   const mcpConfig = await readFile(path.join(cwd, '.mcp.json'), 'utf8');
   assert.match(mcpConfig, /engram-mcp/);
   assert.equal(JSON.parse(mcpConfig).mcpServers.engram.command, 'npx');

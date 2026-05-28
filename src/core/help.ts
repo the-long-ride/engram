@@ -1,62 +1,8 @@
 /** Cached help generation used by init and the help command. */
 import { VERSION } from './constants.js';
+import { HELP_DATA, commandPrefixes, type HelpSection } from './command-registry.js';
 
-interface CommandHelp { command: string; purpose: string; }
-interface HelpSection { title: string; commands: CommandHelp[]; }
-
-const HELP_DATA: HelpSection[] = [
-  {
-    title: 'Meta Commands',
-    commands: [
-      { command: 'engram init [--force] [--submodule] [--submodule-remote <git-url>] [--global-remote <git-url>] [--global-branch main]', purpose: 'Initialize workspace memory and optional global Git repository remote' },
-      { command: 'engram help [topic]', purpose: 'Show this help menu or specific topic details' },
-      { command: 'engram update-help', purpose: 'Regenerate workspace HELP.md file' },
-      { command: 'engram entry', purpose: 'Show runtime configurations and global Git repository status' }
-    ]
-  },
-  {
-    title: 'Memory Commands',
-    commands: [
-      { command: 'engram save rule <text>', purpose: 'Draft and save a new rule memory after user approval' },
-      { command: 'engram save skill <text>', purpose: 'Draft and save a new skill memory after user approval' },
-      { command: 'engram save knowledge [text]', purpose: 'Draft and save a new knowledge memory (agent summary or text)' },
-      { command: 'engram load [query]', purpose: 'Route and load relevant memories into the agent context' },
-      { command: 'engram dry-run [query]', purpose: 'Preview routed memory file paths without printing their content' },
-      { command: 'engram search <query>', purpose: 'Perform a search across all indexed memories' },
-      { command: 'engram verify [workspace|global]', purpose: 'Verify memory file integrity and hashes' },
-      { command: 'engram audit [--author email] [--stale] [--low-confidence]', purpose: 'Show audit log of memories with optional filters' }
-    ]
-  },
-  {
-    title: 'Operations',
-    commands: [
-      { command: 'engram health', purpose: 'Analyze and report workspace memory health metrics' },
-      { command: 'engram quality-check', purpose: 'Evaluate quality score and potential issues for each memory' },
-      { command: 'engram stats', purpose: 'Show total count and statistics of indexed memories' },
-      { command: 'engram deduplicate [--semantic]', purpose: 'Detect and report similar or duplicate memory entries' },
-      { command: 'engram export [--format agents-md|claude-md|cursorrules]', purpose: 'Export memory to a specific format or JSON bundle' },
-      { command: 'engram import <bundle.json>', purpose: 'Import a memory bundle through the approval gate' },
-      { command: 'engram ignore status|check <path>|add <pattern>', purpose: 'Manage ignore rules and query file match status' },
-      { command: 'engram set-role <role...>', purpose: 'Configure active developer roles for context routing' },
-      { command: 'engram set-rule-variant off|light|balanced|strict|status', purpose: 'Configure rule variant strictness level' },
-      { command: 'engram resolve-conflicts [--dry-run|--auto]', purpose: 'Preview or resolve Git conflicts in memory files' },
-      { command: 'engram install-hooks', purpose: 'Install local Git hooks for automatic index and integrity checks' },
-      { command: 'engram install-skillset [all|slash|codex|agents-md|copilot|claude|cursor|gemini|cline|windsurf|antigravity-cli|opencode|mcp]', purpose: 'Generate agent skillset instruction files and slash command adapters' },
-      { command: 'engram sync', purpose: 'Sync global memory with Git remote and refresh live-sync targets' },
-      { command: 'engram propose <memory-file>', purpose: 'Propose changes to a memory file for review' },
-      { command: 'engram team-dashboard', purpose: 'Show team activity dashboard and contributor stats' }
-    ]
-  }
-];
-
-const COMMAND_PREFIXES = [
-  'engram save rule', 'engram save skill', 'engram save knowledge', 'engram init', 'engram help',
-  'engram update-help', 'engram entry', 'engram load', 'engram dry-run', 'engram search',
-  'engram verify', 'engram audit', 'engram health', 'engram quality-check', 'engram stats',
-  'engram deduplicate', 'engram export', 'engram import', 'engram ignore', 'engram set-role',
-  'engram set-rule-variant', 'engram resolve-conflicts', 'engram install-hooks', 'engram install-skillset',
-  'engram sync', 'engram propose', 'engram team-dashboard'
-];
+const COMMAND_PREFIXES = commandPrefixes();
 
 function highlightUsage(usage: string): string {
   let commandPart = usage;

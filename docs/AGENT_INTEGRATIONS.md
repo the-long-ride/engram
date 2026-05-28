@@ -11,10 +11,24 @@ Engram supports two integration layers:
 Run:
 
 ```bash
+engram init
+```
+
+This creates `.engram/` and installs the compact Codex target by default:
+`AGENTS.md` plus `.agents/skills/engram/SKILL.md`. The generated instructions
+tell agents to load memory, keep Engram replies short, ask only for required
+confirmation, and report what changed.
+
+Use `engram init --no-skillset` to skip agent files, or
+`engram init --skillset all` to install every supported adapter during init.
+Existing human-authored files are skipped.
+
+To add or refresh adapters later:
+
+```bash
 engram install-skillset all
 ```
 
-This writes supported adapter files without overwriting human-authored files.
 Use `--force` only when replacing generated Engram adapter files intentionally.
 
 ## Supported Targets
@@ -39,17 +53,17 @@ Aliases: `codex` installs the `agents-md` adapter plus the Agent Skill file,
 
 ## Recommended Flow
 
-1. Install skillset files:
-
-   ```bash
-   engram install-skillset all
-   ```
-
-2. Initialize memory:
+1. Initialize memory:
 
    ```bash
    engram init
    ```
+
+   Rerun `engram init` after Engram upgrades. Existing workspaces are
+   reconciled in place: missing standard files/folders are restored, generated
+   help/readme/skillset files are refreshed, config defaults are merged, and
+   safe legacy folder migrations are applied without overwriting human-authored
+   agent files or memory audit data.
 
    If the human wants `.engram` tracked as a separate repository, ask whether to
    create a local submodule. When they approve, run:
@@ -70,15 +84,15 @@ Aliases: `codex` installs the `agents-md` adapter plus the Agent Skill file,
    engram init --global-remote <git-url>
    ```
 
-3. Ask the agent to use Engram memory:
+2. Ask the agent to use Engram memory:
 
    ```text
    Before working, load Engram memory for this task.
    ```
 
-4. If the host supports external tool processes, register `.mcp.json` or equivalent host config.
+3. If the host supports external tool processes, register `.mcp.json` or equivalent host config.
 
-5. If the host supports custom slash commands, type:
+4. If the host supports custom slash commands, type:
 
    ```text
    /engram load deployment workflow

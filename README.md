@@ -55,6 +55,13 @@ Engram initializes `.engram` on `main`, creates the first submodule commit as
 `Initialize engram`, validates any provided remote URL, and stages only
 `.gitmodules` plus the `.engram` gitlink in the parent repository.
 
+You can rerun `engram init` after upgrades. On existing workspaces it reconciles
+Engram-owned output with the current version: missing standard folders/files are
+restored, generated help/readme/skillset files are refreshed, config defaults are
+merged without dropping user settings, and legacy memory folders such as
+`workflows/` are migrated into the current layout when safe. Human-authored
+agent files, changelog entries, memory files, and existing hashes are preserved.
+
 ## Why Files, Not Agent Brain?
 
 | Property | Engram files | Agent memory |
@@ -156,11 +163,17 @@ Engram can also install itself as an agent skillset:
 engram install-skillset all
 ```
 
-This creates host-specific instruction files for AGENTS.md-compatible agents,
-OpenAI Codex, GitHub Copilot, Claude, Cursor, Gemini CLI, Cline, Windsurf,
-Antigravity CLI, OpenCode, and MCP-capable clients without overwriting existing
-human-authored files. It also installs `/engram` slash-command adapters for
-slash-capable hosts.
+`engram init` installs the compact Codex target by default (`AGENTS.md` plus
+`.agents/skills/engram/SKILL.md`) so agents load memory and report Engram work
+with short confirmations instead of long explanations. Use
+`engram init --no-skillset` to skip this, or `engram init --skillset all` to
+install every adapter during initialization.
+
+`engram install-skillset all` creates host-specific instruction files for
+AGENTS.md-compatible agents, OpenAI Codex, GitHub Copilot, Claude, Cursor,
+Gemini CLI, Cline, Windsurf, Antigravity CLI, OpenCode, and MCP-capable clients
+without overwriting existing human-authored files. It also installs `/engram`
+slash-command adapters for slash-capable hosts.
 
 For targeted setup:
 
@@ -188,6 +201,8 @@ Core commands include:
 engram --version
 engram -v
 engram init
+engram init --no-skillset
+engram init --skillset all
 engram entry
 engram completion bash
 engram completion powershell

@@ -16,6 +16,7 @@ import { configureGlobalRemote, globalGitInfo, isValidGitRemoteUrl, normalizeBra
 import { planMemorySave, previewSavePlans, type SavePlan } from '../core/memory/save-plan.js';
 import { configureWorkspaceSubmodule } from '../core/vcs/submodule.js';
 import { rebuildIndex } from '../core/memory/index.js';
+import { installSkillset, type InstallResult } from '../core/integrations/skillset.js';
 import { autosaveGuidance, generatedMemoryGuidance, inferMemoryType, normalizeMemoryType, parseMemoryCandidate, parseMemoryCandidates } from '../core/memory/memory-candidate.js';
 import type { MemoryType, Scope } from '../core/runtime/types.js';
 
@@ -25,6 +26,7 @@ export async function cmdInit(flags: Record<string, any>): Promise<string> {
   const requestedBranch = typeof flags['global-branch'] === 'string' ? flags['global-branch'] : config.branch;
   const branch = normalizeBranchName(requestedBranch);
   const lines = await initWorkspace(process.cwd(), Boolean(flags.force), branch);
+  lines.push(...await maybeInstallDefaultSkillset(flags));
   lines.push(...await maybeConfigureWorkspaceSubmodule(flags));
   const remote = typeof flags['global-remote'] === 'string' ? flags['global-remote'].trim() : '';
   if (remote) {
@@ -34,6 +36,26 @@ export async function cmdInit(flags: Record<string, any>): Promise<string> {
     lines.push(...await maybeConfigureGlobalRemote(branch));
   }
   return lines.join('\n');
+}
+
+async function maybeInstallDefaultSkillset(flags: Record<string, any>): Promise<string[]> {
+  const requested = typeof flags.skillset === 'string' ? flags.skillset.trim() : 'codex';
+  if (flags['no-skillset'] === true || isDisabledSkillsetTarget(requested)) return ['skillset: skipped'];
+  const results = await installSkillset(process.cwd(), requested, false);
+  return [`skillset: ${summarizeSkillsetInstall(results)}`];
+}
+
+function isDisabledSkillsetTarget(target: string): boolean {
+  return ['none', 'off', 'false', '0'].includes(target.toLowerCase());
+}
+
+function summarizeSkillsetInstall(results: InstallResult[]): string {
+  const written = results.filter((result) => result.action === 'written').map((result) => result.file);
+  const skipped = results.filter((result) => result.action === 'skipped').map((result) => result.file);
+  const parts = [];
+  if (written.length) parts.push(`written ${written.join(', ')}`);
+  if (skipped.length) parts.push(`skipped ${skipped.join(', ')}`);
+  return parts.join('; ') || 'no changes';
 }
 
 /** Show cached help or refresh it. */

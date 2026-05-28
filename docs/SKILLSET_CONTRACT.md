@@ -35,6 +35,9 @@ files. Hosts that support custom slash commands can also load generated
   matching MCP read/proposal tool.
 - Keep short aliases equivalent to their canonical commands. Aliases are
   convenience only; they must not change safety behavior.
+- Generated skillsets must keep agent chatter compact: summarize read commands
+  in one line, speak for confirmations/file changes/failures/final results, and
+  avoid pasting raw command output unless needed.
 
 ## Tool Contract
 
@@ -54,7 +57,7 @@ proposal and collect explicit human approval before invoking a CLI write flow.
 
 | Command | Purpose |
 | --- | --- |
-| `engram init [--submodule] [--global-remote <git-url>]` | Create memory roots, optionally create `.engram` as a submodule, and initialize global memory Git |
+| `engram init [--no-skillset] [--skillset target] [--submodule] [--global-remote <git-url>]` | Create or reconcile memory roots, install compact Codex skillset by default, optionally create `.engram` as a submodule, and initialize global memory Git |
 | `engram --version` / `engram -v` | Print the installed CLI version |
 | `engram help [topic]` | Show compact help or detailed command-specific examples and use cases |
 | `engram entry` | Print resolved flags, paths, and detected global Git state |

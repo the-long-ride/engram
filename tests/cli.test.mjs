@@ -8,7 +8,9 @@ import { initGit, runEngram, tempWorkspace } from './helpers.mjs';
 
 test('init, help, save reject, save accept, load, verify, audit', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
-  assert.equal((await runEngram(cwd, env, ['init'])).code, 0);
+  const init = await runEngram(cwd, env, ['init']);
+  assert.equal(init.code, 0, init.stderr);
+  assert.match(init.stdout, /skillset: written AGENTS\.md, \.agents\/skills\/engram\/SKILL\.md/);
   assert.match((await runEngram(cwd, env, ['help'])).stdout, /Memory Commands/);
   assert.match((await runEngram(cwd, env, ['-h'])).stdout, /Memory Commands/);
   assert.match((await runEngram(cwd, env, ['--help'])).stdout, /Memory Commands/);
@@ -28,6 +30,33 @@ test('init, help, save reject, save accept, load, verify, audit', async () => {
   assert.match((await runEngram(cwd, env, ['load', 'pnpm installs'])).stdout, /Use pnpm/);
   assert.match((await runEngram(cwd, env, ['verify'])).stdout, /OK workspace/);
   assert.match((await runEngram(cwd, env, ['audit'])).stdout, /use-pnpm-for-installs/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('init can skip or retarget default skillset install', async () => {
+  const skipped = await tempWorkspace('engram-cli-');
+  const noSkillset = await runEngram(skipped.cwd, skipped.env, ['init', '--no-skillset']);
+  assert.equal(noSkillset.code, 0, noSkillset.stderr);
+  assert.match(noSkillset.stdout, /skillset: skipped/);
+  await assert.rejects(readFile(path.join(skipped.cwd, 'AGENTS.md'), 'utf8'));
+  await rm(skipped.cwd, { recursive: true, force: true });
+
+  const targeted = await tempWorkspace('engram-cli-');
+  const slash = await runEngram(targeted.cwd, targeted.env, ['init', '--skillset', 'slash']);
+  assert.equal(slash.code, 0, slash.stderr);
+  assert.match(slash.stdout, /skillset: written \.claude\/skills\/engram\/SKILL\.md/);
+  assert.match(await readFile(path.join(targeted.cwd, '.cursor/commands/engram.md'), 'utf8'), /Keep replies compact/);
+  await assert.rejects(readFile(path.join(targeted.cwd, 'AGENTS.md'), 'utf8'));
+  await rm(targeted.cwd, { recursive: true, force: true });
+});
+
+test('init skips human-authored skillset files', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await writeFile(path.join(cwd, 'AGENTS.md'), '# Human agent instructions\n');
+  const result = await runEngram(cwd, env, ['init']);
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /skillset: written \.agents\/skills\/engram\/SKILL\.md; skipped AGENTS\.md/);
+  assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /Human agent instructions/);
   await rm(cwd, { recursive: true, force: true });
 });
 

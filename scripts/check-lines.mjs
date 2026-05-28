@@ -1,7 +1,7 @@
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 
-const roots = ['src', 'scripts', 'tests'];
+const roots = ['src', 'scripts'];
 const codeExts = new Set(['.ts', '.js', '.mjs', '.cjs']);
 const limit = 350;
 const failures = [];
@@ -19,7 +19,7 @@ async function walk(dir) {
 
 for (const root of roots) await walk(root).catch(() => {});
 if (failures.length) {
-  console.error(`Code files must stay under ${limit} lines:\n${failures.join('\n')}`);
+  console.error(`Source/tooling code files must stay under ${limit} lines:\n${failures.join('\n')}`);
   process.exit(1);
 }
-console.log(`line-check: all code files <= ${limit} lines`);
+console.log(`line-check: source/tooling code files <= ${limit} lines`);

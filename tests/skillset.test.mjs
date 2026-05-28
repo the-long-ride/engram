@@ -11,18 +11,18 @@ test('skillset installer writes all supported agent adapter files', async () => 
   const writtenTargets = [...new Set(results.map((result) => result.target))].sort();
   assert.deepEqual(writtenTargets, skillsetTargets().sort());
   assert.ok(results.every((result) => result.action === 'written'));
-  assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /\/engram load \[--all\] \[query\]/);
+  assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /Default agent mode: compact/);
   const mcpConfig = await readFile(path.join(cwd, '.mcp.json'), 'utf8');
   assert.match(mcpConfig, /engram-mcp/);
   assert.equal(JSON.parse(mcpConfig).mcpServers.engram.command, 'npx');
-  assert.match(await readFile(path.join(cwd, '.agents/skills/engram/SKILL.md'), 'utf8'), /Engram Memory Skill/);
-  assert.match(await readFile(path.join(cwd, '.claude/skills/engram/SKILL.md'), 'utf8'), /name: engram/);
+  assert.match(await readFile(path.join(cwd, '.agents/skills/engram/SKILL.md'), 'utf8'), /compact replies/);
+  assert.match(await readFile(path.join(cwd, '.claude/skills/engram/SKILL.md'), 'utf8'), /any `engram` CLI arguments/);
   assert.match(await readFile(path.join(cwd, '.cursor/commands/engram.md'), 'utf8'), /Engram Slash Command/);
   assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /\/engram \{\{args\}\}/);
   const opencodeConfig = await readFile(path.join(cwd, 'opencode.json'), 'utf8');
   assert.match(opencodeConfig, /\.opencode\/engram\.md/);
   assert.deepEqual(JSON.parse(opencodeConfig).instructions, ['.opencode/engram.md']);
-  assert.match(await readFile(path.join(cwd, '.opencode/engram.md'), 'utf8'), /Slash Command Surface/);
+  assert.match(await readFile(path.join(cwd, '.opencode/engram.md'), 'utf8'), /Preferred replies/);
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -66,8 +66,8 @@ test('cli installs codex alias as AGENTS.md skillset file', async () => {
   assert.equal(result.code, 0, result.stderr);
   assert.match(result.stdout, /WRITTEN codex: AGENTS\.md/);
   assert.match(result.stdout, /WRITTEN codex: \.agents\/skills\/engram\/SKILL\.md/);
-  assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /\/engram save knowledge \[--role role\] \[text\]/);
-  assert.match(await readFile(path.join(cwd, '.agents/skills/engram/SKILL.md'), 'utf8'), /\/engram install-skillset/);
+  assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /Speak only for confirmation/);
+  assert.match(await readFile(path.join(cwd, '.agents/skills/engram/SKILL.md'), 'utf8'), /Default agent mode: compact/);
   await rm(cwd, { recursive: true, force: true });
 });
 

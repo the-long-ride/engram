@@ -6,9 +6,10 @@ export function renderHelp(): string {
   return `# Engram Help v${VERSION}
 
 ## Meta Commands
-- engram init [--force]
+- engram init [--force] [--global-remote <git-url>] [--global-branch main]
 - engram help [topic]
 - engram update-help
+- engram entry
 
 ## Memory Commands
 - engram save rule <text>

@@ -28,6 +28,20 @@ Resolution is simple: workspace memory is checked first, global memory is the
 fallback. If both scopes contain the same topic, the workspace version wins. No
 merging, no ambiguity, no hidden platform state.
 
+Global memory is also a Git repository. `engram init` creates or reuses the
+global folder, runs `git init` there, and defaults to the `main` branch. To share
+it with a team or across devices, add an origin during init:
+
+```bash
+engram init --global-remote https://github.com/example/team-engram.git
+```
+
+If you run `engram init` in an interactive terminal, Engram offers to collect
+that origin URL for you. Agents should ask before adding the remote. Engram uses
+the currently checked-out global branch when it saves or syncs, so a user can
+switch the single supported branch outside Engram and `engram entry` will show
+the detected branch.
+
 ## Why Files, Not Agent Brain?
 
 | Property | Engram files | Agent memory |
@@ -97,6 +111,7 @@ Core commands include:
 
 ```bash
 engram init
+engram entry
 engram save rule "Never commit secrets."
 engram save knowledge
 engram load "deployment workflow"
@@ -110,6 +125,11 @@ engram-mcp
 Every memory write is reviewed before it touches disk. Sensitive content is
 blocked, prompt-injection patterns are skipped, and hashes are checked so changes
 outside Engram are visible.
+
+Global saves automatically pull the configured origin, resolve Engram-owned
+memory conflicts when deterministic rules apply, commit the approved change, and
+push back to the same branch. `engram sync` performs the same global Git sync and
+then refreshes live-sync targets.
 
 ## Author recommendations
 

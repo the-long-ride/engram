@@ -17,6 +17,9 @@ npm run lint:lines
 - `src/core` holds config, schema, indexes, routing, security, and storage.
 - `src/commands` holds thin command handlers.
 - `src/bin` exposes `engram` and `engram-mcp`.
+- `src/core/git.ts` owns global memory Git init, branch detection, remote setup,
+  pull, commit, push, and retry-on-merge handling. Workspace Git remains
+  untouched except for the explicit `resolve-conflicts` command.
 - `src/core/skillset.ts` renders agent instruction, MCP, and slash-command
   adapters.
 - `prompts` contains agent-facing prompt templates.
@@ -33,6 +36,9 @@ npm run lint:lines
   preview before writing.
 - Slash-command adapters are routers. Keep `/engram <args>` mapped to the same
   CLI or MCP flow, never to a hidden write path.
+- Global memory Git automation may touch only `$ENGRAM_GLOBAL_DIR`. Agents must
+  ask before adding an origin remote; CLI init may prompt for it, and non-TTY
+  runs should print the `--global-remote` command instead.
 - When adding or renaming a CLI command, update `src/core/help.ts`,
   `src/core/skillset.ts`, `docs/SKILLSET_CONTRACT.md`, and skillset tests
   together.
@@ -73,6 +79,7 @@ folder:
 export ENGRAM_GLOBAL_DIR="$PWD/.tmp-engram-global"
 npm run build
 node ./dist/bin/engram.js init
+node ./dist/bin/engram.js entry
 node ./dist/bin/engram.js save rule --scope workspace "Use pnpm for installs"
 node ./dist/bin/engram.js save knowledge --scope workspace
 ```
@@ -106,6 +113,11 @@ modify or stage workspace source files.
 
 Use `engram resolve-conflicts --dry-run` to preview classifications without
 writing files.
+
+Global Git sync uses the currently checked-out branch in `$ENGRAM_GLOBAL_DIR`,
+falling back to `global_git.branch` (`main` by default) for new repos. Automatic
+conflict resolution is limited to Engram memory Markdown files in the global
+root; unresolved Git conflicts must remain visible for human review.
 
 ## Publishing
 

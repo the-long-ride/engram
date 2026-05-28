@@ -30,7 +30,7 @@ const targets: Record<SkillsetTarget, string[]> = {
 };
 
 const commandSurface = [
-  'init [--force]', 'help [topic]', 'update-help', 'load [query]', 'dry-run [query]',
+  'init [--force] [--global-remote <git-url>] [--global-branch main]', 'help [topic]', 'update-help', 'entry', 'load [query]', 'dry-run [query]',
   'save rule <text>', 'save skill <text>', 'save knowledge [text]', 'search <query>',
   'verify [workspace|global]', 'audit [--author email] [--stale] [--low-confidence]',
   'health', 'quality-check', 'deduplicate [--semantic]',
@@ -102,6 +102,7 @@ Engram is the memory layer for this workspace. Use it to load relevant project m
 ## How To Use
 
 - At session start, run or call: \`engram load "<current task>"\`.
+- After \`engram init\`, suggest adding a global Git origin if \`engram entry\` shows none; ask for the URL before running \`engram init --global-remote <url>\`.
 - Before storing memory, propose it with \`engram save <rule|skill|knowledge> "<text>"\`.
 - If the human asks for \`engram save knowledge\` with no text, provide a concise generated summary of durable knowledge from your current work when prompted.
 - Never bypass the human A/B/C approval step for memory writes.
@@ -154,7 +155,7 @@ function slashInstructions(): string {
 
 Otherwise run \`engram <args>\` from the workspace root; if the binary is unavailable, use \`npx -y --package @the-long-ride/engram engram <args>\`.
 
-Never bypass Engram's human approval gate. For writes, conflict resolution, hook installation, import, sync, or adapter installation, explain what the command will change before running it and show the resulting Engram output.
+Never bypass Engram's human approval gate. For writes, remote setup, conflict resolution, hook installation, import, sync, or adapter installation, explain what the command will change before running it and show the resulting Engram output.
 
 ## Supported Requests
 

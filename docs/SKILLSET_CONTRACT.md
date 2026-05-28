@@ -16,6 +16,8 @@ files. Hosts that support custom slash commands can also load generated
 - Run sensitive-data and prompt-injection guards before writing or loading.
 - Verify hashes before trusting memory files.
 - Stage only `.engram/` files during `engram resolve-conflicts`.
+- Ask before adding a global Git `origin`; once configured, global saves and
+  syncs may pull, auto-resolve Engram-owned memory conflicts, commit, and push.
 - Treat `/engram <args>` as a human-visible router to `engram <args>` or the
   matching MCP read/proposal tool.
 
@@ -36,13 +38,15 @@ and collect explicit human approval before invoking a CLI write flow.
 
 | Command | Purpose |
 | --- | --- |
-| `engram init` | Create `.engram/` workspace memory |
+| `engram init [--global-remote <git-url>]` | Create workspace memory and initialize global memory Git |
+| `engram entry` | Print resolved flags, paths, and detected global Git state |
 | `engram load "<task>"` | Load relevant memory |
 | `engram save rule "<text>"` | Propose and write after A/B/C approval |
 | `engram verify` | Check hash integrity |
 | `engram resolve-conflicts` | Resolve and stage only `.engram/` conflicts |
 | `engram install-skillset all` | Install agent-host instruction files |
 | `engram install-skillset slash` | Install slash-command adapters |
+| `engram sync` | Sync global memory Git and refresh live-sync targets |
 
 ## Slash Contract
 

@@ -50,6 +50,14 @@ Aliases: `codex` installs the `agents-md` adapter plus the Agent Skill file,
    engram init
    ```
 
+   If `engram entry` shows no `global_git_detected.remote_url`, ask the human
+   whether global memory should be shared through Git. When they provide a URL,
+   run:
+
+   ```bash
+   engram init --global-remote <git-url>
+   ```
+
 3. Ask the agent to use Engram memory:
 
    ```text
@@ -62,6 +70,7 @@ Aliases: `codex` installs the `agents-md` adapter plus the Agent Skill file,
 
    ```text
    /engram load deployment workflow
+   /engram entry
    /engram save knowledge
    /engram verify
    ```

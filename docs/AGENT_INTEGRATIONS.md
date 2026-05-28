@@ -104,27 +104,15 @@ files through the `instructions` field in `opencode.json`. Engram uses
 
 ## References
 
-- GitHub Copilot repository custom instructions:
-  https://docs.github.com/en/copilot/how-tos/custom-instructions/adding-repository-custom-instructions-for-github-copilot
-- Claude Code MCP:
-  https://code.claude.com/docs/en/mcp
-- Claude Code skills and custom slash commands:
-  https://code.claude.com/docs/en/slash-commands
-- Cursor MCP:
-  https://docs.cursor.com/context/model-context-protocol
-- Cursor custom commands:
-  https://docs.cursor.com/en/agent/chat/commands
-- Gemini CLI context files:
-  https://google-gemini.github.io/gemini-cli/docs/cli/gemini-md.html
-- Gemini CLI custom commands:
-  https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/custom-commands.md
-- AGENTS.md:
-  https://github.com/openai/agents.md
-- Codex Agent Skills:
-  https://developers.openai.com/codex/skills
-- Antigravity Agent Skills:
-  https://antigravity.google/docs/skills
-- Antigravity CLI features:
-  https://antigravity.google/docs/cli-features
-- OpenCode rules and custom instructions:
-  https://opencode.ai/docs/rules/
+- [GitHub Copilot repository custom instructions](https://docs.github.com/en/copilot/how-tos/custom-instructions/adding-repository-custom-instructions-for-github-copilot)
+- [Claude Code MCP](https://code.claude.com/docs/en/mcp)
+- [Claude Code skills and custom slash commands](https://code.claude.com/docs/en/slash-commands)
+- [Cursor MCP](https://docs.cursor.com/context/model-context-protocol)
+- [Cursor custom commands](https://docs.cursor.com/en/agent/chat/commands)
+- [Gemini CLI context files](https://google-gemini.github.io/gemini-cli/docs/cli/gemini-md.html)
+- [Gemini CLI custom commands](https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/custom-commands.md)
+- [AGENTS.md](https://github.com/openai/agents.md)
+- [Codex Agent Skills](https://developers.openai.com/codex/skills)
+- [Antigravity Agent Skills](https://antigravity.google/docs/skills)
+- [Antigravity CLI features](https://antigravity.google/docs/cli-features)
+- [OpenCode rules and custom instructions](https://opencode.ai/docs/rules/)

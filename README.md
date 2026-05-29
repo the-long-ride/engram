@@ -23,7 +23,7 @@ All memory is plain Markdown. That means humans can read it, teams can review it
 | Scope | Path | Who it serves |
 | --- | --- | --- |
 | Workspace | `<project_root>/.agents/.engram/` | Everyone sharing the repository |
-| Global | `$ENGRAM_GLOBAL_DIR` or `engram init --global-path <path>` | You, across agents, projects, and devices |
+| Global | `$ENGRAM_GLOBAL_DIR`, `engram init --global-path <path>`, or `engram init --global-only --global-path <path>` | You, across agents, projects, and devices |
 
 Resolution is simple: workspace memory is checked first, global memory is the
 fallback. If both scopes contain the same topic, the workspace version wins. No
@@ -115,6 +115,18 @@ non-interactively:
 engram init --global-path ~/Documents/engram
 ```
 
+For a global-only setup that does not install `.agents/.engram` or local agent
+skillset files in the current workspace, initialize the global folder directly:
+
+```bash
+engram init --global-only --global-path ~/Documents/engram
+engram save rule "Use pnpm for package management."
+```
+
+Global-only init writes a user-level Engram config pointer, sets the default
+save scope to `global`, and keeps approved saves and updates in that global
+folder. Set `ENGRAM_GLOBAL_DIR` when you prefer environment-based discovery.
+
 To share global memory with a team or across devices, add an origin during init:
 
 ```bash
@@ -166,6 +178,7 @@ including older Engram-generated skill files.
 
 ```bash
 npx @the-long-ride/engram init
+npx @the-long-ride/engram init --global-only --global-path ~/Documents/engram
 npx @the-long-ride/engram save rule "Use pnpm for package management."
 npx @the-long-ride/engram save rule --role frontend "Use design tokens for spacing."
 npx @the-long-ride/engram save workflow "When releasing, run tests, update the changelog, then tag the version."
@@ -228,6 +241,15 @@ When rule variants are off, Engram renders balanced rule wording by default. Whe
 variants are enabled, new or updated rule memories include light, balanced, and
 strict versions, and `engram load`, `engram export`, and `engram sync` emit only
 the selected variant.
+
+After a successful `engram init`, the CLI points users at three high-leverage
+features:
+
+| Feature | Use for what? | How to use | Best example |
+| --- | --- | --- | --- |
+| Rule strict level | Tune how strongly saved rules steer an agent. | `engram set-rule-variant strict`, `balanced`, `light`, or `off`. | Use `strict` for smaller automation models; use `balanced` or `light` for stronger reasoning models. |
+| Autosave | Capture several durable memories from a long session. | `engram autosave`, `engram autosave --file transcript.md`, or `engram at -a` when the human explicitly approves all. | At the end of a feature session, save its new rules, facts, and repeatable workflow in one review. |
+| Take control | Convert existing agent guidance, docs, and notes into Engram memory. | `engram take-control --dry-run`, then `engram take-control`. | Adopt Engram in a repo that already has AGENTS.md, CLAUDE.md, Cursor rules, or scattered notes. |
 
 ## Shell Completion
 
@@ -321,6 +343,7 @@ that same accept-all autosave flow.
 | Consume document files | install optional `@the-long-ride/markdown-them`, then run `engram take-control --file docs/handbook.docx` or `engram take-control --include "docs/**/*.pdf"` |
 | Daily agent session | `engram load "<task>"`, `engram search "<topic>"`, `engram save ...`, `engram autosave` |
 | Long session capture | `engram autosave`, `engram autosave --file transcript.md`, `engram at -a` when the human explicitly wants accept-all |
+| Global-only personal memory | `engram init --global-only --global-path <path>`, `engram save rule "..."`, `engram load "<task>"` |
 | Team workspace memory | `engram init --submodule`, `engram install-hooks`, `engram verify`, `engram resolve-conflicts` |
 | Cross-device personal memory | `engram init --global-path <path>`, `engram init --global-remote <git-url>`, `engram sync` |
 | Audit and cleanup | `engram health`, `engram stats`, `engram quality-check`, `engram deduplicate`, `engram ignore status` |
@@ -333,6 +356,7 @@ Core commands include:
 engram --version
 engram -v
 engram init
+engram init --global-only --global-path ~/Documents/engram
 engram init --no-skillset
 engram init --skillset all
 engram entry

@@ -37,6 +37,7 @@ engram verify
 async function temp() {
   const { cwd, env } = await tempWorkspace('engram-safety-');
   process.env.ENGRAM_GLOBAL_DIR = env.ENGRAM_GLOBAL_DIR;
+  process.env.ENGRAM_CONFIG_DIR = env.ENGRAM_CONFIG_DIR;
   await initWorkspace(cwd, true);
   return cwd;
 }

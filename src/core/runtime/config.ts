@@ -3,11 +3,17 @@ import path from 'node:path';
 import { homedir } from 'node:os';
 import { ENGRAM_DIR, LEGACY_ENGRAM_DIR, VERSION } from './constants.js';
 import type { EngramConfig, Scope } from './types.js';
-import { readJson } from '../system/fsx.js';
+import { exists, readJson, writeJson } from '../system/fsx.js';
 
 /** Return the OS-specific default global memory path. */
 export function defaultGlobalPath(): string {
   return path.join(homedir(), 'Documents', 'engram');
+}
+
+/** Return the user-level Engram config path used by global-only init. */
+export function userConfigPath(): string {
+  const configured = process.env.ENGRAM_CONFIG_DIR?.trim();
+  return path.join(configured ? path.resolve(configured) : path.join(homedir(), '.engram'), 'engram.config.json');
 }
 
 /** Return the default config written during init. */
@@ -51,8 +57,17 @@ export async function loadConfig(cwd = process.cwd()): Promise<EngramConfig> {
   const roots = scopeRoots(cwd);
   const file = path.join(roots.workspace, 'engram.config.json');
   const legacyFile = path.join(cwd, LEGACY_ENGRAM_DIR, 'engram.config.json');
-  const found = await readJson<Partial<EngramConfig>>(file, await readJson<Partial<EngramConfig>>(legacyFile, {}));
-  return mergeConfig(defaultConfig(), found);
+  const workspace = await readJson<Partial<EngramConfig>>(file, {});
+  const legacy = await readJson<Partial<EngramConfig>>(legacyFile, {});
+  const user = await readJson<Partial<EngramConfig>>(userConfigPath(), {});
+  const globalPath = process.env.ENGRAM_GLOBAL_DIR?.trim()
+    || stringValue(workspace.global_path)
+    || stringValue(legacy.global_path)
+    || stringValue(user.global_path);
+  const global = globalPath ? await readJson<Partial<EngramConfig>>(path.join(path.resolve(globalPath), 'engram.config.json'), {}) : {};
+  let config = defaultConfig();
+  for (const found of [global, user, legacy, workspace]) config = mergeConfig(config, found);
+  return config;
 }
 
 /** Merge a partial config without losing nested defaults. */
@@ -69,6 +84,26 @@ export function mergeConfig(base: EngramConfig, found: Partial<EngramConfig>): E
     pr_workflow: { ...base.pr_workflow, ...(found.pr_workflow ?? {}) },
     encryption: { ...base.encryption, ...(found.encryption ?? {}) }
   };
+}
+
+/** Persist global-only settings outside any workspace. */
+export async function writeUserConfig(update: Partial<EngramConfig>): Promise<string> {
+  const file = userConfigPath();
+  const current = await readJson<Partial<EngramConfig>>(file, {});
+  const merged = mergeConfig(mergeConfig(defaultConfig(), current), update);
+  await writeJson(file, merged);
+  return file;
+}
+
+/** Persist runtime config to the active workspace, or to user config for global-only sessions. */
+export async function writeConfig(cwd: string, config: EngramConfig): Promise<string> {
+  const file = path.join(workspaceRoot(cwd), 'engram.config.json');
+  const root = workspaceRoot(cwd);
+  if (await exists(file) || await exists(root) || config.scope !== 'global') {
+    await writeJson(file, config);
+    return file;
+  }
+  return writeUserConfig(config);
 }
 
 /** Expand a scope setting into concrete write scopes. */
@@ -94,4 +129,8 @@ export function resolveGlobalRoot(configured = ''): string {
   const configuredPath = typeof configured === 'string' ? configured.trim() : '';
   const chosen = env || configuredPath;
   return chosen ? path.resolve(chosen) : '';
+}
+
+function stringValue(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
 }

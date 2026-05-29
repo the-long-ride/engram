@@ -7,7 +7,7 @@ import { initWorkspace, resolveAuthor, writeApprovedMemory } from '../core/memor
 import { getContext, loadSummary } from '../core/memory/context.js';
 import { loadConfig, scopeRootsForConfig, writeScopes } from '../core/runtime/config.js';
 import { renderHelp, renderHelpTerminal } from '../core/cli/help.js';
-import { INIT_WORDMARK } from '../core/cli/banner.js';
+import { INIT_WORDMARK, renderInitWordmark } from '../core/cli/banner.js';
 import { completionScript } from '../core/cli/command-registry.js';
 import { readText, writeText } from '../core/system/fsx.js';
 import { applyApprovalEdit, requestApproval, requestGeneratedMemoryApproval, requestGeneratedSelectionApproval, requestGeneratedSelectionText, requestSelectionApproval, type SelectionApproval } from '../core/safety/approval.js';
@@ -26,32 +26,80 @@ import type { MemoryType, Scope } from '../core/runtime/types.js';
 export async function cmdInit(flags: Record<string, any>): Promise<string> {
   const prelude = initWordmarkPrelude();
   const loaded = await loadConfig();
+  const globalOnly = flags['global-only'] === true;
+  if (globalOnly && flags['no-global'] === true) throw new Error('global-only init requires global memory; remove --no-global or pass --global-path <path>');
+  if (globalOnly && (flags.submodule === true || typeof flags['submodule-remote'] === 'string')) throw new Error('global-only init cannot configure a workspace submodule');
   const requestedBranch = typeof flags['global-branch'] === 'string' ? flags['global-branch'] : loaded.global_git.branch;
   const branch = normalizeBranchName(requestedBranch);
-  const submodule = await planWorkspaceSubmodule(flags);
+  const submodule = globalOnly ? undefined : await planWorkspaceSubmodule(flags);
   const globalPath = await resolveGlobalPath(flags, loaded.global_path);
   const config = { ...loaded, global_path: globalPath, global_git: { ...loaded.global_git, branch } };
   const roots = scopeRootsForConfig(process.cwd(), config);
   const globalRemote = await planGlobalRemote(flags, roots.global, branch, config.global_git);
-  const lines = await initWorkspace(process.cwd(), Boolean(flags.force), branch, globalPath);
-  lines.push(...await applyWorkspaceSubmodule(submodule));
+  const lines = await initWorkspace(process.cwd(), Boolean(flags.force), branch, globalPath, { globalOnly });
+  if (submodule) lines.push(...await applyWorkspaceSubmodule(submodule));
   lines.push(...await applyGlobalRemote(globalRemote, roots.global, config.global_git));
-  lines.push(...await maybeInstallDefaultSkillset(flags));
+  lines.push(...await maybeInstallDefaultSkillset(flags, globalOnly));
+  lines.push(...initSuccessSuggestions(globalOnly));
   return `${prelude}${lines.join('\n')}`;
 }
 function initWordmarkPrelude(): string {
   if (process.stdout.isTTY) {
-    output.write(`${INIT_WORDMARK}\n`);
+    output.write(`${renderInitWordmark(true)}\n`);
     return '';
   }
   return `${INIT_WORDMARK}\n`;
 }
 
-async function maybeInstallDefaultSkillset(flags: Record<string, any>): Promise<string[]> {
+async function maybeInstallDefaultSkillset(flags: Record<string, any>, globalOnly = false): Promise<string[]> {
+  if (globalOnly) return ['skillset: skipped (global-only init)'];
   const requested = typeof flags.skillset === 'string' ? flags.skillset.trim() : 'codex';
   if (flags['no-skillset'] === true || isDisabledSkillsetTarget(requested)) return ['skillset: skipped'];
   const results = await installSkillset(process.cwd(), requested, false);
   return [`skillset: ${summarizeSkillsetInstall(results)}`];
+}
+
+function initSuccessSuggestions(globalOnly: boolean): string[] {
+  const style = initSuggestionStyle();
+  return [
+    '',
+    style.heading('Try next:'),
+    `- ${style.title('Rule strict level')}`,
+    `  ${style.label('Use for what:')} tune how strongly saved rules steer agents.`,
+    `  ${style.label('How to use:')} ${style.command('engram set-rule-variant strict|balanced|light|off')}.`,
+    `  ${style.label('Best example:')} use strict for smaller automation models, balanced or light for stronger reasoning models.`,
+    `- ${style.title('Autosave')}`,
+    `  ${style.label('Use for what:')} capture several durable memories from a long session.`,
+    `  ${style.label('How to use:')} ${style.command('engram autosave')}, ${style.command('engram autosave --file transcript.md')}, or ${style.command('engram at -a')} when the human explicitly approves all.`,
+    `  ${style.label('Best example:')} end a feature session by saving its new rules, facts, and workflow.`,
+    `- ${style.title('Take control')}`,
+    `  ${style.label('Use for what:')} migrate existing AGENTS.md, CLAUDE.md, Cursor rules, docs, or notes into Engram memory.`,
+    `  ${style.label('How to use:')} ${style.command('engram take-control --dry-run')}, then ${style.command('engram take-control')}.`,
+    `  ${style.label('Best example:')} adopt Engram in a repo that already has scattered agent guidance.`,
+    ...(globalOnly ? [
+      `- ${style.title('Global-only saves')}`,
+      `  ${style.label('Use for what:')} keep memory across projects without a workspace install.`,
+      `  ${style.label('How to use:')} ${style.command('engram save rule "Use pnpm for package management."')}`,
+      `  ${style.label('Best example:')} save personal agent preferences once and load them anywhere.`
+    ] : [
+      `- ${style.title('Global memory')}`,
+      `  ${style.label('Use for what:')} keep memory across projects.`,
+      `  ${style.label('How to use:')} ${style.command('engram init --global-only --global-path <path>')}, then ${style.command('engram save --scope global "Use pnpm for package management."')}`,
+      `  ${style.label('Best example:')} keep personal or team-wide preferences outside one repo.`
+    ]),
+    '',
+    `${style.label('More help:')} run ${style.command('engram -h')} for all commands, or ${style.command('engram help <command>')} for deeper examples.`
+  ];
+}
+
+function initSuggestionStyle(): Record<'heading' | 'title' | 'label' | 'command', (text: string) => string> {
+  const color = process.stdout.isTTY ? (open: string, text: string) => `${open}${text}\x1b[0m` : (_open: string, text: string) => text;
+  return {
+    heading: (text) => color('\x1b[1;36m', text),
+    title: (text) => color('\x1b[1;33m', text),
+    label: (text) => color('\x1b[90m', text),
+    command: (text) => color('\x1b[1;36m', text)
+  };
 }
 
 function isDisabledSkillsetTarget(target: string): boolean {
@@ -130,7 +178,7 @@ export async function cmdAutosave(args: string[], flags: Record<string, any> = {
   let approval: SelectionApproval | undefined = acceptAll ? { accepted: true } : undefined;
   if (!text) {
     if (acceptAll) {
-      text = await requestGeneratedSelectionText({ guidance: autosaveGuidance() }) ?? '';
+      text = await requestGeneratedSelectionText({ guidance: autosaveGuidance(), acceptAll }) ?? '';
       if (!text) return 'Discarded. No file written.';
     }
     else {
@@ -170,7 +218,7 @@ export async function cmdTakeControl(args: string[], flags: Record<string, any> 
   let plans: SavePlan[] = [];
   let approval: SelectionApproval | undefined = acceptAll ? { accepted: true } : undefined;
   if (!text) {
-    if (acceptAll) text = await requestGeneratedSelectionText({ guidance }) ?? '';
+    if (acceptAll) text = await requestGeneratedSelectionText({ guidance, acceptAll }) ?? '';
     else {
       const captured = await requestGeneratedSelectionApproval(async (generated) => {
         text = generated;

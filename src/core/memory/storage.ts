@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { CHANGELOG_FILE, DEFAULT_IGNORE, HASH_FILE, HELP_FILE, INDEX_FILE, MEMORY_DIRS, README_FILE } from '../runtime/constants.js';
 import type { EngramConfig, Scope } from '../runtime/types.js';
-import { defaultConfig, legacyWorkspaceRoot, loadConfig, mergeConfig, scopeRootsForConfig, workspaceRoot } from '../runtime/config.js';
+import { defaultConfig, legacyWorkspaceRoot, loadConfig, mergeConfig, scopeRootsForConfig, workspaceRoot, writeUserConfig } from '../runtime/config.js';
 import { ensureDir, exists, inside, listFiles, readJson, readText, writeJson, writeText } from '../system/fsx.js';
 import { renderHelp, renderMemoryReadme } from '../cli/help.js';
 import { emptyIndex, rebuildIndex } from './index.js';
@@ -14,17 +14,20 @@ import { ensureGlobalGit, gitCommitGlobal, gitUserEmail, pullGlobalGit } from '.
 import { resolveConflictsInRoot } from '../vcs/conflict.js';
 
 type ReconcileResult = { dirs: number; files: number; config: boolean; migrated: number; index: boolean };
+type InitOptions = { globalOnly?: boolean };
 
 /** Initialize a workspace .agents/.engram folder. */
-export async function initWorkspace(cwd: string, force = false, branch = 'main', globalPath = ''): Promise<string[]> {
-  const migration = await migrateLegacyWorkspaceRoot(cwd);
+export async function initWorkspace(cwd: string, force = false, branch = 'main', globalPath = '', options: InitOptions = {}): Promise<string[]> {
   const root = workspaceRoot(cwd);
   const existing = await loadConfig(cwd);
-  const config = { ...existing, version: defaultConfig().version, global_path: globalPath, global_git: { ...existing.global_git, branch } };
+  const globalOnly = Boolean(options.globalOnly);
+  const config = { ...existing, version: defaultConfig().version, global_path: globalPath, scope: globalOnly ? 'global' as const : existing.scope, global_git: { ...existing.global_git, branch } };
   const roots = scopeRootsForConfig(cwd, config);
   const lines: string[] = [];
-  const workspaceExisted = await exists(root);
+  if (globalOnly) return initGlobalOnly(roots.global, config, force, branch, lines);
+  const migration = await migrateLegacyWorkspaceRoot(cwd);
   if (migration) lines.push(migration);
+  const workspaceExisted = await exists(root);
   const globalExisted = roots.global ? await exists(roots.global) : false;
   if (workspaceExisted && !force) {
     lines.push(`engram already initialized at ${root}`);
@@ -47,8 +50,23 @@ export async function initWorkspace(cwd: string, force = false, branch = 'main',
   return lines;
 }
 
+async function initGlobalOnly(root: string, config: EngramConfig, force: boolean, branch: string, lines: string[]): Promise<string[]> {
+  if (!root) throw new Error('global-only init requires ENGRAM_GLOBAL_DIR or --global-path <path>');
+  const existed = await exists(root);
+  const globalConfig = { ...config, global_path: root, scope: 'global' as const, global_git: { ...config.global_git, branch } };
+  lines.push(existed && !force ? `engram global-only already initialized at ${root}` : `engram global-only initialized at ${root}`);
+  const global = await createScope(root, globalConfig, 'global', force, { scope: 'global', global_path: root });
+  if (existed || force) lines.push(...scopeRepairLines('global', global, false));
+  const detected = await ensureGlobalGit(root, branch);
+  await gitCommitGlobal(root, 'initialize global memory', globalConfig.global_git, () => resolveGlobalConflicts(root));
+  const userConfig = await writeUserConfig({ global_path: root, scope: 'global', global_git: globalConfig.global_git });
+  lines.push(`engram global ready at ${root} (git branch: ${detected})`);
+  lines.push(`engram user config ready at ${userConfig}`);
+  return lines;
+}
+
 /** Create the standard scope files and folders. */
-export async function createScope(root: string, config: EngramConfig, scope: Scope, force = true): Promise<ReconcileResult> {
+export async function createScope(root: string, config: EngramConfig, scope: Scope, force = true, configOverrides: Partial<EngramConfig> = {}): Promise<ReconcileResult> {
   const result: ReconcileResult = { dirs: 0, files: 0, config: false, migrated: 0, index: false };
   await ensureDir(root);
   result.migrated = await migrateLegacyDirs(root);
@@ -57,7 +75,7 @@ export async function createScope(root: string, config: EngramConfig, scope: Sco
     if (!(await exists(target))) result.dirs += 1;
     await ensureDir(target);
   }
-  result.config = await writeMergedConfig(path.join(root, 'engram.config.json'), config, force);
+  result.config = await writeMergedConfig(path.join(root, 'engram.config.json'), config, force, configOverrides);
   result.files += await writeJsonIfNeeded(path.join(root, HASH_FILE), {}, false) ? 1 : 0;
   result.files += await writeTextIfNeeded(path.join(root, HELP_FILE), renderHelp(), true) ? 1 : 0;
   result.files += await writeTextIfNeeded(path.join(root, README_FILE), renderMemoryReadme(), true) ? 1 : 0;
@@ -139,10 +157,15 @@ async function writeTextIfNeeded(file: string, value: string, overwrite: boolean
   return true;
 }
 
-async function writeMergedConfig(file: string, config: EngramConfig, force: boolean): Promise<boolean> {
+async function writeMergedConfig(file: string, config: EngramConfig, force: boolean, overrides: Partial<EngramConfig> = {}): Promise<boolean> {
   const current = force ? {} : await readJson<Partial<EngramConfig>>(file, {});
   const merged = mergeConfig(config, current);
-  const next = { ...merged, version: config.version, global_git: { ...merged.global_git, branch: config.global_git.branch } };
+  const next = {
+    ...merged,
+    ...overrides,
+    version: config.version,
+    global_git: { ...merged.global_git, ...(overrides.global_git ?? {}), branch: config.global_git.branch }
+  };
   return writeJsonIfChanged(file, next);
 }
 

@@ -77,7 +77,7 @@ proposal and collect explicit human approval before invoking a CLI write flow.
 
 | Command | Purpose |
 | --- | --- |
-| `engram init [--no-skillset] [--skillset target] [--submodule] [--no-global] [--global-path path] [--global-remote <git-url>]` | Create or reconcile memory roots, install compact Codex skillset by default, optionally create `.agents/.engram` as a submodule, and initialize global memory Git when configured |
+| `engram init [--global-only] [--no-skillset] [--skillset target] [--submodule] [--no-global] [--global-path path] [--global-remote <git-url>]` | Create or reconcile memory roots, install compact Codex skillset by default, optionally create `.agents/.engram` as a submodule, initialize global memory Git when configured, or create only global memory with `--global-only` |
 | `engram --version` / `engram -v` | Print the installed CLI version |
 | `engram help [topic]` | Show compact help or detailed command-specific examples and use cases |
 | `engram entry` | Print resolved flags, paths, and detected global Git state |

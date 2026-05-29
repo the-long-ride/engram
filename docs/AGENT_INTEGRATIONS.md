@@ -23,6 +23,10 @@ Use `engram init --no-skillset` to skip agent files, or
 `engram init --skillset all` to install every supported adapter during init.
 Existing human-authored files are skipped.
 
+Use `engram init --global-only --global-path <path>` when the human wants only
+portable global memory and no `.agents/.engram` or local skillset files in the
+current workspace. In that mode, default saves go to the global folder.
+
 To add or refresh adapters later:
 
 ```bash
@@ -69,7 +73,9 @@ Aliases: `codex` installs the `agents-md` adapter plus the Agent Skill file,
 
    Interactive init asks in this order: whether to add `./.agents/.engram` as a
    submodule, whether to use a global Engram path, and whether to add a shared
-   global Git origin. Use `engram init --global-path <path>` for scripted setup.
+   global Git origin. Use `engram init --global-path <path>` for scripted setup,
+   or `engram init --global-only --global-path <path>` for a global memory folder
+   without local workspace installation.
 
    If the human wants `.agents/.engram` tracked as a separate repository, ask whether to
    create a local submodule. When they approve, run:
@@ -130,8 +136,10 @@ Aliases: `codex` installs the `agents-md` adapter plus the Agent Skill file,
   `--accept-all`, or uses the `/engram at -a` shortcut, the slash adapter should
   generate/provide concise candidates, run the CLI with
   `engram autosave --accept-all`, and report the saved files without asking for
-  another A/B/C reply. Agents must not add `--accept-all` unless the human
-  requested it.
+  another A/B/C reply. For `/engram take-control --accept-all`, the slash adapter
+  should read the source pack, generate `TYPE: ... | TEXT: ...` candidates, pass
+  them to the CLI, and let Engram save them without a second approval prompt.
+  Agents must not add `--accept-all` unless the human requested it.
 
    Generated knowledge should be objective and durable. Corrections and
    preferences become rules. Repeatable procedures become workflows/skills.

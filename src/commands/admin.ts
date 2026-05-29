@@ -2,8 +2,9 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { getContext } from '../core/memory/context.js';
+import { writeConfig } from '../core/runtime/config.js';
 import { isIgnored } from '../core/safety/ignore.js';
-import { ensureDir, readText, writeJson, writeText } from '../core/system/fsx.js';
+import { ensureDir, readText, writeText } from '../core/system/fsx.js';
 import { findConflicts, resolveConflicts } from '../core/vcs/conflict.js';
 import { installSkillset, skillsetTargets } from '../core/integrations/skillset.js';
 import { visibleEntries } from '../core/memory/routing.js';
@@ -27,7 +28,7 @@ export async function cmdIgnore(args: string[]): Promise<string> {
 export async function cmdSetRole(args: string[]): Promise<string> {
   const ctx = await getContext();
   ctx.config.roles = args;
-  await writeJson(path.join(ctx.roots.workspace, 'engram.config.json'), ctx.config);
+  await writeConfig(process.cwd(), ctx.config);
   return `Roles: ${args.join(', ') || '(none)'}`;
 }
 
@@ -43,7 +44,7 @@ export async function cmdSetRuleVariant(args: string[]): Promise<string> {
   } else {
     throw new Error('set-rule-variant expects off, light, balanced, strict, or status');
   }
-  await writeJson(path.join(ctx.roots.workspace, 'engram.config.json'), ctx.config);
+  await writeConfig(process.cwd(), ctx.config);
   return ruleVariantStatus(ctx.config.rule_variants);
 }
 

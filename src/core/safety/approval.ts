@@ -5,7 +5,7 @@ import { stdin as input, stdout as output } from 'node:process';
 export type Approval = { accepted: boolean; edits?: string; redacted?: boolean };
 export type SelectionApproval = Approval & { selected?: number[] };
 type PreviewRenderer = (text: string) => string | Promise<string>;
-type GeneratedMemoryOptions = { explicitType?: string; guidance?: string };
+type GeneratedMemoryOptions = { explicitType?: string; guidance?: string; acceptAll?: boolean };
 
 /** Ask for generated knowledge, then approve the rendered memory preview. */
 export async function requestGeneratedKnowledgeApproval(
@@ -41,7 +41,7 @@ export async function requestGeneratedSelectionApproval(
   writeGeneratedPrompt(options);
   if (!input.isTTY) return requestGeneratedSelectionPipe(renderPreview);
   const rl = createInterface({ input, output });
-  const text = (await rl.question('Memory: ')).trim();
+  const text = await readInteractiveSelectionText(rl, options);
   if (!text) {
     rl.close();
     return undefined;
@@ -56,12 +56,12 @@ export async function requestGeneratedSelectionApproval(
 export async function requestGeneratedSelectionText(options: GeneratedMemoryOptions = {}): Promise<string | undefined> {
   writeGeneratedPrompt(options);
   if (!input.isTTY) {
-    output.write('Memory: ');
+    output.write('Candidates: ');
     const text = (await readPipe()).trim();
     return text || undefined;
   }
   const rl = createInterface({ input, output });
-  const text = (await rl.question('Memory: ')).trim();
+  const text = await readInteractiveSelectionText(rl, options);
   rl.close();
   return text || undefined;
 }
@@ -79,7 +79,7 @@ async function requestGeneratedKnowledgePipe(
 async function requestGeneratedSelectionPipe(
   renderPreview: PreviewRenderer
 ): Promise<{ text: string; approval: SelectionApproval } | undefined> {
-  output.write('Memory: ');
+  output.write('Candidates: ');
   const { text, approvalLine } = splitPipedGeneratedInput(await readPipe());
   if (!text) return undefined;
   writeSelectionApprovalPreview(await renderPreview(text));
@@ -128,7 +128,35 @@ function writeGeneratedPrompt(options: GeneratedMemoryOptions): void {
   const title = options.explicitType === 'knowledge' ? 'KNOWLEDGE TEXT NEEDED' : 'MEMORY CANDIDATE NEEDED';
   output.write(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nENGRAM — ${title}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
   output.write(options.guidance ?? 'Write one concise memory candidate, or leave blank to cancel.\n');
+  if (options.acceptAll) output.write('\n--accept-all skips the final A/B/C approval after candidates are provided.\n');
   output.write('\n');
+}
+
+async function readInteractiveSelectionText(rl: { question(query: string): Promise<string> }, options: GeneratedMemoryOptions): Promise<string> {
+  output.write('Enter candidates one at a time. Leave Type blank when finished.\n');
+  output.write('Types: rule, workflow, skill, knowledge. AI agents may provide TYPE/TEXT candidate lines directly.\n');
+  if (options.acceptAll) output.write('Because --accept-all is active, every candidate entered here will be saved.\n');
+  const lines: string[] = [];
+  for (let index = 1; index <= 8; index += 1) {
+    const type = (await rl.question(`Type ${index}: `)).trim();
+    if (!type) break;
+    if (looksLikeCandidateLine(type)) {
+      lines.push(type);
+      continue;
+    }
+    const text = (await rl.question('Text: ')).trim();
+    if (!text) {
+      output.write('Skipped empty candidate text.\n');
+      index -= 1;
+      continue;
+    }
+    lines.push(`TYPE: ${type} | TEXT: ${text}`);
+  }
+  return lines.join('\n');
+}
+
+function looksLikeCandidateLine(text: string): boolean {
+  return /^\s*(?:[-*]\s*)?(?:type|kind|memory type|rule|rules|skill|skills|workflow|workflows|knowledge)\s*:/i.test(text);
 }
 
 function parseApproval(answer: string): Approval {

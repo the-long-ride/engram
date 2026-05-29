@@ -11,12 +11,21 @@ import {
 import { parseArgs } from '../dist/cli/args.js';
 import { HELP_DATA, commandAliases } from '../dist/core/cli/command-registry.js';
 import { COMMAND_TOPICS } from '../dist/core/cli/help-topics.js';
+import { INIT_WORDMARK, renderInitWordmark } from '../dist/core/cli/banner.js';
 import { isIgnored } from '../dist/core/safety/ignore.js';
 import { scanInjection, scanSensitive, redactSensitive } from '../dist/core/safety/security.js';
 import { sha256 } from '../dist/core/safety/hash.js';
 import { scoreMemory } from '../dist/core/analysis/quality.js';
 import { convertDocumentToMarkdown, isConvertibleDocument } from '../dist/core/integrations/markdown-them.js';
 import { tempWorkspace } from './helpers.mjs';
+
+test('init wordmark can render colored or plain', () => {
+  assert.equal(renderInitWordmark(false), INIT_WORDMARK);
+  assert.doesNotMatch(renderInitWordmark(true), /\x1b\[(?:1;)?34m/);
+  assert.match(renderInitWordmark(true), /\x1b\[1;36m/);
+  assert.match(renderInitWordmark(true).replace(/\x1b\[[0-9;]*m/g, ''), /SYNTHETIC MEMORY/);
+  assert.match(renderInitWordmark(true).split('\n').at(-1) ?? '', /^\x1b\[1;36m/);
+});
 
 test('schema parser reads required frontmatter and sections', () => {
   const doc = parseMemory(`---

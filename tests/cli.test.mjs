@@ -13,6 +13,7 @@ test('init, help, save reject, save accept, load, verify, audit', async () => {
   assert.match(init.stdout, /█████████╗███╗   ██╗/);
   assert.match(init.stdout, /SYNTHETIC MEMORY \/\/ NEURAL ARCHIVE :: @the-long-ride with <3/);
   assert.match(init.stdout, /skillset: written AGENTS\.md, \.agents\/skills\/engram\/SKILL\.md/);
+  assert.match(init.stdout, /More help: run engram -h for all commands, or engram help <command> for deeper examples\./);
   assert.match((await runEngram(cwd, env, ['help'])).stdout, /Memory Commands/);
   assert.match((await runEngram(cwd, env, ['-h'])).stdout, /Memory Commands/);
   assert.match((await runEngram(cwd, env, ['--help'])).stdout, /Memory Commands/);
@@ -343,6 +344,8 @@ test('autosave accept-all saves generated candidates without final approval line
   const saved = await runEngram(cwd, env, ['autosave', '--scope', 'workspace', '--accept-all'], input);
   assert.equal(saved.code, 0, saved.stderr);
   assert.match(saved.stdout, /MEMORY CANDIDATE NEEDED/);
+  assert.match(saved.stdout, /Candidates:/);
+  assert.match(saved.stdout, /--accept-all skips the final A\/B\/C approval/);
   assert.match(saved.stdout, /Accepted all autosave candidates/);
   assert.doesNotMatch(saved.stdout, /A 1,3/);
   assert.match((await runEngram(cwd, env, ['stats'])).stdout, /Total: 2/);
@@ -413,6 +416,45 @@ test('init can persist a custom global memory path', async () => {
   assert.equal(config.global_path, globalPath);
   const entry = await runEngram(cwd, customEnv, ['entry']);
   assert.match(entry.stdout.replace(/\x1b\[[0-9;]*m/g, ''), new RegExp(`roots\\.global:\\s*${globalPath.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')}`));
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('global-only init skips workspace install and saves to global by default', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  const customEnv = { ...env };
+  delete customEnv.ENGRAM_GLOBAL_DIR;
+  const globalPath = path.join(cwd, 'portable-engram');
+  const init = await runEngram(cwd, customEnv, ['init', '--global-only', '--global-path', globalPath]);
+  assert.equal(init.code, 0, init.stderr);
+  assert.match(init.stdout, /engram global-only initialized/);
+  assert.match(init.stdout, /Rule strict level/);
+  assert.match(init.stdout, /Autosave/);
+  assert.match(init.stdout, /Take control/);
+  assert.match(init.stdout, /Global-only saves/);
+  await assert.rejects(readFile(path.join(workspaceMemoryRoot(cwd), 'engram.config.json'), 'utf8'));
+  await assert.rejects(readFile(path.join(cwd, 'AGENTS.md'), 'utf8'));
+
+  const userConfig = JSON.parse(await readFile(path.join(customEnv.ENGRAM_CONFIG_DIR, 'engram.config.json'), 'utf8'));
+  assert.equal(userConfig.global_path, globalPath);
+  assert.equal(userConfig.scope, 'global');
+  const globalConfig = JSON.parse(await readFile(path.join(globalPath, 'engram.config.json'), 'utf8'));
+  assert.equal(globalConfig.global_path, globalPath);
+  assert.equal(globalConfig.scope, 'global');
+
+  const strict = await runEngram(cwd, customEnv, ['set-rule-variant', 'strict']);
+  assert.equal(strict.code, 0, strict.stderr);
+  assert.match(strict.stdout, /strict/);
+  await assert.rejects(readFile(path.join(workspaceMemoryRoot(cwd), 'engram.config.json'), 'utf8'));
+
+  const saved = await runEngram(cwd, customEnv, ['save', 'rule', 'Use global-only defaults'], 'A\n');
+  assert.equal(saved.code, 0, saved.stderr);
+  assert.match(saved.stdout, /Saved/);
+  await readFile(path.join(globalPath, 'rules', 'use-global-only-defaults.md'), 'utf8');
+  await assert.rejects(readFile(path.join(workspaceMemoryRoot(cwd), 'rules', 'use-global-only-defaults.md'), 'utf8'));
+  const loaded = await runEngram(cwd, customEnv, ['load', 'global-only defaults']);
+  assert.equal(loaded.code, 0, loaded.stderr);
+  assert.match(loaded.stdout, /global: 1/);
+  assert.match(loaded.stdout, /mandatory/);
   await rm(cwd, { recursive: true, force: true });
 });
 

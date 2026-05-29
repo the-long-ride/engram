@@ -16,8 +16,9 @@ export async function loadIgnore(cwd: string, config: EngramConfig): Promise<Ign
   if (source === 'gitignore' || source === 'both') {
     patterns.push(...parseIgnore(await readText(path.join(cwd, config.ignore.gitignore_path))));
   }
-  if (config.ignore.global_engramignore) {
-    patterns.push(...parseIgnore(await readText(path.join(scopeRootsForConfig(cwd, config).global, '.engramignore'))));
+  const globalRoot = scopeRootsForConfig(cwd, config).global;
+  if (config.ignore.global_engramignore && globalRoot) {
+    patterns.push(...parseIgnore(await readText(path.join(globalRoot, '.engramignore'))));
   }
   return { patterns: [...new Set(patterns)], hiddenCount: 0 };
 }

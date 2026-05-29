@@ -3,13 +3,13 @@ import assert from 'node:assert/strict';
 import { readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { initGit, runEngram, tempWorkspace } from './helpers.mjs';
+import { initGit, runEngram, tempWorkspace, workspaceMemoryRoot } from './helpers.mjs';
 
-test('resolve-conflicts writes and stages only .engram files', async () => {
+test('resolve-conflicts writes and stages only workspace memory files', async () => {
   const { cwd, env } = await tempWorkspace('engram-conflict-');
   initGit(cwd);
   await runEngram(cwd, env, ['init']);
-  const memoryFile = path.join(cwd, '.engram', 'rules', 'merge-rule.md');
+  const memoryFile = path.join(workspaceMemoryRoot(cwd), 'rules', 'merge-rule.md');
   await writeFile(memoryFile, conflictMemory());
   await writeFile(path.join(cwd, 'workspace.txt'), '<<<<<<< ours\ncode\n=======\ncode2\n>>>>>>> theirs\n');
   const result = await runEngram(cwd, env, ['resolve-conflicts']);
@@ -18,7 +18,7 @@ test('resolve-conflicts writes and stages only .engram files', async () => {
   assert.doesNotMatch(await readFile(memoryFile, 'utf8'), /<<<<<<<|=======|>>>>>>>/);
   assert.match(await readFile(path.join(cwd, 'workspace.txt'), 'utf8'), /<<<<<<< ours/);
   const status = spawnSync('git', ['status', '--porcelain'], { cwd, encoding: 'utf8' }).stdout;
-  assert.match(status, /\.engram\/rules\/merge-rule\.md/);
+  assert.match(status, /\.agents\/\.engram\/rules\/merge-rule\.md/);
   assert.doesNotMatch(status.split(/\r?\n/).filter((line) => line.startsWith('A ')).join('\n'), /workspace\.txt/);
   await rm(cwd, { recursive: true, force: true });
 });

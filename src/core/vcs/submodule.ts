@@ -1,18 +1,19 @@
-/** Optional workspace .engram Git submodule setup. */
+/** Optional workspace .agents/.engram Git submodule setup. */
 import path from 'node:path';
 import { ENGRAM_DIR } from '../runtime/constants.js';
+import { workspaceRoot } from '../runtime/config.js';
 import { ensureDir, exists } from '../system/fsx.js';
 import { git, isValidGitRemoteUrl, normalizeBranchName } from './git.js';
 
 export type WorkspaceSubmoduleOptions = { branch?: string; remoteUrl?: string };
 
-/** Initialize .engram as a local submodule and stage only submodule metadata. */
+/** Initialize workspace memory as a local submodule and stage only submodule metadata. */
 export async function configureWorkspaceSubmodule(cwd: string, options: WorkspaceSubmoduleOptions = {}): Promise<string[]> {
   const branch = normalizeBranchName(options.branch ?? 'main');
   const remoteUrl = options.remoteUrl?.trim() ?? '';
   if (remoteUrl && !isValidGitRemoteUrl(remoteUrl)) throw new Error('invalid submodule remote URL');
   if (!await isGitRepo(cwd)) return ['workspace submodule: skipped (workspace is not a Git repo)'];
-  const root = path.join(cwd, ENGRAM_DIR);
+  const root = workspaceRoot(cwd);
   if (!await exists(root)) throw new Error('workspace memory must be initialized before submodule setup');
   await ensureLocalRepo(root, branch);
   const lines = [`workspace submodule: branch ${branch}`];
@@ -24,7 +25,7 @@ export async function configureWorkspaceSubmodule(cwd: string, options: Workspac
   await ensureGitmodules(cwd, remoteUrl || `./${ENGRAM_DIR}`, branch);
   await ensureNotTrackedAsFiles(cwd);
   await git(['-C', cwd, 'add', '-f', '.gitmodules', ENGRAM_DIR]);
-  return [...lines, 'workspace submodule: staged .gitmodules and .engram gitlink'];
+  return [...lines, `workspace submodule: staged .gitmodules and ${ENGRAM_DIR} gitlink`];
 }
 
 async function ensureLocalRepo(root: string, branch: string): Promise<void> {
@@ -56,7 +57,7 @@ async function ensureGitmodules(cwd: string, url: string, branch: string): Promi
 async function ensureNotTrackedAsFiles(cwd: string): Promise<void> {
   const tracked = (await git(['-C', cwd, 'ls-files', '-s', '--', ENGRAM_DIR]).catch(() => '')).trim();
   if (tracked && !tracked.split(/\r?\n/).every((line) => line.startsWith('160000 '))) {
-    throw new Error('.engram is already tracked as normal files; remove it from the parent index before converting to a submodule');
+    throw new Error(`${ENGRAM_DIR} is already tracked as normal files; remove it from the parent index before converting to a submodule`);
   }
 }
 

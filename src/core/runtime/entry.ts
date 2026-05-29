@@ -7,7 +7,9 @@ import { globalGitInfo } from '../vcs/git.js';
 export async function renderEntry(cwd = process.cwd()): Promise<string> {
   const config = await loadConfig(cwd);
   const roots = scopeRootsForConfig(cwd, config);
-  const info = await globalGitInfo(roots.global, config.global_git);
+  const info = roots.global
+    ? await globalGitInfo(roots.global, config.global_git)
+    : { repo: false, branch: config.global_git.branch, remote: config.global_git.remote, remoteUrl: '', dirty: false };
   const rows = flatten({
     version: VERSION,
     roots,
@@ -194,6 +196,7 @@ function highlightValue(val: string): string {
 
 function flatten(value: any, prefix = ''): Array<[string, string]> {
   if (Array.isArray(value)) return [[prefix, value.join(',') || '<none>']];
+  if (value === '') return [[prefix, '<none>']];
   if (!value || typeof value !== 'object') return [[prefix, String(value)]];
   return Object.keys(value).flatMap((key) => flatten(value[key], prefix ? `${prefix}.${key}` : key));
 }

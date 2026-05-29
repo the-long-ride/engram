@@ -80,7 +80,7 @@ function renderTopicHelpTerminal(detail: CommandTopicHelp): string {
 
 /** Render a short human-facing memory README. */
 export function renderMemoryReadme(): string {
-  return `# .engram Memory
+  return `# .agents/.engram Memory
 
 This folder stores portable AI-agent memory as Markdown.
 

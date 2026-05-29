@@ -22,18 +22,19 @@ All memory is plain Markdown. That means humans can read it, teams can review it
 
 | Scope | Path | Who it serves |
 | --- | --- | --- |
-| Workspace | `<project_root>/.engram/` | Everyone sharing the repository |
-| Global | `$ENGRAM_GLOBAL_DIR` | You, across agents, projects, and devices |
+| Workspace | `<project_root>/.agents/.engram/` | Everyone sharing the repository |
+| Global | `$ENGRAM_GLOBAL_DIR` or `engram init --global-path <path>` | You, across agents, projects, and devices |
 
 Resolution is simple: workspace memory is checked first, global memory is the
 fallback. If both scopes contain the same topic, the workspace version wins. No
 merging, no ambiguity, no hidden platform state.
 
-Global memory is also a Git repository. `engram init` creates or reuses the
-global folder, runs `git init` there, and defaults to the `main` branch. During
-interactive init, Engram asks whether to make `./.engram` a submodule, which
-global memory path to use, and whether to add a shared global Git origin. To set
-the global path non-interactively:
+Global memory is optional. When you set `ENGRAM_GLOBAL_DIR` or pass
+`--global-path`, Engram creates or reuses that folder, runs `git init` there,
+and defaults to the `main` branch. During interactive init, Engram asks whether
+to make `./.agents/.engram` a submodule, whether to use a global memory path,
+and whether to add a shared global Git origin. To set the global path
+non-interactively:
 
 ```bash
 engram init --global-path ~/Documents/engram
@@ -51,7 +52,7 @@ the currently checked-out global branch when it saves or syncs, so a user can
 switch the single supported branch outside Engram and `engram entry` will show
 the detected branch.
 
-Workspace memory can also be made into a local `.engram` Git submodule. In an
+Workspace memory can also be made into a local `.agents/.engram` Git submodule. In an
 interactive terminal, `engram init` asks before doing this. Non-interactive
 flows can opt in explicitly:
 
@@ -59,9 +60,9 @@ flows can opt in explicitly:
 engram init --submodule --submodule-remote https://github.com/example/project-engram.git
 ```
 
-Engram initializes `.engram` on `main`, creates the first submodule commit as
+Engram initializes `.agents/.engram` on `main`, creates the first submodule commit as
 `Initialize engram`, validates any provided remote URL, and stages only
-`.gitmodules` plus the `.engram` gitlink in the parent repository.
+`.gitmodules` plus the `.agents/.engram` gitlink in the parent repository.
 
 You can rerun `engram init` after upgrades. On existing workspaces it reconciles
 Engram-owned output with the current version: missing standard folders/files are
@@ -69,13 +70,15 @@ restored, generated help/readme/skillset files are refreshed, config defaults ar
 merged without dropping user settings, and legacy memory folders such as
 `workflows/` are migrated into the current layout when safe. Human-authored
 agent files, changelog entries, memory files, and existing hashes are preserved.
+The Engram Agent Skill at `.agents/skills/engram/SKILL.md` is refreshed too,
+including older Engram-generated skill files.
 
 ## Why Files, Not Agent Brain?
 
 | Property | Engram files | Agent memory |
 | --- | --- | --- |
 | Portability | Any device, any app | Tied to one platform |
-| Team sharing | Commit `.engram/` to Git | Not shareable |
+| Team sharing | Commit `.agents/.engram/` to Git | Not shareable |
 | Transparency | Human-readable Markdown | Opaque |
 | Cross-agent use | Any agent can read it | Usually locked in |
 | Offline use | Just files on disk | Often cloud/session based |
@@ -179,6 +182,11 @@ engram install-skillset all
 with short confirmations instead of long explanations. Use
 `engram init --no-skillset` to skip this, or `engram init --skillset all` to
 install every adapter during initialization.
+
+Generated instructions tell agents to treat Engram as the knowledge memory
+center for project, workspace, team, and personal context. Agents route-load at
+session start, search/load again when the task changes or research depends on
+stored knowledge, and summarize only relevant IDs/rules to keep token usage low.
 
 `engram install-skillset all` creates host-specific instruction files for
 AGENTS.md-compatible agents, OpenAI Codex, GitHub Copilot, Claude, Cursor,

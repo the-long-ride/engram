@@ -1,6 +1,7 @@
 /** Deterministic merge-conflict discovery and scoped auto-resolution. */
 import path from 'node:path';
 import { CHANGELOG_FILE, ENGRAM_DIR, HASH_FILE, INDEX_FILE } from '../runtime/constants.js';
+import { workspaceRoot } from '../runtime/config.js';
 import { listFiles, readText, writeText } from '../system/fsx.js';
 import { updateHash } from '../safety/hash.js';
 import { rebuildIndex } from '../memory/index.js';
@@ -14,7 +15,7 @@ export type ConflictResult = Conflict & { resolved: boolean; staged: boolean; de
 
 /** Find conflicted memory files and classify with conservative heuristics. */
 export async function findConflicts(cwd: string): Promise<Conflict[]> {
-  return findConflictsInRoot(path.join(cwd, ENGRAM_DIR));
+  return findConflictsInRoot(workspaceRoot(cwd));
 }
 
 /** Find conflicted memory files under any Engram scope root. */
@@ -38,9 +39,9 @@ export function classifyConflict(text: string): Conflict['kind'] {
   return 'UNRELATED';
 }
 
-/** Resolve all conflicted .engram Markdown files, optionally as preview only. */
+/** Resolve all conflicted workspace memory Markdown files, optionally as preview only. */
 export async function resolveConflicts(cwd: string, dryRun = false): Promise<ConflictResult[]> {
-  const root = path.join(cwd, ENGRAM_DIR);
+  const root = workspaceRoot(cwd);
   const results = await resolveConflictsInRoot(root, 'workspace', dryRun);
   const changed = results.filter((row) => row.resolved).map((row) => row.file);
   const staged = dryRun ? false : await stageResolved(cwd, changed);

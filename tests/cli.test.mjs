@@ -4,13 +4,13 @@ import { rm, writeFile, mkdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
-import { initGit, runEngram, tempWorkspace } from './helpers.mjs';
+import { initGit, runEngram, tempWorkspace, workspaceMemoryRoot } from './helpers.mjs';
 
 test('init, help, save reject, save accept, load, verify, audit', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
   const init = await runEngram(cwd, env, ['init']);
   assert.equal(init.code, 0, init.stderr);
-  assert.ok(init.stdout.startsWith('███████╗███╗   ██╗'));
+  assert.match(init.stdout, /█████████╗███╗   ██╗/);
   assert.match(init.stdout, /SYNTHETIC MEMORY \/\/ NEURAL ARCHIVE :: @the-long-ride with <3/);
   assert.match(init.stdout, /skillset: written AGENTS\.md, \.agents\/skills\/engram\/SKILL\.md/);
   assert.match((await runEngram(cwd, env, ['help'])).stdout, /Memory Commands/);
@@ -102,7 +102,7 @@ test('export, health, search, stats, and conflict dry-run work', async () => {
   assert.match((await runEngram(cwd, env, ['search', 'React'])).stdout, /frontend-uses-react/);
   assert.match((await runEngram(cwd, env, ['stats'])).stdout, /Total: 1/);
   assert.match((await runEngram(cwd, env, ['export', '--format', 'agents-md'])).stdout, /AGENTS.md/);
-  const conflictDir = path.join(cwd, '.engram', 'rules');
+  const conflictDir = path.join(workspaceMemoryRoot(cwd), 'rules');
   await mkdir(conflictDir, { recursive: true });
   await writeFile(path.join(conflictDir, 'conflict.md'), '<<<<<<< ours\nx\n=======\ny\n>>>>>>> theirs\n');
   assert.match((await runEngram(cwd, env, ['resolve-conflicts', '--dry-run'])).stdout, /UNRELATED|CONTRADICT|EXTEND|DUPLICATE/);
@@ -130,7 +130,7 @@ test('live sync respects enabled flag and writes configured target when enabled'
   assert.match(disabled.stdout, /Live sync disabled/);
   await assert.rejects(readFile(path.join(cwd, '.cursor', 'rules', 'engram.mdc'), 'utf8'));
 
-  const configPath = path.join(cwd, '.engram', 'engram.config.json');
+  const configPath = path.join(workspaceMemoryRoot(cwd), 'engram.config.json');
   const config = JSON.parse(await readFile(configPath, 'utf8'));
   config.live_sync = { enabled: true, targets: ['cursorrules'] };
   await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`);
@@ -205,7 +205,7 @@ test('save stores role metadata for routing', async () => {
     'Use design tokens for UI spacing'
   ], 'A\n');
   assert.equal(saved.code, 0, saved.stderr);
-  const file = path.join(cwd, '.engram', 'rules', 'use-design-tokens-for-ui-spacing.md');
+  const file = path.join(workspaceMemoryRoot(cwd), 'rules', 'use-design-tokens-for-ui-spacing.md');
   assert.match(await readFile(file, 'utf8'), /role: \[frontend\]/);
   const updated = await runEngram(cwd, env, [
     'save', 'rule', '--scope', 'workspace', '--role', 'backend',
@@ -262,7 +262,7 @@ test('autosave can read a transcript file and save selected candidates only', as
   assert.equal(saved.code, 0, saved.stderr);
   assert.match(saved.stdout, /A 1,3/);
   assert.match((await runEngram(cwd, env, ['stats'])).stdout, /Total: 1/);
-  const content = await readFile(path.join(cwd, '.engram', 'rules', 'always-run-release-tests-before-tagging.md'), 'utf8');
+  const content = await readFile(path.join(workspaceMemoryRoot(cwd), 'rules', 'always-run-release-tests-before-tagging.md'), 'utf8');
   assert.match(content, /role: \[release\]/);
   assert.doesNotMatch((await runEngram(cwd, env, ['search', 'Release notes'])).stdout, /release-notes/);
   await rm(cwd, { recursive: true, force: true });
@@ -309,7 +309,7 @@ test('generated memories use standard markdown spacing and links', async () => {
   await runEngram(cwd, env, ['init']);
   const saved = await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Docs live at www.google.com.'], 'A\n');
   assert.equal(saved.code, 0, saved.stderr);
-  const content = await readFile(path.join(cwd, '.engram', 'knowledge', 'docs-live-at-www-google-com.md'), 'utf8');
+  const content = await readFile(path.join(workspaceMemoryRoot(cwd), 'knowledge', 'docs-live-at-www-google-com.md'), 'utf8');
   assert.match(content, /## Context\r?\n\r?\nApproved/);
   assert.match(content, /## Content\r?\n\r?\n- Docs live at \[www\.google\.com\]\(https:\/\/www\.google\.com\)\./);
   assert.match(content, /## Example\r?\n\r?\nUse this memory/);
@@ -324,7 +324,7 @@ test('save automatically updates matching memory instead of duplicating it', asy
   assert.equal(updated.code, 0, updated.stderr);
   assert.match(updated.stdout, /Saved/);
   assert.match((await runEngram(cwd, env, ['stats'])).stdout, /Total: 1/);
-  assert.match(await readFile(path.join(cwd, '.engram', 'knowledge', 'frontend-uses-react-and-pnpm.md'), 'utf8'), /workspace scripts/);
+  assert.match(await readFile(path.join(workspaceMemoryRoot(cwd), 'knowledge', 'frontend-uses-react-and-pnpm.md'), 'utf8'), /workspace scripts/);
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -364,21 +364,36 @@ test('init can persist a custom global memory path', async () => {
   const init = await runEngram(cwd, customEnv, ['init', '--global-path', globalPath, '--no-skillset']);
   assert.equal(init.code, 0, init.stderr);
   assert.match(init.stdout, new RegExp(globalPath.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')));
-  const config = JSON.parse(await readFile(path.join(cwd, '.engram', 'engram.config.json'), 'utf8'));
+  const config = JSON.parse(await readFile(path.join(workspaceMemoryRoot(cwd), 'engram.config.json'), 'utf8'));
   assert.equal(config.global_path, globalPath);
   const entry = await runEngram(cwd, customEnv, ['entry']);
   assert.match(entry.stdout.replace(/\x1b\[[0-9;]*m/g, ''), new RegExp(`roots\\.global:\\s*${globalPath.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')}`));
   await rm(cwd, { recursive: true, force: true });
 });
 
-test('init can create .engram as a local submodule', async () => {
+test('init does not require a global memory directory', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  const localOnlyEnv = { ...env };
+  delete localOnlyEnv.ENGRAM_GLOBAL_DIR;
+  const init = await runEngram(cwd, localOnlyEnv, ['init', '--no-skillset']);
+  assert.equal(init.code, 0, init.stderr);
+  assert.match(init.stdout, /engram global skipped/);
+  const config = JSON.parse(await readFile(path.join(workspaceMemoryRoot(cwd), 'engram.config.json'), 'utf8'));
+  assert.equal(config.global_path, '');
+  assert.equal(config.scope, 'workspace');
+  const entry = await runEngram(cwd, localOnlyEnv, ['entry']);
+  assert.match(entry.stdout.replace(/\x1b\[[0-9;]*m/g, ''), /roots\.global:\s*<none>/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('init can create .agents/.engram as a local submodule', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
   assert.equal(initGit(cwd).status, 0);
   const init = await runEngram(cwd, env, ['init', '--submodule']);
   assert.equal(init.code, 0, init.stderr);
   assert.match(init.stdout, /workspace submodule: branch main/);
-  assert.match(spawnSync('git', ['-C', path.join(cwd, '.engram'), 'log', '--format=%s', '-1'], { encoding: 'utf8' }).stdout, /Initialize engram/);
-  assert.match(spawnSync('git', ['-C', cwd, 'ls-files', '-s', '--', '.engram'], { encoding: 'utf8' }).stdout, /^160000 /);
+  assert.match(spawnSync('git', ['-C', workspaceMemoryRoot(cwd), 'log', '--format=%s', '-1'], { encoding: 'utf8' }).stdout, /Initialize engram/);
+  assert.match(spawnSync('git', ['-C', cwd, 'ls-files', '-s', '--', '.agents/.engram'], { encoding: 'utf8' }).stdout, /^160000 /);
   await rm(cwd, { recursive: true, force: true });
 });
 

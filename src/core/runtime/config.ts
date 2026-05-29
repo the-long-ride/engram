@@ -1,7 +1,7 @@
 /** Configuration discovery, defaults, and scope path resolution. */
 import path from 'node:path';
 import { homedir } from 'node:os';
-import { ENGRAM_DIR, VERSION } from './constants.js';
+import { ENGRAM_DIR, LEGACY_ENGRAM_DIR, VERSION } from './constants.js';
 import type { EngramConfig, Scope } from './types.js';
 import { readJson } from '../system/fsx.js';
 
@@ -15,8 +15,8 @@ export function defaultConfig(): EngramConfig {
   return {
     version: VERSION,
     enabled: true,
-    global_path: defaultGlobalPath(),
-    scope: 'both',
+    global_path: '',
+    scope: 'workspace',
     update: 'auto',
     read: 'auto',
     ignore: {
@@ -38,21 +38,20 @@ export function defaultConfig(): EngramConfig {
 
 /** Resolve workspace and global memory roots. */
 export function scopeRoots(cwd = process.cwd()): Record<Scope, string> {
-  const globalRoot = process.env.ENGRAM_GLOBAL_DIR || defaultGlobalPath();
-  return { workspace: path.join(cwd, ENGRAM_DIR), global: globalRoot };
+  return { workspace: workspaceRoot(cwd), global: resolveGlobalRoot() };
 }
 
 /** Resolve roots using a loaded config, with ENGRAM_GLOBAL_DIR as override. */
 export function scopeRootsForConfig(cwd: string, config: EngramConfig): Record<Scope, string> {
-  const globalRoot = process.env.ENGRAM_GLOBAL_DIR || config.global_path || defaultGlobalPath();
-  return { workspace: path.join(cwd, ENGRAM_DIR), global: globalRoot };
+  return { workspace: workspaceRoot(cwd), global: resolveGlobalRoot(config.global_path) };
 }
 
 /** Load workspace config with default fallback. */
 export async function loadConfig(cwd = process.cwd()): Promise<EngramConfig> {
   const roots = scopeRoots(cwd);
   const file = path.join(roots.workspace, 'engram.config.json');
-  const found = await readJson<Partial<EngramConfig>>(file, {});
+  const legacyFile = path.join(cwd, LEGACY_ENGRAM_DIR, 'engram.config.json');
+  const found = await readJson<Partial<EngramConfig>>(file, await readJson<Partial<EngramConfig>>(legacyFile, {}));
   return mergeConfig(defaultConfig(), found);
 }
 
@@ -61,6 +60,7 @@ export function mergeConfig(base: EngramConfig, found: Partial<EngramConfig>): E
   return {
     ...base,
     ...found,
+    global_path: typeof found.global_path === 'string' ? found.global_path : base.global_path,
     ignore: { ...base.ignore, ...(found.ignore ?? {}) },
     live_sync: { ...base.live_sync, ...(found.live_sync ?? {}) },
     global_git: { ...base.global_git, ...(found.global_git ?? {}) },
@@ -72,7 +72,26 @@ export function mergeConfig(base: EngramConfig, found: Partial<EngramConfig>): E
 }
 
 /** Expand a scope setting into concrete write scopes. */
-export function writeScopes(scope: EngramConfig['scope']): Scope[] {
-  if (scope === 'both') return ['workspace', 'global'];
-  return [scope];
+export function writeScopes(scope: EngramConfig['scope'], config?: EngramConfig): Scope[] {
+  const scopes: Scope[] = scope === 'both' ? ['workspace', 'global'] : [scope];
+  if (!config || resolveGlobalRoot(config.global_path)) return scopes;
+  return scopes.filter((current) => current !== 'global');
+}
+
+/** Return the configured workspace memory root. */
+export function workspaceRoot(cwd = process.cwd()): string {
+  return path.join(cwd, ENGRAM_DIR);
+}
+
+/** Return the legacy workspace memory root used before .agents/.engram. */
+export function legacyWorkspaceRoot(cwd = process.cwd()): string {
+  return path.join(cwd, LEGACY_ENGRAM_DIR);
+}
+
+/** Return the active global root, or an empty string when global memory is disabled. */
+export function resolveGlobalRoot(configured = ''): string {
+  const env = process.env.ENGRAM_GLOBAL_DIR?.trim();
+  const configuredPath = typeof configured === 'string' ? configured.trim() : '';
+  const chosen = env || configuredPath;
+  return chosen ? path.resolve(chosen) : '';
 }

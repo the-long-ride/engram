@@ -47,11 +47,11 @@ export async function cmdSetRuleVariant(args: string[]): Promise<string> {
   return ruleVariantStatus(ctx.config.rule_variants);
 }
 
-/** Resolve or preview .engram-only merge conflicts. */
+/** Resolve or preview workspace memory merge conflicts. */
 export async function cmdResolveConflicts(flags: Record<string, any> = {}): Promise<string> {
   if (flags.auto) throw new Error('resolve-conflicts --auto is not supported; use --dry-run or resolve-conflicts');
   const conflicts = await findConflicts(process.cwd());
-  if (!conflicts.length) return 'No .engram merge conflicts found';
+  if (!conflicts.length) return 'No workspace Engram merge conflicts found';
   if (flags['dry-run']) return conflicts.map((c) => `DRY-RUN ${c.kind} ${c.file} - ${c.summary}`).join('\n');
   const results = await resolveConflicts(process.cwd(), false);
   return results.map((c) => `RESOLVED ${c.kind} ${c.file} - ${c.decision}${c.staged ? ' [staged]' : ' [stage skipped]'}`).join('\n');

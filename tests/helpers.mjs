@@ -5,6 +5,10 @@ import { spawn, spawnSync } from 'node:child_process';
 
 export const bin = path.resolve('dist/bin/engram.js');
 
+export function workspaceMemoryRoot(cwd) {
+  return path.join(cwd, '.agents', '.engram');
+}
+
 export async function tempWorkspace(prefix = 'engram-test-') {
   const cwd = await mkdtemp(path.join(os.tmpdir(), prefix));
   return { cwd, env: { ...process.env, ENGRAM_GLOBAL_DIR: path.join(cwd, 'global') } };

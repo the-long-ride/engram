@@ -14,6 +14,7 @@ yarn-error.log*
 pnpm-debug.log*
 
 # Local Engram runtime data created while testing the CLI
+.agents/.engram/
 .engram/
 .engramignore
 

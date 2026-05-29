@@ -24,6 +24,7 @@ export async function readGuardedMemory(
 ): Promise<GuardedRead> {
   const roots = scopeRootsForConfig(cwd, config);
   const root = roots[entry.scope as Scope];
+  if (!root) return { entry, content: '', flagged: 'global memory is not configured' };
   const raw = await readText(inside(root, entry.file));
   const verify = options.verifyHashes !== false ? await verifyMemoryHash(root, entry.file, raw) : { ok: true };
   if (!verify.ok) return { entry, content: '', flagged: verify.reason };

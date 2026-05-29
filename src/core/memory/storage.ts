@@ -1,9 +1,9 @@
 /** Workspace/global storage setup and approved memory writes. */
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { CHANGELOG_FILE, DEFAULT_IGNORE, ENGRAM_DIR, HASH_FILE, HELP_FILE, INDEX_FILE, MEMORY_DIRS, README_FILE } from '../runtime/constants.js';
+import { CHANGELOG_FILE, DEFAULT_IGNORE, HASH_FILE, HELP_FILE, INDEX_FILE, MEMORY_DIRS, README_FILE } from '../runtime/constants.js';
 import type { EngramConfig, Scope } from '../runtime/types.js';
-import { defaultConfig, loadConfig, mergeConfig, scopeRootsForConfig } from '../runtime/config.js';
+import { defaultConfig, legacyWorkspaceRoot, loadConfig, mergeConfig, scopeRootsForConfig, workspaceRoot } from '../runtime/config.js';
 import { ensureDir, exists, inside, listFiles, readJson, readText, writeJson, writeText } from '../system/fsx.js';
 import { renderHelp, renderMemoryReadme } from '../cli/help.js';
 import { emptyIndex, rebuildIndex } from './index.js';
@@ -15,15 +15,17 @@ import { resolveConflictsInRoot } from '../vcs/conflict.js';
 
 type ReconcileResult = { dirs: number; files: number; config: boolean; migrated: number; index: boolean };
 
-/** Initialize a workspace .engram folder. */
+/** Initialize a workspace .agents/.engram folder. */
 export async function initWorkspace(cwd: string, force = false, branch = 'main', globalPath = ''): Promise<string[]> {
-  const root = path.join(cwd, ENGRAM_DIR);
+  const migration = await migrateLegacyWorkspaceRoot(cwd);
+  const root = workspaceRoot(cwd);
   const existing = await loadConfig(cwd);
-  const config = { ...existing, version: defaultConfig().version, global_path: globalPath || existing.global_path, global_git: { ...existing.global_git, branch } };
+  const config = { ...existing, version: defaultConfig().version, global_path: globalPath, global_git: { ...existing.global_git, branch } };
   const roots = scopeRootsForConfig(cwd, config);
   const lines: string[] = [];
   const workspaceExisted = await exists(root);
-  const globalExisted = await exists(roots.global);
+  if (migration) lines.push(migration);
+  const globalExisted = roots.global ? await exists(roots.global) : false;
   if (workspaceExisted && !force) {
     lines.push(`engram already initialized at ${root}`);
   }
@@ -33,11 +35,15 @@ export async function initWorkspace(cwd: string, force = false, branch = 'main',
   const workspace = await createScope(root, config, 'workspace', force);
   const ignoreUpdated = await reconcileIgnoreFile(cwd, force);
   if (workspaceExisted || force) lines.push(...scopeRepairLines('workspace', workspace, ignoreUpdated));
-  const global = await createScope(roots.global, config, 'global', force);
-  if (globalExisted || force) lines.push(...scopeRepairLines('global', global, false));
-  const detected = await ensureGlobalGit(roots.global, branch);
-  await gitCommitGlobal(roots.global, 'initialize global memory', config.global_git, () => resolveGlobalConflicts(roots.global));
-  lines.push(`engram global ready at ${roots.global} (git branch: ${detected})`);
+  if (roots.global) {
+    const global = await createScope(roots.global, config, 'global', force);
+    if (globalExisted || force) lines.push(...scopeRepairLines('global', global, false));
+    const detected = await ensureGlobalGit(roots.global, branch);
+    await gitCommitGlobal(roots.global, 'initialize global memory', config.global_git, () => resolveGlobalConflicts(roots.global));
+    lines.push(`engram global ready at ${roots.global} (git branch: ${detected})`);
+  } else {
+    lines.push('engram global skipped (no global path configured)');
+  }
   return lines;
 }
 
@@ -71,6 +77,7 @@ export async function writeApprovedMemory(input: {
   const config = await loadConfig(input.cwd);
   const roots = scopeRootsForConfig(input.cwd, config);
   const root = roots[input.scope];
+  if (!root) throw new Error('global memory is not configured; set ENGRAM_GLOBAL_DIR or run engram init --global-path <path>');
   const sensitive = scanSensitive(input.content);
   if (sensitive.length) throw new Error(`Sensitive data blocked on line ${sensitive[0].line}: ${sensitive[0].reason}`);
   const injection = scanInjection(input.content);
@@ -92,6 +99,7 @@ export async function syncGlobalMemoryGit(cwd: string): Promise<string[]> {
   const loaded = await loadConfig(cwd);
   const config = loaded.global_git;
   const roots = scopeRootsForConfig(cwd, loaded);
+  if (!roots.global) return ['global memory: not configured'];
   const rows = [
     ...await pullGlobalGit(roots.global, config, () => resolveGlobalConflicts(roots.global)),
     ...await gitCommitGlobal(roots.global, 'sync global memory', config, () => resolveGlobalConflicts(roots.global))
@@ -176,6 +184,15 @@ async function migrateLegacyDirs(root: string): Promise<number> {
     if (!(await listFiles(fromRoot)).length) await fs.rm(fromRoot, { recursive: true, force: true });
   }
   return count;
+}
+
+async function migrateLegacyWorkspaceRoot(cwd: string): Promise<string> {
+  const current = workspaceRoot(cwd);
+  const legacy = legacyWorkspaceRoot(cwd);
+  if (await exists(current) || !(await exists(legacy))) return '';
+  await ensureDir(path.dirname(current));
+  await fs.rename(legacy, current);
+  return `engram workspace migrated from ${legacy} to ${current}`;
 }
 
 function scopeRepairLines(scope: string, result: ReconcileResult, ignoreUpdated: boolean): string[] {

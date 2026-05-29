@@ -91,7 +91,7 @@ export async function cmdSync(): Promise<string> {
   const before = await getContext();
   const targets = before.config.live_sync.targets;
   for (const target of targets) assertFormat(target);
-  const syncRows = await syncGlobalMemoryGit(process.cwd());
+  const syncRows = before.roots.global ? await syncGlobalMemoryGit(process.cwd()) : ['global memory: not configured'];
   if (!before.config.live_sync.enabled) return `${syncRows.join('\n')}\nLive sync disabled`;
   const ctx = await getContext(process.cwd(), { rebuild: true });
   const entries = visibleEntries(ctx.index.entries, ctx.config, false, ctx.ignorePatterns);

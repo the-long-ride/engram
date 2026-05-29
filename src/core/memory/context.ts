@@ -2,7 +2,7 @@
 import type { EngramConfig, MemoryIndex } from '../runtime/types.js';
 import { loadConfig, scopeRoots, scopeRootsForConfig } from '../runtime/config.js';
 import { isIgnored, loadIgnore } from '../safety/ignore.js';
-import { loadIndex, mergeIndexes, rebuildIndex } from './index.js';
+import { emptyIndex, loadIndex, mergeIndexes, rebuildIndex } from './index.js';
 import { exists, inside } from '../system/fsx.js';
 
 export type EngramContext = {
@@ -22,7 +22,7 @@ export async function getContext(cwd = process.cwd(), options: ContextOptions = 
   const roots = scopeRootsForConfig(cwd, config);
   const ignore = await loadIgnore(cwd, config);
   const workspace = await readIndex(roots.workspace, 'workspace', ignore.patterns, Boolean(options.rebuild));
-  const global = await readIndex(roots.global, 'global', ignore.patterns, Boolean(options.rebuild));
+  const global = roots.global ? await readIndex(roots.global, 'global', ignore.patterns, Boolean(options.rebuild)) : emptyIndex();
   const index = mergeIndexes(workspace, global);
   const hiddenCount = index.entries.filter((entry) => entry.ignored || isIgnored(entry.file, ignore.patterns)).length;
   return { cwd, config, roots, index, hiddenCount, ignorePatterns: ignore.patterns };
@@ -43,7 +43,9 @@ export function loadSummary(entries: { type: string; id: string; scope: string }
 
 /** Resolve a memory entry to an absolute file path. */
 export function entryPath(ctx: EngramContext, scope: string, file: string): string {
-  return inside(ctx.roots[scope as 'workspace' | 'global'], file);
+  const root = ctx.roots[scope as 'workspace' | 'global'];
+  if (!root) throw new Error('global memory is not configured; set ENGRAM_GLOBAL_DIR or run engram init --global-path <path>');
+  return inside(root, file);
 }
 
 async function readIndex(root: string, scope: 'workspace' | 'global', patterns: string[], rebuild: boolean): Promise<MemoryIndex> {

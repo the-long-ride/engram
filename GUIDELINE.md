@@ -34,14 +34,14 @@ npm run lint:lines
   and agent-facing brainstorming guidance.
 - `src/core/vcs/git.ts` owns global memory Git init, branch detection, remote
   setup, pull, commit, push, and retry-on-merge handling. Workspace Git remains
-  untouched except for explicit `.engram` submodule setup and
+  untouched except for explicit `.agents/.engram` submodule setup and
   `resolve-conflicts`.
-- `src/core/vcs/submodule.ts` owns opt-in workspace `.engram` submodule creation
-  and may stage only `.gitmodules` plus the `.engram` gitlink after human opt-in.
+- `src/core/vcs/submodule.ts` owns opt-in workspace `.agents/.engram` submodule creation
+  and may stage only `.gitmodules` plus the `.agents/.engram` gitlink after human opt-in.
 - `src/core/integrations/skillset.ts` renders agent instruction, MCP, and slash-command
   adapters.
 - `prompts` contains agent-facing prompt templates.
-- `templates` contains generated `.engram/` starter files.
+- `templates` contains generated memory starter files.
 
 ## Coding Rules
 
@@ -87,18 +87,19 @@ npm run lint:lines
 - Slash-command adapters are routers. Keep `/engram <args>` mapped to the same
   CLI or MCP flow, never to a hidden write path. `/engram autosave --accept-all`
   must route to the CLI write path because MCP autosave remains proposal-only.
-- Global memory Git automation may touch only `$ENGRAM_GLOBAL_DIR`. Workspace
-  submodule automation may touch only `.engram`, `.gitmodules`, and the parent
-  gitlink. Agents must ask before adding any origin remote; CLI init may prompt
-  for it, and non-TTY runs should print the explicit command instead.
+- Global memory Git automation may touch only the configured global root.
+  Workspace submodule automation may touch only `.agents/.engram`, `.gitmodules`,
+  and the parent gitlink. Agents must ask before adding any origin remote; CLI
+  init may prompt for it, and non-TTY runs should print the explicit command
+  instead.
 - When adding or renaming a CLI command, update
   `src/core/cli/command-registry.ts`, `src/core/cli/help-topics.ts`,
   `src/core/integrations/skillset.ts`,
   `docs/SKILLSET_CONTRACT.md`, README examples, and command/skillset tests
   together.
-- Never stage workspace code. `resolve-conflicts` may stage only `.engram` files
-  after an explicit human command; submodule setup may stage only `.gitmodules`
-  and the `.engram` gitlink.
+- Never stage workspace code. `resolve-conflicts` may stage only
+  `.agents/.engram` files after an explicit human command; submodule setup may
+  stage only `.gitmodules` and the `.agents/.engram` gitlink.
 - Preserve archived memory; move superseded files, do not delete them.
 
 ## Debugging
@@ -167,8 +168,8 @@ those gates.
 ## Conflict Resolution
 
 `engram resolve-conflicts` is an explicit human command. It may automatically
-resolve two-sided Git conflict markers under `.engram/**/*.md`, update Engram
-hash/index/changelog metadata, and stage only `.engram` paths. It must never
+resolve two-sided Git conflict markers under `.agents/.engram/**/*.md`, update Engram
+hash/index/changelog metadata, and stage only `.agents/.engram` paths. It must never
 modify or stage workspace source files.
 
 Use `engram resolve-conflicts --dry-run` to preview classifications without

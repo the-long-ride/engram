@@ -6,6 +6,7 @@ const booleanFlags = new Set([
   'low-confidence', 'no-global', 'no-skillset', 'no-submodule', 'semantic', 'stale',
   'submodule', 'v', 'version'
 ]);
+const autosaveCommands = new Set(['autosave', 'as', 'at']);
 
 /** Parse argv into command, positional args, and --flags. */
 export function parseArgs(argv: string[]): ParsedArgs {
@@ -14,7 +15,8 @@ export function parseArgs(argv: string[]): ParsedArgs {
   const flags: Record<string, string | boolean> = {};
   for (let i = 0; i < tokens.length; i += 1) {
     const token = tokens[i];
-    if (!token.startsWith('--')) rest.push(token);
+    if (token === '-a' && autosaveCommands.has(command)) flags['accept-all'] = true;
+    else if (!token.startsWith('--')) rest.push(token);
     else if (booleanFlags.has(token.slice(2))) flags[token.slice(2)] = true;
     else if (tokens[i + 1] && !tokens[i + 1].startsWith('--')) flags[token.slice(2)] = tokens[++i];
     else flags[token.slice(2)] = true;

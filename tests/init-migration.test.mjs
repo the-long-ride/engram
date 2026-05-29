@@ -39,7 +39,7 @@ test('init can run repeatedly and refresh generated skillset files', async () =>
 name: engram
 description: Old generated Engram skill
 ---
-# Engram Memory Skill
+# Engram Memory Management Skill
 
 Engram = workspace memory.
 `);

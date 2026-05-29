@@ -22,6 +22,7 @@ test('init, help, save reject, save accept, load, verify, audit', async () => {
   assert.match((await runEngram(cwd, env, ['help', 'set-rule-variant'])).stdout, /lower-tier models/);
   assert.match((await runEngram(cwd, env, ['help', 'set-role'])).stdout, /frontend-only memory/);
   assert.match((await runEngram(cwd, env, ['help', 'autosave'])).stdout, /--accept-all/);
+  assert.match((await runEngram(cwd, env, ['help', 'autosave'])).stdout, /engram at -a/);
   assert.match((await runEngram(cwd, env, ['-h', 'roles'])).stdout, /role: \[\.\.\.\]/);
   assert.match((await runEngram(cwd, env, ['autosave', '-h'])).stdout, /one candidate per line/);
   assert.match((await runEngram(cwd, env, ['h', 'save'])).stdout, /engram save/);
@@ -68,7 +69,11 @@ test('short command aliases dispatch to canonical commands', async () => {
   assert.equal((await runEngram(cwd, env, ['i'])).code, 0);
   const saved = await runEngram(cwd, env, ['s', 'rule', '--scope', 'workspace', 'Alias save rule'], 'A\n');
   assert.equal(saved.code, 0, saved.stderr);
+  const autosaved = await runEngram(cwd, env, ['at', '-a', '--scope', 'workspace', 'TYPE: knowledge | TEXT: Alias at accepts all autosave candidates.']);
+  assert.equal(autosaved.code, 0, autosaved.stderr);
+  assert.match(autosaved.stdout, /Accepted all autosave candidates/);
   assert.match((await runEngram(cwd, env, ['l', 'alias save'])).stdout, /Alias save rule/);
+  assert.match((await runEngram(cwd, env, ['search', 'Alias at'])).stdout, /Alias at accepts all autosave candidates/);
   assert.match((await runEngram(cwd, env, ['vf'])).stdout, /OK workspace/);
   await rm(cwd, { recursive: true, force: true });
 });
@@ -86,10 +91,12 @@ test('completion emits shell helper with command suggestions', async () => {
   const zsh = await runEngram(cwd, env, ['completion', 'zsh']);
   assert.equal(zsh.code, 0, zsh.stderr);
   assert.match(zsh.stdout, /#compdef engram/);
+  assert.match(zsh.stdout, /autosave\|as\|at/);
   assert.match(zsh.stdout, /--file\[read session summary file\]/);
   const powershell = await runEngram(cwd, env, ['completion', 'powershell']);
   assert.equal(powershell.code, 0, powershell.stderr);
   assert.match(powershell.stdout, /Register-ArgumentCompleter/);
+  assert.match(powershell.stdout, /'autosave', 'as', 'at'/);
   assert.match(powershell.stdout, /\$engramAutosaveArgs/);
   await rm(cwd, { recursive: true, force: true });
 });

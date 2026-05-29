@@ -211,6 +211,7 @@ test('command registry has topic help and stable aliases', () => {
     seenAliases.set(item.alias, command);
   }
   assert.equal(commandAliases().s, 'save');
+  assert.equal(commandAliases().at, 'autosave');
   assert.equal(commandAliases()['-v'], '--version');
 });
 
@@ -218,6 +219,9 @@ test('argument parser preserves positional text after known boolean flags', () =
   const autosave = parseArgs(['autosave', '--accept-all', 'TYPE: rule | TEXT: Always test releases.']);
   assert.equal(autosave.flags['accept-all'], true);
   assert.deepEqual(autosave.rest, ['TYPE: rule | TEXT: Always test releases.']);
+  const shortcut = parseArgs(['at', '-a', 'TYPE: rule | TEXT: Always test releases.']);
+  assert.equal(shortcut.flags['accept-all'], true);
+  assert.deepEqual(shortcut.rest, ['TYPE: rule | TEXT: Always test releases.']);
   const load = parseArgs(['load', '--all', 'deployment workflow']);
   assert.equal(load.flags.all, true);
   assert.deepEqual(load.rest, ['deployment workflow']);

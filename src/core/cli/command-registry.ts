@@ -2,6 +2,8 @@
 export interface CommandHelp { command: string; purpose: string; alias?: string; }
 export interface HelpSection { title: string; commands: CommandHelp[]; }
 
+const EXTRA_ALIASES: Record<string, string> = { at: 'autosave' };
+
 export const HELP_DATA: HelpSection[] = [
   {
     title: 'Meta Commands',
@@ -68,7 +70,7 @@ export function slashCommandSurface(): string {
 
 /** Map short user-facing command aliases to canonical top-level commands. */
 export function commandAliases(): Record<string, string> {
-  const aliases: Record<string, string> = {};
+  const aliases: Record<string, string> = { ...EXTRA_ALIASES };
   for (const item of HELP_DATA.flatMap((section) => section.commands)) {
     if (!item.alias) continue;
     const command = item.command.replace(/^engram\s+/, '').trim().split(/\s+/u)[0];
@@ -89,7 +91,7 @@ export function commandNames(): string[] {
   const aliases = HELP_DATA.flatMap((section) => section.commands)
     .map((item) => item.alias)
     .filter((alias): alias is string => Boolean(alias));
-  return [...new Set([...names, ...aliases])];
+  return [...new Set([...names, ...aliases, ...Object.keys(EXTRA_ALIASES)])];
 }
 
 /** Return a shell completion script for the current command surface. */
@@ -126,7 +128,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '    save|s)',
       `      _arguments "--scope[write scope]:scope:(${scopes})" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "1:memory type:(${saveTypes})"`,
       '      ;;',
-      '    autosave|as)',
+      '    autosave|as|at)',
       '      _arguments "--file[read session summary file]:file:_files" "--scope[write scope]:scope:(workspace global)" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "--accept-all[accept every autosave candidate]" "1:session summary: "',
       '      ;;',
       '    load|l|dry-run|dr)',
@@ -185,7 +187,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '      switch ($command) {',
       '        { $_ -in @(\'init\', \'i\') } { $engramInitArgs; break }',
       '        { $_ -in @(\'save\', \'s\') } { $engramSaveTypes; break }',
-      '        { $_ -in @(\'autosave\', \'as\') } { $engramAutosaveArgs; break }',
+      '        { $_ -in @(\'autosave\', \'as\', \'at\') } { $engramAutosaveArgs; break }',
       '        { $_ -in @(\'install-skillset\', \'is\') } { $engramSkillsetTargets + \'--force\'; break }',
       '        { $_ -in @(\'set-rule-variant\', \'rv\') } { $engramRuleVariants; break }',
       '        { $_ -in @(\'verify\', \'vf\', \'rebuild-index\', \'ri\') } { $engramScopes; break }',
@@ -255,7 +257,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
     '      COMPREPLY=( $(compgen -W "--scope --role --roles" -- "$cur") )',
     '      return',
     '      ;;',
-    '    autosave|as)',
+    '    autosave|as|at)',
     '      COMPREPLY=( $(compgen -W "--file --scope --role --roles --accept-all" -- "$cur") )',
     '      return',
     '      ;;',

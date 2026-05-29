@@ -14,7 +14,7 @@ Run:
 engram init
 ```
 
-This creates `.engram/` and installs the compact Codex target by default:
+This creates `.agents/.engram/` and installs the compact Codex target by default:
 `AGENTS.md` plus `.agents/skills/engram/SKILL.md`. The generated instructions
 tell agents to load memory, keep Engram replies short, ask only for required
 confirmation, and report what changed.
@@ -64,12 +64,14 @@ Aliases: `codex` installs the `agents-md` adapter plus the Agent Skill file,
    help/readme/skillset files are refreshed, config defaults are merged, and
    safe legacy folder migrations are applied without overwriting human-authored
    agent files or memory audit data.
+   This includes refreshing `.agents/skills/engram/SKILL.md` when an older
+   Engram-generated skill is present.
 
-   Interactive init asks in this order: whether to add `./.engram` as a
-   submodule, which global Engram path to use, and whether to add a shared
+   Interactive init asks in this order: whether to add `./.agents/.engram` as a
+   submodule, whether to use a global Engram path, and whether to add a shared
    global Git origin. Use `engram init --global-path <path>` for scripted setup.
 
-   If the human wants `.engram` tracked as a separate repository, ask whether to
+   If the human wants `.agents/.engram` tracked as a separate repository, ask whether to
    create a local submodule. When they approve, run:
 
    ```bash
@@ -94,6 +96,12 @@ Aliases: `codex` installs the `agents-md` adapter plus the Agent Skill file,
    Before working, load Engram memory for this task.
    ```
 
+   Agents should treat Engram as the knowledge memory center for project,
+   workspace, team, and personal context. They should load at session start,
+   search or route-load again when the task changes or research depends on
+   project knowledge, then summarize only the relevant IDs/rules to keep token
+   usage low.
+
 3. If the host supports external tool processes, register `.mcp.json` or equivalent host config.
 
 4. If the host supports custom slash commands, type:
@@ -103,6 +111,7 @@ Aliases: `codex` installs the `agents-md` adapter plus the Agent Skill file,
    /engram entry
    /engram save knowledge
    /engram autosave
+   /engram at -a
    /engram autosave --accept-all
    /engram help set-role
    /engram set-rule-variant strict
@@ -117,10 +126,11 @@ Aliases: `codex` installs the `agents-md` adapter plus the Agent Skill file,
   For transcripts or long summaries already on disk, use
   `engram autosave --file transcript.md`. The autosave approval prompt supports
   selected candidate replies such as `A 1,3`. When the human explicitly includes
-  `--accept-all`, the slash adapter should generate/provide concise candidates,
-  run the CLI with `engram autosave --accept-all`, and report the saved files
-  without asking for another A/B/C reply. Agents must not add `--accept-all`
-  unless the human requested it.
+  `--accept-all`, or uses the `/engram at -a` shortcut, the slash adapter should
+  generate/provide concise candidates, run the CLI with
+  `engram autosave --accept-all`, and report the saved files without asking for
+  another A/B/C reply. Agents must not add `--accept-all` unless the human
+  requested it.
 
    Generated knowledge should be objective and durable. Corrections and
    preferences become rules. Repeatable procedures become workflows/skills.
@@ -171,10 +181,13 @@ Engram as an invokable skill.
 Claude Code and Cursor support external tool configuration, so Engram can be
 registered through `.mcp.json` where that wrapper is accepted. The `slash`
 target also writes Claude and Cursor project-level command files for `/engram`.
+The generated slash description is: "Your knowledge memory manager, synced
+across every device with Git."
 MCP hosts should treat `engram_save` and `engram_autosave` as proposal-only
 tools; they must still route final writes through the human-visible CLI approval
-flow. Explicit `/engram autosave --accept-all` requests should use the CLI write
-path because MCP autosave remains proposal-only.
+flow. Explicit `/engram autosave --accept-all` requests, including the shortcut
+`/engram at -a`, should use the CLI write path because MCP autosave remains
+proposal-only.
 
 Gemini CLI searches for `GEMINI.md` files as context. The `slash` target writes
 `.gemini/commands/engram.toml` so `/engram <args>` becomes a project custom

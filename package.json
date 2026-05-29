@@ -35,6 +35,14 @@
   "engines": {
     "node": ">=20"
   },
+  "peerDependencies": {
+    "@the-long-ride/markdown-them": "*"
+  },
+  "peerDependenciesMeta": {
+    "@the-long-ride/markdown-them": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "typescript": "^5.9.3"
   }

@@ -3,7 +3,7 @@ description = "Your knowledge memory manager, synced across every device with Gi
 prompt = """
 Handle this as an Engram workspace memory request:
 /engram {{args}}
-Prefer MCP for load/search/verify/status/save/autosave proposals. If args start with "take-control", run engram {{args}}, read the source pack, and provide concise TYPE/TEXT candidates when prompted. If args are "at -a", treat them as "autosave --accept-all". If args contain "autosave --accept-all", generate candidates when needed and pass them to the CLI with --accept-all. Otherwise run: engram {{args}}
+Prefer MCP for load/search/verify/status/save/autosave proposals. If args start with "take-control", run engram {{args}}, read the source pack, and provide concise TYPE/TEXT candidates when prompted; document files use optional @the-long-ride/markdown-them when available. If args are "at -a", treat them as "autosave --accept-all". If args contain "autosave --accept-all", generate candidates when needed and pass them to the CLI with --accept-all. Otherwise run: engram {{args}}
 Fallback: npx -y --package @the-long-ride/engram engram {{args}}
 Keep replies compact. Never add --accept-all unless the human included it. Never bypass approval except explicit autosave --accept-all. State file-changing commands first, then show short result.
 """

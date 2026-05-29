@@ -44,6 +44,9 @@ files. Hosts that support custom slash commands can also load generated
   when variant mode is off, use balanced wording.
 - Treat `/engram <args>` as a human-visible router to `engram <args>` or the
   matching MCP read/proposal tool.
+- Treat `engram take-control` and `/engram take-control` as an agent-assisted
+  source-discovery flow that converts existing workspace guidance into Engram
+  candidates through the same approval gate as autosave.
 - Treat `/engram at -a` as `/engram autosave --accept-all`; `-a` is explicit
   human accept-all approval for this shortcut.
 - Describe slash adapters as: "Your knowledge memory manager, synced across
@@ -82,6 +85,7 @@ proposal and collect explicit human approval before invoking a CLI write flow.
 | `engram search "<query>"` | Search visible memory by query |
 | `engram save [rule|skill|workflow|knowledge] [--role role] "<text>"` | Propose one memory and write after A/B/C approval |
 | `engram autosave [--file transcript.md] [--role role] [--accept-all] [session-summary]` | Propose multiple memories from a long session and write only after numbered A/B/C approval, or save every candidate when the human passed `--accept-all` |
+| `engram take-control [--file path] [--dir path] [--include glob] [--all] [--accept-all]` | Explore existing workspace guidance, notes, and docs with agent help and consume approved candidates as Engram memory |
 | `engram set-role <role...>` | Configure active developer roles for routing role-scoped memory |
 | `engram set-rule-variant light|balanced|strict|off` | Configure compact rule output for agents |
 | `engram verify` | Check hash integrity |
@@ -106,6 +110,7 @@ hosts may prefer MCP-style tools:
 | `/engram health` | `engram_status` or `engram health` |
 | `/engram save ...` | `engram_save` proposal or CLI approval flow |
 | `/engram autosave ...` | `engram_autosave` proposal or CLI approval flow; use CLI write flow when `--accept-all` is present |
+| `/engram take-control ...` | `engram take-control ...` CLI flow with agent-generated candidates and approval |
 | `/engram at -a` | `engram autosave --accept-all` CLI write flow |
 | `/engram <other command>` | `engram <other command>` CLI flow |
 

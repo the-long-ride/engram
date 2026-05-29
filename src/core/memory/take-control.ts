@@ -2,6 +2,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { ENGRAM_DIR, LEGACY_ENGRAM_DIR } from '../runtime/constants.js';
+import { convertDocumentToMarkdown, isConvertibleDocument } from '../integrations/markdown-them.js';
 import { isIgnored, matchPattern } from '../safety/ignore.js';
 import { redactSensitive, scanInjection } from '../safety/security.js';
 import { inside, readText } from '../system/fsx.js';
@@ -21,7 +22,7 @@ export async function discoverTakeControlSources(
   const files = await resolveTakeControlFiles(cwd, ignorePatterns, flags);
   const sources: TakeControlSource[] = [];
   for (const file of files) {
-    const source = await readSource(cwd, file);
+    const source = await readSource(cwd, file, Boolean(flags.file));
     if (source) sources.push(source);
     if (sources.length >= MAX_SOURCES) break;
   }
@@ -78,12 +79,21 @@ async function walkCandidateFiles(root: string, cwd: string, ignorePatterns: str
   return found.sort((a, b) => relative(cwd, a).localeCompare(relative(cwd, b)));
 }
 
-async function readSource(cwd: string, file: string): Promise<TakeControlSource | undefined> {
-  const text = await readText(file);
+async function readSource(cwd: string, file: string, required = false): Promise<TakeControlSource | undefined> {
+  const text = await readSourceText(file, required);
   if (!text.trim() || isGeneratedEngram(text)) return undefined;
   const safe = compactExcerpt(sanitizeSource(text));
   if (!safe) return undefined;
   return { file: relative(cwd, file), excerpt: safe, lines: text.split(/\r?\n/).length, chars: text.length };
+}
+
+async function readSourceText(file: string, required: boolean): Promise<string> {
+  if (!isConvertibleDocument(file)) return readText(file);
+  try { return await convertDocumentToMarkdown(file); }
+  catch (error) {
+    if (required) throw error;
+    return '';
+  }
 }
 
 function sanitizeSource(text: string): string {
@@ -110,7 +120,7 @@ function compactExcerpt(text: string): string {
 
 function isCandidatePath(rel: string, broad: boolean, includePattern = ''): boolean {
   const file = rel.replace(/\\/g, '/');
-  if (includePattern && matchPattern(file, includePattern) && isTextMemoryFile(file)) return true;
+  if (includePattern && matchPattern(file, includePattern) && isReadableSourceFile(file)) return true;
   const defaults = [
     /^AGENTS\.md$/i,
     /^CLAUDE\.md$/i,
@@ -125,8 +135,8 @@ function isCandidatePath(rel: string, broad: boolean, includePattern = ''): bool
     /^\.agents\/skills\/[^/]+\/SKILL\.md$/i,
     /^\.opencode\/[^/]+\.md$/i,
     /^opencode\.json$/i,
-    /^(memory-bank|project-memory|\.memory|\.ai-memory)\/.+\.(md|mdx|mdc|txt)$/i,
-    /^(rules|skills|workflows|knowledge|notes)\/.+\.(md|mdx|mdc|txt)$/i
+    /^(memory-bank|project-memory|\.memory|\.ai-memory)\/.+\.(md|mdx|mdc|txt|docx?|html?|pdf|rtf|odt)$/i,
+    /^(rules|skills|workflows|knowledge|notes)\/.+\.(md|mdx|mdc|txt|docx?|html?|pdf|rtf|odt)$/i
   ];
   if (defaults.some((pattern) => pattern.test(file))) return true;
   return broad && isBroadDocument(file);
@@ -148,13 +158,17 @@ function isGeneratedEngram(text: string): boolean {
 }
 
 function isBroadDocument(file: string): boolean {
-  return isTextMemoryFile(file) && (/^(README|readme)\.(md|mdx|txt)$/i.test(file)
-    || /^(docs|doc|documentation|library|libraries)\/.+\.(md|mdx|mdc|txt|rst|adoc)$/i.test(file)
-    || /\/(docs|doc|documentation|library|libraries)\/.+\.(md|mdx|mdc|txt|rst|adoc)$/i.test(file));
+  return isReadableSourceFile(file) && (/^(README|readme)\.(md|mdx|txt)$/i.test(file)
+    || /^(docs|doc|documentation|library|libraries)\/.+\.(md|mdx|mdc|txt|rst|adoc|docx?|html?|pdf|rtf|odt)$/i.test(file)
+    || /\/(docs|doc|documentation|library|libraries)\/.+\.(md|mdx|mdc|txt|rst|adoc|docx?|html?|pdf|rtf|odt)$/i.test(file));
 }
 
 function isTextMemoryFile(file: string): boolean {
   return /\.(md|mdx|mdc|txt|rst|adoc|json)$/i.test(file);
+}
+
+function isReadableSourceFile(file: string): boolean {
+  return isTextMemoryFile(file) || isConvertibleDocument(file);
 }
 
 function patternFromFlags(flags: Record<string, any>): string {

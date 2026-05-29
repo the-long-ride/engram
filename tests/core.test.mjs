@@ -15,6 +15,7 @@ import { isIgnored } from '../dist/core/safety/ignore.js';
 import { scanInjection, scanSensitive, redactSensitive } from '../dist/core/safety/security.js';
 import { sha256 } from '../dist/core/safety/hash.js';
 import { scoreMemory } from '../dist/core/analysis/quality.js';
+import { convertDocumentToMarkdown, isConvertibleDocument } from '../dist/core/integrations/markdown-them.js';
 import { tempWorkspace } from './helpers.mjs';
 
 test('schema parser reads required frontmatter and sections', () => {
@@ -214,6 +215,20 @@ test('command registry has topic help and stable aliases', () => {
   assert.equal(commandAliases().at, 'autosave');
   assert.equal(commandAliases().tc, 'take-control');
   assert.equal(commandAliases()['-v'], '--version');
+});
+
+test('markdown-them bridge converts document results through common exports', async () => {
+  assert.equal(isConvertibleDocument('docs/handbook.docx'), true);
+  assert.equal(isConvertibleDocument('docs/notes.md'), false);
+  const markdown = await convertDocumentToMarkdown('docs/handbook.docx', async () => ({
+    toMarkdown: async (input) => typeof input === 'string' ? undefined : { markdown: `# Converted\n\n${input.file}` }
+  }));
+  assert.match(markdown, /# Converted/);
+  assert.match(markdown, /handbook\.docx/);
+  await assert.rejects(
+    () => convertDocumentToMarkdown('docs/handbook.docx', async () => undefined),
+    /@the-long-ride\/markdown-them is required/
+  );
 });
 
 test('argument parser preserves positional text after known boolean flags', () => {

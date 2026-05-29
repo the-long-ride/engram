@@ -111,6 +111,7 @@ Aliases: `codex` installs the `agents-md` adapter plus the Agent Skill file,
    /engram entry
    /engram save knowledge
    /engram autosave
+   /engram take-control
    /engram at -a
    /engram autosave --accept-all
    /engram help set-role
@@ -138,6 +139,16 @@ Aliases: `codex` installs the `agents-md` adapter plus the Agent Skill file,
    `engram autosave --role backend ...`. Role routing can be tuned with
    `engram set-role frontend`, `engram set-role backend security`, or
    `engram set-role` to clear active roles.
+
+   `engram take-control` is the agent-assisted takeover flow for existing
+   workspace guidance. It builds a compact source pack from files such as
+   `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, Cursor rules, memory-bank notes, and
+   top-level `rules/`, `skills/`, `workflows/`, `knowledge/`, or `notes/`
+   folders, including `.txt` notes. The agent should return concise
+   `TYPE: ... | TEXT: ...` candidates from that source pack, then let Engram
+   show the normal approval gate. Use `engram take-control --dry-run` to inspect
+   the source pack first, `--dir` for docs/library folders, or `--include` for
+   one extra glob.
 
    Rule variant mode is useful when a model needs lighter or stricter
    instruction wording. Strict helps lower-tier models stay controlled; stronger
@@ -187,7 +198,8 @@ MCP hosts should treat `engram_save` and `engram_autosave` as proposal-only
 tools; they must still route final writes through the human-visible CLI approval
 flow. Explicit `/engram autosave --accept-all` requests, including the shortcut
 `/engram at -a`, should use the CLI write path because MCP autosave remains
-proposal-only.
+proposal-only. `/engram take-control` should use the CLI flow because it needs
+workspace source discovery plus human-visible approval.
 
 Gemini CLI searches for `GEMINI.md` files as context. The `slash` target writes
 `.gemini/commands/engram.toml` so `/engram <args>` becomes a project custom

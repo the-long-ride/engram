@@ -199,12 +199,14 @@ Use `engram take-control` when a workspace already has agent guidance or memory
 files such as `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, Cursor rules,
 `memory-bank/` notes, or top-level `rules/`, `skills/`, `workflows/`,
 `knowledge/`, and `notes/` folders. Engram reads Markdown and `.txt` guidance,
-builds a compact source pack, asks the agent to convert durable rules,
-workflows, and facts into `TYPE: ... | TEXT: ...` candidates, then saves only
-after the normal approval gate. Use `--dry-run` to inspect the source pack,
-`--file <path>` for one source, `--dir <path>` for a specific docs/library
-folder, `--include "<glob>"` for one extra pattern, and `--all` to include
-`README.md`, `docs/`, and library documentation excerpts.
+and when optional package `@the-long-ride/markdown-them` is installed it
+converts document files such as PDF, DOCX, HTML, RTF, and ODT into Markdown
+before extraction. It builds a compact source pack, asks the agent to convert
+durable rules, workflows, and facts into `TYPE: ... | TEXT: ...` candidates,
+then saves only after the normal approval gate. Use `--dry-run` to inspect the
+source pack, `--file <path>` for one source, `--dir <path>` for a specific
+docs/library folder, `--include "<glob>"` for one extra pattern, and `--all` to
+include `README.md`, `docs/`, and library documentation excerpts.
 
 Use `--role` or `--roles` when saving role-specific memory:
 
@@ -316,6 +318,7 @@ that same accept-all autosave flow.
 | Existing agent memory takeover | `engram take-control --dry-run`, `engram take-control`, `engram verify` |
 | Migrate one guidance file | `engram take-control --file CLAUDE.md`, `engram search "<topic>"`, `engram deduplicate` |
 | Consume notes or library docs | `engram take-control --dir notes`, `engram take-control --dir docs/library`, `engram take-control --include "docs/**/*.txt"` |
+| Consume document files | install optional `@the-long-ride/markdown-them`, then run `engram take-control --file docs/handbook.docx` or `engram take-control --include "docs/**/*.pdf"` |
 | Daily agent session | `engram load "<task>"`, `engram search "<topic>"`, `engram save ...`, `engram autosave` |
 | Long session capture | `engram autosave`, `engram autosave --file transcript.md`, `engram at -a` when the human explicitly wants accept-all |
 | Team workspace memory | `engram init --submodule`, `engram install-hooks`, `engram verify`, `engram resolve-conflicts` |
@@ -343,8 +346,10 @@ engram autosave
 engram take-control
 engram tc --dry-run
 engram take-control --file CLAUDE.md
+engram take-control --file docs/handbook.docx
 engram take-control --dir docs/library
 engram take-control --include "docs/**/*.txt"
+engram take-control --include "docs/**/*.pdf"
 engram take-control --all
 engram autosave --file transcript.md
 engram autosave --file transcript.md --accept-all

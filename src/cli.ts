@@ -2,7 +2,7 @@
 import { parseArgs } from './cli/args.js';
 import { VERSION } from './core/runtime/constants.js';
 import { canonicalCommand } from './core/cli/command-registry.js';
-import { cmdAudit, cmdAutosave, cmdCompletion, cmdHelp, cmdInit, cmdLoad, cmdRebuildIndex, cmdSave, cmdUpdateHelp, cmdVerify } from './commands/core.js';
+import { cmdAudit, cmdAutosave, cmdCompletion, cmdHelp, cmdInit, cmdLoad, cmdRebuildIndex, cmdSave, cmdTakeControl, cmdUpdateHelp, cmdVerify } from './commands/core.js';
 import { cmdDeduplicate, cmdEntry, cmdExport, cmdHealth, cmdImport, cmdQuality, cmdSearch, cmdStats, cmdSync } from './commands/ops.js';
 import { cmdIgnore, cmdInstallHooks, cmdInstallSkillset, cmdPropose, cmdResolveConflicts, cmdSetRole, cmdSetRuleVariant, cmdTeamDashboard } from './commands/admin.js';
 
@@ -23,6 +23,7 @@ export async function runCli(argv: string[]): Promise<string> {
     case 'completion': return cmdCompletion(rest[0]);
     case 'save': return cmdSave(rest, flags);
     case 'autosave': return cmdAutosave(rest, flags);
+    case 'take-control': return cmdTakeControl(rest, flags);
     case 'load': return cmdLoad(rest, flags);
     case 'dry-run': return dryRun(rest, flags);
     case 'verify': return cmdVerify(rest[0]);

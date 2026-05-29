@@ -7,6 +7,7 @@ When the human types `/engram <args>`, handle it as an Engram request.
 - Prefer MCP for `load`, `search`, `verify`, `status`, `save`, and `autosave` proposals.
 - Otherwise run `engram <args>` from the workspace root. Fallback: `npx -y --package @the-long-ride/engram engram <args>`.
 - Keep replies compact: confirmation needed, command failed, files changed, final result.
+- If the request is `/engram take-control`, run `engram take-control` with any provided `--file`, `--dir`, `--include`, or `--all` options, read the source pack, return concise `TYPE: ... | TEXT: ...` candidates when prompted, and keep the normal approval gate unless the human included `--accept-all`.
 - If the request is `/engram at -a`, treat it as `/engram autosave --accept-all`; `-a` is the human's explicit accept-all approval for this shortcut.
 - If the request is `/engram autosave --accept-all`, treat the flag as explicit approval: generate concise `TYPE: ... | TEXT: ...` candidates when needed, pass them to the CLI with `--accept-all`, and report saved files.
 - Never add `--accept-all` yourself. Otherwise never bypass Engram's approval gate. For writes, remotes, conflicts, hooks, import, sync, or adapter install, state the change first and show the short result.

@@ -18,6 +18,7 @@ import { planMemorySave, previewSavePlans, type SavePlan } from '../core/memory/
 import { rebuildIndex } from '../core/memory/index.js';
 import { installSkillset, type InstallResult } from '../core/integrations/skillset.js';
 import { autosaveGuidance, generatedMemoryGuidance, inferMemoryType, normalizeMemoryType, parseMemoryCandidate, parseMemoryCandidates } from '../core/memory/memory-candidate.js';
+import { discoverTakeControlSources, takeControlGuidance } from '../core/memory/take-control.js';
 import { applyGlobalRemote, applyWorkspaceSubmodule, planGlobalRemote, planWorkspaceSubmodule, resolveGlobalPath } from './init-plans.js';
 import type { MemoryType, Scope } from '../core/runtime/types.js';
 
@@ -152,6 +153,45 @@ export async function cmdAutosave(args: string[], flags: Record<string, any> = {
   if (!plans.length) return 'Discarded. No selected candidates written.';
   const saved = await writeSavePlans(plans, approval.edits);
   return acceptAll ? `Accepted all autosave candidates (--accept-all).\n${saved}` : saved;
+}
+
+/** Convert existing workspace guidance into approved Engram memories with agent help. */
+export async function cmdTakeControl(args: string[], flags: Record<string, any> = {}): Promise<string> {
+  const ctx = await getContext();
+  const sources = await discoverTakeControlSources(process.cwd(), ctx.ignorePatterns, flags);
+  const guidance = takeControlGuidance(sources);
+  if (flags['dry-run']) return guidance;
+  if (!sources.length && !args.join(' ').trim()) return 'No workspace guidance files found. Try engram take-control --all or --file <path>.';
+  const scopes = flags.scope ? [flags.scope as Scope] : writeScopes(ctx.config.scope, ctx.config);
+  const author = await resolveAuthor();
+  const role = rolesFromFlags(flags);
+  const acceptAll = flags['accept-all'] === true;
+  let text = args.join(' ').trim();
+  let plans: SavePlan[] = [];
+  let approval: SelectionApproval | undefined = acceptAll ? { accepted: true } : undefined;
+  if (!text) {
+    if (acceptAll) text = await requestGeneratedSelectionText({ guidance }) ?? '';
+    else {
+      const captured = await requestGeneratedSelectionApproval(async (generated) => {
+        text = generated;
+        plans = await planAutosaveCandidates(ctx, generated, scopes, author, role);
+        return previewSavePlans(plans);
+      }, { guidance });
+      if (!captured) return 'Discarded. No file written.';
+      approval = captured.approval;
+    }
+  } else {
+    plans = await planAutosaveCandidates(ctx, text, scopes, author, role);
+    if (!acceptAll) approval = await requestSelectionApproval(previewSavePlans(plans));
+  }
+  if (acceptAll && text && !plans.length) plans = await planAutosaveCandidates(ctx, text, scopes, author, role);
+  if (!plans.length) return 'No memory candidates detected.';
+  if (!approval?.accepted) return 'Discarded. No file written.';
+  if (approval.selected?.length) plans = plans.filter((plan) => plan.candidateIndex === undefined || approval.selected?.includes(plan.candidateIndex));
+  if (!plans.length) return 'Discarded. No selected candidates written.';
+  const saved = await writeSavePlans(plans, approval.edits);
+  const prefix = acceptAll ? 'Take-control accepted all candidates (--accept-all).' : `Take-control consumed ${sources.length} source file${sources.length === 1 ? '' : 's'}.`;
+  return `${prefix}\n${saved}`;
 }
 
 async function planAutosaveCandidates(ctx: Awaited<ReturnType<typeof getContext>>, text: string, scopes: Scope[], author: string, role?: string[]): Promise<SavePlan[]> {

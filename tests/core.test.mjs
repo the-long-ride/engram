@@ -212,6 +212,7 @@ test('command registry has topic help and stable aliases', () => {
   }
   assert.equal(commandAliases().s, 'save');
   assert.equal(commandAliases().at, 'autosave');
+  assert.equal(commandAliases().tc, 'take-control');
   assert.equal(commandAliases()['-v'], '--version');
 });
 

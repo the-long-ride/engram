@@ -29,6 +29,81 @@ Resolution is simple: workspace memory is checked first, global memory is the
 fallback. If both scopes contain the same topic, the workspace version wins. No
 merging, no ambiguity, no hidden platform state.
 
+## How Engram Flows
+
+```mermaid
+flowchart LR
+  Human[Human] -->|asks for work or memory action| Agent[AI agent]
+  Agent -->|engram load or search| Engram[Engram CLI / MCP / slash]
+  Engram -->|compact relevant memory| Agent
+  Agent -->|answer, code, or memory proposal| Human
+  Human -->|approve save, autosave, take-control, import| Engram
+  Engram -->|Markdown memory, index, hashes| Workspace[Workspace .agents/.engram]
+  Engram -->|optional sync| Global[Global memory + Git]
+  Workspace -->|review in Git| Human
+  Global -->|reuse across devices| Agent
+```
+
+```mermaid
+flowchart TB
+  subgraph Interfaces
+    CLI[engram CLI]
+    Slash["/engram slash adapters"]
+    MCP[engram-mcp]
+  end
+
+  subgraph Runtime
+    Router[workspace-first router]
+    Safety[secret, injection, ignore, hash guards]
+    Approval[A/B/C approval gate]
+    Sync[Git sync and live export]
+  end
+
+  subgraph Workspace["Workspace system"]
+    WRoot[".agents/.engram/"]
+    WMem["rules / skills / knowledge"]
+    WMeta["config / index / hashes / changelog"]
+  end
+
+  subgraph Global["Optional global system"]
+    GRoot["$ENGRAM_GLOBAL_DIR or --global-path"]
+    GMem["rules / skills / knowledge"]
+    GGit["optional Git remote"]
+  end
+
+  CLI --> Router
+  Slash --> Router
+  MCP --> Router
+  Router --> Safety
+  Safety --> Approval
+  Approval --> WRoot
+  Approval --> GRoot
+  WRoot --> WMem
+  WRoot --> WMeta
+  GRoot --> GMem
+  GRoot --> GGit
+  Router -->|workspace wins| WMem
+  Router -->|fallback| GMem
+  Sync --> GGit
+```
+
+```mermaid
+flowchart TD
+  Source[Chat, transcript, existing agent files, docs] --> Capture[save / autosave / take-control / import]
+  Capture --> Draft[Draft typed candidates]
+  Draft --> Safety[Validate schema, scan secrets, scan injection]
+  Safety --> Preview[Human-readable preview]
+  Preview -->|A accept| Write[Write Markdown memory]
+  Preview -->|A 1,3 select| Write
+  Preview -->|B note| Write
+  Preview -->|C reject| NoWrite[No write]
+  Write --> Index[Rebuild index]
+  Write --> Hash[Update hashes]
+  Index --> Load[load / search / export]
+  Hash --> Verify[verify]
+  Verify --> Sync[sync / Git review]
+```
+
 Global memory is optional. When you set `ENGRAM_GLOBAL_DIR` or pass
 `--global-path`, Engram creates or reuses that folder, runs `git init` there,
 and defaults to the `main` branch. During interactive init, Engram asks whether
@@ -96,6 +171,8 @@ npx @the-long-ride/engram save rule --role frontend "Use design tokens for spaci
 npx @the-long-ride/engram save workflow "When releasing, run tests, update the changelog, then tag the version."
 npx @the-long-ride/engram save knowledge
 npx @the-long-ride/engram autosave
+npx @the-long-ride/engram take-control --dry-run
+npx @the-long-ride/engram take-control
 npx @the-long-ride/engram autosave --file transcript.md
 npx @the-long-ride/engram autosave --file transcript.md --accept-all
 npx @the-long-ride/engram load "package setup"
@@ -117,6 +194,17 @@ also accepts `--file transcript.md`, and the approval prompt can accept selected
 candidate numbers with replies such as `A 1,3`. Use
 `engram autosave --accept-all` only when the human explicitly wants every
 agent-recommended candidate saved without a second A/B/C reply.
+
+Use `engram take-control` when a workspace already has agent guidance or memory
+files such as `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, Cursor rules,
+`memory-bank/` notes, or top-level `rules/`, `skills/`, `workflows/`,
+`knowledge/`, and `notes/` folders. Engram reads Markdown and `.txt` guidance,
+builds a compact source pack, asks the agent to convert durable rules,
+workflows, and facts into `TYPE: ... | TEXT: ...` candidates, then saves only
+after the normal approval gate. Use `--dry-run` to inspect the source pack,
+`--file <path>` for one source, `--dir <path>` for a specific docs/library
+folder, `--include "<glob>"` for one extra pattern, and `--all` to include
+`README.md`, `docs/`, and library documentation excerpts.
 
 Use `--role` or `--roles` when saving role-specific memory:
 
@@ -208,14 +296,33 @@ After that, a human can ask an agent to run Engram with slash-style requests:
 ```text
 /engram load "deployment workflow"
 /engram save knowledge
+/engram take-control
 /engram autosave --accept-all
+/engram at -a
 /engram verify
 ```
 
 The slash adapter routes to the same CLI or MCP flow. It does not bypass the
 normal human approval gate for writes, except that
 `/engram autosave --accept-all` treats the flag as explicit approval for every
-agent-recommended autosave candidate.
+agent-recommended autosave candidate. `/engram at -a` is the compact shortcut for
+that same accept-all autosave flow.
+
+## Best Command Sets By Use Case
+
+| Use case | Best command set |
+| --- | --- |
+| New project setup | `engram init`, `engram install-skillset slash`, `engram load "current task"` |
+| Existing agent memory takeover | `engram take-control --dry-run`, `engram take-control`, `engram verify` |
+| Migrate one guidance file | `engram take-control --file CLAUDE.md`, `engram search "<topic>"`, `engram deduplicate` |
+| Consume notes or library docs | `engram take-control --dir notes`, `engram take-control --dir docs/library`, `engram take-control --include "docs/**/*.txt"` |
+| Daily agent session | `engram load "<task>"`, `engram search "<topic>"`, `engram save ...`, `engram autosave` |
+| Long session capture | `engram autosave`, `engram autosave --file transcript.md`, `engram at -a` when the human explicitly wants accept-all |
+| Team workspace memory | `engram init --submodule`, `engram install-hooks`, `engram verify`, `engram resolve-conflicts` |
+| Cross-device personal memory | `engram init --global-path <path>`, `engram init --global-remote <git-url>`, `engram sync` |
+| Audit and cleanup | `engram health`, `engram stats`, `engram quality-check`, `engram deduplicate`, `engram ignore status` |
+| Agent integration | `engram install-skillset all`, `engram install-skillset slash`, `engram-mcp` |
+| Export without runtime tools | `engram export --format agents-md`, `engram export --format claude-md`, `engram export --format cursorrules` |
 
 Core commands include:
 
@@ -233,14 +340,27 @@ engram save rule --role frontend "Use design tokens."
 engram save workflow "When deploying, run tests, build, then verify health."
 engram save knowledge
 engram autosave
+engram take-control
+engram tc --dry-run
+engram take-control --file CLAUDE.md
+engram take-control --dir docs/library
+engram take-control --include "docs/**/*.txt"
+engram take-control --all
 engram autosave --file transcript.md
 engram autosave --file transcript.md --accept-all
+engram at -a
 engram load "deployment workflow"
+engram search "deployment"
 engram set-rule-variant strict
 engram verify
 engram health
+engram stats
+engram quality-check
+engram deduplicate
+engram ignore status
 engram export --format agents-md
 engram install-skillset all
+engram sync
 engram-mcp
 ```
 

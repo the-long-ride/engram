@@ -110,7 +110,7 @@ function compactSkillInstructions(): string {
 - Speak only for confirmation, file-changing actions, command failures, and final result.
 - Preferred replies: \`Loaded: N memories.\`, \`Need confirm: <action>.\`, \`Ran: <command>. Result: <short result>.\`, \`Saved: <file>.\`, \`No write.\`
 - Read commands (\`load/search/verify/health/stats/audit/dry-run/entry\`): one-line summary. Use \`--all\` only when broad context is requested.
-- Write/change commands (\`save/autosave/import/resolve-conflicts/install-hooks/install-skillset/sync/init --submodule|--global-remote\`): state the change first, then show Engram result.
+- Write/change commands (\`save/autosave/take-control/import/resolve-conflicts/install-hooks/install-skillset/sync/init --submodule|--global-remote\`): state the change first, then show Engram result.
 - Save flow: use \`engram save <rule|skill|workflow|knowledge> "<text>"\`. No text means brainstorm one concise candidate. Long session means \`engram autosave\` with \`TYPE: ... | TEXT: ...\` lines.
 - Session end: if durable rules, knowledge, or workflows emerged, propose \`engram save\` or \`engram autosave\` instead of relying on private chat memory.
 - \`engram autosave --accept-all\` is explicit human approval for every agent-recommended autosave candidate. Use it only when the human included \`--accept-all\`; then pass generated candidates to the CLI and report saved files.
@@ -164,6 +164,7 @@ function slashInstructions(): string {
 - Prefer MCP for \`load\`, \`search\`, \`verify\`, \`status\`, \`save\`, and \`autosave\` proposals.
 - Otherwise run \`engram <args>\` from the workspace root. Fallback: \`npx -y --package @the-long-ride/engram engram <args>\`.
 - Keep replies compact: confirmation needed, command failed, files changed, final result.
+- If the request is \`/engram take-control\`, run \`engram take-control\` with any provided \`--file\`, \`--dir\`, \`--include\`, or \`--all\` options, read the source pack, return concise \`TYPE: ... | TEXT: ...\` candidates when prompted, and keep the normal approval gate unless the human included \`--accept-all\`.
 - If the request is \`/engram at -a\`, treat it as \`/engram autosave --accept-all\`; \`-a\` is the human's explicit accept-all approval for this shortcut.
 - If the request is \`/engram autosave --accept-all\`, treat the flag as explicit approval: generate concise \`TYPE: ... | TEXT: ...\` candidates when needed, pass them to the CLI with \`--accept-all\`, and report saved files.
 - Never add \`--accept-all\` yourself. Otherwise never bypass Engram's approval gate. For writes, remotes, conflicts, hooks, import, sync, or adapter install, state the change first and show the short result.
@@ -186,7 +187,7 @@ description = "${SLASH_DESCRIPTION}"
 prompt = """
 Handle this as an Engram workspace memory request:
 /engram {{args}}
-Prefer MCP for load/search/verify/status/save/autosave proposals. If args are "at -a", treat them as "autosave --accept-all". If args contain "autosave --accept-all", generate candidates when needed and pass them to the CLI with --accept-all. Otherwise run: engram {{args}}
+Prefer MCP for load/search/verify/status/save/autosave proposals. If args start with "take-control", run engram {{args}}, read the source pack, and provide concise TYPE/TEXT candidates when prompted. If args are "at -a", treat them as "autosave --accept-all". If args contain "autosave --accept-all", generate candidates when needed and pass them to the CLI with --accept-all. Otherwise run: engram {{args}}
 Fallback: npx -y --package @the-long-ride/engram engram {{args}}
 Keep replies compact. Never add --accept-all unless the human included it. Never bypass approval except explicit autosave --accept-all. State file-changing commands first, then show short result.
 """

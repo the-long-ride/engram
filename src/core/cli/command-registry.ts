@@ -25,6 +25,7 @@ export const HELP_DATA: HelpSection[] = [
       { command: 'engram save knowledge [--role role] [text]', alias: 's', purpose: 'Draft and save a knowledge memory (agent summary or text)' },
       { command: 'engram save [--role role] [text]', alias: 's', purpose: 'Auto-detect rule, workflow, skill, or knowledge memory from text' },
       { command: 'engram autosave [--file transcript.md] [--role role] [--accept-all] [session-summary]', alias: 'as', purpose: 'Propose multiple memories from a long session before approval or explicit accept-all' },
+      { command: 'engram take-control [--file path] [--dir path] [--include glob] [--all] [--accept-all]', alias: 'tc', purpose: 'Explore existing workspace guidance with agent help and consume it as Engram memory' },
       { command: 'engram load [--all] [query]', alias: 'l', purpose: 'Route and load relevant memories into the agent context' },
       { command: 'engram dry-run [--all] [query]', alias: 'dr', purpose: 'Preview routed memory file paths without printing their content' },
       { command: 'engram search <query>', alias: 'f', purpose: 'Perform a search across visible indexed memories' },
@@ -103,6 +104,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
   const shells = ['bash', 'zsh', 'powershell'].join(' ');
   const ruleVariants = ['off', 'light', 'balanced', 'strict', 'status'].join(' ');
   const ignoreActions = ['status', 'check', 'add'].join(' ');
+  const takeControlArgs = ['--file', '--dir', '--include', '--scope', '--role', '--roles', '--all', '--accept-all', '--dry-run'].join(' ');
   const skillsetTargets = [
     'all', 'list', 'agents-md', 'codex', 'copilot', 'claude', 'cursor',
     'gemini', 'cline', 'windsurf', 'antigravity', 'antigravity-cli',
@@ -130,6 +132,9 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '      ;;',
       '    autosave|as|at)',
       '      _arguments "--file[read session summary file]:file:_files" "--scope[write scope]:scope:(workspace global)" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "--accept-all[accept every autosave candidate]" "1:session summary: "',
+      '      ;;',
+      '    take-control|tc)',
+      '      _arguments "--file[read one source file]:file:_files" "--dir[scan one source directory]:dir:_files -/" "--include[include matching glob]:glob:" "--scope[write scope]:scope:(workspace global)" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "--all[include README docs and library docs]" "--accept-all[accept every generated candidate]" "--dry-run[show source pack only]"',
       '      ;;',
       '    load|l|dry-run|dr)',
       '      _arguments "--all" "1:query: "',
@@ -168,6 +173,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '$engramInitArgs = @(\'--force\', \'--no-skillset\', \'--skillset\', \'--submodule\', \'--submodule-remote\', \'--no-global\', \'--global-path\', \'--global-remote\', \'--global-branch\')',
       '$engramSaveTypes = @(\'rule\', \'skill\', \'workflow\', \'knowledge\', \'--scope\', \'--role\', \'--roles\')',
       '$engramAutosaveArgs = @(\'--file\', \'--scope\', \'--role\', \'--roles\', \'--accept-all\')',
+      `$engramTakeControlArgs = @(${takeControlArgs.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
       `$engramSkillsetTargets = @(${skillsetTargets.split(' ').map((target) => `'${target}'`).join(', ')})`,
       '$engramScopes = @(\'workspace\', \'global\')',
       '$engramRuleVariants = @(\'off\', \'light\', \'balanced\', \'strict\', \'status\')',
@@ -188,6 +194,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '        { $_ -in @(\'init\', \'i\') } { $engramInitArgs; break }',
       '        { $_ -in @(\'save\', \'s\') } { $engramSaveTypes; break }',
       '        { $_ -in @(\'autosave\', \'as\', \'at\') } { $engramAutosaveArgs; break }',
+      '        { $_ -in @(\'take-control\', \'tc\') } { $engramTakeControlArgs; break }',
       '        { $_ -in @(\'install-skillset\', \'is\') } { $engramSkillsetTargets + \'--force\'; break }',
       '        { $_ -in @(\'set-rule-variant\', \'rv\') } { $engramRuleVariants; break }',
       '        { $_ -in @(\'verify\', \'vf\', \'rebuild-index\', \'ri\') } { $engramScopes; break }',
@@ -259,6 +266,10 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
     '      ;;',
     '    autosave|as|at)',
     '      COMPREPLY=( $(compgen -W "--file --scope --role --roles --accept-all" -- "$cur") )',
+    '      return',
+    '      ;;',
+    '    take-control|tc)',
+    '      COMPREPLY=( $(compgen -W "--file --dir --include --scope --role --roles --all --accept-all --dry-run" -- "$cur") )',
     '      return',
     '      ;;',
     '    load|l|dry-run|dr)',

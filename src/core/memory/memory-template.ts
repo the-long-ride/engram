@@ -5,6 +5,7 @@ import { defaultRuleVariants, extractRuleVariants } from './rule-variants.js';
 import { slugify, tagsFrom, today } from '../system/text.js';
 
 export type MemoryDraftOptions = { ruleVariants?: boolean };
+export type MemorySourceMeta = { source?: string; sourceFiles?: string[]; sourceHashes?: string[] };
 
 /** Build a concise schema-compliant memory from user text. */
 export function draftMemory(input: {
@@ -13,6 +14,7 @@ export function draftMemory(input: {
   scope: Scope;
   author: string;
   role?: string[];
+  source?: MemorySourceMeta;
 }, options: MemoryDraftOptions = {}): { file: string; id: string; content: string; tags: string[] } {
   const title = titleFor(input.text, input.type);
   const id = slugify(title);
@@ -28,6 +30,7 @@ export function updateMemory(raw: string, input: {
   scope: Scope;
   author: string;
   role?: string[];
+  source?: MemorySourceMeta;
 }, options: MemoryDraftOptions = {}): string {
   const doc = parseMemory(raw);
   const tags = unique([...(doc.frontmatter.tags ?? []), ...tagsFrom(input.text)]);
@@ -41,6 +44,7 @@ export function updateMemory(raw: string, input: {
     tags,
     created: String(doc.frontmatter.created ?? today()),
     role: input.role?.length ? unique([...(doc.frontmatter.role ?? []), ...input.role]) : doc.frontmatter.role,
+    source: mergeSourceMeta(doc.frontmatter, input.source),
     bodyText: bullets.join('\n'),
     variantText: text,
     variants
@@ -55,15 +59,17 @@ function titleFor(text: string, type: MemoryType): string {
 
 function renderMemory(input: {
   text: string; type: MemoryType; scope: Scope; author: string; id: string; title: string;
-  tags: string[]; created: string; role?: string[]; bodyText?: string; variantText?: string; variants?: Partial<Record<'light' | 'balanced' | 'strict', string>>;
+  tags: string[]; created: string; role?: string[]; source?: MemorySourceMeta; bodyText?: string; variantText?: string; variants?: Partial<Record<'light' | 'balanced' | 'strict', string>>;
 }, options: MemoryDraftOptions): string {
   const now = today();
   const metadata: Record<string, any> = {
     id: input.id, type: input.type, scope: input.scope, tags: input.tags,
     created: input.created, updated: now, author: input.author,
-    source: 'manual', confidence: 'high'
+    source: input.source?.source ?? 'manual', confidence: 'high'
   };
   if (input.role?.length) metadata.role = input.role;
+  if (input.source?.sourceFiles?.length) metadata.source_files = unique(input.source.sourceFiles);
+  if (input.source?.sourceHashes?.length) metadata.source_hashes = unique(input.source.sourceHashes);
   const meta = frontmatter(metadata);
   return `${meta}
 # ${formatInlineMarkdown(input.title)}
@@ -131,6 +137,24 @@ function dirFor(type: MemoryType): string {
 
 function unique(values: string[]): string[] {
   return [...new Set(values.map((value) => value.trim()).filter(Boolean))].slice(0, 8);
+}
+
+function mergeSourceMeta(frontmatter: Record<string, any>, source?: MemorySourceMeta): MemorySourceMeta | undefined {
+  if (!source) {
+    const existingFiles = arrayFrontmatter(frontmatter.source_files);
+    const existingHashes = arrayFrontmatter(frontmatter.source_hashes);
+    return existingFiles.length || existingHashes.length ? { source: String(frontmatter.source ?? 'manual'), sourceFiles: existingFiles, sourceHashes: existingHashes } : undefined;
+  }
+  return {
+    source: source.source ?? String(frontmatter.source ?? 'manual'),
+    sourceFiles: unique([...arrayFrontmatter(frontmatter.source_files), ...(source.sourceFiles ?? [])]),
+    sourceHashes: unique([...arrayFrontmatter(frontmatter.source_hashes), ...(source.sourceHashes ?? [])])
+  };
+}
+
+function arrayFrontmatter(value: unknown): string[] {
+  if (Array.isArray(value)) return value.filter((item): item is string => typeof item === 'string' && Boolean(item.trim()));
+  return typeof value === 'string' && value.trim() ? [value] : [];
 }
 
 function formatInlineMarkdown(text: string): string {

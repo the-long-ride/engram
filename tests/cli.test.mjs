@@ -50,7 +50,9 @@ test('init can skip or retarget default skillset install', async () => {
   const targeted = await tempWorkspace('engram-cli-');
   const slash = await runEngram(targeted.cwd, targeted.env, ['init', '--skillset', 'slash']);
   assert.equal(slash.code, 0, slash.stderr);
-  assert.match(slash.stdout, /skillset: written \.claude\/skills\/engram\/SKILL\.md/);
+  assert.match(slash.stdout, /skillset: written .*\.claude\/commands\/engram\.md/);
+  assert.match(slash.stdout, /skillset: written .*\.claude\/skills\/engram\/SKILL\.md/);
+  assert.match(await readFile(path.join(targeted.cwd, '.claude/commands/engram.md'), 'utf8'), /Engram Slash Command/);
   assert.match(await readFile(path.join(targeted.cwd, '.cursor/commands/engram.md'), 'utf8'), /Keep replies compact/);
   await assert.rejects(readFile(path.join(targeted.cwd, 'AGENTS.md'), 'utf8'));
   await rm(targeted.cwd, { recursive: true, force: true });
@@ -74,7 +76,11 @@ test('short command aliases dispatch to canonical commands', async () => {
   const autosaved = await runEngram(cwd, env, ['at', '-a', '--scope', 'workspace', 'TYPE: knowledge | TEXT: Alias at accepts all autosave candidates.']);
   assert.equal(autosaved.code, 0, autosaved.stderr);
   assert.match(autosaved.stdout, /Accepted all autosave candidates/);
+  const naturalAutosaved = await runEngram(cwd, env, ['auto', 'save', 'accept', 'all', '--scope', 'workspace', 'TYPE: knowledge | TEXT: Natural auto save accepts all candidates.']);
+  assert.equal(naturalAutosaved.code, 0, naturalAutosaved.stderr);
+  assert.match(naturalAutosaved.stdout, /Accepted all autosave candidates/);
   assert.match((await runEngram(cwd, env, ['l', 'alias save'])).stdout, /Alias save rule/);
+  assert.match((await runEngram(cwd, env, ['search', 'Natural auto save'])).stdout, /natural-auto-save-accepts-all-candidates/);
   assert.match((await runEngram(cwd, env, ['search', 'Alias at'])).stdout, /Alias at accepts all autosave candidates/);
   assert.match((await runEngram(cwd, env, ['vf'])).stdout, /OK workspace/);
   await rm(cwd, { recursive: true, force: true });
@@ -112,7 +118,64 @@ test('take-control converts existing workspace guidance through approval', async
   const converted = await runEngram(cwd, env, ['tc', '--scope', 'workspace'], input);
   assert.equal(converted.code, 0, converted.stderr);
   assert.match(converted.stdout, /Take-control consumed 2 source files/);
+  const savedMemory = await readFile(path.join(workspaceMemoryRoot(cwd), 'rules', 'always-run-release-smoke-tests-before-deploy.md'), 'utf8');
+  assert.match(savedMemory, /source: take-control/);
+  assert.match(savedMemory, /source_files: \[CLAUDE\.md, notes\/team\.txt\]/);
+  assert.match(savedMemory, /source_hashes: \[[a-f0-9]{64}, [a-f0-9]{64}\]/);
+  const plannedAgain = await runEngram(cwd, env, ['take-control', '--plan']);
+  assert.equal(plannedAgain.code, 0, plannedAgain.stderr);
+  assert.match(plannedAgain.stdout, /Selected sources: 0/);
+  assert.match(plannedAgain.stdout, /CLAUDE\.md: already imported source hash/);
+  assert.match(plannedAgain.stdout, /notes\/team\.txt: already imported source hash/);
   assert.match((await runEngram(cwd, env, ['search', 'smoke tests'])).stdout, /release-smoke-tests/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('take-control plan supports repeated includes, excludes, and scan limits', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['init', '--no-skillset']);
+  await mkdir(path.join(cwd, 'docs', 'nested'), { recursive: true });
+  await writeFile(path.join(cwd, 'docs', 'intro.txt'), 'Always use the public API examples in docs.');
+  await writeFile(path.join(cwd, 'docs', 'nested', 'routing.txt'), 'The routing docs describe workspace-first lookup.');
+  await writeFile(path.join(cwd, 'docs', 'skip.txt'), 'Never import this skipped note.');
+  await mkdir(path.join(cwd, 'notes'), { recursive: true });
+  await writeFile(path.join(cwd, 'notes', 'team.txt'), 'Prefer short release notes with risk callouts.');
+  const planned = await runEngram(cwd, env, [
+    'take-control', '--plan',
+    '--include', 'docs/**/*.txt',
+    '--include', 'notes/*.txt',
+    '--exclude', 'docs/skip.txt',
+    '--max-sources', '2',
+    '--max-chars', '80'
+  ]);
+  assert.equal(planned.code, 0, planned.stderr);
+  assert.match(planned.stdout, /ENGRAM TAKE-CONTROL PLAN/);
+  assert.match(planned.stdout, /Selected sources: 2/);
+  assert.match(planned.stdout, /docs\/intro\.txt/);
+  assert.match(planned.stdout, /docs\/nested\/routing\.txt/);
+  assert.match(planned.stdout, /docs\/skip\.txt: excluded by --exclude docs\/skip\.txt/);
+  assert.match(planned.stdout, /notes\/team\.txt: over --max-sources 2/);
+  assert.match(planned.stdout, /proposed: rule/);
+  assert.doesNotMatch(planned.stdout, /Workspace sources:/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('take-control accept-all natural wording uses token-light defaults', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['init', '--no-skillset']);
+  await mkdir(path.join(cwd, 'notes'), { recursive: true });
+  for (let index = 1; index <= 6; index += 1) {
+    await writeFile(path.join(cwd, 'notes', `note-${index}.txt`), `Always keep durable note ${index} concise.`);
+  }
+  const planned = await runEngram(cwd, env, ['take', 'control', 'accept', 'all', '--plan']);
+  assert.equal(planned.code, 0, planned.stderr);
+  assert.match(planned.stdout, /Selected sources: 5/);
+  assert.match(planned.stdout, /Limits: max sources 5, max chars\/source 900/);
+  assert.match(planned.stdout, /notes\/note-6\.txt: over --max-sources 5/);
+  const dryRun = await runEngram(cwd, env, ['take-control', 'accept', 'all', '--dry-run']);
+  assert.equal(dryRun.code, 0, dryRun.stderr);
+  assert.match(dryRun.stdout, /Token-light accept-all mode/);
+  assert.match(dryRun.stdout, /Return up to 5 candidates/);
   await rm(cwd, { recursive: true, force: true });
 });
 

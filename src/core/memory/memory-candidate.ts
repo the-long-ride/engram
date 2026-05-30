@@ -107,7 +107,8 @@ export function generatedMemoryGuidance(explicitType?: MemoryType): string {
 /** Guidance shown when an agent should mine a long interaction. */
 export function autosaveGuidance(): string {
   return [
-    'Brainstorm up to 5 durable memory candidates from the long interaction.',
+    'Brainstorm up to 5 durable memory candidates from the long interaction or current AI agent chat.',
+    'If you are an AI agent in chat, use LLM judgment to define the candidates from the current conversation before passing them to Engram.',
     'Use one candidate per line in this format: TYPE: rule | TEXT: Always use pnpm for installs.',
     'Use rule for user corrections, preferences, constraints, or repeated "always/never/do not" guidance.',
     'Use workflow for repeatable procedures discovered from rules plus project knowledge across the session.',

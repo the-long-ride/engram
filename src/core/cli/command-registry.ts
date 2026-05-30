@@ -25,7 +25,7 @@ export const HELP_DATA: HelpSection[] = [
       { command: 'engram save knowledge [--role role] [text]', alias: 's', purpose: 'Draft and save a knowledge memory (agent summary or text)' },
       { command: 'engram save [--role role] [text]', alias: 's', purpose: 'Auto-detect rule, workflow, skill, or knowledge memory from text' },
       { command: 'engram autosave [--file transcript.md] [--role role] [--accept-all] [session-summary]', alias: 'as', purpose: 'Propose multiple memories from a long session before approval or explicit accept-all' },
-      { command: 'engram take-control [--file path] [--dir path] [--include glob] [--all] [--accept-all]', alias: 'tc', purpose: 'Explore existing workspace guidance with agent help and consume it as Engram memory' },
+      { command: 'engram take-control [--plan] [--file path] [--dir path] [--include glob] [--exclude glob] [--max-sources n] [--max-chars n] [--all] [--accept-all]', alias: 'tc', purpose: 'Explore existing workspace guidance with agent help, token-light accept-all, and Engram memory writes' },
       { command: 'engram load [--all] [query]', alias: 'l', purpose: 'Route and load relevant memories into the agent context' },
       { command: 'engram dry-run [--all] [query]', alias: 'dr', purpose: 'Preview routed memory file paths without printing their content' },
       { command: 'engram search <query>', alias: 'f', purpose: 'Perform a search across visible indexed memories' },
@@ -104,7 +104,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
   const shells = ['bash', 'zsh', 'powershell'].join(' ');
   const ruleVariants = ['off', 'light', 'balanced', 'strict', 'status'].join(' ');
   const ignoreActions = ['status', 'check', 'add'].join(' ');
-  const takeControlArgs = ['--file', '--dir', '--include', '--scope', '--role', '--roles', '--all', '--accept-all', '--dry-run'].join(' ');
+  const takeControlArgs = ['--file', '--dir', '--include', '--exclude', '--max-sources', '--max-chars', '--scope', '--role', '--roles', '--all', '--accept-all', '--dry-run', '--plan'].join(' ');
   const skillsetTargets = [
     'all', 'list', 'agents-md', 'codex', 'copilot', 'claude', 'cursor',
     'gemini', 'cline', 'windsurf', 'antigravity', 'antigravity-cli',
@@ -134,7 +134,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '      _arguments "--file[read session summary file]:file:_files" "--scope[write scope]:scope:(workspace global)" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "--accept-all[accept every autosave candidate]" "1:session summary: "',
       '      ;;',
       '    take-control|tc)',
-      '      _arguments "--file[read one source file]:file:_files" "--dir[scan one source directory]:dir:_files -/" "--include[include matching glob]:glob:" "--scope[write scope]:scope:(workspace global)" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "--all[include README docs and library docs]" "--accept-all[accept every generated candidate]" "--dry-run[show source pack only]"',
+      '      _arguments "--file[read one source file]:file:_files" "--dir[scan one source directory]:dir:_files -/" "--include[include matching glob]:glob:" "--exclude[exclude matching glob]:glob:" "--max-sources[maximum source count]:number:" "--max-chars[maximum chars per source]:number:" "--scope[write scope]:scope:(workspace global)" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "--all[include README docs and library docs]" "--accept-all[accept every generated candidate]" "--dry-run[show source pack only]" "--plan[preview source plan only]"',
       '      ;;',
       '    load|l|dry-run|dr)',
       '      _arguments "--all" "1:query: "',
@@ -240,7 +240,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
     '      COMPREPLY=( $(compgen -W "$skillset_targets" -- "$cur") )',
     '      return',
     '      ;;',
-    '    --file)',
+    '    --file|--dir)',
     '      COMPREPLY=( $(compgen -f -- "$cur") )',
     '      return',
     '      ;;',
@@ -269,7 +269,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
     '      return',
     '      ;;',
     '    take-control|tc)',
-    '      COMPREPLY=( $(compgen -W "--file --dir --include --scope --role --roles --all --accept-all --dry-run" -- "$cur") )',
+    '      COMPREPLY=( $(compgen -W "--file --dir --include --exclude --max-sources --max-chars --scope --role --roles --all --accept-all --dry-run --plan" -- "$cur") )',
     '      return',
     '      ;;',
     '    load|l|dry-run|dr)',

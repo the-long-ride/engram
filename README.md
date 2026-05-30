@@ -207,6 +207,9 @@ also accepts `--file transcript.md`, and the approval prompt can accept selected
 candidate numbers with replies such as `A 1,3`. Use
 `engram autosave --accept-all` only when the human explicitly wants every
 agent-recommended candidate saved without a second A/B/C reply.
+In AI agent chat, `/engram autosave` or `/engram auto save` asks the LLM to
+define concise candidates from the current conversation before passing them to
+Engram.
 
 Use `engram take-control` when a workspace already has agent guidance or memory
 files such as `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, Cursor rules,
@@ -216,10 +219,18 @@ and when optional package `@the-long-ride/markdown-them` is installed it
 converts document files such as PDF, DOCX, HTML, RTF, and ODT into Markdown
 before extraction. It builds a compact source pack, asks the agent to convert
 durable rules, workflows, and facts into `TYPE: ... | TEXT: ...` candidates,
-then saves only after the normal approval gate. Use `--dry-run` to inspect the
-source pack, `--file <path>` for one source, `--dir <path>` for a specific
-docs/library folder, `--include "<glob>"` for one extra pattern, and `--all` to
-include `README.md`, `docs/`, and library documentation excerpts.
+then saves only after the normal approval gate. Use `--plan` to preview selected
+files, skipped files with reasons, conversion status, token estimates, and
+likely memory types before any LLM step. Use `--dry-run` to inspect the source
+pack, repeated `--file <path>`, `--dir <path>`, or `--include "<glob>"`
+selectors to combine sources, `--exclude "<glob>"` to prune noisy paths,
+`--max-sources <n>` and `--max-chars <n>` to keep scans token-safe, and `--all`
+to include `README.md`, `docs/`, and library documentation excerpts.
+`engram take-control --accept-all` uses smaller token-light source defaults
+unless explicit `--max-sources` or `--max-chars` limits are provided.
+Saved take-control memories include `source_files` and `source_hashes`
+frontmatter; later scans skip unchanged imported sources unless the human
+explicitly targets a file.
 
 Use `--role` or `--roles` when saving role-specific memory:
 
@@ -305,6 +316,9 @@ AGENTS.md-compatible agents, OpenAI Codex, GitHub Copilot, Claude, Cursor,
 Gemini CLI, Cline, Windsurf, Antigravity CLI, OpenCode, and MCP-capable clients
 without overwriting existing human-authored files. It also installs `/engram`
 slash-command adapters for slash-capable hosts.
+For Claude, Engram writes both `.claude/commands/engram.md` and
+`.claude/skills/engram/SKILL.md` so `/engram` can appear in command-file menus
+and newer skill-aware sessions.
 
 For targeted setup:
 
@@ -320,7 +334,9 @@ After that, a human can ask an agent to run Engram with slash-style requests:
 ```text
 /engram load "deployment workflow"
 /engram save knowledge
+/engram auto save
 /engram take-control
+/engram take control accept all
 /engram autosave --accept-all
 /engram at -a
 /engram verify
@@ -329,8 +345,12 @@ After that, a human can ask an agent to run Engram with slash-style requests:
 The slash adapter routes to the same CLI or MCP flow. It does not bypass the
 normal human approval gate for writes, except that
 `/engram autosave --accept-all` treats the flag as explicit approval for every
-agent-recommended autosave candidate. `/engram at -a` is the compact shortcut for
-that same accept-all autosave flow.
+agent-recommended autosave candidate. `/engram auto save` is accepted as natural
+wording for `/engram autosave`, and the agent uses the LLM to define candidates
+from the current chat. `/engram at -a` is the compact shortcut for
+that same accept-all autosave flow. For `/engram take control accept all`, slash
+adapters normalize the wording to `engram take-control --accept-all`, keep the
+source pack token-light, and avoid pasting source excerpts back into chat.
 
 ## Best Command Sets By Use Case
 
@@ -339,10 +359,12 @@ that same accept-all autosave flow.
 | New project setup | `engram init`, `engram install-skillset slash`, `engram load "current task"` |
 | Existing agent memory takeover | `engram take-control --dry-run`, `engram take-control`, `engram verify` |
 | Migrate one guidance file | `engram take-control --file CLAUDE.md`, `engram search "<topic>"`, `engram deduplicate` |
-| Consume notes or library docs | `engram take-control --dir notes`, `engram take-control --dir docs/library`, `engram take-control --include "docs/**/*.txt"` |
+| Plan a memory takeover | `engram take-control --plan`, `engram take-control --plan --include "docs/**/*.txt" --exclude "docs/private/**"` |
+| Token-light takeover accept-all | `/engram take control accept all`, `engram take-control --accept-all --max-sources 5 --max-chars 900` |
+| Consume notes or library docs | `engram take-control --dir notes --dir docs/library`, `engram take-control --include "docs/**/*.txt" --max-sources 5` |
 | Consume document files | install optional `@the-long-ride/markdown-them`, then run `engram take-control --file docs/handbook.docx` or `engram take-control --include "docs/**/*.pdf"` |
 | Daily agent session | `engram load "<task>"`, `engram search "<topic>"`, `engram save ...`, `engram autosave` |
-| Long session capture | `engram autosave`, `engram autosave --file transcript.md`, `engram at -a` when the human explicitly wants accept-all |
+| Long session capture | `engram autosave`, `/engram auto save`, `engram autosave --file transcript.md`, `engram at -a` when the human explicitly wants accept-all |
 | Global-only personal memory | `engram init --global-only --global-path <path>`, `engram save rule "..."`, `engram load "<task>"` |
 | Team workspace memory | `engram init --submodule`, `engram install-hooks`, `engram verify`, `engram resolve-conflicts` |
 | Cross-device personal memory | `engram init --global-path <path>`, `engram init --global-remote <git-url>`, `engram sync` |
@@ -367,14 +389,18 @@ engram save rule --role frontend "Use design tokens."
 engram save workflow "When deploying, run tests, build, then verify health."
 engram save knowledge
 engram autosave
+engram auto save
 engram take-control
 engram tc --dry-run
+engram take-control --plan
 engram take-control --file CLAUDE.md
+engram take-control --file CLAUDE.md --file notes/team.txt
 engram take-control --file docs/handbook.docx
 engram take-control --dir docs/library
-engram take-control --include "docs/**/*.txt"
+engram take-control --include "docs/**/*.txt" --exclude "docs/private/**"
 engram take-control --include "docs/**/*.pdf"
 engram take-control --all
+engram take control accept all
 engram autosave --file transcript.md
 engram autosave --file transcript.md --accept-all
 engram at -a

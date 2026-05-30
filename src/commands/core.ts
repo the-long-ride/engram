@@ -4,7 +4,7 @@ import { createInterface } from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
 import { HELP_FILE } from '../core/runtime/constants.js';
 import { initWorkspace, resolveAuthor, writeApprovedMemory } from '../core/memory/storage.js';
-import { getContext, loadSummary } from '../core/memory/context.js';
+import { entryPath, getContext, loadSummary } from '../core/memory/context.js';
 import { loadConfig, scopeRootsForConfig, writeScopes } from '../core/runtime/config.js';
 import { renderHelp, renderHelpTerminal } from '../core/cli/help.js';
 import { INIT_WORDMARK, renderInitWordmark } from '../core/cli/banner.js';
@@ -15,10 +15,12 @@ import { verifyRoot } from '../core/safety/hash.js';
 import { route, loadEntries, visibleEntries } from '../core/memory/routing.js';
 import { normalizeBranchName } from '../core/vcs/git.js';
 import { planMemorySave, previewSavePlans, type SavePlan } from '../core/memory/save-plan.js';
+import { parseMemory } from '../core/memory/schema.js';
+import type { MemorySourceMeta } from '../core/memory/memory-template.js';
 import { rebuildIndex } from '../core/memory/index.js';
 import { installSkillset, type InstallResult } from '../core/integrations/skillset.js';
 import { autosaveGuidance, generatedMemoryGuidance, inferMemoryType, normalizeMemoryType, parseMemoryCandidate, parseMemoryCandidates } from '../core/memory/memory-candidate.js';
-import { discoverTakeControlSources, takeControlGuidance } from '../core/memory/take-control.js';
+import { discoverTakeControlSources, planTakeControlSources, renderTakeControlPlan, takeControlGuidance } from '../core/memory/take-control.js';
 import { applyGlobalRemote, applyWorkspaceSubmodule, planGlobalRemote, planWorkspaceSubmodule, resolveGlobalPath } from './init-plans.js';
 import type { MemoryType, Scope } from '../core/runtime/types.js';
 
@@ -206,33 +208,37 @@ export async function cmdAutosave(args: string[], flags: Record<string, any> = {
 /** Convert existing workspace guidance into approved Engram memories with agent help. */
 export async function cmdTakeControl(args: string[], flags: Record<string, any> = {}): Promise<string> {
   const ctx = await getContext();
-  const sources = await discoverTakeControlSources(process.cwd(), ctx.ignorePatterns, flags);
-  const guidance = takeControlGuidance(sources);
+  const sourceHashes = await importedSourceHashes(ctx);
+  const takeControlFlags = { ...flags, 'known-source-hashes': sourceHashes };
+  if (flags.plan === true) return renderTakeControlPlan(await planTakeControlSources(process.cwd(), ctx.ignorePatterns, takeControlFlags));
+  const acceptAll = flags['accept-all'] === true;
+  const sources = await discoverTakeControlSources(process.cwd(), ctx.ignorePatterns, takeControlFlags);
+  const guidance = takeControlGuidance(sources, { acceptAll });
   if (flags['dry-run']) return guidance;
   if (!sources.length && !args.join(' ').trim()) return 'No workspace guidance files found. Try engram take-control --all or --file <path>.';
   const scopes = flags.scope ? [flags.scope as Scope] : writeScopes(ctx.config.scope, ctx.config);
   const author = await resolveAuthor();
   const role = rolesFromFlags(flags);
-  const acceptAll = flags['accept-all'] === true;
   let text = args.join(' ').trim();
   let plans: SavePlan[] = [];
   let approval: SelectionApproval | undefined = acceptAll ? { accepted: true } : undefined;
+  const source = takeControlSourceMeta(sources);
   if (!text) {
     if (acceptAll) text = await requestGeneratedSelectionText({ guidance, acceptAll }) ?? '';
     else {
       const captured = await requestGeneratedSelectionApproval(async (generated) => {
         text = generated;
-        plans = await planAutosaveCandidates(ctx, generated, scopes, author, role);
+        plans = await planAutosaveCandidates(ctx, generated, scopes, author, role, source);
         return previewSavePlans(plans);
       }, { guidance });
       if (!captured) return 'Discarded. No file written.';
       approval = captured.approval;
     }
   } else {
-    plans = await planAutosaveCandidates(ctx, text, scopes, author, role);
+    plans = await planAutosaveCandidates(ctx, text, scopes, author, role, source);
     if (!acceptAll) approval = await requestSelectionApproval(previewSavePlans(plans));
   }
-  if (acceptAll && text && !plans.length) plans = await planAutosaveCandidates(ctx, text, scopes, author, role);
+  if (acceptAll && text && !plans.length) plans = await planAutosaveCandidates(ctx, text, scopes, author, role, source);
   if (!plans.length) return 'No memory candidates detected.';
   if (!approval?.accepted) return 'Discarded. No file written.';
   if (approval.selected?.length) plans = plans.filter((plan) => plan.candidateIndex === undefined || approval.selected?.includes(plan.candidateIndex));
@@ -242,19 +248,52 @@ export async function cmdTakeControl(args: string[], flags: Record<string, any> 
   return `${prefix}\n${saved}`;
 }
 
-async function planAutosaveCandidates(ctx: Awaited<ReturnType<typeof getContext>>, text: string, scopes: Scope[], author: string, role?: string[]): Promise<SavePlan[]> {
+async function planAutosaveCandidates(ctx: Awaited<ReturnType<typeof getContext>>, text: string, scopes: Scope[], author: string, role?: string[], source?: MemorySourceMeta): Promise<SavePlan[]> {
   const plans: SavePlan[] = [];
   let candidateIndex = 1;
   for (const candidate of parseMemoryCandidates(text)) {
-    const candidatePlans = await planMemorySave({ ctx, text: candidate.text, type: candidate.type, scopes, author, role });
+    const candidatePlans = await planMemorySave({ ctx, text: candidate.text, type: candidate.type, scopes, author, role, source });
     plans.push(...candidatePlans.map((plan) => ({ ...plan, candidateIndex })));
     candidateIndex += 1;
   }
   return plans;
 }
 
+async function importedSourceHashes(ctx: Awaited<ReturnType<typeof getContext>>): Promise<Set<string>> {
+  const hashes = new Set<string>();
+  for (const entry of ctx.index.entries) {
+    try {
+      const raw = await readText(entryPath(ctx, entry.scope, entry.file));
+      const doc = parseMemory(raw);
+      for (const hash of frontmatterStrings(doc.frontmatter.source_hashes)) hashes.add(hash);
+    } catch {
+      continue;
+    }
+  }
+  return hashes;
+}
+
+function takeControlSourceMeta(sources: Awaited<ReturnType<typeof discoverTakeControlSources>>): MemorySourceMeta | undefined {
+  if (!sources.length) return undefined;
+  return {
+    source: 'take-control',
+    sourceFiles: sources.map((source) => source.file),
+    sourceHashes: sources.map((source) => source.hash)
+  };
+}
+
+function frontmatterStrings(value: unknown): string[] {
+  if (Array.isArray(value)) return value.filter((item): item is string => typeof item === 'string' && Boolean(item.trim()));
+  return typeof value === 'string' && value.trim() ? [value] : [];
+}
+
 async function autosaveInput(args: string[], flags: Record<string, any>): Promise<string> {
-  const file = typeof flags.file === 'string' ? flags.file : typeof flags.f === 'string' ? flags.f : '';
+  const files = [
+    ...(Array.isArray(flags.file) ? flags.file : typeof flags.file === 'string' ? [flags.file] : []),
+    ...(typeof flags.f === 'string' ? [flags.f] : [])
+  ];
+  if (files.length > 1) throw new Error('autosave accepts only one --file');
+  const file = files[0] ?? '';
   const inline = args.join(' ').trim();
   if (!file) return inline;
   if (inline) throw new Error('autosave accepts either --file or inline text, not both');

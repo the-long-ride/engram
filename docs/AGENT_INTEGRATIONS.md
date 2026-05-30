@@ -34,6 +34,9 @@ engram install-skillset all
 ```
 
 Use `--force` only when replacing generated Engram adapter files intentionally.
+Claude receives both `.claude/commands/engram.md` and
+`.claude/skills/engram/SKILL.md` so `/engram` appears in older command menus and
+newer skill-aware Claude Code sessions.
 
 ## Supported Targets
 
@@ -50,7 +53,7 @@ Use `--force` only when replacing generated Engram adapter files intentionally.
 | `antigravity-cli` | `.agents/skills/engram/SKILL.md` | Antigravity CLI workspace skill |
 | `opencode` | `opencode.json`, `.opencode/engram.md` | OpenCode custom instructions |
 | `mcp` | `.mcp.json` | MCP-style JSON-lines wrapper registration |
-| `slash` | `.claude/skills/engram/SKILL.md`, `.cursor/commands/engram.md`, `.gemini/commands/engram.toml` | Native `/engram` slash adapters |
+| `slash` | `.claude/commands/engram.md`, `.claude/skills/engram/SKILL.md`, `.cursor/commands/engram.md`, `.gemini/commands/engram.toml` | Native `/engram` slash adapters |
 
 Aliases: `codex` installs the `agents-md` adapter plus the Agent Skill file,
 `antigravity` maps to `antigravity-cli`, and `open-code` maps to `opencode`.
@@ -117,7 +120,9 @@ Aliases: `codex` installs the `agents-md` adapter plus the Agent Skill file,
    /engram entry
    /engram save knowledge
    /engram autosave
+   /engram auto save
    /engram take-control
+   /engram take control accept all
    /engram at -a
    /engram autosave --accept-all
    /engram help set-role
@@ -136,9 +141,16 @@ Aliases: `codex` installs the `agents-md` adapter plus the Agent Skill file,
   `--accept-all`, or uses the `/engram at -a` shortcut, the slash adapter should
   generate/provide concise candidates, run the CLI with
   `engram autosave --accept-all`, and report the saved files without asking for
-  another A/B/C reply. For `/engram take-control --accept-all`, the slash adapter
-  should read the source pack, generate `TYPE: ... | TEXT: ...` candidates, pass
-  them to the CLI, and let Engram save them without a second approval prompt.
+  another A/B/C reply. For `/engram take-control --accept-all` or natural
+  `/engram take control accept all`, the slash adapter should normalize the
+  wording, keep the source pack token-light, generate only concise
+  `TYPE: ... | TEXT: ...` candidates, pass them to the CLI, and let Engram save
+  them without a second approval prompt. The adapter should not paste source
+  excerpts or reasoning back into chat.
+  For `/engram autosave` or natural `/engram auto save` without a file or inline
+  candidates, the slash adapter should use the LLM to define concise candidates
+  from the current AI agent chat/session, then pass `TYPE: ... | TEXT: ...`
+  lines to Engram for the normal approval flow.
   Agents must not add `--accept-all` unless the human requested it.
 
    Generated knowledge should be objective and durable. Corrections and
@@ -154,9 +166,18 @@ Aliases: `codex` installs the `agents-md` adapter plus the Agent Skill file,
    top-level `rules/`, `skills/`, `workflows/`, `knowledge/`, or `notes/`
    folders, including `.txt` notes. The agent should return concise
    `TYPE: ... | TEXT: ...` candidates from that source pack, then let Engram
-   show the normal approval gate. Use `engram take-control --dry-run` to inspect
-   the source pack first, `--dir` for docs/library folders, or `--include` for
-   one extra glob.
+   show the normal approval gate. Use `engram take-control --plan` to preview
+   selected files, skipped files with reasons, conversion status, token
+   estimates, and likely memory types before the LLM step. Use
+   `engram take-control --dry-run` to inspect the source pack first, repeated
+   `--file`, `--dir`, and `--include` selectors to combine sources, plus
+   `--exclude`, `--max-sources`, and `--max-chars` to keep scans token-safe.
+   `--accept-all` uses smaller token-light source defaults unless explicit
+   `--max-sources` or `--max-chars` values are provided.
+   Saved take-control memories record `source_files` and `source_hashes`
+   frontmatter. Later scans skip unchanged imported sources, while an explicit
+   `--file` import still lets the human force a specific source back through the
+   approval flow.
 
    Rule variant mode is useful when a model needs lighter or stricter
    instruction wording. Strict helps lower-tier models stay controlled; stronger
@@ -200,6 +221,8 @@ Engram as an invokable skill.
 Claude Code and Cursor support external tool configuration, so Engram can be
 registered through `.mcp.json` where that wrapper is accepted. The `slash`
 target also writes Claude and Cursor project-level command files for `/engram`.
+For Claude, Engram writes both the classic command file and the newer skill file
+because Claude Code supports both forms for slash invocation.
 The generated slash description is: "Your knowledge memory manager, synced
 across every device with Git."
 MCP hosts should treat `engram_save` and `engram_autosave` as proposal-only
@@ -207,7 +230,9 @@ tools; they must still route final writes through the human-visible CLI approval
 flow. Explicit `/engram autosave --accept-all` requests, including the shortcut
 `/engram at -a`, should use the CLI write path because MCP autosave remains
 proposal-only. `/engram take-control` should use the CLI flow because it needs
-workspace source discovery plus human-visible approval.
+workspace source discovery plus human-visible approval. Slash adapters normalize
+`/engram auto save` to `engram autosave` and `/engram take control accept all`
+to `engram take-control --accept-all`.
 
 Gemini CLI searches for `GEMINI.md` files as context. The `slash` target writes
 `.gemini/commands/engram.toml` so `/engram <args>` becomes a project custom

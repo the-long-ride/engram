@@ -51,7 +51,7 @@ export async function runCli(argv: string[]): Promise<string> {
 }
 
 /** Dry-run routing without printing full memory content. */
-async function dryRun(args: string[], flags: Record<string, string | boolean>): Promise<string> {
+async function dryRun(args: string[], flags: Record<string, any>): Promise<string> {
   const { getContext } = await import('./core/memory/context.js');
   const { route } = await import('./core/memory/routing.js');
   const ctx = await getContext();

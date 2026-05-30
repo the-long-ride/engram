@@ -38,12 +38,34 @@ export function isIgnored(relPath: string, patterns: string[]): boolean {
 
 /** Small glob subset: *, **, directory prefixes, and exact names. */
 export function matchPattern(file: string, pattern: string): boolean {
+  const normalized = file.replace(/\\/g, '/').replace(/^\.\//, '');
   const p = pattern.replace(/\\/g, '/').replace(/^\.\//, '');
-  if (p.endsWith('/')) return file.startsWith(p) || file.includes(`/${p}`);
-  if (p.endsWith('/**')) return file.startsWith(p.slice(0, -3));
-  if (!p.includes('*')) return file === p || file.endsWith(`/${p}`) || file.startsWith(`${p}/`);
-  const escaped = p.split('*').map(escapeRegex).join('[^/]*').replace(/\[\^\/\]\*\[\^\/\]\*/g, '.*');
-  return new RegExp(`^${escaped}$`).test(file) || new RegExp(`(^|/)${escaped}$`).test(file);
+  if (p.endsWith('/')) return normalized.startsWith(p) || normalized.includes(`/${p}`);
+  if (p.endsWith('/**')) return normalized.startsWith(p.slice(0, -3));
+  if (!/[?*]/.test(p)) return normalized === p || normalized.endsWith(`/${p}`) || normalized.startsWith(`${p}/`);
+  const source = globSource(p);
+  return new RegExp(`^${source}$`).test(normalized) || new RegExp(`(^|/)${source}$`).test(normalized);
+}
+
+function globSource(pattern: string): string {
+  let out = '';
+  for (let i = 0; i < pattern.length; i += 1) {
+    const char = pattern[i];
+    if (pattern.slice(i, i + 3) === '**/') {
+      out += '(?:.*/)?';
+      i += 2;
+    } else if (pattern.slice(i, i + 2) === '**') {
+      out += '.*';
+      i += 1;
+    } else if (char === '*') {
+      out += '[^/]*';
+    } else if (char === '?') {
+      out += '[^/]';
+    } else {
+      out += escapeRegex(char);
+    }
+  }
+  return out;
 }
 
 function escapeRegex(text: string): string {

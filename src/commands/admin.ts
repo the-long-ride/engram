@@ -112,7 +112,18 @@ export async function cmdInstallSkillset(args: string[], flags: Record<string, a
   if (args[0] === 'list') return skillsetTargets().join('\n');
   const target = args[0] ?? 'all';
   const results = await installSkillset(process.cwd(), target, Boolean(flags.force));
-  return results.map((r) => `${r.action.toUpperCase()} ${r.target}: ${r.file}`).join('\n');
+  return [
+    ...results.map((r) => `${r.action.toUpperCase()} ${r.target}: ${r.file}`),
+    ...skillsetInstallHints(results)
+  ].join('\n');
+}
+
+function skillsetInstallHints(results: Awaited<ReturnType<typeof installSkillset>>): string[] {
+  if (!results.some((result) => result.target === 'slash')) return [];
+  return [
+    'Hint: if /engram is not visible in an already-open chat, restart or reload the agent chat after the new slash files are written.',
+    'Claude paths: .claude/commands/engram.md and .claude/skills/engram/SKILL.md'
+  ];
 }
 
 function isRuleVariant(value: string): value is RuleVariant {

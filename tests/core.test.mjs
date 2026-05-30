@@ -247,15 +247,28 @@ test('argument parser preserves positional text after known boolean flags', () =
   const shortcut = parseArgs(['at', '-a', 'TYPE: rule | TEXT: Always test releases.']);
   assert.equal(shortcut.flags['accept-all'], true);
   assert.deepEqual(shortcut.rest, ['TYPE: rule | TEXT: Always test releases.']);
+  const naturalAutosave = parseArgs(['auto', 'save', 'accept', 'all', '--scope', 'workspace']);
+  assert.equal(naturalAutosave.command, 'autosave');
+  assert.equal(naturalAutosave.flags['accept-all'], true);
+  assert.deepEqual(naturalAutosave.rest, []);
   const load = parseArgs(['load', '--all', 'deployment workflow']);
   assert.equal(load.flags.all, true);
   assert.deepEqual(load.rest, ['deployment workflow']);
+  const takeControl = parseArgs(['take-control', '--plan', '--include', 'docs/**/*.txt', '--include', 'notes/*.txt']);
+  assert.equal(takeControl.flags.plan, true);
+  assert.deepEqual(takeControl.flags.include, ['docs/**/*.txt', 'notes/*.txt']);
+  const naturalTakeControl = parseArgs(['take', 'control', 'accept', 'all', '--scope', 'workspace']);
+  assert.equal(naturalTakeControl.command, 'take-control');
+  assert.equal(naturalTakeControl.flags['accept-all'], true);
+  assert.deepEqual(naturalTakeControl.rest, []);
 });
 
 test('ignore matcher supports common patterns', () => {
   assert.equal(isIgnored('dist/app.js', ['dist/']), true);
   assert.equal(isIgnored('src/app.secret', ['*.secret']), true);
   assert.equal(isIgnored('private/a/b.txt', ['private/**']), true);
+  assert.equal(isIgnored('docs/intro.txt', ['docs/**/*.txt']), true);
+  assert.equal(isIgnored('docs/nested/intro.txt', ['docs/**/*.txt']), true);
   assert.equal(isIgnored('src/app.ts', ['dist/']), false);
 });
 

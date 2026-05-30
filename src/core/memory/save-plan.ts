@@ -2,7 +2,7 @@
 import type { EngramContext } from './context.js';
 import { entryPath } from './context.js';
 import { exists, readText } from '../system/fsx.js';
-import { draftMemory, updateMemory } from './memory-template.js';
+import { draftMemory, updateMemory, type MemorySourceMeta } from './memory-template.js';
 import type { MemoryEntry, MemoryType, Scope } from '../runtime/types.js';
 import { lexicalScore, slugify, words } from '../system/text.js';
 import { sha256 } from '../safety/hash.js';
@@ -20,17 +20,17 @@ export type SavePlan = {
 
 /** Choose whether each scope should add a new memory or update an existing one. */
 export async function planMemorySave(input: {
-  ctx: EngramContext; text: string; type: MemoryType; scopes: Scope[]; author: string; role?: string[];
+  ctx: EngramContext; text: string; type: MemoryType; scopes: Scope[]; author: string; role?: string[]; source?: MemorySourceMeta;
 }): Promise<SavePlan[]> {
   const plans: SavePlan[] = [];
   const options = { ruleVariants: input.ctx.config.rule_variants.enabled };
   for (const scope of input.scopes) {
     const match = await bestMatch(input.ctx, input.text, input.type, scope);
     if (match) {
-      const content = updateMemory(match.raw, { text: input.text, type: input.type, scope, author: input.author, role: input.role }, options);
+      const content = updateMemory(match.raw, { text: input.text, type: input.type, scope, author: input.author, role: input.role, source: input.source }, options);
       plans.push({ action: 'update', scope, file: match.entry.file, id: match.entry.id, content, matchScore: match.score, message: `update ${input.type}: ${match.entry.id}` });
     } else {
-      const draft = draftMemory({ text: input.text, type: input.type, scope, author: input.author, role: input.role }, options);
+      const draft = draftMemory({ text: input.text, type: input.type, scope, author: input.author, role: input.role, source: input.source }, options);
       const unique = await avoidCollision(input.ctx, scope, draft, input.text);
       plans.push({ action: 'add', scope, file: unique.file, id: unique.id, content: unique.content, message: `add ${input.type}: ${unique.id}` });
     }

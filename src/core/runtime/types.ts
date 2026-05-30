@@ -16,6 +16,7 @@ export type EngramConfig = {
   live_sync: { enabled: boolean; targets: string[] };
   global_git: { enabled: boolean; remote: string; branch: string; auto_sync: boolean; auto_resolve: boolean };
   rule_variants: { enabled: boolean; active: RuleVariant };
+  graph: { enabled: boolean; max_related: number; min_related_score: number };
   pattern_mining: { enabled: boolean; threshold: number; lookback_sessions: number };
   pr_workflow: { enabled: boolean; provider?: string; repo?: string; target_branch: string };
   encryption: { enabled: boolean; scope: Scope; key_source: string };
@@ -47,3 +48,36 @@ export type MemoryIndex = { version: string; last_updated: string; entries: Memo
 export type HashStore = Record<string, string>;
 export type ScanFinding = { line: number; reason: string; value: string; kind: string };
 export type MemoryDoc = { frontmatter: Record<string, any>; title: string; body: string; raw: string };
+
+export type MemoryGraphNodeKind = 'scope' | 'type' | 'topic' | 'memory';
+export type MemoryGraphEdgeKind = 'contains' | 'tagged_as' | 'related_to' | 'contradicts';
+
+export type MemoryGraphNode = {
+  id: string;
+  kind: MemoryGraphNodeKind;
+  level: number;
+  label: string;
+  scope?: Scope;
+  memoryId?: string;
+  memoryType?: MemoryType;
+  file?: string;
+  tags?: string[];
+  summary?: string;
+  embedding?: number[];
+};
+
+export type MemoryGraphEdge = {
+  id: string;
+  kind: MemoryGraphEdgeKind;
+  from: string;
+  to: string;
+  weight: number;
+  reason: string;
+};
+
+export type MemoryGraph = {
+  version: string;
+  last_updated: string;
+  nodes: MemoryGraphNode[];
+  edges: MemoryGraphEdge[];
+};

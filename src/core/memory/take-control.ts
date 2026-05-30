@@ -9,25 +9,13 @@ import { sha256 } from '../safety/hash.js';
 import { inside, readText } from '../system/fsx.js';
 
 export type TakeControlSource = {
-  file: string;
-  excerpt: string;
-  lines: number;
-  chars: number;
-  excerptChars: number;
-  tokenEstimate: number;
-  conversion: string;
-  proposedTypes: string[];
-  hash: string;
+  file: string; excerpt: string; lines: number; chars: number; excerptChars: number;
+  tokenEstimate: number; conversion: string; proposedTypes: string[]; hash: string;
 };
 export type TakeControlSkipped = { file: string; reason: string };
 export type TakeControlPlan = {
-  sources: TakeControlSource[];
-  skipped: TakeControlSkipped[];
-  tokenEstimate: number;
-  maxSources: number;
-  maxChars: number;
-  includes: string[];
-  excludes: string[];
+  sources: TakeControlSource[]; skipped: TakeControlSkipped[]; tokenEstimate: number;
+  maxSources: number; maxChars: number; includes: string[]; excludes: string[];
 };
 
 const DEFAULT_MAX_SOURCES = 12;
@@ -39,18 +27,14 @@ type CandidateFile = { file: string; required: boolean };
 
 /** Find likely existing memory/guidance files that can be converted to Engram memory. */
 export async function discoverTakeControlSources(
-  cwd: string,
-  ignorePatterns: string[],
-  flags: Record<string, any> = {}
+  cwd: string, ignorePatterns: string[], flags: Record<string, any> = {}
 ): Promise<TakeControlSource[]> {
   return (await planTakeControlSources(cwd, ignorePatterns, flags)).sources;
 }
 
 /** Build the source plan without invoking the LLM-assisted candidate step. */
 export async function planTakeControlSources(
-  cwd: string,
-  ignorePatterns: string[],
-  flags: Record<string, any> = {}
+  cwd: string, ignorePatterns: string[], flags: Record<string, any> = {}
 ): Promise<TakeControlPlan> {
   const options = takeControlOptions(flags);
   const resolved = await resolveTakeControlFiles(cwd, ignorePatterns, options);
@@ -79,9 +63,7 @@ export async function planTakeControlSources(
 }
 
 async function resolveTakeControlFiles(
-  cwd: string,
-  ignorePatterns: string[],
-  options: ReturnType<typeof takeControlOptions>
+  cwd: string, ignorePatterns: string[], options: ReturnType<typeof takeControlOptions>
 ): Promise<{ files: CandidateFile[]; skipped: TakeControlSkipped[] }> {
   const skipped: TakeControlSkipped[] = [];
   const files: CandidateFile[] = [];
@@ -152,13 +134,8 @@ export function takeControlGuidance(sources: TakeControlSource[], options: { acc
 }
 
 async function walkCandidateFiles(
-  root: string,
-  cwd: string,
-  ignorePatterns: string[],
-  broad: boolean,
-  includePatterns: string[],
-  excludePatterns: string[],
-  skipped: TakeControlSkipped[]
+  root: string, cwd: string, ignorePatterns: string[], broad: boolean,
+  includePatterns: string[], excludePatterns: string[], skipped: TakeControlSkipped[]
 ): Promise<CandidateFile[]> {
   const found: CandidateFile[] = [];
   async function visit(dir: string): Promise<void> {

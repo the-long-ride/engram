@@ -30,6 +30,13 @@ files. Hosts that support custom slash commands can also load generated
 - Treat `engram autosave --accept-all` as explicit human approval for every
   agent-recommended autosave candidate. Agents must not add this flag unless the
   human requested it.
+- Treat `engram observe` as raw inbox capture, not active memory. It may write a
+  sanitized `inbox/` note, but converting that note into memory requires
+  `observe --propose` or `autosave --file` and the normal approval flow unless
+  the human explicitly passed `--accept-all`.
+- Treat `engram graph` and `engram quality-check` contradiction rows as advisory
+  wrong-memory signals. Wrong or superseded memory should leave active routing
+  only through `engram archive --reason <why> <id-or-file>` after approval.
 - Preserve role metadata passed through `--role`, `--roles`, or MCP `role`
   arguments so role-based routing can include or skip memories later.
 - Validate memory Markdown before writing: headings need a following blank line,
@@ -99,9 +106,13 @@ proposal and collect explicit human approval before invoking a CLI write flow.
 | `engram entry` | Print resolved flags, paths, and detected global Git state |
 | `engram load [--all] "<task>"` | Load relevant memory; `--all` is the explicit broad-load mode |
 | `engram search "<query>"` | Search visible memory by query |
+| `engram graph [--rebuild] ["<query>"]` | Inspect the derived layered JSON graph and contradiction candidates |
 | `engram save [rule|skill|workflow|knowledge] [--role role] "<text>"` | Propose one memory and write after A/B/C approval |
 | `engram autosave [--file transcript.md] [--role role] [--accept-all] [session-summary]` | Propose multiple memories from a long session and write only after numbered A/B/C approval, or save every candidate when the human passed `--accept-all` |
+| `engram observe [--file session.md] [--propose] [note]` | Write sanitized raw notes into inbox; `--propose` mines them through autosave |
 | `engram take-control [--plan] [--file path] [--dir path] [--include glob] [--exclude glob] [--max-sources n] [--max-chars n] [--all] [--accept-all]` | Explore existing workspace guidance, notes, and docs with agent help, preview source plans, and consume approved candidates as Engram memory |
+| `engram archive [--reason text] <memory-id|file>` | Move wrong or superseded memory out of active routing after approval |
+| `engram benchmark <cases.json>` | Run a read-only hit@8 routing benchmark over query/expected-memory cases |
 | `engram set-role <role...>` | Configure active developer roles for routing role-scoped memory |
 | `engram set-rule-variant light|balanced|strict|off` | Configure compact rule output for agents |
 | `engram verify` | Check hash integrity |
@@ -127,6 +138,9 @@ hosts may prefer MCP-style tools:
 | `/engram save ...` | `engram_save` proposal or CLI approval flow |
 | `/engram autosave ...` | `engram_autosave` proposal or CLI approval flow; use CLI write flow when `--accept-all` is present |
 | `/engram auto save ...` | Same as `/engram autosave ...`; LLM defines candidates from current chat when no file or inline candidates are provided |
+| `/engram observe ...` | `engram observe ...` CLI flow; `--propose` may mine candidates through autosave |
+| `/engram graph ...` | `engram graph ...` CLI flow |
+| `/engram archive ...` | `engram archive ...` CLI approval flow |
 | `/engram take-control ...` | `engram take-control ...` CLI flow with agent-generated candidates and approval |
 | `/engram take control accept all` | `engram take-control --accept-all` CLI write flow with token-light source defaults |
 | `/engram at -a` | `engram autosave --accept-all` CLI write flow |

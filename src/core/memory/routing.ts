@@ -1,8 +1,9 @@
 /** Deterministic routing and load helpers for relevant memory selection. */
-import type { EngramConfig, MemoryEntry, MemoryIndex } from '../runtime/types.js';
+import type { EngramConfig, MemoryEntry, MemoryGraph, MemoryIndex } from '../runtime/types.js';
 import { readGuardedMemory } from '../safety/safe-read.js';
 import { isIgnored } from '../safety/ignore.js';
 import { lexicalScore } from '../system/text.js';
+import { routeWithGraph } from './graph.js';
 
 type RouteOptions = { all?: boolean; ignorePatterns?: string[] };
 
@@ -22,8 +23,10 @@ export function visibleEntries(entries: MemoryEntry[], config: EngramConfig, man
 }
 
 /** Select the 3-8 most relevant entries using lexical similarity. */
-export function route(index: MemoryIndex, query: string, config: EngramConfig, manual = false, options: RouteOptions = {}): MemoryEntry[] {
-  const scored = prefilter(index, config, manual, options.ignorePatterns).map((entry) => ({
+export function route(index: MemoryIndex, query: string, config: EngramConfig, manual = false, options: RouteOptions = {}, graph?: MemoryGraph): MemoryEntry[] {
+  const entries = prefilter(index, config, manual, options.ignorePatterns);
+  if (config.graph.enabled && graph?.nodes.length && !options.all) return routeWithGraph(entries, graph, query, 8);
+  const scored = entries.map((entry) => ({
     entry,
     score: lexicalScore(query, `${entry.id} ${entry.type} ${entry.tags.join(' ')} ${entry.summary}`)
   }));

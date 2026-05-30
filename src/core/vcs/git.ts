@@ -1,7 +1,7 @@
 /** Small Git integration helpers. Workspace Git is intentionally untouched. */
 import { execFile } from 'node:child_process';
 import path from 'node:path';
-import { CHANGELOG_FILE, HASH_FILE, HELP_FILE, INDEX_FILE, MEMORY_DIRS, README_FILE } from '../runtime/constants.js';
+import { CHANGELOG_FILE, GRAPH_FILE, HASH_FILE, HELP_FILE, INDEX_FILE, MEMORY_DIRS, README_FILE } from '../runtime/constants.js';
 import { ensureDir, exists } from '../system/fsx.js';
 import type { EngramConfig } from '../runtime/types.js';
 
@@ -171,6 +171,7 @@ async function gitAddEngramOwned(root: string): Promise<void> {
   const candidates = [
     ...MEMORY_DIRS,
     INDEX_FILE,
+    GRAPH_FILE,
     HASH_FILE,
     CHANGELOG_FILE,
     HELP_FILE,

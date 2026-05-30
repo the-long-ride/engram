@@ -4,12 +4,13 @@ export const AGENTS_DIR = '.agents';
 export const ENGRAM_DIR = '.agents/.engram';
 export const LEGACY_ENGRAM_DIR = '.engram';
 export const INDEX_FILE = 'memory.index.json';
+export const GRAPH_FILE = 'memory.graph.json';
 export const HASH_FILE = 'memory.hashes.json';
 export const CHANGELOG_FILE = 'changelog.md';
 export const HELP_FILE = 'HELP.md';
 export const README_FILE = 'README.md';
 
-export const MEMORY_DIRS = ['rules', 'skills', 'knowledge', 'archive', 'quarantine', 'proposals'];
+export const MEMORY_DIRS = ['rules', 'skills', 'knowledge', 'archive', 'quarantine', 'proposals', 'inbox'];
 
 export const DEFAULT_IGNORE = `# Engram ignores private or generated AI context.
 .env

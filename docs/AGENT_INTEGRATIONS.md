@@ -121,10 +121,13 @@ Aliases: `codex` installs the `agents-md` adapter plus the Agent Skill file,
    /engram save knowledge
    /engram autosave
    /engram auto save
+   /engram observe --file session.md
    /engram take-control
    /engram take control accept all
    /engram at -a
    /engram autosave --accept-all
+   /engram graph release workflow
+   /engram archive --reason "Superseded" knowledge/old-fact.md
    /engram help set-role
    /engram set-rule-variant strict
    /engram verify
@@ -151,6 +154,14 @@ Aliases: `codex` installs the `agents-md` adapter plus the Agent Skill file,
   candidates, the slash adapter should use the LLM to define concise candidates
   from the current AI agent chat/session, then pass `TYPE: ... | TEXT: ...`
   lines to Engram for the normal approval flow.
+  For `/engram observe`, slash adapters should run the CLI and report the saved
+  inbox file. If the human included `--propose`, the adapter may generate
+  concise autosave candidates from the sanitized note, but writes still use the
+  normal approval flow unless the human explicitly included `--accept-all`.
+  For `/engram graph` and `/engram quality-check`, report contradiction
+  candidates compactly. If a memory is wrong or superseded, use
+  `/engram archive --reason <why> <id-or-file>` so the file leaves active
+  routing only after approval and remains preserved under `archive/`.
   Agents must not add `--accept-all` unless the human requested it.
 
    Generated knowledge should be objective and durable. Corrections and
@@ -233,6 +244,9 @@ proposal-only. `/engram take-control` should use the CLI flow because it needs
 workspace source discovery plus human-visible approval. Slash adapters normalize
 `/engram auto save` to `engram autosave` and `/engram take control accept all`
 to `engram take-control --accept-all`.
+`/engram observe`, `/engram archive`, and `/engram benchmark` should use the CLI
+flow. `engram load` is graph-aware automatically because it reads the derived
+`memory.graph.json` when graph routing is enabled.
 
 Gemini CLI searches for `GEMINI.md` files as context. The `slash` target writes
 `.gemini/commands/engram.toml` so `/engram <args>` becomes a project custom

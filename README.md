@@ -13,6 +13,7 @@ All memory is plain Markdown. That means humans can read it, teams can review it
 - **Agent-agnostic:** any agent can read Markdown memory, even without a plugin.
 - **Human-approved:** every write goes through an A/B/C review gate.
 - **Workspace-first:** project memory wins; global memory follows you elsewhere.
+- **Graph-aware:** approved memories are layered into scope, type, topic, and memory nodes for better routing.
 - **Adaptive rules:** rule memories can render as light, balanced, or strict.
 - **Safe by default:** ignore rules, secret scans, injection checks, and hashes.
 - **Git-friendly:** memory is reviewable, portable, auditable, and recoverable.
@@ -184,6 +185,8 @@ npx @the-long-ride/engram save rule --role frontend "Use design tokens for spaci
 npx @the-long-ride/engram save workflow "When releasing, run tests, update the changelog, then tag the version."
 npx @the-long-ride/engram save knowledge
 npx @the-long-ride/engram autosave
+npx @the-long-ride/engram observe --file session.md
+npx @the-long-ride/engram graph "release workflow"
 npx @the-long-ride/engram take-control --dry-run
 npx @the-long-ride/engram take-control
 npx @the-long-ride/engram autosave --file transcript.md
@@ -253,6 +256,38 @@ Engram always saves rule memories with light, balanced, and strict versions.
 `engram load`, `engram export`, and `engram sync` emit the selected variant.
 When rule variants are off, Engram renders balanced rule wording by default.
 
+## Inbox And Graph Routing
+
+Use `engram observe` when an agent or human has raw session notes that should
+not become active memory yet:
+
+```bash
+engram observe "We fixed token refresh by renewing sessions before expiry."
+engram observe --file session.md
+engram observe --file session.md --propose
+```
+
+Observation files are saved under `inbox/`, redacting sensitive values and
+dropping prompt-injection-like lines. They are not indexed as memory. To turn
+one into real memory, run `engram autosave --file <inbox-file>` or pass
+`--propose`, which still goes through the normal approval flow.
+
+Engram also maintains a derived `memory.graph.json` next to each memory index.
+The graph stores scope, type, topic, and memory nodes plus related and
+contradiction-candidate edges. `engram load` uses this graph to expand from the
+best direct matches into related knowledge chains, while `engram graph <query>`
+lets you inspect the chain without printing full memory bodies.
+
+Wrong or superseded memory should be archived, not deleted:
+
+```bash
+engram graph "package manager"
+engram archive --reason "Repo migrated to npm." use-pnpm-for-installs
+```
+
+Archive requires approval and moves the file under `archive/YYYY-MM-DD/`, so it
+stops routing while history remains reviewable.
+
 After a successful `engram init`, the CLI points users at three high-leverage
 features:
 
@@ -289,8 +324,9 @@ startup files by itself.
 ## What Is Included
 
 Engram ships a deterministic CLI, MCP-style JSON-lines wrapper, cached help,
-memory schema, indexing, routing, safety guards, import/export, live-sync
-renderers, conflict previews, and health checks. Prompt templates, pattern
+memory schema, indexing, layered JSON graph routing, inbox capture, safety
+guards, import/export, live-sync renderers, conflict previews, and health
+checks. Prompt templates, pattern
 mining, encryption, and PR workflow ideas are design assets until wired into
 runtime commands.
 
@@ -365,6 +401,9 @@ source pack token-light, and avoid pasting source excerpts back into chat.
 | Consume document files | install optional `@the-long-ride/markdown-them`, then run `engram take-control --file docs/handbook.docx` or `engram take-control --include "docs/**/*.pdf"` |
 | Daily agent session | `engram load "<task>"`, `engram search "<topic>"`, `engram save ...`, `engram autosave` |
 | Long session capture | `engram autosave`, `/engram auto save`, `engram autosave --file transcript.md`, `engram at -a` when the human explicitly wants accept-all |
+| Raw note inbox | `engram observe --file session.md`, `engram observe --file session.md --propose` |
+| Graph routing debug | `engram graph "<topic>"`, `engram graph --rebuild "<topic>"`, `engram benchmark cases.json` |
+| Wrong memory cleanup | `engram quality-check`, `engram graph "<topic>"`, `engram archive --reason "<why>" <id-or-file>` |
 | Global-only personal memory | `engram init --global-only --global-path <path>`, `engram save rule "..."`, `engram load "<task>"` |
 | Team workspace memory | `engram init --submodule`, `engram install-hooks`, `engram verify`, `engram resolve-conflicts` |
 | Cross-device personal memory | `engram init --global-path <path>`, `engram init --global-remote <git-url>`, `engram sync` |
@@ -390,6 +429,8 @@ engram save workflow "When deploying, run tests, build, then verify health."
 engram save knowledge
 engram autosave
 engram auto save
+engram observe "Raw session note to inspect later"
+engram observe --file session.md --propose
 engram take-control
 engram tc --dry-run
 engram take-control --plan
@@ -406,6 +447,9 @@ engram autosave --file transcript.md --accept-all
 engram at -a
 engram load "deployment workflow"
 engram search "deployment"
+engram graph "deployment workflow"
+engram archive --reason "Superseded by current deploy workflow" knowledge/old-deploy.md
+engram benchmark cases.json
 engram set-rule-variant strict
 engram verify
 engram health

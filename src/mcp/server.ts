@@ -1,6 +1,6 @@
 /** Minimal JSON-line MCP wrapper for Engram tools. */
 import { createInterface } from 'node:readline';
-import { cmdLoad, cmdVerify } from '../commands/core.js';
+import { cmdLoad, cmdVerify } from '../commands/read.js';
 import { cmdHealth, cmdSearch } from '../commands/ops.js';
 import { getContext } from '../core/memory/context.js';
 import { planMemorySave, previewSavePlans } from '../core/memory/save-plan.js';

@@ -22,6 +22,13 @@ export async function updateHash(root: string, relFile: string, content: string)
   await writeJson(path.join(root, HASH_FILE), hashes);
 }
 
+/** Remove one hash entry after an approved archive/move. */
+export async function removeHash(root: string, relFile: string): Promise<void> {
+  const hashes = await loadHashes(root);
+  delete hashes[relFile.replace(/\\/g, '/')];
+  await writeJson(path.join(root, HASH_FILE), hashes);
+}
+
 /** Verify one memory file against the stored hash without trusting its content. */
 export async function verifyMemoryHash(root: string, relFile: string, content?: string): Promise<{ ok: boolean; reason?: string }> {
   const normalized = relFile.replace(/\\/g, '/');
@@ -34,10 +41,11 @@ export async function verifyMemoryHash(root: string, relFile: string, content?: 
 /** Verify every Markdown memory file under a root. */
 export async function verifyRoot(root: string, scope: Scope): Promise<Array<{ file: string; scope: Scope; ok: boolean }>> {
   const hashes = await loadHashes(root);
-  const files = (await listFiles(root)).filter((file) => file.endsWith('.md') && !file.includes(`${path.sep}archive${path.sep}`));
+  const files = (await listFiles(root)).filter((file) => file.endsWith('.md'));
   const rows = [];
   for (const file of files) {
     const rel = path.relative(root, file).replace(/\\/g, '/');
+    if (!/^(rules|skills|knowledge)\//.test(rel)) continue;
     if (rel === 'HELP.md' || rel === 'README.md' || rel === 'changelog.md') continue;
     const current = sha256(await readText(file));
     rows.push({ file: rel, scope, ok: hashes[rel] === current });

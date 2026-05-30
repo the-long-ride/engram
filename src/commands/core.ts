@@ -4,20 +4,17 @@ import { createInterface } from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
 import { HELP_FILE } from '../core/runtime/constants.js';
 import { initWorkspace, resolveAuthor, writeApprovedMemory } from '../core/memory/storage.js';
-import { entryPath, getContext, loadSummary } from '../core/memory/context.js';
+import { entryPath, getContext } from '../core/memory/context.js';
 import { loadConfig, scopeRootsForConfig, writeScopes } from '../core/runtime/config.js';
 import { renderHelp, renderHelpTerminal } from '../core/cli/help.js';
 import { INIT_WORDMARK, renderInitWordmark } from '../core/cli/banner.js';
 import { completionScript } from '../core/cli/command-registry.js';
 import { readText, writeText } from '../core/system/fsx.js';
 import { applyApprovalEdit, requestApproval, requestGeneratedMemoryApproval, requestGeneratedSelectionApproval, requestGeneratedSelectionText, requestSelectionApproval, type SelectionApproval } from '../core/safety/approval.js';
-import { verifyRoot } from '../core/safety/hash.js';
-import { route, loadEntries, visibleEntries } from '../core/memory/routing.js';
 import { normalizeBranchName } from '../core/vcs/git.js';
 import { planMemorySave, previewSavePlans, type SavePlan } from '../core/memory/save-plan.js';
 import { parseMemory } from '../core/memory/schema.js';
 import type { MemorySourceMeta } from '../core/memory/memory-template.js';
-import { rebuildIndex } from '../core/memory/index.js';
 import { installSkillset, type InstallResult } from '../core/integrations/skillset.js';
 import { autosaveGuidance, generatedMemoryGuidance, inferMemoryType, normalizeMemoryType, parseMemoryCandidate, parseMemoryCandidates } from '../core/memory/memory-candidate.js';
 import { discoverTakeControlSources, planTakeControlSources, renderTakeControlPlan, takeControlGuidance } from '../core/memory/take-control.js';
@@ -328,51 +325,4 @@ function rolesFromFlags(flags: Record<string, any>): string[] | undefined {
   const value = typeof flags.role === 'string' ? flags.role : typeof flags.roles === 'string' ? flags.roles : '';
   const roles = value.split(',').map((role) => role.trim()).filter(Boolean);
   return roles.length ? roles : undefined;
-}
-
-/** Load routed memory for a query. */
-export async function cmdLoad(args: string[], flags: Record<string, any> = {}): Promise<string> {
-  const ctx = await getContext();
-  if (!ctx.config.enabled || ctx.config.read === 'off') return '';
-  const query = args.join(' ') || 'current session';
-  const all = flags.all === true;
-  const entries = route(ctx.index, query, ctx.config, all, { all, ignorePatterns: ctx.ignorePatterns });
-  const loaded = await loadEntries(process.cwd(), entries, ctx.config);
-  const summary = loadSummary(entries, ctx.hiddenCount);
-  return `${summary}\n\n${loaded.map((row) => row.flagged ? `SKIPPED ${row.entry.file}: ${row.flagged}` : row.content).join('\n\n')}`.trim();
-}
-
-/** Explicitly rebuild one or both indexes from memory files. */
-export async function cmdRebuildIndex(scope?: string): Promise<string> {
-  const ctx = await getContext();
-  const scopes = scope === 'workspace' || scope === 'global' ? [scope] : ['workspace', 'global'];
-  const rows = [];
-  for (const current of scopes) {
-    if (!ctx.roots[current as Scope]) {
-      rows.push(`${current}: not configured`);
-      continue;
-    }
-    const index = await rebuildIndex(ctx.roots[current as Scope], current as Scope, ctx.ignorePatterns);
-    rows.push(`${current}: ${index.entries.length} indexed`);
-  }
-  return `engram: rebuilt indexes\n${rows.join('\n')}`;
-}
-
-/** Verify hashes for one or both scopes. */
-export async function cmdVerify(scope?: string): Promise<string> {
-  const ctx = await getContext();
-  const scopes = scope === 'workspace' || scope === 'global' ? [scope] : ['workspace', 'global'];
-  const rows = (await Promise.all(scopes.map((s) => ctx.roots[s as Scope] ? verifyRoot(ctx.roots[s as Scope], s as Scope) : []))).flat();
-  if (!rows.length) return 'engram: no memory files to verify';
-  return rows.map((row) => `${row.ok ? 'OK' : 'MISMATCH'} ${row.scope}:${row.file}`).join('\n');
-}
-
-/** Show audit rows, with simple filters. */
-export async function cmdAudit(flags: Record<string, any>): Promise<string> {
-  const ctx = await getContext();
-  let entries = visibleEntries(ctx.index.entries, ctx.config, Boolean(flags['low-confidence']), ctx.ignorePatterns);
-  if (flags.author) entries = entries.filter((e) => e.author === flags.author);
-  if (flags['low-confidence']) entries = entries.filter((e) => e.confidence === 'low');
-  if (flags.stale) entries = entries.filter((e) => Date.now() - Date.parse(e.updated) > 180 * 864e5);
-  return entries.map((e) => `${e.scope} ${e.type} ${e.id} ${e.updated} ${e.author}`).join('\n') || 'engram: no matching memories';
 }

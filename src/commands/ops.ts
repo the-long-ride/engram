@@ -4,12 +4,18 @@ import { getContext } from '../core/memory/context.js';
 import { health, scoreMemory } from '../core/analysis/quality.js';
 import { duplicatePairs, searchEntries, stats } from '../core/analysis/search.js';
 import { assertFormat, exportBundle, renderFormat, writeSyncTarget } from '../core/integrations/exporter.js';
-import { readJson } from '../core/system/fsx.js';
-import { syncGlobalMemoryGit, writeApprovedMemory } from '../core/memory/storage.js';
-import { requestApproval } from '../core/safety/approval.js';
+import { readJson, readText } from '../core/system/fsx.js';
+import { resolveAuthor, syncGlobalMemoryGit, writeApprovedMemory } from '../core/memory/storage.js';
+import { applyApprovalEdit, requestApproval } from '../core/safety/approval.js';
 import { renderEntry } from '../core/runtime/entry.js';
-import { visibleEntries } from '../core/memory/routing.js';
+import { route, visibleEntries } from '../core/memory/routing.js';
 import { readGuardedMemory } from '../core/safety/safe-read.js';
+import { contradictionEdges, renderGraphReport } from '../core/memory/graph.js';
+import { archiveMemory, planArchive } from '../core/memory/archive.js';
+import { planMemorySave, previewSavePlans, type SavePlan } from '../core/memory/save-plan.js';
+import { normalizeMemoryType } from '../core/memory/memory-candidate.js';
+import { writeScopes } from '../core/runtime/config.js';
+import type { MemoryType, Scope } from '../core/runtime/types.js';
 
 /** Return memory health summary. */
 export async function cmdHealth(): Promise<string> {
@@ -38,7 +44,55 @@ export async function cmdQuality(): Promise<string> {
     const result = scoreMemory(row.content);
     rows.push(`${entry.file} ${result.score}/100 ${result.issues.join(', ') || '-'}`);
   }
+  for (const edge of contradictionEdges(ctx.graph)) rows.push(`contradiction ${edge.from} <-> ${edge.to}: ${edge.reason}`);
   return rows.join('\n') || 'No memories';
+}
+
+/** Show the derived layered memory graph and optional query matches. */
+export async function cmdGraph(args: string[], flags: Record<string, any> = {}): Promise<string> {
+  const ctx = await getContext(process.cwd(), { rebuild: flags.rebuild === true });
+  return renderGraphReport(ctx.graph, args.join(' '));
+}
+
+/** Run a tiny retrieval benchmark over query/expected-memory cases. */
+export async function cmdBenchmark(args: string[]): Promise<string> {
+  const file = args[0];
+  if (!file) throw new Error('benchmark requires cases.json');
+  const rawCases = await readJson<any>(path.resolve(file), []);
+  const cases: Array<{ query: string; expect: string[] }> = Array.isArray(rawCases) ? rawCases : rawCases.cases ?? [];
+  const ctx = await getContext();
+  let hits = 0;
+  const rows = [];
+  for (const item of cases) {
+    const expects = Array.isArray(item.expect) ? item.expect : [item.expect].filter(Boolean);
+    const expected = new Set(expects.map((value) => String(value).replace(/\\/g, '/')));
+    const routed = route(ctx.index, item.query, ctx.config, false, { ignorePatterns: ctx.ignorePatterns }, ctx.graph);
+    const found = routed.some((entry) => expected.has(entry.id) || expected.has(entry.file) || expected.has(`${entry.scope}:${entry.file}`));
+    if (found) hits += 1;
+    rows.push(`${found ? 'HIT' : 'MISS'} ${item.query} -> ${routed.map((entry) => entry.file).join(', ') || '-'}`);
+  }
+  const total = cases.length || 1;
+  return [`Benchmark: ${hits}/${cases.length} hit@8 (${Math.round((hits / total) * 100)}%)`, ...rows].join('\n');
+}
+
+/** Archive one wrong or superseded memory after approval. */
+export async function cmdArchive(args: string[], flags: Record<string, any> = {}): Promise<string> {
+  const target = args[0];
+  if (!target) throw new Error('archive requires memory id or file path');
+  const reason = typeof flags.reason === 'string' ? flags.reason : args.slice(1).join(' ').trim();
+  const ctx = await getContext();
+  const plan = planArchive(ctx, target, reason);
+  const raw = await readText(plan.originalPath);
+  const approval = await requestApproval([
+    `Archive ${plan.entry.scope}:${plan.entry.file}`,
+    `Reason: ${reason || 'No reason provided'}`,
+    '',
+    raw
+  ].join('\n'));
+  if (!approval.accepted) return 'Discarded. No file archived.';
+  const finalReason = [reason, approval.edits].filter(Boolean).join(' ');
+  const archived = await archiveMemory(ctx, planArchive(ctx, target, finalReason), finalReason);
+  return `Archived -> ${archived}`;
 }
 
 /** Show likely duplicate pairs. */
@@ -61,10 +115,11 @@ export async function cmdExport(flags: Record<string, any>): Promise<string> {
 }
 
 /** Import a JSON bundle through the approval gate. */
-export async function cmdImport(args: string[]): Promise<string> {
+export async function cmdImport(args: string[], flags: Record<string, any> = {}): Promise<string> {
   const file = args[0];
   if (!file) throw new Error('import requires bundle.json');
   const bundle = await readJson<any>(path.resolve(file), { memories: [] });
+  if (isAgentMemoryBundle(bundle)) return importAgentMemoryBundle(bundle, flags);
   let count = 0;
   for (const item of bundle.memories ?? []) {
     const approval = await requestApproval(`Import ${item.entry.scope}:${item.entry.file}\n\n${item.content}`);
@@ -73,6 +128,74 @@ export async function cmdImport(args: string[]): Promise<string> {
     count += 1;
   }
   return `Imported ${count} memories`;
+}
+
+async function importAgentMemoryBundle(bundle: any, flags: Record<string, any>): Promise<string> {
+  const ctx = await getContext();
+  const scopes = flags.scope ? [flags.scope as Scope] : writeScopes(ctx.config.scope, ctx.config);
+  const author = await resolveAuthor();
+  const max = flags.all === true ? Number.POSITIVE_INFINITY : Number(flags.max ?? 50);
+  const candidates = agentMemoryCandidates(bundle).slice(0, Number.isFinite(max) ? Math.max(0, max) : undefined);
+  let count = 0;
+  for (const candidate of candidates) {
+    const plans = await planMemorySave({ ctx, text: candidate.text, type: candidate.type, scopes, author, source: { source: 'agentmemory-import' } });
+    const approval = await requestApproval(previewSavePlans(plans));
+    if (!approval.accepted) continue;
+    await writePlans(plans, approval.edits);
+    count += 1;
+  }
+  return `Imported ${count} agentmemory memories`;
+}
+
+function isAgentMemoryBundle(bundle: any): boolean {
+  if (!Array.isArray(bundle.memories)) return false;
+  return bundle.memories.some((item: any) => item && typeof item.content === 'string' && typeof item.title === 'string' && !item.entry);
+}
+
+function agentMemoryCandidates(bundle: any): Array<{ type: MemoryType; text: string }> {
+  const candidates: Array<{ type: MemoryType; text: string }> = [];
+  for (const memory of bundle.memories ?? []) {
+    if (!memory?.content) continue;
+    candidates.push({ type: agentMemoryType(memory.type), text: compactParts([memory.title, memory.content, arrayLabel('Concepts', memory.concepts), arrayLabel('Files', memory.files)]) });
+  }
+  for (const semantic of bundle.semanticMemories ?? []) {
+    if (semantic?.fact) candidates.push({ type: 'knowledge', text: String(semantic.fact) });
+  }
+  for (const proc of bundle.proceduralMemories ?? []) {
+    const steps = Array.isArray(proc.steps) ? proc.steps.join(' ') : '';
+    candidates.push({ type: 'skill', text: compactParts([proc.name, steps, proc.triggerCondition && `Trigger: ${proc.triggerCondition}`]) });
+  }
+  for (const lesson of bundle.lessons ?? []) {
+    if (lesson?.content) candidates.push({ type: 'knowledge', text: compactParts([lesson.content, lesson.context]) });
+  }
+  for (const insight of bundle.insights ?? []) {
+    if (insight?.content) candidates.push({ type: 'knowledge', text: compactParts([insight.title, insight.content]) });
+  }
+  const unique = new Map<string, { type: MemoryType; text: string }>();
+  for (const candidate of candidates) unique.set(`${candidate.type}:${candidate.text.toLowerCase()}`, candidate);
+  return [...unique.values()];
+}
+
+function agentMemoryType(type: string): MemoryType {
+  const normalized = normalizeMemoryType(type);
+  if (normalized) return normalized;
+  if (type === 'preference') return 'rule';
+  if (type === 'workflow') return 'skill';
+  return 'knowledge';
+}
+
+function compactParts(parts: unknown[]): string {
+  return parts.map((part) => String(part ?? '').trim()).filter(Boolean).join(' ');
+}
+
+function arrayLabel(label: string, value: unknown): string {
+  return Array.isArray(value) && value.length ? `${label}: ${value.join(', ')}` : '';
+}
+
+async function writePlans(plans: SavePlan[], edits?: string): Promise<void> {
+  for (const plan of plans) {
+    await writeApprovedMemory({ cwd: process.cwd(), scope: plan.scope, file: plan.file, content: applyApprovalEdit(plan.content, edits), message: plan.message });
+  }
 }
 
 /** Print index counts. */

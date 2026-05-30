@@ -1,12 +1,13 @@
 /** Workspace/global storage setup and approved memory writes. */
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { CHANGELOG_FILE, DEFAULT_IGNORE, HASH_FILE, HELP_FILE, INDEX_FILE, MEMORY_DIRS, README_FILE } from '../runtime/constants.js';
+import { CHANGELOG_FILE, DEFAULT_IGNORE, GRAPH_FILE, HASH_FILE, HELP_FILE, INDEX_FILE, MEMORY_DIRS, README_FILE } from '../runtime/constants.js';
 import type { EngramConfig, Scope } from '../runtime/types.js';
 import { defaultConfig, legacyWorkspaceRoot, loadConfig, mergeConfig, scopeRootsForConfig, workspaceRoot, writeUserConfig } from '../runtime/config.js';
 import { ensureDir, exists, inside, listFiles, readJson, readText, writeJson, writeText } from '../system/fsx.js';
 import { renderHelp, renderMemoryReadme } from '../cli/help.js';
 import { emptyIndex, rebuildIndex } from './index.js';
+import { rebuildGraph } from './graph.js';
 import { updateHash } from '../safety/hash.js';
 import { scanInjection, scanSensitive } from '../safety/security.js';
 import { validateMemoryRaw } from './schema.js';
@@ -81,10 +82,14 @@ export async function createScope(root: string, config: EngramConfig, scope: Sco
   result.files += await writeTextIfNeeded(path.join(root, README_FILE), renderMemoryReadme(), true) ? 1 : 0;
   result.files += await writeTextIfNeeded(path.join(root, CHANGELOG_FILE), `# Engram Changelog\n\n`, false) ? 1 : 0;
   if (force || result.migrated || !(await exists(path.join(root, INDEX_FILE)))) {
-    await rebuildIndex(root, scope);
+    const index = await rebuildIndex(root, scope);
+    await rebuildGraph(root, scope, index, config);
     result.index = true;
   }
-  else result.files += await writeJsonIfNeeded(path.join(root, INDEX_FILE), emptyIndex(), false) ? 1 : 0;
+  else {
+    result.files += await writeJsonIfNeeded(path.join(root, INDEX_FILE), emptyIndex(), false) ? 1 : 0;
+    if (!(await exists(path.join(root, GRAPH_FILE)))) await rebuildGraph(root, scope, await rebuildIndex(root, scope), config);
+  }
   return result;
 }
 
@@ -106,7 +111,8 @@ export async function writeApprovedMemory(input: {
   if (globalGit) await pullGlobalGit(root, globalGit, () => resolveGlobalConflicts(root));
   await writeText(full, input.content);
   await updateHash(root, input.file, input.content);
-  await rebuildIndex(root, input.scope);
+  const index = await rebuildIndex(root, input.scope);
+  await rebuildGraph(root, input.scope, index, config);
   await appendChangelog(root, input.file, input.message);
   if (globalGit) await gitCommitGlobal(root, input.message, globalGit, () => resolveGlobalConflicts(root));
   return full;

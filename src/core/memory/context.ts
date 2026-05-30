@@ -1,8 +1,10 @@
 /** Shared command context: config, roots, ignore rules, and merged index. */
 import type { EngramConfig, MemoryIndex } from '../runtime/types.js';
+import type { MemoryGraph } from '../runtime/types.js';
 import { loadConfig, scopeRoots, scopeRootsForConfig } from '../runtime/config.js';
 import { isIgnored, loadIgnore } from '../safety/ignore.js';
 import { emptyIndex, loadIndex, mergeIndexes, rebuildIndex } from './index.js';
+import { emptyGraph, loadGraph, mergeGraphs, rebuildGraph } from './graph.js';
 import { exists, inside } from '../system/fsx.js';
 
 export type EngramContext = {
@@ -10,6 +12,7 @@ export type EngramContext = {
   config: EngramConfig;
   roots: ReturnType<typeof scopeRoots>;
   index: MemoryIndex;
+  graph: MemoryGraph;
   hiddenCount: number;
   ignorePatterns: string[];
 };
@@ -24,8 +27,11 @@ export async function getContext(cwd = process.cwd(), options: ContextOptions = 
   const workspace = await readIndex(roots.workspace, 'workspace', ignore.patterns, Boolean(options.rebuild));
   const global = roots.global ? await readIndex(roots.global, 'global', ignore.patterns, Boolean(options.rebuild)) : emptyIndex();
   const index = mergeIndexes(workspace, global);
+  const workspaceGraph = await readGraph(roots.workspace, 'workspace', workspace, config, Boolean(options.rebuild));
+  const globalGraph = roots.global ? await readGraph(roots.global, 'global', global, config, Boolean(options.rebuild)) : emptyGraph();
+  const graph = mergeGraphs(workspaceGraph, globalGraph);
   const hiddenCount = index.entries.filter((entry) => entry.ignored || isIgnored(entry.file, ignore.patterns)).length;
-  return { cwd, config, roots, index, hiddenCount, ignorePatterns: ignore.patterns };
+  return { cwd, config, roots, index, graph, hiddenCount, ignorePatterns: ignore.patterns };
 }
 
 /** Format the session-start load summary. */
@@ -51,4 +57,9 @@ export function entryPath(ctx: EngramContext, scope: string, file: string): stri
 async function readIndex(root: string, scope: 'workspace' | 'global', patterns: string[], rebuild: boolean): Promise<MemoryIndex> {
   if (!(await exists(root))) return loadIndex(root);
   return rebuild ? rebuildIndex(root, scope, patterns) : loadIndex(root);
+}
+
+async function readGraph(root: string, scope: 'workspace' | 'global', index: MemoryIndex, config: EngramConfig, rebuild: boolean): Promise<MemoryGraph> {
+  if (!(await exists(root))) return emptyGraph();
+  return rebuild ? rebuildGraph(root, scope, index, config) : loadGraph(root);
 }

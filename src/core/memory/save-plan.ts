@@ -23,7 +23,7 @@ export async function planMemorySave(input: {
   ctx: EngramContext; text: string; type: MemoryType; scopes: Scope[]; author: string; role?: string[]; source?: MemorySourceMeta;
 }): Promise<SavePlan[]> {
   const plans: SavePlan[] = [];
-  const options = { ruleVariants: input.ctx.config.rule_variants.enabled };
+  const options = { ruleVariants: true };
   for (const scope of input.scopes) {
     const match = await bestMatch(input.ctx, input.text, input.type, scope);
     if (match) {

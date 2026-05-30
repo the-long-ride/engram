@@ -43,8 +43,11 @@ files. Hosts that support custom slash commands can also load generated
 - Ask before adding a global Git `origin`; once configured, global saves and
   syncs may pull, auto-resolve Engram-owned memory conflicts, commit, and push.
 - Ask before creating a workspace `.agents/.engram` submodule or adding its origin.
+- Save rule memories with light, balanced, and strict variants regardless of the
+  active render setting.
 - Render rule memories with the configured light, balanced, or strict variant;
-  when variant mode is off, use balanced wording.
+  when variant mode is off, use balanced wording. The setting affects
+  agent-facing load/export/sync output, not what gets stored in memory files.
 - Treat `/engram <args>` as a human-visible router to `engram <args>` or the
   matching MCP read/proposal tool.
 - Install Claude slash support in both `.claude/commands/engram.md` and

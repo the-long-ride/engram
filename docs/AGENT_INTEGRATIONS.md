@@ -179,11 +179,11 @@ Aliases: `codex` installs the `agents-md` adapter plus the Agent Skill file,
    `--file` import still lets the human force a specific source back through the
    approval flow.
 
-   Rule variant mode is useful when a model needs lighter or stricter
-   instruction wording. Strict helps lower-tier models stay controlled; stronger
-   models usually benefit from light or balanced wording so rules do not limit
-   their reasoning. When variants are off, Engram renders balanced rule wording
-   by default.
+   Engram always saves rule memories with light, balanced, and strict versions.
+   Rule variant mode is a render lens for agent-facing memory. Strict helps
+   lower-tier models stay controlled; stronger models usually benefit from light
+   or balanced wording so rules do not limit their reasoning. When variants are
+   off, Engram renders balanced rule wording by default.
 
 ## Command Discovery
 

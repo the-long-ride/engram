@@ -248,17 +248,17 @@ engram set-rule-variant strict
 engram set-rule-variant off
 ```
 
-When rule variants are off, Engram renders balanced rule wording by default. When
-variants are enabled, new or updated rule memories include light, balanced, and
-strict versions, and `engram load`, `engram export`, and `engram sync` emit only
-the selected variant.
+Engram always saves rule memories with light, balanced, and strict versions.
+`engram set-rule-variant` only changes the agent-facing render lens:
+`engram load`, `engram export`, and `engram sync` emit the selected variant.
+When rule variants are off, Engram renders balanced rule wording by default.
 
 After a successful `engram init`, the CLI points users at three high-leverage
 features:
 
 | Feature | Use for what? | How to use | Best example |
 | --- | --- | --- | --- |
-| Rule strict level | Tune how strongly saved rules steer an agent. | `engram set-rule-variant strict`, `balanced`, `light`, or `off`. | Use `strict` for smaller automation models; use `balanced` or `light` for stronger reasoning models. |
+| Rule strict level | Tune how strongly loaded rules steer an agent. | `engram set-rule-variant strict`, `balanced`, `light`, or `off`. | Use `strict` for smaller automation models; use `balanced` or `light` for stronger reasoning models. |
 | Autosave | Capture several durable memories from a long session. | `engram autosave`, `engram autosave --file transcript.md`, or `engram at -a` when the human explicitly approves all. | At the end of a feature session, save its new rules, facts, and repeatable workflow in one review. |
 | Take control | Convert existing agent guidance, docs, and notes into Engram memory. | `engram take-control --dry-run`, then `engram take-control`. | Adopt Engram in a repo that already has AGENTS.md, CLAUDE.md, Cursor rules, or scattered notes. |
 

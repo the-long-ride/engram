@@ -442,8 +442,18 @@ test('save automatically updates matching memory instead of duplicating it', asy
 test('rule variants render the active compact variant', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
   await runEngram(cwd, env, ['init']);
-  assert.match((await runEngram(cwd, env, ['set-rule-variant', 'strict'])).stdout, /strict/);
   await runEngram(cwd, env, ['save', 'rule', '--scope', 'workspace', 'Use pnpm for package management'], 'A\n');
+  const raw = await readFile(path.join(workspaceMemoryRoot(cwd), 'rules', 'use-pnpm-for-package-management.md'), 'utf8');
+  assert.match(raw, /## Rule Variants/);
+  assert.match(raw, /### Light/);
+  assert.match(raw, /### Balanced/);
+  assert.match(raw, /### Strict/);
+  const balanced = await runEngram(cwd, env, ['load', 'pnpm package']);
+  assert.equal(balanced.code, 0, balanced.stderr);
+  assert.match(balanced.stdout, /Use pnpm for package management/);
+  assert.doesNotMatch(balanced.stdout, /mandatory/);
+  assert.doesNotMatch(balanced.stdout, /### Light/);
+  assert.match((await runEngram(cwd, env, ['set-rule-variant', 'strict'])).stdout, /strict/);
   const loaded = await runEngram(cwd, env, ['load', 'pnpm package']);
   assert.equal(loaded.code, 0, loaded.stderr);
   assert.match(loaded.stdout, /mandatory/);

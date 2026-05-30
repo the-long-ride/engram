@@ -67,7 +67,7 @@ function initSuccessSuggestions(globalOnly: boolean): string[] {
     '',
     style.heading('Try next:'),
     `- ${style.title('Rule strict level')}`,
-    `  ${style.label('Use for what:')} tune how strongly saved rules steer agents.`,
+    `  ${style.label('Use for what:')} tune how strongly loaded rules steer agents.`,
     `  ${style.label('How to use:')} ${style.command('engram set-rule-variant strict|balanced|light|off')}.`,
     `  ${style.label('Best example:')} use strict for smaller automation models, balanced or light for stronger reasoning models.`,
     `- ${style.title('Autosave')}`,

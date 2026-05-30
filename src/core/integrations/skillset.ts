@@ -145,9 +145,13 @@ ${compactSkillInstructions()}`
 function agentSkill(title: string, name: string, description: string, body = slashBody(title)): string {
   return `---
 name: ${name}
-description: ${description}
+description: ${yamlString(description)}
 ---
 ${body}`;
+}
+
+function yamlString(value: string): string {
+  return JSON.stringify(value);
 }
 
 function slashBody(title: string): string {

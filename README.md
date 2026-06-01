@@ -133,7 +133,7 @@ Each language includes overview, understanding, AI-agent quickstart, protocol, o
 - Current search is deterministic lexical search, not embedding-backed semantic search.
 - Graph vectors are local hashed word vectors, not semantic embeddings.
 - Contradiction detection is heuristic and advisory.
-- `deduplicate --semantic` is not implemented yet.
+- `deduplicate --semantic` uses deterministic local similarity, not external embeddings.
 - Pattern mining, encrypted storage, and full PR automation are design areas, not complete runtime workflows yet.
 
 ## Compared With Agentmemory

@@ -19,7 +19,7 @@ Engram оптимизирован под human ownership, reviewability и porta
 - Current search is lexical, not embedding-backed semantic search.
 - Graph vectors are local hashed word vectors.
 - Contradiction detection is heuristic/advisory.
-- `deduplicate --semantic` is not implemented.
+- `deduplicate --semantic` uses deterministic local similarity, no external embeddings.
 - Pattern mining, encryption config, PR workflow are not full runtime workflows yet.
 
 ## Compared With Agentmemory
@@ -49,6 +49,5 @@ Built-in memory is convenient but host-bound. Engram keeps authority in files th
 - Versioned benchmark fixtures.
 - Better contradiction review workflow.
 - More agentmemory import variants.
-- Semantic dedupe with embeddings.
+- Optional external embedding provider for semantic dedupe.
 - Repair that can propose fixes.
-

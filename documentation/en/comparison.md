@@ -19,7 +19,7 @@ Engram sits in a different part of the memory space than automatic memory engine
 - Current search is deterministic lexical search, not embedding-backed semantic search.
 - Graph vectors are local hashed word vectors, not semantic embeddings.
 - Contradiction detection is heuristic and advisory.
-- `deduplicate --semantic` is not implemented.
+- `deduplicate --semantic` uses deterministic local similarity, not external embeddings.
 - Pattern mining, encryption config, and PR workflow assets exist, but full runtime workflows are not wired yet.
 - The graph depends on generated tags and summaries.
 
@@ -53,8 +53,7 @@ Engram treats built-in memory as a convenience layer, not the authority. The aut
 - Benchmark fixtures checked into the repo for regression tracking.
 - Stronger contradiction review workflow combining graph, quality-check, and archive.
 - More import tests for agentmemory export variants.
-- Optional semantic duplicate detection when embeddings are configured.
+- Optional external embedding provider for semantic duplicate detection.
 - Repair workflows that can propose fixes after reporting invalid memory files.
 
 Next: back to [Home](index.md).
-

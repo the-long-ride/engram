@@ -19,7 +19,7 @@ Engram 优化的是人类所有权、可审查性和可移植性。
 - 当前 search 是 lexical，不是 embedding-backed semantic search。
 - Graph vectors 是本地 hashed word vectors。
 - Contradiction detection 是 heuristic/advisory。
-- `deduplicate --semantic` 尚未实现。
+- `deduplicate --semantic` 使用本地确定性相似度，不依赖外部 embeddings。
 - Pattern mining、encryption config、PR workflow 还不是完整运行时流程。
 
 ## 与 Agentmemory 对比
@@ -49,6 +49,5 @@ Engram 优化的是人类所有权、可审查性和可移植性。
 - 版本化 benchmark fixtures。
 - 更强 contradiction review workflow。
 - 更多 agentmemory export import tests。
-- 配置 embeddings 后支持 semantic duplicate detection。
+- 可选外部 embedding provider 用于 semantic duplicate detection。
 - Repair 报告错误后可提出修复建议。
-

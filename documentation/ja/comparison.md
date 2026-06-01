@@ -19,7 +19,7 @@ Engram は human ownership, reviewability, portability を重視します。
 - 現在の search は lexical で、semantic embedding-backed ではない。
 - Graph vectors は local hashed word vectors。
 - Contradiction detection は heuristic/advisory。
-- `deduplicate --semantic` は未実装。
+- `deduplicate --semantic` はローカル deterministic similarity を使い、外部 embeddings に依存しません。
 - Pattern mining, encryption config, PR workflow はまだ full runtime workflow ではない。
 
 ## Agentmemory との比較
@@ -49,6 +49,5 @@ repo-readable protocol, Markdown-first, human-approved, Git-reviewed, server な
 - Versioned benchmark fixtures.
 - Better contradiction review workflow.
 - More agentmemory import variants.
-- Semantic dedupe with embeddings.
+- Optional external embedding provider for semantic dedupe.
 - Repair that can propose fixes.
-

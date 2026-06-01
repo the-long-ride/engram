@@ -19,7 +19,7 @@ Engram은 human ownership, reviewability, portability를 최적화합니다.
 - 현재 search는 lexical이며 semantic embedding-backed가 아닙니다.
 - Graph vectors는 local hashed word vectors입니다.
 - Contradiction detection은 heuristic/advisory입니다.
-- `deduplicate --semantic`은 구현되지 않았습니다.
+- `deduplicate --semantic`은 로컬 deterministic similarity를 사용하며 외부 embeddings에 의존하지 않습니다.
 - Pattern mining, encryption config, PR workflow는 아직 full runtime workflow가 아닙니다.
 
 ## Agentmemory와 비교
@@ -49,6 +49,5 @@ repo-readable protocol, Markdown-first, human-approved, Git-reviewed, server 없
 - Versioned benchmark fixtures.
 - Better contradiction review workflow.
 - More agentmemory import variants.
-- Semantic dedupe with embeddings.
+- Optional external embedding provider for semantic dedupe.
 - Repair that can propose fixes.
-

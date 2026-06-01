@@ -19,7 +19,7 @@ Engram nam o mot vung khac voi cac automatic memory engine. No toi uu cho quyen 
 - Search hien tai la lexical deterministic, chua co embedding-backed semantic search.
 - Graph vectors la hashed word vectors cuc bo, khong phai semantic embeddings.
 - Contradiction detection la heuristic va chi advisory.
-- `deduplicate --semantic` chua implement.
+- `deduplicate --semantic` dung local similarity deterministic, khong can external embeddings.
 - Pattern mining, encryption config va PR workflow assets da co, nhung full runtime workflow chua wire.
 - Graph phu thuoc vao tags va summaries sinh ra.
 
@@ -53,8 +53,7 @@ Engram xem built-in memory la convenience layer, khong phai authority. Authority
 - Benchmark fixtures trong repo de theo doi regression.
 - Workflow review contradiction ket hop graph, quality-check va archive.
 - Them test import cho nhieu bien the agentmemory export.
-- Semantic duplicate detection khi embeddings duoc cau hinh.
+- Optional external embedding provider cho semantic duplicate detection.
 - Repair workflow co the de xuat fix sau khi report invalid memory files.
 
 Tiep theo: quay lai [Home](index.md).
-

@@ -19,7 +19,7 @@ Engram optimiza propiedad humana, revisión y portabilidad.
 - Search lexical, no semantic embedding-backed.
 - Graph vectors son hashed word vectors locales.
 - Contradiction detection es heurística.
-- `deduplicate --semantic` no está implementado.
+- `deduplicate --semantic` usa similitud local determinista, no embeddings externos.
 - Pattern mining, encryption config y PR workflow aún no son flujos completos.
 
 ## Frente A Agentmemory
@@ -49,6 +49,5 @@ La memoria integrada es cómoda pero ligada a un host. Engram deja la autoridad 
 - Benchmark fixtures versionados.
 - Mejor workflow para contradicciones.
 - Más variantes de import agentmemory.
-- Dedupe semántico cuando haya embeddings.
+- Proveedor opcional de embeddings externos para dedupe semántico.
 - Repair que proponga fixes después de reportar errores.
-

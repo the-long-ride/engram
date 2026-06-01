@@ -181,10 +181,6 @@ Built-in AI-agent memory is convenient, but often locked to one host. It may be 
 
 Engram treats built-in memory as a convenience layer, not authority. The authority is the memory folder humans can inspect.
 
-## Current Command Names
-
-`save-session` is the long-session memory command. Short form: `ss`.
-
 ## License
 
 [GPL-3.0 License](LICENSE)

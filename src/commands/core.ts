@@ -9,6 +9,7 @@ import { loadConfig, scopeRootsForConfig, writeScopes } from '../core/runtime/co
 import { renderHelp, renderHelpTerminal } from '../core/cli/help.js';
 import { INIT_WORDMARK, renderInitWordmark } from '../core/cli/banner.js';
 import { completionScript } from '../core/cli/command-registry.js';
+import { detectCompletionTarget } from '../core/cli/completion-target.js';
 import { readText, writeText } from '../core/system/fsx.js';
 import { applyApprovalEdit, requestApproval, requestGeneratedMemoryApproval, requestGeneratedSelectionApproval, requestGeneratedSelectionText, requestSelectionApproval, type SelectionApproval } from '../core/safety/approval.js';
 import { normalizeBranchName } from '../core/vcs/git.js';
@@ -100,6 +101,7 @@ function initSuccessSuggestions(globalOnly: boolean): string[] {
       `  ${style.label('Best example:')} keep personal or team-wide preferences outside one repo.`
     ]),
     '',
+    `${style.label('Completion:')} run ${style.command(`engram completion ${detectCompletionTarget()}`)} and add it to your shell profile.`,
     `${style.label('More help:')} run ${style.command('engram -h')} for all commands, or ${style.command('engram help <command>')} for deeper examples.`
   ];
 }

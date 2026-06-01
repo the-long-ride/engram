@@ -10,6 +10,7 @@ import {
 } from '../dist/core/memory/schema.js';
 import { parseArgs } from '../dist/cli/args.js';
 import { HELP_DATA, commandAliases } from '../dist/core/cli/command-registry.js';
+import { detectCompletionTarget } from '../dist/core/cli/completion-target.js';
 import { COMMAND_TOPICS } from '../dist/core/cli/help-topics.js';
 import { INIT_WORDMARK, renderInitWordmark } from '../dist/core/cli/banner.js';
 import { isIgnored } from '../dist/core/safety/ignore.js';
@@ -310,6 +311,14 @@ test('argument parser preserves positional text after known boolean flags', () =
   assert.equal(naturalTakeControl.command, 'take-control');
   assert.equal(naturalTakeControl.flags['accept-all'], true);
   assert.deepEqual(naturalTakeControl.rest, []);
+});
+
+test('completion target detection follows shell hints and platform fallback', () => {
+  assert.equal(detectCompletionTarget({ SHELL: '/bin/zsh' }, 'linux'), 'zsh');
+  assert.equal(detectCompletionTarget({ SHELL: '/usr/bin/bash' }, 'darwin'), 'bash');
+  assert.equal(detectCompletionTarget({ ComSpec: 'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe' }, 'win32'), 'powershell');
+  assert.equal(detectCompletionTarget({}, 'darwin'), 'zsh');
+  assert.equal(detectCompletionTarget({}, 'linux'), 'bash');
 });
 
 test('ignore matcher supports common patterns', () => {

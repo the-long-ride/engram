@@ -14,6 +14,7 @@ test('init, help, save reject, save accept, load, verify, audit', async () => {
   assert.match(init.stdout, /SYNTHETIC MEMORY \/\/ NEURAL ARCHIVE :: @the-long-ride with <3/);
   assert.match(init.stdout, /skillset: written AGENTS\.md, \.agents\/skills\/engram\/SKILL\.md/);
   assert.match(init.stdout, /More help: run engram -h for all commands, or engram help <command> for deeper examples\./);
+  assert.match(init.stdout, /Completion: run engram completion (bash|zsh|powershell) and add it to your shell profile\./);
   assert.match((await runEngram(cwd, env, ['help'])).stdout, /Memory Commands/);
   assert.match((await runEngram(cwd, env, ['-h'])).stdout, /Memory Commands/);
   assert.match((await runEngram(cwd, env, ['--help'])).stdout, /Memory Commands/);

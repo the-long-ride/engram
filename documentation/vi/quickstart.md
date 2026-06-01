@@ -1,130 +1,128 @@
-# Quickstart Voi AI Agent
+# Bắt Đầu Nhanh Với Tác Nhân AI
 
-Hay dung Engram qua agent truoc. CLI van co, nhung trai nghiem tot nhat la: bao agent load memory, lam viec, roi de xuat memory ben vung khi co dieu dang luu.
+Hãy sử dụng Engram thông qua tác nhân AI trước tiên. Mặc dù giao diện dòng lệnh (CLI) có sẵn, nhưng trải nghiệm tốt nhất là: yêu cầu tác nhân AI tải bộ nhớ, thực hiện công việc, sau đó đề xuất ghi nhận bộ nhớ bền vững khi có thông tin hữu ích xuất hiện.
 
-## Tin Nhan Dau Session
+## Tin Nhắn Đầu Tiên Trong Một Phiên Làm Việc Mới
 
-Hoi agent:
-
-```text
-Dung Engram cho task nay. Load memory cho: <viec chung ta dang lam>.
-```
-
-Neu da cai slash adapter:
+Hãy hỏi tác nhân AI:
 
 ```text
-/engram load "<current task>"
+Hãy dùng Engram cho tác vụ này. Tải bộ nhớ cho: <chủ đề chúng ta đang thực hiện>.
 ```
 
-Agent nen tom tat memory ID/rule lien quan, khong paste tat ca file.
-
-## Setup Duoc Khuyen Nghi
-
-Hoi agent:
+Nếu các bộ điều hợp lệnh slash đã được cài đặt:
 
 ```text
-Khoi tao Engram cho workspace nay, cai skillset dung cho agent nay,
-va cho toi biet lenh tiep theo nen dung.
+/engram load "<tác vụ hiện tại>"
 ```
 
-Agent co the chay:
+Tác nhân AI chỉ nên tóm tắt các mã định danh bộ nhớ (IDs) và các quy tắc liên quan, chứ không dán toàn bộ nội dung của từng tệp tin vào cửa sổ chat.
+
+## Đoạn Hội Thoại Thiết Lập Được Đề Xuất
+
+Yêu cầu tác nhân AI:
+
+```text
+Hãy khởi tạo Engram cho không gian làm việc này, cài đặt bộ kỹ năng (skillset) phù hợp cho tác nhân AI này, và cho tôi biết tôi nên dùng lệnh nào tiếp theo.
+```
+
+Tác nhân AI có thể chạy:
 
 ```bash
 engram init
 engram help install-skillset
-engram install-skillset <agent-name>
+engram install-skillset <tên-tác-nhân-ai>
 ```
 
-Muon dung ngay trong chat:
+Để sử dụng trực tiếp trong chat, hãy hỏi:
 
 ```text
-Cai slash support de toi dung /engram truc tiep trong agent nay.
+Hãy cài đặt hỗ trợ lệnh slash để tôi có thể sử dụng lệnh /engram trực tiếp từ tác nhân AI này.
 ```
 
-## Vong Lap Hang Ngay
+## Vòng Lặp Hằng Ngày
 
-Bat dau:
+Bắt đầu:
 
 ```text
-/engram load "current task"
+/engram load "tác vụ hiện tại"
 ```
 
-Khi can tim:
+Trong lúc làm việc:
 
 ```text
-/engram search "topic can nho"
+/engram search "chủ đề tôi có thể đang thiếu sót"
 ```
 
-Khi hoc duoc mot fact ben vung:
+Khi tác nhân AI học được một sự thật bền vững:
 
 ```text
 /engram save knowledge
 ```
 
-Khi ca session tao ra nhieu rule, fact hoac workflow:
+Khi phiên làm việc tạo ra nhiều quy tắc, sự thật hoặc quy trình làm việc hữu ích:
 
 ```text
 /engram save-session
 ```
 
-Dang ngan:
+Dạng viết tắt:
 
 ```text
 /engram ss
 ```
 
-Chi dung accept-all khi ban thuc su muon:
+Lối tắt phê duyệt toàn bộ (accept-all) chỉ khi bạn thực sự muốn sử dụng nó:
 
 ```text
 /engram ss -a
 ```
 
-`-a` nghia la con nguoi chap nhan tat ca candidate do agent de xuat. Agent khong duoc tu them flag nay.
+`-a` có nghĩa là con người phê duyệt rõ ràng cho mọi ứng viên được tác nhân AI đề xuất. Các tác nhân AI không được tự ý thêm cờ này vào lệnh.
 
-## Import Tri Thuc Co San
+## Nhập Kiến Thức Hiện Có (Import)
 
-Neu repo da co `AGENTS.md`, `CLAUDE.md`, Cursor rules, notes, hoac docs:
+Đối với một kho lưu trữ đã có sẵn các tệp `AGENTS.md`, `CLAUDE.md`, các quy tắc Cursor, ghi chú hoặc tài liệu khác:
 
 ```text
 /engram take-control --plan
 /engram take-control --all
 ```
 
-Dung `--plan` truoc neu muon xem file duoc chon, file bi bo qua, uoc luong token va loai memory du kien.
+Hãy sử dụng `--plan` trước tiên khi bạn muốn xem danh sách các tệp được chọn, tệp bị bỏ qua, ước tính số lượng token và loại bộ nhớ dự kiến.
 
-## Global Memory
+## Bộ Nhớ Toàn Cục (Global Memory)
 
-Dung global memory cho preference can theo ban qua nhieu repo:
+Sử dụng bộ nhớ toàn cục cho các tùy chọn ưu tiên đi theo bạn xuyên suốt các kho lưu trữ:
 
 ```text
-Thiet lap Engram global memory tai <path>, roi luu preference nay vao global:
-Use pnpm for package management.
+Thiết lập bộ nhớ toàn cục Engram tại <đường_dẫn>, sau đó lưu tùy chọn này trên toàn cục:
+Sử dụng pnpm để quản lý gói (package management).
 ```
 
-Agent co the dung:
+Tác nhân AI có thể sử dụng:
 
 ```bash
-engram init --global-only --global-path <path>
-engram save --scope global "Use pnpm for package management."
+engram init --global-only --global-path <đường_dẫn>
+engram save --scope global "Sử dụng pnpm để quản lý gói."
 ```
 
-## Giu Memory Khoe
+## Giữ Cho Bộ Nhớ Luôn Khỏe Mạnh
 
-Cuoi phien lam viec quan trong, hoi agent:
+Hãy hỏi tác nhân AI vào cuối những phiên làm việc có ý nghĩa:
 
 ```text
-Kiem tra Engram health, bao memory loi, va de xuat dieu nen save tu session nay.
+Hãy kiểm tra sức khỏe Engram, báo cáo các bộ nhớ không hợp lệ và đề xuất những nội dung đáng lưu lại từ phiên làm việc này.
 ```
 
-Lenh huu ich:
+Các lệnh hữu ích:
 
 ```bash
 engram verify
 engram repair
-engram graph "<topic>"
+engram graph "<chủ đề>"
 engram quality-check
-engram archive --reason "<why>" <id-or-file>
+engram archive --reason "<lý do>" <id-hoặc-tên-tệp>
 ```
 
-Tiep theo: [Giao thuc do con nguoi so huu](protocol.md).
-
+Tiếp theo: [Giao thức bộ nhớ do con người sở hữu](protocol.md).

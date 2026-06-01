@@ -1,117 +1,117 @@
 # Entender Engram
 
-Lee esta página antes de la guía de comandos. Engram importa por quién posee la memoria, no por la cantidad de comandos.
+Lea esto antes de la guía de comandos. Engram es útil debido a quién es el propietario de la memoria, no porque tenga muchos comandos.
 
-## Modelo En Una Frase
+## Modelo en Una Frase
 
-Engram es un protocolo de archivos que permite a los agentes de IA usar memoria duradera mientras las personas deciden qué se vuelve duradero.
+Engram es un protocolo de archivos que permite a los agentes de IA utilizar memoria duradera mientras los humanos deciden qué se vuelve duradero.
 
 ## Qué Es Engram
 
 Engram es un centro de memoria de conocimiento para:
 
-- reglas de proyecto
-- decisiones de equipo
-- flujos repetibles
+- reglas del proyecto
+- decisiones del equipo
+- flujos de trabajo repetibles
 - hechos duraderos
-- preferencias personales que deben viajar entre proyectos
+- preferencias personales que deben viajar a través de los proyectos
 
-La memoria es Markdown común. El índice, el grafo, los hashes y los adaptadores existen para que ese Markdown sea más fácil y seguro de usar.
+La memoria es Markdown simple. El índice, el grafo, los hashes y los archivos de adaptador existen para hacer que ese Markdown sea más fácil y seguro de usar.
 
 ## Qué No Es Engram
 
 Engram no es:
 
-- un cerebro oculto del agente
+- un cerebro oculto para un agente
 - un silo de memoria propiedad de un proveedor
-- un reemplazo de la documentación del proyecto
-- una base vectorial que pretende ser autoridad
-- una grabadora automática que guarda todo para siempre
+- un reemplazo para la documentación del proyecto
+- una base de datos vectorial que pretende ser la autoridad
+- un grabador automático que guarda todo para siempre
 
-Los agentes pueden proponer memoria. Las personas aprueban, rechazan, editan, archivan y poseen la memoria.
+Los agentes pueden proponer memoria. Los humanos aprueban, rechazan, editan, archivan y son dueños de la memoria.
 
-## Promesa Principal
+## La Promesa Central
 
-Engram busca que la memoria de IA sea:
+Engram intenta hacer que la memoria de IA sea:
 
-- revisable: se lee en un editor normal
-- portable: se sincroniza con Git y funciona con varios agentes
-- corregible: la memoria incorrecta se archiva con una razón
-- privada por defecto: ignore rules y aprobación reducen capturas accidentales
-- deliberadamente simple: Markdown es más confiable que estado invisible de plataforma
+- revisable: se puede leer en un editor normal
+- portable: se puede sincronizar con Git y usar con diferentes agentes
+- corregible: la memoria errónea se puede archivar en lugar de alterar silenciosamente el trabajo futuro
+- privada por defecto: las reglas de omisión (ignore rules) y las puertas de aprobación detienen la captura accidental
+- aburrida a propósito: Markdown es más fácil de confiar que el estado invisible de una plataforma
 
-## Capas
+## Las Capas
 
 | Capa | Significado |
 | --- | --- |
-| Markdown | fuente de verdad duradera |
-| JSON index | capa de búsqueda rápida |
-| JSON graph | rutas por tema y relación |
-| Hashes | controles de integridad |
-| Approval | frontera de confianza antes de escribir |
-| Ignore rules | controles de privacidad |
-| Git | historial, portabilidad, revisión, recuperación |
-| Agent adapters | capa de comodidad para Codex, Claude, Cursor, Gemini y otros agentes |
+| Markdown | Fuente de verdad duradera |
+| JSON index | Capa de búsqueda rápida |
+| JSON graph | Capa de enrutamiento de temas y relaciones |
+| Hashes | Comprobaciones de integridad |
+| Approval | Límite de confianza antes de las escrituras |
+| Ignore rules | Controles de privacidad |
+| Git | Historial, portabilidad, revisión, recuperación |
+| Agent adapters | Capa de conveniencia para Codex, Claude, Cursor, Gemini y otros agentes |
 
-El JSON generado ayuda a encontrar memoria más rápido, pero no es la autoridad. Si el JSON y Markdown discrepan, gana Markdown.
+El JSON generado ayuda a los agentes a encontrar la memoria más rápido, pero no es la autoridad. Si los archivos generados no coinciden con Markdown, gana Markdown.
 
-## Ciclo De Vida De La Memoria
+## Ciclo de Vida de la Memoria
 
 1. Una sesión, archivo o nota humana contiene conocimiento útil.
-2. Un agente propone candidatos concisos.
-3. Una persona aprueba todo, selecciona algunos, añade una nota o rechaza.
-4. Engram escribe Markdown aprobado.
-5. Engram actualiza hashes, índice, grafo y changelog.
-6. Agentes futuros cargan solo la memoria relevante para la tarea.
-7. Si una memoria se vuelve incorrecta, Engram la archiva con una razón.
+2. Un agente propone candidatos a memoria concisos.
+3. Un humano aprueba todos, selecciona algunos, añade una nota o los rechaza.
+4. Engram escribe la memoria en Markdown aprobado.
+5. Engram actualiza los hashes, el índice, el grafo y el registro de cambios (changelog).
+6. Los agentes futuros cargan solo la memoria relevante para la tarea actual.
+7. Si la memoria se vuelve incorrecta, Engram la archiva junto con un motivo.
 
-Este ciclo mantiene la memoria activa sin hacerla invisible.
+Este ciclo de vida mantiene la memoria activa sin hacerla invisible.
 
 ## Humano, Agente, Engram, Git
 
 | Actor | Rol |
 | --- | --- |
-| Humano | decide qué se vuelve memoria duradera |
-| Agente | detecta patrones y propone candidatos |
-| Engram | aplica esquema, seguridad, rutas, aprobación y mantenimiento |
-| Git | mueve memoria entre máquinas y conserva historial de revisión |
+| Humano | Elige qué se convierte en memoria duradera |
+| Agente | Detecta patrones y propone candidatos |
+| Engram | Aplica el esquema, la seguridad, el enrutamiento, la aprobación y el mantenimiento |
+| Git | Transporta la memoria entre máquinas y proporciona el historial de revisiones |
 
-El agente ayuda, pero no es el dueño.
+El agente es útil, pero no es el propietario.
 
 ## Buena Memoria
 
-Una buena memoria Engram es:
+La buena memoria de Engram es:
 
-- suficientemente estable para importar la próxima semana
-- suficientemente específica para encontrarse después
-- suficientemente corta para entrar en contexto del agente
-- segura para el alcance elegido
-- escrita como regla, flujo o conocimiento
+- lo suficientemente estable como para importar la próxima semana
+- lo suficientemente específica como para enrutarse más tarde
+- lo suficientemente corta como para cargarse en el contexto de un agente
+- lo suficientemente segura como para compartirse en el ámbito previsto
+- escrita como una regla, flujo de trabajo o elemento de conocimiento
 
-Mala memoria es ruido temporal de chat, secretos, credenciales, especulación puntual o hechos no aprobados.
+La mala memoria es ruido de chat temporal, secretos, credenciales, especulaciones puntuales o hechos que nadie ha aprobado.
 
 ## Alcance
 
-La memoria workspace vive en:
+La memoria del espacio de trabajo vive en:
 
 ```text
-<project>/.agents/.engram/
+<proyecto>/.agents/.engram/
 ```
 
-La memoria global es opcional y vive donde la configure el usuario.
+La memoria global es opcional y vive donde el usuario la configure.
 
-Workspace gana. Global es fallback para preferencias reutilizables, hábitos personales o defaults de equipo.
+La memoria del espacio de trabajo gana. La memoria global es el respaldo para preferencias reutilizables, hábitos personales o valores predeterminados de todo el equipo.
 
-## Por Qué No Solo Memoria Integrada
+## Por Qué No Solo la Memoria Integrada del Agente
 
-La memoria integrada es cómoda, pero puede ser difícil de inspeccionar, comparar, exportar, compartir o corregir. Suele pertenecer a una app o cuenta.
+La memoria integrada es conveniente, pero puede ser difícil de inspeccionar, comparar, exportar, compartir o corregir. A menudo pertenece a una sola aplicación o cuenta.
 
-Engram hace visible la capa duradera. La memoria integrada puede ayudar, pero Engram debe ser la fuente poseída cuando el conocimiento importa.
+Engram hace visible la capa duradera. La memoria integrada aún puede ayudar, pero Engram debe ser la fuente de propiedad cuando el conocimiento importa.
 
-## Límites A Conocer
+## Límites a Conocer
 
-La búsqueda por defecto es léxica y determinista. `engram search --semantic` añade similitud local determinista, no búsqueda semántica con embeddings. Los vectores del grafo son vectores locales de palabras hasheadas, no embeddings semánticos. La detección de contradicciones es orientativa. Existe configuración de cifrado, pero el almacenamiento cifrado aún no está implementado.
+La búsqueda predeterminada de Engram es una búsqueda léxica determinista. `engram search --semantic` añade similitud local determinista, no búsqueda semántica respaldada por embeddings. Los vectores del grafo son vectores locales de palabras hasheadas, no embeddings semánticos. La detección de contradicciones es consultiva. La configuración de cifrado existe, pero el almacenamiento cifrado aún no está implementado.
 
-Estos límites se declaran a propósito. Engram debe mostrar qué existe hoy y qué es trabajo futuro.
+Estos límites se declaran intencionadamente de forma clara. Engram debe decir a los usuarios qué es real hoy y qué es trabajo futuro.
 
-Siguiente: [Quickstart con agente](quickstart.md).
+Siguiente: [Inicio rápido para agentes de IA](quickstart.md).

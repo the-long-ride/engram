@@ -1,54 +1,57 @@
-# 人类拥有的记忆协议
+# 人类掌控的内存协议
 
-Engram 不只是 "agent memory"。它是一套让记忆可检查、可迁移、由人类治理的协议。
+Engram 不仅仅是“智能体内存”。它是一个使内存可检查、可移植且由人类治理的协议。
 
-## 核心契约
+## 契约
 
-Markdown 是持久记忆。
+Markdown 是持久的内存。
 
-JSON index 和 graph 是加速层。
+JSON 索引和图谱文件是加速层。
 
-Approval 是信任边界。
+批准（Approval）是信任的边界。
 
-Hashes 是完整性检查。
+哈希（Hashes）是完整性检查。
 
-Ignore rules 是隐私控制。
+忽略规则（Ignore rules）是隐私控制。
 
 Git 是可移植性和审计历史。
 
-Agent adapters 是便利层，不是权威。
+智能体适配器（Agent adapters）是便利层，而不是权威来源。
 
-agent 可以建议记忆，但人类决定什么成为记忆。
+智能体可以建议内存，但人类拥有并决定什么成为内存。
 
-## 记忆类型
+## 内存类型
 
 | 类型 | 用途 |
 | --- | --- |
-| Rule | 偏好、纠正、约束、always/never 指令 |
-| Skill | 可重复流程、检查清单、procedure、runbook |
-| Knowledge | 客观事实、决定、实现细节 |
+| Rule | 用户偏好、修正、约束、“总是/绝不”的指导原则 |
+| Skill | 可重复的工作流、清单、步骤、操作手册（runbook） |
+| Knowledge | 客观的项目事实、决策、实现细节 |
 
-每个 active memory 都包含 `Context`、`Content`、`Example`。
+每个激活的内存文件都必须有 `Context`、`Content` 和 `Example` 部分。规则内存还针对简明的行数限制，以便加载的指南能保持实用价值。
 
-## 写入流程
+## 写入流 (Write Flow)
 
-1. agent 提出候选。
-2. Engram 解析类型和 scope。
-3. 检查 schema、secret、prompt injection、路径安全。
-4. 人类查看 preview。
-5. 人类回复 `A`、`A 1,3`、`B <note>` 或 `C`。
-6. 只写入已批准内容。
-7. 刷新 index、graph、hashes 和 changelog。
+1. 智能体提议一个或多个候选。
+2. Engram 解析候选类型和目标作用域（scope）。
+3. Engram 检查 Schema、秘密信息、提示词注入模式和路径安全。
+4. 人类看到预览。
+5. 人类回复 `A`（全部批准）、`A 1,3`（批准指定）、`B <说明>`（添加注释批准）或 `C`（拒绝）。
+6. 只有获得批准的内存才会被写入。
+7. 索引、图谱、哈希和变更历史（changelog）会被刷新。
 
-## 读取流程
+## 读取流 (Read Flow)
 
-1. Engram 加载 workspace 和 global index。
-2. Workspace 覆盖 global duplicate。
-3. Ignore rules 和 role filters 过滤噪音。
-4. Graph-aware routing 选择紧凑上下文。
-5. 输出前进行 hash 和安全检查。
+1. Engram 加载工作区和可选的全局索引。
+2. 当 ID 重复时，工作区条目胜过全局条目。
+3. 忽略规则和角色过滤器隐藏无关条目。
+4. 图谱感知路由选择一个紧凑的上下文包。
+5. 在输出内容之前运行哈希和安全检查。
 
-没有协议时，记忆会变成不可见状态。Engram 把它变回 files、diffs、hashes 和 review。
+## 为什么这很重要
 
-下一页：[操作指南](operations.md)。
+如果没有协议，内存可能会变成不可见的状态（invisible state）。不可见的状态难以评审、难以共享，并且极易被智能体意外污染。
 
+Engram 故意让内存管理变得简单无趣：文件、差异对比（diffs）、哈希、评审门槛以及人类可以重新运行的的命令。
+
+下一步：[操作指南](operations.md)。

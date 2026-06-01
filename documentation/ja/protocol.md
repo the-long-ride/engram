@@ -1,54 +1,57 @@
-# 人間が所有する Memory Protocol
+# 人間が所有するメモリプロトコル
 
-Engram は単なる "agent memory" ではありません。memory を inspect 可能、portable、人間が governance できるものにする protocol です。
+Engram は単なる「エージェントのメモリ」ではありません。メモリを検査可能にし、ポータブルにし、人間によって統治されるようにするプロトコルです。
 
-## Contract
+## 契約事項
 
-Markdown は durable memory です。
+Markdown は永続メモリです。
 
-JSON index と graph は acceleration layers です。
+JSON インデックスおよびグラフファイルは、高速化のためのアクセラレーションレイヤーです。
 
-Approval は trust boundary です。
+承認（Approval）は信頼の境界です。
 
-Hashes は integrity checks です。
+ハッシュは整合性チェックです。
 
-Ignore rules は privacy controls です。
+除外ルールはプライバシーコントロールです。
 
-Git は portability と audit history です。
+Git はポータビリティと変更履歴の監査を提供します。
 
-Agent adapters は convenience であり authority ではありません。
+エージェントアダプターは利便性のためのものであり、権威ではありません。
 
-agent は memory を提案できますが、何が memory になるかは人間が所有します。
+エージェントはメモリを提案できますが、何がメモリになるかは人間が決定・所有します。
 
-## Memory Types
+## メモリのタイプ
 
-| Type | Use |
+| タイプ | 用途 |
 | --- | --- |
-| Rule | preference, correction, constraint |
-| Skill | repeatable workflow, checklist, procedure |
-| Knowledge | objective fact, decision, implementation detail |
+| Rule | ユーザーの好み、修正、制約、「常に実行する/決して実行しない」といったガイドライン |
+| Skill | 繰り返し発生するワークフロー、チェックリスト、手順、ランブック |
+| Knowledge | 客観的なプロジェクトの事実、決定事項、実装の詳細 |
 
-すべての active memory は `Context`, `Content`, `Example` を持ちます。
+すべてのアクティブなメモリファイルには、`Context`、`Content`、および `Example` セクションがあります。ルールメモリは、ロードされたガイドラインが常に有用であるように、簡潔な行数制限もターゲットにしています。
 
-## Write Flow
+## 書き込みフロー
 
-1. Agent が candidates を提案します。
-2. Engram が type と scope を parse します。
-3. schema, secrets, prompt injection, path safety を検査します。
-4. 人間が preview を見ます。
-5. 人間が `A`, `A 1,3`, `B <note>`, `C` で返答します。
-6. 承認された memory だけを書き込みます。
-7. index, graph, hashes, changelog を更新します。
+1. エージェントが 1 つまたは複数の候補を提案します。
+2. Engram が候補のタイプとターゲットスコープを解析します。
+3. Engram がスキーマ、機密情報（secrets）、プロンプトインジェクションのパターン、およびパスの安全性を検証します。
+4. 人間にプレビューが表示されます。
+5. 人間が `A`、`A 1,3`、`B <メモ>`、または `C` と返答します。
+6. 承認されたメモリのみが書き込まれます。
+7. インデックス、グラフ、ハッシュ、および変更履歴（changelog）が更新されます。
 
-## Read Flow
+## 読み込みフロー
 
-1. Engram が workspace/global index を load します。
-2. Workspace が global duplicate より優先します。
-3. Ignore rules と roles がノイズを除外します。
-4. Graph-aware routing が compact context を選びます。
-5. 出力前に hash と safety checks が走ります。
+1. Engram がワークスペースおよびオプションのグローバルインデックスをロードします。
+2. 重複する ID がある場合、ワークスペースのエントリがグローバルよりも優先されます。
+3. 除外ルールとロールフィルタにより、無関係なエントリが非表示になります。
+4. グラフ指向ルーティングにより、コンパクトなコンテキストパックが選択されます。
+5. コンテンツが出力される前に、ハッシュと安全性のチェックが実行されます。
 
-protocol がないと memory は invisible state になります。Engram はそれを files, diffs, hashes, review gates に戻します。
+## なぜこれが重要なのか
 
-次: [Operations](operations.md)。
+プロトコルがないと、メモリは「不可視な状態」になってしまいます。不可視な状態はレビューが難しく、共有するのも困難であり、エージェントによって誤って破損（汚染）される危険性があります。
 
+Engram は意図的にメモリを退屈なものにしています：ファイル、差分（diffs）、ハッシュ、レビューゲート、そして人間が再実行できるコマンドによって管理されます。
+
+次へ：[操作ガイド](operations.md)。

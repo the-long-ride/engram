@@ -1,92 +1,128 @@
-# AI Agent Quickstart
+# AI エージェントクイックスタート
 
-Engram はまず agent 経由で使うのが最適です。CLI もありますが、よい流れは agent に memory を load させ、作業し、最後に残す価値のある知識を提案させることです。
+まずはエージェントを通じて Engram を使用してください。CLI も存在しますが、最も良い体験は、エージェントにメモリを読み込ませ、作業を行い、何か有用なものが得られたらエージェントに永続メモリを提案させることです。
 
-## 新しい Session の最初
+## 新しいセッションでの最初のメッセージ
 
-```text
-Use Engram for this task. Load memory for: <what we are doing>.
-```
-
-slash adapter がある場合:
+以下のように尋ねます：
 
 ```text
-/engram load "<current task>"
+このタスクには Engram を使用してください。次のメモリをロードしてください: <行っていること>
 ```
 
-agent は関連 memory ID/rule だけを要約し、全ファイルを貼り付けないでください。
-
-## 推奨 Setup
+スラッシュアダプターがインストールされている場合：
 
 ```text
-Initialize Engram for this workspace, install the right skillset for this agent,
-and tell me what command I should use next.
+/engram load "<現在のタスク>"
 ```
+
+エージェントはすべてのファイルを貼り付けるのではなく、関連するメモリ ID とルールのみを要約する必要があります。
+
+## 推奨されるセットアップ時の会話
+
+エージェントに以下のように依頼します：
+
+```text
+このワークスペース用に Engram を初期化し、このエージェントに適したスキルセット（skillset）をインストールして、次にどのコマンドを使用すべきか教えてください。
+```
+
+エージェントは以下を実行できます：
 
 ```bash
 engram init
 engram help install-skillset
-engram install-skillset <agent-name>
+engram install-skillset <エージェント名>
 ```
 
-chat で直接使うなら:
+チャットで直接使う場合は、以下のように尋ねます：
 
 ```text
-Install slash support so I can use /engram directly from this agent.
+このエージェントから直接 /engram を使用できるように、スラッシュコマンドのサポートをインストールしてください。
 ```
 
-## Daily Loop
+## 日常のルーティン
+
+開始時：
 
 ```text
-/engram load "current task"
-/engram search "topic I might be missing"
+/engram load "現在のタスク"
+```
+
+作業中：
+
+```text
+/engram search "見落としているかもしれないトピック"
+```
+
+エージェントが永続的な事実を学んだとき：
+
+```text
 /engram save knowledge
+```
+
+セッションから役立つルール、事実、またはワークフローがいくつか生まれたとき：
+
+```text
 /engram save-session
+```
+
+短縮形：
+
+```text
 /engram ss
 ```
 
-本当に全候補を承認する時だけ:
+本当にすべての候補を保存したい場合のみ、一括承認（accept-all）のショートカットを使用します：
 
 ```text
 /engram ss -a
 ```
 
-`-a` は人間がすべての agent-recommended candidates を明示承認した意味です。agent が勝手に追加してはいけません。
+`-a` は、人間がエージェントの推奨するすべての候補を明示的に承認することを意味します。エージェントが自らこれを追加してはなりません。
 
-## 既存 Knowledge の取り込み
+## 既存の知識のインポート
+
+すでに `AGENTS.md`、`CLAUDE.md`、Cursor のルール、メモ、またはドキュメントが存在するリポジトリの場合：
 
 ```text
 /engram take-control --plan
 /engram take-control --all
 ```
 
-`--plan` は選択ファイル、skip 理由、token estimates、想定 memory type を表示します。
+選択されたファイル、スキップされたファイル、トークン見積もり、および想定されるメモリタイプを確認したい場合は、最初に `--plan` を使用します。
 
-## Global Memory
+## グローバルメモリ
+
+リポジトリをまたいで適用したい設定には、グローバルメモリを使用します：
 
 ```text
-Set up global Engram memory at <path>, then save this preference globally:
+グローバルな Engram メモリを <path> にセットアップし、この設定をグローバルに保存してください:
 Use pnpm for package management.
 ```
+
+エージェントは以下を使用できます：
 
 ```bash
 engram init --global-only --global-path <path>
 engram save --scope global "Use pnpm for package management."
 ```
 
-## Health
+## メモリの健康維持
+
+意味のある作業の最後に、エージェントに以下のように尋ねます：
 
 ```text
-Check Engram health, report invalid memories, and propose anything worth saving from this session.
+Engram のヘルスチェックを行い、無効なメモリを報告し、このセッションから保存する価値のあるものを提案してください。
 ```
+
+便利なコマンド：
 
 ```bash
 engram verify
 engram repair
-engram graph "<topic>"
+engram graph "<トピック>"
 engram quality-check
-engram archive --reason "<why>" <id-or-file>
+engram archive --reason "<理由>" <IDまたはファイル名>
 ```
 
-次: [Protocol](protocol.md)。
-
+次へ：[人間が所有するプロトコル](protocol.md)。

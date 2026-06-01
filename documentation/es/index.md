@@ -1,56 +1,60 @@
 # Engram
 
-Engram es un protocolo de memoria para agentes de IA, propiedad del ser humano. Guarda conocimiento duradero de proyectos, equipos y preferencias personales en archivos que se pueden leer, revisar, sincronizar y reparar.
+Engram es un protocolo de memoria de propiedad humana para agentes de IA. Conserva el conocimiento duradero del proyecto, del equipo y de las preferencias personales en archivos que los humanos pueden inspeccionar, revisar, sincronizar y reparar.
 
-No es un cerebro oculto del agente. El agente puede proponer memoria; la fuente de verdad son archivos Markdown aprobados en `.agents/.engram/` o en una memoria global opcional.
+Engram no es un cerebro de agente oculto. El agente puede proponer memoria, pero la fuente de verdad es un Markdown aprobado bajo `.agents/.engram/` o una carpeta de memoria global opcional.
 
 ## Qué Problema Resuelve
 
-Los agentes olvidan decisiones del proyecto, repiten preguntas de configuración y mezclan contexto antiguo con instrucciones nuevas. La memoria integrada suele vivir dentro de un proveedor, una aplicación o una máquina.
+Los agentes de IA olvidan las decisiones del proyecto, repiten las preguntas de configuración y mezclan el contexto antiguo con las nuevas instrucciones. La memoria integrada suele ser privada de un proveedor, una aplicación o una máquina.
 
-Engram da un contrato estable:
+Engram le da a la memoria un contrato estable:
 
-- hechos, reglas y flujos aprobados viven en Markdown
-- índices y grafos aceleran el enrutamiento
-- toda escritura requiere aprobación humana
-- los hashes detectan cambios inseguros
-- las reglas de ignore protegen privacidad
-- Git aporta historial, portabilidad y revisión de equipo
+- Los hechos, reglas y flujos de trabajo aprobados viven como Markdown.
+- Los índices y los grafos aceleran el enrutamiento.
+- Las escrituras requieren aprobación humana.
+- Los hashes revelan modificaciones inseguras.
+- Las reglas de omisión (ignore rules) protegen el contexto privado.
+- Git proporciona historial, portabilidad y revisión por parte del equipo.
 
 ## Modelo Mental
 
-Engram funciona como un centro de memoria de conocimiento:
+Piense en Engram como un centro de memoria de conocimiento:
 
-| Capa | Función |
+| Capa | Trabajo |
 | --- | --- |
-| Markdown | fuente de verdad durable |
-| JSON index | búsqueda rápida |
-| JSON graph | rutas por tema y relación |
-| Approval gate | frontera de confianza |
-| Hashes | integridad antes de leer |
-| Ignore rules | controles de privacidad |
-| Git | auditoría y sincronización |
-| Agent adapters | comodidad, no autoridad |
+| Markdown | Fuente de verdad duradera |
+| JSON index | Capa de búsqueda rápida |
+| JSON graph | Capa de enrutamiento de temas y relaciones |
+| Approval gate | Límite de confianza antes de las escrituras |
+| Hashes | Comprobaciones de integridad antes de las lecturas |
+| Ignore rules | Controles de privacidad |
+| Git | Historial de auditoría y sincronización |
+| Agent adapters | Conveniencia, no autoridad |
 
-## Prioridad De Alcance
+## Prioridad de Alcance
 
-1. Memoria workspace: `<project>/.agents/.engram/`
-2. Memoria global: `$ENGRAM_GLOBAL_DIR` o `engram init --global-path <path>`
+Engram resuelve la memoria en este orden:
 
-La memoria workspace gana. La global sirve como fallback para preferencias reutilizables y contexto entre repos.
+1. Memoria del espacio de trabajo (workspace): `<proyecto>/.agents/.engram/`
+2. Memoria global: `$ENGRAM_GLOBAL_DIR` o `engram init --global-path <ruta>`
 
-## Qué Incluye
+La memoria del espacio de trabajo gana. La memoria global es el respaldo para preferencias reutilizables y contexto del equipo en diferentes proyectos.
 
-- `save` para una memoria aprobada
-- `save-session` / `ss` para varias memorias de una sesión
-- `observe` para notas crudas no activas
-- `take-control` para importar guías y documentos existentes
-- `graph` y `quality-check` para señales de revisión
-- `archive` para memoria incorrecta u obsoleta
-- `repair` para archivos inválidos omitidos por rebuild
-- `benchmark` para regresiones de recuperación
-- skillsets, slash adapters y herramientas MCP de propuesta
+## Estado Actual
 
-Antes de usar comandos, lee la página conceptual: [Entender Engram](understanding.md).
+Engram incluye:
 
-Siguiente: [Quickstart con agente](quickstart.md).
+- `save` para una memoria aprobada.
+- `save-session` / `ss` para varias memorias de una sesión.
+- `observe` para notas en borrador que aún no son memoria activa.
+- `take-control` para importar guías y documentos existentes del agente.
+- `graph` y `quality-check` para señales de revisión.
+- `archive` para memoria incorrecta o reemplazada.
+- `repair` para archivos de memoria mal formados que el proceso de reconstrucción del índice omite.
+- `benchmark` para comprobaciones de regresión de recuperación.
+- Conjuntos de habilidades del agente (skillsets), adaptadores de comando slash y herramientas de propuesta de estilo MCP.
+
+Antes de usar comandos, lea la página de conceptos: [Entender Engram](understanding.md).
+
+Siguiente: [Inicio rápido para agentes de IA](quickstart.md).

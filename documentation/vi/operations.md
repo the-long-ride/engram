@@ -1,30 +1,30 @@
-# Huong Dan Operations
+# Hướng Dẫn Vận Hành
 
-Trang nay giu chi tiet su dung de README gon hon.
+Trang này chứa thông tin chi tiết về cách sử dụng để tệp README có thể duy trì dung lượng ngắn gọn.
 
-## Command Surface
+## Các Lệnh Được Hỗ Trợ
 
-| Nhu cau | Lenh |
+| Nhu cầu | Câu lệnh |
 | --- | --- |
-| Load memory cho task | `engram load "<task>"` |
-| Search memory | `engram search "<topic>"` |
-| Save mot memory | `engram save [rule|workflow|knowledge] "<text>"` |
-| Save nhieu memory tu session | `engram save-session` hoac `engram ss` |
-| Chap nhan tat ca candidates | `engram ss -a` |
-| Ghi raw note | `engram observe --file session.md` |
-| Chuyen docs/guidance co san | `engram take-control --all` |
-| Preview source takeover | `engram take-control --plan` |
-| Inspect graph routing | `engram graph "<topic>"` |
-| Kiem tra hash | `engram verify` |
-| Tim memory file loi | `engram repair` |
-| Archive memory sai | `engram archive --reason "<why>" <id-or-file>` |
-| Dieu chinh do manh rule | `engram set-rule-variant strict|balanced|light|off` |
+| Tải bộ nhớ tác vụ | `engram load "<tác vụ>"` |
+| Tìm kiếm bộ nhớ | `engram search "<chủ đề>"` |
+| Lưu một bộ nhớ | `engram save [rule\|workflow\|knowledge] "<nội dung>"` |
+| Lưu nhiều bộ nhớ phiên làm việc | `engram save-session` hoặc `engram ss` |
+| Phê duyệt toàn bộ đề xuất của phiên | `engram ss -a` |
+| Ghi lại ghi chú thô | `engram observe --file session.md` |
+| Chuyển đổi tài liệu/hướng dẫn có sẵn | `engram take-control --all` |
+| Xem trước kế hoạch tiếp quản tài liệu | `engram take-control --plan` |
+| Kiểm tra định tuyến đồ thị | `engram graph "<chủ đề>"` |
+| Kiểm tra mã băm bảo mật | `engram verify` |
+| Tìm các tệp bộ nhớ bị lỗi cấu trúc | `engram repair` |
+| Lưu trữ bộ nhớ sai lệch | `engram archive --reason "<lý do>" <id-hoặc-tên-tệp>` |
+| Điều chỉnh độ mạnh quy tắc | `engram set-rule-variant strict\|balanced\|light\|off` |
 
-Dung `save-session` cho long-session memory proposals. Dang ngan: `ss`.
+Sử dụng lệnh `save-session` cho các đề xuất bộ nhớ từ các phiên làm việc dài. Dạng viết tắt: `ss`.
 
-## Save Session
+## Lưu Phiên Làm Việc (Save Session)
 
-Dung `save-session` khi long interaction tao nhieu candidate:
+Sử dụng `save-session` khi một tương tác dài tạo ra nhiều ứng viên bộ nhớ:
 
 ```text
 TYPE: rule | TEXT: Always run tests before release.
@@ -32,13 +32,13 @@ TYPE: knowledge | TEXT: Release notes live in CHANGELOG.md.
 TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
 ```
 
-Khong co `--accept-all`, Engram hoi candidate nao can save. Voi `ss -a`, moi candidate sinh ra duoc save vi con nguoi da chap nhan ro rang shortcut do.
+Nếu không có cờ `--accept-all`, Engram sẽ hỏi ứng viên nào cần lưu. Với `ss -a`, mọi ứng viên được tạo ra sẽ được lưu lại vì con người đã phê duyệt rõ ràng cho phím tắt đó.
 
-## Take Control
+## Tiếp Quản Bộ Nhớ (Take Control)
 
-`take-control` giup dua Engram vao repo co san. No scan agent guidance, notes, docs va file duoc chon, roi nho agent tao candidates ngan gon.
+`take-control` giúp bạn triển khai Engram vào các kho lưu trữ hiện có. Nó quét các hướng dẫn của tác nhân AI, ghi chú, tài liệu và các tệp được chọn, sau đó yêu cầu tác nhân AI tạo ra các ứng viên ngắn gọn.
 
-Selectors huu ich:
+Các bộ lọc hữu ích:
 
 ```bash
 engram take-control --plan
@@ -49,22 +49,22 @@ engram take-control --include "docs/**/*.md" --exclude "docs/private/**"
 engram take-control --max-sources 5 --max-chars 900
 ```
 
-Memory duoc save tu take-control co `source_files` va `source_hashes`, nen lan sau source khong doi se duoc bo qua.
+Các bộ nhớ được lưu bởi take-control ghi lại `source_files` và `source_hashes`, nhờ đó các nguồn không thay đổi sẽ được bỏ qua trong các lần quét sau.
 
-## Observe
+## Ghi Nhận (Observe)
 
-`observe` luu raw note da sanitize vao `inbox/`. Inbox note khong phai active memory.
+`observe` lưu trữ các ghi chú thô đã được làm sạch thông tin nhạy cảm vào thư mục `inbox/`. Các ghi chú trong hộp thư đến (inbox) này không phải là bộ nhớ hoạt động.
 
 ```bash
 engram observe --file session.md
-engram save-session --file .agents/.engram/inbox/<note>.md
+engram save-session --file .agents/.engram/inbox/<tên_ghi_chú>.md
 ```
 
-Dung khi muon giu rough note truoc khi quyet dinh cai gi nen thanh durable memory.
+Sử dụng tính năng này khi bạn muốn lưu giữ các ghi chú sơ bộ trước khi quyết định những gì sẽ trở thành bộ nhớ bền vững.
 
-## Repair Va Review
+## Sửa Chữa Và Đánh Giá
 
-Dung `repair` sau manual edit hoac import:
+Sử dụng `repair` sau khi chỉnh sửa thủ công hoặc nhập dữ liệu:
 
 ```bash
 engram repair
@@ -72,7 +72,7 @@ engram rebuild-index
 engram verify
 ```
 
-Dung graph va quality check truoc khi archive:
+Sử dụng đồ thị và kiểm tra chất lượng trước khi lưu trữ (archive) bộ nhớ:
 
 ```bash
 engram graph "package manager"
@@ -80,4 +80,4 @@ engram quality-check
 engram archive --reason "Repo migrated to npm." rules/use-pnpm.md
 ```
 
-Tiep theo: [So sanh va roadmap](comparison.md).
+Tiếp theo: [So sánh và lộ trình phát triển](comparison.md).

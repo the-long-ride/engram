@@ -1,26 +1,30 @@
 # 操作指南
 
-## 常用命令
+本页面包含详细的用法，以便 README 可以保持简短。
+
+## 命令面板
 
 | 需求 | 命令 |
 | --- | --- |
-| 加载任务记忆 | `engram load "<task>"` |
-| 搜索记忆 | `engram search "<topic>"` |
-| 保存一个记忆 | `engram save [rule|workflow|knowledge] "<text>"` |
-| 保存会话记忆 | `engram save-session` 或 `engram ss` |
-| 接受全部候选 | `engram ss -a` |
+| 加载任务内存 | `engram load "<任务>"` |
+| 搜索内存 | `engram search "<主题>"` |
+| 保存一条内存 | `engram save [rule\|workflow\|knowledge] "<文本>"` |
+| 保存多次会话内存 | `engram save-session` 或 `engram ss` |
+| 接受全部会话候选 | `engram ss -a` |
 | 捕获原始笔记 | `engram observe --file session.md` |
-| 导入 docs/guidance | `engram take-control --all` |
-| 预览 takeover | `engram take-control --plan` |
-| 查看 graph routing | `engram graph "<topic>"` |
-| 检查 hash | `engram verify` |
-| 查找无效文件 | `engram repair` |
-| 归档错误记忆 | `engram archive --reason "<why>" <id-or-file>` |
-| 调整规则强度 | `engram set-rule-variant strict|balanced|light|off` |
+| 转换已有的智能体指导/文档 | `engram take-control --all` |
+| 预览接管计划 | `engram take-control --plan` |
+| 检查图谱路由 | `engram graph "<主题>"` |
+| 校验哈希 | `engram verify` |
+| 查找损坏的内存文件 | `engram repair` |
+| 归档错误的内存 | `engram archive --reason "<原因>" <id-或-文件>` |
+| 调整规则强度 | `engram set-rule-variant strict\|balanced\|light\|off` |
 
-长会话 memory proposal 请使用 `save-session`。短形式：`ss`。
+对于较长时间会话的内存建议，请使用 `save-session`。简写形式：`ss`。
 
-## Save Session
+## 保存会话 (Save Session)
+
+当长时间的交互产生了多个候选条目时，请使用 `save-session`：
 
 ```text
 TYPE: rule | TEXT: Always run tests before release.
@@ -28,9 +32,13 @@ TYPE: knowledge | TEXT: Release notes live in CHANGELOG.md.
 TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
 ```
 
-没有 `--accept-all` 时，Engram 会询问保存哪些候选。`ss -a` 会保存全部，因为人类明确批准。
+如果不带 `--accept-all` 运行，Engram 会询问要保存哪些候选。带有 `ss -a` 时，每个生成的候选都会被直接保存，因为人类显式批准了该快捷操作。
 
-## Take Control
+## 接管控制 (Take Control)
+
+`take-control` 帮助在现有的仓库中采用 Engram。它会扫描智能体指导原则、笔记、文档和选定的文件，然后请求智能体提议简明的内存候选。
+
+常用的筛选器：
 
 ```bash
 engram take-control --plan
@@ -41,26 +49,35 @@ engram take-control --include "docs/**/*.md" --exclude "docs/private/**"
 engram take-control --max-sources 5 --max-chars 900
 ```
 
-保存的记忆会记录 `source_files` 和 `source_hashes`。
+由 take-control 保存的内存会记录 `source_files` 和 `source_hashes`，因此未更改的源文件在以后会被自动跳过。
 
-## Observe
+## 观察记录 (Observe)
+
+`observe` 将清洗过的原始笔记存储在 `inbox/` 中。收件箱（inbox）笔记不是激活的内存。
 
 ```bash
 engram observe --file session.md
-engram save-session --file .agents/.engram/inbox/<note>.md
+engram save-session --file .agents/.engram/inbox/<笔记>.md
 ```
 
-`inbox/` 笔记在转换前不是 active memory。
+当您在决定哪些应该成为持久内存之前，希望保留粗糙的草稿笔记时，请使用此命令。
 
-## Repair And Review
+## 修复与评审
+
+在手动编辑或导入后使用 `repair`：
 
 ```bash
 engram repair
 engram rebuild-index
 engram verify
+```
+
+在归档前使用图谱和质量检查：
+
+```bash
 engram graph "package manager"
 engram quality-check
 engram archive --reason "Repo migrated to npm." rules/use-pnpm.md
 ```
 
-下一页：[对比与路线图](comparison.md)。
+下一步：[对比与路线图](comparison.md)。

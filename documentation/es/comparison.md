@@ -1,53 +1,59 @@
-# Comparación, Pros, Contras Y Roadmap
+# Comparación, Pros, Contras y Hoja de Ruta
 
-Engram optimiza propiedad humana, revisión y portabilidad.
+Engram se sitúa en una parte diferente del espacio de memoria que los motores de memoria automática. Se optimiza para la propiedad humana, la capacidad de revisión y la portabilidad.
 
-## Fortalezas
+## Fortalezas de Engram
 
-- Markdown como fuente de verdad.
-- Aprobación humana antes de escrituras durables.
-- Historial y sync con Git.
-- Workspace-first, global-fallback.
-- Agnóstico a agentes.
-- Seguridad: schema, secret scan, injection scan, hashes, ignore rules.
-- Sin daemon, base de datos o nube obligatoria.
-- Import, observe, archive, graph, benchmark y repair para mantenimiento.
+- Fuente de verdad en Markdown simple.
+- Aprobación humana antes de escrituras duraderas.
+- Historial de auditoría y sincronización nativos de Git.
+- Memoria con prioridad en el espacio de trabajo y respaldo en la global.
+- Agnóstico al agente: cualquier agente puede leer Markdown.
+- Capas de seguridad: validación de esquemas, escaneo de secretos, escaneo de inyección, hashes y reglas de omisión.
+- No se requiere daemon, base de datos ni cuenta en la nube.
+- Los flujos de importación, observación, archivado, grafo, benchmark y reparación respaldan el mantenimiento a largo plazo.
 
-## Costes
+## Compensaciones (Tradeoffs) de Engram
 
-- Menos automático que sistemas daemon.
-- Search default lexical; `search --semantic` usa similitud local determinista, no semantic embedding-backed.
-- Graph vectors son hashed word vectors locales.
-- Contradiction detection es heurística.
-- `deduplicate --semantic` usa similitud local determinista, no embeddings externos.
-- Pattern mining, encryption config y PR workflow aún no son flujos completos.
+- Menos automático que los sistemas de memoria basados en daemon.
+- La búsqueda predeterminada es una búsqueda léxica determinista; `search --semantic` añade similitud local determinista, no búsqueda semántica respaldada por embeddings completos.
+- Los vectores del grafo son vectores locales de palabras hasheadas, no embeddings semánticos.
+- La detección de contradicciones es heurística y consultiva.
+- `deduplicate --semantic` utiliza similitud local determinista, no embeddings externos.
+- La minería de patrones, la configuración de cifrado y los activos del flujo de trabajo de PR existen, pero los flujos de trabajo completos en tiempo de ejecución aún no están conectados.
+- El grafo depende de las etiquetas y resúmenes generados.
 
-## Frente A Agentmemory
+## Comparado con Agentmemory
 
-[rohitg00/agentmemory](https://github.com/rohitg00/agentmemory) es un motor automático para coding agents con servidor, MCP/hooks/REST, adaptadores, benchmarks, viewer, replay, hybrid retrieval e integración Hermes.
+[rohitg00/agentmemory](https://github.com/rohitg00/agentmemory) es un potente motor de memoria automática para agentes de codificación. Su README presenta memoria basada en servidor, integración de MCP/hooks/REST, muchos adaptadores de agente, afirmaciones de benchmark, un visor, reproducción (replay), recuperación híbrida e integración con Hermes.
 
-Usa agentmemory si quieres captura automática, replay, vector retrieval y muchas herramientas MCP.
+Use `agentmemory` cuando desee captura automática, visor/reproducción en vivo, recuperación de vectores, muchas herramientas MCP y memoria compartida de estilo de servidor.
 
-Usa Engram si quieres un protocolo legible en repo: Markdown primero, aprobado por humanos, revisado en Git y portable entre agentes sin servidor.
+Use `Engram` cuando desee que la memoria sea un protocolo legible por el repositorio: Markdown primero, aprobado por humanos, revisado por Git y portable entre agentes incluso sin un servidor en ejecución.
 
 | Dimensión | Engram | agentmemory |
 | --- | --- | --- |
-| Fuente de verdad | Markdown aprobado | Servidor/store |
-| Confianza | Aprobación A/B/C | Captura automática + governance |
-| Modo default | Protocolo de archivos | Servicio recomendado |
-| Revisión | Git diff y Markdown | Viewer/API/sesiones |
-| Mejor para | ownership y auditoría | recall automático y replay |
+| Fuente de verdad | Archivos Markdown aprobados | Servidor/almacén de memoria |
+| Límite de confianza | Aprobación humana A/B/C | Captura automática más gobernanza de herramientas |
+| Modo predeterminado | Protocolo de archivos, no requiere daemon | Se recomienda servicio en ejecución |
+| Revisión | Git diff y revisión de Markdown | Visor/API y sesiones almacenadas |
+| Mejor ajuste | Equipos que necesitan propiedad y auditabilidad | Usuarios que desean recuerdo y reproducción automáticos |
+| Riesgo | Más disciplina manual | Más estado invisible a menos que se gobierne con cuidado |
 
-## Frente A Memoria Integrada
+## Comparado con la Memoria Integrada del Agente
 
-La memoria integrada es cómoda pero ligada a un host. Engram deja la autoridad en archivos que el humano controla.
+La memoria integrada del agente es conveniente, pero a menudo está vinculada a un solo host. Puede ser difícil de comparar (diff), exportar, revisar o compartir con otro agente.
 
-## Roadmap
+Engram trata la memoria integrada como una capa de conveniencia, no como la autoridad. La autoridad sigue siendo los archivos de los que el humano es propietario.
 
-- Embeddings locales opcionales para graph/search.
-- Diagnóstico de routing más explícito.
-- Benchmark fixtures versionados.
-- Mejor workflow para contradicciones.
-- Más variantes de import agentmemory.
-- Proveedor opcional de embeddings externos para dedupe semántico.
-- Repair que proponga fixes después de reportar errores.
+## Ideas para la Hoja de Ruta
+
+- Proveedor de embeddings locales opcional para vectores de grafos y búsqueda.
+- Mejores diagnósticos de grafo que expliquen por qué se enrutó una memoria.
+- Fixtures de benchmark registrados en el repositorio para el seguimiento de regresiones.
+- Flujo de trabajo de revisión de contradicciones más sólido que combine grafos, control de calidad y archivado.
+- Más pruebas de importación para variantes de exportación de `agentmemory`.
+- Proveedor de embeddings externos opcional para la detección semántica de duplicados.
+- Flujos de trabajo de reparación que puedan proponer correcciones después de informar sobre archivos de memoria no válidos.
+
+Siguiente: volver al [Inicio](index.md).

@@ -1,58 +1,57 @@
-# Giao Thuc Memory Do Con Nguoi So Huu
+# Giao Thức Bộ Nhớ Do Con Người Sở Hữu
 
-Engram khong chi la "agent memory." No la giao thuc giup memory co the inspect, portable va do con nguoi quan tri.
+Engram không chỉ đơn thuần là "bộ nhớ của tác nhân AI". Nó là một giao thức giúp bộ nhớ có thể được kiểm tra, di chuyển và quản lý bởi con người.
 
-## Hop Dong Cot Loi
+## Hợp Đồng Giao Thức
 
-Markdown la memory ben vung.
+Markdown là bộ nhớ bền vững.
 
-JSON index va graph la lop tang toc.
+Các tệp chỉ mục (index) và đồ thị (graph) JSON là các lớp tăng tốc.
 
-Approval la ranh gioi niem tin.
+Phê duyệt (Approval) là ranh giới tin cậy.
 
-Hashes la kiem tra toan ven.
+Mã băm (Hashes) là các bước kiểm tra tính toàn vẹn.
 
-Ignore rules la dieu khien rieng tu.
+Các quy tắc bỏ qua (Ignore rules) là các chốt kiểm soát quyền riêng tư.
 
-Git la portability va audit history.
+Git mang lại tính di động và lịch sử kiểm duyệt thay đổi.
 
-Agent adapters la tien ich, khong phai quyen luc.
+Các bộ điều hợp (Agent adapters) mang tính chất tiện ích, không có quyền lực cao nhất.
 
-Agent co the de xuat memory, nhung con nguoi so huu thu se tro thanh memory.
+Các tác nhân AI có thể đề xuất bộ nhớ, nhưng con người mới sở hữu những gì được đưa vào bộ nhớ.
 
-## Loai Memory
+## Các Loại Bộ Nhớ
 
-| Loai | Dung khi |
+| Loại | Mục đích sử dụng |
 | --- | --- |
-| Rule | preference, correction, constraint, always/never guidance |
-| Skill | workflow lap lai, checklist, procedure, runbook |
-| Knowledge | fact khach quan, quyet dinh, chi tiet implementation |
+| Rule | tùy chọn ưu tiên của người dùng, sửa lỗi, ràng buộc, hướng dẫn "luôn luôn/không bao giờ" |
+| Skill | quy trình làm việc có thể lặp lại, danh sách kiểm tra (checklist), thủ tục, sổ tay vận hành (runbook) |
+| Knowledge | sự thật khách quan của dự án, quyết định, chi tiết triển khai |
 
-Moi active memory file co cac muc `Context`, `Content`, va `Example`. Rule memory co gioi han dong de loaded guidance van gon va co ich.
+Mỗi tệp bộ nhớ đang hoạt động đều có các phần `Context`, `Content`, và `Example`. Các bộ nhớ thuộc loại Quy tắc (Rule) cũng hướng tới giới hạn dòng ngắn gọn để đảm bảo hướng dẫn được tải luôn hữu ích.
 
-## Flow Ghi
+## Quy Trình Ghi Bộ Nhớ
 
-1. Agent de xuat mot hoac nhieu candidate.
-2. Engram parse loai candidate va scope.
-3. Engram kiem tra schema, secrets, prompt-injection va path safety.
-4. Con nguoi thay preview.
-5. Con nguoi tra loi `A`, `A 1,3`, `B <note>`, hoac `C`.
-6. Chi memory duoc duyet moi ghi.
-7. Index, graph, hashes va changelog duoc refresh.
+1. Tác nhân AI đề xuất một hoặc nhiều ứng viên.
+2. Engram phân tích loại ứng viên và phạm vi ghi mục tiêu (scope).
+3. Engram kiểm tra cấu trúc (schema), thông tin nhạy cảm (secrets), các mẫu tấn công prompt-injection và tính an toàn của đường dẫn tệp.
+4. Con người xem trước bản đề xuất.
+5. Con người phản hồi `A`, `A 1,3`, `B <ghi chú>`, hoặc `C`.
+6. Chỉ các bộ nhớ được phê duyệt mới được ghi lại.
+7. Chỉ mục, đồ thị, mã băm và nhật ký thay đổi (changelog) được làm mới.
 
-## Flow Doc
+## Quy Trình Đọc Bộ Nhớ
 
-1. Engram load workspace va global index neu co.
-2. Workspace thang global duplicate.
-3. Ignore rules va role filters an entry khong lien quan.
-4. Graph-aware routing chon context pack gon.
-5. Hash va safety checks chay truoc khi in content.
+1. Engram tải các chỉ mục không gian làm việc và chỉ mục toàn cục tùy chọn.
+2. Các mục trong không gian làm việc ghi đè lên các mục trùng lặp toàn cục.
+3. Các quy tắc bỏ qua và bộ lọc vai trò (role filters) ẩn các mục không liên quan.
+4. Định tuyến dựa trên đồ thị lựa chọn một gói ngữ cảnh nhỏ gọn.
+5. Việc kiểm tra mã băm và an toàn bảo mật được chạy trước khi in nội dung.
 
-## Vi Sao Quan Trong
+## Tại Sao Điều Này Quan Trọng
 
-Neu khong co protocol, memory de thanh invisible state. Invisible state kho review, kho share, va de bi agent lam sai lech.
+Nếu không có một giao thức rõ ràng, bộ nhớ có thể trở thành một trạng thái ẩn (invisible state). Trạng thái ẩn rất khó xem xét, khó chia sẻ và dễ bị các tác nhân AI làm sai lệch thông tin một cách vô tình.
 
-Engram co tinh lam memory "binh thuong": files, diffs, hashes, review gates, va command con nguoi chay lai duoc.
+Engram làm cho bộ nhớ trở nên đơn giản một cách có chủ đích: quản lý bằng tệp tin, các bản so sánh sự khác biệt (diffs), mã băm, cổng phê duyệt và các lệnh mà con người có thể chạy lại bất cứ lúc nào.
 
-Tiep theo: [Operations](operations.md).
-
+Tiếp theo: [Hướng dẫn vận hành](operations.md).

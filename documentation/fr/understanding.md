@@ -1,117 +1,117 @@
 # Comprendre Engram
 
-Lis cette page avant le guide des commandes. Engram vaut surtout par la propriété de la mémoire, pas par le nombre de commandes.
+Lisez ceci avant le guide des commandes. Engram est utile en raison de qui possède la mémoire, et non pas parce qu'il propose de nombreuses commandes.
 
-## Modèle En Une Phrase
+## Modèle en Une Phrase
 
-Engram est un protocole de fichiers qui permet aux agents IA d'utiliser une mémoire durable pendant que les humains décident ce qui devient durable.
+Engram est un protocole de fichier qui permet aux agents d'IA d'utiliser une mémoire durable tandis que les humains décident de ce qui devient durable.
 
 ## Ce Qu'est Engram
 
-Engram est un centre de mémoire de connaissance pour:
+Engram est un centre de mémoire de connaissances pour :
 
-- règles de projet
-- décisions d'équipe
-- workflows répétables
-- faits durables
-- préférences personnelles qui doivent suivre entre projets
+- les règles de projet
+- les décisions d'équipe
+- les flux de travail (workflows) répétables
+- les faits durables
+- les préférences personnelles qui doivent voyager d'un projet à l'autre
 
-La mémoire est du Markdown ordinaire. L'index, le graphe, les hashes et les adapters rendent ce Markdown plus facile et plus sûr à utiliser.
+La mémoire est en Markdown simple. L'index, le graphe, les hashes et les fichiers d'adaptateur n'existent que pour rendre ce Markdown plus facile et plus sûr à utiliser.
 
-## Ce Que N'est Pas Engram
+## Ce Qu'Engram N'est Pas
 
-Engram n'est pas:
+Engram n'est pas :
 
-- un cerveau caché de l'agent
-- un silo mémoire possédé par un fournisseur
-- un remplacement de la documentation projet
-- une base vectorielle qui prétend faire autorité
-- un enregistreur automatique qui garde tout pour toujours
+- un cerveau caché pour un agent
+- un silo de mémoire appartenant à un fournisseur (vendor)
+- un remplacement pour la documentation du projet
+- une base de données vectorielle prétendant faire autorité
+- un enregistreur automatique qui sauvegarde tout pour toujours
 
-Les agents peuvent proposer une mémoire. Les humains approuvent, rejettent, éditent, archivent et possèdent la mémoire.
+Les agents peuvent suggérer des éléments de mémoire. Les humains approuvent, rejettent, modifient, archivent et possèdent la mémoire.
 
-## Promesse Centrale
+## La Promesse Centrale
 
-Engram cherche à rendre la mémoire IA:
+Engram s'efforce de rendre la mémoire de l'IA :
 
-- révisable: lisible dans un éditeur normal
-- portable: synchronisable avec Git et utilisable par plusieurs agents
-- corrigeable: une mauvaise mémoire peut être archivée avec une raison
-- privée par défaut: ignore rules et approbation limitent les captures accidentelles
-- volontairement simple: Markdown inspire plus confiance qu'un état invisible de plateforme
+- révisable : vous pouvez la lire dans un éditeur standard
+- portable : vous pouvez la synchroniser avec Git et l'utiliser sur différents agents
+- corrigeable : une mémoire erronée peut être archivée au lieu de hanter silencieusement le travail futur
+- privée par défaut : les règles d'exclusion (ignore rules) et les barrières d'approbation empêchent la capture accidentelle
+- ennuyeuse à dessein : le Markdown est plus facile à croire et à valider qu'un état de plateforme invisible
 
 ## Les Couches
 
-| Couche | Sens |
+| Couche | Signification |
 | --- | --- |
-| Markdown | source de vérité durable |
-| JSON index | couche de recherche rapide |
-| JSON graph | routage par sujet et relation |
-| Hashes | contrôles d'intégrité |
-| Approval | frontière de confiance avant écriture |
-| Ignore rules | contrôles de confidentialité |
-| Git | historique, portabilité, revue, récupération |
-| Agent adapters | couche de confort pour Codex, Claude, Cursor, Gemini et autres agents |
+| Markdown | Source de vérité durable |
+| JSON index | Couche de recherche rapide |
+| JSON graph | Couche de routage par sujet et relation |
+| Hashes | Vérifications d'intégrité |
+| Approval | Limite de confiance avant les écritures |
+| Ignore rules | Contrôles de confidentialité |
+| Git | Historique, portabilité, révision, récupération |
+| Agent adapters | Couche de commodité pour Codex, Claude, Cursor, Gemini et d'autres agents |
 
-Le JSON généré aide les agents à trouver la mémoire plus vite, mais il ne fait pas autorité. Si JSON et Markdown divergent, Markdown gagne.
+Le JSON généré aide les agents à trouver la mémoire plus rapidement, mais il ne fait pas autorité. Si les fichiers générés ne correspondent pas au Markdown, c'est le Markdown qui l'emporte.
 
-## Cycle De Vie De La Mémoire
+## Cycle de Vie de la Mémoire
 
-1. Une session, un fichier ou une note humaine contient un savoir utile.
-2. Un agent propose des candidats concis.
-3. Un humain approuve tout, sélectionne certains éléments, ajoute une note ou rejette.
+1. Une session, un fichier ou une note humaine contient des connaissances utiles.
+2. Un agent propose des candidats de mémoire concis.
+3. Un humain approuve tout, en sélectionne certains, ajoute une note ou les rejette.
 4. Engram écrit la mémoire Markdown approuvée.
-5. Engram met à jour hashes, index, graphe et changelog.
-6. Les futurs agents chargent seulement la mémoire utile à la tâche.
-7. Si une mémoire devient fausse, Engram l'archive avec une raison.
+5. Engram actualise les hashes, l'index, le graphe et le journal des modifications (changelog).
+6. Les futurs agents chargent uniquement la mémoire pertinente pour la tâche actuelle.
+7. Si une mémoire devient erronée, Engram l'archive avec un motif.
 
-Ce cycle garde la mémoire active sans la rendre invisible.
+Ce cycle de vie maintient la mémoire active sans la rendre invisible.
 
 ## Humain, Agent, Engram, Git
 
 | Acteur | Rôle |
 | --- | --- |
-| Humain | décide ce qui devient mémoire durable |
-| Agent | repère des patterns et propose des candidats |
-| Engram | applique schéma, sécurité, routage, approbation et maintenance |
-| Git | transporte la mémoire entre machines et garde l'historique de revue |
+| Humain | Choisit ce qui devient une mémoire durable |
+| Agent | Détecte les modèles et propose des candidats |
+| Engram | Applique le schéma, la sécurité, le routage, l'approbation et la maintenance |
+| Git | Transporte la mémoire entre les machines et fournit l'historique des révisions |
 
-L'agent aide, mais il n'est pas propriétaire.
+L'agent est utile, mais il n'est pas le propriétaire.
 
-## Bonne Mémoire
+## Une Bonne Mémoire
 
-Une bonne mémoire Engram est:
+Une bonne mémoire Engram est :
 
-- assez stable pour être utile la semaine prochaine
-- assez précise pour être retrouvée plus tard
-- assez courte pour entrer dans le contexte de l'agent
-- sûre pour le scope prévu
-- écrite comme règle, workflow ou connaissance
+- assez stable pour avoir de l'importance la semaine prochaine
+- assez spécifique pour être routée plus tard
+- assez courte pour être chargée dans le contexte d'un agent
+- assez sûre pour être partagée dans la portée (scope) prévue
+- rédigée sous forme de règle, de flux de travail (workflow) ou d'élément de connaissance
 
-Une mauvaise mémoire est du bruit de chat temporaire, un secret, un credential, une spéculation ponctuelle ou un fait non approuvé.
+Une mauvaise mémoire est constituée par le bruit temporaire du chat, les secrets, les identifiants, les spéculations ponctuelles ou les faits que personne n'a approuvés.
 
-## Scope
+## Portée (Scope)
 
-La mémoire workspace vit ici:
+La mémoire de l'espace de travail vit dans :
 
 ```text
-<project>/.agents/.engram/
+<projet>/.agents/.engram/
 ```
 
-La mémoire globale est optionnelle et vit là où l'utilisateur la configure.
+La mémoire globale est facultative et vit là où l'utilisateur la configure.
 
-Le workspace gagne. Le global sert de fallback pour préférences réutilisables, habitudes personnelles ou defaults d'équipe.
+La mémoire de l'espace de travail l'emporte. La mémoire globale sert de secours (fallback) pour les préférences réutilisables, les habitudes personnelles ou les valeurs par défaut de l'équipe.
 
-## Pourquoi Pas Seulement La Mémoire Intégrée
+## Pourquoi Pas Seulement la Mémoire Intégrée de l'Agent
 
-La mémoire intégrée est pratique, mais elle peut être difficile à inspecter, comparer, exporter, partager ou corriger. Elle appartient souvent à une app ou un compte.
+La mémoire intégrée est pratique, mais elle peut être difficile à inspecter, à comparer (diff), à exporter, à partager ou à corriger. Elle appartient souvent à une seule application ou à un seul compte.
 
-Engram rend la couche durable visible. La mémoire intégrée peut aider, mais Engram doit être la source possédée quand le savoir compte.
+Engram rend la couche durable visible. La mémoire intégrée peut toujours aider, mais Engram doit rester la source détenue par l'utilisateur lorsque les connaissances sont importantes.
 
-## Limites À Connaître
+## Limites à Connaître
 
-La recherche par defaut est lexicale et deterministe. `engram search --semantic` ajoute une similarite locale deterministe, pas une recherche semantique avec embeddings. Les vecteurs du graphe sont des vecteurs locaux de mots hashes, pas des embeddings semantiques. La detection de contradictions est indicative. La configuration de chiffrement existe, mais le stockage chiffre n'est pas encore implemente.
+La recherche par défaut d'Engram est une recherche lexicale déterministe. `engram search --semantic` ajoute une similarité locale déterministe, et non une recherche sémantique basée sur des embeddings complets. Les vecteurs du graphe sont des vecteurs de mots hachés locaux, pas des embeddings sémantiques. La détection des contradictions est indicative et consultative. La configuration du chiffrement existe, mais le stockage chiffré n'est pas encore implémenté.
 
-Ces limites sont dites explicitement. Engram doit montrer ce qui existe aujourd'hui et ce qui reste du travail futur.
+Ces limites sont intentionnellement présentées de manière claire. Engram se doit de dire aux utilisateurs ce qui est réel aujourd'hui et ce qui relève du travail futur.
 
-Suite: [Quickstart agent IA](quickstart.md).
+Suivant : [Démarrage rapide pour agent d'IA](quickstart.md).

@@ -1,54 +1,60 @@
 # Engram
 
-Engram은 AI agent를 위한 인간 소유 메모리 프로토콜입니다. 프로젝트, 팀, 개인 선호에 관한 오래가는 지식을 읽고, 검토하고, 동기화하고, 복구할 수 있는 파일에 저장합니다.
+Engram은 AI 에이전트를 위한 인간 소유의 메모리 프로토콜입니다. 프로젝트, 팀, 그리고 개인의 영속적인 지식을 인간이 검사, 검토, 동기화 및 복구할 수 있는 파일로 저장합니다.
 
-Engram은 agent의 숨겨진 두뇌가 아닙니다. agent는 memory를 제안할 수 있지만, 진짜 source of truth는 `.agents/.engram/` 또는 선택적 global memory 폴더 안의 승인된 Markdown입니다.
+Engram은 에이전트의 숨겨진 두뇌가 아닙니다. 에이전트가 메모리를 제안할 수는 있지만, 진짜 신뢰할 수 있는 단일 소스(source of truth)는 `.agents/.engram/` 또는 선택적인 글로벌 메모리 폴더에 보관되는 승인된 Markdown 파일입니다.
 
 ## 해결하는 문제
 
-AI agent는 프로젝트 결정을 잊고, 설정 질문을 반복하고, 오래된 컨텍스트와 새 지시를 섞습니다. 내장 메모리는 보통 특정 벤더, 앱, 기기에 묶입니다.
+AI 에이전트는 프로젝트 결정 사항을 잊어버리고, 설정 관련 질문을 반복하며, 오래된 컨텍스트와 새로운 지시사항을 혼동하곤 합니다. 또한 내장형 메모리는 흔히 특정 벤더, 애플리케이션 또는 장치에 종속되어 사유화되는 경향이 있습니다.
 
-Engram의 계약:
+Engram은 메모리에 안정적인 계약을 제공합니다:
 
-- 승인된 facts, rules, workflows는 Markdown에 저장
-- index와 graph는 가속 레이어
-- 모든 쓰기는 인간 승인 필요
-- hash는 무결성 체크
-- ignore rules는 privacy control
-- Git은 history, portability, team review 제공
+- 승인된 사실, 규칙 및 워크플로우는 Markdown으로 저장됩니다.
+- 인덱스와 그래프를 통해 빠른 라우팅이 가능해집니다.
+- 메모리 쓰기에는 인간의 명시적인 승인이 필요합니다.
+- 해시(hashes)를 통해 비정상적인 수정 내역을 찾아냅니다.
+- 제외 규칙(ignore rules)으로 비공개 컨텍스트를 보호합니다.
+- Git을 통해 이력 관리, 이식성 및 팀 검토를 보장합니다.
 
-## Mental Model
+## 멘탈 모델
 
-| Layer | 역할 |
+Engram을 일종의 지식 메모리 센터로 생각하십시오:
+
+| 레이어 | 역할 |
 | --- | --- |
-| Markdown | durable source of truth |
-| JSON index | 빠른 lookup |
-| JSON graph | topic/relationship routing |
-| Approval gate | trust boundary |
-| Hashes | 읽기 전 integrity check |
-| Ignore rules | privacy controls |
-| Git | audit history와 sync |
-| Agent adapters | 편의 기능, 권위 아님 |
+| Markdown | 영속적인 신뢰할 수 있는 단일 소스(source of truth) |
+| JSON 인덱스 | 빠른 조회(lookup) 레이어 |
+| JSON 그래프 | 주제 및 관계 라우팅 레이어 |
+| 승인 게이트 | 쓰기 작업 전 신뢰의 경계 |
+| 해시 | 읽기 작업 전 무결성 체크 |
+| 제외 규칙 | 개인정보 보호 및 제어 |
+| Git | 변경 이력 감사 및 동기화 |
+| 에이전트 어댑터 | 권한이 아닌 편의성 제공 |
 
-## Scope 우선순위
+## 스코ープ 우선순위
 
-1. Workspace memory: `<project>/.agents/.engram/`
-2. Global memory: `$ENGRAM_GLOBAL_DIR` 또는 `engram init --global-path <path>`
+Engram은 다음 순서에 따라 메모리를 해결합니다:
 
-Workspace가 우선입니다. Global은 여러 repo에서 재사용할 선호와 팀 컨텍스트 fallback입니다.
+1. 워크스페이스 메모리: `<project>/.agents/.engram/`
+2. 글로벌 메모리: `$ENGRAM_GLOBAL_DIR` 또는 `engram init --global-path <path>`
 
-## 현재 기능
+워크스페이스 메모리가 우선권을 갖습니다. 글로벌 메모리는 여러 프로젝트에 걸쳐 재사용 가능한 개인 선호 사항이나 팀 컨텍스트를 위한 폴백(fallback) 옵션입니다.
 
-- `save`: 하나의 승인된 memory 저장
-- `save-session` / `ss`: session에서 여러 memory 저장
-- `observe`: active memory가 아닌 raw note 저장
-- `take-control`: 기존 guidance/docs 가져오기
-- `graph`, `quality-check`: review signal
-- `archive`: 잘못되었거나 오래된 memory 제외
-- `repair`: rebuild에서 skipped 된 invalid memory 보고
-- `benchmark`: retrieval regression 확인
-- agent skillsets, slash adapters, MCP-style proposal tools
+## 현재 지원 기능
 
-명령을 쓰기 전에 concept page를 읽으세요: [Engram 이해하기](understanding.md).
+Engram에는 다음이 포함됩니다:
 
-다음: [AI agent quickstart](quickstart.md).
+- `save`: 승인된 하나의 메모리를 저장합니다.
+- `save-session` / `ss`: 세션에서 도출된 여러 메모리 후보를 저장합니다.
+- `observe`: 아직 활성 메모리가 되지 않은 정리되지 않은 원시 노트(raw notes)를 캡처합니다.
+- `take-control`: 기존 에이전트 가이드라인 및 도큐먼트를 가져옵니다.
+- `graph` 및 `quality-check`: 리뷰를 위한 신호를 시각화하거나 찾아냅니다.
+- `archive`: 잘못되었거나 오래된 메모리를 보관 처리합니다.
+- `repair`: 인덱스 재빌드 시 건너뛰는 잘못된 구조의 메모리 파일을 찾아 보고합니다.
+- `benchmark`: 검색 성능의 회귀(regression) 여부를 체크합니다.
+- 에이전트 스킬셋(skillsets), 슬래시 명령어용 어댑터, MCP 스타일 제안 도구.
+
+명령어를 사용하기 전에 개념 설명 페이지를 읽으십시오: [Engram 이해하기](understanding.md).
+
+다음 단계: [AI 에이전트 퀵스타트](quickstart.md).

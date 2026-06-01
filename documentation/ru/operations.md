@@ -1,26 +1,30 @@
-# Operations Guide
+# Руководство по операциям
 
-## Commands
+На этой странице приведено подробное руководство по использованию, чтобы файл README оставался кратким.
 
-| Need | Command |
+## Список команд
+
+| Потребность | Команда |
 | --- | --- |
-| Load task memory | `engram load "<task>"` |
-| Search memory | `engram search "<topic>"` |
-| Save one memory | `engram save [rule|workflow|knowledge] "<text>"` |
-| Save session | `engram save-session` or `engram ss` |
-| Accept all | `engram ss -a` |
-| Capture raw note | `engram observe --file session.md` |
-| Import docs/guidance | `engram take-control --all` |
-| Preview takeover | `engram take-control --plan` |
-| Inspect graph | `engram graph "<topic>"` |
-| Verify hashes | `engram verify` |
-| Find invalid files | `engram repair` |
-| Archive wrong memory | `engram archive --reason "<why>" <id-or-file>` |
-| Tune rule strength | `engram set-rule-variant strict|balanced|light|off` |
+| Загрузить память для задачи | `engram load "<задача>"` |
+| Найти запись в памяти | `engram search "<тема>"` |
+| Сохранить одну запись памяти | `engram save [rule\|workflow\|knowledge] "<текст>"` |
+| Сохранить несколько записей по итогам сессии | `engram save-session` или `engram ss` |
+| Одобрить сохранение всех кандидатов сессии | `engram ss -a` |
+| Создать черновую заметку | `engram observe --file session.md` |
+| Импортировать существующие инструкции/документы | `engram take-control --all` |
+| Предварительный просмотр плана импорта | `engram take-control --plan` |
+| Проверить маршрутизацию графа | `engram graph "<тема>"` |
+| Проверить целостность хэшей | `engram verify` |
+| Найти поврежденные файлы памяти | `engram repair` |
+| Отправить неверную память в архив | `engram archive --reason "<причина>" <id-или-файл>` |
+| Настроить силу фильтрации правил | `engram set-rule-variant strict\|balanced\|light\|off` |
 
-Use `save-session` for long-session memory proposals. Short form: `ss`.
+Используйте `save-session` для фиксации памяти по итогам длинных сессий взаимодействия. Короткая форма: `ss`.
 
-## Save Session
+## Сохранение сессии (Save Session)
+
+Используйте команду `save-session`, когда длительное взаимодействие с агентом привело к появлению нескольких кандидатов на запись в память:
 
 ```text
 TYPE: rule | TEXT: Always run tests before release.
@@ -28,9 +32,13 @@ TYPE: knowledge | TEXT: Release notes live in CHANGELOG.md.
 TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
 ```
 
-Без `--accept-all` Engram спрашивает, какие candidates сохранить. С `ss -a` сохраняются все, потому что human явно одобрил.
+Без флага `--accept-all` Engram спросит вас, какие именно кандидаты следует сохранить. С флагом `ss -a` сохраняются все сгенерированные кандидаты, поскольку человек явно разрешил это действие.
 
-## Take Control
+## Импорт под контроль (Take Control)
+
+Команда `take-control` помогает внедрить Engram в существующие репозитории. Она сканирует инструкции для агента, заметки, документацию и выбранные файлы, а затем предлагает лаконичные кандидаты для сохранения.
+
+Полезные параметры фильтрации:
 
 ```bash
 engram take-control --plan
@@ -41,26 +49,35 @@ engram take-control --include "docs/**/*.md" --exclude "docs/private/**"
 engram take-control --max-sources 5 --max-chars 900
 ```
 
-Saved memories record `source_files` and `source_hashes`.
+Сохраненная через `take-control` память записывает поля `source_files` и `source_hashes`, поэтому неизмененные файлы-источники при последующих запусках будут автоматически пропущены.
 
-## Observe
+## Наблюдение (Observe)
+
+Команда `observe` сохраняет очищенные сырые заметки в папку `inbox/`. Заметки из папки inbox не участвуют в активной работе памяти.
 
 ```bash
 engram observe --file session.md
-engram save-session --file .agents/.engram/inbox/<note>.md
+engram save-session --file .agents/.engram/inbox/<заметка>.md
 ```
 
-`inbox/` notes are not active memory until converted.
+Используйте этот рабочий процесс, когда хотите сохранить предварительные наброски, прежде чем решить, что из этого должно стать долговечной памятью.
 
-## Repair And Review
+## Восстановление и проверка
+
+Используйте команду `repair` после ручного редактирования или импорта файлов:
 
 ```bash
 engram repair
 engram rebuild-index
 engram verify
+```
+
+Используйте визуализацию графа и проверки качества перед архивацией устаревших файлов:
+
+```bash
 engram graph "package manager"
 engram quality-check
 engram archive --reason "Repo migrated to npm." rules/use-pnpm.md
 ```
 
-Далее: [Comparison](comparison.md).
+Далее: [Сравнение и дорожная карта](comparison.md).

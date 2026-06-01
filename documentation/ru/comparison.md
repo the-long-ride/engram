@@ -1,53 +1,59 @@
-# Comparison, Pros, Cons, Roadmap
+# Сравнение, плюсы, минусы и дорожная карта
 
-Engram оптимизирован под human ownership, reviewability и portability.
+Engram занимает другое место в пространстве памяти ИИ, нежели автоматические фоновые движки памяти. Он оптимизирован для контроля человеком, удобства проверки изменений и переносимости между различными ИИ-агентами.
 
-## Strengths
+## Сильные стороны Engram
 
-- Markdown source of truth.
-- Human approval before durable writes.
-- Git-native audit history and sync.
-- Workspace-first, global-fallback.
-- Agent-agnostic.
-- Safety layers: schema, secret scan, injection scan, hashes, ignore rules.
-- No required daemon, database, or cloud account.
-- Import, observe, archive, graph, benchmark, repair for long-term maintenance.
+- Обычный Markdown в качестве первоисточника (source of truth).
+- Обязательное одобрение изменений человеком перед их физической записью на диск.
+- История аудита и синхронизация, встроенные прямо в Git.
+- Приоритет памяти проекта (workspace-first) и автоматический откат к глобальной памяти (global-fallback).
+- Независимость от ИИ-агента: любой ИИ умеет читать Markdown.
+- Слои безопасности: валидация схемы, поиск секретов, поиск инъекций кода, хэширование файлов и правила исключений.
+- Не требует установки постоянных служб (демонов), баз данных или облачных аккаунтов.
+- Поддержка долгосрочного сопровождения через встроенные инструменты импорта, наблюдения, архивации, построения графов, бенчмаркинга и восстановления.
 
-## Tradeoffs
+## Недостатки и компромиссы (Tradeoffs)
 
-- Less automatic than daemon-based systems.
-- Default search is lexical; `search --semantic` uses deterministic local similarity, not embedding-backed semantic search.
-- Graph vectors are local hashed word vectors.
-- Contradiction detection is heuristic/advisory.
-- `deduplicate --semantic` uses deterministic local similarity, no external embeddings.
-- Pattern mining, encryption config, PR workflow are not full runtime workflows yet.
+- Требует больше ручной дисциплины со стороны пользователя, чем полностью автоматические фоновые службы.
+- Поиск по умолчанию является детерминированным лексическим поиском; `search --semantic` добавляет детерминированное локальное сходство слов, а не семантический поиск на основе полноценных нейросетевых эмбеддингов.
+- Векторы графа — это локальные хэшированные векторы слов, а не семантические эмбеддинги.
+- Обнаружение противоречий работает на основе эвристики и носит рекомендательный характер.
+- `deduplicate --semantic` использует локальное сходство слов, а не внешние модели эмбеддингов.
+- Схемы выявления паттернов (pattern mining), шифрования данных и интеграции с PR-workflow подготовлены на уровне концептов, но полноценно в рантайме пока не задействованы.
+- Структура графа полностью зависит от сгенерированных тегов и саммари.
 
-## Compared With Agentmemory
+## Сравнение с Agentmemory
 
-[rohitg00/agentmemory](https://github.com/rohitg00/agentmemory) is an automatic memory engine for coding agents. Its README emphasizes server memory, MCP/hooks/REST, adapters, benchmarks, viewer, replay, hybrid retrieval, and Hermes integration.
+[rohitg00/agentmemory](https://github.com/rohitg00/agentmemory) — это мощный автоматический фоновый движок памяти для пишущих код агентов. Его документация предлагает серверную архитектуру памяти, интеграцию через MCP/хуки/REST, множество адаптеров под ИИ-инструменты, тесты производительности, встроенный UI-просмотрщик, воспроизведение сессий (replay), гибридный поиск и интеграцию с моделью Hermes.
 
-Use agentmemory for automatic capture, replay, vector retrieval, and many MCP tools.
+Используйте `agentmemory`, если вам нужен полностью автоматический фоновый сбор данных, визуальный просмотрщик и воспроизведение сессий, векторный поиск, множество готовых инструментов MCP и общая память в стиле выделенного сервера.
 
-Use Engram for a repo-readable protocol: Markdown first, human approved, Git reviewed, portable across agents without a server.
+Используйте `Engram`, если хотите, чтобы память была прозрачным текстовым протоколом внутри репозитория: приоритет Markdown, одобрение человеком, ревью через Git, независимость от ИИ и работоспособность без запуска каких-либо фоновых серверов.
 
-| Dimension | Engram | agentmemory |
+| Критерий | Engram | agentmemory |
 | --- | --- | --- |
-| Source | Approved Markdown | Memory server/store |
-| Trust | Human A/B/C approval | Auto-capture + governance |
-| Default | File protocol | Service recommended |
-| Review | Git diff + Markdown | Viewer/API/sessions |
-| Best fit | ownership/audit | automatic recall/replay |
+| Источник истины | Утвержденные файлы Markdown | Выделенный сервер / БД памяти |
+| Граница доверия | Одобрение человеком в стиле A/B/C | Автоматический сбор + правила инструментов |
+| Режим работы | Файловый протокол, службы не нужны | Рекомендуется запуск фоновой службы |
+| Проверка изменений | Git diff и ревью файлов Markdown | Просмотрщик/API и сохраненные сессии |
+| Кому подходит | Командам, которым важен аудит и контроль | Пользователям, желающим автоматический захват сессий |
+| Риски | Требуется ручная аккуратность | Невидимое состояние БД, если не следить тщательно |
 
-## Compared With Built-In Agent Memory
+## Сравнение со встроенной памятью ИИ-агентов
 
-Built-in memory is convenient but host-bound. Engram keeps authority in files the human owns.
+Встроенная память ИИ-агентов удобна, но обычно заблокирована внутри одного хоста или платформы. Её трудно сравнить (diff), экспортировать, отредактировать или перенести на другого агента.
 
-## Roadmap
+Engram рассматривает встроенную память лишь как вспомогательный слой, а не как авторитетный первоисточник. Авторитетным источником остаются файлы, принадлежащие человеку.
 
-- Optional local embeddings.
-- Clearer graph routing diagnostics.
-- Versioned benchmark fixtures.
-- Better contradiction review workflow.
-- More agentmemory import variants.
-- Optional external embedding provider for semantic dedupe.
-- Repair that can propose fixes.
+## Идеи для дорожной карты (Roadmap)
+
+- Опциональный локальный провайдер эмбеддингов для векторов графа и поиска.
+- Улучшенная диагностика графа, объясняющая, почему сработал тот или иной маршрут памяти.
+- Сохраняемые в репозиторий наборы тестовых данных (fixtures) бенчмарка для отслеживания регрессии качества поиска.
+- Более надежный рабочий процесс проверки противоречий, сочетающий граф, проверку качества и архив.
+- Больше тестов импорта для различных вариантов экспорта из `agentmemory`.
+- Опциональный внешний провайдер эмбеддингов для семантического поиска дубликатов.
+- Инструменты автоматического исправления файлов памяти после обнаружения ошибок схем в процессе `repair`.
+
+Далее: вернуться на [Главную](index.md).

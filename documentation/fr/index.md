@@ -1,54 +1,60 @@
 # Engram
 
-Engram est un protocole de mémoire pour agents IA, possédé par l'humain. Il garde le savoir durable d'un projet, d'une équipe ou d'une préférence personnelle dans des fichiers lisibles, révisables, synchronisables et réparables.
+Engram est un protocole de mémoire sous le contrôle de l'utilisateur pour les agents d'IA. Il conserve les connaissances durables du projet, de l'équipe et des préférences personnelles dans des fichiers que les humains peuvent inspecter, réviser, synchroniser et réparer.
 
-Ce n'est pas un cerveau caché d'agent. L'agent peut proposer une mémoire, mais la source de vérité est le Markdown approuvé dans `.agents/.engram/` ou dans une mémoire globale optionnelle.
+Engram n'est pas un cerveau caché de l'agent. L'agent peut proposer une mémoire, mais la source de vérité est le Markdown approuvé situé sous `.agents/.engram/` ou dans un dossier de mémoire globale facultatif.
 
-## Problème Résolu
+## Quel Problème Il Résout
 
-Les agents oublient les décisions, redemandent la configuration et mélangent ancien contexte et nouvelles consignes. La mémoire intégrée reste souvent enfermée dans un fournisseur, une application ou une machine.
+Les agents d'IA oublient les décisions du projet, répètent les questions de configuration et mélangent l'ancien contexte avec les nouvelles instructions. La mémoire intégrée est souvent privée et propre à un fournisseur, une application ou une machine.
 
-Engram fournit un contrat stable:
+Engram offre à la mémoire un contrat stable :
 
-- faits, règles et workflows approuvés vivent en Markdown
-- index et graphes accélèrent le routage
-- chaque écriture demande une approbation humaine
-- les hashes révèlent les modifications non sûres
-- les ignore rules protègent la confidentialité
-- Git donne historique, portabilité et revue d'équipe
+- Les faits, règles et flux de travail approuvés vivent sous forme de fichiers Markdown.
+- Les index et les graphes accélèrent le routage.
+- Les écritures nécessitent une approbation humaine.
+- Les hashes révèlent les modifications non sécurisées.
+- Les règles d'exclusion (ignore rules) protègent le contexte privé.
+- Git fournit l'historique, la portabilité et la révision par l'équipe.
 
 ## Modèle Mental
 
+Considérez Engram comme un centre de mémoire de connaissances :
+
 | Couche | Rôle |
 | --- | --- |
-| Markdown | source de vérité durable |
-| JSON index | recherche rapide |
-| JSON graph | routage par sujet et relation |
-| Approval gate | frontière de confiance |
-| Hashes | intégrité avant lecture |
-| Ignore rules | contrôle de confidentialité |
-| Git | audit et synchronisation |
-| Agent adapters | commodité, pas autorité |
+| Markdown | Source de vérité durable |
+| JSON index | Couche de recherche rapide |
+| JSON graph | Couche de routage par sujet et relation |
+| Approval gate | Limite de confiance avant les écritures |
+| Hashes | Vérifications d'intégrité avant les lectures |
+| Ignore rules | Contrôles de confidentialité |
+| Git | Historique d'audit et synchronisation |
+| Agent adapters | Commodité, pas autorité |
 
-## Priorité Des Scopes
+## Priorité des Portées (Scopes)
 
-1. Workspace: `<project>/.agents/.engram/`
-2. Global: `$ENGRAM_GLOBAL_DIR` ou `engram init --global-path <path>`
+Engram résout la mémoire dans cet ordre :
 
-Le workspace gagne. Le global sert de fallback pour les préférences et le contexte réutilisable.
+1. Mémoire de l'espace de travail (workspace) : `<projet>/.agents/.engram/`
+2. Mémoire globale : `$ENGRAM_GLOBAL_DIR` ou `engram init --global-path <chemin>`
 
-## Contenu Actuel
+La mémoire de l'espace de travail l'emporte. La mémoire globale sert de secours (fallback) pour les préférences réutilisables et le contexte d'équipe sur plusieurs projets.
 
-- `save` pour une mémoire approuvée
-- `save-session` / `ss` pour plusieurs mémoires d'une session
-- `observe` pour des notes brutes non actives
-- `take-control` pour importer guides et docs existants
-- `graph` et `quality-check` pour la revue
-- `archive` pour les mémoires fausses ou obsolètes
-- `repair` pour les fichiers invalides ignorés par rebuild
-- `benchmark` pour tester la récupération
-- skillsets, slash adapters et outils MCP de proposition
+## État Actuel
 
-Avant les commandes, lis la page conceptuelle: [Comprendre Engram](understanding.md).
+Engram comprend :
 
-Suite: [Quickstart agent IA](quickstart.md).
+- `save` pour une seule mémoire approuvée.
+- `save-session` / `ss` pour plusieurs mémoires issues d'une session.
+- `observe` pour les notes brutes qui ne sont pas encore de la mémoire active.
+- `take-control` pour importer les directives et documentations existantes de l'agent.
+- `graph` et `quality-check` pour les signaux de révision.
+- `archive` pour les mémoires incorrectes ou obsolètes.
+- `repair` pour les fichiers de mémoire mal formés ignorés par la reconstruction de l'index.
+- `benchmark` pour les vérifications de régression lors de la récupération.
+- Les ensembles de compétences de l'agent (skillsets), les adaptateurs slash et les outils de proposition de style MCP.
+
+Avant d'utiliser les commandes, lisez la page conceptuelle : [Comprendre Engram](understanding.md).
+
+Suivant : [Démarrage rapide pour agent d'IA](quickstart.md).

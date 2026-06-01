@@ -1,60 +1,60 @@
 # Engram
 
-Engram la mot giao thuc bo nho do con nguoi so huu cho AI agent. No giu tri thuc ben vung cua project, team va ca nhan trong cac file co the doc, review, dong bo va sua.
+Engram là một giao thức bộ nhớ do con người sở hữu dành cho các tác nhân AI (AI agents). Giao thức này lưu giữ kiến thức bền vững về dự án, nhóm và cá nhân dưới dạng các tệp tin mà con người có thể kiểm tra, xem xét, đồng bộ hóa và sửa chữa.
 
-Engram khong phai "bo nao an" cua agent. Agent co the de xuat memory, nhung source of truth la Markdown da duoc duyet trong `.agents/.engram/` hoac thu muc global tuy chon.
+Engram không phải là một bộ não ẩn của tác nhân AI. Tác nhân AI có thể đề xuất bộ nhớ, nhưng nguồn sự thật (source of truth) duy nhất luôn là các tệp Markdown đã được phê duyệt nằm trong thư mục `.agents/.engram/` hoặc một thư mục bộ nhớ toàn cục (global) tùy chọn.
 
-## Van De Engram Giai Quyet
+## Vấn Đề Engram Giải Quyết
 
-AI agent quen quyet dinh cua project, hoi lai setup, va tron context cu voi yeu cau moi. Bo nho tich hop san thuong bi khoa trong mot vendor, mot app, hoac mot may.
+Các tác nhân AI thường quên các quyết định của dự án, lặp lại các câu hỏi thiết lập và trộn lẫn ngữ cảnh cũ với các hướng dẫn mới. Bộ nhớ tích hợp sẵn thường thuộc quyền sở hữu riêng của một nhà cung cấp, một ứng dụng hoặc một máy tính cụ thể.
 
-Engram tao mot hop dong on dinh:
+Engram mang lại cho bộ nhớ một hợp đồng ổn định:
 
-- facts, rules va workflows da duyet nam trong Markdown
-- index va graph giup route nhanh
-- moi ghi memory can human approval
-- hash cho thay sua doi khong an toan
-- ignore rules bao ve context rieng tu
-- Git cho lich su, portability va team review
+- Các sự thật (facts), quy tắc (rules) và quy trình làm việc (workflows) đã được phê duyệt sẽ sống dưới dạng Markdown.
+- Các chỉ mục (indexes) và đồ thị (graphs) giúp tăng tốc độ định tuyến (routing).
+- Mọi thao tác ghi bộ nhớ đều yêu cầu sự phê duyệt của con người.
+- Các mã băm (hashes) giúp phát hiện những sửa đổi không an toàn.
+- Các quy tắc bỏ qua (ignore rules) bảo vệ các ngữ cảnh riêng tư.
+- Git cung cấp lịch sử thay đổi, tính di động và khả năng xem xét trong nội bộ nhóm.
 
-## Mo Hinh Nhan Thuc
+## Mô Hình Nhận Thức
 
-Hay xem Engram la knowledge memory center:
+Hãy nghĩ về Engram như một trung tâm lưu trữ kiến thức:
 
-| Lop | Vai tro |
+| Lớp | Vai trò |
 | --- | --- |
-| Markdown | source of truth ben vung |
-| JSON index | lop tim kiem nhanh |
-| JSON graph | lop route topic va quan he |
-| Approval gate | ranh gioi niem tin truoc khi ghi |
-| Hashes | kiem tra toan ven truoc khi doc |
-| Ignore rules | dieu khien rieng tu |
-| Git | audit history va sync |
-| Agent adapters | tien ich, khong phai quyen luc |
+| Markdown | Nguồn sự thật bền vững |
+| JSON index | Lớp tra cứu nhanh |
+| JSON graph | Lớp định tuyến chủ đề và mối quan hệ |
+| Approval gate | Ranh giới tin cậy trước khi ghi bộ nhớ |
+| Hashes | Kiểm tra tính toàn vẹn trước khi đọc |
+| Ignore rules | Kiểm soát quyền riêng tư |
+| Git | Lịch sử kiểm toán và đồng bộ hóa |
+| Agent adapters | Tiện ích kết nối, không có quyền quyết định |
 
-## Uu Tien Scope
+## Thứ Tự Ưu Tiên Phạm Vi
 
-Engram doc memory theo thu tu:
+Engram phân giải bộ nhớ theo thứ tự sau:
 
-1. Workspace memory: `<project>/.agents/.engram/`
-2. Global memory: `$ENGRAM_GLOBAL_DIR` hoac `engram init --global-path <path>`
+1. Bộ nhớ không gian làm việc (workspace): `<project>/.agents/.engram/`
+2. Bộ nhớ toàn cục (global): `$ENGRAM_GLOBAL_DIR` hoặc `engram init --global-path <đường_dẫn>`
 
-Workspace thang. Global la fallback cho preference va team context dung lai giua nhieu repo.
+Bộ nhớ workspace luôn giành chiến thắng. Bộ nhớ global đóng vai trò là phương án dự phòng (fallback) cho các thiết lập có thể tái sử dụng và ngữ cảnh chung của nhóm trên nhiều dự án.
 
-## Hien Tai Co Gi
+## Trạng Thái Hiện Tại
 
-Engram gom:
+Engram bao gồm:
 
-- `save` de luu mot memory da duyet
-- `save-session` / `ss` de luu nhieu memory tu mot session
-- `observe` de ghi raw note chua thanh active memory
-- `take-control` de import agent guidance va docs co san
-- `graph` va `quality-check` de review tin hieu
-- `archive` de dua memory sai/cu ra khoi routing
-- `repair` de bao file memory loi bi index rebuild bo qua
-- `benchmark` de kiem tra regression retrieval
-- agent skillsets, slash adapters, va MCP-style proposal tools
+- `save` để lưu trữ một bộ nhớ đã phê duyệt.
+- `save-session` / `ss` để lưu nhiều bộ nhớ rút ra từ một phiên làm việc.
+- `observe` để ghi lại các ghi chú thô chưa được đưa vào bộ nhớ hoạt động.
+- `take-control` để nhập (import) các hướng dẫn và tài liệu hiện có của tác nhân AI.
+- `graph` và `quality-check` để cung cấp các tín hiệu xem xét cấu trúc bộ nhớ.
+- `archive` để đưa các bộ nhớ sai hoặc đã bị thay thế ra khỏi định tuyến hoạt động.
+- `repair` để phát hiện các tệp bộ nhớ bị lỗi cấu trúc bị bỏ qua khi xây dựng lại chỉ mục.
+- `benchmark` để kiểm tra độ suy giảm hiệu suất truy xuất (retrieval regression).
+- Các bộ kỹ năng tác nhân (skillsets), bộ điều hợp lệnh slash, và các công cụ đề xuất kiểu MCP.
 
-Truoc khi dung command, doc trang khai niem: [Hieu Engram](understanding.md).
+Trước khi sử dụng các lệnh, vui lòng đọc trang khái niệm: [Hiểu Về Engram](understanding.md).
 
-Tiep theo: [Quickstart voi AI agent](quickstart.md).
+Tiếp theo: [Bắt đầu nhanh với tác nhân AI](quickstart.md).

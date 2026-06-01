@@ -1,53 +1,59 @@
-# Comparison, Pros, Cons, Roadmap
+# 대안 비교, 장단점 및 로드맵
 
-Engram은 human ownership, reviewability, portability를 최적화합니다.
+Engram은 자동화 백그라운드 메모리 엔진들과는 추구하는 철학과 배치되는 공간이 다릅니다. 철저히 인간의 소유권, 검토 용이성, 그리고 에이전트 간 이식성을 최고 목표로 최적화되었습니다.
 
-## Strengths
+## Engram의 특장점
 
-- Markdown source of truth.
-- Durable write 전 human approval.
-- Git-native audit history와 sync.
-- Workspace-first, global-fallback.
-- Agent-agnostic.
-- Safety layers: schema, secret scan, injection scan, hashes, ignore rules.
-- daemon, database, cloud account 필수 아님.
-- import, observe, archive, graph, benchmark, repair로 long-term maintenance 지원.
+- 텍스트 그대로 readable한 Markdown 기반의 신뢰 소스 제공
+- 영속 디스크 쓰기가 작동하기 직전에 항상 거치는 인간 승인 절차
+- Git 친화적인 이력 추적 및 협업 브랜치/머지 동기화
+- 워크스페이스(로컬) 우선순위 할당 및 글로벌로 연계되는 계층식 폴백
+- 특정 에이전트 도구에 종속되지 않음: Markdown 파일은 어떤 에이전트 브레인이든 즉시 파싱하고 활용할 수 있음
+- 강력한 안전 레이어: 스키마 구조 정밀 유효성 확인, 토큰/암호 노출 방지 스캔, 프롬프트 인젝션 패턴 사전 필터링, 정합성 해시, 제외 패턴 처리
+- 데몬 프로세스나 별도 로컬 DB 엔진 혹은 유료 클라우드 계정이 전혀 요구되지 않음
+- 가져오기, 원시 수집, 아카이브 격리, 관계 그래프화, 리그레션 성능 벤치마킹, 무결성 수리 기능 등 장기 보존 및 유지 보수에 탁월한 시스템 구축
 
-## Tradeoffs
+## Engram 설계상의 트레이드오프
 
-- daemon 기반 시스템보다 덜 자동적입니다.
-- 기본 search는 lexical이며 `search --semantic`은 로컬 deterministic similarity를 사용하고 semantic embedding-backed는 아닙니다.
-- Graph vectors는 local hashed word vectors입니다.
-- Contradiction detection은 heuristic/advisory입니다.
-- `deduplicate --semantic`은 로컬 deterministic similarity를 사용하며 외부 embeddings에 의존하지 않습니다.
-- Pattern mining, encryption config, PR workflow는 아직 full runtime workflow가 아닙니다.
+- 백그라운드 데몬이 혼자 감지하고 기록해 주는 방식에 비해 사용자의 관리적 디시플린(규율)이 약간 필요함
+- 기본 조회는 결정론적 렉시컬 검색으로 작동합니다. `search --semantic`은 결정론적인 로컬 단어 유사도를 덧붙이는 것이며 딥러닝 임베딩 모델의 시맨틱 시뮬레이티드 검색이 아닙니다.
+- 그래프의 노드 벡터도 가볍고 해시화된 단어 카운트 조합 벡터에 해당하며 고도화된 의미 벡터 임베딩이 아닙니다.
+- 충돌/모순 메모리 감지는 어디까지나 휴리스틱 알고리즘에 기초하므로 조언 및 팁을 주는 보조 용도로 제한됩니다.
+- `deduplicate --semantic` 또한 로컬 형태소 단어 매칭 방식을 사용하므로 외부 임베딩 서버의 힘을 빌리지 않습니다.
+- 지식 패턴 감지(pattern mining), 기밀 정보 암호화 설정, PR 워크플로우를 위한 파일 등은 준비되어 있지만 현재 메인 CLI 실행 단계에서 전부 파이프라인이 엮여 동작하진 않습니다.
+- 그래프를 구성할 때는 자동 추출된 요약(summary) 및 태그 정보에 의존합니다.
 
-## Agentmemory와 비교
+## Agentmemory 도구와의 비교
 
-[rohitg00/agentmemory](https://github.com/rohitg00/agentmemory)는 coding agents용 automatic memory engine입니다. README는 server memory, MCP/hooks/REST, adapters, benchmarks, viewer, replay, hybrid retrieval, Hermes integration을 강조합니다.
+[rohitg00/agentmemory](https://github.com/rohitg00/agentmemory)는 코딩 에이전트 전용의 무척 정교한 자동 백그라운드 메모리 머신입니다. 서버/데몬 방식 운용, MCP 규격, 훅스 시스템, REST API, 에이전트 어댑터 지원, 가시적인 뷰어 인터페이스, 행동 리플레이, 하이브리드 검색 및 Hermes 모델 최적화 등을 강점으로 내세웁니다.
 
-automatic capture, replay, vector retrieval, many MCP tools가 필요하면 agentmemory가 좋습니다.
+에이전트가 알아서 기억을 수집해주고, 시각적 리플레이나 벡터 검색을 선호하며, MCP 툴셋 연계 및 서버-클라이언트 형태의 통합 공유 메모리를 바라신다면 `agentmemory`가 이상적입니다.
 
-repo-readable protocol, Markdown-first, human-approved, Git-reviewed, server 없이 agent 간 portability가 필요하면 Engram이 맞습니다.
+반면, 메모리도 우리 코드 파일처럼 투명하게 프로젝트 레포지토리 내의 Markdown 파일로 소유하고, 변경 사항은 Git Diff로 한눈에 검토하며, 서버를 키지 않아도 어느 에이전트로든 자유롭게 마이그레이션 가능한 구조를 원하신다면 `Engram`이 최선입니다.
 
-| Dimension | Engram | agentmemory |
+| 비교 차원 | Engram | agentmemory |
 | --- | --- | --- |
-| Source | Approved Markdown | Memory server/store |
-| Trust | Human A/B/C approval | Auto-capture + governance |
-| Default | File protocol | Service recommended |
-| Review | Git diff + Markdown | Viewer/API/sessions |
-| Best fit | ownership/audit | automatic recall/replay |
+| 최종 신뢰 소스 | 검증된 Markdown 파일들 | 백그라운드 메모리 DB / 서버 |
+| 신뢰의 게이트선 | 인간의 명시적 A/B/C 승인 | 자동 캡처 후 툴 규칙 제어 |
+| 기본 실행 형태 | 파일 프로토콜, 백그라운드 데몬 없음 | 활성화된 로컬 데몬/서비스 요구됨 |
+| 이력 검토 방식 | Git Diff 확인 및 마크다운 직접 리뷰 | 뷰어 UI나 API로 과거 세션 조회 |
+| 어울리는 환경 | 기록 투명성 및 엄격한 감사가 필요한 팀 | 모든 대화가 자동으로 연동되길 원하는 개인 |
+| 관리상 리스크 | 사용자의 수동 규칙 승인 관리가 필요함 | 보이지 않는 DB 상태가 꼬일 염려가 있음 |
 
-## Built-In Agent Memory와 비교
+## 개발 도구 자체 내장 메모리와의 비교
 
-내장 메모리는 편하지만 host에 묶입니다. Engram은 authority를 인간이 소유한 files에 둡니다.
+IDE나 특정 에이전트 서비스에 내장된 메모리는 쓰기는 간편하지만, 백업하거나 추출하여 타사 도구와 공유하기 곤란하고, 어떤 내용을 머리에 넣었는지 사람이 diff로 변경점을 검토하기 아주 어렵습니다.
 
-## Roadmap
+Engram은 그러한 에이전트의 내부 기억들을 단지 필요할 때 읽어 가는 보조 장치로 격하시킵니다. 진짜 기억의 중심부는 인간이 소유한 Markdown 파일들이기 때문입니다.
 
-- Optional local embeddings.
-- Clearer graph routing diagnostics.
-- Versioned benchmark fixtures.
-- Better contradiction review workflow.
-- More agentmemory import variants.
-- Optional external embedding provider for semantic dedupe.
-- Repair that can propose fixes.
+## 향후 로드맵 아이디어
+
+- 그래프 벡터 및 로컬 검색을 지원하기 위한 선택형 로컬 임베딩 공급 장치 탑재
+- 특정 지식이 라우팅된 상세 사유를 인간에게 설명하는 투명한 그래프 디버거 제공
+- 벤치마크 테스트용 고정 fixture 데이터를 레포지토리에 보관해 품질 퇴보 방지
+- 그래프 구조, 퀄리티 체크 지표, 아카이브 흐름을 통합해 고도화된 상호 모순 제거 루틴 확보
+- 다양한 형태의 `agentmemory` 내보내기 규격에 대응하는 이식 테스트 확대
+- 시맨틱 중복 감지 전용 선택형 외부 임베딩 서버 연동
+- 손상되거나 망가진 메모리 파일이 보고되었을 때 고칠 수 있는 수리(proposal) 패치 제공
+
+다음 단계: [홈화면](index.md)(으)로 이동.

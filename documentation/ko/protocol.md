@@ -1,54 +1,57 @@
-# 인간 소유 Memory Protocol
+# 인간 소유 메모리 프로토콜
 
-Engram은 단순한 "agent memory"가 아닙니다. inspect 가능하고 portable하며 인간이 governance하는 memory protocol입니다.
+Engram은 단지 "에이전트용 메모리 저장소"를 넘어서는 개념입니다. 메모리를 직접 투명하게 검사할 수 있고, 공유 및 이식이 가능하며, 최종 소유권이 인간에게 있음을 보장하는 프로토콜입니다.
 
-## Contract
+## 계약 (The Contract)
 
-Markdown은 durable memory입니다.
+Markdown은 영속적인 메모리의 기본 실체입니다.
 
-JSON index와 graph는 acceleration layers입니다.
+JSON 인덱스 및 그래프 파일은 빠른 처리를 돕는 가속 레이어에 불과합니다.
 
-Approval은 trust boundary입니다.
+승인(Approval)은 최종 쓰기 권한을 지키는 신뢰 경계선입니다.
 
-Hashes는 integrity checks입니다.
+해시(Hashes)는 무결성을 검증하기 위한 수단입니다.
 
-Ignore rules는 privacy controls입니다.
+제외 규칙(Ignore rules)은 프라이버시 필터입니다.
 
-Git은 portability와 audit history입니다.
+Git은 버전 이력 추적과 이식성을 책임집니다.
 
-Agent adapters는 convenience이며 authority가 아닙니다.
+에이전트 어댑터는 편의를 제공할 뿐 어떠한 최종 결정 권한도 가지지 못합니다.
 
-agent는 memory를 제안할 수 있지만, 무엇이 memory가 되는지는 인간이 소유합니다.
+에이전트는 새로운 메모리를 감지하고 추천할 수 있지만 인간만이 그것을 최종적인 메모리로 영속화할 수 있습니다.
 
-## Memory Types
+## 메모리 유형 (Memory Types)
 
-| Type | Use |
+| 유형 | 용도 |
 | --- | --- |
-| Rule | preference, correction, constraint |
-| Skill | repeatable workflow, checklist, procedure |
-| Knowledge | objective fact, decision, implementation detail |
+| Rule | 사용자 선호, 제약 사항, 교정 피드백, 항상 또는 절대 준수해야 하는 가이드 |
+| Skill | 반복 실행하는 워크플로우, 단계별 체크리스트, 프로시저, 런북(runbook) |
+| Knowledge | 객관적인 프로젝트 팩트, 아키텍처 결정 사항, 세부 구현 내용 |
 
-모든 active memory는 `Context`, `Content`, `Example` 섹션을 가집니다.
+실제 작동하는 모든 메모리 파일은 명확하게 `Context`, `Content`, 그리고 `Example` 섹션을 포함해야 합니다. 특히 규칙(Rule) 메모리는 에이전트에 로드되었을 때 유의미한 밀도를 유지하기 위해 간결한 줄(line) 수 제한 규칙을 엄격히 적용받습니다.
 
-## Write Flow
+## 쓰기 흐름 (Write Flow)
 
-1. Agent가 candidates를 제안합니다.
-2. Engram이 type과 scope를 parse합니다.
-3. schema, secrets, prompt injection, path safety를 검사합니다.
-4. 인간이 preview를 봅니다.
-5. 인간이 `A`, `A 1,3`, `B <note>`, `C`로 응답합니다.
-6. 승인된 memory만 쓰입니다.
-7. index, graph, hashes, changelog가 갱신됩니다.
+1. 에이전트가 하나 이상의 메모리 후보를 추천합니다.
+2. Engram이 추천 대상의 유형과 저장 위치(scope)를 분석합니다.
+3. Engram이 스키마 준수 여부, 계정 비밀번호나 API 키 누출 여부, 프롬프트 인젝션 패턴 및 파일 접근 경로의 안전성을 검사합니다.
+4. 인간 사용자에게 저장하려는 정보의 프리뷰를 표시합니다.
+5. 사용자가 확인 후 `A`, `A 1,3`, `B <메모 내용>` 또는 `C`를 통해 승인 여부를 전달합니다.
+6. 승인을 거친 메모리 내용만 디스크에 기록됩니다.
+7. 인덱스, 그래프, 해시 맵 및 변경 이력(changelog) 파일이 즉시 갱신됩니다.
 
-## Read Flow
+## 읽기 흐름 (Read Flow)
 
-1. Engram이 workspace/global index를 load합니다.
-2. Workspace가 global duplicate보다 우선합니다.
-3. Ignore rules와 roles가 noise를 거릅니다.
-4. Graph-aware routing이 compact context를 선택합니다.
-5. 출력 전 hash와 safety checks가 실행됩니다.
+1. Engram이 워크스페이스 및 활성화된 글로벌 인덱스를 읽어 들입니다.
+2. 중복되는 키(ID)가 발견되면 워크스페이스 메모리가 글로벌 메모리보다 우선 적재됩니다.
+3. 제외 규칙 및 활성 역할(role) 필터를 적용해 현재 태스크와 연관 없는 항목들을 걸러냅니다.
+4. 그래프 분석 모델을 활용해 현재 작업에 가장 적합한 최소한의 컨텍스트 패키지를 추출합니다.
+5. 에이전트 프롬프트에 들어가기 직전에 해시 값 체크 및 내용 보안 검증이 실행됩니다.
 
-protocol이 없으면 memory는 invisible state가 됩니다. Engram은 memory를 files, diffs, hashes, review gates로 되돌립니다.
+## 이것이 중요한 이유
 
-다음: [Operations](operations.md).
+프로토콜에 기반하지 않는 에이전트 메모리는 보이지 않는 내부 상태(invisible state)로 전락하고 맙니다. 보이지 않는 메모리는 검토하거나 공유하기 매우 곤란할 뿐만 아니라, 에이전트가 예기치 않게 오염된 상태를 PERSIST 해버릴 리스크가 큽니다.
 
+Engram은 메모리를 의도적으로 단순하게 관리합니다. 오직 파일, Diff 비교, 해시 체크, 인간의 승인 게이트, 그리고 언제든 수동으로 재실행 가능한 명령어들로만 이루어집니다.
+
+다음 단계: [운영 및 명령어 가이드](operations.md).

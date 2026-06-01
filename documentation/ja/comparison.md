@@ -1,53 +1,59 @@
-# Comparison, Pros, Cons, Roadmap
+# 比較、メリット、デメリット、およびロードマップ
 
-Engram は human ownership, reviewability, portability を重視します。
+Engram は、自動メモリエンジンとはメモリスペースの異なる部分に位置しています。人間の所有権、レビューの容易さ、およびポータビリティを最適化します。
 
-## Strengths
+## Engram の強み
 
-- Markdown source of truth.
-- durable write 前の human approval.
-- Git-native audit history と sync.
-- Workspace-first, global-fallback.
-- Agent-agnostic.
-- Safety layers: schema, secret scan, injection scan, hashes, ignore rules.
-- daemon, database, cloud account が必須ではない。
-- import, observe, archive, graph, benchmark, repair で long-term maintenance。
+- プレーンな Markdown による信頼できる唯一の情報源（source of truth）。
+- 永続的な書き込みが行われる前の、人間による承認ステップ。
+- Git ネイティブな変更履歴の監査と同期。
+- ワークスペース優先、グローバルをフォールバックとするメモリ構成。
+- エージェントに依存しない構成：すべてのエージェントが Markdown を読み込み可能。
+- 安全レイヤー：スキーマ検証、機密情報のスキャン、インジェクションのスキャン、ハッシュ、除外ルール。
+- 常駐プロセス（daemon）、データベース、またはクラウドのアカウントが不要。
+- インポート、オブザーブ、アーカイブ、グラフ、ベンチマーク、修復のフローによる長期メンテナンスの支援。
 
-## Tradeoffs
+## Engram のトレードオフ
 
-- daemon-based memory systems より自動化は弱い。
-- デフォルトの search は lexical で、`search --semantic` はローカル deterministic similarity を使い、semantic embedding-backed ではない。
-- Graph vectors は local hashed word vectors。
-- Contradiction detection は heuristic/advisory。
-- `deduplicate --semantic` はローカル deterministic similarity を使い、外部 embeddings に依存しません。
-- Pattern mining, encryption config, PR workflow はまだ full runtime workflow ではない。
+- 常駐プロセス（daemon）ベースのメモリシステムに比べ、自動化の度合いが低い。
+- デフォルトの検索は決定論的なレキシカル（文字）検索です。`search --semantic` は決定論的なローカル類似度を追加しますが、外部の埋め込み（embeddings）を利用した意味検索ではありません。
+- グラフのベクトルはローカルでハッシュ化された単語ベクトルであり、セマンティックな埋め込みではありません。
+- 矛盾の検出はアドバイザリー（助言）およびヘルスチェックとしての位置づけです。
+- `deduplicate --semantic` はローカル類似度を使用し、外部の埋め込みは使用しません。
+- パターンマイニング、暗号化設定、および PR ワークフローの設計アセットは存在しますが、実行時のフルワークフローはまだ接続されていません。
+- グラフ構造は生成されたタグと要約に依存します。
 
 ## Agentmemory との比較
 
-[rohitg00/agentmemory](https://github.com/rohitg00/agentmemory) は coding agents 向け automatic memory engine です。README は server memory, MCP/hooks/REST, adapters, benchmarks, viewer, replay, hybrid retrieval, Hermes integration を強調しています。
+[rohitg00/agentmemory](https://github.com/rohitg00/agentmemory) は、コーディングエージェントのための強力な自動メモリエンジンです。その README では、サーバーベースのメモリ、MCP/フック/REST 統合、多数のエージェントアダプター、ベンチマーク性能、ビューアー、リプレイ機能、ハイブリッド検索、および Hermes との統合が説明されています。
 
-automatic capture, replay, vector retrieval, many MCP tools が必要なら agentmemory。
+自動キャプチャ、リアルタイムビューアー/リプレイ、ベクトル検索、多くの MCP ツール、およびサーバー型の共有メモリが必要な場合は、`agentmemory` を使用してください。
 
-repo-readable protocol, Markdown-first, human-approved, Git-reviewed, server なしの agent portability が必要なら Engram。
+メモリをリポジトリ内に保持し、読み取り可能なプロトコルとしたい場合は `Engram` を使用してください：Markdown ファーストであり、人間が承認し、Git でレビューでき、サーバーが動作していなくてもエージェント間で共有可能です。
 
-| Dimension | Engram | agentmemory |
+| 次元 | Engram | agentmemory |
 | --- | --- | --- |
-| Source | Approved Markdown | Memory server/store |
-| Trust | Human A/B/C approval | Auto-capture + governance |
-| Default | File protocol | Service recommended |
-| Review | Git diff + Markdown | Viewer/API/sessions |
-| Best fit | ownership/audit | automatic recall/replay |
+| 信頼できる唯一の情報源 | 承認済みの Markdown ファイル | メモリサーバー / ストア |
+| 信頼の境界 | 人間による A/B/C の承認 | 自動キャプチャとツールの統治 |
+| デフォルトモード | ファイルプロトコル、常駐不要 | 常駐サービスの実行を推奨 |
+| レビュー | Git diff と Markdown のレビュー | ビューアー/API と保存されたセッション |
+| 最適な用途 | 所有権と監査性を必要とするチーム | 自動的な思い出しやリプレイを望むユーザー |
+| リスク | より手動の規律（ディシプリン）が必要 | 慎重に管理しない限り不可視な状態が増える |
 
-## Built-In Agent Memory との比較
+## 内蔵のエージェントメモリとの比較
 
-内蔵 memory は便利ですが host に閉じがちです。Engram は authority を人間が所有する files に置きます。
+内蔵のメモリは便利ですが、特定のホストに縛られがちです。差分（diff）をとったり、エクスポートしたり、レビューしたり、他のエージェントと共有したりするのが難しい場合があります。
 
-## Roadmap
+Engram は内蔵メモリを「利便性のためのレイヤー」として扱い、権威とはみなしません。権威は常に、人間が所有する Markdown ファイルにあります。
 
-- Optional local embeddings.
-- Clearer graph routing diagnostics.
-- Versioned benchmark fixtures.
-- Better contradiction review workflow.
-- More agentmemory import variants.
-- Optional external embedding provider for semantic dedupe.
-- Repair that can propose fixes.
+## ロードマップ案
+
+- グラフベクトルおよび検索用の、オプションのローカル埋め込み（embedding）プロバイダ。
+- なぜ特定のメモリがルーティングされたのかを説明する、より良いグラフ診断。
+- レグレス追跡のためにリポジトリにコミットされたベンチマークテストデータ。
+- グラフ、品質チェック、アーカイブを組み合わせた、より強力な矛盾レビューワークフロー。
+- 様々な形式の `agentmemory` エクスポートに対するインポートテストの強化。
+- セマンティックな重複検出用の、オプションの外部埋め込みプロバイダ。
+- 無効なメモリファイルを報告した後に修正案を提示できる修復（repair）ワークフロー。
+
+次へ：[ホーム](index.md)に戻る。

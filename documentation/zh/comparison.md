@@ -1,53 +1,59 @@
-# 对比、优缺点与路线图
+# 对比、优缺点及路线图
 
-Engram 优化的是人类所有权、可审查性和可移植性。
+Engram 与自动内存引擎处于不同的内存生态空间。它重点针对人类所有权、可评审性和可移植性进行了优化。
 
-## 优点
+## Engram 的优势
 
-- Markdown 是事实来源。
-- 持久写入前需要人类批准。
-- Git 原生日志和同步。
-- Workspace-first, global-fallback。
-- 与 agent 无关。
-- 安全层：schema、secret scan、injection scan、hashes、ignore rules。
-- 不强制 daemon、database 或 cloud account。
-- import、observe、archive、graph、benchmark、repair 支持长期维护。
+- 纯文本 Markdown 格式的事实唯一来源（source of truth）。
+- 持久写入前必须经过人类批准。
+- Git 原生的审计历史与同步。
+- 工作区优先（workspace-first）和全局后备（global-fallback）的内存分级。
+- 独立于智能体：任何智能体都可以直接读取 Markdown。
+- 安全保障层：Schema 校验、秘密扫描、注入扫描、哈希完整性校验和忽略规则。
+- 不需要运行常驻进程（daemon）、数据库或云端账户。
+- 导入、观察、归档、图谱、基准测试和修复流程为长期维护提供支持。
 
-## 代价
+## Engram 的权衡点 (Tradeoffs)
 
-- 自动化程度低于 daemon 系统。
-- 默认 search 是 lexical；`search --semantic` 使用本地确定性相似度，不是 embedding-backed semantic search。
-- Graph vectors 是本地 hashed word vectors。
-- Contradiction detection 是 heuristic/advisory。
-- `deduplicate --semantic` 使用本地确定性相似度，不依赖外部 embeddings。
-- Pattern mining、encryption config、PR workflow 还不是完整运行时流程。
+- 自动化程度低于基于常驻守护进程（daemon）的内存系统。
+- 默认搜索是确定性的词汇搜索；`search --semantic` 增加了确定性的局部相似度匹配，而不是基于第三方向量模型服务的语义搜索。
+- 图谱向量是局部哈希的词向量，而不是高维语义嵌入。
+- 矛盾检测是启发式且仅具建议性的。
+- `deduplicate --semantic` 使用确定性的局部相似度，不调用外部向量服务。
+- 模式挖掘、加密配置和 PR 工作流设计资产虽已存在，但在运行时的完整工作流尚未完全打通。
+- 内存图谱完全依赖于自动生成的标签和摘要。
 
-## 与 Agentmemory 对比
+## 与 Agentmemory 的对比
 
-[rohitg00/agentmemory](https://github.com/rohitg00/agentmemory) 是面向 coding agents 的自动记忆引擎，强调 server memory、MCP/hooks/REST、多个 adapter、benchmark、viewer、replay、hybrid retrieval 和 Hermes integration。
+[rohitg00/agentmemory](https://github.com/rohitg00/agentmemory) 是一个适用于编码智能体的强大的自动内存引擎。其 README 介绍了基于服务器的内存、MCP/hooks/REST 集成、许多智能体适配器、基准测试声明、查看器、回放功能、混合检索以及 Hermes 集成。
 
-如果你想要自动捕获、replay、vector retrieval 和大量 MCP tools，选择 agentmemory。
+当您需要自动捕获、实时查看器/回放、向量检索、多个 MCP 工具和服务器端共享内存时，请使用 `agentmemory`。
 
-如果你想要 repo 可读协议：Markdown first、human approved、Git reviewed、无需 server 也能跨 agent 使用，选择 Engram。
+当您希望内存成为仓库可读的协议时，请使用 `Engram`：Markdown 优先、人类批准、Git 评审，即使没有运行中的服务器也能跨智能体移植。
 
-| 维度 | Engram | agentmemory |
+| 对比维度 | Engram | agentmemory |
 | --- | --- | --- |
-| Source of truth | Approved Markdown | Memory server/store |
-| Trust boundary | Human A/B/C approval | Auto-capture + governance |
-| Default mode | File protocol | Service recommended |
-| Review | Git diff + Markdown | Viewer/API/sessions |
-| Best fit | ownership 和 auditability | automatic recall 和 replay |
+| 唯一事实来源 | 批准的 Markdown 文件 | 内存服务器 / 数据库 |
+| 信任边界 | 人类 A/B/C 批准 | 自动捕获加工具治理 |
+| 默认模式 | 文件协议，不需要常驻进程 | 推荐运行后台服务 |
+| 评审机制 | Git diff 和 Markdown 评审 | 查看器/API 和存储的会话 |
+| 最合适场景 | 需要所有权和可审计性的团队 | 需要自动召回和回放的个人用户 |
+| 风险点 | 需要更多的手动纪律规范 | 除非严密治理，否则会产生更多隐性状态 |
 
-## 与内置 Agent Memory 对比
+## 与智能体内置内存的对比
 
-内置记忆很方便，但常绑定某个 host。Engram 把权威放回人类控制的文件。
+内置的智能体内存很方便，但通常与单个主机绑定。它可能难以进行对比（diff）、导出、评审或与其他智能体共享。
 
-## Roadmap
+Engram 将内置内存视为便利层，而不是权威来源。权威仍然是人类拥有的文件。
 
-- 可选本地 embedding provider。
-- 更清晰的 graph routing diagnostics。
-- 版本化 benchmark fixtures。
-- 更强 contradiction review workflow。
-- 更多 agentmemory export import tests。
-- 可选外部 embedding provider 用于 semantic duplicate detection。
-- Repair 报告错误后可提出修复建议。
+## 路线图想法
+
+- 用于图谱向量和搜索的可选局部嵌入（embedding）提供程序。
+- 更好的图谱诊断，用以解释特定内存被路由的原因。
+- 签入仓库的基准测试基准数据（fixtures），以便跟踪召回率是否下降。
+- 结合图谱、质量检查和归档的更强大的矛盾冲突评审工作流。
+- 针对 `agentmemory` 各种导出变体的更多导入测试。
+- 用于语义重复项检测的可选外部嵌入提供程序。
+- 能够在报告无效内存文件后提议修复方案的修复（repair）工作流。
+
+下一步：返回到[首页](index.md)。

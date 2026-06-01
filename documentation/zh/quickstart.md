@@ -1,94 +1,128 @@
-# AI Agent 快速开始
+# AI 智能体快速开始
 
-优先通过 agent 使用 Engram。CLI 存在，但最佳体验是让 agent 加载记忆、完成任务，然后把有价值的内容提议为持久记忆。
+首先请通过您的智能体来使用 Engram。虽然 CLI 存在，但最好的体验是：要求智能体加载内存、执行工作，然后当产生有用的内容时由智能体提议持久内存。
 
-## 新会话第一句话
+## 新会话中的第一条消息
 
-```text
-Use Engram for this task. Load memory for: <what we are doing>.
-```
-
-如果已安装 slash adapter：
+询问：
 
 ```text
-/engram load "<current task>"
+在此任务中使用 Engram。加载关于以下内容的内存：<我们正在做的事情>。
 ```
 
-agent 应只总结相关 memory ID 和规则，不应粘贴所有文件。
-
-## 推荐设置
+如果安装了斜杠命令适配器：
 
 ```text
-Initialize Engram for this workspace, install the right skillset for this agent,
-and tell me what command I should use next.
+/engram load "<当前任务>"
 ```
 
-agent 可运行：
+智能体应该只总结相关的内存 ID 和规则，而不是粘贴每一个文件的内容。
+
+## 推荐的设置对话
+
+询问智能体：
+
+```text
+为此工作区初始化 Engram，为此智能体安装正确的技能集（skillset），并告诉我下一步应该使用什么命令。
+```
+
+智能体可以运行：
 
 ```bash
 engram init
 engram help install-skillset
-engram install-skillset <agent-name>
+engram install-skillset <智能体名称>
 ```
 
-如果想在聊天里直接使用：
+若要在聊天中直接使用，询问：
 
 ```text
-Install slash support so I can use /engram directly from this agent.
+安装斜杠支持，以便我可以直接从此智能体使用 /engram。
 ```
 
 ## 日常循环
 
+开始：
+
 ```text
-/engram load "current task"
-/engram search "topic I might be missing"
+/engram load "当前任务"
+```
+
+工作期间：
+
+```text
+/engram search "我可能遗漏的主题"
+```
+
+当智能体学习到一条持久的事实时：
+
+```text
 /engram save knowledge
+```
+
+当会话产生了几个有用的规则、事实或工作流时：
+
+```text
 /engram save-session
+```
+
+简写形式：
+
+```text
 /engram ss
 ```
 
-只有明确想接受全部候选时才用：
+仅在您确实需要时才使用一键批准（accept-all）快捷方式：
 
 ```text
 /engram ss -a
 ```
 
-`-a` 表示人类明确批准保存所有 agent 推荐候选。agent 不能自行添加。
+`-a` 表示人类明确批准智能体推荐的每个候选。智能体绝不能自己私自添加它。
 
-## 导入已有知识
+## 导入现有知识
+
+对于已经有 `AGENTS.md`、`CLAUDE.md`、Cursor 规则、笔记或文档的仓库：
 
 ```text
 /engram take-control --plan
 /engram take-control --all
 ```
 
-`--plan` 会显示选中文件、跳过原因、token 估算和可能的记忆类型。
+如果您想查看选定的文件、跳过的文件、Token 估计以及可能的内存类型，请先使用 `--plan`。
 
-## Global Memory
+## 全局内存
+
+将全局内存用于应该跨仓库跟随您的偏好设置：
 
 ```text
-Set up global Engram memory at <path>, then save this preference globally:
+在 <path> 设置全局 Engram 内存，然后全局保存此偏好：
 Use pnpm for package management.
 ```
+
+智能体可以使用：
 
 ```bash
 engram init --global-only --global-path <path>
 engram save --scope global "Use pnpm for package management."
 ```
 
-## 维护
+## 保持健康状态
+
+在有意义的工作结束时询问智能体：
 
 ```text
-Check Engram health, report invalid memories, and propose anything worth saving from this session.
+检查 Engram 健康状况，报告无效的内存，并提议此会话中任何值得保存的内容。
 ```
+
+常用命令：
 
 ```bash
 engram verify
 engram repair
-engram graph "<topic>"
+engram graph "<主题>"
 engram quality-check
-engram archive --reason "<why>" <id-or-file>
+engram archive --reason "<原因>" <id-或-文件>
 ```
 
-下一页：[协议](protocol.md)。
-
+下一步：[人类拥有的内存协议](protocol.md)。

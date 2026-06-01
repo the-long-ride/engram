@@ -1,117 +1,117 @@
 # Engram 이해하기
 
-명령 가이드 전에 이 페이지를 읽으면 좋습니다. Engram의 핵심은 명령 수가 아니라 memory의 소유권입니다.
+명령어 가이드를 읽기 전에 먼저 이 글을 읽어보십시오. Engram이 유용한 이유는 수많은 명령어 때문이 아니라 메모리를 소유하는 주체가 누구인가에 있습니다.
 
-## 한 문장 모델
+## 한 줄 요약 모델
 
-Engram은 AI agent가 오래가는 memory를 쓰게 하면서, 무엇이 durable memory가 될지는 사람이 결정하게 하는 file protocol입니다.
+Engram은 AI 에이전트가 영속적인 메모리를 사용할 수 있도록 지원하는 동시에, 무엇을 영속화할지는 인간이 결정하는 파일 프로토콜입니다.
 
-## Engram이란
+## Engram의 본질
 
-Engram은 다음을 위한 knowledge memory center입니다:
+Engram은 다음을 저장하고 관리하는 지식 메모리 센터입니다:
 
-- project rules
-- team decisions
-- repeatable workflows
-- durable facts
-- 여러 프로젝트에 따라가야 하는 personal preferences
+- 프로젝트 규칙
+- 팀의 결정 사항
+- 반복 가능한 워크플로우
+- 영속적인 사실들
+- 여러 프로젝트에서 공유하고자 하는 개인적인 설정
 
-Memory 자체는 평범한 Markdown입니다. index, graph, hash, adapter는 그 Markdown을 더 쉽고 안전하게 쓰기 위한 장치입니다.
+메모리는 일반 Markdown 파일입니다. 인덱스, 그래프, 해시, 그리고 어댑터 파일들은 단지 Markdown을 보다 쉽고 안전하게 활용하기 위해 존재할 뿐입니다.
 
 ## Engram이 아닌 것
 
-Engram은 다음이 아닙니다:
+Engram은 다음과 같은 것이 아닙니다:
 
-- agent의 숨겨진 두뇌
-- 특정 vendor가 소유한 memory silo
-- project documentation의 대체품
-- authority인 척하는 vector database
-- 모든 것을 영원히 저장하는 automatic recorder
+- 에이전트를 위한 숨겨진 두뇌
+- 벤더에 종속된 비공개 메모리 사일로(silo)
+- 프로젝트 문서를 완전히 대체하는 도구
+- 권위를 대변하는 것처럼 위장한 벡터 데이터베이스
+- 모든 것을 평생 저장하는 자동 녹음/녹화기
 
-Agent는 memory를 제안할 수 있습니다. 사람은 memory를 승인, 거절, 수정, archive하고 소유합니다.
+에이전트는 메모리를 제안할 수만 있습니다. 인간이 메모리를 승인, 거부, 편집, 아카이브하고 궁극적으로 소유합니다.
 
 ## 핵심 약속
 
-Engram은 AI memory를 이렇게 만들려고 합니다:
+Engram은 AI 메모리를 다음과 같이 만듭니다:
 
-- reviewable: 일반 editor에서 읽을 수 있음
-- portable: Git으로 sync하고 여러 agent에서 사용 가능
-- correctable: 잘못된 memory를 이유와 함께 archive 가능
-- private by default: ignore rules와 approval gate가 실수 저장을 줄임
-- deliberately simple: 보이지 않는 platform state보다 Markdown을 신뢰하기 쉬움
+- 검토 가능: 일반 에디터에서 누구나 직접 읽을 수 있습니다.
+- 이식성 보장: Git으로 동기화하여 에이전트 간에 연동 및 재사용할 수 있습니다.
+- 수정 가능: 잘못된 메모리는 나중에 조용히 부작용을 일으키기 전에 사유와 함께 아카이브 처리할 수 있습니다.
+- 기본적으로 비공개: 제외 규칙과 승인 단계를 두어 의도치 않은 정보 저장을 방지합니다.
+- 의도적으로 단순함: 보이지 않는 플랫폼 내부의 복잡한 상태보다 사람이 파일로 확인할 수 있는 Markdown이 훨씬 신뢰하기 쉽습니다.
 
-## 레이어
+## 레이어 구성
 
-| Layer | 의미 |
+| 레이어 | 의미 |
 | --- | --- |
-| Markdown | durable source of truth |
-| JSON index | 빠른 lookup layer |
-| JSON graph | topic/relationship routing layer |
-| Hashes | integrity checks |
-| Approval | 쓰기 전 trust boundary |
-| Ignore rules | privacy controls |
-| Git | history, portability, review, recovery |
-| Agent adapters | Codex, Claude, Cursor, Gemini 등 agent를 위한 convenience layer |
+| Markdown | 영속적인 신뢰할 수 있는 단일 소스(source of truth) |
+| JSON 인덱스 | 빠른 조회(lookup)를 돕는 레이어 |
+| JSON 그래프 | 주제 및 관계 라우팅 레이어 |
+| 해시 | 무결성 체크 기능 |
+| 승인(Approval) | 쓰기 실행 전 신뢰 경계 확보 |
+| 제외 규칙 | 프라이버시 및 범위 제어 |
+| Git | 이력 관리, 이식성, 검토 및 복구 경로 제공 |
+| 에이전트 어댑터 | Codex, Claude, Cursor, Gemini 등 다양한 에이전트를 위한 편의 레이어 |
 
-생성된 JSON은 agent가 memory를 빨리 찾도록 돕지만 authority는 아닙니다. JSON과 Markdown이 다르면 Markdown이 이깁니다.
+생성된 JSON은 에이전트가 메모리를 빠르게 찾도록 도울 뿐 소스 자체의 최종 권위를 가지지 않습니다. 만약 생성된 파일의 내용과 Markdown이 일치하지 않는다면 Markdown이 항상 우선합니다.
 
-## Memory Lifecycle
+## 메모리 라이프사이클
 
-1. session, file, human note에 유용한 지식이 있습니다.
-2. agent가 짧은 memory candidate를 제안합니다.
-3. 사람이 전부 승인, 일부 선택, note 추가, 또는 거절합니다.
-4. Engram이 승인된 Markdown memory를 씁니다.
-5. Engram이 hash, index, graph, changelog를 갱신합니다.
-6. 이후 agent는 현재 task와 관련된 memory만 load합니다.
-7. memory가 틀리면 Engram이 이유와 함께 archive합니다.
+1. 세션, 파일 또는 인간의 메모(note)에 유용한 지식이 포함된다.
+2. 에이전트가 요약된 메모리 후보(candidates)를 제안한다.
+3. 인간이 이를 일괄 승인하거나 일부만 선택하고 메모를 추가하거나 혹은 거절한다.
+4. Engram이 최종 승인된 Markdown 메모리를 기록한다.
+5. Engram이 해시, 인덱스, 그래프 및 변경 이력(changelog)을 갱신한다.
+6. 이후 에이전트가 현재 태스크에 연관된 메모리만 적재한다.
+7. 메모리가 더 이상 유효하지 않게 되면 Engram이 사유와 함께 이를 아카이브한다.
 
-이 lifecycle은 memory를 살아 있게 만들지만 보이지 않는 상태로 만들지 않습니다.
+이 라이프사이클을 통해 메모리를 숨기지 않고 항상 유효하게 관리할 수 있습니다.
 
-## Human, Agent, Engram, Git
+## 인간, 에이전트, Engram, Git
 
-| Actor | 역할 |
+| 주체 | 역할 |
 | --- | --- |
-| Human | 무엇이 durable memory가 될지 결정 |
-| Agent | pattern을 발견하고 candidate 제안 |
-| Engram | schema, safety, routing, approval, maintenance 적용 |
-| Git | memory를 기기 간 이동시키고 review history 제공 |
+| 인간 | 무엇을 영속 메모리로 전환할지 최종 결정 |
+| 에이전트 | 패턴을 감지하고 메모리 후보 제안 |
+| Engram | 스키마 적용, 보안 필터링, 라우팅, 승인 게이트 및 유지보수 보장 |
+| Git | 장치 간 메모리 전달 및 검토 이력 보존 |
 
-Agent는 도움이 되지만 owner는 아닙니다.
+에이전트는 돕는 조력자일 뿐 소유자가 아닙니다.
 
-## 좋은 Memory
+## 좋은 메모리란
 
-좋은 Engram memory는:
+좋은 Engram 메모리는 다음과 같습니다:
 
-- 다음 주에도 의미 있을 만큼 안정적
-- 나중에 routing될 만큼 구체적
-- agent context에 들어갈 만큼 짧음
-- 의도한 scope에 안전함
-- rule, workflow, knowledge 중 하나로 명확함
+- 다음 주에 다시 보더라도 여전히 유효할 만큼 안정적임
+- 나중에 정확히 라우팅할 수 있을 만큼 구체적임
+- 에이전트의 컨텍스트 한도 내에 들어갈 만큼 충분히 짧음
+- 의도한 공유 범위 내에서 공유하기에 안전함
+- 규칙(rule), 스킬(skill) 또는 지식(knowledge) 항목으로 정리됨
 
-나쁜 memory는 임시 chat noise, secret, credential, 일회성 추측, 승인되지 않은 fact입니다.
+나쁜 메모리는 일시적인 대화 노이즈, 보안 비밀번호나 API 키, 일회성 추측 또는 누구도 검증하지 않은 사실 같은 것들입니다.
 
-## Scope
+## 범위(Scope)
 
-Workspace memory 위치:
+워크스페이스 메모리가 저장되는 경로:
 
 ```text
 <project>/.agents/.engram/
 ```
 
-Global memory는 optional이며 사용자가 설정한 곳에 둡니다.
+글로벌 메모리는 옵션이며, 사용자가 지정한 위치에 저장됩니다.
 
-Workspace가 우선입니다. Global은 reusable preference, personal habit, team default의 fallback입니다.
+워크스페이스 메모리가 항상 우선합니다. 글로벌 메모리는 여러 레포지토리에서 공통으로 적용할 규칙, 개인 습관 또는 팀 기본값을 위한 폴백(fallback)입니다.
 
-## Built-In Agent Memory만 쓰지 않는 이유
+## 에이전트 내장 메모리만 사용하지 않는 이유
 
-Built-in memory는 편하지만 inspect, diff, export, share, correct가 어려울 수 있습니다. 보통 특정 app이나 account에 속합니다.
+내장 메모리는 확실히 편리하지만, 검사, 비교(diff), 내보내기, 공유 혹은 수정하기가 무척 까다롭습니다. 흔히 단일 계정이나 특정 애플리케이션 내에 갇혀 있기 때문입니다.
 
-Engram은 durable layer를 보이게 만듭니다. Built-in memory도 도움은 되지만, 중요한 지식은 사람이 소유한 Engram을 source로 두는 것이 좋습니다.
+Engram은 이러한 영속 레이어를 사람이 직접 볼 수 있도록 외부로 꺼내줍니다. 내장 메모리를 보조로 사용할 수도 있지만 지식이 핵심인 경우에는 사람이 관리하는 Engram이 최종 소스여야 합니다.
 
-## 알아둘 한계
+## 미리 알아둘 한계점
 
-기본 search는 deterministic lexical search입니다. `engram search --semantic`은 로컬 deterministic similarity를 사용하며 embedding-backed semantic search는 아닙니다. Graph vector는 local hashed word vector이며 semantic embedding이 아닙니다. Contradiction detection은 advisory signal입니다. Encryption config는 있지만 encrypted storage는 아직 구현되지 않았습니다.
+기본적으로 Engram 렌더링은 결정론적 렉시컬(lexical) 검색에 기반합니다. `engram search --semantic`은 결정론적 로컬 유사도 분석을 더하는 것이며 딥러닝 기반 임베딩 검색이 아닙니다. 그래프의 벡터도 세맨틱 임베딩이 아니라 로컬 해시 단어 벡터로 동작합니다. 모순 감지는 가이드 제안용으로만 설계되었습니다. 암호화 설정 인터페이스는 존재하지만 암호화 저장소 기능은 아직 구현되지 않았습니다.
 
-이 한계를 명확히 말하는 것이 중요합니다. Engram은 오늘 실제로 있는 것과 future work를 분리해서 보여줘야 합니다.
+이러한 한계를 숨기지 않고 명시적으로 표현합니다. Engram은 현재 지원하는 한계와 앞으로 해결할 작업을 사용자에게 투명하게 보여주고자 합니다.
 
-다음: [AI agent quickstart](quickstart.md).
+다음 단계: [AI 에이전트 퀵스타트](quickstart.md).

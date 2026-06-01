@@ -1,92 +1,128 @@
-# Quickstart Avec Agent IA
+# Démarrage Rapide pour Agent d'IA
 
-Utilisez Engram via l'agent d'abord. Le CLI existe, mais le meilleur flux est: demander à l'agent de charger la mémoire, travailler, puis proposer ce qui mérite de devenir durable.
+Utilisez d'abord Engram par le biais de votre agent. Le CLI existe, mais la meilleure expérience est la suivante : demandez à l'agent de charger la mémoire, effectuez le travail, puis proposez une mémoire durable lorsque quelque chose d'utile se dégage.
 
-## Premier Message
+## Premier Message Dans Une Nouvelle Session
 
-```text
-Utilise Engram pour cette tâche. Charge la mémoire pour: <ce que nous faisons>.
-```
-
-Avec les slash adapters:
+Demandez :
 
 ```text
-/engram load "<current task>"
+Utilise Engram pour cette tâche. Charge la mémoire pour : <ce que nous faisons>.
 ```
 
-L'agent doit résumer les IDs/règles pertinents, pas coller tous les fichiers.
-
-## Installation Recommandée
+Si les adaptateurs slash sont installés :
 
 ```text
-Initialise Engram pour ce workspace, installe le skillset adapté à cet agent,
-et dis-moi quelle commande utiliser ensuite.
+/engram load "<tâche actuelle>"
 ```
+
+L'agent doit résumer uniquement les identifiants de mémoire (IDs) et les règles pertinentes, et non coller l'intégralité de chaque fichier.
+
+## Conversation de Configuration Recommandée
+
+Demandez à l'agent :
+
+```text
+Initialise Engram pour cet espace de travail, installe le bon ensemble de compétences (skillset) pour cet agent, et indique-moi la commande que je devrais utiliser ensuite.
+```
+
+L'agent peut exécuter :
 
 ```bash
 engram init
 engram help install-skillset
-engram install-skillset <agent-name>
+engram install-skillset <nom-de-l-agent>
 ```
 
-Pour le chat:
+Pour une utilisation native dans le chat, demandez :
 
 ```text
-Installe le support slash pour que je puisse utiliser /engram directement.
+Installe le support des commandes slash pour que je puisse utiliser /engram directement depuis cet agent.
 ```
 
 ## Boucle Quotidienne
 
+Démarrage :
+
 ```text
-/engram load "current task"
-/engram search "topic I might be missing"
+/engram load "tâche actuelle"
+```
+
+Pendant le travail :
+
+```text
+/engram search "sujet que je pourrais avoir manqué"
+```
+
+Lorsque l'agent apprend un fait durable :
+
+```text
 /engram save knowledge
+```
+
+Lorsque la session a produit plusieurs règles, faits ou flux de travail utiles :
+
+```text
 /engram save-session
+```
+
+Forme courte :
+
+```text
 /engram ss
 ```
 
-Accept-all seulement si vous le voulez vraiment:
+Raccourci d'approbation totale (accept-all) uniquement lorsque vous le souhaitez vraiment :
 
 ```text
 /engram ss -a
 ```
 
-`-a` signifie que l'humain approuve explicitement tous les candidats proposés.
+`-a` signifie que l'humain approuve explicitement chaque candidat recommandé par l'agent. Les agents ne doivent pas l'ajouter d'eux-mêmes.
 
-## Importer L'Existant
+## Importer des Connaissances Existantes
+
+Pour un dépôt qui a déjà un fichier `AGENTS.md`, `CLAUDE.md`, des règles Cursor, des notes ou des documents :
 
 ```text
 /engram take-control --plan
 /engram take-control --all
 ```
 
-`--plan` montre sources sélectionnées, sources ignorées, estimation de tokens et types probables.
+Utilisez `--plan` en premier lorsque vous souhaitez voir les fichiers sélectionnés, les fichiers ignorés, les estimations de tokens et les types de mémoire probables.
 
 ## Mémoire Globale
 
+Utilisez la mémoire globale pour les préférences qui doivent vous suivre dans tous les dépôts :
+
 ```text
-Configure une mémoire globale Engram à <path>, puis sauvegarde cette préférence globalement:
+Configure la mémoire globale d'Engram sur <chemin>, puis enregistre cette préférence globalement :
 Use pnpm for package management.
 ```
 
+L'agent peut utiliser :
+
 ```bash
-engram init --global-only --global-path <path>
+engram init --global-only --global-path <chemin>
 engram save --scope global "Use pnpm for package management."
 ```
 
-## Santé
+## Garder le Système Sain
+
+Demandez à l'agent à la fin de tout travail significatif :
 
 ```text
-Vérifie la santé d'Engram, signale les mémoires invalides et propose quoi sauvegarder depuis cette session.
+Vérifie la santé d'Engram, signale les mémoires invalides et propose tout ce qui mérite d'être sauvegardé de cette session.
 ```
+
+Commandes utiles :
 
 ```bash
 engram verify
 engram repair
-engram graph "<topic>"
+engram graph "<sujet>"
 engram quality-check
-engram archive --reason "<why>" <id-or-file>
+engram archive --reason "<pourquoi>" <id-ou-fichier>
 ```
 
-Suite: [Protocole](protocol.md).
-
+Suivant : [Protocole de mémoire humaine](protocol.md).

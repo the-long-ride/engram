@@ -1,54 +1,60 @@
 # Engram
 
-Engram は AI agent のための、人間が所有するメモリプロトコルです。プロジェクト、チーム、個人設定の長く残すべき知識を、読めて、レビューできて、同期できて、修復できるファイルとして保存します。
+Engram は、AI エージェントのための人間が所有するメモリプロトコルです。プロジェクト、チーム、そして個人の永続的な知識を、人間が検査、レビュー、同期、および修復できるファイルとして保存します。
 
-Engram は agent の隠れた脳ではありません。agent は memory を提案できますが、source of truth は `.agents/.engram/` または任意の global memory フォルダにある承認済み Markdown です。
+Engram はエージェントの隠された脳ではありません。エージェントはメモリを提案できますが、信頼できる唯一の情報源（source of truth）は、`.agents/.engram/` またはオプションのグローバルメモリフォルダにある承認済みの Markdown です。
 
 ## 解決する問題
 
-AI agent はプロジェクトの決定を忘れ、セットアップを何度も聞き、古い文脈と新しい指示を混ぜます。内蔵メモリは多くの場合、特定のベンダー、アプリ、マシンに閉じています。
+AI エージェントはプロジェクトの決定事項を忘れ、セットアップに関する質問を繰り返し、古いコンテキストと新しい指示を混同しがちです。また、内蔵のメモリは多くの場合、特定のベンダー、アプリ、またはマシンに固定されており、プライベートな状態になっています。
 
-Engram の契約:
+Engram はメモリに対して安定した契約を提供します：
 
-- 承認済み facts, rules, workflows は Markdown に保存
-- index と graph は高速化レイヤー
-- 書き込みは人間の承認が必要
-- hash が整合性を確認
-- ignore rules が privacy を制御
-- Git が履歴、portability、team review を提供
+- 承認された事実、ルール、ワークフローは Markdown として保存されます。
+- インデックスとグラフによってルーティングが高速化されます。
+- 書き込みには人間の承認が必要です。
+- ハッシュ値によって安全でない編集が検出されます。
+- 除外ルール（ignore rules）によってプライベートなコンテキストが保護されます。
+- Git により、履歴の追跡、ポータビリティ、およびチームでのレビューが可能になります。
 
-## Mental Model
+## メンタルモデル
 
-| Layer | 役割 |
+Engram は知識メモリセンターのようなものです：
+
+| レイヤー | 役割 |
 | --- | --- |
-| Markdown | durable source of truth |
-| JSON index | fast lookup |
-| JSON graph | topic/relationship routing |
-| Approval gate | trust boundary |
-| Hashes | integrity checks |
-| Ignore rules | privacy controls |
-| Git | audit history and sync |
-| Agent adapters | convenience, not authority |
+| Markdown | 永続的な信頼できる唯一の情報源（source of truth） |
+| JSON インデックス | 高速なルックアップレイヤー |
+| JSON グラフ | トピックと関係性のルーティングレイヤー |
+| 承認ゲート | 書き込み前の信頼の境界 |
+| ハッシュ | 読み込み前の整合性チェック |
+| 除外ルール | プライバシーコントロール |
+| Git | 変更履歴の監査と同期 |
+| エージェントアダプター | 権限ではなく、利便性のためのレイヤー |
 
-## Scope 優先順位
+## スコープの優先順位
 
-1. Workspace memory: `<project>/.agents/.engram/`
-2. Global memory: `$ENGRAM_GLOBAL_DIR` または `engram init --global-path <path>`
+Engram は以下の順序でメモリを解決します：
 
-Workspace が優先です。Global は複数 repo で再利用する好みやチーム文脈の fallback です。
+1. ワークスペースメモリ：`<project>/.agents/.engram/`
+2. グローバルメモリ：`$ENGRAM_GLOBAL_DIR` または `engram init --global-path <path>`
+
+ワークスペースメモリが優先されます。グローバルメモリは、複数のプロジェクトにわたる再利用可能な設定やチームのコンテキストのためのフォールバック（備え）です。
 
 ## 現在の機能
 
-- `save`: 1つの承認済み memory
-- `save-session` / `ss`: session から複数 memory
-- `observe`: active memory ではない raw note
-- `take-control`: 既存 guidance/docs の取り込み
-- `graph`, `quality-check`: review signals
-- `archive`: 誤った/古い memory を routing から外す
-- `repair`: rebuild で skip された invalid memory の報告
-- `benchmark`: retrieval regression check
-- agent skillsets, slash adapters, MCP-style proposal tools
+Engram には以下が含まれます：
 
-コマンドを使う前に concept page を読んでください: [Engram を理解する](understanding.md)。
+- `save`：1つの承認されたメモリを保存します。
+- `save-session` / `ss`：セッションからの複数のメモリ候補を保存します。
+- `observe`：まだアクティブなメモリになっていない生メモ（raw notes）をキャプチャします。
+- `take-control`：既存のエージェント向けガイドラインやドキュメントを取り込みます。
+- `graph` および `quality-check`：レビューのためのシグナルを出力します。
+- `archive`：誤ったメモリや古くなったメモリをアーカイブします。
+- `repair`：インデックス再構築時にスキップされた不正なメモリファイルを検出・報告します。
+- `benchmark`：検索のデグレード（regressions）をチェックします。
+- エージェントスキルセット（skillsets）、スラッシュコマンド用アダプター、MCP スタイルの提案ツール。
 
-次: [AI agent quickstart](quickstart.md)。
+コマンドを使用する前に、コンセプトページをお読みください：[Engram を理解する](understanding.md)。
+
+次へ：[AI エージェントクイックスタート](quickstart.md)。

@@ -1,117 +1,117 @@
 # Engram を理解する
 
-コマンドガイドの前にこのページを読むと、Engram の見方がつかみやすくなります。Engram の価値はコマンドの多さではなく、memory の所有者が人間であることです。
+コマンドガイドを読む前に、こちらをお読みください。Engram が有用である理由は、コマンドの多さではなく、誰がメモリを所有しているかにあります。
 
-## 一文モデル
+## 一言で表すモデル
 
-Engram は、AI agent が durable memory を使えるようにしつつ、何が durable になるかは人間が決める file protocol です。
+Engram は、AI エージェントが永続的なメモリを使用できるようにしつつ、何が永続化されるかを人間が決定するファイルプロトコルです。
 
-## Engram とは
+## Engram とは何か
 
-Engram は次のための knowledge memory center です:
+Engram は、以下を管理するための知識メモリセンターです：
 
-- project rules
-- team decisions
-- repeatable workflows
-- durable facts
-- 複数 project に持ち運びたい personal preferences
+- プロジェクトのルール
+- チームの決定事項
+- 再利用可能なワークフロー
+- 永続的な事実
+- プロジェクトをまたいで適用したい個人の設定
 
-Memory 本体は普通の Markdown です。index、graph、hash、adapter は、その Markdown を見つけやすく、安全に使うための補助です。
+メモリはプレーンな Markdown です。インデックス、グラフ、ハッシュ、およびアダプターファイルは、その Markdown をより簡単かつ安全に使用できるようにするために存在します。
 
 ## Engram ではないもの
 
-Engram は次のものではありません:
+Engram は以下のものではありません：
 
-- agent の隠れた脳
-- vendor が所有する memory silo
-- project documentation の代替
-- authority を名乗る vector database
-- すべてを永久保存する automatic recorder
+- エージェントのための隠された脳
+- ベンダーが所有する閉じたメモリシステム
+- プロジェクトドキュメントの代替物
+- 権威を装ったベクトルデータベース
+- すべてを永久に保存する自動レコーダー
 
-Agent は memory を提案できます。人間が承認、拒否、編集、archive し、memory を所有します。
+エージェントはメモリを提案できますが、人間がメモリの承認、拒否、編集、アーカイブ、および所有を行います。
 
-## 中心の約束
+## コアとなる約束
 
-Engram は AI memory を次のようにします:
+Engram は、AI メモリを以下のようにすることを目指しています：
 
-- reviewable: 普通の editor で読める
-- portable: Git で sync し、複数 agent で使える
-- correctable: 間違った memory を理由付きで archive できる
-- private by default: ignore rules と approval gate が誤保存を減らす
-- deliberately simple: 見えない platform state より Markdown の方が信頼しやすい
+- レビュー可能：一般的なエディタで直接読むことができます
+- ポータブル：Git で同期し、異なるエージェント間で再利用できます
+- 修正可能：誤ったメモリは、将来の作業に悪影響を及ぼさないようにアーカイブ（理由付き）できます
+- デフォルトでプライベート：除外ルールと承認ゲートにより、誤った情報のキャプチャを防ぎます
+- 意図的にシンプル：不可視のプラットフォームの状態よりも、Markdown ファイルのほうが信頼しやすいです
 
-## レイヤー
+## 各レイヤー
 
-| Layer | 意味 |
+| レイヤー | 意味 |
 | --- | --- |
-| Markdown | durable source of truth |
-| JSON index | fast lookup layer |
-| JSON graph | topic/relationship routing layer |
-| Hashes | integrity checks |
-| Approval | 書き込み前の trust boundary |
-| Ignore rules | privacy controls |
-| Git | history, portability, review, recovery |
-| Agent adapters | Codex, Claude, Cursor, Gemini などの agent 向け convenience layer |
+| Markdown | 永続的な信頼できる唯一の情報源（source of truth） |
+| JSON インデックス | 高速ルックアップレイヤー |
+| JSON グラフ | トピックおよび関係性のルーティングレイヤー |
+| ハッシュ | 整合性チェック |
+| 承認（Approval） | 書き込み前の信頼の境界 |
+| 除外ルール | プライバシーコントロール |
+| Git | 履歴管理、ポータビリティ、レビュー、復元 |
+| エージェントアダプター | Codex、Claude、Cursor、Gemini、その他のエージェント用の利便性レイヤー |
 
-生成された JSON は agent が memory を早く探す助けになりますが、authority ではありません。JSON と Markdown が食い違う場合、Markdown が勝ちます。
+生成される JSON はエージェントがメモリを素早く見つけるのを助けますが、それは権威ではありません。生成されたファイルと Markdown の内容が矛盾する場合、Markdown が優先されます。
 
-## Memory Lifecycle
+## メモリのライフサイクル
 
-1. session、file、human note に有用な知識がある。
-2. agent が短い memory candidate を提案する。
-3. 人間がすべて承認、一部選択、note 追加、または拒否する。
-4. Engram が承認済み Markdown memory を書く。
-5. Engram が hash、index、graph、changelog を更新する。
-6. 未来の agent は現在の task に関係する memory だけを load する。
-7. memory が誤りになったら、Engram が理由付きで archive する。
+1. セッション、ファイル、または人間のメモに有用な知識が含まれている。
+2. エージェントが簡潔なメモリ候補を提案する。
+3. 人間がすべてを承認、一部を選択、メモを追加、または拒否する。
+4. Engram が承認された Markdown メモリを書き込む。
+5. Engram がハッシュ、インデックス、グラフ、および変更履歴（changelog）を更新する。
+6. 将来のエージェントが、現在のタスクに関連するメモリのみを読み込む。
+7. メモリが誤りになった場合、Engram は理由とともにそれをアーカイブする。
 
-この lifecycle により、memory は有効なまま、見えない state にはなりません。
+このライフサイクルにより、メモリを不可視にすることなく有効に保ちます。
 
-## Human, Agent, Engram, Git
+## 人間、エージェント、Engram、Git
 
-| Actor | 役割 |
+| アクター | 役割 |
 | --- | --- |
-| Human | 何が durable memory になるか決める |
-| Agent | pattern を見つけて candidate を提案する |
-| Engram | schema, safety, routing, approval, maintenance を適用する |
-| Git | memory を machine 間で運び、review history を残す |
+| 人間 | 何を永続メモリにするかを選択する |
+| エージェント | パターンを検知し、メモリ候補を提案する |
+| Engram | スキーマ、安全性、ルーティング、承認、およびメンテナンスを適用する |
+| Git | マシン間でメモリを搬送し、レビュー履歴を提供する |
 
-Agent は助けになりますが、owner ではありません。
+エージェントは支援をしますが、所有者ではありません。
 
-## よい Memory
+## 良いメモリ
 
-よい Engram memory は:
+良い Engram メモリとは：
 
-- 来週も意味があるほど安定している
-- 後で routing できるほど具体的
-- agent context に入るほど短い
-- 意図した scope に対して安全
-- rule、workflow、knowledge のどれかとして明確
+- 来週になっても価値がある程度に安定していること
+- 後でルーティングできる程度に具体的であること
+- エージェントのコンテキストに収まる程度に短いこと
+- 意図したスコープで共有しても安全であること
+- ルール（rule）、スキル（skill）、または知識項目（knowledge）として記述されていること
 
-悪い memory は、一時的な chat noise、secret、credential、一度だけの推測、承認されていない fact です。
+悪いメモリとは、一時的なチャットのノイズ、機密情報、認証情報、その場限りの推測、または誰も承認していない事実などです。
 
-## Scope
+## スコープ
 
-Workspace memory はここにあります:
+ワークスペースメモリの保存先：
 
 ```text
 <project>/.agents/.engram/
 ```
 
-Global memory は optional で、user が設定した場所に置きます。
+グローバルメモリはオプションであり、ユーザーが設定した場所に保存されます。
 
-Workspace が優先です。Global は reusable preference、personal habit、team default の fallback です。
+ワークスペースメモリが優先されます。グローバルメモリは、再利用可能な設定、個人の習慣、またはチーム全体のデフォルト値のためのフォールバックです。
 
-## Built-In Agent Memory だけにしない理由
+## なぜ内蔵のエージェントメモリだけではダメなのか
 
-Built-in memory は便利ですが、inspect、diff、export、share、correct が難しいことがあります。多くは特定の app や account に属します。
+内蔵メモリは便利ですが、検査、比較（diff）、エクスポート、共有、あるいは修正が困難な場合があります。また、特定のアプリやアカウントに依存しがちです。
 
-Engram は durable layer を見える形にします。Built-in memory も役立ちますが、重要な知識は人間が所有する Engram を source にするべきです。
+Engram は永続的なレイヤーを可視化します。内蔵メモリも役立ちますが、知識が重要である場合には、人間が所有する Engram が信頼できる情報源であるべきです。
 
-## 知っておく制限
+## 知っておくべき限界
 
-デフォルトの search は deterministic lexical search です。`engram search --semantic` はローカル deterministic similarity を使い、embedding-backed semantic search ではありません。Graph vector は local hashed word vector で、semantic embedding ではありません。Contradiction detection は advisory signal です。Encryption config はありますが、encrypted storage はまだ実装されていません。
+デフォルトの Engram 検索は、決定論的なレキシカル検索です。`engram search --semantic` は決定論的なローカル類似度チェックを追加しますが、外部の埋め込み（embeddings）を利用した意味検索ではありません。グラフのベクトルは、セマンティックな埋め込みではなく、ローカルでハッシュ化された単語ベクトルです。矛盾の検出はアドバイザリー（推奨情報）にすぎません。暗号化設定は存在しますが、暗号化ストレージはまだ実装されていません。
 
-これらの制限は明示するべきです。Engram は、今日実際にあるものと future work を分けて伝えます。
+これらの制限は、あえて明確に示すようにしています。Engram は、現在何が実現可能で、何が将来の課題であるかをユーザーに明確に伝えるべきだと考えています。
 
-次: [AI agent quickstart](quickstart.md)。
+次へ：[AI エージェントクイックスタート](quickstart.md)。

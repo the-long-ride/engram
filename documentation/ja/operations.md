@@ -1,26 +1,30 @@
-# Operations Guide
+# 操作ガイド
 
-## Commands
+このページでは詳細な使用方法を説明し、README を短く保ちます。
 
-| Need | Command |
+## コマンド一覧
+
+| 用途 | コマンド |
 | --- | --- |
-| Load task memory | `engram load "<task>"` |
-| Search memory | `engram search "<topic>"` |
-| Save one memory | `engram save [rule|workflow|knowledge] "<text>"` |
-| Save session | `engram save-session` or `engram ss` |
-| Accept all | `engram ss -a` |
-| Capture raw note | `engram observe --file session.md` |
-| Import docs/guidance | `engram take-control --all` |
-| Preview takeover | `engram take-control --plan` |
-| Inspect graph | `engram graph "<topic>"` |
-| Verify hashes | `engram verify` |
-| Find invalid files | `engram repair` |
-| Archive wrong memory | `engram archive --reason "<why>" <id-or-file>` |
-| Tune rule strength | `engram set-rule-variant strict|balanced|light|off` |
+| タスクメモリのロード | `engram load "<task>"` |
+| メモリの検索 | `engram search "<topic>"` |
+| 1つのメモリを保存 | `engram save [rule\|workflow\|knowledge] "<text>"` |
+| セッションから複数のメモリを保存 | `engram save-session` または `engram ss` |
+| セッションの全候補を一括承認 | `engram ss -a` |
+| 生のメモをキャプチャ | `engram observe --file session.md` |
+| 既存のドキュメントやガイドラインを変換 | `engram take-control --all` |
+| 取り込み計画をプレビュー | `engram take-control --plan` |
+| グラフのルーティングを検査 | `engram graph "<topic>"` |
+| ハッシュ値をチェック | `engram verify` |
+| 不正なメモリファイルを検出 | `engram repair` |
+| 誤ったメモリをアーカイブ | `engram archive --reason "<why>" <id-or-file>` |
+| ルールの適用強度を調整 | `engram set-rule-variant strict\|balanced\|light\|off` |
 
-長いセッションの memory proposal には `save-session` を使います。短縮形は `ss` です。
+長時間のセッションにおけるメモリ提案には `save-session` を使用します。短縮形：`ss`。
 
-## Save Session
+## セッションの保存 (Save Session)
+
+長時間の対話によって複数の候補が生成された場合は、`save-session` を使用します：
 
 ```text
 TYPE: rule | TEXT: Always run tests before release.
@@ -28,9 +32,13 @@ TYPE: knowledge | TEXT: Release notes live in CHANGELOG.md.
 TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
 ```
 
-`--accept-all` なしでは Engram が保存する候補を確認します。`ss -a` は人間が明示承認したので全候補を保存します。
+`--accept-all` を指定しない場合、Engram はどの候補を保存するかを尋ねます。`ss -a` を指定すると、人間が事前にこのショートカットを明示的に承認しているため、生成されたすべての候補が保存されます。
 
-## Take Control
+## テイクコントロール (Take Control)
+
+`take-control` は、既存のリポジトリに Engram を導入するのを支援します。エージェント向けガイドライン、メモ、ドキュメント、および選択されたファイルをスキャンし、簡潔な候補の生成を提案します。
+
+便利なセレクタ：
 
 ```bash
 engram take-control --plan
@@ -41,26 +49,35 @@ engram take-control --include "docs/**/*.md" --exclude "docs/private/**"
 engram take-control --max-sources 5 --max-chars 900
 ```
 
-保存された memories は `source_files` と `source_hashes` を記録します。
+`take-control` で保存されたメモリには `source_files` と `source_hashes` が記録されるため、変更のないソースファイルは次回以降スキップされます。
 
-## Observe
+## オブザーブ (Observe)
+
+`observe` は、クレンジングされた生のメモを `inbox/` に保存します。インボックス内のメモはアクティブなメモリではありません。
 
 ```bash
 engram observe --file session.md
 engram save-session --file .agents/.engram/inbox/<note>.md
 ```
 
-`inbox/` notes は変換されるまで active memory ではありません。
+永続メモリにするかどうかを決める前に、一時的にメモを残しておきたい場合に使用します。
 
-## Repair And Review
+## 修復とレビュー (Repair & Review)
+
+手動での編集やインポートの後は `repair` を実行します：
 
 ```bash
 engram repair
 engram rebuild-index
 engram verify
+```
+
+アーカイブする前に、グラフおよび品質チェックを利用します：
+
+```bash
 engram graph "package manager"
 engram quality-check
 engram archive --reason "Repo migrated to npm." rules/use-pnpm.md
 ```
 
-次: [Comparison](comparison.md)。
+次へ：[比較とロードマップ](comparison.md)。

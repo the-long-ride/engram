@@ -1,54 +1,57 @@
-# Protocolo De Memoria Humana
+# Protocolo de Memoria de Propiedad Humana
 
-Engram no es solo "memoria de agente." Es un protocolo para que la memoria sea inspeccionable, portable y gobernada por humanos.
+Engram no es solo "memoria de agente". Es un protocolo que hace que la memoria sea inspeccionable, portable y gobernada por humanos.
 
-## Contrato
+## El Contrato
 
-Markdown es memoria durable.
+Markdown es memoria duradera.
 
-JSON index y graph son capas de aceleración.
+Los archivos de índice y grafo JSON son capas de aceleración.
 
-La aprobación es la frontera de confianza.
+La aprobación es el límite de confianza.
 
-Los hashes son controles de integridad.
+Los hashes son comprobaciones de integridad.
 
-Las ignore rules son controles de privacidad.
+Las reglas de omisión (ignore rules) son controles de privacidad.
 
 Git es portabilidad e historial de auditoría.
 
-Los adaptadores de agente son comodidad, no autoridad.
+Los adaptadores de agente son conveniencia, no autoridad.
 
-Los agentes sugieren; los humanos deciden qué se vuelve memoria.
+Los agentes pueden sugerir memoria, pero los humanos son propietarios de lo que se convierte en memoria.
 
-## Tipos
+## Tipos de Memoria
 
 | Tipo | Uso |
 | --- | --- |
-| Rule | preferencia, corrección, restricción |
-| Skill | workflow repetible, checklist, procedimiento |
-| Knowledge | hecho objetivo, decisión, detalle de implementación |
+| Rule | preferencia del usuario, corrección, restricción, guía de siempre/nunca |
+| Skill | flujo de trabajo repetible, lista de verificación, procedimiento, libro de ejecución (runbook) |
+| Knowledge | hecho objetivo del proyecto, decisión, detalle de implementación |
 
-Cada memoria activa tiene `Context`, `Content` y `Example`.
+Cada archivo de memoria activa tiene secciones de `Context`, `Content` y `Example`. Las memorias de tipo Rule (regla) también apuntan a límites de líneas concisos para que la guía cargada siga siendo útil.
 
-## Flujo De Escritura
+## Flujo de Escritura
 
-1. El agente propone candidatos.
-2. Engram detecta tipo y scope.
-3. Valida schema, secretos, prompt injection y rutas.
-4. El humano ve un preview.
-5. Responde `A`, `A 1,3`, `B <note>` o `C`.
-6. Solo lo aprobado se escribe.
-7. Se refrescan index, graph, hashes y changelog.
+1. El agente propone uno o más candidatos.
+2. Engram analiza el tipo de candidato y el alcance de destino (scope).
+3. Engram comprueba el esquema, secretos, patrones de inyección de prompts y seguridad de ruta.
+4. El humano ve una vista previa.
+5. El humano responde `A`, `A 1,3`, `B <nota>` o `C`.
+6. Solo se escribe la memoria aprobada.
+7. Se actualizan el índice, grafo, hashes y registro de cambios (changelog).
 
-## Flujo De Lectura
+## Flujo de Lectura
 
-1. Engram carga workspace y global index.
-2. Workspace gana sobre duplicados globales.
-3. Ignore rules y roles filtran ruido.
-4. El graph routing elige contexto compacto.
-5. Hashes y seguridad corren antes de imprimir contenido.
+1. Engram carga el espacio de trabajo y los índices globales opcionales.
+2. Las entradas del espacio de trabajo ganan sobre los duplicados globales.
+3. Las reglas de omisión y los filtros de rol ocultan las entradas irrelevantes.
+4. El enrutamiento sensible al grafo selecciona un paquete de contexto compacto.
+5. Se ejecutan comprobaciones de hash y de seguridad antes de imprimir el contenido.
 
-Sin protocolo, la memoria se vuelve estado invisible. Engram la vuelve archivos, diffs, hashes y revisiones.
+## Por Qué Importa Esto
+
+Sin un protocolo, la memoria puede convertirse en un estado invisible. El estado invisible es difícil de revisar, difícil de compartir y fácil de envenenar accidentalmente por los agentes.
+
+Engram hace que la memoria sea aburrida a propósito: archivos, diferencias (diffs), hashes, puertas de revisión y comandos que un humano puede volver a ejecutar.
 
 Siguiente: [Operaciones](operations.md).
-

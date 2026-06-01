@@ -16,7 +16,7 @@ import { planMemorySave, previewSavePlans, type SavePlan } from '../core/memory/
 import { parseMemory } from '../core/memory/schema.js';
 import type { MemorySourceMeta } from '../core/memory/memory-template.js';
 import { installSkillset, type InstallResult } from '../core/integrations/skillset.js';
-import { autosaveGuidance, generatedMemoryGuidance, inferMemoryType, normalizeMemoryType, parseMemoryCandidate, parseMemoryCandidates } from '../core/memory/memory-candidate.js';
+import { generatedMemoryGuidance, inferMemoryType, normalizeMemoryType, parseMemoryCandidate, parseMemoryCandidates, saveSessionGuidance } from '../core/memory/memory-candidate.js';
 import { discoverTakeControlSources, planTakeControlSources, renderTakeControlPlan, takeControlGuidance } from '../core/memory/take-control.js';
 import { applyGlobalRemote, applyWorkspaceSubmodule, planGlobalRemote, planWorkspaceSubmodule, resolveGlobalPath } from './init-plans.js';
 import type { MemoryType, Scope } from '../core/runtime/types.js';
@@ -150,7 +150,7 @@ export async function cmdSave(args: string[], flags: Record<string, any>): Promi
   const explicitType = normalizeMemoryType(args[0]);
   let type: MemoryType = explicitType ?? inferMemoryType(args.join(' '));
   let text = (explicitType ? args.slice(1) : args).join(' ').trim();
-  if (!explicitType && await shouldSwitchToAutosave(text)) return cmdAutosave([text], flags);
+  if (!explicitType && await shouldSwitchToSaveSession(text)) return cmdSaveSession([text], flags);
   const ctx = await getContext();
   const scopes = flags.scope ? [flags.scope as Scope] : writeScopes(ctx.config.scope, ctx.config);
   const author = await resolveAuthor();
@@ -179,34 +179,34 @@ export async function cmdSave(args: string[], flags: Record<string, any>): Promi
 }
 
 /** Propose multiple memories from a long session summary or agent brainstorm. */
-export async function cmdAutosave(args: string[], flags: Record<string, any> = {}): Promise<string> {
+export async function cmdSaveSession(args: string[], flags: Record<string, any> = {}): Promise<string> {
   const ctx = await getContext();
   const scopes = flags.scope ? [flags.scope as Scope] : writeScopes(ctx.config.scope, ctx.config);
   const author = await resolveAuthor();
   const role = rolesFromFlags(flags);
   const acceptAll = flags['accept-all'] === true;
-  let text = await autosaveInput(args, flags);
+  let text = await saveSessionInput(args, flags);
   let plans: SavePlan[] = [];
   let approval: SelectionApproval | undefined = acceptAll ? { accepted: true } : undefined;
   if (!text) {
     if (acceptAll) {
-      text = await requestGeneratedSelectionText({ guidance: autosaveGuidance(), acceptAll }) ?? '';
+      text = await requestGeneratedSelectionText({ guidance: saveSessionGuidance(), acceptAll }) ?? '';
       if (!text) return 'Discarded. No file written.';
     }
     else {
       const captured = await requestGeneratedSelectionApproval(async (generated) => {
         text = generated;
-        plans = await planAutosaveCandidates(ctx, generated, scopes, author, role);
+        plans = await planSaveSessionCandidates(ctx, generated, scopes, author, role);
         return previewSavePlans(plans);
-      }, { guidance: autosaveGuidance() });
+      }, { guidance: saveSessionGuidance() });
       if (!captured) return 'Discarded. No file written.';
       approval = captured.approval;
     }
   } else {
-    plans = await planAutosaveCandidates(ctx, text, scopes, author, role);
+    plans = await planSaveSessionCandidates(ctx, text, scopes, author, role);
     if (!acceptAll) approval = await requestSelectionApproval(previewSavePlans(plans));
   }
-  if (acceptAll && text && !plans.length) plans = await planAutosaveCandidates(ctx, text, scopes, author, role);
+  if (acceptAll && text && !plans.length) plans = await planSaveSessionCandidates(ctx, text, scopes, author, role);
   if (!plans.length) return 'No memory candidates detected.';
   if (!approval?.accepted) return 'Discarded. No file written.';
   if (approval.selected?.length) plans = plans.filter((plan) => plan.candidateIndex === undefined || approval.selected?.includes(plan.candidateIndex));
@@ -238,17 +238,17 @@ export async function cmdTakeControl(args: string[], flags: Record<string, any> 
     else {
       const captured = await requestGeneratedSelectionApproval(async (generated) => {
         text = generated;
-        plans = await planAutosaveCandidates(ctx, generated, scopes, author, role, source);
+        plans = await planSaveSessionCandidates(ctx, generated, scopes, author, role, source);
         return previewSavePlans(plans);
       }, { guidance });
       if (!captured) return 'Discarded. No file written.';
       approval = captured.approval;
     }
   } else {
-    plans = await planAutosaveCandidates(ctx, text, scopes, author, role, source);
+    plans = await planSaveSessionCandidates(ctx, text, scopes, author, role, source);
     if (!acceptAll) approval = await requestSelectionApproval(previewSavePlans(plans));
   }
-  if (acceptAll && text && !plans.length) plans = await planAutosaveCandidates(ctx, text, scopes, author, role, source);
+  if (acceptAll && text && !plans.length) plans = await planSaveSessionCandidates(ctx, text, scopes, author, role, source);
   if (!plans.length) return 'No memory candidates detected.';
   if (!approval?.accepted) return 'Discarded. No file written.';
   if (approval.selected?.length) plans = plans.filter((plan) => plan.candidateIndex === undefined || approval.selected?.includes(plan.candidateIndex));
@@ -258,7 +258,7 @@ export async function cmdTakeControl(args: string[], flags: Record<string, any> 
   return `${prefix}\n${saved}`;
 }
 
-async function planAutosaveCandidates(ctx: Awaited<ReturnType<typeof getContext>>, text: string, scopes: Scope[], author: string, role?: string[], source?: MemorySourceMeta): Promise<SavePlan[]> {
+async function planSaveSessionCandidates(ctx: Awaited<ReturnType<typeof getContext>>, text: string, scopes: Scope[], author: string, role?: string[], source?: MemorySourceMeta): Promise<SavePlan[]> {
   const plans: SavePlan[] = [];
   let candidateIndex = 1;
   for (const candidate of parseMemoryCandidates(text)) {
@@ -297,7 +297,7 @@ function frontmatterStrings(value: unknown): string[] {
   return typeof value === 'string' && value.trim() ? [value] : [];
 }
 
-async function autosaveInput(args: string[], flags: Record<string, any>): Promise<string> {
+async function saveSessionInput(args: string[], flags: Record<string, any>): Promise<string> {
   const files = [
     ...(Array.isArray(flags.file) ? flags.file : typeof flags.file === 'string' ? [flags.file] : []),
     ...(typeof flags.f === 'string' ? [flags.f] : [])
@@ -319,7 +319,7 @@ async function writeSavePlans(plans: SavePlan[], edits?: string): Promise<string
   return `Saved -> ${written.join(', ')}`;
 }
 
-async function shouldSwitchToAutosave(text: string): Promise<boolean> {
+async function shouldSwitchToSaveSession(text: string): Promise<boolean> {
   if (!text || !process.stdin.isTTY || !process.stdout.isTTY || !looksLikeLongSession(text)) return false;
   const rl = createInterface({ input, output });
   try {

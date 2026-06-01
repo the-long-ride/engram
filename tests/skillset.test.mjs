@@ -36,7 +36,7 @@ test('skillset installer writes all supported agent adapter files', async () => 
   assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /Your knowledge memory manager, synced across every device with Git/);
   assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /take-control/);
   assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /"take control" to "take-control"/);
-  assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /legacy "autosave" to "save-session"/);
+  assert.doesNotMatch(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /autosave|auto save|legacy "autosave"/);
   assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /current AI agent chat\/session/);
   assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /source pack token-light/);
   assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /ss -a/);

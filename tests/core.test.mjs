@@ -225,9 +225,9 @@ test('command registry has topic help and stable aliases', () => {
   }
   assert.equal(commandAliases().s, 'save');
   assert.equal(commandAliases().ss, 'save-session');
-  assert.equal(commandAliases().autosave, 'save-session');
-  assert.equal(commandAliases().as, 'save-session');
-  assert.equal(commandAliases().at, 'save-session');
+  assert.equal(commandAliases().autosave, undefined);
+  assert.equal(commandAliases().as, undefined);
+  assert.equal(commandAliases().at, undefined);
   assert.equal(commandAliases().tc, 'take-control');
   assert.equal(commandAliases()['-v'], '--version');
 });
@@ -294,13 +294,12 @@ test('argument parser preserves positional text after known boolean flags', () =
   const shortcut = parseArgs(['ss', '-a', 'TYPE: rule | TEXT: Always test releases.']);
   assert.equal(shortcut.flags['accept-all'], true);
   assert.deepEqual(shortcut.rest, ['TYPE: rule | TEXT: Always test releases.']);
-  const legacy = parseArgs(['autosave', '-a', 'TYPE: rule | TEXT: Always test releases.']);
-  assert.equal(legacy.flags['accept-all'], true);
-  assert.deepEqual(legacy.rest, ['TYPE: rule | TEXT: Always test releases.']);
-  const naturalAutosave = parseArgs(['auto', 'save', 'accept', 'all', '--scope', 'workspace']);
-  assert.equal(naturalAutosave.command, 'save-session');
-  assert.equal(naturalAutosave.flags['accept-all'], true);
-  assert.deepEqual(naturalAutosave.rest, []);
+  const removedLegacy = parseArgs(['autosave', '-a', 'TYPE: rule | TEXT: Always test releases.']);
+  assert.equal(removedLegacy.command, 'autosave');
+  assert.deepEqual(removedLegacy.rest, ['-a', 'TYPE: rule | TEXT: Always test releases.']);
+  const removedNatural = parseArgs(['auto', 'save', 'accept', 'all', '--scope', 'workspace']);
+  assert.equal(removedNatural.command, 'auto');
+  assert.deepEqual(removedNatural.rest, ['save', 'accept', 'all']);
   const load = parseArgs(['load', '--all', 'deployment workflow']);
   assert.equal(load.flags.all, true);
   assert.deepEqual(load.rest, ['deployment workflow']);

@@ -52,7 +52,7 @@ export async function requestGeneratedSelectionApproval(
   return { text, approval };
 }
 
-/** Ask for generated autosave text without a second approval prompt. */
+/** Ask for generated save-session text without a second approval prompt. */
 export async function requestGeneratedSelectionText(options: GeneratedMemoryOptions = {}): Promise<string | undefined> {
   writeGeneratedPrompt(options);
   if (!input.isTTY) {

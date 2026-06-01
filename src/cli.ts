@@ -2,7 +2,7 @@
 import { parseArgs } from './cli/args.js';
 import { VERSION } from './core/runtime/constants.js';
 import { canonicalCommand } from './core/cli/command-registry.js';
-import { cmdAutosave, cmdCompletion, cmdHelp, cmdInit, cmdSave, cmdTakeControl, cmdUpdateHelp } from './commands/core.js';
+import { cmdCompletion, cmdHelp, cmdInit, cmdSave, cmdSaveSession, cmdTakeControl, cmdUpdateHelp } from './commands/core.js';
 import { cmdObserve } from './commands/observe.js';
 import { cmdAudit, cmdLoad, cmdRebuildIndex, cmdRepair, cmdVerify } from './commands/read.js';
 import { cmdArchive, cmdBenchmark, cmdDeduplicate, cmdEntry, cmdExport, cmdGraph, cmdHealth, cmdImport, cmdQuality, cmdSearch, cmdStats, cmdSync } from './commands/ops.js';
@@ -24,7 +24,7 @@ export async function runCli(argv: string[]): Promise<string> {
     case 'update-help': return cmdUpdateHelp();
     case 'completion': return cmdCompletion(rest[0]);
     case 'save': return cmdSave(rest, flags);
-    case 'save-session': return cmdAutosave(rest, flags);
+    case 'save-session': return cmdSaveSession(rest, flags);
     case 'observe': return cmdObserve(rest, flags);
     case 'take-control': return cmdTakeControl(rest, flags);
     case 'load': return cmdLoad(rest, flags);

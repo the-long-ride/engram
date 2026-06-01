@@ -28,7 +28,7 @@ test('init, help, save reject, save accept, load, verify, audit', async () => {
   assert.match((await runEngram(cwd, env, ['help', 'take-control'])).stdout, /workspace guidance/);
   assert.match((await runEngram(cwd, env, ['-h', 'roles'])).stdout, /role: \[\.\.\.\]/);
   assert.match((await runEngram(cwd, env, ['save-session', '-h'])).stdout, /one candidate per line/);
-  assert.match((await runEngram(cwd, env, ['autosave', '-h'])).stdout, /engram save-session/);
+  assert.doesNotMatch((await runEngram(cwd, env, ['autosave', '-h'])).stdout, /one candidate per line/);
   assert.match((await runEngram(cwd, env, ['h', 'save'])).stdout, /engram save/);
   assert.match((await runEngram(cwd, env, ['save', '-h'])).stdout, /engram save rule/);
   assert.match((await runEngram(cwd, env, ['save', 'rule', 'Use pnpm for installs'], 'C\n')).stdout, /Discarded/);
@@ -75,20 +75,16 @@ test('short command aliases dispatch to canonical commands', async () => {
   assert.equal((await runEngram(cwd, env, ['i'])).code, 0);
   const saved = await runEngram(cwd, env, ['s', 'rule', '--scope', 'workspace', 'Alias save rule'], 'A\n');
   assert.equal(saved.code, 0, saved.stderr);
-  const autosaved = await runEngram(cwd, env, ['ss', '-a', '--scope', 'workspace', 'TYPE: knowledge | TEXT: Alias ss accepts all save-session candidates.']);
-  assert.equal(autosaved.code, 0, autosaved.stderr);
-  assert.match(autosaved.stdout, /Accepted all save-session candidates/);
+  const shortcutSaved = await runEngram(cwd, env, ['ss', '-a', '--scope', 'workspace', 'TYPE: knowledge | TEXT: Alias ss accepts all save-session candidates.']);
+  assert.equal(shortcutSaved.code, 0, shortcutSaved.stderr);
+  assert.match(shortcutSaved.stdout, /Accepted all save-session candidates/);
   const canonical = await runEngram(cwd, env, ['save-session', '--accept-all', '--scope', 'workspace', 'TYPE: knowledge | TEXT: Canonical save-session accepts all candidates.']);
   assert.equal(canonical.code, 0, canonical.stderr);
   assert.match(canonical.stdout, /Accepted all save-session candidates/);
-  const legacyAutosaved = await runEngram(cwd, env, ['at', '-a', '--scope', 'workspace', 'TYPE: knowledge | TEXT: Legacy at accepts all save-session candidates.']);
-  assert.equal(legacyAutosaved.code, 0, legacyAutosaved.stderr);
-  assert.match(legacyAutosaved.stdout, /Accepted all save-session candidates/);
-  const naturalAutosaved = await runEngram(cwd, env, ['auto', 'save', 'accept', 'all', '--scope', 'workspace', 'TYPE: knowledge | TEXT: Natural auto save accepts all candidates.']);
-  assert.equal(naturalAutosaved.code, 0, naturalAutosaved.stderr);
-  assert.match(naturalAutosaved.stdout, /Accepted all save-session candidates/);
+  assert.doesNotMatch((await runEngram(cwd, env, ['at', '-a', '--scope', 'workspace', 'TYPE: knowledge | TEXT: Legacy at should not save.'])).stdout, /Accepted all save-session candidates/);
+  assert.doesNotMatch((await runEngram(cwd, env, ['auto', 'save', 'accept', 'all', '--scope', 'workspace', 'TYPE: knowledge | TEXT: Natural auto save should not save.'])).stdout, /Accepted all save-session candidates/);
   assert.match((await runEngram(cwd, env, ['l', 'alias save'])).stdout, /Alias save rule/);
-  assert.match((await runEngram(cwd, env, ['search', 'Natural auto save'])).stdout, /natural-auto-save-accepts-all-candidates/);
+  assert.doesNotMatch((await runEngram(cwd, env, ['search', 'Natural auto save'])).stdout, /Natural auto save should not save/);
   assert.match((await runEngram(cwd, env, ['search', 'Alias ss'])).stdout, /Alias ss accepts all save.?session candidates/);
   assert.match((await runEngram(cwd, env, ['vf'])).stdout, /OK workspace/);
   await rm(cwd, { recursive: true, force: true });
@@ -200,12 +196,14 @@ test('completion emits shell helper with command suggestions', async () => {
   const zsh = await runEngram(cwd, env, ['completion', 'zsh']);
   assert.equal(zsh.code, 0, zsh.stderr);
   assert.match(zsh.stdout, /#compdef engram/);
-  assert.match(zsh.stdout, /save-session\|ss\|autosave\|as\|at/);
+  assert.match(zsh.stdout, /save-session\|ss/);
+  assert.doesNotMatch(zsh.stdout, /save-session\|ss\|autosave/);
   assert.match(zsh.stdout, /--file\[read session summary file\]/);
   const powershell = await runEngram(cwd, env, ['completion', 'powershell']);
   assert.equal(powershell.code, 0, powershell.stderr);
   assert.match(powershell.stdout, /Register-ArgumentCompleter/);
-  assert.match(powershell.stdout, /'save-session', 'ss', 'autosave', 'as', 'at'/);
+  assert.match(powershell.stdout, /'save-session', 'ss'/);
+  assert.doesNotMatch(powershell.stdout, /'autosave'/);
   assert.match(powershell.stdout, /\$engramTakeControlArgs/);
   assert.match(powershell.stdout, /\$engramSaveSessionArgs/);
   await rm(cwd, { recursive: true, force: true });
@@ -497,7 +495,7 @@ test('save-session accept-all saves generated candidates without final approval 
   await runEngram(cwd, env, ['init']);
   const input = [
     'TYPE: rule | TEXT: Always update Engram skillsets after changing slash behavior.',
-    'TYPE: knowledge | TEXT: Slash autosave accept-all is explicit human approval.',
+    'TYPE: knowledge | TEXT: Slash save-session accept-all is explicit human approval.',
     ''
   ].join('\n');
   const saved = await runEngram(cwd, env, ['save-session', '--scope', 'workspace', '--accept-all'], input);

@@ -4,7 +4,7 @@ import { getContext } from '../core/memory/context.js';
 import { writeObservation } from '../core/memory/observe.js';
 import { writeScopes } from '../core/runtime/config.js';
 import { readText } from '../core/system/fsx.js';
-import { cmdAutosave } from './core.js';
+import { cmdSaveSession } from './core.js';
 import type { Scope } from '../core/runtime/types.js';
 
 /** Capture a raw session note in inbox, optionally mining it through save-session. */
@@ -23,7 +23,7 @@ export async function cmdObserve(args: string[], flags: Record<string, any> = {}
     delete nextFlags.file;
     delete nextFlags.f;
     delete nextFlags.propose;
-    const saved = await cmdAutosave([observed.text], nextFlags);
+    const saved = await cmdSaveSession([observed.text], nextFlags);
     return `Observed -> ${observed.fullPath}\n${observeSafetyLine(observed)}\n${saved}`;
   }
   return `Observed -> ${observed.fullPath}\n${observeSafetyLine(observed)}\nNext: engram save-session --file ${observed.fullPath}`;

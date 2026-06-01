@@ -105,7 +105,7 @@ export function generatedMemoryGuidance(explicitType?: MemoryType): string {
 }
 
 /** Guidance shown when an agent should mine a long interaction. */
-export function autosaveGuidance(): string {
+export function saveSessionGuidance(): string {
   return [
     'Brainstorm up to 5 durable memory candidates from the long interaction or current AI agent chat.',
     'If you are an AI agent in chat, use LLM judgment to define the candidates from the current conversation before passing them to Engram.',

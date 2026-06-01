@@ -29,9 +29,9 @@ test('mcp status and save proposal do not write silently', async () => {
     const detected = await handleMcp({ id: 4, method: 'engram_save', params: { text: 'Always use pnpm for installs' } });
     assert.match(detected.result, /Type: rule/);
 
-    const autosave = await handleMcp({
+    const saveSession = await handleMcp({
       id: 5,
-      method: 'engram_autosave',
+      method: 'engram_save_session',
       params: {
         text: [
           'TYPE: rule | TEXT: Always run tests before release.',
@@ -40,10 +40,10 @@ test('mcp status and save proposal do not write silently', async () => {
         role: ['release']
       }
     });
-    assert.match(autosave.result, /ENGRAM AUTOSAVE PROPOSAL/);
-    assert.match(autosave.result, /Candidate: 1/);
-    assert.match(autosave.result, /Candidate: 2/);
-    assert.match(autosave.result, /Human approval required/);
+    assert.match(saveSession.result, /ENGRAM SAVE-SESSION PROPOSAL/);
+    assert.match(saveSession.result, /Candidate: 1/);
+    assert.match(saveSession.result, /Candidate: 2/);
+    assert.match(saveSession.result, /Human approval required/);
     assert.match(await runCli(['stats']), /Total: 0/);
 
     const empty = await handleMcp({ id: 6, method: 'engram_save', params: { text: '' } });

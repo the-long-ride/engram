@@ -2,7 +2,11 @@
 export interface CommandHelp { command: string; purpose: string; alias?: string; }
 export interface HelpSection { title: string; commands: CommandHelp[]; }
 
-const EXTRA_ALIASES: Record<string, string> = { at: 'autosave' };
+const EXTRA_ALIASES: Record<string, string> = {
+  autosave: 'save-session',
+  as: 'save-session',
+  at: 'save-session'
+};
 
 export const HELP_DATA: HelpSection[] = [
   {
@@ -24,8 +28,8 @@ export const HELP_DATA: HelpSection[] = [
       { command: 'engram save workflow [--role role] <text>', alias: 's', purpose: 'Draft and save a repeatable workflow as a skill memory' },
       { command: 'engram save knowledge [--role role] [text]', alias: 's', purpose: 'Draft and save a knowledge memory (agent summary or text)' },
       { command: 'engram save [--role role] [text]', alias: 's', purpose: 'Auto-detect rule, workflow, skill, or knowledge memory from text' },
-      { command: 'engram autosave [--file transcript.md] [--role role] [--accept-all] [session-summary]', alias: 'as', purpose: 'Propose multiple memories from a long session before approval or explicit accept-all' },
-      { command: 'engram observe [--file session.md] [--propose] [note]', alias: 'o', purpose: 'Capture sanitized raw notes in inbox, then optionally propose memories through autosave' },
+      { command: 'engram save-session [--file transcript.md] [--role role] [--accept-all] [session-summary]', alias: 'ss', purpose: 'Propose multiple memories from a long session before approval or explicit accept-all' },
+      { command: 'engram observe [--file session.md] [--propose] [note]', alias: 'o', purpose: 'Capture sanitized raw notes in inbox, then optionally propose memories through save-session' },
       { command: 'engram take-control [--plan] [--file path] [--dir path] [--include glob] [--exclude glob] [--max-sources n] [--max-chars n] [--all] [--accept-all]', alias: 'tc', purpose: 'Explore existing workspace guidance with agent help, token-light accept-all, and Engram memory writes' },
       { command: 'engram load [--all] [query]', alias: 'l', purpose: 'Route and load relevant memories into the agent context' },
       { command: 'engram dry-run [--all] [query]', alias: 'dr', purpose: 'Preview routed memory file paths without printing their content' },
@@ -33,6 +37,7 @@ export const HELP_DATA: HelpSection[] = [
       { command: 'engram graph [--rebuild] [query]', alias: 'g', purpose: 'Inspect the derived layered JSON memory graph and contradiction candidates' },
       { command: 'engram verify [workspace|global]', alias: 'vf', purpose: 'Verify memory file integrity and hashes' },
       { command: 'engram rebuild-index [workspace|global]', alias: 'ri', purpose: 'Explicitly rebuild memory indexes from Markdown files' },
+      { command: 'engram repair [workspace|global]', alias: 'rp', purpose: 'Report invalid memory files that index rebuild would skip' },
       { command: 'engram audit [--author email] [--stale] [--low-confidence]', alias: 'a', purpose: 'Show audit rows for visible memories with optional filters' }
     ]
   },
@@ -135,11 +140,11 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '    save|s)',
       `      _arguments "--scope[write scope]:scope:(${scopes})" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "1:memory type:(${saveTypes})"`,
       '      ;;',
-      '    autosave|as|at)',
-      '      _arguments "--file[read session summary file]:file:_files" "--scope[write scope]:scope:(workspace global)" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "--accept-all[accept every autosave candidate]" "1:session summary: "',
+      '    save-session|ss|autosave|as|at)',
+      '      _arguments "--file[read session summary file]:file:_files" "--scope[write scope]:scope:(workspace global)" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "--accept-all[accept every save-session candidate]" "1:session summary: "',
       '      ;;',
       '    observe|o)',
-      '      _arguments "--file[read raw note file]:file:_files" "--scope[write scope]:scope:(workspace global)" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "--propose[mine inbox note through autosave]" "--accept-all[accept every proposed candidate]" "1:note: "',
+      '      _arguments "--file[read raw note file]:file:_files" "--scope[write scope]:scope:(workspace global)" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "--propose[mine inbox note through save-session]" "--accept-all[accept every proposed candidate]" "1:note: "',
       '      ;;',
       '    take-control|tc)',
       '      _arguments "--file[read one source file]:file:_files" "--dir[scan one source directory]:dir:_files -/" "--include[include matching glob]:glob:" "--exclude[exclude matching glob]:glob:" "--max-sources[maximum source count]:number:" "--max-chars[maximum chars per source]:number:" "--scope[write scope]:scope:(workspace global)" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "--all[include README docs and library docs]" "--accept-all[accept every generated candidate]" "--dry-run[show source pack only]" "--plan[preview source plan only]"',
@@ -159,7 +164,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '    search|f|propose|p)',
       '      _arguments "1:query: "',
       '      ;;',
-      '    verify|vf|rebuild-index|ri)',
+      '    verify|vf|rebuild-index|ri|repair|rp)',
       `      _arguments "1:scope:(${scopes})"`,
       '      ;;',
       '    export|x)',
@@ -189,7 +194,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       ')',
       '$engramInitArgs = @(\'--force\', \'--global-only\', \'--no-skillset\', \'--skillset\', \'--submodule\', \'--submodule-remote\', \'--no-global\', \'--global-path\', \'--global-remote\', \'--global-branch\')',
       '$engramSaveTypes = @(\'rule\', \'skill\', \'workflow\', \'knowledge\', \'--scope\', \'--role\', \'--roles\')',
-      '$engramAutosaveArgs = @(\'--file\', \'--scope\', \'--role\', \'--roles\', \'--accept-all\')',
+      '$engramSaveSessionArgs = @(\'--file\', \'--scope\', \'--role\', \'--roles\', \'--accept-all\')',
       `$engramObserveArgs = @(${observeArgs.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
       `$engramTakeControlArgs = @(${takeControlArgs.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
       `$engramSkillsetTargets = @(${skillsetTargets.split(' ').map((target) => `'${target}'`).join(', ')})`,
@@ -211,12 +216,12 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '      switch ($command) {',
       '        { $_ -in @(\'init\', \'i\') } { $engramInitArgs; break }',
       '        { $_ -in @(\'save\', \'s\') } { $engramSaveTypes; break }',
-      '        { $_ -in @(\'autosave\', \'as\', \'at\') } { $engramAutosaveArgs; break }',
+      '        { $_ -in @(\'save-session\', \'ss\', \'autosave\', \'as\', \'at\') } { $engramSaveSessionArgs; break }',
       '        { $_ -in @(\'observe\', \'o\') } { $engramObserveArgs; break }',
       '        { $_ -in @(\'take-control\', \'tc\') } { $engramTakeControlArgs; break }',
       '        { $_ -in @(\'install-skillset\', \'is\') } { $engramSkillsetTargets + \'--force\'; break }',
       '        { $_ -in @(\'set-rule-variant\', \'rv\') } { $engramRuleVariants; break }',
-      '        { $_ -in @(\'verify\', \'vf\', \'rebuild-index\', \'ri\') } { $engramScopes; break }',
+      '        { $_ -in @(\'verify\', \'vf\', \'rebuild-index\', \'ri\', \'repair\', \'rp\') } { $engramScopes; break }',
       '        default { $engramCommands }',
       '      }',
       '    }',
@@ -283,7 +288,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
     '      COMPREPLY=( $(compgen -W "--scope --role --roles" -- "$cur") )',
     '      return',
     '      ;;',
-      '    autosave|as|at)',
+      '    save-session|ss|autosave|as|at)',
       '      COMPREPLY=( $(compgen -W "--file --scope --role --roles --accept-all" -- "$cur") )',
       '      return',
       '      ;;',
@@ -307,7 +312,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '      COMPREPLY=( $(compgen -W "--reason" -- "$cur") )',
       '      return',
       '      ;;',
-    '    verify|vf|rebuild-index|ri)',
+    '    verify|vf|rebuild-index|ri|repair|rp)',
     '      if [[ $cword -eq 2 ]]; then COMPREPLY=( $(compgen -W "$scopes" -- "$cur") ); return; fi',
     '      COMPREPLY=()',
     '      return',

@@ -20,19 +20,19 @@ files. Hosts that support custom slash commands can also load generated
 - Never write memory silently.
 - Treat `engram_save` and `engram save` as proposal flows with human approval.
   Engram may automatically choose update-vs-new before presenting the preview.
-- Treat `engram autosave` as the explicit long-session proposal flow. It may
+- Treat `engram save-session` (`engram ss`) as the explicit long-session proposal flow. It may
   propose multiple rule, knowledge, and workflow/skill candidates, but it must
   still require human approval before writing. Numbered approvals such as
   `A 1,3` write only the selected candidates.
-- Treat `/engram auto save` as natural wording for `/engram autosave`. In AI
+- Treat `/engram auto save` and legacy `/engram autosave` as natural wording for `/engram save-session`. In AI
   agent chat, the host should let the LLM define concise candidates from the
   current conversation and pass `TYPE: ... | TEXT: ...` lines to Engram.
-- Treat `engram autosave --accept-all` as explicit human approval for every
-  agent-recommended autosave candidate. Agents must not add this flag unless the
+- Treat `engram save-session --accept-all` as explicit human approval for every
+  agent-recommended save-session candidate. Agents must not add this flag unless the
   human requested it.
 - Treat `engram observe` as raw inbox capture, not active memory. It may write a
   sanitized `inbox/` note, but converting that note into memory requires
-  `observe --propose` or `autosave --file` and the normal approval flow unless
+  `observe --propose` or `save-session --file` and the normal approval flow unless
   the human explicitly passed `--accept-all`.
 - Treat `engram graph` and `engram quality-check` contradiction rows as advisory
   wrong-memory signals. Wrong or superseded memory should leave active routing
@@ -62,7 +62,7 @@ files. Hosts that support custom slash commands can also load generated
   surface `/engram`.
 - Treat `engram take-control` and `/engram take-control` as an agent-assisted
   source-discovery flow that converts existing workspace guidance into Engram
-  candidates through the same approval gate as autosave.
+  candidates through the same approval gate as save-session.
 - Preserve take-control source attribution by writing `source_files` and
   `source_hashes` frontmatter on saved memories. Re-runs should skip unchanged
   imported source hashes unless the human explicitly targets a file.
@@ -70,8 +70,8 @@ files. Hosts that support custom slash commands can also load generated
   `engram take-control --accept-all`. Keep take-control accept-all prompts
   token-light, generate only concise `TYPE: ... | TEXT: ...` candidates, and do
   not paste source excerpts or reasoning into chat.
-- Treat `/engram at -a` as `/engram autosave --accept-all`; `-a` is explicit
-  human accept-all approval for this shortcut.
+- Treat `/engram ss -a` as `/engram save-session --accept-all`; `-a` is explicit
+  human accept-all approval for this shortcut. Legacy `/engram at -a` remains compatible.
 - Describe slash adapters as: "Your knowledge memory manager, synced across
   every device with Git."
 - Keep short aliases equivalent to their canonical commands. Aliases are
@@ -79,7 +79,7 @@ files. Hosts that support custom slash commands can also load generated
 - Generated skillsets must keep agent chatter compact: summarize read commands
   in one line, speak for confirmations/file changes/failures/final results, and
   avoid pasting raw command output unless needed.
-- At session end, agents should suggest `engram save` or `engram autosave` when
+- At session end, agents should suggest `engram save` or `engram save-session` when
   durable rules, knowledge, or workflows emerged.
 
 ## Tool Contract
@@ -93,7 +93,7 @@ files. Hosts that support custom slash commands can also load generated
 | `engram_save` | Return a memory proposal for human review | No |
 | `engram_autosave` | Return multiple numbered memory proposals for human review | No |
 
-The MCP save/autosave tools intentionally do not write. A host must display the
+The MCP save/autosave proposal tools intentionally do not write. A host must display the
 proposal and collect explicit human approval before invoking a CLI write flow.
 
 ## CLI Contract
@@ -108,14 +108,15 @@ proposal and collect explicit human approval before invoking a CLI write flow.
 | `engram search "<query>"` | Search visible memory by query |
 | `engram graph [--rebuild] ["<query>"]` | Inspect the derived layered JSON graph and contradiction candidates |
 | `engram save [rule|skill|workflow|knowledge] [--role role] "<text>"` | Propose one memory and write after A/B/C approval |
-| `engram autosave [--file transcript.md] [--role role] [--accept-all] [session-summary]` | Propose multiple memories from a long session and write only after numbered A/B/C approval, or save every candidate when the human passed `--accept-all` |
-| `engram observe [--file session.md] [--propose] [note]` | Write sanitized raw notes into inbox; `--propose` mines them through autosave |
+| `engram save-session [--file transcript.md] [--role role] [--accept-all] [session-summary]` / `engram ss` | Propose multiple memories from a long session and write only after numbered A/B/C approval, or save every candidate when the human passed `--accept-all` |
+| `engram observe [--file session.md] [--propose] [note]` | Write sanitized raw notes into inbox; `--propose` mines them through save-session |
 | `engram take-control [--plan] [--file path] [--dir path] [--include glob] [--exclude glob] [--max-sources n] [--max-chars n] [--all] [--accept-all]` | Explore existing workspace guidance, notes, and docs with agent help, preview source plans, and consume approved candidates as Engram memory |
 | `engram archive [--reason text] <memory-id|file>` | Move wrong or superseded memory out of active routing after approval |
 | `engram benchmark <cases.json>` | Run a read-only hit@8 routing benchmark over query/expected-memory cases |
 | `engram set-role <role...>` | Configure active developer roles for routing role-scoped memory |
 | `engram set-rule-variant light|balanced|strict|off` | Configure compact rule output for agents |
 | `engram verify` | Check hash integrity |
+| `engram repair [workspace|global]` | Report invalid memory files that index rebuild would skip |
 | `engram rebuild-index [workspace|global]` | Explicitly rebuild memory indexes |
 | `engram resolve-conflicts` | Resolve and stage only `.agents/.engram/` conflicts |
 | `engram stats` | Show visible memory counts |
@@ -136,20 +137,20 @@ hosts may prefer MCP-style tools:
 | `/engram verify [scope]` | `engram_verify` or `engram verify [scope]` |
 | `/engram health` | `engram_status` or `engram health` |
 | `/engram save ...` | `engram_save` proposal or CLI approval flow |
-| `/engram autosave ...` | `engram_autosave` proposal or CLI approval flow; use CLI write flow when `--accept-all` is present |
-| `/engram auto save ...` | Same as `/engram autosave ...`; LLM defines candidates from current chat when no file or inline candidates are provided |
-| `/engram observe ...` | `engram observe ...` CLI flow; `--propose` may mine candidates through autosave |
+| `/engram save-session ...` / `/engram ss ...` | `engram_autosave` proposal or CLI approval flow; use CLI write flow when `--accept-all` is present |
+| `/engram auto save ...` / legacy `/engram autosave ...` | Same as `/engram save-session ...`; LLM defines candidates from current chat when no file or inline candidates are provided |
+| `/engram observe ...` | `engram observe ...` CLI flow; `--propose` may mine candidates through save-session |
 | `/engram graph ...` | `engram graph ...` CLI flow |
 | `/engram archive ...` | `engram archive ...` CLI approval flow |
 | `/engram take-control ...` | `engram take-control ...` CLI flow with agent-generated candidates and approval |
 | `/engram take control accept all` | `engram take-control --accept-all` CLI write flow with token-light source defaults |
-| `/engram at -a` | `engram autosave --accept-all` CLI write flow |
+| `/engram ss -a` | `engram save-session --accept-all` CLI write flow |
 | `/engram <other command>` | `engram <other command>` CLI flow |
 
 The slash adapter must not write memory by itself. It only asks the agent to run
 the same CLI/MCP flow the human could inspect directly. When the human includes
-`--accept-all` on autosave, the adapter may generate candidates and invoke the
-CLI accept-all path because the flag is the approval.
+`--accept-all` on save-session, the adapter may generate candidates and invoke the
+CLI accept-all path because the flag is the approval. Legacy `autosave`, `as`, and `at` remain aliases.
 The same applies to human-requested take-control accept-all, but adapters should
 preserve or tighten token limits and keep source excerpts out of chat output.
 

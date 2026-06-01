@@ -16,7 +16,10 @@ import { isIgnored } from '../dist/core/safety/ignore.js';
 import { scanInjection, scanSensitive, redactSensitive } from '../dist/core/safety/security.js';
 import { sha256 } from '../dist/core/safety/hash.js';
 import { scoreMemory } from '../dist/core/analysis/quality.js';
+import { searchEntries } from '../dist/core/analysis/search.js';
 import { convertDocumentToMarkdown, isConvertibleDocument } from '../dist/core/integrations/markdown-them.js';
+import { mergeIndexes } from '../dist/core/memory/index.js';
+import { route } from '../dist/core/memory/routing.js';
 import { tempWorkspace } from './helpers.mjs';
 
 test('init wordmark can render colored or plain', () => {
@@ -221,9 +224,53 @@ test('command registry has topic help and stable aliases', () => {
     seenAliases.set(item.alias, command);
   }
   assert.equal(commandAliases().s, 'save');
-  assert.equal(commandAliases().at, 'autosave');
+  assert.equal(commandAliases().ss, 'save-session');
+  assert.equal(commandAliases().autosave, 'save-session');
+  assert.equal(commandAliases().as, 'save-session');
+  assert.equal(commandAliases().at, 'save-session');
   assert.equal(commandAliases().tc, 'take-control');
   assert.equal(commandAliases()['-v'], '--version');
+});
+
+test('merged memory priority keeps workspace before global fallback', () => {
+  const workspaceEntry = {
+    id: 'same-topic',
+    type: 'knowledge',
+    scope: 'workspace',
+    tags: ['deploy'],
+    summary: 'Deploy checklist lives local.',
+    file: 'knowledge/same-topic.md',
+    author: 'dev@example.com',
+    confidence: 'high',
+    ignored: false,
+    updated: '2026-05-31'
+  };
+  const globalEntry = {
+    ...workspaceEntry,
+    id: 'global-topic',
+    scope: 'global',
+    summary: 'Deploy checklist lives global.',
+    file: 'knowledge/global-topic.md'
+  };
+  const duplicateGlobal = { ...workspaceEntry, scope: 'global', summary: 'Old global copy.' };
+  const index = mergeIndexes(
+    { version: 'test', last_updated: 'now', entries: [workspaceEntry] },
+    { version: 'test', last_updated: 'now', entries: [globalEntry, duplicateGlobal] }
+  );
+  assert.deepEqual(index.entries.map((entry) => `${entry.scope}:${entry.id}`), [
+    'workspace:same-topic',
+    'global:global-topic'
+  ]);
+  assert.equal(index.entries[0].summary, 'Deploy checklist lives local.');
+
+  const config = {
+    enabled: true,
+    read: 'auto',
+    roles: [],
+    graph: { enabled: false }
+  };
+  assert.equal(searchEntries(index.entries, 'deploy checklist')[0].scope, 'workspace');
+  assert.equal(route(index, 'deploy checklist', config)[0].scope, 'workspace');
 });
 
 test('markdown-them bridge converts document results through common exports', async () => {
@@ -241,14 +288,17 @@ test('markdown-them bridge converts document results through common exports', as
 });
 
 test('argument parser preserves positional text after known boolean flags', () => {
-  const autosave = parseArgs(['autosave', '--accept-all', 'TYPE: rule | TEXT: Always test releases.']);
-  assert.equal(autosave.flags['accept-all'], true);
-  assert.deepEqual(autosave.rest, ['TYPE: rule | TEXT: Always test releases.']);
-  const shortcut = parseArgs(['at', '-a', 'TYPE: rule | TEXT: Always test releases.']);
+  const saveSession = parseArgs(['save-session', '--accept-all', 'TYPE: rule | TEXT: Always test releases.']);
+  assert.equal(saveSession.flags['accept-all'], true);
+  assert.deepEqual(saveSession.rest, ['TYPE: rule | TEXT: Always test releases.']);
+  const shortcut = parseArgs(['ss', '-a', 'TYPE: rule | TEXT: Always test releases.']);
   assert.equal(shortcut.flags['accept-all'], true);
   assert.deepEqual(shortcut.rest, ['TYPE: rule | TEXT: Always test releases.']);
+  const legacy = parseArgs(['autosave', '-a', 'TYPE: rule | TEXT: Always test releases.']);
+  assert.equal(legacy.flags['accept-all'], true);
+  assert.deepEqual(legacy.rest, ['TYPE: rule | TEXT: Always test releases.']);
   const naturalAutosave = parseArgs(['auto', 'save', 'accept', 'all', '--scope', 'workspace']);
-  assert.equal(naturalAutosave.command, 'autosave');
+  assert.equal(naturalAutosave.command, 'save-session');
   assert.equal(naturalAutosave.flags['accept-all'], true);
   assert.deepEqual(naturalAutosave.rest, []);
   const load = parseArgs(['load', '--all', 'deployment workflow']);

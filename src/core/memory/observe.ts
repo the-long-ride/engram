@@ -55,6 +55,6 @@ ${text}
 
 ## Next
 
-Run \`engram autosave --file .agents/.engram/${file}\` only after reviewing the observation.
+Run \`engram save-session --file .agents/.engram/${file}\` only after reviewing the observation.
 `;
 }

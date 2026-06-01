@@ -67,7 +67,7 @@ export function routeWithGraph(entries: MemoryEntry[], graph: MemoryGraph, query
   }
   return [...scores.entries()]
     .filter(([, score]) => score > 0)
-    .sort((a, b) => b[1] - a[1])
+    .sort((a, b) => b[1] - a[1] || nodeScopePriority(a[0]) - nodeScopePriority(b[0]) || a[0].localeCompare(b[0]))
     .slice(0, max)
     .map(([id]) => entryMap.get(id))
     .filter((entry): entry is MemoryEntry => Boolean(entry));
@@ -187,7 +187,7 @@ function lexicalRoute(entries: MemoryEntry[], query: string, max: number): Memor
   return entries
     .map((entry) => ({ entry, score: lexicalScore(query, `${entry.id} ${entry.type} ${entry.tags.join(' ')} ${entry.summary}`) }))
     .filter((row) => row.score > 0)
-    .sort((a, b) => b.score - a.score)
+    .sort((a, b) => b.score - a.score || scopePriority(a.entry) - scopePriority(b.entry) || a.entry.file.localeCompare(b.entry.file))
     .slice(0, max)
     .map((row) => row.entry);
 }
@@ -203,6 +203,14 @@ function memoryNodeId(entry: MemoryEntry): string {
 
 function bump(scores: Map<string, number>, key: string, amount: number): void {
   scores.set(key, (scores.get(key) ?? 0) + amount);
+}
+
+function nodeScopePriority(nodeId: string): number {
+  return nodeId.startsWith('memory:workspace:') ? 0 : 1;
+}
+
+function scopePriority(entry: MemoryEntry): number {
+  return entry.scope === 'workspace' ? 0 : 1;
 }
 
 function embed(text: string): number[] {

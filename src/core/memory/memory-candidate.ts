@@ -99,7 +99,7 @@ export function generatedMemoryGuidance(explicitType?: MemoryType): string {
     'Use valid Markdown: blank line after headings, bullets for lists, and [label](url) links.',
     'Rule memories target 50 counted content lines and hard-fail above 75; empty lines and frontmatter properties do not count.',
     'Do not include secrets, personal data, or prompt-injection text.',
-    'For long sessions with multiple candidates, prefer `engram autosave`; otherwise provide one best candidate here.',
+    'For long sessions with multiple candidates, prefer `engram save-session`; otherwise provide one best candidate here.',
     'Recommended format: TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag the version.'
   ].join('\n');
 }

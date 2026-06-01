@@ -62,19 +62,32 @@ function initSuccessSuggestions(globalOnly: boolean): string[] {
   const style = initSuggestionStyle();
   return [
     '',
-    style.heading('Try next:'),
+    style.heading('Keep Engram useful:'),
+    `${style.label('Priority:')} workspace memory loads first; global memory is fallback for personal/team context across repos.`,
+    `- ${style.title('Use slash command in AI chat')}`,
+    `  ${style.label('Use for what:')} run Engram features directly through agents without leaving chat.`,
+    `  ${style.label('How to use:')} ${style.command('/engram load "<task>"')}, ${style.command('/engram save-session')}, or ${style.command('/engram take-control --all')}.`,
+    `  ${style.label('Best example:')} start each session with ${style.command('/engram load "<current task>"')} and save durable lessons before you leave.`,
+    `- ${style.title('Install agent skillset')}`,
+    `  ${style.label('Use for what:')} teach your agent how to load, search, save, and maintain Engram memory.`,
+    `  ${style.label('How to use:')} ${style.command('engram help install-skillset')}, then ${style.command('engram install-skillset <your-agent>')}.`,
+    `  ${style.label('Best example:')} run this after init so future sessions know the Engram protocol.`,
     `- ${style.title('Rule strict level')}`,
     `  ${style.label('Use for what:')} tune how strongly loaded rules steer agents.`,
     `  ${style.label('How to use:')} ${style.command('engram set-rule-variant strict|balanced|light|off')}.`,
     `  ${style.label('Best example:')} use strict for smaller automation models, balanced or light for stronger reasoning models.`,
-    `- ${style.title('Autosave')}`,
+    `- ${style.title('Save session')}`,
     `  ${style.label('Use for what:')} capture several durable memories from a long session.`,
-    `  ${style.label('How to use:')} ${style.command('engram autosave')}, ${style.command('engram autosave --file transcript.md')}, or ${style.command('engram at -a')} when the human explicitly approves all.`,
+    `  ${style.label('How to use:')} ${style.command('engram save-session')}, ${style.command('engram ss')}, or ${style.command('engram ss -a')} when the human explicitly approves all.`,
     `  ${style.label('Best example:')} end a feature session by saving its new rules, facts, and workflow.`,
     `- ${style.title('Take control')}`,
     `  ${style.label('Use for what:')} migrate existing AGENTS.md, CLAUDE.md, Cursor rules, docs, or notes into Engram memory.`,
-    `  ${style.label('How to use:')} ${style.command('engram take-control --dry-run')}, then ${style.command('engram take-control')}.`,
-    `  ${style.label('Best example:')} adopt Engram in a repo that already has scattered agent guidance.`,
+    `  ${style.label('How to use:')} ${style.command('engram take-control --all')}, or preview with ${style.command('engram take-control --plan')}.`,
+    `  ${style.label('Best example:')} adopt Engram in a repo that already has scattered agent guidance or docs.`,
+    `- ${style.title('Maintenance')}`,
+    `  ${style.label('Use for what:')} keep memory healthy as it grows.`,
+    `  ${style.label('How to use:')} ${style.command('engram verify')}, ${style.command('engram repair')}, ${style.command('engram graph')}, ${style.command('engram quality-check')}, then ${style.command('engram archive --reason <why> <id|file>')}.`,
+    `  ${style.label('Best example:')} run verify/repair before commits and use graph + quality-check before archiving stale or contradictory memory.`,
     ...(globalOnly ? [
       `- ${style.title('Global-only saves')}`,
       `  ${style.label('Use for what:')} keep memory across projects without a workspace install.`,
@@ -199,7 +212,7 @@ export async function cmdAutosave(args: string[], flags: Record<string, any> = {
   if (approval.selected?.length) plans = plans.filter((plan) => plan.candidateIndex === undefined || approval.selected?.includes(plan.candidateIndex));
   if (!plans.length) return 'Discarded. No selected candidates written.';
   const saved = await writeSavePlans(plans, approval.edits);
-  return acceptAll ? `Accepted all autosave candidates (--accept-all).\n${saved}` : saved;
+  return acceptAll ? `Accepted all save-session candidates (--accept-all).\n${saved}` : saved;
 }
 
 /** Convert existing workspace guidance into approved Engram memories with agent help. */
@@ -289,11 +302,11 @@ async function autosaveInput(args: string[], flags: Record<string, any>): Promis
     ...(Array.isArray(flags.file) ? flags.file : typeof flags.file === 'string' ? [flags.file] : []),
     ...(typeof flags.f === 'string' ? [flags.f] : [])
   ];
-  if (files.length > 1) throw new Error('autosave accepts only one --file');
+  if (files.length > 1) throw new Error('save-session accepts only one --file');
   const file = files[0] ?? '';
   const inline = args.join(' ').trim();
   if (!file) return inline;
-  if (inline) throw new Error('autosave accepts either --file or inline text, not both');
+  if (inline) throw new Error('save-session accepts either --file or inline text, not both');
   return readText(path.resolve(file));
 }
 
@@ -310,7 +323,7 @@ async function shouldSwitchToAutosave(text: string): Promise<boolean> {
   if (!text || !process.stdin.isTTY || !process.stdout.isTTY || !looksLikeLongSession(text)) return false;
   const rl = createInterface({ input, output });
   try {
-    const answer = (await rl.question('This looks like a long session. Use engram autosave to propose multiple memories? [y/N] ')).trim();
+    const answer = (await rl.question('This looks like a long session. Use engram save-session to propose multiple memories? [y/N] ')).trim();
     return /^y(es)?$/i.test(answer);
   } finally {
     rl.close();

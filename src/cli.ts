@@ -4,7 +4,7 @@ import { VERSION } from './core/runtime/constants.js';
 import { canonicalCommand } from './core/cli/command-registry.js';
 import { cmdAutosave, cmdCompletion, cmdHelp, cmdInit, cmdSave, cmdTakeControl, cmdUpdateHelp } from './commands/core.js';
 import { cmdObserve } from './commands/observe.js';
-import { cmdAudit, cmdLoad, cmdRebuildIndex, cmdVerify } from './commands/read.js';
+import { cmdAudit, cmdLoad, cmdRebuildIndex, cmdRepair, cmdVerify } from './commands/read.js';
 import { cmdArchive, cmdBenchmark, cmdDeduplicate, cmdEntry, cmdExport, cmdGraph, cmdHealth, cmdImport, cmdQuality, cmdSearch, cmdStats, cmdSync } from './commands/ops.js';
 import { cmdIgnore, cmdInstallHooks, cmdInstallSkillset, cmdPropose, cmdResolveConflicts, cmdSetRole, cmdSetRuleVariant, cmdTeamDashboard } from './commands/admin.js';
 
@@ -24,13 +24,14 @@ export async function runCli(argv: string[]): Promise<string> {
     case 'update-help': return cmdUpdateHelp();
     case 'completion': return cmdCompletion(rest[0]);
     case 'save': return cmdSave(rest, flags);
-    case 'autosave': return cmdAutosave(rest, flags);
+    case 'save-session': return cmdAutosave(rest, flags);
     case 'observe': return cmdObserve(rest, flags);
     case 'take-control': return cmdTakeControl(rest, flags);
     case 'load': return cmdLoad(rest, flags);
     case 'dry-run': return dryRun(rest, flags);
     case 'verify': return cmdVerify(rest[0]);
     case 'rebuild-index': return cmdRebuildIndex(rest[0]);
+    case 'repair': return cmdRepair(rest[0]);
     case 'audit': return cmdAudit(flags);
     case 'archive': return cmdArchive(rest, flags);
     case 'benchmark': return cmdBenchmark(rest);

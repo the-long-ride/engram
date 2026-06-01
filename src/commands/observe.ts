@@ -7,7 +7,7 @@ import { readText } from '../core/system/fsx.js';
 import { cmdAutosave } from './core.js';
 import type { Scope } from '../core/runtime/types.js';
 
-/** Capture a raw session note in inbox, optionally mining it through autosave. */
+/** Capture a raw session note in inbox, optionally mining it through save-session. */
 export async function cmdObserve(args: string[], flags: Record<string, any> = {}): Promise<string> {
   const ctx = await getContext();
   const scopes = flags.scope ? [flags.scope as Scope] : writeScopes(ctx.config.scope, ctx.config);
@@ -26,7 +26,7 @@ export async function cmdObserve(args: string[], flags: Record<string, any> = {}
     const saved = await cmdAutosave([observed.text], nextFlags);
     return `Observed -> ${observed.fullPath}\n${observeSafetyLine(observed)}\n${saved}`;
   }
-  return `Observed -> ${observed.fullPath}\n${observeSafetyLine(observed)}\nNext: engram autosave --file ${observed.fullPath}`;
+  return `Observed -> ${observed.fullPath}\n${observeSafetyLine(observed)}\nNext: engram save-session --file ${observed.fullPath}`;
 }
 
 function observeFile(flags: Record<string, any>): string {

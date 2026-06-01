@@ -7,7 +7,7 @@ export function searchEntries(entries: MemoryEntry[], query: string): MemoryEntr
   return entries
     .map((entry) => ({ entry, score: lexicalScore(query, `${entry.id} ${entry.tags.join(' ')} ${entry.summary}`) }))
     .filter((row) => row.score > 0)
-    .sort((a, b) => b.score - a.score)
+    .sort((a, b) => b.score - a.score || scopePriority(a.entry) - scopePriority(b.entry) || a.entry.file.localeCompare(b.entry.file))
     .map((row) => row.entry);
 }
 
@@ -38,4 +38,8 @@ function overlap(a: string, b: string): number {
   let hit = 0;
   for (const word of aw) if (bw.has(word)) hit += 1;
   return hit / Math.max(1, Math.min(aw.size, bw.size));
+}
+
+function scopePriority(entry: MemoryEntry): number {
+  return entry.scope === 'workspace' ? 0 : 1;
 }

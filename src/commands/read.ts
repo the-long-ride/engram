@@ -1,7 +1,7 @@
 /** Read-oriented commands: load, rebuild-index, verify, and audit. */
 import { getContext, loadSummary } from '../core/memory/context.js';
 import { rebuildGraph } from '../core/memory/graph.js';
-import { rebuildIndex } from '../core/memory/index.js';
+import { invalidMemoryFiles, rebuildIndex } from '../core/memory/index.js';
 import { loadEntries, route, visibleEntries } from '../core/memory/routing.js';
 import type { Scope } from '../core/runtime/types.js';
 import { verifyRoot } from '../core/safety/hash.js';
@@ -33,6 +33,26 @@ export async function cmdRebuildIndex(scope?: string): Promise<string> {
     rows.push(`${current}: ${index.entries.length} indexed, ${graph.nodes.length} graph nodes`);
   }
   return `engram: rebuilt indexes\n${rows.join('\n')}`;
+}
+
+/** Report malformed memories that rebuild-index skips. */
+export async function cmdRepair(scope?: string): Promise<string> {
+  const ctx = await getContext();
+  const scopes = scope === 'workspace' || scope === 'global' ? [scope] : ['workspace', 'global'];
+  const rows = [];
+  for (const current of scopes) {
+    const root = ctx.roots[current as Scope];
+    if (!root) {
+      rows.push(`${current}: not configured`);
+      continue;
+    }
+    for (const item of await invalidMemoryFiles(root, current as Scope)) {
+      rows.push(`${item.scope}:${item.file} - ${item.error}`);
+    }
+  }
+  const invalid = rows.filter((row) => !row.endsWith(': not configured'));
+  if (!invalid.length) return rows.length ? `No invalid memory files.\n${rows.join('\n')}` : 'No invalid memory files.';
+  return `Invalid memory files:\n${rows.join('\n')}`;
 }
 
 /** Verify hashes for one or both scopes. */

@@ -30,7 +30,11 @@ export function route(index: MemoryIndex, query: string, config: EngramConfig, m
     entry,
     score: lexicalScore(query, `${entry.id} ${entry.type} ${entry.tags.join(' ')} ${entry.summary}`)
   }));
-  return scored.sort((a, b) => b.score - a.score).filter((row) => row.score > 0 || options.all).slice(0, 8).map((row) => row.entry);
+  return scored
+    .sort((a, b) => b.score - a.score || scopePriority(a.entry) - scopePriority(b.entry) || a.entry.file.localeCompare(b.entry.file))
+    .filter((row) => row.score > 0 || options.all)
+    .slice(0, 8)
+    .map((row) => row.entry);
 }
 
 /** Load routed files and quarantine prompt-injection matches by skipping them. */
@@ -40,4 +44,8 @@ export async function loadEntries(cwd: string, entries: MemoryEntry[], config: E
     loaded.push(await readGuardedMemory(cwd, entry, config));
   }
   return loaded;
+}
+
+function scopePriority(entry: MemoryEntry): number {
+  return entry.scope === 'workspace' ? 0 : 1;
 }

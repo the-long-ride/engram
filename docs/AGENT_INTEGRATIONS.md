@@ -119,13 +119,14 @@ Aliases: `codex` installs the `agents-md` adapter plus the Agent Skill file,
    /engram load deployment workflow
    /engram entry
    /engram save knowledge
-   /engram autosave
+   /engram save-session
+   /engram ss
    /engram auto save
    /engram observe --file session.md
    /engram take-control
    /engram take control accept all
-   /engram at -a
-   /engram autosave --accept-all
+   /engram ss -a
+   /engram save-session --accept-all
    /engram graph release workflow
    /engram archive --reason "Superseded" knowledge/old-fact.md
    /engram help set-role
@@ -136,27 +137,27 @@ Aliases: `codex` installs the `agents-md` adapter plus the Agent Skill file,
    `engram save` captures the best single memory candidate, automatically
    updates a matching memory or creates a new one, and always shows the A/B/C
    approval gate before writing. For long sessions with several possible rules,
-   knowledge facts, or workflows, agents should suggest `engram autosave`; if
+   knowledge facts, or workflows, agents should suggest `engram save-session`; if
    the human declines, continue with the best single `engram save` candidate.
   For transcripts or long summaries already on disk, use
-  `engram autosave --file transcript.md`. The autosave approval prompt supports
+  `engram save-session --file transcript.md`. The save-session approval prompt supports
   selected candidate replies such as `A 1,3`. When the human explicitly includes
-  `--accept-all`, or uses the `/engram at -a` shortcut, the slash adapter should
+  `--accept-all`, or uses the `/engram ss -a` shortcut, the slash adapter should
   generate/provide concise candidates, run the CLI with
-  `engram autosave --accept-all`, and report the saved files without asking for
+  `engram save-session --accept-all`, and report the saved files without asking for
   another A/B/C reply. For `/engram take-control --accept-all` or natural
   `/engram take control accept all`, the slash adapter should normalize the
   wording, keep the source pack token-light, generate only concise
   `TYPE: ... | TEXT: ...` candidates, pass them to the CLI, and let Engram save
   them without a second approval prompt. The adapter should not paste source
   excerpts or reasoning back into chat.
-  For `/engram autosave` or natural `/engram auto save` without a file or inline
+  For `/engram save-session`, `/engram ss`, legacy `/engram autosave`, or natural `/engram auto save` without a file or inline
   candidates, the slash adapter should use the LLM to define concise candidates
   from the current AI agent chat/session, then pass `TYPE: ... | TEXT: ...`
   lines to Engram for the normal approval flow.
   For `/engram observe`, slash adapters should run the CLI and report the saved
   inbox file. If the human included `--propose`, the adapter may generate
-  concise autosave candidates from the sanitized note, but writes still use the
+  concise save-session candidates from the sanitized note, but writes still use the
   normal approval flow unless the human explicitly included `--accept-all`.
   For `/engram graph` and `/engram quality-check`, report contradiction
   candidates compactly. If a memory is wrong or superseded, use
@@ -167,7 +168,7 @@ Aliases: `codex` installs the `agents-md` adapter plus the Agent Skill file,
    Generated knowledge should be objective and durable. Corrections and
    preferences become rules. Repeatable procedures become workflows/skills.
    Save role-specific memory with `engram save --role frontend ...` or
-   `engram autosave --role backend ...`. Role routing can be tuned with
+   `engram save-session --role backend ...`. Role routing can be tuned with
    `engram set-role frontend`, `engram set-role backend security`, or
    `engram set-role` to clear active roles.
 
@@ -202,7 +203,7 @@ Run `engram -h` for the compact command surface. Run `engram help <topic>` or
 `engram -h <topic>` for command-specific examples and use cases:
 
 ```bash
-engram help autosave
+engram help save-session
 engram help set-role
 engram -h set-rule-variant
 ```
@@ -238,11 +239,11 @@ The generated slash description is: "Your knowledge memory manager, synced
 across every device with Git."
 MCP hosts should treat `engram_save` and `engram_autosave` as proposal-only
 tools; they must still route final writes through the human-visible CLI approval
-flow. Explicit `/engram autosave --accept-all` requests, including the shortcut
-`/engram at -a`, should use the CLI write path because MCP autosave remains
-proposal-only. `/engram take-control` should use the CLI flow because it needs
+flow. Explicit `/engram save-session --accept-all` requests, including the shortcut
+`/engram ss -a`, should use the CLI write path because MCP autosave remains
+proposal-only. Legacy `/engram autosave --accept-all` and `/engram at -a` remain compatible. `/engram take-control` should use the CLI flow because it needs
 workspace source discovery plus human-visible approval. Slash adapters normalize
-`/engram auto save` to `engram autosave` and `/engram take control accept all`
+`/engram auto save` to `engram save-session` and `/engram take control accept all`
 to `engram take-control --accept-all`.
 `/engram observe`, `/engram archive`, and `/engram benchmark` should use the CLI
 flow. `engram load` is graph-aware automatically because it reads the derived

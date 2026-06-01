@@ -7,9 +7,9 @@ const booleanFlags = new Set([
   'global-only', 'low-confidence', 'no-global', 'no-skillset', 'no-submodule', 'plan', 'propose', 'rebuild', 'semantic', 'stale',
   'submodule', 'v', 'version'
 ]);
-const autosaveCommands = new Set(['autosave', 'as', 'at']);
+const saveSessionCommands = new Set(['save-session', 'ss', 'autosave', 'as', 'at']);
 const takeControlCommands = new Set(['take-control', 'tc']);
-const acceptAllCommands = new Set([...autosaveCommands, ...takeControlCommands]);
+const acceptAllCommands = new Set([...saveSessionCommands, ...takeControlCommands]);
 const repeatableFlags = new Set(['dir', 'exclude', 'file', 'include']);
 
 /** Parse argv into command, positional args, and --flags. */
@@ -19,7 +19,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
   const flags: Record<string, FlagValue> = {};
   for (let i = 0; i < tokens.length; i += 1) {
     const token = tokens[i];
-    if (token === '-a' && autosaveCommands.has(command)) flags['accept-all'] = true;
+    if (token === '-a' && saveSessionCommands.has(command)) flags['accept-all'] = true;
     else if (!token.startsWith('--')) rest.push(token);
     else if (booleanFlags.has(token.slice(2))) flags[token.slice(2)] = true;
     else if (tokens[i + 1] && !tokens[i + 1].startsWith('--')) setFlag(flags, token.slice(2), tokens[++i]);
@@ -61,8 +61,8 @@ function setFlag(flags: Record<string, FlagValue>, name: string, value: string):
 }
 
 function normalizeNaturalArgs(argv: string[]): string[] {
-  if (argv[0]?.toLowerCase() === 'auto' && argv[1]?.toLowerCase() === 'save') return normalizeAcceptAll(['autosave', ...argv.slice(2)]);
-  if (argv[0]?.toLowerCase() === 'auto-save') return normalizeAcceptAll(['autosave', ...argv.slice(1)]);
+  if (argv[0]?.toLowerCase() === 'auto' && argv[1]?.toLowerCase() === 'save') return normalizeAcceptAll(['save-session', ...argv.slice(2)]);
+  if (argv[0]?.toLowerCase() === 'auto-save') return normalizeAcceptAll(['save-session', ...argv.slice(1)]);
   if (argv[0]?.toLowerCase() === 'take' && argv[1]?.toLowerCase() === 'control') return normalizeAcceptAll(['take-control', ...argv.slice(2)]);
   return normalizeAcceptAll(argv);
 }

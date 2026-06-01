@@ -110,7 +110,7 @@ Engram은 durable layer를 보이게 만듭니다. Built-in memory도 도움은 
 
 ## 알아둘 한계
 
-현재 search는 deterministic lexical search입니다. Graph vector는 local hashed word vector이며 semantic embedding이 아닙니다. Contradiction detection은 advisory signal입니다. Encryption config는 있지만 encrypted storage는 아직 구현되지 않았습니다.
+기본 search는 deterministic lexical search입니다. `engram search --semantic`은 로컬 deterministic similarity를 사용하며 embedding-backed semantic search는 아닙니다. Graph vector는 local hashed word vector이며 semantic embedding이 아닙니다. Contradiction detection은 advisory signal입니다. Encryption config는 있지만 encrypted storage는 아직 구현되지 않았습니다.
 
 이 한계를 명확히 말하는 것이 중요합니다. Engram은 오늘 실제로 있는 것과 future work를 분리해서 보여줘야 합니다.
 

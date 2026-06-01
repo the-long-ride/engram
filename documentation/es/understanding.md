@@ -110,7 +110,7 @@ Engram hace visible la capa duradera. La memoria integrada puede ayudar, pero En
 
 ## Límites A Conocer
 
-La búsqueda actual es léxica y determinista. Los vectores del grafo son vectores locales de palabras hasheadas, no embeddings semánticos. La detección de contradicciones es orientativa. Existe configuración de cifrado, pero el almacenamiento cifrado aún no está implementado.
+La búsqueda por defecto es léxica y determinista. `engram search --semantic` añade similitud local determinista, no búsqueda semántica con embeddings. Los vectores del grafo son vectores locales de palabras hasheadas, no embeddings semánticos. La detección de contradicciones es orientativa. Existe configuración de cifrado, pero el almacenamiento cifrado aún no está implementado.
 
 Estos límites se declaran a propósito. Engram debe mostrar qué existe hoy y qué es trabajo futuro.
 

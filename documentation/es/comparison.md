@@ -16,7 +16,7 @@ Engram optimiza propiedad humana, revisión y portabilidad.
 ## Costes
 
 - Menos automático que sistemas daemon.
-- Search lexical, no semantic embedding-backed.
+- Search default lexical; `search --semantic` usa similitud local determinista, no semantic embedding-backed.
 - Graph vectors son hashed word vectors locales.
 - Contradiction detection es heurística.
 - `deduplicate --semantic` usa similitud local determinista, no embeddings externos.

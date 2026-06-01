@@ -110,7 +110,7 @@ Engram makes the durable layer visible. Built-in memory can still help, but Engr
 
 ## Limits To Know
 
-Current Engram search is deterministic lexical search. Graph vectors are local hashed word vectors, not semantic embeddings. Contradiction detection is advisory. Encryption config exists, but encrypted storage is not implemented yet.
+Default Engram search is deterministic lexical search. `engram search --semantic` adds deterministic local similarity, not embedding-backed semantic search. Graph vectors are local hashed word vectors, not semantic embeddings. Contradiction detection is advisory. Encryption config exists, but encrypted storage is not implemented yet.
 
 These limits are intentional to state clearly. Engram should tell users what is real today and what is future work.
 

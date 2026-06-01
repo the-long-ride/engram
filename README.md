@@ -130,7 +130,7 @@ Each language includes overview, understanding, AI-agent quickstart, protocol, o
 ## Cons
 
 - Less automatic than memory engines that capture everything in the background.
-- Current search is deterministic lexical search, not embedding-backed semantic search.
+- Default search is deterministic lexical search; `search --semantic` adds deterministic local similarity, not embedding-backed semantic search.
 - Graph vectors are local hashed word vectors, not semantic embeddings.
 - Contradiction detection is heuristic and advisory.
 - `deduplicate --semantic` uses deterministic local similarity, not external embeddings.

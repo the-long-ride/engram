@@ -16,7 +16,7 @@ Engram 优化的是人类所有权、可审查性和可移植性。
 ## 代价
 
 - 自动化程度低于 daemon 系统。
-- 当前 search 是 lexical，不是 embedding-backed semantic search。
+- 默认 search 是 lexical；`search --semantic` 使用本地确定性相似度，不是 embedding-backed semantic search。
 - Graph vectors 是本地 hashed word vectors。
 - Contradiction detection 是 heuristic/advisory。
 - `deduplicate --semantic` 使用本地确定性相似度，不依赖外部 embeddings。

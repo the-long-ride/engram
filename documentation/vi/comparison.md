@@ -16,7 +16,7 @@ Engram nam o mot vung khac voi cac automatic memory engine. No toi uu cho quyen 
 ## Tradeoffs
 
 - It tu dong hon cac he thong daemon-based.
-- Search hien tai la lexical deterministic, chua co embedding-backed semantic search.
+- Search mac dinh la lexical deterministic; `search --semantic` dung local similarity deterministic, chua phai embedding-backed semantic search.
 - Graph vectors la hashed word vectors cuc bo, khong phai semantic embeddings.
 - Contradiction detection la heuristic va chi advisory.
 - `deduplicate --semantic` dung local similarity deterministic, khong can external embeddings.

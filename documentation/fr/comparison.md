@@ -16,7 +16,7 @@ Engram optimise la propriété humaine, la revue et la portabilité.
 ## Limites
 
 - Moins automatique que les systèmes daemon.
-- Recherche lexicale, pas encore semantic embedding-backed.
+- Recherche par defaut lexicale; `search --semantic` utilise une similarite locale deterministe, pas semantic embedding-backed.
 - Graph vectors = hashed word vectors locaux.
 - Détection de contradiction heuristique.
 - `deduplicate --semantic` utilise une similarite locale deterministe, sans embeddings externes.

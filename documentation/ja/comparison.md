@@ -16,7 +16,7 @@ Engram は human ownership, reviewability, portability を重視します。
 ## Tradeoffs
 
 - daemon-based memory systems より自動化は弱い。
-- 現在の search は lexical で、semantic embedding-backed ではない。
+- デフォルトの search は lexical で、`search --semantic` はローカル deterministic similarity を使い、semantic embedding-backed ではない。
 - Graph vectors は local hashed word vectors。
 - Contradiction detection は heuristic/advisory。
 - `deduplicate --semantic` はローカル deterministic similarity を使い、外部 embeddings に依存しません。

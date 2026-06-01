@@ -16,7 +16,7 @@ Engram оптимизирован под human ownership, reviewability и porta
 ## Tradeoffs
 
 - Less automatic than daemon-based systems.
-- Current search is lexical, not embedding-backed semantic search.
+- Default search is lexical; `search --semantic` uses deterministic local similarity, not embedding-backed semantic search.
 - Graph vectors are local hashed word vectors.
 - Contradiction detection is heuristic/advisory.
 - `deduplicate --semantic` uses deterministic local similarity, no external embeddings.

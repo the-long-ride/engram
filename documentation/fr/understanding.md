@@ -110,7 +110,7 @@ Engram rend la couche durable visible. La mémoire intégrée peut aider, mais E
 
 ## Limites À Connaître
 
-La recherche actuelle est lexicale et déterministe. Les vecteurs du graphe sont des vecteurs locaux de mots hashés, pas des embeddings sémantiques. La détection de contradictions est indicative. La configuration de chiffrement existe, mais le stockage chiffré n'est pas encore implémenté.
+La recherche par defaut est lexicale et deterministe. `engram search --semantic` ajoute une similarite locale deterministe, pas une recherche semantique avec embeddings. Les vecteurs du graphe sont des vecteurs locaux de mots hashes, pas des embeddings semantiques. La detection de contradictions est indicative. La configuration de chiffrement existe, mais le stockage chiffre n'est pas encore implemente.
 
 Ces limites sont dites explicitement. Engram doit montrer ce qui existe aujourd'hui et ce qui reste du travail futur.
 

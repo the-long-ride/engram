@@ -110,7 +110,7 @@ Engram lam lop ben vung thanh ro rang. Memory tich hop van co ich, nhung khi tri
 
 ## Gioi Han Can Biet
 
-Search hien tai la lexical deterministic search. Graph vector la local hashed word vector, khong phai semantic embedding. Contradiction detection chi mang tinh goi y. Encryption config da co, nhung encrypted storage chua duoc implement.
+Search mac dinh la lexical deterministic search. `engram search --semantic` dung local similarity deterministic, khong phai embedding-backed semantic search. Graph vector la local hashed word vector, khong phai semantic embedding. Contradiction detection chi mang tinh goi y. Encryption config da co, nhung encrypted storage chua duoc implement.
 
 Nhung gioi han nay duoc noi thang. Engram nen cho user biet cai gi co that hom nay va cai gi la future work.
 

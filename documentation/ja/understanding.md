@@ -110,7 +110,7 @@ Engram は durable layer を見える形にします。Built-in memory も役立
 
 ## 知っておく制限
 
-現在の search は deterministic lexical search です。Graph vector は local hashed word vector で、semantic embedding ではありません。Contradiction detection は advisory signal です。Encryption config はありますが、encrypted storage はまだ実装されていません。
+デフォルトの search は deterministic lexical search です。`engram search --semantic` はローカル deterministic similarity を使い、embedding-backed semantic search ではありません。Graph vector は local hashed word vector で、semantic embedding ではありません。Contradiction detection は advisory signal です。Encryption config はありますが、encrypted storage はまだ実装されていません。
 
 これらの制限は明示するべきです。Engram は、今日実際にあるものと future work を分けて伝えます。
 

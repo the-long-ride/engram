@@ -16,7 +16,7 @@ Engram sits in a different part of the memory space than automatic memory engine
 ## Engram Tradeoffs
 
 - Less automatic than daemon-based memory systems.
-- Current search is deterministic lexical search, not embedding-backed semantic search.
+- Default search is deterministic lexical search; `search --semantic` adds deterministic local similarity, not embedding-backed semantic search.
 - Graph vectors are local hashed word vectors, not semantic embeddings.
 - Contradiction detection is heuristic and advisory.
 - `deduplicate --semantic` uses deterministic local similarity, not external embeddings.

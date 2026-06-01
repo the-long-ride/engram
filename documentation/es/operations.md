@@ -18,7 +18,7 @@
 | Archivar memoria incorrecta | `engram archive --reason "<why>" <id-or-file>` |
 | Ajustar fuerza de reglas | `engram set-rule-variant strict|balanced|light|off` |
 
-`autosave`, `as` y `at` siguen funcionando como alias legacy de `save-session`. Usa `save-session` o `ss` en documentación nueva.
+Usa `save-session` para propuestas de memoria de sesiones largas. Forma corta: `ss`.
 
 ## Save Session
 
@@ -64,4 +64,3 @@ engram archive --reason "Repo migrated to npm." rules/use-pnpm.md
 ```
 
 Siguiente: [Comparación](comparison.md).
-

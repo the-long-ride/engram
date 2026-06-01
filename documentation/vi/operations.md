@@ -20,7 +20,7 @@ Trang nay giu chi tiet su dung de README gon hon.
 | Archive memory sai | `engram archive --reason "<why>" <id-or-file>` |
 | Dieu chinh do manh rule | `engram set-rule-variant strict|balanced|light|off` |
 
-Legacy `autosave`, `as`, va `at` van route toi `save-session`. Docs moi nen dung `save-session` va `ss`.
+Dung `save-session` cho long-session memory proposals. Dang ngan: `ss`.
 
 ## Save Session
 
@@ -81,4 +81,3 @@ engram archive --reason "Repo migrated to npm." rules/use-pnpm.md
 ```
 
 Tiep theo: [So sanh va roadmap](comparison.md).
-

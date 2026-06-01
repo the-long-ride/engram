@@ -20,7 +20,7 @@ This page holds detailed usage so the README can stay short.
 | Archive wrong memory | `engram archive --reason "<why>" <id-or-file>` |
 | Tune rule strength | `engram set-rule-variant strict|balanced|light|off` |
 
-Legacy `autosave`, `as`, and `at` still route to `save-session`. New docs should prefer `save-session` and `ss`.
+Use `save-session` for long-session memory proposals. Short form: `ss`.
 
 ## Save Session
 
@@ -81,4 +81,3 @@ engram archive --reason "Repo migrated to npm." rules/use-pnpm.md
 ```
 
 Next: [Comparison and roadmap](comparison.md).
-

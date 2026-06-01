@@ -18,7 +18,7 @@
 | 归档错误记忆 | `engram archive --reason "<why>" <id-or-file>` |
 | 调整规则强度 | `engram set-rule-variant strict|balanced|light|off` |
 
-Legacy `autosave`、`as`、`at` 仍会路由到 `save-session`。新文档应使用 `save-session` 和 `ss`。
+长会话 memory proposal 请使用 `save-session`。短形式：`ss`。
 
 ## Save Session
 
@@ -64,4 +64,3 @@ engram archive --reason "Repo migrated to npm." rules/use-pnpm.md
 ```
 
 下一页：[对比与路线图](comparison.md)。
-

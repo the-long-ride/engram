@@ -185,15 +185,6 @@ Engram treats built-in memory as a convenience layer, not authority. The authori
 
 `save-session` is the long-session memory command. Short form: `ss`.
 
-Legacy aliases still work:
-
-- `autosave`
-- `as`
-- `at`
-- `auto save`
-
-New docs and examples use `save-session` and `ss`.
-
 ## License
 
 [GPL-3.0 License](LICENSE)

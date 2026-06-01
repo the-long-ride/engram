@@ -15,6 +15,7 @@ import { archiveMemory, planArchive } from '../core/memory/archive.js';
 import { planMemorySave, previewSavePlans, type SavePlan } from '../core/memory/save-plan.js';
 import { normalizeMemoryType } from '../core/memory/memory-candidate.js';
 import { writeScopes } from '../core/runtime/config.js';
+import { formatRecords, type RecordBlock } from '../core/cli/format.js';
 import type { MemoryType, Scope } from '../core/runtime/types.js';
 
 /** Return memory health summary. */
@@ -28,25 +29,31 @@ export async function cmdSearch(args: string[], flags: Record<string, any> = {})
   const ctx = await getContext();
   const entries = visibleEntries(ctx.index.entries, ctx.config, true, ctx.ignorePatterns);
   const search = flags.semantic ? semanticSearchEntries : searchEntries;
-  return search(entries, args.join(' ')).map((e) => `${e.scope}:${e.file} - ${e.summary}`).join('\n') || 'No matches';
+  const hits = search(entries, args.join(' '));
+  if (!hits.length) return 'No matches';
+  const title = flags.semantic ? `Semantic search results (${hits.length})` : `Search results (${hits.length})`;
+  return formatRecords(title, hits.map((entry) => ({
+    title: `${entry.scope}:${entry.file}`,
+    fields: [['Type', entry.type], ['Summary', entry.summary]]
+  })));
 }
 
 /** Score every indexed memory. */
 export async function cmdQuality(): Promise<string> {
   const ctx = await getContext();
   const entries = visibleEntries(ctx.index.entries, ctx.config, false, ctx.ignorePatterns);
-  const rows = [];
+  const rows: RecordBlock[] = [];
   for (const entry of entries) {
     const row = await readGuardedMemory(process.cwd(), entry, ctx.config, { render: false });
     if (row.flagged) {
-      rows.push(`${entry.file} skipped: ${row.flagged}`);
+      rows.push({ title: entry.file, fields: [['Status', `skipped: ${row.flagged}`]] });
       continue;
     }
     const result = scoreMemory(row.content);
-    rows.push(`${entry.file} ${result.score}/100 ${result.issues.join(', ') || '-'}`);
+    rows.push({ title: entry.file, fields: [['Score', `${result.score}/100`], ['Issues', result.issues.join(', ') || '-']] });
   }
-  for (const edge of contradictionEdges(ctx.graph)) rows.push(`contradiction ${edge.from} <-> ${edge.to}: ${edge.reason}`);
-  return rows.join('\n') || 'No memories';
+  for (const edge of contradictionEdges(ctx.graph)) rows.push({ title: 'contradiction candidate', fields: [['From', edge.from], ['To', edge.to], ['Reason', edge.reason]] });
+  return rows.length ? formatRecords(`Quality check (${rows.length})`, rows) : 'No memories';
 }
 
 /** Show the derived layered memory graph and optional query matches. */
@@ -63,17 +70,20 @@ export async function cmdBenchmark(args: string[]): Promise<string> {
   const cases: Array<{ query: string; expect: string[] }> = Array.isArray(rawCases) ? rawCases : rawCases.cases ?? [];
   const ctx = await getContext();
   let hits = 0;
-  const rows = [];
+  const rows: RecordBlock[] = [];
   for (const item of cases) {
     const expects = Array.isArray(item.expect) ? item.expect : [item.expect].filter(Boolean);
     const expected = new Set(expects.map((value) => String(value).replace(/\\/g, '/')));
     const routed = route(ctx.index, item.query, ctx.config, false, { ignorePatterns: ctx.ignorePatterns }, ctx.graph);
     const found = routed.some((entry) => expected.has(entry.id) || expected.has(entry.file) || expected.has(`${entry.scope}:${entry.file}`));
     if (found) hits += 1;
-    rows.push(`${found ? 'HIT' : 'MISS'} ${item.query} -> ${routed.map((entry) => entry.file).join(', ') || '-'}`);
+    rows.push({
+      title: `${found ? 'HIT' : 'MISS'} ${item.query}`,
+      fields: [['Routed', routed.map((entry) => entry.file).join(', ') || '-']]
+    });
   }
   const total = cases.length || 1;
-  return [`Benchmark: ${hits}/${cases.length} hit@8 (${Math.round((hits / total) * 100)}%)`, ...rows].join('\n');
+  return formatRecords(`Benchmark: ${hits}/${cases.length} hit@8 (${Math.round((hits / total) * 100)}%)`, rows);
 }
 
 /** Archive one wrong or superseded memory after approval. */
@@ -101,7 +111,11 @@ export async function cmdDeduplicate(flags: Record<string, any> = {}): Promise<s
   const ctx = await getContext();
   const finder = flags.semantic ? semanticDuplicatePairs : duplicatePairs;
   const pairs = finder(visibleEntries(ctx.index.entries, ctx.config, false, ctx.ignorePatterns));
-  return pairs.map(([a, b, s]) => `${Math.round(s * 100)}% ${a.file} <-> ${b.file}`).join('\n') || 'No duplicate candidates';
+  if (!pairs.length) return 'No duplicate candidates';
+  return formatRecords(`Duplicate candidates (${pairs.length})`, pairs.map(([a, b, score]) => ({
+    title: `${Math.round(score * 100)}% match`,
+    fields: [['A', a.file], ['B', b.file]]
+  })));
 }
 
 /** Export to agent formats or a JSON bundle. */

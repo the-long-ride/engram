@@ -39,7 +39,21 @@ export function stats(entries: MemoryEntry[]): string {
     acc[e[key]] = (acc[e[key]] ?? 0) + 1;
     return acc;
   }, {});
-  return `Total: ${entries.length}\nBy type: ${JSON.stringify(by('type'))}\nBy scope: ${JSON.stringify(by('scope'))}`;
+  return [
+    'Memory stats',
+    `Total: ${entries.length}`,
+    '',
+    'By type:',
+    ...countRows(by('type')),
+    '',
+    'By scope:',
+    ...countRows(by('scope'))
+  ].join('\n');
+}
+
+function countRows(counts: Record<string, number>): string[] {
+  const rows = Object.entries(counts).sort(([a], [b]) => a.localeCompare(b));
+  return rows.length ? rows.map(([key, count]) => `  ${key}: ${count}`) : ['  none'];
 }
 
 function matchingPairs(entries: MemoryEntry[], scorePair: (a: MemoryEntry, b: MemoryEntry) => number, threshold: number): DuplicatePair[] {

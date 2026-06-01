@@ -2,6 +2,7 @@
 import { parseArgs } from './cli/args.js';
 import { VERSION } from './core/runtime/constants.js';
 import { canonicalCommand } from './core/cli/command-registry.js';
+import { formatRecords } from './core/cli/format.js';
 import { cmdCompletion, cmdHelp, cmdInit, cmdSave, cmdSaveSession, cmdTakeControl, cmdUpdateHelp } from './commands/core.js';
 import { cmdObserve } from './commands/observe.js';
 import { cmdAudit, cmdLoad, cmdRebuildIndex, cmdRepair, cmdVerify } from './commands/read.js';
@@ -64,7 +65,11 @@ async function dryRun(args: string[], flags: Record<string, any>): Promise<strin
   const ctx = await getContext();
   const all = flags.all === true;
   const entries = route(ctx.index, args.join(' ') || 'current session', ctx.config, all, { all, ignorePatterns: ctx.ignorePatterns }, ctx.graph);
-  return entries.map((entry) => `${entry.scope}:${entry.file}`).join('\n') || 'No routed memories';
+  if (!entries.length) return 'No routed memories';
+  return formatRecords(`Routed memories (${entries.length})`, entries.map((entry) => ({
+    title: `${entry.scope}:${entry.file}`,
+    fields: [['Type', entry.type], ['Summary', entry.summary]]
+  })));
 }
 
 /** Main process entrypoint with clear errors. */

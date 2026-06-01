@@ -4,6 +4,7 @@ import { GRAPH_FILE, VERSION } from '../runtime/constants.js';
 import type { EngramConfig, MemoryEntry, MemoryGraph, MemoryGraphEdge, MemoryGraphNode, MemoryIndex, Scope } from '../runtime/types.js';
 import { lexicalScore, words } from '../system/text.js';
 import { readJson, writeJson } from '../system/fsx.js';
+import { formatRecords } from '../cli/format.js';
 
 const VECTOR_SIZE = 48;
 
@@ -89,13 +90,16 @@ export function renderGraphReport(graph: MemoryGraph, query = ''): string {
       .sort((a, b) => b.score - a.score)
       .slice(0, 8);
     lines.push(`Query: ${query}`);
-    for (const row of matches) lines.push(`- ${row.node.scope}:${row.node.file} (${row.score.toFixed(2)}) ${row.node.summary}`);
+    if (matches.length) lines.push(formatRecords('Query matches', matches.map((row) => ({
+      title: `${row.node.scope}:${row.node.file}`,
+      fields: [['Score', row.score.toFixed(2)], ['Summary', row.node.summary ?? '']]
+    }))));
   }
   const contradictions = contradictionEdges(graph).slice(0, 8);
-  if (contradictions.length) {
-    lines.push('Contradiction candidates:');
-    for (const edge of contradictions) lines.push(`- ${edge.from} <-> ${edge.to}: ${edge.reason}`);
-  }
+  if (contradictions.length) lines.push(formatRecords('Contradiction candidates', contradictions.map((edge) => ({
+    title: `${edge.from} <-> ${edge.to}`,
+    fields: [['Reason', edge.reason]]
+  }))));
   return lines.join('\n');
 }
 

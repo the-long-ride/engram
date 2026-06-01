@@ -9,6 +9,7 @@ import { findConflicts, resolveConflicts } from '../core/vcs/conflict.js';
 import { installSkillset, skillsetTargets } from '../core/integrations/skillset.js';
 import { visibleEntries } from '../core/memory/routing.js';
 import { git } from '../core/vcs/git.js';
+import { formatRecords, type RecordBlock } from '../core/cli/format.js';
 import type { RuleVariant } from '../core/runtime/types.js';
 
 /** Inspect or update ignore patterns. */
@@ -21,7 +22,10 @@ export async function cmdIgnore(args: string[]): Promise<string> {
     await writeText(file, `${(await readText(file)).trimEnd()}\n${value}\n`);
     return `Added ignore pattern: ${value}`;
   }
-  return `Ignore source: ${ctx.config.ignore.source}\nAlso ignore: ${ctx.config.ignore.also_ignore.join(', ')}\nHidden: ${ctx.hiddenCount}`;
+  return formatRecords('Ignore status', [{
+    title: ctx.config.ignore.source,
+    fields: [['Also ignore', ctx.config.ignore.also_ignore.join(', ') || '(none)'], ['Hidden', ctx.hiddenCount]]
+  }]);
 }
 
 /** Persist local developer roles in config. */
@@ -53,9 +57,15 @@ export async function cmdResolveConflicts(flags: Record<string, any> = {}): Prom
   if (flags.auto) throw new Error('resolve-conflicts --auto is not supported; use --dry-run or resolve-conflicts');
   const conflicts = await findConflicts(process.cwd());
   if (!conflicts.length) return 'No workspace Engram merge conflicts found';
-  if (flags['dry-run']) return conflicts.map((c) => `DRY-RUN ${c.kind} ${c.file} - ${c.summary}`).join('\n');
+  if (flags['dry-run']) return formatRecords('Conflict dry-run', conflicts.map((conflict) => ({
+    title: `DRY-RUN ${conflict.kind} ${conflict.file}`,
+    fields: [['Summary', conflict.summary]]
+  })));
   const results = await resolveConflicts(process.cwd(), false);
-  return results.map((c) => `RESOLVED ${c.kind} ${c.file} - ${c.decision}${c.staged ? ' [staged]' : ' [stage skipped]'}`).join('\n');
+  return formatRecords('Resolved conflicts', results.map((conflict) => ({
+    title: `RESOLVED ${conflict.kind} ${conflict.file}`,
+    fields: [['Decision', conflict.decision], ['Stage', conflict.staged ? 'staged' : 'stage skipped']]
+  })));
 }
 
 /** Install opt-in Git hooks that call Engram commands. */
@@ -65,7 +75,7 @@ export async function cmdInstallHooks(): Promise<string> {
   const results = [];
   results.push(await writeGeneratedHook(path.join(hookDir, 'post-merge'), '#!/bin/sh\nnpx @the-long-ride/engram resolve-conflicts\n'));
   results.push(await writeGeneratedHook(path.join(hookDir, 'pre-commit'), '#!/bin/sh\nnpx @the-long-ride/engram verify workspace\n'));
-  return `Engram Git hooks:\n${results.join('\n')}`;
+  return formatRecords('Engram Git hooks', results.map((result) => ({ title: result })));
 }
 
 /** Create a prompt-assisted PR proposal body. */
@@ -84,7 +94,8 @@ export async function cmdTeamDashboard(): Promise<string> {
     acc[e.author] = (acc[e.author] ?? 0) + 1;
     return acc;
   }, {});
-  return Object.entries(byAuthor).map(([author, count]) => `${author}: ${count} memories`).join('\n') || 'No team memory yet';
+  const rows = Object.entries(byAuthor).sort(([a], [b]) => a.localeCompare(b));
+  return rows.length ? formatRecords('Team memory', rows.map(([author, count]) => ({ title: author, fields: [['Memories', count]] }))) : 'No team memory yet';
 }
 
 async function writeGeneratedHook(file: string, body: string): Promise<string> {
@@ -112,8 +123,9 @@ export async function cmdInstallSkillset(args: string[], flags: Record<string, a
   if (args[0] === 'list') return skillsetTargets().join('\n');
   const target = args[0] ?? 'all';
   const results = await installSkillset(process.cwd(), target, Boolean(flags.force));
+  const records: RecordBlock[] = results.map((result) => ({ title: `${result.action.toUpperCase()} ${result.target}: ${result.file}` }));
   return [
-    ...results.map((r) => `${r.action.toUpperCase()} ${r.target}: ${r.file}`),
+    formatRecords('Skillset install', records),
     ...skillsetInstallHints(results)
   ].join('\n');
 }

@@ -24,5 +24,12 @@ export function health(entries: MemoryEntry[]): string {
   const low = entries.filter((e) => e.confidence === 'low').length;
   const ignored = entries.filter((e) => e.ignored).length;
   const score = Math.max(0, 100 - stale * 5 - low * 8);
-  return `Memory health: ${score}/100\nCoverage: ${entries.length} files\nStale: ${stale}\nLow confidence: ${low}\nHidden by ignore: ${ignored}`;
+  return [
+    'Memory health',
+    `Score: ${score}/100`,
+    `Coverage: ${entries.length} files`,
+    `Stale: ${stale}`,
+    `Low confidence: ${low}`,
+    `Hidden by ignore: ${ignored}`
+  ].join('\n');
 }

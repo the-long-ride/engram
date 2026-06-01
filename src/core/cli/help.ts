@@ -2,8 +2,10 @@
 import { VERSION } from '../runtime/constants.js';
 import { HELP_DATA, commandPrefixes, type HelpSection } from './command-registry.js';
 import { detailForTopic, type CommandTopicHelp } from './help-topics.js';
+import { terminalWidth, wrapText } from './format.js';
 
-const COMMAND_PREFIXES = commandPrefixes();
+const COMMAND_PREFIXES = commandPrefixes().sort((a, b) => b.length - a.length);
+const gray = (text: string): string => `\x1b[90m${text}\x1b[0m`;
 
 function highlightUsage(usage: string): string {
   let commandPart = usage;
@@ -56,26 +58,31 @@ export function renderHelpTerminal(topic = ''): string {
   for (const sec of sections) {
     lines.push(`\x1b[1;37m## ${sec.title}\x1b[0m`);
     for (const cmd of sec.commands) {
-      lines.push(`- ${highlightUsage(cmd.command)}: \x1b[90m${cmd.purpose}\x1b[0m`);
-      if (cmd.alias) lines.push(`  \x1b[90mshort: engram ${cmd.alias}\x1b[0m`);
+      lines.push(`- ${highlightUsage(cmd.command)}`);
+      lines.push(...colorWrapped(cmd.purpose, '  ', gray));
+      if (cmd.alias) lines.push(`  ${gray(`short: engram ${cmd.alias}`)}`);
     }
     lines.push('');
   }
-  lines.push('\x1b[2;37mRun `engram help <topic>` for command examples and use cases. Every write path requires A/B/C approval before files are changed.\x1b[0m');
+  lines.push(...colorWrapped('Run `engram help <topic>` for command examples and use cases. Every write path requires A/B/C approval before files are changed.', '', (text) => `\x1b[2;37m${text}\x1b[0m`));
   return lines.join('\n');
 }
 
 function renderTopicHelpTerminal(detail: CommandTopicHelp): string {
-  const lines = [`\x1b[1m# ${detail.title}\x1b[0m`, '', `\x1b[90m${detail.summary}\x1b[0m`, ''];
+  const lines = [`\x1b[1m# ${detail.title}\x1b[0m`, '', ...colorWrapped(detail.summary, '', gray), ''];
   lines.push('\x1b[1;37m## Use Cases\x1b[0m');
-  for (const item of detail.useCases) lines.push(`- ${item}`);
+  for (const item of detail.useCases) lines.push(...wrapText(item, '  ', '- ').split('\n'));
   lines.push('', '\x1b[1;37m## Examples\x1b[0m');
   for (const example of detail.examples) lines.push(`- \x1b[1;36m${example}\x1b[0m`);
   if (detail.notes?.length) {
     lines.push('', '\x1b[1;37m## Notes\x1b[0m');
-    for (const note of detail.notes) lines.push(`- \x1b[90m${note}\x1b[0m`);
+    for (const note of detail.notes) lines.push(...wrapText(note, '  ', '- ').split('\n').map(gray));
   }
   return lines.join('\n');
+}
+
+function colorWrapped(text: string, indent: string, color: (line: string) => string): string[] {
+  return wrapText(text, indent, indent, terminalWidth()).split('\n').map(color);
 }
 
 /** Render a short human-facing memory README. */

@@ -42,7 +42,7 @@ export async function runCli(argv: string[]): Promise<string> {
     case 'deduplicate': return cmdDeduplicate(flags);
     case 'export': return cmdExport(flags);
     case 'import': return cmdImport(rest, flags);
-    case 'search': return cmdSearch(rest);
+    case 'search': return cmdSearch(rest, flags);
     case 'stats': return cmdStats();
     case 'ignore': return cmdIgnore(rest);
     case 'set-role': return cmdSetRole(rest);

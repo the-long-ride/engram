@@ -13,6 +13,16 @@ export function searchEntries(entries: MemoryEntry[], query: string): MemoryEntr
     .map((row) => row.entry);
 }
 
+/** Return entries ranked by local normalized-term similarity. */
+export function semanticSearchEntries(entries: MemoryEntry[], query: string): MemoryEntry[] {
+  const queryTerms = semanticTerms(query);
+  return entries
+    .map((entry) => ({ entry, score: semanticSearchScore(query, queryTerms, entry) }))
+    .filter((row) => row.score > 0)
+    .sort((a, b) => b.score - a.score || scopePriority(a.entry) - scopePriority(b.entry) || a.entry.file.localeCompare(b.entry.file))
+    .map((row) => row.entry);
+}
+
 /** Find likely duplicates with deterministic token overlap. */
 export function duplicatePairs(entries: MemoryEntry[]): DuplicatePair[] {
   return matchingPairs(entries, (a, b) => overlap(`${a.id} ${a.summary}`, `${b.id} ${b.summary}`), 0.75);
@@ -66,6 +76,22 @@ function semanticDuplicateScore(a: MemoryEntry, b: MemoryEntry): number {
     vectorScore * 0.82 + tagScore * 0.12
   );
   return Math.min(1, semantic + typeBonus);
+}
+
+function semanticSearchScore(query: string, queryTerms: Set<string>, entry: MemoryEntry): number {
+  const candidate = entryText(entry);
+  const entryTerms = semanticTerms(candidate);
+  if (!queryTerms.size || !entryTerms.size) return lexicalScore(query, candidate);
+  const tagScore = setContainment(queryTerms, semanticTerms(entry.tags.join(' ')));
+  const queryCoverage = intersectionSize(queryTerms, entryTerms) / Math.max(1, queryTerms.size);
+  const normalizedLexical = lexicalScore([...queryTerms].join(' '), [...entryTerms].join(' '));
+  const vectorScore = cosine(termVector(queryTerms), termVector(entryTerms));
+  return Math.min(1, Math.max(
+    lexicalScore(query, candidate),
+    normalizedLexical,
+    queryCoverage * 0.78 + tagScore * 0.12,
+    vectorScore * 0.82 + tagScore * 0.08
+  ));
 }
 
 function entryText(entry: MemoryEntry): string {

@@ -2,7 +2,7 @@
 import path from 'node:path';
 import { getContext } from '../core/memory/context.js';
 import { health, scoreMemory } from '../core/analysis/quality.js';
-import { duplicatePairs, searchEntries, semanticDuplicatePairs, stats } from '../core/analysis/search.js';
+import { duplicatePairs, searchEntries, semanticDuplicatePairs, semanticSearchEntries, stats } from '../core/analysis/search.js';
 import { assertFormat, exportBundle, renderFormat, writeSyncTarget } from '../core/integrations/exporter.js';
 import { readJson, readText } from '../core/system/fsx.js';
 import { resolveAuthor, syncGlobalMemoryGit, writeApprovedMemory } from '../core/memory/storage.js';
@@ -24,10 +24,11 @@ export async function cmdHealth(): Promise<string> {
 }
 
 /** Search the merged index. */
-export async function cmdSearch(args: string[]): Promise<string> {
+export async function cmdSearch(args: string[], flags: Record<string, any> = {}): Promise<string> {
   const ctx = await getContext();
   const entries = visibleEntries(ctx.index.entries, ctx.config, true, ctx.ignorePatterns);
-  return searchEntries(entries, args.join(' ')).map((e) => `${e.scope}:${e.file} - ${e.summary}`).join('\n') || 'No matches';
+  const search = flags.semantic ? semanticSearchEntries : searchEntries;
+  return search(entries, args.join(' ')).map((e) => `${e.scope}:${e.file} - ${e.summary}`).join('\n') || 'No matches';
 }
 
 /** Score every indexed memory. */

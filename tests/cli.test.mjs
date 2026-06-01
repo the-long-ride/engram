@@ -24,6 +24,7 @@ test('init, help, save reject, save accept, load, verify, audit', async () => {
   assert.match((await runEngram(cwd, env, ['help', 'set-role'])).stdout, /frontend-only memory/);
   assert.match((await runEngram(cwd, env, ['help', 'save-session'])).stdout, /--accept-all/);
   assert.match((await runEngram(cwd, env, ['help', 'save-session'])).stdout, /engram ss -a/);
+  assert.match((await runEngram(cwd, env, ['help', 'search'])).stdout, /--semantic/);
   assert.match((await runEngram(cwd, env, ['help', 'take-control'])).stdout, /workspace guidance/);
   assert.match((await runEngram(cwd, env, ['-h', 'roles'])).stdout, /role: \[\.\.\.\]/);
   assert.match((await runEngram(cwd, env, ['save-session', '-h'])).stdout, /one candidate per line/);
@@ -216,6 +217,8 @@ test('export, health, search, stats, and conflict dry-run work', async () => {
   await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Frontend uses React and pnpm'], 'A\n');
   assert.match((await runEngram(cwd, env, ['health'])).stdout, /Memory health/);
   assert.match((await runEngram(cwd, env, ['search', 'React'])).stdout, /frontend-uses-react/);
+  assert.match((await runEngram(cwd, env, ['search', 'package manager'])).stdout, /No matches/);
+  assert.match((await runEngram(cwd, env, ['search', '--semantic', 'package manager'])).stdout, /frontend-uses-react/);
   assert.match((await runEngram(cwd, env, ['stats'])).stdout, /Total: 1/);
   assert.match((await runEngram(cwd, env, ['export', '--format', 'agents-md'])).stdout, /AGENTS.md/);
   const conflictDir = path.join(workspaceMemoryRoot(cwd), 'rules');

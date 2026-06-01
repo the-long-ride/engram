@@ -1,5 +1,20 @@
-/** Small terminal formatting helpers for readable CLI reports. */
 const ANSI_PATTERN = /\x1b\[[0-9;]*m/g;
+
+const color = process.stdout.isTTY
+  ? (open: string, text: string) => `${open}${text}\x1b[0m`
+  : (_open: string, text: string) => text;
+
+export const style = {
+  heading: (text: string) => color('\x1b[1;36m', text),  // bold cyan
+  title: (text: string) => color('\x1b[1;33m', text),    // bold yellow
+  label: (text: string) => color('\x1b[90m', text),      // gray
+  value: (text: string) => color('\x1b[32m', text),      // green
+  number: (text: string) => color('\x1b[33m', text),     // yellow
+  muted: (text: string) => color('\x1b[2;37m', text),    // dim white
+  command: (text: string) => color('\x1b[1;36m', text),  // bold cyan
+  success: (text: string) => color('\x1b[1;32m', text),  // bold green
+  error: (text: string) => color('\x1b[1;31m', text),    // bold red
+};
 
 export type Field = [label: string, value: unknown];
 export type RecordBlock = { title: string; fields?: Field[]; lines?: string[] };
@@ -36,9 +51,21 @@ export function wrapText(text: string, indent = '', firstIndent = indent, width 
 }
 
 export function formatField(label: string, value: unknown, indent = '  '): string {
-  const prefix = `${indent}${label}: `;
-  const nextIndent = `${indent}${' '.repeat(label.length + 2)}`;
-  return wrapText(String(value ?? ''), nextIndent, prefix);
+  const styledLabel = style.label(label);
+  const valStr = String(value ?? '');
+  let styledValue = valStr;
+  if (/^\d+(\/\d+)?%?$/.test(valStr)) {
+    styledValue = style.number(valStr);
+  } else if (valStr === 'not configured' || valStr === '-') {
+    styledValue = style.muted(valStr);
+  } else if (valStr.startsWith('skipped:')) {
+    styledValue = style.muted(valStr);
+  } else {
+    styledValue = style.value(valStr);
+  }
+  const prefix = `${indent}${styledLabel}: `;
+  const nextIndent = `${indent}${' '.repeat(visibleLength(label) + 2)}`;
+  return wrapText(styledValue, nextIndent, prefix);
 }
 
 export function formatFields(fields: Field[], indent = '  '): string[] {
@@ -47,10 +74,22 @@ export function formatFields(fields: Field[], indent = '  '): string[] {
 
 export function formatRecords(title: string, records: RecordBlock[]): string {
   if (!records.length) return title;
-  const lines = [title];
+  const lines = [style.heading(title)];
   records.forEach((record, index) => {
     if (index) lines.push('');
-    lines.push(`${index + 1}. ${record.title}`);
+    let styledTitle = record.title;
+    if (styledTitle.startsWith('OK ')) {
+      styledTitle = `${style.success('OK')} ${styledTitle.slice(3)}`;
+    } else if (styledTitle.startsWith('MISMATCH ')) {
+      styledTitle = `${style.error('MISMATCH')} ${styledTitle.slice(9)}`;
+    } else if (styledTitle.startsWith('HIT ')) {
+      styledTitle = `${style.success('HIT')} ${styledTitle.slice(4)}`;
+    } else if (styledTitle.startsWith('MISS ')) {
+      styledTitle = `${style.error('MISS')} ${styledTitle.slice(5)}`;
+    } else {
+      styledTitle = style.title(styledTitle);
+    }
+    lines.push(`${style.number(String(index + 1))}. ${styledTitle}`);
     if (record.fields?.length) lines.push(...formatFields(record.fields, '   '));
     if (record.lines?.length) lines.push(...record.lines.map((line) => wrapText(line, '   ')));
   });
@@ -59,7 +98,10 @@ export function formatRecords(title: string, records: RecordBlock[]): string {
 
 export function formatCounts(title: string, counts: Record<string, number>): string[] {
   const rows = Object.entries(counts).sort(([a], [b]) => a.localeCompare(b));
-  return [title, ...(rows.length ? rows.map(([key, count]) => `  ${key}: ${count}`) : ['  none'])];
+  return [
+    style.heading(title),
+    ...(rows.length ? rows.map(([key, count]) => `  ${style.label(key)}: ${style.number(String(count))}`) : ['  none'])
+  ];
 }
 
 function visibleLength(text: string): number {

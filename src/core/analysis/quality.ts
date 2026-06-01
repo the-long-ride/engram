@@ -1,6 +1,7 @@
 /** Deterministic memory quality and health scoring. */
 import type { MemoryEntry } from '../runtime/types.js';
 import { effectiveMemoryLines, parseMemory, RULE_EFFECTIVE_LINE_TARGET } from '../memory/schema.js';
+import { style } from '../cli/format.js';
 
 /** Score one memory on specificity, completeness, and freshness. */
 export function scoreMemory(raw: string): { score: number; issues: string[] } {
@@ -25,11 +26,11 @@ export function health(entries: MemoryEntry[]): string {
   const ignored = entries.filter((e) => e.ignored).length;
   const score = Math.max(0, 100 - stale * 5 - low * 8);
   return [
-    'Memory health',
-    `Score: ${score}/100`,
-    `Coverage: ${entries.length} files`,
-    `Stale: ${stale}`,
-    `Low confidence: ${low}`,
-    `Hidden by ignore: ${ignored}`
+    style.heading('Memory health'),
+    `${style.label('Score:')} ${style.number(`${score}/100`)}`,
+    `${style.label('Coverage:')} ${style.number(String(entries.length))} files`,
+    `${style.label('Stale:')} ${style.number(String(stale))}`,
+    `${style.label('Low confidence:')} ${style.number(String(low))}`,
+    `${style.label('Hidden by ignore:')} ${style.number(String(ignored))}`
   ].join('\n');
 }

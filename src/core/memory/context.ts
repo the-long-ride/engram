@@ -6,6 +6,7 @@ import { isIgnored, loadIgnore } from '../safety/ignore.js';
 import { emptyIndex, loadIndex, mergeIndexes, rebuildIndex } from './index.js';
 import { emptyGraph, loadGraph, mergeGraphs, rebuildGraph } from './graph.js';
 import { exists, inside } from '../system/fsx.js';
+import { style } from '../cli/format.js';
 
 export type EngramContext = {
   cwd: string;
@@ -42,8 +43,16 @@ export function loadSummary(entries: { type: string; id: string; scope: string }
     acc[e.type] = [...(acc[e.type] ?? []), e.id];
     return acc;
   }, {});
-  const lines = [`engram: loaded ${entries.length} memory files (workspace: ${workspace}, global: ${global}) [${hidden} hidden by ignore]`];
-  for (const [type, ids] of Object.entries(groups)) lines.push(`  ${type}: ${ids.join(', ')}`);
+  const totalStr = style.number(String(entries.length));
+  const wsStr = style.number(String(workspace));
+  const glStr = style.number(String(global));
+  const hidStr = style.number(String(hidden));
+  const lines = [
+    `${style.heading('engram:')} loaded ${totalStr} memory files (${style.label('workspace:')} ${wsStr}, ${style.label('global:')} ${glStr}) [${hidStr} hidden by ignore]`
+  ];
+  for (const [type, ids] of Object.entries(groups)) {
+    lines.push(`  ${style.label(type)}: ${ids.map((id) => style.value(id)).join(', ')}`);
+  }
   return lines.join('\n');
 }
 

@@ -53,14 +53,15 @@ function entryGroup(key: string): string {
 }
 
 function highlightGroup(name: string): string {
-  return `\x1b[1;37m## ${name}\x1b[0m`;
+  return process.stdout.isTTY ? `\x1b[1;37m## ${name}\x1b[0m` : `## ${name}`;
 }
 
 function highlightName(name: string): string {
-  return `\x1b[1;36m${name}\x1b[0m`;
+  return process.stdout.isTTY ? `\x1b[1;36m${name}\x1b[0m` : name;
 }
 
 function highlightValue(val: string): string {
+  if (!process.stdout.isTTY) return val;
   const lower = val.toLowerCase();
   if (lower === 'true' || lower === 'enabled' || lower === 'auto' || lower === 'active') return `\x1b[1;32m${val}\x1b[0m`;
   if (lower === 'false' || lower === 'disabled' || lower === '<none>') return `\x1b[1;31m${val}\x1b[0m`;

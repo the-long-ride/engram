@@ -1,6 +1,7 @@
 /** Search, stats, and duplicate detection helpers. */
 import type { MemoryEntry } from '../runtime/types.js';
 import { lexicalScore, words } from '../system/text.js';
+import { style } from '../cli/format.js';
 
 export type DuplicatePair = [MemoryEntry, MemoryEntry, number];
 
@@ -12,7 +13,7 @@ export function searchEntries(entries: MemoryEntry[], query: string): MemoryEntr
     .sort((a, b) => b.score - a.score || scopePriority(a.entry) - scopePriority(b.entry) || a.entry.file.localeCompare(b.entry.file))
     .map((row) => row.entry);
 }
-
+// ... [keeping semanticSearchEntries, duplicatePairs, semanticDuplicatePairs unchanged]
 /** Return entries ranked by local normalized-term similarity. */
 export function semanticSearchEntries(entries: MemoryEntry[], query: string): MemoryEntry[] {
   const queryTerms = semanticTerms(query);
@@ -40,20 +41,20 @@ export function stats(entries: MemoryEntry[]): string {
     return acc;
   }, {});
   return [
-    'Memory stats',
-    `Total: ${entries.length}`,
+    style.heading('Memory stats'),
+    `${style.label('Total:')} ${style.number(String(entries.length))}`,
     '',
-    'By type:',
+    style.title('By type:'),
     ...countRows(by('type')),
     '',
-    'By scope:',
+    style.title('By scope:'),
     ...countRows(by('scope'))
   ].join('\n');
 }
 
 function countRows(counts: Record<string, number>): string[] {
   const rows = Object.entries(counts).sort(([a], [b]) => a.localeCompare(b));
-  return rows.length ? rows.map(([key, count]) => `  ${key}: ${count}`) : ['  none'];
+  return rows.length ? rows.map(([key, count]) => `  ${style.label(key)}: ${style.number(String(count))}`) : [`  ${style.muted('none')}`];
 }
 
 function matchingPairs(entries: MemoryEntry[], scorePair: (a: MemoryEntry, b: MemoryEntry) => number, threshold: number): DuplicatePair[] {

@@ -617,6 +617,14 @@ test('init prepares global git and entry reports detected branch', async () => {
   const entry = await runEngram(cwd, env, ['entry']);
   assert.equal(entry.code, 0, entry.stderr);
   const cleanStdout = entry.stdout.replace(/\x1b\[[0-9;]*m/g, '');
+  assert.match(cleanStdout, /SYNTHETIC MEMORY/);
+  assert.doesNotMatch(cleanStdout, /^engram entry/m);
+  assert.doesNotMatch(cleanStdout, /Use for:|Edit:/);
+  assert.match(cleanStdout, /## Runtime/);
+  assert.match(cleanStdout, /## Memory roots/);
+  assert.match(cleanStdout, /## Core config/);
+  assert.match(cleanStdout, /## Global Git config/);
+  assert.match(cleanStdout, /## Detected global Git/);
   assert.match(cleanStdout, /config\.global_git\.branch:\s*main/);
   assert.match(cleanStdout, /global_git_detected\.branch:\s*team/);
   assert.doesNotMatch(cleanStdout, /pattern_mining|pr_workflow|encryption/);

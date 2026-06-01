@@ -225,6 +225,64 @@ test('export, health, search, stats, and conflict dry-run work', async () => {
   await rm(cwd, { recursive: true, force: true });
 });
 
+test('deduplicate semantic reports normalized local duplicate candidates', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['init', '--no-skillset']);
+  const rules = path.join(workspaceMemoryRoot(cwd), 'rules');
+  await mkdir(rules, { recursive: true });
+  const memory = ({ id, title, tags, context, content, example }) => `---
+id: ${id}
+type: rule
+scope: workspace
+tags: [${tags.join(', ')}]
+created: 2026-06-01
+updated: 2026-06-01
+author: dev@example.com
+source: manual
+confidence: high
+---
+# ${title}
+
+## Context
+
+${context}
+
+## Content
+
+- ${content}
+
+## Example
+
+${example}
+`;
+  await writeFile(path.join(rules, 'prefer-pnpm-package-scripts.md'), memory({
+    id: 'prefer-pnpm-package-scripts',
+    title: 'Prefer pnpm package scripts',
+    tags: ['pnpm', 'package', 'scripts'],
+    context: 'Local package choice.',
+    content: 'Prefer pnpm package scripts for workspace tasks.',
+    example: 'pnpm run test'
+  }));
+  await writeFile(path.join(rules, 'run-pnpm-for-npm-scripts.md'), memory({
+    id: 'run-pnpm-for-npm-scripts',
+    title: 'Run pnpm for npm scripts',
+    tags: ['pnpm', 'npm', 'scripts'],
+    context: 'Script runner preference.',
+    content: 'Use pnpm when running npm scripts in the workspace.',
+    example: 'pnpm test'
+  }));
+  const rebuilt = await runEngram(cwd, env, ['rebuild-index']);
+  assert.equal(rebuilt.code, 0, rebuilt.stderr);
+  const strict = await runEngram(cwd, env, ['deduplicate']);
+  assert.equal(strict.code, 0, strict.stderr);
+  assert.match(strict.stdout, /No duplicate candidates/);
+  const semantic = await runEngram(cwd, env, ['deduplicate', '--semantic']);
+  assert.equal(semantic.code, 0, semantic.stderr);
+  assert.match(semantic.stdout, /rules\/prefer-pnpm-package-scripts\.md/);
+  assert.match(semantic.stdout, /rules\/run-pnpm-for-npm-scripts\.md/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
 test('repair reports invalid memory files skipped by index rebuild', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
   await runEngram(cwd, env, ['init', '--no-skillset']);
@@ -290,7 +348,6 @@ test('unsupported public flags fail instead of silently degrading', async () => 
   const { cwd, env } = await tempWorkspace('engram-cli-');
   await runEngram(cwd, env, ['init']);
   assert.equal((await runEngram(cwd, env, ['export', '--format', 'bogus'])).code, 1);
-  assert.equal((await runEngram(cwd, env, ['deduplicate', '--semantic'])).code, 1);
   assert.equal((await runEngram(cwd, env, ['resolve-conflicts', '--auto'])).code, 1);
   await rm(cwd, { recursive: true, force: true });
 });

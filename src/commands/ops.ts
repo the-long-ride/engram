@@ -2,7 +2,7 @@
 import path from 'node:path';
 import { getContext } from '../core/memory/context.js';
 import { health, scoreMemory } from '../core/analysis/quality.js';
-import { duplicatePairs, searchEntries, stats } from '../core/analysis/search.js';
+import { duplicatePairs, searchEntries, semanticDuplicatePairs, stats } from '../core/analysis/search.js';
 import { assertFormat, exportBundle, renderFormat, writeSyncTarget } from '../core/integrations/exporter.js';
 import { readJson, readText } from '../core/system/fsx.js';
 import { resolveAuthor, syncGlobalMemoryGit, writeApprovedMemory } from '../core/memory/storage.js';
@@ -97,9 +97,9 @@ export async function cmdArchive(args: string[], flags: Record<string, any> = {}
 
 /** Show likely duplicate pairs. */
 export async function cmdDeduplicate(flags: Record<string, any> = {}): Promise<string> {
-  if (flags.semantic) throw new Error('deduplicate --semantic is not supported yet');
   const ctx = await getContext();
-  const pairs = duplicatePairs(visibleEntries(ctx.index.entries, ctx.config, false, ctx.ignorePatterns));
+  const finder = flags.semantic ? semanticDuplicatePairs : duplicatePairs;
+  const pairs = finder(visibleEntries(ctx.index.entries, ctx.config, false, ctx.ignorePatterns));
   return pairs.map(([a, b, s]) => `${Math.round(s * 100)}% ${a.file} <-> ${b.file}`).join('\n') || 'No duplicate candidates';
 }
 

@@ -97,6 +97,8 @@ Install flow:
 npx @the-long-ride/engram init
 engram help install-skillset
 engram install-skillset <your-agent>
+engram install-skillset --global <your-agent>
+engram upgrade
 ```
 
 ## Documentation

@@ -35,6 +35,12 @@ engram help install-skillset
 engram install-skillset <agent-name>
 ```
 
+To teach the same agent globally, so new workspaces can load Engram global memory without running `engram init` first:
+
+```bash
+engram install-skillset --global <agent-name>
+```
+
 For chat-native use, ask:
 
 ```text
@@ -106,6 +112,7 @@ The agent may use:
 ```bash
 engram init --global-only --global-path <path>
 engram save --scope global "Use pnpm for package management."
+engram install-skillset --global <agent-name>
 ```
 
 ## Keep It Healthy
@@ -119,6 +126,8 @@ Check Engram health, report invalid memories, and propose anything worth saving 
 Useful commands:
 
 ```bash
+engram upgrade
+engram upgrade --plan
 engram verify
 engram repair
 engram graph "<topic>"
@@ -127,4 +136,3 @@ engram archive --reason "<why>" <id-or-file>
 ```
 
 Next: [Human-owned protocol](protocol.md).
-

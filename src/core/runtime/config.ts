@@ -11,9 +11,14 @@ export function defaultGlobalPath(): string {
 }
 
 /** Return the user-level Engram config path used by global-only init. */
-export function userConfigPath(): string {
+export function userConfigDir(): string {
   const configured = process.env.ENGRAM_CONFIG_DIR?.trim();
-  return path.join(configured ? path.resolve(configured) : path.join(homedir(), '.engram'), 'engram.config.json');
+  return configured ? path.resolve(configured) : path.join(homedir(), '.engram');
+}
+
+/** Return the user-level Engram config path used by global-only init. */
+export function userConfigPath(): string {
+  return path.join(userConfigDir(), 'engram.config.json');
 }
 
 /** Return the default config written during init. */

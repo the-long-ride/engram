@@ -4,7 +4,8 @@ export type ParsedArgs = { command: string; rest: string[]; flags: Record<string
 
 const booleanFlags = new Set([
   'accept-all', 'all', 'auto', 'dry-run', 'force', 'h', 'help',
-  'global-only', 'low-confidence', 'no-global', 'no-skillset', 'no-submodule', 'plan', 'propose', 'rebuild', 'semantic', 'stale',
+  'global', 'global-only', 'global-skillsets-only', 'latest', 'low-confidence', 'memory-only', 'no-global', 'no-skillset',
+  'no-submodule', 'no-version-check', 'plan', 'propose', 'rebuild', 'self', 'semantic', 'stale',
   'submodule', 'v', 'version'
 ]);
 const saveSessionCommands = new Set(['save-session', 'ss']);

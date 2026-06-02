@@ -304,6 +304,12 @@ test('argument parser preserves positional text after known boolean flags', () =
   const load = parseArgs(['load', '--all', 'deployment workflow']);
   assert.equal(load.flags.all, true);
   assert.deepEqual(load.rest, ['deployment workflow']);
+  const globalSkillset = parseArgs(['install-skillset', '--global', 'codex']);
+  assert.equal(globalSkillset.flags.global, true);
+  assert.deepEqual(globalSkillset.rest, ['codex']);
+  const upgrade = parseArgs(['upgrade', '--plan', '--target', 'codex']);
+  assert.equal(upgrade.flags.plan, true);
+  assert.equal(upgrade.flags.target, 'codex');
   const takeControl = parseArgs(['take-control', '--plan', '--include', 'docs/**/*.txt', '--include', 'notes/*.txt']);
   assert.equal(takeControl.flags.plan, true);
   assert.deepEqual(takeControl.flags.include, ['docs/**/*.txt', 'notes/*.txt']);

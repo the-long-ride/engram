@@ -11,7 +11,8 @@ export const HELP_DATA: HelpSection[] = [
       { command: 'engram help [topic]', alias: 'h', purpose: 'Show this help menu or specific topic details & example use-cases' },
       { command: 'engram update-help', alias: 'uh', purpose: 'Regenerate workspace HELP.md file' },
       { command: 'engram entry', alias: 'e', purpose: 'Show runtime configurations and global Git repository status' },
-      { command: 'engram completion [bash|zsh|powershell]', alias: 'c', purpose: 'Generate shell completion support for Tab suggestions' }
+      { command: 'engram completion [bash|zsh|powershell]', alias: 'c', purpose: 'Generate shell completion support for Tab suggestions' },
+      { command: 'engram upgrade [--plan] [--latest] [--self] [--memory-only|--global-skillsets-only] [--target agent]', alias: 'up', purpose: 'Recommend package update and refresh global memory plus registered global agent skillsets' }
     ]
   },
   {
@@ -51,7 +52,7 @@ export const HELP_DATA: HelpSection[] = [
       { command: 'engram set-rule-variant off|light|balanced|strict|status', alias: 'rv', purpose: 'Tune rule strictness: strict helps lower-tier models stay controlled, while top-tier models often work better with light or balanced so strict wording does not limit their reasoning' },
       { command: 'engram resolve-conflicts [--dry-run]', alias: 'rc', purpose: 'Preview or resolve Git conflicts in memory files' },
       { command: 'engram install-hooks', alias: 'ih', purpose: 'Install local Git hooks for Engram integrity checks' },
-      { command: 'engram install-skillset [all|list|target] [--force]', alias: 'is', purpose: 'Generate agent skillset instruction files and slash adapters' },
+      { command: 'engram install-skillset [all|list|target] [--global] [--force]', alias: 'is', purpose: 'Generate workspace or global agent skillset instruction files and slash adapters' },
       { command: 'engram sync', alias: 'sy', purpose: 'Sync global memory with Git remote and refresh enabled live-sync targets' },
       { command: 'engram propose <memory-file>', alias: 'p', purpose: 'Propose changes to a memory file for review' },
       { command: 'engram team-dashboard', alias: 'td', purpose: 'Show team memory ownership, quality, and coverage stats' }
@@ -109,6 +110,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
   const ignoreActions = ['status', 'check', 'add'].join(' ');
   const observeArgs = ['--file', '--scope', '--role', '--roles', '--propose', '--accept-all'].join(' ');
   const takeControlArgs = ['--file', '--dir', '--include', '--exclude', '--max-sources', '--max-chars', '--scope', '--role', '--roles', '--all', '--accept-all', '--dry-run', '--plan'].join(' ');
+  const upgradeArgs = ['--plan', '--latest', '--self', '--memory-only', '--global-skillsets-only', '--target', '--force', '--no-version-check'].join(' ');
   const skillsetTargets = [
     'all', 'list', 'agents-md', 'codex', 'copilot', 'claude', 'cursor',
     'gemini', 'cline', 'windsurf', 'antigravity', 'antigravity-cli',
@@ -174,7 +176,10 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '      _arguments "--dry-run"',
       '      ;;',
       '    install-skillset|is)',
-      `      _arguments "--force" "1:target:(${skillsetTargets})"`,
+      `      _arguments "--global" "--force" "1:target:(${skillsetTargets})"`,
+      '      ;;',
+      '    upgrade|up)',
+      `      _arguments "--plan" "--latest" "--self" "--memory-only" "--global-skillsets-only" "--target=[agent]:agent:(${skillsetTargets})" "--force" "--no-version-check"`,
       '      ;;',
       '  esac',
       '}',
@@ -191,6 +196,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '$engramSaveSessionArgs = @(\'--file\', \'--scope\', \'--role\', \'--roles\', \'--accept-all\')',
       `$engramObserveArgs = @(${observeArgs.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
       `$engramTakeControlArgs = @(${takeControlArgs.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
+      `$engramUpgradeArgs = @(${upgradeArgs.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
       `$engramSkillsetTargets = @(${skillsetTargets.split(' ').map((target) => `'${target}'`).join(', ')})`,
       '$engramScopes = @(\'workspace\', \'global\')',
       '$engramRuleVariants = @(\'off\', \'light\', \'balanced\', \'strict\', \'status\')',
@@ -202,6 +208,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '  $choices = switch ($previous) {',
       '    "--scope" { $engramScopes; break }',
       '    "--skillset" { $engramSkillsetTargets; break }',
+      '    "--target" { $engramSkillsetTargets; break }',
       '    "--format" { @(\'agents-md\', \'claude-md\', \'cursorrules\'); break }',
       '    "--file" { break }',
       '    "--role" { break }',
@@ -213,7 +220,8 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '        { $_ -in @(\'save-session\', \'ss\') } { $engramSaveSessionArgs; break }',
       '        { $_ -in @(\'observe\', \'o\') } { $engramObserveArgs; break }',
       '        { $_ -in @(\'take-control\', \'tc\') } { $engramTakeControlArgs; break }',
-      '        { $_ -in @(\'install-skillset\', \'is\') } { $engramSkillsetTargets + \'--force\'; break }',
+      '        { $_ -in @(\'install-skillset\', \'is\') } { $engramSkillsetTargets + \'--global\' + \'--force\'; break }',
+      '        { $_ -in @(\'upgrade\', \'up\') } { $engramUpgradeArgs; break }',
       '        { $_ -in @(\'set-rule-variant\', \'rv\') } { $engramRuleVariants; break }',
       '        { $_ -in @(\'verify\', \'vf\', \'rebuild-index\', \'ri\', \'repair\', \'rp\') } { $engramScopes; break }',
       '        default { $engramCommands }',
@@ -244,6 +252,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
     `  local shells="${shells}"`,
     `  local rule_variants="${ruleVariants}"`,
     `  local ignore_actions="${ignoreActions}"`,
+    `  local upgrade_args="${upgradeArgs}"`,
     `  local skillset_targets="${skillsetTargets}"`,
     '  case "$prev" in',
     '    --format)',
@@ -255,6 +264,10 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
     '      return',
     '      ;;',
     '    --skillset)',
+    '      COMPREPLY=( $(compgen -W "$skillset_targets" -- "$cur") )',
+    '      return',
+    '      ;;',
+    '    --target)',
     '      COMPREPLY=( $(compgen -W "$skillset_targets" -- "$cur") )',
     '      return',
     '      ;;',
@@ -330,8 +343,12 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
     '      return',
     '      ;;',
     '    install-skillset|is)',
-    '      if [[ $prev == install-skillset || $prev == is ]]; then COMPREPLY=( $(compgen -W "$skillset_targets --force" -- "$cur") ); return; fi',
-    '      COMPREPLY=( $(compgen -W "--force" -- "$cur") )',
+    '      if [[ $prev == install-skillset || $prev == is ]]; then COMPREPLY=( $(compgen -W "$skillset_targets --global --force" -- "$cur") ); return; fi',
+    '      COMPREPLY=( $(compgen -W "--global --force" -- "$cur") )',
+    '      return',
+    '      ;;',
+    '    upgrade|up)',
+    '      COMPREPLY=( $(compgen -W "$upgrade_args" -- "$cur") )',
     '      return',
     '      ;;',
     '  esac',

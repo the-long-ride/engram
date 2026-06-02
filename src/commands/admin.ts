@@ -1,12 +1,23 @@
 /** Admin and roadmap commands: ignore, roles, conflicts, hooks, proposals, dashboard. */
+import { execFile } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { getContext } from '../core/memory/context.js';
-import { writeConfig } from '../core/runtime/config.js';
+import { initWorkspace } from '../core/memory/storage.js';
+import { loadConfig, scopeRootsForConfig, writeConfig } from '../core/runtime/config.js';
+import { VERSION } from '../core/runtime/constants.js';
 import { isIgnored } from '../core/safety/ignore.js';
 import { ensureDir, readText, writeText } from '../core/system/fsx.js';
 import { findConflicts, resolveConflicts } from '../core/vcs/conflict.js';
-import { installSkillset, skillsetTargets } from '../core/integrations/skillset.js';
+import {
+  globalSkillsetRegistryPath,
+  installGlobalSkillset,
+  installSkillset,
+  readGlobalSkillsetRegistry,
+  refreshGlobalSkillsets,
+  skillsetTargets,
+  type InstallResult
+} from '../core/integrations/skillset.js';
 import { visibleEntries } from '../core/memory/routing.js';
 import { git } from '../core/vcs/git.js';
 import { formatRecords, type RecordBlock } from '../core/cli/format.js';
@@ -122,20 +133,118 @@ async function gitHookDir(cwd: string): Promise<string> {
 export async function cmdInstallSkillset(args: string[], flags: Record<string, any> = {}): Promise<string> {
   if (args[0] === 'list') return skillsetTargets().join('\n');
   const target = args[0] ?? 'all';
-  const results = await installSkillset(process.cwd(), target, Boolean(flags.force));
-  const records: RecordBlock[] = results.map((result) => ({ title: `${result.action.toUpperCase()} ${result.target}: ${result.file}` }));
+  const global = flags.global === true;
+  const results = global
+    ? await installGlobalSkillset(target, { force: Boolean(flags.force) })
+    : await installSkillset(process.cwd(), target, Boolean(flags.force));
+  const records = installResultRecords(results);
   return [
-    formatRecords('Skillset install', records),
-    ...skillsetInstallHints(results)
+    formatRecords(global ? 'Global skillset install' : 'Skillset install', records),
+    ...skillsetInstallHints(results, global)
   ].join('\n');
 }
 
-function skillsetInstallHints(results: Awaited<ReturnType<typeof installSkillset>>): string[] {
-  if (!results.some((result) => result.target === 'slash')) return [];
+/** Upgrade Engram package guidance, global memory scaffold, and registered global skillsets. */
+export async function cmdUpgrade(args: string[] = [], flags: Record<string, any> = {}): Promise<string> {
+  if (flags['memory-only'] === true && flags['global-skillsets-only'] === true) throw new Error('upgrade cannot use --memory-only and --global-skillsets-only together');
+  const plan = flags.plan === true || flags['dry-run'] === true;
+  const records: RecordBlock[] = [];
+  records.push(await upgradePackageRecord(flags, plan));
+  if (flags['global-skillsets-only'] !== true) records.push(...await globalMemoryUpgradeRecords(plan, Boolean(flags.force)));
+  if (flags['memory-only'] !== true) records.push(...await globalSkillsetUpgradeRecords(args, flags, plan));
   return [
+    formatRecords(plan ? 'Upgrade plan' : 'Upgrade', records),
+    '',
+    'Quick update:',
+    '  npm install -g @the-long-ride/engram@latest',
+    '  engram upgrade'
+  ].join('\n');
+}
+
+function installResultRecords(results: InstallResult[]): RecordBlock[] {
+  return results.map((result) => ({
+    title: `${result.action.toUpperCase()} ${result.target}: ${result.file}`,
+    fields: [
+      ...(result.mode ? [['Mode', result.mode] as [string, string]] : []),
+      ...(result.reason ? [['Reason', result.reason] as [string, string]] : [])
+    ]
+  }));
+}
+
+function skillsetInstallHints(results: InstallResult[], global = false): string[] {
+  const hints = [];
+  if (global) hints.push(`Registry: ${globalSkillsetRegistryPath()}`);
+  if (results.some((result) => result.action === 'skipped')) hints.push('Skipped targets can be installed manually when the agent exposes a stable user/global rule path.');
+  if (!results.some((result) => result.target === 'slash')) return hints;
+  hints.push(
     'Hint: if /engram is not visible in an already-open chat, restart or reload the agent chat after the new slash files are written.',
-    'Claude paths: .claude/commands/engram.md and .claude/skills/engram/SKILL.md'
-  ];
+    global ? 'Global Claude paths: ~/.claude/commands/engram.md and ~/.claude/skills/engram/SKILL.md' : 'Claude paths: .claude/commands/engram.md and .claude/skills/engram/SKILL.md'
+  );
+  return hints;
+}
+
+async function upgradePackageRecord(flags: Record<string, any>, plan: boolean): Promise<RecordBlock> {
+  const latest = await latestVersion(flags);
+  if (flags.self === true && !plan) {
+    const result = await runNpm(['install', '-g', '@the-long-ride/engram@latest'], 120000).catch((error) => `failed: ${error.message}`);
+    return { title: 'PACKAGE self update', fields: [['Current', VERSION], ['Latest', latest], ['Result', compact(result)]] };
+  }
+  return {
+    title: flags.self === true ? 'PLAN package self update' : 'PACKAGE recommendation',
+    fields: [
+      ['Current', VERSION],
+      ['Latest', latest],
+      ['Command', 'npm install -g @the-long-ride/engram@latest']
+    ]
+  };
+}
+
+async function globalMemoryUpgradeRecords(plan: boolean, force: boolean): Promise<RecordBlock[]> {
+  const config = await loadConfig(process.cwd());
+  const roots = scopeRootsForConfig(process.cwd(), config);
+  if (!roots.global) return [{ title: 'SKIPPED global memory', fields: [['Reason', 'global memory is not configured; run engram init --global-only --global-path <path>']] }];
+  if (plan) return [{ title: 'PLAN global memory', fields: [['Path', roots.global], ['Action', 'reconcile global-only scaffold']] }];
+  const lines = await initWorkspace(process.cwd(), force, config.global_git.branch, roots.global, { globalOnly: true });
+  return [{ title: 'UPDATED global memory', fields: [['Path', roots.global]], lines }];
+}
+
+async function globalSkillsetUpgradeRecords(args: string[], flags: Record<string, any>, plan: boolean): Promise<RecordBlock[]> {
+  const target = typeof flags.target === 'string' ? flags.target : args[0] ?? '';
+  const registry = await readGlobalSkillsetRegistry();
+  if (!target && !Object.keys(registry.installs).length) {
+    return [{
+      title: 'SKIPPED global skillsets',
+      fields: [
+        ['Reason', 'no registered global skillsets yet'],
+        ['Start with', 'engram install-skillset --global codex']
+      ]
+    }];
+  }
+  const results = target
+    ? await installGlobalSkillset(target, { force: Boolean(flags.force), plan })
+    : await refreshGlobalSkillsets('', { force: Boolean(flags.force), plan });
+  return installResultRecords(results);
+}
+
+async function latestVersion(flags: Record<string, any>): Promise<string> {
+  if (flags['no-version-check'] === true) return 'not checked';
+  if (process.env.ENGRAM_LATEST_VERSION?.trim()) return process.env.ENGRAM_LATEST_VERSION.trim();
+  if (flags.latest !== true && flags.self !== true) return 'not checked (use --latest to query npm)';
+  return compact(await runNpm(['view', '@the-long-ride/engram', 'version', '--silent'], 5000).catch((error) => `unavailable: ${error.message}`));
+}
+
+function runNpm(args: string[], timeout: number): Promise<string> {
+  const command = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+  return new Promise((resolve, reject) => {
+    execFile(command, args, { encoding: 'utf8', timeout }, (error: any, stdout: string, stderr: string) => {
+      if (error) reject(new Error(compact(stderr || error.message)));
+      else resolve(stdout.trim());
+    });
+  });
+}
+
+function compact(value: string): string {
+  return value.trim().replace(/\s+/g, ' ') || '-';
 }
 
 function isRuleVariant(value: string): value is RuleVariant {

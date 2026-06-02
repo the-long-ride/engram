@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { installSkillset, skillsetTargets } from '../dist/core/integrations/skillset.js';
 import { runEngram, tempWorkspace } from './helpers.mjs';
@@ -102,5 +102,78 @@ test('cli installs slash command adapters', async () => {
   assert.match(result.stdout, /WRITTEN slash: \.cursor\/commands\/engram\.md/);
   assert.match(result.stdout, /WRITTEN slash: \.gemini\/commands\/engram\.toml/);
   assert.match(result.stdout, /if \/engram is not visible/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('global skillset installer writes managed rules, skills, and registry', async () => {
+  const { cwd, env } = await tempWorkspace('engram-skillset-global-');
+  const agentHome = path.join(cwd, 'agent-home');
+  const globalEnv = { ...env, ENGRAM_AGENT_HOME: agentHome, ENGRAM_AGENT_CONFIG_HOME: path.join(cwd, 'agent-config') };
+  const result = await runEngram(cwd, globalEnv, ['install-skillset', '--global', 'codex']);
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /Global skillset install/);
+  assert.match(result.stdout, /WRITTEN codex: .*AGENTS\.md/);
+  assert.match(result.stdout, /WRITTEN codex: .*SKILL\.md/);
+  assert.match(result.stdout, /Registry:/);
+
+  const agents = await readFile(path.join(agentHome, '.codex', 'AGENTS.md'), 'utf8');
+  assert.match(agents, /BEGIN ENGRAM GLOBAL SKILLSET/);
+  assert.match(agents, /Global Startup/);
+  assert.match(agents, /engram load "<current task>"/);
+  const skill = await readFile(path.join(agentHome, '.agents', 'skills', 'engram', 'SKILL.md'), 'utf8');
+  assert.match(skill, /name: engram/);
+  assert.match(skill, /Default agent mode: compact/);
+
+  const registry = JSON.parse(await readFile(path.join(globalEnv.ENGRAM_CONFIG_DIR, 'global-skillsets.json'), 'utf8'));
+  assert.equal(registry.installs.codex.files.length, 2);
+  assert.equal(registry.installs.codex.engram_version, '0.0.1');
+
+  const updated = await runEngram(cwd, globalEnv, ['install-skillset', '--global', 'codex']);
+  assert.equal(updated.code, 0, updated.stderr);
+  assert.match(updated.stdout, /UPDATED codex: .*AGENTS\.md/);
+  assert.match(updated.stdout, /UPDATED codex: .*SKILL\.md/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('global skillset installer preserves human-authored shared files with a managed block', async () => {
+  const { cwd, env } = await tempWorkspace('engram-skillset-global-');
+  const agentHome = path.join(cwd, 'agent-home');
+  const globalEnv = { ...env, ENGRAM_AGENT_HOME: agentHome, ENGRAM_AGENT_CONFIG_HOME: path.join(cwd, 'agent-config') };
+  const codexDir = path.join(agentHome, '.codex');
+  await mkdir(codexDir, { recursive: true });
+  await writeFile(path.join(codexDir, 'AGENTS.md'), '# Human global rules\n');
+
+  const result = await runEngram(cwd, globalEnv, ['install-skillset', '--global', 'agents-md']);
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /UPDATED agents-md: .*AGENTS\.md/);
+  const agents = await readFile(path.join(codexDir, 'AGENTS.md'), 'utf8');
+  assert.match(agents, /# Human global rules/);
+  assert.match(agents, /BEGIN ENGRAM GLOBAL SKILLSET/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('global codex install appends rules and skips human-authored skill files', async () => {
+  const { cwd, env } = await tempWorkspace('engram-skillset-global-');
+  const agentHome = path.join(cwd, 'agent-home');
+  const globalEnv = { ...env, ENGRAM_AGENT_HOME: agentHome, ENGRAM_AGENT_CONFIG_HOME: path.join(cwd, 'agent-config') };
+  const codexFile = path.join(agentHome, '.codex', 'AGENTS.md');
+  const skillFile = path.join(agentHome, '.agents', 'skills', 'engram', 'SKILL.md');
+  await mkdir(path.dirname(codexFile), { recursive: true });
+  await mkdir(path.dirname(skillFile), { recursive: true });
+  await writeFile(codexFile, '# My Codex Rules\n\n- Keep this rule.\n');
+  await writeFile(skillFile, '# Human Engram-like Skill\n\nDo not replace me.\n');
+
+  const result = await runEngram(cwd, globalEnv, ['install-skillset', '--global', 'codex']);
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /UPDATED codex: .*AGENTS\.md/);
+  assert.match(result.stdout, /SKIPPED codex: .*SKILL\.md/);
+
+  const codex = await readFile(codexFile, 'utf8');
+  assert.match(codex, /# My Codex Rules/);
+  assert.match(codex, /- Keep this rule\./);
+  assert.match(codex, /BEGIN ENGRAM GLOBAL SKILLSET/);
+  assert.match(codex, /END ENGRAM GLOBAL SKILLSET/);
+  assert.equal((codex.match(/# My Codex Rules/g) ?? []).length, 1);
+  assert.match(await readFile(skillFile, 'utf8'), /Do not replace me\./);
   await rm(cwd, { recursive: true, force: true });
 });

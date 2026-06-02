@@ -7,7 +7,7 @@ import { cmdCompletion, cmdHelp, cmdInit, cmdSave, cmdSaveSession, cmdTakeContro
 import { cmdObserve } from './commands/observe.js';
 import { cmdAudit, cmdLoad, cmdRebuildIndex, cmdRepair, cmdVerify } from './commands/read.js';
 import { cmdArchive, cmdBenchmark, cmdDeduplicate, cmdEntry, cmdExport, cmdGraph, cmdHealth, cmdImport, cmdQuality, cmdSearch, cmdStats, cmdSync } from './commands/ops.js';
-import { cmdIgnore, cmdInstallHooks, cmdInstallSkillset, cmdPropose, cmdResolveConflicts, cmdSetRole, cmdSetRuleVariant, cmdTeamDashboard } from './commands/admin.js';
+import { cmdIgnore, cmdInstallHooks, cmdInstallSkillset, cmdPropose, cmdResolveConflicts, cmdSetRole, cmdSetRuleVariant, cmdTeamDashboard, cmdUpgrade } from './commands/admin.js';
 
 /** Execute a CLI invocation and return printable output. */
 export async function runCli(argv: string[]): Promise<string> {
@@ -51,6 +51,7 @@ export async function runCli(argv: string[]): Promise<string> {
     case 'resolve-conflicts': return cmdResolveConflicts(flags);
     case 'install-hooks': return cmdInstallHooks();
     case 'install-skillset': return cmdInstallSkillset(rest, flags);
+    case 'upgrade': return cmdUpgrade(rest, flags);
     case 'sync': return cmdSync();
     case 'propose': return cmdPropose(rest);
     case 'team-dashboard': return cmdTeamDashboard();

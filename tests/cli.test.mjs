@@ -194,6 +194,8 @@ test('completion emits shell helper with command suggestions', async () => {
   assert.match(bash.stdout, /local commands="[^"]*\bsave\b[^"]*"/);
   assert.doesNotMatch(bash.stdout, /local commands="[^"]*save rule/);
   assert.match(bash.stdout, /--file --scope --role --roles/);
+  assert.match(bash.stdout, /upgrade\|up/);
+  assert.match(bash.stdout, /--global --force/);
   const zsh = await runEngram(cwd, env, ['completion', 'zsh']);
   assert.equal(zsh.code, 0, zsh.stderr);
   assert.match(zsh.stdout, /#compdef engram/);
@@ -207,6 +209,25 @@ test('completion emits shell helper with command suggestions', async () => {
   assert.doesNotMatch(powershell.stdout, /'autosave'/);
   assert.match(powershell.stdout, /\$engramTakeControlArgs/);
   assert.match(powershell.stdout, /\$engramSaveSessionArgs/);
+  assert.match(powershell.stdout, /\$engramUpgradeArgs/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('upgrade plan reports quick package update and registered global skillset refresh', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-upgrade-');
+  const agentHome = path.join(cwd, 'agent-home');
+  const globalEnv = { ...env, ENGRAM_AGENT_HOME: agentHome, ENGRAM_AGENT_CONFIG_HOME: path.join(cwd, 'agent-config') };
+  const installed = await runEngram(cwd, globalEnv, ['install-skillset', '--global', 'codex']);
+  assert.equal(installed.code, 0, installed.stderr);
+
+  const plan = await runEngram(cwd, globalEnv, ['upgrade', '--plan', '--no-version-check']);
+  assert.equal(plan.code, 0, plan.stderr);
+  assert.match(plan.stdout, /Upgrade plan/);
+  assert.match(plan.stdout, /PACKAGE recommendation/);
+  assert.match(plan.stdout, /PLAN global memory/);
+  assert.match(plan.stdout, /PLANNED codex: .*AGENTS\.md/);
+  assert.match(plan.stdout, /Quick update:/);
+  assert.match(plan.stdout, /npm install -g @the-long-ride\/engram@latest/);
   await rm(cwd, { recursive: true, force: true });
 });
 

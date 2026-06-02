@@ -3,6 +3,7 @@ declare const process: {
   cwd(): string;
   exit(code?: number): never;
   env: Record<string, string | undefined>;
+  platform: string;
   stdin: any;
   stdout: any;
   stderr: any;
@@ -16,7 +17,7 @@ declare const Buffer: any;
 declare module 'node:fs/promises' { const mod: any; export = mod; }
 declare module 'node:fs' { export const existsSync: any; export const mkdirSync: any; }
 declare module 'node:path' { const mod: any; export = mod; }
-declare module 'node:os' { export const homedir: any; export const EOL: string; }
+declare module 'node:os' { export const homedir: any; export const EOL: string; export const platform: any; }
 declare module 'node:crypto' {
   export const createHash: any;
   export const createCipheriv: any;

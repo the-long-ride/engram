@@ -33,7 +33,7 @@ export function renderHelp(): string {
     md += `\n`;
   }
   md += `Run \`engram help <topic>\` for command examples and use cases.\n\n`;
-  md += `Every write path requires A/B/C approval before files are changed. Save automatically updates the best matching existing memory, or adds a new memory when no match is found.\n`;
+  md += `Every write path requires A/B/C approval before files are changed. Save automatically updates the best matching existing memory, or adds a new memory when no match is found. When global memory is configured, workspace saves also include a global copy.\n`;
   return md;
 }
 
@@ -64,7 +64,7 @@ export function renderHelpTerminal(topic = ''): string {
     }
     lines.push('');
   }
-  lines.push(...colorWrapped('Run `engram help <topic>` for command examples and use cases. Every write path requires A/B/C approval before files are changed.', '', (text) => `\x1b[2;37m${text}\x1b[0m`));
+  lines.push(...colorWrapped('Run `engram help <topic>` for command examples and use cases. Every write path requires A/B/C approval before files are changed. When global memory is configured, workspace saves also include a global copy.', '', (text) => `\x1b[2;37m${text}\x1b[0m`));
   return lines.join('\n');
 }
 

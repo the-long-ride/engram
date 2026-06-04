@@ -40,7 +40,9 @@ Engram moves memory into files:
 | Remove wrong memory | Archive after review, keep history |
 | Find broken memory | Run `engram repair` |
 
-Workspace memory loads first. Global memory is fallback.
+Workspace memory loads first. Global memory is fallback. When global memory is
+configured, approved workspace save flows also keep a global copy so portable
+memory survives even in workspaces that have not run `engram init`.
 
 ## AI-Agent Quickstart
 

@@ -68,6 +68,13 @@ npm run lint:lines
   unless the human requested it.
 - `engram save` upsert detection is automatic. Do not add a second approval
   prompt just to choose the target file.
+- When global memory is configured, workspace save flows must include a global
+  copy in the same approval preview, even if the current workspace has not run
+  `engram init`. Upsert detection must run per scope so a matching global copy
+  is updated instead of duplicated.
+- Archiving a workspace memory must also archive its matching global copy when
+  one exists, so wrong or stale twin memories do not remain active through
+  global fallback.
 - Memory Markdown must keep a blank line after every heading, use the standard
   `Context`, `Content`, `Example` section order, and format links as
   `[label](url)`.

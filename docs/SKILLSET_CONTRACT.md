@@ -17,6 +17,11 @@ files. Hosts that support custom slash commands can also load generated
   memory when project knowledge, user preferences, or team rules could matter.
 - Never load all memory blindly; route by task intent and summarize relevant
   IDs/rules instead of pasting raw output to reduce token usage.
+- For large memory scopes, maintain an optional per-scope sqlite-vec sidecar
+  (`memory.vec.sqlite`) once the visible memory count reaches the configured
+  threshold. Vector hits are candidate expansion only: lexical and graph routing
+  remain active so a missing, stale, or unavailable vector DB cannot hide saved
+  memories.
 - Never write memory silently.
 - Treat `engram_save` and `engram save` as proposal flows with human approval.
   Engram may automatically choose update-vs-new before presenting the preview.
@@ -117,7 +122,7 @@ proposal and collect explicit human approval before invoking a CLI write flow.
 | `engram set-rule-variant light|balanced|strict|off` | Configure compact rule output for agents |
 | `engram verify` | Check hash integrity |
 | `engram repair [workspace|global]` | Report invalid memory files that index rebuild would skip |
-| `engram rebuild-index [workspace|global]` | Explicitly rebuild memory indexes |
+| `engram rebuild-index [workspace|global]` | Explicitly rebuild memory indexes, graph files, and eligible vector sidecars |
 | `engram resolve-conflicts` | Resolve and stage only `.agents/.engram/` conflicts |
 | `engram stats` | Show visible memory counts, scope mix, and author ownership |
 | `engram install-skillset all` | Install agent-host instruction files |

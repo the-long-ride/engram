@@ -1,6 +1,6 @@
 # Engram
 
-![Engram cover](media/cover/engram-cover.png)
+![Engram cover](https://raw.githubusercontent.com/the-long-ride/engram/main/media/cover/engram-cover.png)
 
 **Engram is a human-owned memory protocol for AI agents. Grow with you & your teams.**
 

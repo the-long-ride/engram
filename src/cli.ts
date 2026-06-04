@@ -2,12 +2,11 @@
 import { parseArgs } from './cli/args.js';
 import { VERSION } from './core/runtime/constants.js';
 import { canonicalCommand } from './core/cli/command-registry.js';
-import { formatRecords } from './core/cli/format.js';
-import { cmdCompletion, cmdHelp, cmdInit, cmdSave, cmdSaveSession, cmdTakeControl, cmdUpdateHelp } from './commands/core.js';
+import { cmdCompletion, cmdHelp, cmdInit, cmdSave, cmdSaveSession, cmdTakeControl } from './commands/core.js';
 import { cmdObserve } from './commands/observe.js';
 import { cmdAudit, cmdLoad, cmdRebuildIndex, cmdRepair, cmdVerify } from './commands/read.js';
 import { cmdArchive, cmdBenchmark, cmdDeduplicate, cmdEntry, cmdExport, cmdGraph, cmdHealth, cmdImport, cmdQuality, cmdSearch, cmdStats, cmdSync } from './commands/ops.js';
-import { cmdIgnore, cmdInstallHooks, cmdInstallSkillset, cmdPropose, cmdResolveConflicts, cmdSetRole, cmdSetRuleVariant, cmdTeamDashboard, cmdUpgrade } from './commands/admin.js';
+import { cmdIgnore, cmdInstallHooks, cmdInstallSkillset, cmdResolveConflicts, cmdSetRole, cmdSetRuleVariant, cmdUpgrade } from './commands/admin.js';
 
 /** Execute a CLI invocation and return printable output. */
 export async function runCli(argv: string[]): Promise<string> {
@@ -22,14 +21,12 @@ export async function runCli(argv: string[]): Promise<string> {
   switch (command) {
     case 'init': return cmdInit(flags);
     case 'help': return cmdHelp(rest[0]);
-    case 'update-help': return cmdUpdateHelp();
     case 'completion': return cmdCompletion(rest[0]);
     case 'save': return cmdSave(rest, flags);
     case 'save-session': return cmdSaveSession(rest, flags);
     case 'observe': return cmdObserve(rest, flags);
     case 'take-control': return cmdTakeControl(rest, flags);
     case 'load': return cmdLoad(rest, flags);
-    case 'dry-run': return dryRun(rest, flags);
     case 'verify': return cmdVerify(rest[0]);
     case 'rebuild-index': return cmdRebuildIndex(rest[0]);
     case 'repair': return cmdRepair(rest[0]);
@@ -53,24 +50,8 @@ export async function runCli(argv: string[]): Promise<string> {
     case 'install-skillset': return cmdInstallSkillset(rest, flags);
     case 'upgrade': return cmdUpgrade(rest, flags);
     case 'sync': return cmdSync();
-    case 'propose': return cmdPropose(rest);
-    case 'team-dashboard': return cmdTeamDashboard();
     default: return cmdHelp();
   }
-}
-
-/** Dry-run routing without printing full memory content. */
-async function dryRun(args: string[], flags: Record<string, any>): Promise<string> {
-  const { getContext } = await import('./core/memory/context.js');
-  const { route } = await import('./core/memory/routing.js');
-  const ctx = await getContext();
-  const all = flags.all === true;
-  const entries = route(ctx.index, args.join(' ') || 'current session', ctx.config, all, { all, ignorePatterns: ctx.ignorePatterns }, ctx.graph);
-  if (!entries.length) return 'No routed memories';
-  return formatRecords(`Routed memories (${entries.length})`, entries.map((entry) => ({
-    title: `${entry.scope}:${entry.file}`,
-    fields: [['Type', entry.type], ['Summary', entry.summary]]
-  })));
 }
 
 /** Main process entrypoint with clear errors. */

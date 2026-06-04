@@ -48,13 +48,23 @@ export function stats(entries: MemoryEntry[]): string {
     ...countRows(by('type')),
     '',
     style.title('By scope:'),
-    ...countRows(by('scope'))
+    ...countRows(by('scope')),
+    '',
+    style.title('By author:'),
+    ...countRows(authorCounts(entries))
   ].join('\n');
 }
 
 function countRows(counts: Record<string, number>): string[] {
   const rows = Object.entries(counts).sort(([a], [b]) => a.localeCompare(b));
   return rows.length ? rows.map(([key, count]) => `  ${style.label(key)}: ${style.number(String(count))}`) : [`  ${style.muted('none')}`];
+}
+
+function authorCounts(entries: MemoryEntry[]): Record<string, number> {
+  return entries.reduce<Record<string, number>>((acc, entry) => {
+    acc[entry.author] = (acc[entry.author] ?? 0) + 1;
+    return acc;
+  }, {});
 }
 
 function matchingPairs(entries: MemoryEntry[], scorePair: (a: MemoryEntry, b: MemoryEntry) => number, threshold: number): DuplicatePair[] {

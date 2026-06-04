@@ -14,6 +14,13 @@ export async function cmdLoad(args: string[], flags: Record<string, any> = {}): 
   const query = args.join(' ') || 'current session';
   const all = flags.all === true;
   const entries = route(ctx.index, query, ctx.config, all, { all, ignorePatterns: ctx.ignorePatterns }, ctx.graph);
+  if (flags['dry-run'] === true) {
+    if (!entries.length) return 'No routed memories';
+    return formatRecords(`Routed memories (${entries.length})`, entries.map((entry) => ({
+      title: `${entry.scope}:${entry.file}`,
+      fields: [['Type', entry.type], ['Summary', entry.summary]]
+    })));
+  }
   const loaded = await loadEntries(process.cwd(), entries, ctx.config);
   const summary = loadSummary(entries, ctx.hiddenCount);
   return `${summary}\n\n${loaded.map((row) => row.flagged ? `SKIPPED ${row.entry.file}: ${row.flagged}` : row.content).join('\n\n')}`.trim();

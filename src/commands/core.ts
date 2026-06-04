@@ -2,15 +2,14 @@
 import path from 'node:path';
 import { createInterface } from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
-import { HELP_FILE } from '../core/runtime/constants.js';
 import { initWorkspace, resolveAuthor, writeApprovedMemory } from '../core/memory/storage.js';
 import { entryPath, getContext } from '../core/memory/context.js';
 import { loadConfig, scopeRootsForConfig, writeScopes } from '../core/runtime/config.js';
-import { renderHelp, renderHelpTerminal } from '../core/cli/help.js';
+import { renderHelpTerminal } from '../core/cli/help.js';
 import { INIT_WORDMARK, renderInitWordmark } from '../core/cli/banner.js';
-import { completionScript } from '../core/cli/command-registry.js';
+import { completionScript } from '../core/cli/completion.js';
 import { detectCompletionTarget } from '../core/cli/completion-target.js';
-import { readText, writeText } from '../core/system/fsx.js';
+import { readText } from '../core/system/fsx.js';
 import { applyApprovalEdit, requestApproval, requestGeneratedMemoryApproval, requestGeneratedSelectionApproval, requestGeneratedSelectionText, requestSelectionApproval, type SelectionApproval } from '../core/safety/approval.js';
 import { normalizeBranchName } from '../core/vcs/git.js';
 import { planMemorySave, previewSavePlans, withGlobalSaveCopy, type SavePlan } from '../core/memory/save-plan.js';
@@ -132,13 +131,6 @@ function summarizeSkillsetInstall(results: InstallResult[]): string {
 /** Show cached help or refresh it. */
 export async function cmdHelp(topic = ''): Promise<string> {
   return renderHelpTerminal(topic);
-}
-
-/** Regenerate workspace HELP.md. */
-export async function cmdUpdateHelp(): Promise<string> {
-  const ctx = await getContext();
-  await writeText(path.join(ctx.roots.workspace, HELP_FILE), renderHelp());
-  return 'engram: HELP.md refreshed';
 }
 
 /** Generate shell completion support for Tab suggestions. */

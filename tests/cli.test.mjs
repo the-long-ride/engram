@@ -27,6 +27,8 @@ test('init, help, save reject, save accept, load, verify, audit', async () => {
   assert.match((await runEngram(cwd, env, ['help', 'save-session'])).stdout, /engram ss -a/);
   assert.match((await runEngram(cwd, env, ['help', 'search'])).stdout, /--semantic/);
   assert.match((await runEngram(cwd, env, ['help', 'take-control'])).stdout, /workspace guidance/);
+  assert.match((await runEngram(cwd, env, ['help', 'load'])).stdout, /--dry-run/);
+  assert.doesNotMatch((await runEngram(cwd, env, ['help'])).stdout, /update-help|team-dashboard|engram dry-run|engram propose/);
   assert.match((await runEngram(cwd, env, ['-h', 'roles'])).stdout, /role: \[\.\.\.\]/);
   assert.match((await runEngram(cwd, env, ['save-session', '-h'])).stdout, /one candidate per line/);
   assert.doesNotMatch((await runEngram(cwd, env, ['autosave', '-h'])).stdout, /one candidate per line/);
@@ -194,6 +196,8 @@ test('completion emits shell helper with command suggestions', async () => {
   assert.match(bash.stdout, /local commands="[^"]*\bsave\b[^"]*"/);
   assert.doesNotMatch(bash.stdout, /local commands="[^"]*save rule/);
   assert.match(bash.stdout, /--file --scope --role --roles/);
+  assert.match(bash.stdout, /--all --dry-run/);
+  assert.doesNotMatch(bash.stdout, /dry-run\|dr|propose\|p|team-dashboard|update-help/);
   assert.match(bash.stdout, /upgrade\|up/);
   assert.match(bash.stdout, /--global --force/);
   const zsh = await runEngram(cwd, env, ['completion', 'zsh']);
@@ -207,6 +211,7 @@ test('completion emits shell helper with command suggestions', async () => {
   assert.match(powershell.stdout, /Register-ArgumentCompleter/);
   assert.match(powershell.stdout, /'save-session', 'ss'/);
   assert.doesNotMatch(powershell.stdout, /'autosave'/);
+  assert.doesNotMatch(powershell.stdout, /'dry-run'|'dr'|'propose'|'p'|'team-dashboard'|'td'|'update-help'|'uh'/);
   assert.match(powershell.stdout, /\$engramTakeControlArgs/);
   assert.match(powershell.stdout, /\$engramSaveSessionArgs/);
   assert.match(powershell.stdout, /\$engramUpgradeArgs/);
@@ -231,7 +236,7 @@ test('upgrade plan reports quick package update and registered global skillset r
   await rm(cwd, { recursive: true, force: true });
 });
 
-test('export, health, search, stats, and conflict dry-run work', async () => {
+test('export, health, search, stats, load dry-run, and conflict dry-run work', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
   await runEngram(cwd, env, ['init']);
   await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Frontend uses React and pnpm'], 'A\n');
@@ -239,7 +244,10 @@ test('export, health, search, stats, and conflict dry-run work', async () => {
   assert.match((await runEngram(cwd, env, ['search', 'React'])).stdout, /frontend-uses-react/);
   assert.match((await runEngram(cwd, env, ['search', 'package manager'])).stdout, /No matches/);
   assert.match((await runEngram(cwd, env, ['search', '--semantic', 'package manager'])).stdout, /frontend-uses-react/);
-  assert.match((await runEngram(cwd, env, ['stats'])).stdout, /Total: 1/);
+  const stats = await runEngram(cwd, env, ['stats']);
+  assert.match(stats.stdout, /Total: 1/);
+  assert.match(stats.stdout, /By author:/);
+  assert.match((await runEngram(cwd, env, ['load', '--dry-run', 'React'])).stdout, /Routed memories \(1\)/);
   assert.match((await runEngram(cwd, env, ['export', '--format', 'agents-md'])).stdout, /AGENTS.md/);
   const conflictDir = path.join(workspaceMemoryRoot(cwd), 'rules');
   await mkdir(conflictDir, { recursive: true });

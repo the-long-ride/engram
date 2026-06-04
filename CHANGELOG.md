@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.0.1
+
+- Added optional sqlite-vec routing sidecars for large workspace and global
+  memory scopes while keeping Markdown as the source of truth and lexical/graph
+  routing as fallback.
+- Improved `engram load` for broad queries with top-8 refinement, dry-run
+  candidate counts, suggested narrowing tags, and `--all` for intentional broad
+  context loads.
+- Added `engram save-session --query-level <n>` and natural
+  `engram ss -a last 50 sessions` handling so agents can mine recent accessible
+  chat sessions without inventing unavailable history.
+- Added the unified `antigravity` skillset target for Antigravity 2.0, CLI, IDE,
+  and `.antigravityrules`, while keeping `antigravity-cli` as a compatibility
+  alias.
+- Clarified `agents-md` as the generic AGENTS.md fallback target for unlisted
+  AGENTS.md-compatible agents and updated the skillset list output.
+- Refreshed README guidance and localized README entrypoints for recent routing,
+  vector sidecar, save-session, and skillset changes.
+
 ## 0.0.1
 
 - Added explicit agent skillset adapters for Codex, AGENTS.md-compatible agents,

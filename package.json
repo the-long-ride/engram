@@ -1,8 +1,9 @@
 {
   "name": "@the-long-ride/engram",
   "version": "0.0.1",
-  "description": "Portable, human-approved memory for AI agents.",
+  "description": "Portable, human-approved memory for AI agents. Grow with you & your teams.",
   "type": "module",
+  "private": false,
   "license": "GPL-3.0-only",
   "author": "the-long-ride",
   "bin": {
@@ -19,6 +20,9 @@
     "CHANGELOG.md",
     "LICENSE"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",

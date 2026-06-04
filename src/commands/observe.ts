@@ -4,7 +4,7 @@ import { getContext } from '../core/memory/context.js';
 import { writeObservation } from '../core/memory/observe.js';
 import { writeScopes } from '../core/runtime/config.js';
 import { readText } from '../core/system/fsx.js';
-import { cmdSaveSession } from './core.js';
+import { cmdSaveSession } from './write.js';
 import type { Scope } from '../core/runtime/types.js';
 
 /** Capture a raw session note in inbox, optionally mining it through save-session. */

@@ -46,5 +46,8 @@ TODO.md
 AGENTS.md
 .agents/**/*
 .github/**/*
+!.github/workflows/
+!.github/workflows/*.yml
+!.github/workflows/*.yaml
 
 # engram

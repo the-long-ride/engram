@@ -105,7 +105,7 @@ engram upgrade
 
 ## Documentation
 
-Detailed usage moved into `documentation/`.
+Full documentation lives in the repository under `documentation/`; the npm package intentionally ships this README and the runtime docs/assets needed by the CLI, not the full documentation tree.
 
 | Language | Start here |
 | --- | --- |
@@ -178,6 +178,29 @@ Engram sits lower in the stack. It is not a desktop knowledge-base app; it is a 
 Use Tolaria when you want a full desktop home for Markdown notes, vault navigation, and keyboard-first knowledge work.
 
 Use Engram when you want agent memory as a small governed protocol with approval gates, hashes, Git diffs, and installable agent instructions.
+
+## Compared With Obsidian
+
+[Obsidian](https://obsidian.md/) is an excellent Markdown-first app for personal notes, linked knowledge bases, writing, planning, and long-lived vaults. It stores notes locally, has a large plugin and theme ecosystem, and offers optional Sync and Publish services.
+
+Engram is not trying to be a note-taking app. It is a governed memory protocol for AI agents: smaller in scope, stricter about approval, and designed so durable agent memory can be reviewed like code.
+
+| Dimension | Engram | Obsidian |
+| --- | --- | --- |
+| Source of truth | Human-approved memories in `.agents/.engram/` | Local Markdown vault notes |
+| Primary interface | CLI, slash adapters, MCP-style wrapper, and agent-readable Markdown | Desktop and mobile note app with links, graph, canvas, plugins, and themes |
+| Write model | Agents propose; humans approve durable memory writes | Humans and plugins edit vault notes directly |
+| Scope | Rules, workflows, skills, and project/team/personal agent memory | Personal or team notes, writing, planning, and knowledge bases |
+| Runtime shape | No required app, daemon, database, or cloud account | Obsidian app, with optional Sync, Publish, and community plugins |
+| AI integration | Installable agent instructions and approval-gated memory flows | Vaults can become AI context through plugins, MCP servers, or custom workflows |
+| Best for | Auditable cross-agent memory governance | Rich Markdown note-taking and second-brain workflows |
+| Main risk | requires save discipline | agent-facing context can become broad or unreviewed without a separate governance layer |
+
+Use Obsidian when you want a full thinking, writing, and note-navigation workspace.
+
+Use Engram when you want the agent-memory layer itself to stay small, explicit, reviewable, portable, and governed.
+
+They can also work together: keep broad notes in Obsidian, then distill durable AI-agent rules and project knowledge into Engram.
 
 ## Compared With Built-In Agent Memory
 

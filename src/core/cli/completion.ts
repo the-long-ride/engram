@@ -9,12 +9,13 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
   const shells = ['bash', 'zsh', 'powershell'].join(' ');
   const ruleVariants = ['off', 'light', 'balanced', 'strict', 'status'].join(' ');
   const ignoreActions = ['status', 'check', 'add'].join(' ');
+  const saveSessionArgs = ['--file', '--scope', '--role', '--roles', '--query-level', '--accept-all'].join(' ');
   const observeArgs = ['--file', '--scope', '--role', '--roles', '--propose', '--accept-all'].join(' ');
   const takeControlArgs = ['--file', '--dir', '--include', '--exclude', '--max-sources', '--max-chars', '--scope', '--role', '--roles', '--all', '--accept-all', '--dry-run', '--plan'].join(' ');
   const upgradeArgs = ['--plan', '--latest', '--self', '--memory-only', '--global-skillsets-only', '--target', '--force', '--no-version-check'].join(' ');
   const skillsetTargets = [
     'all', 'list', 'agents-md', 'codex', 'copilot', 'claude', 'cursor',
-    'gemini', 'cline', 'windsurf', 'antigravity', 'antigravity-cli',
+    'gemini', 'cline', 'windsurf', 'antigravity',
     'opencode', 'open-code', 'mcp', 'slash'
   ].join(' ');
   if (shell === 'zsh') {
@@ -38,7 +39,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       `      _arguments "--scope[write scope]:scope:(${scopes})" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "1:memory type:(${saveTypes})"`,
       '      ;;',
       '    save-session|ss)',
-      '      _arguments "--file[read session summary file]:file:_files" "--scope[write scope]:scope:(workspace global)" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "--accept-all[accept every save-session candidate]" "1:session summary: "',
+      '      _arguments "--file[read session summary file]:file:_files" "--scope[write scope]:scope:(workspace global)" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "--query-level[recent chat sessions to mine]:number:" "--accept-all[accept every save-session candidate]" "1:session summary: "',
       '      ;;',
       '    observe|o)',
       '      _arguments "--file[read raw note file]:file:_files" "--scope[write scope]:scope:(workspace global)" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "--propose[mine inbox note through save-session]" "--accept-all[accept every proposed candidate]" "1:note: "',
@@ -94,7 +95,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       ')',
       '$engramInitArgs = @(\'--force\', \'--global-only\', \'--no-skillset\', \'--skillset\', \'--submodule\', \'--submodule-remote\', \'--no-global\', \'--global-path\', \'--global-remote\', \'--global-branch\')',
       '$engramSaveTypes = @(\'rule\', \'skill\', \'workflow\', \'knowledge\', \'--scope\', \'--role\', \'--roles\')',
-      '$engramSaveSessionArgs = @(\'--file\', \'--scope\', \'--role\', \'--roles\', \'--accept-all\')',
+      `$engramSaveSessionArgs = @(${saveSessionArgs.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
       `$engramObserveArgs = @(${observeArgs.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
       `$engramTakeControlArgs = @(${takeControlArgs.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
       `$engramUpgradeArgs = @(${upgradeArgs.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
@@ -114,6 +115,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '    "--file" { break }',
       '    "--role" { break }',
       '    "--roles" { break }',
+      '    "--query-level" { break }',
       '    default {',
       '      switch ($command) {',
       '        { $_ -in @(\'init\', \'i\') } { $engramInitArgs; break }',
@@ -176,7 +178,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
     '      COMPREPLY=( $(compgen -f -- "$cur") )',
     '      return',
     '      ;;',
-    '    --role|--roles)',
+    '    --role|--roles|--query-level)',
     '      COMPREPLY=()',
     '      return',
     '      ;;',
@@ -197,7 +199,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
     '      return',
     '      ;;',
     '    save-session|ss)',
-    '      COMPREPLY=( $(compgen -W "--file --scope --role --roles --accept-all" -- "$cur") )',
+    '      COMPREPLY=( $(compgen -W "--file --scope --role --roles --query-level --accept-all" -- "$cur") )',
     '      return',
     '      ;;',
     '    observe|o)',

@@ -2,7 +2,7 @@
 import { getContext, loadSummary } from '../core/memory/context.js';
 import { rebuildGraph } from '../core/memory/graph.js';
 import { invalidMemoryFiles, rebuildIndex } from '../core/memory/index.js';
-import { loadEntries, route, visibleEntries } from '../core/memory/routing.js';
+import { loadEntries, routeDetailed, visibleEntries, type RouteDetail } from '../core/memory/routing.js';
 import { ensureVectorIndex, vectorRouteHits } from '../core/memory/vector-db.js';
 import { formatRecords, type RecordBlock } from '../core/cli/format.js';
 import type { Scope } from '../core/runtime/types.js';
@@ -15,22 +15,26 @@ export async function cmdLoad(args: string[], flags: Record<string, any> = {}): 
   const query = args.join(' ') || 'current session';
   const all = flags.all === true;
   const vectorHits = all ? [] : await vectorRouteHits(ctx.roots, ctx.scopeIndexes, ctx.config, query, ctx.ignorePatterns, all);
-  const entries = route(ctx.index, query, ctx.config, all, {
+  const routed = routeDetailed(ctx.index, query, ctx.config, all, {
     all,
     ignorePatterns: ctx.ignorePatterns,
     vectorHits,
     candidatePool: ctx.config.vector.candidate_pool
   }, ctx.graph);
+  const entries = routed.entries;
   if (flags['dry-run'] === true) {
     if (!entries.length) return 'No routed memories';
-    return formatRecords(`Routed memories (${entries.length})`, entries.map((entry) => ({
+    const rows: RecordBlock[] = [];
+    if (routed.omitted) rows.push(refinementRecord(routed));
+    rows.push(...entries.map((entry): RecordBlock => ({
       title: `${entry.scope}:${entry.file}`,
       fields: [['Type', entry.type], ['Summary', entry.summary]]
     })));
+    return formatRecords(routed.omitted ? `Routed memories (${entries.length} of ${routed.candidates})` : `Routed memories (${entries.length})`, rows);
   }
   const loaded = await loadEntries(process.cwd(), entries, ctx.config);
   const summary = loadSummary(entries, ctx.hiddenCount);
-  return `${summary}\n\n${loaded.map((row) => row.flagged ? `SKIPPED ${row.entry.file}: ${row.flagged}` : row.content).join('\n\n')}`.trim();
+  return `${summary}${routeHint(routed)}\n\n${loaded.map((row) => row.flagged ? `SKIPPED ${row.entry.file}: ${row.flagged}` : row.content).join('\n\n')}`.trim();
 }
 
 /** Explicitly rebuild one or both indexes from memory files. */
@@ -91,4 +95,23 @@ export async function cmdAudit(flags: Record<string, any>): Promise<string> {
     title: `${entry.scope}:${entry.file}`,
     fields: [['Type', entry.type], ['Id', entry.id], ['Updated', entry.updated], ['Author', entry.author]]
   }))) : 'engram: no matching memories';
+}
+
+function refinementRecord(routed: RouteDetail): RecordBlock {
+  const tags = routed.facets.map((facet) => facet.tag).join(', ') || '-';
+  return {
+    title: 'Refinement',
+    fields: [
+      ['Candidates', routed.candidates],
+      ['Selected', routed.selected],
+      ['Omitted', routed.omitted],
+      ['Narrow with tags', tags]
+    ]
+  };
+}
+
+function routeHint(routed: RouteDetail): string {
+  if (!routed.omitted) return '';
+  const tags = routed.facets.map((facet) => facet.tag).join(', ');
+  return `\nengram: refined ${routed.selected} of ${routed.candidates} candidates${tags ? `; narrow with tags: ${tags}` : ''}`;
 }

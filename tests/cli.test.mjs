@@ -24,6 +24,7 @@ test('init, help, save reject, save accept, load, verify, audit', async () => {
   assert.match((await runEngram(cwd, env, ['help', 'set-rule-variant'])).stdout, /lower-tier models/);
   assert.match((await runEngram(cwd, env, ['help', 'set-role'])).stdout, /frontend-only memory/);
   assert.match((await runEngram(cwd, env, ['help', 'save-session'])).stdout, /--accept-all/);
+  assert.match((await runEngram(cwd, env, ['help', 'save-session'])).stdout, /--query-level <n>/);
   assert.match((await runEngram(cwd, env, ['help', 'save-session'])).stdout, /engram ss -a/);
   assert.match((await runEngram(cwd, env, ['help', 'search'])).stdout, /--semantic/);
   assert.match((await runEngram(cwd, env, ['help', 'take-control'])).stdout, /workspace guidance/);
@@ -31,6 +32,7 @@ test('init, help, save reject, save accept, load, verify, audit', async () => {
   assert.doesNotMatch((await runEngram(cwd, env, ['help'])).stdout, /update-help|team-dashboard|engram dry-run|engram propose/);
   assert.match((await runEngram(cwd, env, ['-h', 'roles'])).stdout, /role: \[\.\.\.\]/);
   assert.match((await runEngram(cwd, env, ['save-session', '-h'])).stdout, /one candidate per line/);
+  assert.match((await runEngram(cwd, env, ['save-session', '-h'])).stdout, /positive integer/);
   assert.doesNotMatch((await runEngram(cwd, env, ['autosave', '-h'])).stdout, /one candidate per line/);
   assert.match((await runEngram(cwd, env, ['h', 'save'])).stdout, /engram save/);
   assert.match((await runEngram(cwd, env, ['save', '-h'])).stdout, /engram save rule/);
@@ -196,7 +198,10 @@ test('completion emits shell helper with command suggestions', async () => {
   assert.match(bash.stdout, /local commands="[^"]*\bsave\b[^"]*"/);
   assert.doesNotMatch(bash.stdout, /local commands="[^"]*save rule/);
   assert.match(bash.stdout, /--file --scope --role --roles/);
+  assert.match(bash.stdout, /--query-level/);
   assert.match(bash.stdout, /--all --dry-run/);
+  assert.match(bash.stdout, /\bantigravity\b/);
+  assert.doesNotMatch(bash.stdout, /antigravity-cli/);
   assert.doesNotMatch(bash.stdout, /dry-run\|dr|propose\|p|team-dashboard|update-help/);
   assert.match(bash.stdout, /upgrade\|up/);
   assert.match(bash.stdout, /--global --force/);
@@ -206,6 +211,7 @@ test('completion emits shell helper with command suggestions', async () => {
   assert.match(zsh.stdout, /save-session\|ss/);
   assert.doesNotMatch(zsh.stdout, /save-session\|ss\|autosave/);
   assert.match(zsh.stdout, /--file\[read session summary file\]/);
+  assert.match(zsh.stdout, /--query-level\[recent chat sessions to mine\]/);
   const powershell = await runEngram(cwd, env, ['completion', 'powershell']);
   assert.equal(powershell.code, 0, powershell.stderr);
   assert.match(powershell.stdout, /Register-ArgumentCompleter/);
@@ -214,6 +220,7 @@ test('completion emits shell helper with command suggestions', async () => {
   assert.doesNotMatch(powershell.stdout, /'dry-run'|'dr'|'propose'|'p'|'team-dashboard'|'td'|'update-help'|'uh'/);
   assert.match(powershell.stdout, /\$engramTakeControlArgs/);
   assert.match(powershell.stdout, /\$engramSaveSessionArgs/);
+  assert.match(powershell.stdout, /'--query-level'/);
   assert.match(powershell.stdout, /\$engramUpgradeArgs/);
   await rm(cwd, { recursive: true, force: true });
 });
@@ -311,6 +318,34 @@ ${example}
   assert.equal(semantic.code, 0, semantic.stderr);
   assert.match(semantic.stdout, /rules\/prefer-pnpm-package-scripts\.md/);
   assert.match(semantic.stdout, /rules\/run-pnpm-for-npm-scripts\.md/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('load dry-run reports broad-match refinement and --all loads every visible match', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['init', '--no-skillset']);
+  const dir = path.join(workspaceMemoryRoot(cwd), 'knowledge');
+  await mkdir(dir, { recursive: true });
+  for (let index = 1; index <= 10; index += 1) {
+    const facet = index <= 5 ? 'release' : 'ops';
+    await writeFile(path.join(dir, `deploy-memory-${index}.md`), testMemory({
+      id: `deploy-memory-${index}`,
+      tags: ['deploy', facet],
+      content: `Deploy memory ${index} covers ${facet} work.`
+    }));
+  }
+  await runEngram(cwd, env, ['rebuild-index']);
+
+  const dry = await runEngram(cwd, env, ['load', '--dry-run', 'deploy']);
+  assert.equal(dry.code, 0, dry.stderr);
+  assert.match(dry.stdout, /Routed memories \(8 of 10\)/);
+  assert.match(dry.stdout, /Refinement/);
+  assert.match(dry.stdout, /Narrow with tags/);
+
+  const all = await runEngram(cwd, env, ['load', '--all', '--dry-run', 'deploy']);
+  assert.equal(all.code, 0, all.stderr);
+  assert.match(all.stdout, /Routed memories \(10\)/);
+  assert.doesNotMatch(all.stdout, /8 of 10/);
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -477,6 +512,37 @@ test('save-session proposes multiple agent-brainstormed memories', async () => {
   assert.match(saved.stdout, /Type: rule/);
   assert.match(saved.stdout, /Type: skill/);
   assert.match((await runEngram(cwd, env, ['stats'])).stdout, /Total: 2/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('save-session query-level validates integer and expands agent guidance', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['init']);
+  const input = [
+    'TYPE: knowledge | TEXT: Query-level mining can use recent accessible chat sessions.',
+    'A',
+    ''
+  ].join('\n');
+  const saved = await runEngram(cwd, env, ['save-session', '--scope', 'workspace', '--query-level', '3'], input);
+  assert.equal(saved.code, 0, saved.stderr);
+  assert.match(saved.stdout, /Query level: use up to the 3 most recent human-agent chat sessions/);
+  assert.match(saved.stdout, /do not invent unavailable history/);
+  assert.match((await runEngram(cwd, env, ['stats'])).stdout, /Total: 1/);
+
+  const naturalInput = 'TYPE: knowledge | TEXT: Natural ss last-session shorthand maps to query-level accept-all.\n';
+  const natural = await runEngram(cwd, env, ['ss', '-a', 'last', '50', 'session', '--scope', 'workspace'], naturalInput);
+  assert.equal(natural.code, 0, natural.stderr);
+  assert.match(natural.stdout, /Query level: use up to the 50 most recent human-agent chat sessions/);
+  assert.match(natural.stdout, /--accept-all skips the final A\/B\/C approval/);
+  assert.match(natural.stdout, /Accepted all save-session candidates/);
+  assert.match((await runEngram(cwd, env, ['stats'])).stdout, /Total: 2/);
+
+  const invalid = await runEngram(cwd, env, ['save-session', '--query-level', 'two']);
+  assert.notEqual(invalid.code, 0);
+  assert.match(invalid.stderr, /--query-level must be a positive integer/);
+  const zero = await runEngram(cwd, env, ['save-session', '--query-level', '0']);
+  assert.notEqual(zero.code, 0);
+  assert.match(zero.stderr, /--query-level must be a positive integer/);
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -796,3 +862,32 @@ test('global remote flag validates URL and save pushes global memory', async () 
   assert.match(log, /add rule: share-team-memory-defaults/);
   await rm(fresh.cwd, { recursive: true, force: true });
 });
+
+function testMemory({ id, tags, content }) {
+  return `---
+id: ${id}
+type: knowledge
+scope: workspace
+tags: [${tags.join(', ')}]
+created: 2026-06-05
+updated: 2026-06-05
+author: test@example.com
+source: manual
+confidence: high
+---
+
+# Knowledge: ${id}
+
+## Context
+
+Test memory fixture.
+
+## Content
+
+- ${content}
+
+## Example
+
+Use this memory when a future task touches: ${tags.slice(0, 3).join(', ')}.
+`;
+}

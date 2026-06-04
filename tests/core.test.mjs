@@ -20,7 +20,7 @@ import { scoreMemory } from '../dist/core/analysis/quality.js';
 import { searchEntries } from '../dist/core/analysis/search.js';
 import { convertDocumentToMarkdown, isConvertibleDocument } from '../dist/core/integrations/markdown-them.js';
 import { mergeIndexes } from '../dist/core/memory/index.js';
-import { route } from '../dist/core/memory/routing.js';
+import { route, routeDetailed } from '../dist/core/memory/routing.js';
 import { ensureVectorIndex } from '../dist/core/memory/vector-db.js';
 import { defaultConfig } from '../dist/core/runtime/config.js';
 import { tempWorkspace } from './helpers.mjs';
@@ -294,6 +294,27 @@ test('routing blends vector candidates without dropping lexical matches', () => 
   assert.deepEqual(routed.map((entry) => entry.id), ['deploy-checklist', 'release-runbook']);
 });
 
+test('routing refines broad matches and --all bypasses the top eight cap', () => {
+  const entries = Array.from({ length: 10 }, (_, index) => routingEntry(
+    `deploy-memory-${index + 1}`,
+    'workspace',
+    ['deploy', index < 5 ? 'release' : 'ops'],
+    `Deploy memory ${index + 1} for ${index < 5 ? 'release' : 'operations'} work.`
+  ));
+  const index = { version: 'test', last_updated: 'now', entries };
+  const config = { ...defaultConfig(), graph: { ...defaultConfig().graph, enabled: false } };
+
+  const detail = routeDetailed(index, 'deploy', config);
+  assert.equal(detail.entries.length, 8);
+  assert.equal(detail.candidates, 10);
+  assert.equal(detail.omitted, 2);
+  assert.equal(detail.refined, true);
+  assert.ok(detail.facets.some((facet) => facet.tag === 'release' || facet.tag === 'ops'));
+
+  const all = route(index, 'deploy', config, true, { all: true });
+  assert.equal(all.length, 10);
+});
+
 test('vector sidecar skips cleanly when sqlite-vec runtime is unavailable', async () => {
   const { cwd } = await tempWorkspace('engram-vector-');
   const entries = [
@@ -325,6 +346,16 @@ test('argument parser preserves positional text after known boolean flags', () =
   const saveSession = parseArgs(['save-session', '--accept-all', 'TYPE: rule | TEXT: Always test releases.']);
   assert.equal(saveSession.flags['accept-all'], true);
   assert.deepEqual(saveSession.rest, ['TYPE: rule | TEXT: Always test releases.']);
+  const saveSessionQueryLevel = parseArgs(['save-session', '--query-level', '3']);
+  assert.equal(saveSessionQueryLevel.flags['query-level'], '3');
+  const naturalQueryLevel = parseArgs(['ss', '-a', 'last', '50', 'session']);
+  assert.equal(naturalQueryLevel.flags['accept-all'], true);
+  assert.equal(naturalQueryLevel.flags['query-level'], '50');
+  assert.deepEqual(naturalQueryLevel.rest, []);
+  const naturalAcceptAllQueryLevel = parseArgs(['save-session', 'accept', 'all', 'last', '50', 'sessions']);
+  assert.equal(naturalAcceptAllQueryLevel.flags['accept-all'], true);
+  assert.equal(naturalAcceptAllQueryLevel.flags['query-level'], '50');
+  assert.deepEqual(naturalAcceptAllQueryLevel.rest, []);
   const shortcut = parseArgs(['ss', '-a', 'TYPE: rule | TEXT: Always test releases.']);
   assert.equal(shortcut.flags['accept-all'], true);
   assert.deepEqual(shortcut.rest, ['TYPE: rule | TEXT: Always test releases.']);

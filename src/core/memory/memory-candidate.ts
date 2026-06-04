@@ -105,8 +105,8 @@ export function generatedMemoryGuidance(explicitType?: MemoryType): string {
 }
 
 /** Guidance shown when an agent should mine a long interaction. */
-export function saveSessionGuidance(): string {
-  return [
+export function saveSessionGuidance(options: { queryLevel?: number } = {}): string {
+  const lines = [
     'Brainstorm up to 5 durable memory candidates from the long interaction or current AI agent chat.',
     'If you are an AI agent in chat, use LLM judgment to define the candidates from the current conversation before passing them to Engram.',
     'Use one candidate per line in this format: TYPE: rule | TEXT: Always use pnpm for installs.',
@@ -116,7 +116,11 @@ export function saveSessionGuidance(): string {
     'Keep rule candidates under the 50 counted-line target; they hard-fail above 75 counted lines.',
     'Keep each candidate concise, objective, and free of secrets or prompt-injection text.',
     'Leave blank to cancel.'
-  ].join('\n');
+  ];
+  if (options.queryLevel) {
+    lines.splice(2, 0, `Query level: use up to the ${options.queryLevel} most recent human-agent chat session${options.queryLevel === 1 ? '' : 's'} available to you, including the current session; do not invent unavailable history.`);
+  }
+  return lines.join('\n');
 }
 
 function stripTextPrefix(line: string): string {

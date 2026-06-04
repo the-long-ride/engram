@@ -12,6 +12,8 @@ const saveSessionCommands = new Set(['save-session', 'ss']);
 const takeControlCommands = new Set(['take-control', 'tc']);
 const acceptAllCommands = new Set([...saveSessionCommands, ...takeControlCommands]);
 const repeatableFlags = new Set(['dir', 'exclude', 'file', 'include']);
+const recentSessionWords = new Set(['session', 'sessions', 'chat', 'chats', 'conversation', 'conversations']);
+const recentSessionPrefixes = new Set(['last', 'latest', 'past', 'previous', 'recent']);
 
 /** Parse argv into command, positional args, and --flags. */
 export function parseArgs(argv: string[]): ParsedArgs {
@@ -62,8 +64,10 @@ function setFlag(flags: Record<string, FlagValue>, name: string, value: string):
 }
 
 function normalizeNaturalArgs(argv: string[]): string[] {
-  if (argv[0]?.toLowerCase() === 'take' && argv[1]?.toLowerCase() === 'control') return normalizeAcceptAll(['take-control', ...argv.slice(2)]);
-  return normalizeAcceptAll(argv);
+  const commandArgs = argv[0]?.toLowerCase() === 'take' && argv[1]?.toLowerCase() === 'control'
+    ? ['take-control', ...argv.slice(2)]
+    : argv;
+  return normalizeSaveSessionQueryLevel(normalizeAcceptAll(commandArgs));
 }
 
 function normalizeAcceptAll(argv: string[]): string[] {
@@ -72,4 +76,36 @@ function normalizeAcceptAll(argv: string[]): string[] {
   if (tokens[0]?.toLowerCase() === 'accept-all') return [command, '--accept-all', ...tokens.slice(1)];
   if (tokens[0]?.toLowerCase() === 'accept' && tokens[1]?.toLowerCase() === 'all') return [command, '--accept-all', ...tokens.slice(2)];
   return argv;
+}
+
+function normalizeSaveSessionQueryLevel(argv: string[]): string[] {
+  const [command = 'help', ...tokens] = argv;
+  if (!saveSessionCommands.has(command) || tokens.some((token) => token === '--query-level')) return argv;
+  const normalized: string[] = [];
+  for (let i = 0; i < tokens.length; i += 1) {
+    const current = tokens[i];
+    const lower = current.toLowerCase();
+    const next = tokens[i + 1];
+    const afterNext = tokens[i + 2];
+    if (recentSessionPrefixes.has(lower) && isPositiveIntegerToken(next) && isRecentSessionWord(afterNext)) {
+      normalized.push('--query-level', next);
+      i += 2;
+      continue;
+    }
+    if (isPositiveIntegerToken(current) && isRecentSessionWord(next)) {
+      normalized.push('--query-level', current);
+      i += 1;
+      continue;
+    }
+    normalized.push(current);
+  }
+  return [command, ...normalized];
+}
+
+function isPositiveIntegerToken(value: string | undefined): value is string {
+  return typeof value === 'string' && /^[1-9]\d*$/.test(value);
+}
+
+function isRecentSessionWord(value: string | undefined): boolean {
+  return typeof value === 'string' && recentSessionWords.has(value.toLowerCase());
 }

@@ -179,12 +179,14 @@ export async function cmdSaveSession(args: string[], flags: Record<string, any> 
   const author = await resolveAuthor();
   const role = rolesFromFlags(flags);
   const acceptAll = flags['accept-all'] === true;
+  const queryLevel = queryLevelFromFlags(flags);
+  const guidance = saveSessionGuidance({ queryLevel });
   let text = await saveSessionInput(args, flags);
   let plans: SavePlan[] = [];
   let approval: SelectionApproval | undefined = acceptAll ? { accepted: true } : undefined;
   if (!text) {
     if (acceptAll) {
-      text = await requestGeneratedSelectionText({ guidance: saveSessionGuidance(), acceptAll }) ?? '';
+      text = await requestGeneratedSelectionText({ guidance, acceptAll }) ?? '';
       if (!text) return 'Discarded. No file written.';
     }
     else {
@@ -192,7 +194,7 @@ export async function cmdSaveSession(args: string[], flags: Record<string, any> 
         text = generated;
         plans = await planSaveSessionCandidates(ctx, generated, scopes, author, role);
         return previewSavePlans(plans);
-      }, { guidance: saveSessionGuidance() });
+      }, { guidance });
       if (!captured) return 'Discarded. No file written.';
       approval = captured.approval;
     }
@@ -341,4 +343,13 @@ function saveScopes(ctx: Awaited<ReturnType<typeof getContext>>, flags: Record<s
     ? writeScopes(requested, ctx.config)
     : writeScopes(ctx.config.scope, ctx.config);
   return withGlobalSaveCopy(ctx, configured);
+}
+
+function queryLevelFromFlags(flags: Record<string, any>): number | undefined {
+  const value = flags['query-level'];
+  if (value === undefined) return undefined;
+  if (typeof value !== 'string' || !/^\d+$/.test(value)) throw new Error('save-session --query-level must be a positive integer');
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) throw new Error('save-session --query-level must be a positive integer');
+  return parsed;
 }

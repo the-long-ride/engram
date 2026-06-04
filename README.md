@@ -2,7 +2,7 @@
 
 ![Engram cover](media/cover/engram-cover.png)
 
-**Engram is a human-owned memory protocol for AI agents.**
+**Engram is a human-owned memory protocol for AI agents. Grow with you & your teams.**
 
 It gives agents memory without giving agents ownership of memory. Durable rules, workflows, and project knowledge live as readable Markdown, reviewed by humans, portable through Git, and usable by any agent that can read files.
 

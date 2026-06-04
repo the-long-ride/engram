@@ -567,9 +567,18 @@ test('graph routing, observe inbox, archive, and benchmark work', async () => {
   assert.doesNotMatch(inbox, /Ignore previous instructions/);
   assert.doesNotMatch((await runEngram(cwd, env, ['verify'])).stdout, /inbox/);
 
-  const cases = path.join(cwd, 'cases.json');
-  await writeFile(cases, JSON.stringify([{ query: 'refresh auth tokens', expect: ['knowledge/auth-tokens-refresh-before-expiry.md'] }]));
-  assert.match((await runEngram(cwd, env, ['benchmark', cases])).stdout, /Benchmark: 1\/1 hit@8/);
+  const arrayBenchmark = await runEngram(cwd, env, ['benchmark', path.resolve('tests/fixtures/benchmark-array-cases.json')]);
+  assert.equal(arrayBenchmark.code, 0, arrayBenchmark.stderr);
+  assert.match(arrayBenchmark.stdout, /Benchmark: 1\/1 hit@8/);
+
+  const cases = path.resolve('tests/fixtures/benchmark-cases.json');
+  const benchmark = await runEngram(cwd, env, ['benchmark', cases]);
+  assert.equal(benchmark.code, 0, benchmark.stderr);
+  assert.match(benchmark.stdout, /Benchmark: 3\/4 hit@8 \(75%\)/);
+  assert.match(benchmark.stdout, /HIT refresh auth tokens/);
+  assert.match(benchmark.stdout, /HIT middleware session validation/);
+  assert.match(benchmark.stdout, /HIT auth middleware tokens/);
+  assert.match(benchmark.stdout, /MISS billing invoice export/);
 
   const agentMemory = path.join(cwd, 'agentmemory-export.json');
   await writeFile(agentMemory, JSON.stringify({

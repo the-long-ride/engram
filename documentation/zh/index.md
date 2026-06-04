@@ -46,7 +46,7 @@ Engram 按照以下顺序解析内存：
 Engram 包括：
 
 - `save` 用于保存一条经过批准的内存。
-- `save-session` / `ss` 用于保存单次会话中的多条内存候选。
+- `save-session` / `ss` 用于保存单次会话中的多条内存候选，也可使用 `--query-level <n>` 从最多 n 个可访问的最近聊天中提取候选；`/engram ss -a last 50 sessions` 会规范化为 `engram save-session --query-level 50 --accept-all`。
 - `observe` 用于捕获尚未成为激活内存的原始笔记。
 - `take-control` 用于导入已有的智能体指导原则和文档。
 - `graph` 和 `quality-check` 用于输出评审信号。

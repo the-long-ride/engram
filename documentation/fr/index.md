@@ -46,7 +46,7 @@ La mémoire de l'espace de travail l'emporte. La mémoire globale sert de secour
 Engram comprend :
 
 - `save` pour une seule mémoire approuvée.
-- `save-session` / `ss` pour plusieurs mémoires issues d'une session.
+- `save-session` / `ss` pour plusieurs mémoires issues d'une session, avec `--query-level <n>` facultatif pour exploiter jusqu'à n conversations récentes accessibles ; `/engram ss -a last 50 sessions` se normalise en `engram save-session --query-level 50 --accept-all`.
 - `observe` pour les notes brutes qui ne sont pas encore de la mémoire active.
 - `take-control` pour importer les directives et documentations existantes de l'agent.
 - `graph` et `quality-check` pour les signaux de révision.

@@ -53,13 +53,14 @@ newer skill-aware Claude Code sessions.
 | `gemini` | `GEMINI.md` | Gemini CLI context |
 | `cline` | `.clinerules` | Cline-style workspace rules |
 | `windsurf` | `.windsurfrules` | Windsurf workspace rules |
-| `antigravity-cli` | `.agents/skills/engram/SKILL.md` | Antigravity CLI workspace skill |
+| `antigravity` | `.antigravity/skills/engram/SKILL.md`, `.antigravity-cli/skills/engram/SKILL.md`, `.antigravity-ide/skills/engram/SKILL.md`, `.antigravityrules` | Antigravity 2.0, CLI, IDE, and workspace rules |
 | `opencode` | `opencode.json`, `.opencode/engram.md` | OpenCode custom instructions |
 | `mcp` | `.mcp.json` | MCP-style JSON-lines wrapper registration |
 | `slash` | `.claude/commands/engram.md`, `.claude/skills/engram/SKILL.md`, `.cursor/commands/engram.md`, `.gemini/commands/engram.toml` | Native `/engram` slash adapters |
 
-Aliases: `codex` installs the `agents-md` adapter plus the Agent Skill file,
-`antigravity` maps to `antigravity-cli`, and `open-code` maps to `opencode`.
+Aliases: `codex` installs the `agents-md` adapter plus the generic Agent Skill
+file, `open-code` maps to `opencode`, and the old `antigravity-cli` spelling is
+accepted as a compatibility alias for `antigravity`.
 
 ## Recommended Flow
 
@@ -112,7 +113,10 @@ Aliases: `codex` installs the `agents-md` adapter plus the Agent Skill file,
    workspace, team, and personal context. They should load at session start,
    search or route-load again when the task changes or research depends on
    project knowledge, then summarize only the relevant IDs/rules to keep token
-   usage low.
+   usage low. When a query has more than 8 matching candidates, Engram refines
+   the wider candidate pool into a compact top-8 context pack. Agents can use
+   `engram load --dry-run "<query>"` to inspect candidate counts and suggested
+   narrowing tags before loading broad context.
 
 3. If the host supports external tool processes, register `.mcp.json` or equivalent host config.
 
@@ -123,12 +127,14 @@ Aliases: `codex` installs the `agents-md` adapter plus the Agent Skill file,
    /engram entry
    /engram save knowledge
    /engram save-session
+   /engram save-session --query-level 3
    /engram ss
    /engram auto save
    /engram observe --file session.md
    /engram take-control
    /engram take control accept all
    /engram ss -a
+   /engram ss -a last 50 sessions
    /engram save-session --accept-all
    /engram graph release workflow
    /engram archive --reason "Superseded" knowledge/old-fact.md
@@ -148,7 +154,11 @@ Aliases: `codex` installs the `agents-md` adapter plus the Agent Skill file,
   `--accept-all`, or uses the `/engram ss -a` shortcut, the slash adapter should
   generate/provide concise candidates, run the CLI with
   `engram save-session --accept-all`, and report the saved files without asking for
-  another A/B/C reply. For `/engram take-control --accept-all` or natural
+  another A/B/C reply. If the shortcut includes a count such as
+  `/engram ss -a last 50 sessions`, normalize it to
+  `engram save-session --query-level 50 --accept-all` and mine only recent
+  human-agent chats the agent can actually access. For
+  `/engram take-control --accept-all` or natural
   `/engram take control accept all`, the slash adapter should normalize the
   wording, keep the source pack token-light, generate only concise
   `TYPE: ... | TEXT: ...` candidates, pass them to the CLI, and let Engram save
@@ -157,7 +167,13 @@ Aliases: `codex` installs the `agents-md` adapter plus the Agent Skill file,
   For `/engram save-session`, `/engram ss`, legacy `/engram autosave`, or natural `/engram auto save` without a file or inline
   candidates, the slash adapter should use the LLM to define concise candidates
   from the current AI agent chat/session, then pass `TYPE: ... | TEXT: ...`
-  lines to Engram for the normal approval flow.
+  lines to Engram for the normal approval flow. If the human includes
+  `--query-level <n>`, or natural count wording such as `last 50 sessions`, n
+  must be a positive integer and the adapter should mine up to n recent
+  accessible human-agent chat sessions, including the current session, without
+  inventing unavailable history. The CLI rejects non-integer, zero, and
+  negative query levels; adapters should surface that validation failure instead
+  of falling back to the current session silently.
   For `/engram observe`, slash adapters should run the CLI and report the saved
   inbox file. If the human included `--propose`, the adapter may generate
   concise save-session candidates from the sanitized note, but writes still use the
@@ -242,22 +258,35 @@ The generated slash description is: "Your knowledge memory manager, synced
 across every device with Git."
 MCP hosts should treat `engram_save` and `engram_autosave` as proposal-only
 tools; they must still route final writes through the human-visible CLI approval
-flow. Explicit `/engram save-session --accept-all` requests, including the shortcut
+flow. When `/engram save-session --query-level <n>` is present, or natural
+wording such as `/engram ss -a last 50 sessions` is used, the host may include
+up to n recent accessible human-agent chat sessions in the proposal context, but
+must not invent inaccessible history. Explicit
+`/engram save-session --accept-all` requests, including the shortcut
 `/engram ss -a`, should use the CLI write path because MCP autosave remains
-proposal-only. Legacy `/engram autosave --accept-all` and `/engram at -a` remain compatible. `/engram take-control` should use the CLI flow because it needs
+proposal-only. The counted shortcut `/engram ss -a last 50 sessions` should use
+`engram save-session --query-level 50 --accept-all`. Legacy
+`/engram autosave --accept-all` and `/engram at -a` remain compatible. `/engram take-control` should use the CLI flow because it needs
 workspace source discovery plus human-visible approval. Slash adapters normalize
 `/engram auto save` to `engram save-session` and `/engram take control accept all`
 to `engram take-control --accept-all`.
 `/engram observe`, `/engram archive`, and `/engram benchmark` should use the CLI
 flow. `engram load` is graph-aware automatically because it reads the derived
-`memory.graph.json` when graph routing is enabled.
+`memory.graph.json` when graph routing is enabled, refines broad candidate
+pools to the top 8, and reports narrowing tags in `--dry-run`.
 
 Gemini CLI searches for `GEMINI.md` files as context. The `slash` target writes
 `.gemini/commands/engram.toml` so `/engram <args>` becomes a project custom
 command in Gemini CLI.
 
-Antigravity CLI discovers workspace skills from `.agents/skills/<skill>/`, so
-Engram installs a native `SKILL.md` adapter there.
+Antigravity now has three workspace surfaces. `engram install-skillset
+antigravity` writes the Engram skill to `.antigravity/skills/engram/SKILL.md`
+for Antigravity 2.0, `.antigravity-cli/skills/engram/SKILL.md` for the CLI,
+and `.antigravity-ide/skills/engram/SKILL.md` for the IDE. It also writes a
+root `.antigravityrules` file so local workspace rules can point Antigravity at
+the Engram protocol. The deprecated `antigravity-cli` target name still works as
+a compatibility alias, but generated docs and completions advertise
+`antigravity`.
 
 OpenCode reads `AGENTS.md` rules, and it can also load reusable instruction
 files through the `instructions` field in `opencode.json`. Engram uses

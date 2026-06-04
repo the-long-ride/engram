@@ -33,6 +33,8 @@ Git 是可移植性和审计历史。
 ## 写入流 (Write Flow)
 
 1. 智能体提议一个或多个候选。
+   使用 `save-session --query-level <n>` 时，智能体可以考虑最多 n 个可访问的最近人类-智能体聊天，但这只作为候选提议的上下文。
+   自然写法 `/engram ss -a last 50 sessions` 使用相同范围并带有显式一键批准：`engram save-session --query-level 50 --accept-all`。
 2. Engram 解析候选类型和目标作用域（scope）。
 3. Engram 检查 Schema、秘密信息、提示词注入模式和路径安全。
 4. 人类看到预览。

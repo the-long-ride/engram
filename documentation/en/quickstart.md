@@ -79,6 +79,14 @@ Short form:
 /engram ss
 ```
 
+To include recent chat history the agent can actually access:
+
+```text
+/engram save-session --query-level 3
+```
+
+`--query-level` must be a positive integer. The agent may use up to that many recent human-agent chat sessions, including the current one, and must not invent unavailable history.
+
 Accept-all shortcut only when you truly mean it:
 
 ```text
@@ -86,6 +94,14 @@ Accept-all shortcut only when you truly mean it:
 ```
 
 `-a` means the human explicitly approves every agent-recommended candidate. Agents must not add it by themselves.
+
+To mine recent accessible chats and accept all generated candidates in one request:
+
+```text
+/engram ss -a last 50 sessions
+```
+
+That normalizes to `engram save-session --query-level 50 --accept-all`.
 
 ## Import Existing Knowledge
 

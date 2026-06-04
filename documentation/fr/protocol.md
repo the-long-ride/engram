@@ -33,6 +33,8 @@ Chaque fichier de mémoire active comporte des sections `Context`, `Content` et 
 ## Flux d'Écriture
 
 1. L'agent propose un ou plusieurs candidats.
+   Avec `save-session --query-level <n>`, l'agent peut prendre en compte jusqu'à n conversations humain-agent récentes et accessibles, mais seulement comme contexte de proposition.
+   La forme naturelle `/engram ss -a last 50 sessions` utilise le même périmètre avec approbation explicite de tous les candidats : `engram save-session --query-level 50 --accept-all`.
 2. Engram analyse le type de candidat et la portée cible (scope).
 3. Engram vérifie le schéma, les secrets, les modèles d'injection de prompt et la sécurité des chemins d'accès.
 4. L'humain voit un aperçu.

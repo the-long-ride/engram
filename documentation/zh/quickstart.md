@@ -72,6 +72,14 @@ engram install-skillset <智能体名称>
 /engram ss
 ```
 
+若要包含智能体实际可访问的最近聊天历史：
+
+```text
+/engram save-session --query-level 3
+```
+
+`--query-level` 必须是正整数。智能体最多只能使用该数量的最近人类-智能体聊天（包括当前会话），并且不得编造不可访问的历史。
+
 仅在您确实需要时才使用一键批准（accept-all）快捷方式：
 
 ```text
@@ -79,6 +87,14 @@ engram install-skillset <智能体名称>
 ```
 
 `-a` 表示人类明确批准智能体推荐的每个候选。智能体绝不能自己私自添加它。
+
+要在一次请求中提取可访问的最近聊天并接受所有生成候选：
+
+```text
+/engram ss -a last 50 sessions
+```
+
+它会规范化为 `engram save-session --query-level 50 --accept-all`。
 
 ## 导入现有知识
 

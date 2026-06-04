@@ -10,7 +10,9 @@ Cette page fournit des détails d'utilisation afin que le README puisse rester c
 | Rechercher dans la mémoire | `engram search "<sujet>"` |
 | Enregistrer une mémoire | `engram save [rule\|workflow\|knowledge] "<texte>"` |
 | Enregistrer plusieurs mémoires de session | `engram save-session` ou `engram ss` |
+| Exploiter des chats récents accessibles | `engram save-session --query-level 3` |
 | Accepter tous les candidats de session | `engram ss -a` |
+| Exploiter et accepter des chats récents | `engram ss -a last 50 sessions` |
 | Capturer une note brute | `engram observe --file session.md` |
 | Convertir les documents/directives existants | `engram take-control --all` |
 | Aperçu de la prise de contrôle | `engram take-control --plan` |
@@ -21,6 +23,9 @@ Cette page fournit des détails d'utilisation afin que le README puisse rester c
 | Ajuster la force des règles | `engram set-rule-variant strict\|balanced\|light\|off` |
 
 Utilisez `save-session` pour les propositions de mémoire lors de longues sessions. Forme abrégée : `ss`.
+Utilisez `--query-level <n>` lorsque l'humain souhaite que l'agent exploite jusqu'à n conversations humain-agent récentes et accessibles, au lieu de la seule session actuelle. La formulation naturelle `engram ss -a last 50 sessions` se normalise en `engram save-session --query-level 50 --accept-all`.
+
+Lorsque plus de 8 mémoires correspondent à une requête, `load` affine le bassin de candidats en un pack de contexte top 8. `load --dry-run` affiche les comptes de candidats et les tags de resserrement; `load --all` renvoie volontairement toutes les mémoires visibles routées.
 
 ## Enregistrer Session (Save Session)
 
@@ -33,6 +38,7 @@ TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
 ```
 
 Sans `--accept-all`, Engram demande quels candidats enregistrer. Avec `ss -a`, chaque candidat généré est enregistré car l'humain a explicitement approuvé ce raccourci.
+`--query-level` doit être un entier positif. Les agents ne doivent inclure que les conversations auxquelles ils peuvent réellement accéder et ne doivent pas inventer d'historique indisponible. `engram ss -a last 50 sessions` utilise `50` comme query level et `-a` comme approbation humaine explicite.
 
 ## Prise de Contrôle (Take Control)
 

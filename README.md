@@ -21,87 +21,240 @@ Engram's contract:
 - **Ignore rules are privacy controls.**
 - **Git is portability and audit history.**
 - **Agent adapters are convenience, not authority.**
+- **Strict rules govern agent output.** Load knowledge memory with strict-rules to control, guide, and constrain AI agent outputs.
 
 The core principle: **agents can suggest memory, but humans own what becomes memory.**
 
+### High-Level System Flow
+
+```mermaid
+graph TD
+    %% Styling
+    classDef default fill:#111,stroke:#333,stroke-width:1px,color:#fff;
+    classDef human fill:#1a3a5f,stroke:#3182ce,stroke-width:2px,color:#fff;
+    classDef agent fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#fff;
+    classDef storage fill:#234e52,stroke:#319795,stroke-width:2px,color:#fff;
+    classDef action fill:#2c5282,stroke:#4299e1,stroke-width:1px,color:#fff;
+
+    User["👤 You (The User)"]:::human
+    AI["🤖 AI Assistant (ChatGPT, Claude, Agents)"]:::agent
+
+    subgraph Engram ["Engram Memory System"]
+        Load["Recall Memory (engram load)"]:::action
+        Propose["Suggest Memory (engram save)"]:::action
+        Review["Approval Gate (You review & approve)"]:::action
+    end
+
+    subgraph Storage ["Durable Memory Storage (Plain Markdown Files)"]
+        LocalStore["📁 Local Project Memory (.agents/.engram/)"]:::storage
+        GlobalStore["🌐 Personal Global Memory ($ENGRAM_GLOBAL_DIR)"]:::storage
+        SyncStore["☁️ Cloud / Git Sync (GitHub, Google Drive, OneDrive, etc.)"]:::storage
+    end
+
+    %% Interactions
+    User <-->|Chat & Collaborate| AI
+    AI -->|1. Load Context| Load
+    Load -->|Read memories| LocalStore
+    Load -->|Read preferences| GlobalStore
+    LocalStore & GlobalStore -->|Provide memory context| AI
+
+    AI -->|2. Suggest new memories| Propose
+    Propose -->|Create draft memory| Review
+    User -->|3. Approve or Reject| Review
+    Review -->|4. Save as markdown| LocalStore
+    Review -->|Optional save| GlobalStore
+    LocalStore -->|5. Cloud backup & sync| SyncStore
+    GlobalStore -->|5. Cloud backup & sync| SyncStore
+```
+
 ## Why It Exists
 
-AI agents forget decisions, repeat setup questions, and carry useful lessons only inside one chat, one vendor account, or one machine. That is convenient until a team needs to review, share, correct, or remove memory.
+AI assistants and agents forget decisions, repeat setup questions, and carry useful lessons only inside one chat, one vendor account, or one machine. That is convenient until a team needs to review, share, correct, or remove memory.
 
-Engram moves memory into files:
+Furthermore, current AI memory approaches face severe tactical challenges:
 
-| Need | Engram answer |
+- **Context Window Bloat:** Standard rule files (like `.cursorrules` or system prompts) get sent with every single message. As rules grow, they consume token limits, cost money, and slow down response times.
+- **Context Drift & Hallucination:** In long chat sessions, agents drift from instructions, invent syntax, or hallucinate behaviors because memory lacks structure and filtering.
+- **Silent Secret Leakage:** Automatic background memory capture tools can silently record sensitive keys, API tokens, passwords, or personal identifying information (PII) without your consent or knowledge.
+- **Vendor Lock-In:** Vendor-owned memory databases keep your context locked to one specific platform or model provider, making it impossible to switch assistants or back up your data.
+- **Broken Offline Workflows:** Cloud-based memory systems stop working the moment you lose internet connection, leaving your agent without crucial context.
+
+Engram moves memory into files to solve these problems:
+
+| Tactical Challenge | Engram Answer |
 | --- | --- |
-| Remember project rules | Store approved Markdown in `.agents/.engram/` |
-| Share with a team | Review and sync through Git |
-| Use across agents | Install skillsets or let agents read/export Markdown |
-| Keep personal preferences | Use optional global memory |
-| Avoid silent writes | Require A/B/C approval |
-| Remove wrong memory | Archive after review, keep history |
-| Find broken memory | Run `engram repair` |
+| **Too many rules bloating context** | Only loads memory files matching the active task. |
+| **Silent writes & secret leakage** | Requires human A/B/C approval and scans for secrets/injections. |
+| **Vendor lock-in** | Uses plain, readable Markdown files portable across any agent or model. |
+| **No offline access** | Runs locally as a lightweight file-based protocol—no server or internet required. |
+| **Context drift in team projects** | Synchronizes rules and guidelines team-wide via Git. |
+| **Broken or outdated memory** | Provides validation and cleanup utilities (`engram repair`, `engram quality-check`). |
 
 Workspace memory loads first. Global memory is fallback. When global memory is
 configured, approved workspace save flows also keep a global copy so portable
 memory survives even in workspaces that have not run `engram init`.
 
+## Example Use Cases
+
+Engram is versatile and can be used for any personal, professional, or development memory.
+
+### For Personal & Professional Memory
+- **Personal Preferences & Writing Style:** Teach your AI assistant how you like to communicate, your preferred tone, formatting choices, or email/blog templates so it always drafts content exactly how you want.
+- **Study Notes & Learning Guides:** Store summaries of topics you are studying, key formulas, foreign language vocabulary, or complex concepts you've mastered, allowing the AI to quiz you or explain things using your own past context.
+- **Workflow Checklists:** Keep custom templates and step-by-step checklists for recurring tasks—like video editing checklists, blog post publishing procedures, or travel planning templates.
+- **Personal Life Rules & Principles:** Document personal habits, financial goals, recipes, or health routines so your AI assistant can help you plan meals, budget, or manage tasks according to your guidelines.
+
+### For Software Development & Tech
+- **Repository Rules & Guidelines:** Document codebase styling conventions, architectural guidelines, or specific rules (e.g., "Always write unit tests for endpoints") so any coding agent adheres to them.
+- **Troubleshooting & Debugging Guides:** Save solutions to complex bugs, hardware workarounds, or environment setup steps so future agents (and team members) don't waste time troubleshooting the same issue twice.
+- **Common CLI Commands & Workflows:** Keep a list of repository-specific scripts, test execution flows, and deployment commands handy.
+- **Team Onboarding & Alignment:** Sync your project’s architecture overviews and common gotchas directly via version-controlled Markdown, keeping the entire team aligned.
+
+### For Enterprise & Teams
+- **Security & Compliance Guardrails:** Define strict compliance protocols, data privacy guidelines, or security policies that AI agents must not violate when handling organization or customer data.
+- **Shared Standard Operating Procedures (SOPs):** Store and version-control team SOPs, product specifications, customer service playbooks, and company wikis as Markdown memories.
+- **Consistent Brand Voice & Style Guide:** Enforce marketing guidelines, trademark rules, and legal disclaimers across all team-facing content and external-facing agents.
+- **Audit Trails & Governance:** Maintain full historical records of who modified which guidelines, when, and why via git logs, satisfying enterprise security auditing requirements.
+
 ## AI-Agent Quickstart
 
-Use Engram through your agent first. CLI commands are still available, but the normal daily flow should feel like this:
+For daily use, let your AI assistant handle the memory load and save flows directly within chat.
 
-```text
-Use Engram for this task. Load memory for: <what we are doing>.
-```
+### Best Scenarios (AI Chat Usage)
 
-With slash adapters installed:
+- **Start of a Chat Session:** Tell your AI assistant to recall relevant guidelines or preferences for your task.
+  ```text
+  # But if you install-skillset for AI agents as global, your AI agents will automatically using engram load.
+  /engram load "design pricing table component"
+  ```
+- **Proposing New Memory:** Ask the agent to save an important decision or fact discovered during the conversation.
+  ```text
+  /engram save knowledge "Stripe webhook secret is loaded from process.env.STRIPE_WEBHOOK_SECRET"
+  ```
+- **Summarizing & Saving the Session:** At the end of a session, ask the agent to bundle all new rules, workflows, or facts.
+  ```text
+  /engram save-session
+  ```
+  To ask the agent to include recent chat history it can actually access, pass a positive integer query level:
+  ```text
+  /engram save-session --query-level 3
+  ```
+  The agent should mine up to that many recent human-agent chat sessions, including the current session, and must not invent unavailable history.
+  To both mine recent accessible history and auto-approve all recommended memories, use:
+  ```text
+  /engram ss -a last 50 sessions
+  ```
+  This normalizes to `engram save-session --query-level 50 --accept-all`; `-a` is the human's explicit approval for all generated candidates.
 
-```text
-/engram load "<current task>"
-```
+For full details and advanced features, refer to the [Documentation](documentation/en/index.md).
 
-When useful durable knowledge appears:
+---
 
-```text
-/engram save knowledge
-```
+## Installation & Setup
 
-When a whole session produced several rules, facts, or workflows:
+Set up the Engram CLI and configure it for your AI assistant.
 
-```text
-/engram save-session
-/engram ss
-```
-
-When you explicitly approve every agent-recommended candidate:
-
-```text
-/engram ss -a
-```
-
-For an existing repo with `AGENTS.md`, `CLAUDE.md`, Cursor rules, notes, or docs:
-
-```text
-/engram take-control --plan
-/engram take-control --all
-```
-
-For maintenance:
-
-```text
-/engram verify
-/engram repair
-/engram graph "<topic>"
-/engram quality-check
-```
-
-Install flow:
-
+### 1. Install Engram CLI
+Install the tool globally on your system:
 ```bash
-npx @the-long-ride/engram init
-engram help install-skillset
-engram install-skillset <your-agent>
-engram install-skillset --global <your-agent>
-engram upgrade
+npm install -g @the-long-ride/engram
 ```
+
+### 2. Install Skillset Globally
+Teach your global AI assistant how to interact with Engram (loads, saves, updates, and maintenance):
+```bash
+# You can use below command first to understand.
+# engram h is
+# Use the below command to know the target name of supported agents.
+engram is list
+```
+```bash
+# Install to your AI assistant as global scope for automatic memory loading at start-of-task + the ability to use /engram commands manually
+engram is --global <your-agent>
+```
+*(Replace `<your-agent>` with your assistant name in result of `engram is list`)*
+
+For Antigravity, use the unified ecosystem target:
+```bash
+engram install-skillset antigravity
+```
+This writes `.antigravity/`, `.antigravity-cli/`, `.antigravity-ide/`, and `.antigravityrules` workspace guidance. The old `antigravity-cli` target name remains accepted only as a compatibility alias.
+
+### 3. Initialize Workspace
+Run this in the root folder of any project or workspace you want to enable Engram in:
+```bash
+engram init
+```
+
+> [!IMPORTANT]
+> **What to notice during initialization (`engram init`):**
+> - **Workspace Memory:** It creates a local `.agents/.engram/` directory to store your project-specific memories.
+> - **Git Submodule Option:** Use `engram init --submodule` if your team wants memories tracked in a separate, dedicated Git repository.
+> - **Personal Global Memory:** It prompts for a global directory path (e.g. `--global-path ~/engram-global`). This serves as a fallback location for personal settings that persist across all your projects.
+> - **Cloud Backup & Sync:** Configure a global repository URL (`--global-remote <git-url>`) or set up Onedrive/ Google Drive/ Dropbox to sync and back up your memories seamlessly.
+
+---
+
+## Settings & Next Commands
+
+Once initialized, configure active options and sync behavior. Both CLI commands and their AI agent slash equivalents are supported.
+
+### Set Developer Roles
+Filter active memory loading by specific development roles (e.g., `frontend`, `backend`, `security`, `docs`).
+- **CLI:**
+  ```bash
+  # Filter memory loading to frontend and design rules
+  engram set-role frontend design
+
+  # Clear active roles to load all memories unfiltered
+  engram set-role
+  ```
+- **AI Agent Chat:**
+  ```text
+  /engram set-role frontend design
+  /engram set-role
+  ```
+
+### Set Rule Variant (Strictness Level)
+Tune how strictly rules are formatted when loaded by your AI assistant:
+- **CLI:**
+  ```bash
+  # strict: sharper output for low-tier/smaller models; can cause a "brainlock" (over-constraint) in advanced front-tier models (e.g. Claude Opus 3.5, GPT-5.5)
+  # balanced/light: keeps reasoning flexible and optimal for advanced models
+  engram set-rule-variant balanced
+  ```
+- **AI Agent Chat:**
+  ```text
+  /engram set-rule-variant balanced
+  ```
+
+### Other Next Commands
+- **Check active settings & active paths:** `engram entry` (Agent: `/engram entry`)
+- **Sync local & global changes:** `engram sync` (Agent: `/engram sync`)
+- **Run checkup & clean broken links:** `engram verify` / `engram repair` (Agent: `/engram verify` / `/engram repair`)
+- **Advisory contradiction scan:** `engram quality-check` (Agent: `/engram quality-check`)
+
+---
+
+## CLI Command vs. AI Agent Cheat Sheet
+
+| Task | CLI Command | AI Agent Suggestion (Slash Command) |
+| --- | --- | --- |
+| **Load Memory** | `engram load "<task>"` | `/engram load "<task>"` |
+| **Preview Load Refinement** | `engram load --dry-run "<task>"` | `/engram load --dry-run "<task>"` |
+| **Save Single Memory** | `engram save <type> "<text>"` | `/engram save <type> "<text>"` |
+| **Propose Multiple Memories** | `engram save-session` | `/engram ss` |
+| **Mine Recent Chat Sessions** | `engram save-session --query-level 3` | `/engram save-session --query-level 3` |
+| **Auto-Approve Save Candidates** | `engram save-session --accept-all` | `/engram ss -a` |
+| **Mine and Auto-Approve Recent Sessions** | `engram save-session --query-level 50 --accept-all` | `/engram ss -a last 50 sessions` |
+| **Import Existing Files / Docs** | `engram take-control --all` | `/engram take-control --all` |
+| **Check Config / Paths** | `engram entry` | `/engram entry` |
+| **Verify Memory Integrity** | `engram verify` | `/engram verify` |
+| **Set Active Roles** | `engram set-role <roles>` | `/engram set-role <roles>` |
+| **Set Rule Variant** | `engram set-rule-variant <variant>` | `/engram set-rule-variant <variant>` |
+| **Sync Memories** | `engram sync` | `/engram sync` |
+| **Rebuild & Repair Index** | `engram repair` | `/engram repair` |
+
 
 ## Documentation
 
@@ -204,9 +357,33 @@ They can also work together: keep broad notes in Obsidian, then distill durable 
 
 ## Compared With Built-In Agent Memory
 
-Built-in AI-agent memory is convenient, but often locked to one host. It may be hard to diff, export, audit, share, or correct.
+Built-in AI-assistant memory (like ChatGPT's memory, Claude's projects, or Cursor's rules settings) is convenient, but often locked to one host. It may be hard to diff, export, audit, share, or correct.
 
 Engram treats built-in memory as a convenience layer, not authority. The authority is the memory folder humans can inspect.
+
+| Dimension | Engram | Built-In Agent Memory |
+| --- | --- | --- |
+| **Portability** | Multi-agent & cross-platform: plain Markdown files readable by any editor or agent. | Locked to a single platform (e.g., only in ChatGPT Web, or only in Cursor). |
+| **Human Control** | Explicit: agents propose memory drafts, but humans review and approve (A/B/C gate) before writes. | Silent/Blackbox: assistant updates memory in the background without user review. |
+| **Collaboration** | Git-friendly: share project memory team-wide through version control. | Single-user only: no native way to share, merge, or collaborate on memories. |
+| **Security & Privacy** | Safe: scans for PII and secrets before writing, and runs 100% locally/offline. | High-risk: can silently capture and upload API keys, passwords, and sensitive company data. |
+| **Prompt Optimization** | Selective: loads only memory files relevant to the current task or developer role. | Monolithic: either dumps all instructions into context or uses opaque backend vectors. |
+
+Use built-in memory when you want hands-free, background personalization on a single web chat platform.
+
+Use Engram when you want your assistant's memory to be auditable, shared with your team, portable across multiple IDEs, and 100% controlled by you.
+
+## Roadmap
+
+We are expanding Engram to seamlessly support web-based AI interfaces and cloud storage sync:
+
+- **AI Web Chat Integration:** Develop browser extensions (Chrome/Firefox) and native web plugins that let Engram memory work directly in web chat clients like ChatGPT, Claude.ai, and Gemini Web.
+- **Linked Cloud & Git Storage:** Make `engram` available for user using web-based AI assistants to load memory directly from a user's linked GitHub repository, Google Drive, OneDrive, or Dropbox folder.
+- **Natural Language Command Mapping:** Enable AI agents to map conversational commands (e.g. "Hey, please remember that we use HSL" or "Check my memory bank health") directly into corresponding Engram actions without requiring rigid slash commands.
+
+## Companion Project: Markdown Explorer
+
+Need a visual way to navigate and search your Markdown files? Check out [Markdown Explorer](https://the-long-ride.github.io/markdown-explorer/)—a lightweight, open-source (MIT) VS Code extension/ desktop app (Windows, Linux, macOS) to explore, visualize, and search through your local Markdown folders. It works beautifully alongside Engram to help you browse your agent rules, skills, and knowledge files directly in the Engram memory folder.
 
 ## License
 

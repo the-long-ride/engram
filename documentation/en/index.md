@@ -46,7 +46,7 @@ Workspace memory wins. Global memory is fallback for reusable preferences and te
 Engram includes:
 
 - `save` for one approved memory
-- `save-session` / `ss` for several memories from a session
+- `save-session` / `ss` for several memories from a session, with optional `--query-level <n>` to mine up to n recent accessible chats; `/engram ss -a last 50 sessions` normalizes to `engram save-session --query-level 50 --accept-all`
 - `observe` for raw notes that are not active memory yet
 - `take-control` for importing existing agent guidance and docs
 - `graph` and `quality-check` for review signals

@@ -11,7 +11,9 @@ This page holds detailed usage so the README can stay short.
 | Search memory | `engram search "<topic>"` |
 | Save one memory | `engram save [rule|workflow|knowledge] "<text>"` |
 | Save several session memories | `engram save-session` or `engram ss` |
+| Mine recent accessible chats | `engram save-session --query-level 3` |
 | Accept all session candidates | `engram ss -a` |
+| Mine and accept recent chats | `engram ss -a last 50 sessions` |
 | Capture raw note | `engram observe --file session.md` |
 | Convert existing docs/guidance | `engram take-control --all` |
 | Preview source takeover | `engram take-control --plan` |
@@ -22,9 +24,13 @@ This page holds detailed usage so the README can stay short.
 | Tune rule strength | `engram set-rule-variant strict|balanced|light|off` |
 
 Use `save-session` for long-session memory proposals. Short form: `ss`.
+Use `--query-level <n>` when the human wants the agent to mine up to n recent accessible human-agent chats instead of only the current session. Natural wording such as `engram ss -a last 50 sessions` normalizes to `engram save-session --query-level 50 --accept-all`.
 
 Use `load --dry-run` when you want to inspect which memory files would route
 without printing their contents.
+When more than 8 memories match, `load` refines the wider candidate pool into a
+top-8 context pack. `load --dry-run` shows candidate counts and narrowing tags;
+`load --all` intentionally returns every visible routed memory.
 
 ## Save Session
 
@@ -37,6 +43,7 @@ TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
 ```
 
 Without `--accept-all`, Engram asks which candidates to save. With `ss -a`, every generated candidate is saved because the human explicitly approved that shortcut.
+`--query-level` must be a positive integer. Agents should include only chats they can actually access and must not invent unavailable history. `engram ss -a last 50 sessions` uses `50` as the query level and `-a` as explicit human accept-all approval.
 
 ## Take Control
 

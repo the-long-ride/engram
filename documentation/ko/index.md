@@ -46,7 +46,7 @@ Engram은 다음 순서에 따라 메모리를 해결합니다:
 Engram에는 다음이 포함됩니다:
 
 - `save`: 승인된 하나의 메모리를 저장합니다.
-- `save-session` / `ss`: 세션에서 도출된 여러 메모리 후보를 저장합니다.
+- `save-session` / `ss`: 세션에서 도출된 여러 메모리 후보를 저장합니다. 선택적으로 `--query-level <n>`을 사용해 접근 가능한 최근 채팅 최대 n개에서 후보를 추출할 수 있습니다. `/engram ss -a last 50 sessions`는 `engram save-session --query-level 50 --accept-all`로 정규화됩니다.
 - `observe`: 아직 활성 메모리가 되지 않은 정리되지 않은 원시 노트(raw notes)를 캡처합니다.
 - `take-control`: 기존 에이전트 가이드라인 및 도큐먼트를 가져옵니다.
 - `graph` 및 `quality-check`: 리뷰를 위한 신호를 시각화하거나 찾아냅니다.

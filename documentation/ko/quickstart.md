@@ -72,6 +72,14 @@ engram install-skillset <에이전트-이름>
 /engram ss
 ```
 
+에이전트가 실제로 접근할 수 있는 최근 채팅 기록까지 포함하려면:
+
+```text
+/engram save-session --query-level 3
+```
+
+`--query-level`은 양의 정수여야 합니다. 에이전트는 현재 세션을 포함해 해당 개수만큼의 최근 인간-에이전트 채팅만 사용할 수 있으며, 접근할 수 없는 기록을 만들어내서는 안 됩니다.
+
 확실히 모든 제안 내용을 저장해도 괜찮다고 판단될 때만 일괄 승인(accept-all) 단축키를 씁니다:
 
 ```text
@@ -79,6 +87,14 @@ engram install-skillset <에이전트-이름>
 ```
 
 `-a` 옵션은 에이전트가 제안하는 모든 후보군을 인간이 즉시 저장하도록 사전 동의함을 의미합니다. 에이전트 스스로 이 옵션을 임의로 추가하여 실행해선 안 됩니다.
+
+접근 가능한 최근 채팅을 추출하고 생성된 모든 후보를 한 번에 승인하려면:
+
+```text
+/engram ss -a last 50 sessions
+```
+
+이 표현은 `engram save-session --query-level 50 --accept-all`로 정규화됩니다.
 
 ## 기존 지식 가져오기 (Import)
 

@@ -46,7 +46,7 @@ La memoria del espacio de trabajo gana. La memoria global es el respaldo para pr
 Engram incluye:
 
 - `save` para una memoria aprobada.
-- `save-session` / `ss` para varias memorias de una sesión.
+- `save-session` / `ss` para varias memorias de una sesión, con `--query-level <n>` opcional para extraer hasta n chats recientes accesibles; `/engram ss -a last 50 sessions` se normaliza a `engram save-session --query-level 50 --accept-all`.
 - `observe` para notas en borrador que aún no son memoria activa.
 - `take-control` para importar guías y documentos existentes del agente.
 - `graph` y `quality-check` para señales de revisión.

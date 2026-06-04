@@ -72,6 +72,14 @@ Forma corta:
 /engram ss
 ```
 
+Para incluir historial de chat reciente al que el agente realmente pueda acceder:
+
+```text
+/engram save-session --query-level 3
+```
+
+`--query-level` debe ser un entero positivo. El agente puede usar hasta ese número de sesiones recientes humano-agente, incluida la sesión actual, y no debe inventar historial no disponible.
+
 Atajo de aprobación total (accept-all) solo cuando realmente lo decida:
 
 ```text
@@ -79,6 +87,14 @@ Atajo de aprobación total (accept-all) solo cuando realmente lo decida:
 ```
 
 `-a` significa que el humano aprueba explícitamente cada candidato recomendado por el agente. Los agentes no deben agregarlo por sí mismos.
+
+Para extraer chats recientes accesibles y aceptar todos los candidatos generados en una sola petición:
+
+```text
+/engram ss -a last 50 sessions
+```
+
+Esto se normaliza a `engram save-session --query-level 50 --accept-all`.
 
 ## Importar Conocimiento Existente
 

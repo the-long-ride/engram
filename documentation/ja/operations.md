@@ -10,7 +10,9 @@
 | メモリの検索 | `engram search "<topic>"` |
 | 1つのメモリを保存 | `engram save [rule\|workflow\|knowledge] "<text>"` |
 | セッションから複数のメモリを保存 | `engram save-session` または `engram ss` |
+| アクセス可能な直近チャットから抽出 | `engram save-session --query-level 3` |
 | セッションの全候補を一括承認 | `engram ss -a` |
+| 直近チャットを抽出して一括承認 | `engram ss -a last 50 sessions` |
 | 生のメモをキャプチャ | `engram observe --file session.md` |
 | 既存のドキュメントやガイドラインを変換 | `engram take-control --all` |
 | 取り込み計画をプレビュー | `engram take-control --plan` |
@@ -21,6 +23,9 @@
 | ルールの適用強度を調整 | `engram set-rule-variant strict\|balanced\|light\|off` |
 
 長時間のセッションにおけるメモリ提案には `save-session` を使用します。短縮形：`ss`。
+現在のセッションだけでなく、アクセス可能な直近 n 件までの人間-エージェントチャットから候補を抽出してほしい場合は、`--query-level <n>` を使用します。自然な表現 `engram ss -a last 50 sessions` は `engram save-session --query-level 50 --accept-all` に正規化されます。
+
+8 件を超えるメモリがクエリに一致した場合、`load` は広い候補プールを top 8 のコンテキストパックへ絞り込みます。`load --dry-run` は候補数と絞り込み用タグを表示し、`load --all` は意図的にすべての表示可能なルーティング済みメモリを返します。
 
 ## セッションの保存 (Save Session)
 
@@ -33,6 +38,7 @@ TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
 ```
 
 `--accept-all` を指定しない場合、Engram はどの候補を保存するかを尋ねます。`ss -a` を指定すると、人間が事前にこのショートカットを明示的に承認しているため、生成されたすべての候補が保存されます。
+`--query-level` は正の整数でなければなりません。エージェントは実際にアクセスできるチャットだけを含め、利用できない履歴を作り出してはいけません。`engram ss -a last 50 sessions` は `50` を query level として使い、`-a` を人間の明示的な一括承認として扱います。
 
 ## テイクコントロール (Take Control)
 

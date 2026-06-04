@@ -33,6 +33,8 @@ Mỗi tệp bộ nhớ đang hoạt động đều có các phần `Context`, `C
 ## Quy Trình Ghi Bộ Nhớ
 
 1. Tác nhân AI đề xuất một hoặc nhiều ứng viên.
+   Với `save-session --query-level <n>`, tác nhân AI có thể xem xét tối đa n phiên chat người-tác nhân gần đây có thể truy cập, nhưng chỉ làm ngữ cảnh đề xuất.
+   Cách nói tự nhiên `/engram ss -a last 50 sessions` dùng cùng phạm vi đó kèm phê duyệt rõ ràng toàn bộ ứng viên: `engram save-session --query-level 50 --accept-all`.
 2. Engram phân tích loại ứng viên và phạm vi ghi mục tiêu (scope).
 3. Engram kiểm tra cấu trúc (schema), thông tin nhạy cảm (secrets), các mẫu tấn công prompt-injection và tính an toàn của đường dẫn tệp.
 4. Con người xem trước bản đề xuất.

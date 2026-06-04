@@ -10,7 +10,9 @@
 | 저장된 메모리 검색 | `engram search "<topic>"` |
 | 단일 메모리 저장 | `engram save [rule\|workflow\|knowledge] "<text>"` |
 | 세션에서 도출된 여러 메모리 저장 | `engram save-session` 또는 `engram ss` |
+| 접근 가능한 최근 채팅에서 후보 추출 | `engram save-session --query-level 3` |
 | 세션 제안 사항 일괄 저장 승인 | `engram ss -a` |
+| 최근 채팅 후보 추출 및 일괄 승인 | `engram ss -a last 50 sessions` |
 | 임시 원시 노트 기록 | `engram observe --file session.md` |
 | 기존 문서/가이드라인을 Engram 메모리로 이식 | `engram take-control --all` |
 | 가져오기 사전 계획 및 시뮬레이션 | `engram take-control --plan` |
@@ -21,6 +23,9 @@
 | 규칙 적용 강조 강도 조정 | `engram set-rule-variant strict\|balanced\|light\|off` |
 
 긴 개발 과정에서 여러 메모리 추천을 일괄 처리하고자 할 때는 `save-session`을 애용해 주십시오. 단축 형태는 `ss`입니다.
+현재 세션뿐 아니라 접근 가능한 최근 인간-에이전트 채팅 최대 n개에서 후보를 추출하고 싶다면 `--query-level <n>`을 사용하십시오. 자연어 표현 `engram ss -a last 50 sessions`는 `engram save-session --query-level 50 --accept-all`로 정규화됩니다.
+
+8개를 초과하는 메모리가 쿼리에 매칭되면 `load`는 더 넓은 후보군을 top 8 컨텍스트 팩으로 정제합니다. `load --dry-run`은 후보 수와 범위를 좁힐 수 있는 태그를 보여주며, `load --all`은 의도적으로 모든 표시 가능한 라우팅 메모리를 반환합니다.
 
 ## 세션 저장 (Save Session)
 
@@ -33,6 +38,7 @@ TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
 ```
 
 `--accept-all` 없이 실행하면 각각의 추천에 대해 무엇을 승인할지 일일이 질문하지만, `ss -a` 옵션으로 실행할 경우 인간 사용자의 일괄 동의를 사전에 전제하여 모든 추천이 저장되게 됩니다.
+`--query-level`은 양의 정수여야 합니다. 에이전트는 실제로 접근할 수 있는 채팅만 포함해야 하며, 접근할 수 없는 기록을 만들어내면 안 됩니다. `engram ss -a last 50 sessions`는 `50`을 query level로, `-a`를 인간의 명시적 일괄 승인으로 사용합니다.
 
 ## 테이크 컨트롤 (Take Control)
 

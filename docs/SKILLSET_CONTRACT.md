@@ -3,9 +3,9 @@
 Engram is a portable memory skillset for AI agents. Hosts can integrate it by
 calling the CLI, registering the MCP-style JSON-lines wrapper, or loading generated instruction
 files such as Codex-compatible `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, Copilot
-instructions, Antigravity `SKILL.md` files, and OpenCode custom instruction
-files. Hosts that support custom slash commands can also load generated
-`/engram` adapters.
+instructions, Antigravity ecosystem `SKILL.md` files plus `.antigravityrules`,
+and OpenCode custom instruction files. Hosts that support custom slash commands
+can also load generated `/engram` adapters.
 
 ## Required Behaviors
 
@@ -17,6 +17,10 @@ files. Hosts that support custom slash commands can also load generated
   memory when project knowledge, user preferences, or team rules could matter.
 - Never load all memory blindly; route by task intent and summarize relevant
   IDs/rules instead of pasting raw output to reduce token usage.
+- When more than 8 memories match a load query, refine the candidate pool with
+  lexical, tag, type, recency, graph, and vector signals, then load the compact
+  top-8 pack. Use `load --dry-run` to report candidate counts and narrowing
+  tags; use `--all` only when broad context is explicitly requested.
 - For large memory scopes, maintain an optional per-scope sqlite-vec sidecar
   (`memory.vec.sqlite`) once the visible memory count reaches the configured
   threshold. Vector hits are candidate expansion only: lexical and graph routing
@@ -29,6 +33,11 @@ files. Hosts that support custom slash commands can also load generated
   propose multiple rule, knowledge, and workflow/skill candidates, but it must
   still require human approval before writing. Numbered approvals such as
   `A 1,3` write only the selected candidates.
+- Treat `engram save-session --query-level <n>` as a positive-integer request
+  for agents to mine up to n recent accessible human-agent chat sessions,
+  including the current one. The CLI rejects non-integers, zero, and negative
+  values. Natural save-session count wording such as `last 50 sessions`
+  normalizes to `--query-level 50`. Agents must not invent inaccessible history.
 - Treat `/engram auto save` and legacy `/engram autosave` as natural wording for `/engram save-session`. In AI
   agent chat, the host should let the LLM define concise candidates from the
   current conversation and pass `TYPE: ... | TEXT: ...` lines to Engram.
@@ -65,6 +74,12 @@ files. Hosts that support custom slash commands can also load generated
 - Install Claude slash support in both `.claude/commands/engram.md` and
   `.claude/skills/engram/SKILL.md` so older command menus and newer skills both
   surface `/engram`.
+- Install Antigravity support through the public `antigravity` target. It must
+  write workspace skills for Antigravity 2.0 (`.antigravity/skills/`),
+  Antigravity CLI (`.antigravity-cli/skills/`), Antigravity IDE
+  (`.antigravity-ide/skills/`), and a root `.antigravityrules` file. The old
+  `antigravity-cli` target name may remain as a compatibility alias, but it
+  should not be the advertised target.
 - Treat `engram take-control` and `/engram take-control` as an agent-assisted
   source-discovery flow that converts existing workspace guidance into Engram
   candidates through the same approval gate as save-session.
@@ -76,7 +91,9 @@ files. Hosts that support custom slash commands can also load generated
   token-light, generate only concise `TYPE: ... | TEXT: ...` candidates, and do
   not paste source excerpts or reasoning into chat.
 - Treat `/engram ss -a` as `/engram save-session --accept-all`; `-a` is explicit
-  human accept-all approval for this shortcut. Legacy `/engram at -a` remains compatible.
+  human accept-all approval for this shortcut. Treat `/engram ss -a last 50
+  sessions` as `engram save-session --query-level 50 --accept-all`. Legacy
+  `/engram at -a` remains compatible.
 - Describe slash adapters as: "Your knowledge memory manager, synced across
   every device with Git."
 - Keep short aliases equivalent to their canonical commands. Aliases are
@@ -109,11 +126,11 @@ proposal and collect explicit human approval before invoking a CLI write flow.
 | `engram --version` / `engram -v` | Print the installed CLI version |
 | `engram help [topic]` | Show compact help or detailed command-specific examples and use cases |
 | `engram entry` | Print resolved flags, paths, and detected global Git state |
-| `engram load [--all] [--dry-run] "<task>"` | Load relevant memory; `--all` is the explicit broad-load mode and `--dry-run` previews routed files without printing contents |
+| `engram load [--all] [--dry-run] "<task>"` | Load a refined top-8 context pack; `--all` is the explicit broad-load mode and `--dry-run` previews routed files, candidate counts, and narrowing tags without printing contents |
 | `engram search "<query>"` | Search visible memory by query |
 | `engram graph [--rebuild] ["<query>"]` | Inspect the derived layered JSON graph and contradiction candidates |
 | `engram save [rule|skill|workflow|knowledge] [--role role] "<text>"` | Propose one memory and write after A/B/C approval |
-| `engram save-session [--file transcript.md] [--role role] [--accept-all] [session-summary]` / `engram ss` | Propose multiple memories from a long session and write only after numbered A/B/C approval, or save every candidate when the human passed `--accept-all` |
+| `engram save-session [--file transcript.md] [--role role] [--query-level n] [--accept-all] [session-summary]` / `engram ss` | Propose multiple memories from one or more recent sessions and write only after numbered A/B/C approval, or save every candidate when the human passed `--accept-all` |
 | `engram observe [--file session.md] [--propose] [note]` | Write sanitized raw notes into inbox; `--propose` mines them through save-session |
 | `engram take-control [--plan] [--file path] [--dir path] [--include glob] [--exclude glob] [--max-sources n] [--max-chars n] [--all] [--accept-all]` | Explore existing workspace guidance, notes, and docs with agent help, preview source plans, and consume approved candidates as Engram memory |
 | `engram archive [--reason text] <memory-id|file>` | Move wrong or superseded memory out of active routing after approval |
@@ -142,7 +159,7 @@ hosts may prefer MCP-style tools:
 | `/engram verify [scope]` | `engram_verify` or `engram verify [scope]` |
 | `/engram health` | `engram_status` or `engram health` |
 | `/engram save ...` | `engram_save` proposal or CLI approval flow |
-| `/engram save-session ...` / `/engram ss ...` | `engram_autosave` proposal or CLI approval flow; use CLI write flow when `--accept-all` is present |
+| `/engram save-session ...` / `/engram ss ...` | `engram_autosave` proposal or CLI approval flow; use `--query-level <n>` only as a human-requested recent-session mining scope, and use CLI write flow when `--accept-all` is present |
 | `/engram auto save ...` / legacy `/engram autosave ...` | Same as `/engram save-session ...`; LLM defines candidates from current chat when no file or inline candidates are provided |
 | `/engram observe ...` | `engram observe ...` CLI flow; `--propose` may mine candidates through save-session |
 | `/engram graph ...` | `engram graph ...` CLI flow |
@@ -150,6 +167,7 @@ hosts may prefer MCP-style tools:
 | `/engram take-control ...` | `engram take-control ...` CLI flow with agent-generated candidates and approval |
 | `/engram take control accept all` | `engram take-control --accept-all` CLI write flow with token-light source defaults |
 | `/engram ss -a` | `engram save-session --accept-all` CLI write flow |
+| `/engram ss -a last 50 sessions` | `engram save-session --query-level 50 --accept-all` CLI write flow |
 | `/engram <other command>` | `engram <other command>` CLI flow |
 
 The slash adapter must not write memory by itself. It only asks the agent to run

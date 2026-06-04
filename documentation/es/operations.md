@@ -10,7 +10,9 @@ Esta página contiene el uso detallado para que el README pueda seguir siendo br
 | Buscar memoria | `engram search "<tema>"` |
 | Guardar una memoria | `engram save [rule\|workflow\|knowledge] "<texto>"` |
 | Guardar varias memorias de sesión | `engram save-session` o `engram ss` |
+| Extraer de chats recientes accesibles | `engram save-session --query-level 3` |
 | Aceptar todos los candidatos de la sesión | `engram ss -a` |
+| Extraer y aceptar chats recientes | `engram ss -a last 50 sessions` |
 | Capturar nota cruda | `engram observe --file sesion.md` |
 | Convertir guías/documentos existentes | `engram take-control --all` |
 | Previsualizar toma de control | `engram take-control --plan` |
@@ -21,6 +23,9 @@ Esta página contiene el uso detallado para que el README pueda seguir siendo br
 | Ajustar la fuerza de las reglas | `engram set-rule-variant strict\|balanced\|light\|off` |
 
 Use `save-session` para propuestas de memoria de sesiones largas. Forma corta: `ss`.
+Use `--query-level <n>` cuando el humano quiera que el agente extraiga memoria de hasta n chats humano-agente recientes y accesibles, en lugar de solo la sesión actual. La redacción natural `engram ss -a last 50 sessions` se normaliza a `engram save-session --query-level 50 --accept-all`.
+
+Cuando más de 8 memorias coinciden con una consulta, `load` refina el conjunto amplio de candidatos en un paquete de contexto top 8. `load --dry-run` muestra conteos de candidatos y etiquetas para acotar; `load --all` devuelve intencionalmente toda memoria visible enrutada.
 
 ## Guardar Sesión (Save Session)
 
@@ -33,6 +38,7 @@ TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
 ```
 
 Sin `--accept-all`, Engram pregunta qué candidatos guardar. Con `ss -a`, cada candidato generado se guarda porque el humano aprobó explícitamente ese atajo.
+`--query-level` debe ser un entero positivo. Los agentes solo deben incluir chats a los que realmente puedan acceder y no deben inventar historial no disponible. `engram ss -a last 50 sessions` usa `50` como query level y `-a` como aprobación humana explícita.
 
 ## Tomar Control (Take Control)
 

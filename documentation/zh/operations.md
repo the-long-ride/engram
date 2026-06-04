@@ -10,7 +10,9 @@
 | 搜索内存 | `engram search "<主题>"` |
 | 保存一条内存 | `engram save [rule\|workflow\|knowledge] "<文本>"` |
 | 保存多次会话内存 | `engram save-session` 或 `engram ss` |
+| 从可访问的最近聊天中提取 | `engram save-session --query-level 3` |
 | 接受全部会话候选 | `engram ss -a` |
+| 提取并接受最近聊天候选 | `engram ss -a last 50 sessions` |
 | 捕获原始笔记 | `engram observe --file session.md` |
 | 转换已有的智能体指导/文档 | `engram take-control --all` |
 | 预览接管计划 | `engram take-control --plan` |
@@ -21,6 +23,9 @@
 | 调整规则强度 | `engram set-rule-variant strict\|balanced\|light\|off` |
 
 对于较长时间会话的内存建议，请使用 `save-session`。简写形式：`ss`。
+当人类希望智能体从最多 n 个可访问的最近人类-智能体聊天中提取候选，而不是只使用当前会话时，请使用 `--query-level <n>`。自然写法 `engram ss -a last 50 sessions` 会规范化为 `engram save-session --query-level 50 --accept-all`。
+
+当超过 8 条内存匹配同一查询时，`load` 会将更大的候选池细化为 top 8 上下文包。`load --dry-run` 会显示候选数量和用于缩小范围的标签；`load --all` 会有意返回所有可见的已路由内存。
 
 ## 保存会话 (Save Session)
 
@@ -33,6 +38,7 @@ TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
 ```
 
 如果不带 `--accept-all` 运行，Engram 会询问要保存哪些候选。带有 `ss -a` 时，每个生成的候选都会被直接保存，因为人类显式批准了该快捷操作。
+`--query-level` 必须是正整数。智能体只应包含它真正可以访问的聊天，并且不得编造不可访问的历史。`engram ss -a last 50 sessions` 使用 `50` 作为 query level，并将 `-a` 作为人类显式的一键批准。
 
 ## 接管控制 (Take Control)
 

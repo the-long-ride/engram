@@ -33,6 +33,8 @@ Every active memory file has `Context`, `Content`, and `Example` sections. Rule 
 ## Write Flow
 
 1. Agent proposes one or more candidates.
+   With `save-session --query-level <n>`, the agent may consider up to n recent accessible human-agent chats, but only as proposal context.
+   Natural `/engram ss -a last 50 sessions` is the same scope plus explicit accept-all approval: `engram save-session --query-level 50 --accept-all`.
 2. Engram parses candidate type and target scope.
 3. Engram checks schema, secrets, prompt-injection patterns, and path safety.
 4. Human sees a preview.
@@ -55,4 +57,3 @@ Without a protocol, memory can become invisible state. Invisible state is hard t
 Engram makes memory boring on purpose: files, diffs, hashes, review gates, and commands a human can rerun.
 
 Next: [Operations](operations.md).
-

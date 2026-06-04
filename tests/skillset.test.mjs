@@ -76,6 +76,19 @@ test('cli installs a single skillset target', async () => {
   await rm(cwd, { recursive: true, force: true });
 });
 
+test('cli lists agents-md as fallback after mcp', async () => {
+  const { cwd, env } = await tempWorkspace('engram-skillset-cli-');
+  const result = await runEngram(cwd, env, ['is', 'list']);
+  assert.equal(result.code, 0, result.stderr);
+  const lines = result.stdout.split(/\r?\n/);
+  const mcpIndex = lines.findIndex((line) => line.includes(' mcp'));
+  const agentsMdIndex = lines.findIndex((line) => line.includes(' agents-md'));
+  assert.ok(mcpIndex >= 0, result.stdout);
+  assert.ok(agentsMdIndex > mcpIndex, result.stdout);
+  assert.match(result.stdout, /agents-md\s+# Generic AGENTS\.md fallback for unlisted AGENTS\.md-compatible agents/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
 test('cli installs open-code alias and antigravity ecosystem files', async () => {
   const { cwd, env } = await tempWorkspace('engram-skillset-cli-');
   const opencode = await runEngram(cwd, env, ['install-skillset', 'open-code']);

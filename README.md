@@ -171,8 +171,10 @@ engram is list
 ```bash
 # Install to your AI assistant as global scope for automatic memory loading at start-of-task + the ability to use /engram commands manually
 engram is --global <your-agent>
+# If you do not see your AI agent in list, you can use this option for temporary fallback option. 
+engram is --global agents-md
 ```
-*(Replace `<your-agent>` with your assistant name in result of `engram is list`)*
+*(Replace `<your-agent>` with your assistant name in result of `engram is list`; use `agents-md` when your agent is not listed but reads `AGENTS.md`.)*
 
 For Antigravity, use the unified ecosystem target:
 ```bash

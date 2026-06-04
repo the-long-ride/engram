@@ -46,7 +46,7 @@ newer skill-aware Claude Code sessions.
 | Target | File | Main use |
 | --- | --- | --- |
 | `codex` | `AGENTS.md`, `.agents/skills/engram/SKILL.md` | OpenAI Codex project instructions and Agent Skill |
-| `agents-md` | `AGENTS.md` | AGENTS.md-compatible agents |
+| `agents-md` | `AGENTS.md` | Generic fallback for unlisted AGENTS.md-compatible agents |
 | `copilot` | `.github/copilot-instructions.md` | GitHub Copilot repository instructions |
 | `claude` | `CLAUDE.md` | Claude Code project guidance |
 | `cursor` | `.cursor/rules/engram.mdc` | Cursor project rules |

@@ -16,6 +16,7 @@ import {
   readGlobalSkillsetRegistry,
   refreshGlobalSkillsets,
   skillsetTargets,
+  type SkillsetTarget,
   type InstallResult
 } from '../core/integrations/skillset.js';
 import { git } from '../core/vcs/git.js';
@@ -117,12 +118,10 @@ export async function cmdInstallSkillset(args: string[], flags: Record<string, a
     const yellow = (text: string) => isTTY ? `\x1b[1;33m${text}\x1b[0m` : text;
     const gray = (text: string) => isTTY ? `\x1b[90m${text}\x1b[0m` : text;
 
-    const listLines = skillsetTargets().map((target) => {
+    const listLines = skillsetListTargets().map((target) => {
       const padded = target.padEnd(16);
-      if (target === 'slash') {
-        return `  ${cyan('•')} ${yellow(padded)} ${gray('# Installs IDE/chat slash commands (/engram) for manual requests')}`;
-      }
-      return `  ${cyan('•')} ${yellow(padded)}`;
+      const note = skillsetListNotes[target];
+      return `  ${cyan('•')} ${yellow(padded)}${note ? ` ${gray(note)}` : ''}`;
     });
     return [
       'Currently, engram do support these agents and also mcp:',
@@ -140,6 +139,19 @@ export async function cmdInstallSkillset(args: string[], flags: Record<string, a
     ...skillsetInstallHints(results, global)
   ].join('\n');
 }
+
+function skillsetListTargets(): SkillsetTarget[] {
+  const targets: SkillsetTarget[] = skillsetTargets().filter((target) => target !== 'agents-md');
+  const mcpIndex = targets.indexOf('mcp');
+  if (mcpIndex >= 0) targets.splice(mcpIndex + 1, 0, 'agents-md');
+  else targets.push('agents-md');
+  return targets;
+}
+
+const skillsetListNotes: Partial<Record<SkillsetTarget, string>> = {
+  'agents-md': '# Generic AGENTS.md fallback for unlisted AGENTS.md-compatible agents',
+  slash: '# Installs IDE/chat slash commands (/engram) for manual requests'
+};
 
 /** Upgrade Engram package guidance, global memory scaffold, and registered global skillsets. */
 export async function cmdUpgrade(args: string[] = [], flags: Record<string, any> = {}): Promise<string> {

@@ -104,7 +104,7 @@ proposal and collect explicit human approval before invoking a CLI write flow.
 | `engram --version` / `engram -v` | Print the installed CLI version |
 | `engram help [topic]` | Show compact help or detailed command-specific examples and use cases |
 | `engram entry` | Print resolved flags, paths, and detected global Git state |
-| `engram load [--all] "<task>"` | Load relevant memory; `--all` is the explicit broad-load mode |
+| `engram load [--all] [--dry-run] "<task>"` | Load relevant memory; `--all` is the explicit broad-load mode and `--dry-run` previews routed files without printing contents |
 | `engram search "<query>"` | Search visible memory by query |
 | `engram graph [--rebuild] ["<query>"]` | Inspect the derived layered JSON graph and contradiction candidates |
 | `engram save [rule|skill|workflow|knowledge] [--role role] "<text>"` | Propose one memory and write after A/B/C approval |
@@ -119,7 +119,7 @@ proposal and collect explicit human approval before invoking a CLI write flow.
 | `engram repair [workspace|global]` | Report invalid memory files that index rebuild would skip |
 | `engram rebuild-index [workspace|global]` | Explicitly rebuild memory indexes |
 | `engram resolve-conflicts` | Resolve and stage only `.agents/.engram/` conflicts |
-| `engram stats` | Show visible memory counts |
+| `engram stats` | Show visible memory counts, scope mix, and author ownership |
 | `engram install-skillset all` | Install agent-host instruction files |
 | `engram install-skillset slash` | Install slash-command adapters, including both Claude command and skill paths |
 | `engram sync` | Sync global memory Git and refresh live-sync targets |

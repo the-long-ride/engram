@@ -99,7 +99,7 @@ npm run lint:lines
   and the parent gitlink. Agents must ask before adding any origin remote; CLI
   init may prompt for it, and non-TTY runs should print the explicit command
   instead.
-- When adding or renaming a CLI command, update
+- When adding, removing, or renaming a CLI command, update
   `src/core/cli/command-registry.ts`, `src/core/cli/help-topics.ts`,
   `src/core/integrations/skillset.ts`,
   `docs/SKILLSET_CONTRACT.md`, README examples, and command/skillset tests

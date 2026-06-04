@@ -7,6 +7,7 @@ This page holds detailed usage so the README can stay short.
 | Need | Command |
 | --- | --- |
 | Load task memory | `engram load "<task>"` |
+| Preview routed memory files | `engram load --dry-run "<task>"` |
 | Search memory | `engram search "<topic>"` |
 | Save one memory | `engram save [rule|workflow|knowledge] "<text>"` |
 | Save several session memories | `engram save-session` or `engram ss` |
@@ -21,6 +22,9 @@ This page holds detailed usage so the README can stay short.
 | Tune rule strength | `engram set-rule-variant strict|balanced|light|off` |
 
 Use `save-session` for long-session memory proposals. Short form: `ss`.
+
+Use `load --dry-run` when you want to inspect which memory files would route
+without printing their contents.
 
 ## Save Session
 

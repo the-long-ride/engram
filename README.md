@@ -2,6 +2,8 @@
 
 ![Engram cover](https://raw.githubusercontent.com/the-long-ride/engram/main/media/cover/engram-cover.png)
 
+[English](README.md) | [Tiếng Việt](documentation/vi/README.md) | [Español](documentation/es/README.md) | [Français](documentation/fr/README.md) | [中文](documentation/zh/README.md) | [한국어](documentation/ko/README.md) | [日本語](documentation/ja/README.md) | [Русский](documentation/ru/README.md)
+
 **Engram is a human-owned memory protocol for AI agents. Grow with you & your teams.**
 
 It gives agents memory without giving agents ownership of memory. Durable rules, workflows, and project knowledge live as readable Markdown, reviewed by humans, portable through Git, and usable by any agent that can read files.
@@ -15,7 +17,7 @@ It is not a hidden agent brain. It is not a vendor memory silo. It is not a data
 Engram's contract:
 
 - **Markdown is durable memory.**
-- **JSON index and graph are acceleration layers.**
+- **JSON index, graph, and optional sqlite-vec sidecars are acceleration layers.**
 - **Approval is the trust boundary.**
 - **Hashes are integrity checks.**
 - **Ignore rules are privacy controls.**
@@ -83,7 +85,7 @@ Engram moves memory into files to solve these problems:
 
 | Tactical Challenge | Engram Answer |
 | --- | --- |
-| **Too many rules bloating context** | Only loads memory files matching the active task. |
+| **Too many rules bloating context** | Routes and refines task-matching memory into a compact top-8 context pack by default. |
 | **Silent writes & secret leakage** | Requires human A/B/C approval and scans for secrets/injections. |
 | **Vendor lock-in** | Uses plain, readable Markdown files portable across any agent or model. |
 | **No offline access** | Runs locally as a lightweight file-based protocol—no server or internet required. |
@@ -93,6 +95,10 @@ Engram moves memory into files to solve these problems:
 Workspace memory loads first. Global memory is fallback. When global memory is
 configured, approved workspace save flows also keep a global copy so portable
 memory survives even in workspaces that have not run `engram init`.
+When broad queries match more than eight memories, `engram load` reranks with
+tags, type, recency, graph, and optional sqlite-vec vector signals before loading
+the top eight. Use `engram load --dry-run "<task>"` to preview candidate counts
+and suggested narrowing tags, or `--all` when broad context is intentional.
 
 ## Example Use Cases
 
@@ -124,7 +130,7 @@ For daily use, let your AI assistant handle the memory load and save flows direc
 
 - **Start of a Chat Session:** Tell your AI assistant to recall relevant guidelines or preferences for your task.
   ```text
-  # But if you install-skillset for AI agents as global, your AI agents will automatically using engram load.
+  # If you install the skillset globally, supported agents automatically run engram load at session start and task changes.
   /engram load "design pricing table component"
   ```
 - **Proposing New Memory:** Ask the agent to save an important decision or fact discovered during the conversation.
@@ -171,7 +177,7 @@ engram is list
 ```bash
 # Install to your AI assistant as global scope for automatic memory loading at start-of-task + the ability to use /engram commands manually
 engram is --global <your-agent>
-# If you do not see your AI agent in list, you can use this option for temporary fallback option. 
+# If your agent is not listed but reads AGENTS.md, use the generic fallback target.
 engram is --global agents-md
 ```
 *(Replace `<your-agent>` with your assistant name in result of `engram is list`; use `agents-md` when your agent is not listed but reads `AGENTS.md`.)*
@@ -282,15 +288,16 @@ Each language includes overview, understanding, AI-agent quickstart, protocol, o
 - Git-friendly review, history, sync, and recovery.
 - Workspace-first with optional global fallback.
 - Agent-agnostic: Codex, Claude, Cursor, Gemini, Copilot, OpenCode, Antigravity, Cline, Windsurf, and file-reading agents can all use it.
+- Compact routing by default, with dry-run refinement previews and optional sqlite-vec sidecars for large memory scopes.
 - Safety layers: schema validation, secret scan, prompt-injection scan, hashes, ignore rules.
 - Useful maintenance flows: observe, take-control, graph, archive, benchmark, repair.
-- No required daemon, database, or cloud account.
+- No required daemon, database, or cloud account; sqlite-vec is an optional local sidecar, not the source of truth.
 
 ## Cons
 
 - Less automatic than memory engines that capture everything in the background.
 - Default search is deterministic lexical search; `search --semantic` adds deterministic local similarity, not embedding-backed semantic search.
-- Graph vectors are local hashed word vectors, not semantic embeddings.
+- Optional sqlite-vec routing uses local hashed word vectors, not external embedding services.
 - Contradiction detection is heuristic and advisory.
 - `deduplicate --semantic` uses deterministic local similarity, not external embeddings.
 - Pattern mining, encrypted storage, and full PR automation are design areas, not complete runtime workflows yet.
@@ -305,7 +312,7 @@ Engram chooses a different center of gravity.
 | --- | --- | --- |
 | Source of truth | Human-approved Markdown | Memory server/store |
 | Trust boundary | A/B/C approval before writes | Automatic capture plus tool governance |
-| Default shape | File protocol, no daemon required | Running service recommended |
+| Default shape | File protocol, no daemon required; optional local sqlite-vec sidecar for large scopes | Running service recommended |
 | Review model | Git diff and Markdown review | Viewer/API/session history |
 | Best for | human-owned team memory | automatic recall and replay |
 | Main risk | requires save discipline | can become invisible state without governance |
@@ -326,7 +333,7 @@ Engram sits lower in the stack. It is not a desktop knowledge-base app; it is a 
 | Primary interface | CLI, slash adapters, MCP-style wrapper, and agent-readable Markdown | Cross-platform desktop app |
 | Write model | Agents propose; humans approve durable memory writes | Humans directly manage a Markdown knowledge base |
 | Scope | Rules, workflows, skills, and project/team/personal agent memory | Broad personal or team knowledge bases and second brains |
-| Runtime shape | No required daemon, database, cloud account, or desktop app | Tauri desktop app for macOS, Windows, and Linux |
+| Runtime shape | No required daemon, cloud account, or desktop app; optional local sqlite-vec sidecar for large scopes | Tauri desktop app for macOS, Windows, and Linux |
 | Best for | Auditable memory governance across agents and repos | Browsing, editing, and organizing large Markdown vaults |
 | Main risk | requires save discipline | more app surface than needed if you only want an agent memory protocol |
 
@@ -346,7 +353,7 @@ Engram is not trying to be a note-taking app. It is a governed memory protocol f
 | Primary interface | CLI, slash adapters, MCP-style wrapper, and agent-readable Markdown | Desktop and mobile note app with links, graph, canvas, plugins, and themes |
 | Write model | Agents propose; humans approve durable memory writes | Humans and plugins edit vault notes directly |
 | Scope | Rules, workflows, skills, and project/team/personal agent memory | Personal or team notes, writing, planning, and knowledge bases |
-| Runtime shape | No required app, daemon, database, or cloud account | Obsidian app, with optional Sync, Publish, and community plugins |
+| Runtime shape | No required app, daemon, or cloud account; optional local sqlite-vec sidecar for large scopes | Obsidian app, with optional Sync, Publish, and community plugins |
 | AI integration | Installable agent instructions and approval-gated memory flows | Vaults can become AI context through plugins, MCP servers, or custom workflows |
 | Best for | Auditable cross-agent memory governance | Rich Markdown note-taking and second-brain workflows |
 | Main risk | requires save discipline | agent-facing context can become broad or unreviewed without a separate governance layer |

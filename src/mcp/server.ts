@@ -3,7 +3,7 @@ import { createInterface } from 'node:readline';
 import { cmdLoad, cmdVerify } from '../commands/read.js';
 import { cmdHealth, cmdSearch } from '../commands/ops.js';
 import { getContext } from '../core/memory/context.js';
-import { planMemorySave, previewSavePlans } from '../core/memory/save-plan.js';
+import { planMemorySave, previewSavePlans, withGlobalSaveCopy } from '../core/memory/save-plan.js';
 import { resolveAuthor } from '../core/memory/storage.js';
 import { normalizeMemoryType, parseMemoryCandidate, parseMemoryCandidates } from '../core/memory/memory-candidate.js';
 import type { Scope } from '../core/runtime/types.js';
@@ -40,7 +40,7 @@ async function saveProposal(args: any): Promise<string> {
     ctx,
     text: candidate.text,
     type: candidate.type,
-    scopes: [scope],
+    scopes: withGlobalSaveCopy(ctx, [scope]),
     author: await resolveAuthor(),
     role: rolesFromArgs(args)
   });
@@ -59,7 +59,7 @@ async function saveSessionProposal(args: any): Promise<string> {
   const plans = [];
   let candidateIndex = 1;
   for (const candidate of parseMemoryCandidates(text)) {
-    const next = await planMemorySave({ ctx, text: candidate.text, type: candidate.type, scopes: [scope], author, role });
+    const next = await planMemorySave({ ctx, text: candidate.text, type: candidate.type, scopes: withGlobalSaveCopy(ctx, [scope]), author, role });
     plans.push(...next.map((plan) => ({ ...plan, candidateIndex })));
     candidateIndex += 1;
   }

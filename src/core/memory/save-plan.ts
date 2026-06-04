@@ -18,6 +18,12 @@ export type SavePlan = {
   candidateIndex?: number;
 };
 
+/** Add a global twin for workspace save plans when global memory is configured. */
+export function withGlobalSaveCopy(ctx: EngramContext, scopes: Scope[]): Scope[] {
+  if (!ctx.roots.global || !scopes.includes('workspace') || scopes.includes('global')) return scopes;
+  return [...scopes, 'global'];
+}
+
 /** Choose whether each scope should add a new memory or update an existing one. */
 export async function planMemorySave(input: {
   ctx: EngramContext; text: string; type: MemoryType; scopes: Scope[]; author: string; role?: string[]; source?: MemorySourceMeta;
@@ -49,8 +55,9 @@ export function previewSavePlans(plans: SavePlan[]): string {
 
 async function bestMatch(ctx: EngramContext, text: string, type: MemoryType, scope: Scope): Promise<{ entry: MemoryEntry; raw: string; score: number } | undefined> {
   const queryWords = words(text);
+  const index = ctx.scopeIndexes[scope];
   let best: { entry: MemoryEntry; raw: string; score: number; overlap: number } | undefined;
-  for (const entry of ctx.index.entries.filter((item) => item.scope === scope && item.type === type && !item.ignored)) {
+  for (const entry of index.entries.filter((item) => item.scope === scope && item.type === type && !item.ignored)) {
     const raw = await readText(entryPath(ctx, scope, entry.file));
     const candidate = `${entry.id} ${entry.tags.join(' ')} ${entry.summary} ${raw}`;
     const score = entry.id === slugify(text) ? 1 : lexicalScore(text, candidate);

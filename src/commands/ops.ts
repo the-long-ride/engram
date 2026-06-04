@@ -11,7 +11,7 @@ import { renderEntry } from '../core/runtime/entry.js';
 import { route, visibleEntries } from '../core/memory/routing.js';
 import { readGuardedMemory } from '../core/safety/safe-read.js';
 import { contradictionEdges, renderGraphReport } from '../core/memory/graph.js';
-import { archiveMemory, planArchive } from '../core/memory/archive.js';
+import { archiveMemory, planArchiveSet } from '../core/memory/archive.js';
 import { planMemorySave, previewSavePlans, type SavePlan } from '../core/memory/save-plan.js';
 import { normalizeMemoryType } from '../core/memory/memory-candidate.js';
 import { writeScopes } from '../core/runtime/config.js';
@@ -92,18 +92,21 @@ export async function cmdArchive(args: string[], flags: Record<string, any> = {}
   if (!target) throw new Error('archive requires memory id or file path');
   const reason = typeof flags.reason === 'string' ? flags.reason : args.slice(1).join(' ').trim();
   const ctx = await getContext();
-  const plan = planArchive(ctx, target, reason);
+  const plans = planArchiveSet(ctx, target, reason);
+  const plan = plans[0];
   const raw = await readText(plan.originalPath);
   const approval = await requestApproval([
     `Archive ${plan.entry.scope}:${plan.entry.file}`,
     `Reason: ${reason || 'No reason provided'}`,
+    ...plans.slice(1).map((extra) => `Also archive: ${extra.entry.scope}:${extra.entry.file}`),
     '',
     raw
   ].join('\n'));
   if (!approval.accepted) return 'Discarded. No file archived.';
   const finalReason = [reason, approval.edits].filter(Boolean).join(' ');
-  const archived = await archiveMemory(ctx, planArchive(ctx, target, finalReason), finalReason);
-  return `Archived -> ${archived}`;
+  const archived = [];
+  for (const next of planArchiveSet(ctx, target, finalReason)) archived.push(await archiveMemory(ctx, next, finalReason));
+  return `Archived -> ${archived.join(', ')}`;
 }
 
 /** Show likely duplicate pairs. */

@@ -13,7 +13,7 @@ import { detectCompletionTarget } from '../core/cli/completion-target.js';
 import { readText, writeText } from '../core/system/fsx.js';
 import { applyApprovalEdit, requestApproval, requestGeneratedMemoryApproval, requestGeneratedSelectionApproval, requestGeneratedSelectionText, requestSelectionApproval, type SelectionApproval } from '../core/safety/approval.js';
 import { normalizeBranchName } from '../core/vcs/git.js';
-import { planMemorySave, previewSavePlans, type SavePlan } from '../core/memory/save-plan.js';
+import { planMemorySave, previewSavePlans, withGlobalSaveCopy, type SavePlan } from '../core/memory/save-plan.js';
 import { parseMemory } from '../core/memory/schema.js';
 import type { MemorySourceMeta } from '../core/memory/memory-template.js';
 import { installSkillset, type InstallResult } from '../core/integrations/skillset.js';
@@ -154,7 +154,7 @@ export async function cmdSave(args: string[], flags: Record<string, any>): Promi
   let text = (explicitType ? args.slice(1) : args).join(' ').trim();
   if (!explicitType && await shouldSwitchToSaveSession(text)) return cmdSaveSession([text], flags);
   const ctx = await getContext();
-  const scopes = flags.scope ? [flags.scope as Scope] : writeScopes(ctx.config.scope, ctx.config);
+  const scopes = saveScopes(ctx, flags);
   const author = await resolveAuthor();
   const role = rolesFromFlags(flags);
   let approval;
@@ -183,7 +183,7 @@ export async function cmdSave(args: string[], flags: Record<string, any>): Promi
 /** Propose multiple memories from a long session summary or agent brainstorm. */
 export async function cmdSaveSession(args: string[], flags: Record<string, any> = {}): Promise<string> {
   const ctx = await getContext();
-  const scopes = flags.scope ? [flags.scope as Scope] : writeScopes(ctx.config.scope, ctx.config);
+  const scopes = saveScopes(ctx, flags);
   const author = await resolveAuthor();
   const role = rolesFromFlags(flags);
   const acceptAll = flags['accept-all'] === true;
@@ -228,7 +228,7 @@ export async function cmdTakeControl(args: string[], flags: Record<string, any> 
   const guidance = takeControlGuidance(sources, { acceptAll });
   if (flags['dry-run']) return guidance;
   if (!sources.length && !args.join(' ').trim()) return 'No workspace guidance files found. Try engram take-control --all or --file <path>.';
-  const scopes = flags.scope ? [flags.scope as Scope] : writeScopes(ctx.config.scope, ctx.config);
+  const scopes = saveScopes(ctx, flags);
   const author = await resolveAuthor();
   const role = rolesFromFlags(flags);
   let text = args.join(' ').trim();
@@ -340,4 +340,13 @@ function rolesFromFlags(flags: Record<string, any>): string[] | undefined {
   const value = typeof flags.role === 'string' ? flags.role : typeof flags.roles === 'string' ? flags.roles : '';
   const roles = value.split(',').map((role) => role.trim()).filter(Boolean);
   return roles.length ? roles : undefined;
+}
+
+function saveScopes(ctx: Awaited<ReturnType<typeof getContext>>, flags: Record<string, any>): Scope[] {
+  const requested = typeof flags.scope === 'string' ? flags.scope.trim() : '';
+  if (requested && requested !== 'workspace' && requested !== 'global' && requested !== 'both') throw new Error('save --scope must be workspace, global, or both');
+  const configured = requested === 'workspace' || requested === 'global' || requested === 'both'
+    ? writeScopes(requested, ctx.config)
+    : writeScopes(ctx.config.scope, ctx.config);
+  return withGlobalSaveCopy(ctx, configured);
 }

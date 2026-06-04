@@ -12,6 +12,7 @@ export type EngramContext = {
   cwd: string;
   config: EngramConfig;
   roots: ReturnType<typeof scopeRoots>;
+  scopeIndexes: { workspace: MemoryIndex; global: MemoryIndex };
   index: MemoryIndex;
   graph: MemoryGraph;
   hiddenCount: number;
@@ -32,7 +33,7 @@ export async function getContext(cwd = process.cwd(), options: ContextOptions = 
   const globalGraph = roots.global ? await readGraph(roots.global, 'global', global, config, Boolean(options.rebuild)) : emptyGraph();
   const graph = mergeGraphs(workspaceGraph, globalGraph);
   const hiddenCount = index.entries.filter((entry) => entry.ignored || isIgnored(entry.file, ignore.patterns)).length;
-  return { cwd, config, roots, index, graph, hiddenCount, ignorePatterns: ignore.patterns };
+  return { cwd, config, roots, scopeIndexes: { workspace, global }, index, graph, hiddenCount, ignorePatterns: ignore.patterns };
 }
 
 /** Format the session-start load summary. */

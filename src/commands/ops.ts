@@ -9,6 +9,7 @@ import { resolveAuthor, syncGlobalMemoryGit, writeApprovedMemory } from '../core
 import { applyApprovalEdit, requestApproval } from '../core/safety/approval.js';
 import { renderEntry } from '../core/runtime/entry.js';
 import { route, visibleEntries } from '../core/memory/routing.js';
+import { vectorRouteHits } from '../core/memory/vector-db.js';
 import { readGuardedMemory } from '../core/safety/safe-read.js';
 import { contradictionEdges, renderGraphReport } from '../core/memory/graph.js';
 import { archiveMemory, planArchiveSet } from '../core/memory/archive.js';
@@ -74,7 +75,12 @@ export async function cmdBenchmark(args: string[]): Promise<string> {
   for (const item of cases) {
     const expects = Array.isArray(item.expect) ? item.expect : [item.expect].filter(Boolean);
     const expected = new Set(expects.map((value) => String(value).replace(/\\/g, '/')));
-    const routed = route(ctx.index, item.query, ctx.config, false, { ignorePatterns: ctx.ignorePatterns }, ctx.graph);
+    const vectorHits = await vectorRouteHits(ctx.roots, ctx.scopeIndexes, ctx.config, item.query, ctx.ignorePatterns);
+    const routed = route(ctx.index, item.query, ctx.config, false, {
+      ignorePatterns: ctx.ignorePatterns,
+      vectorHits,
+      candidatePool: ctx.config.vector.candidate_pool
+    }, ctx.graph);
     const found = routed.some((entry) => expected.has(entry.id) || expected.has(entry.file) || expected.has(`${entry.scope}:${entry.file}`));
     if (found) hits += 1;
     rows.push({

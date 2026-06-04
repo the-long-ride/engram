@@ -3,6 +3,7 @@ import { getContext, loadSummary } from '../core/memory/context.js';
 import { rebuildGraph } from '../core/memory/graph.js';
 import { invalidMemoryFiles, rebuildIndex } from '../core/memory/index.js';
 import { loadEntries, route, visibleEntries } from '../core/memory/routing.js';
+import { ensureVectorIndex, vectorRouteHits } from '../core/memory/vector-db.js';
 import { formatRecords, type RecordBlock } from '../core/cli/format.js';
 import type { Scope } from '../core/runtime/types.js';
 import { verifyRoot } from '../core/safety/hash.js';
@@ -13,7 +14,13 @@ export async function cmdLoad(args: string[], flags: Record<string, any> = {}): 
   if (!ctx.config.enabled || ctx.config.read === 'off') return '';
   const query = args.join(' ') || 'current session';
   const all = flags.all === true;
-  const entries = route(ctx.index, query, ctx.config, all, { all, ignorePatterns: ctx.ignorePatterns }, ctx.graph);
+  const vectorHits = all ? [] : await vectorRouteHits(ctx.roots, ctx.scopeIndexes, ctx.config, query, ctx.ignorePatterns, all);
+  const entries = route(ctx.index, query, ctx.config, all, {
+    all,
+    ignorePatterns: ctx.ignorePatterns,
+    vectorHits,
+    candidatePool: ctx.config.vector.candidate_pool
+  }, ctx.graph);
   if (flags['dry-run'] === true) {
     if (!entries.length) return 'No routed memories';
     return formatRecords(`Routed memories (${entries.length})`, entries.map((entry) => ({
@@ -38,7 +45,8 @@ export async function cmdRebuildIndex(scope?: string): Promise<string> {
     }
     const index = await rebuildIndex(ctx.roots[current as Scope], current as Scope, ctx.ignorePatterns);
     const graph = await rebuildGraph(ctx.roots[current as Scope], current as Scope, index, ctx.config);
-    rows.push({ title: current, fields: [['Indexed', index.entries.length], ['Graph nodes', graph.nodes.length]] });
+    const vector = await ensureVectorIndex(ctx.roots[current as Scope], current as Scope, visibleEntries(index.entries, ctx.config, true, ctx.ignorePatterns), ctx.config, { force: true });
+    rows.push({ title: current, fields: [['Indexed', index.entries.length], ['Graph nodes', graph.nodes.length], ['Vector', vector.action], ['Vector reason', vector.reason ?? '-']] });
   }
   return formatRecords('engram: rebuilt indexes', rows);
 }

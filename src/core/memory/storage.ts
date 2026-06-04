@@ -8,6 +8,7 @@ import { ensureDir, exists, inside, listFiles, readJson, readText, writeJson, wr
 import { renderHelp, renderMemoryReadme } from '../cli/help.js';
 import { emptyIndex, rebuildIndex } from './index.js';
 import { rebuildGraph } from './graph.js';
+import { ensureVectorIndex } from './vector-db.js';
 import { updateHash } from '../safety/hash.js';
 import { scanInjection, scanSensitive } from '../safety/security.js';
 import { validateMemoryRaw } from './schema.js';
@@ -16,6 +17,10 @@ import { resolveConflictsInRoot } from '../vcs/conflict.js';
 
 type ReconcileResult = { dirs: number; files: number; config: boolean; migrated: number; index: boolean };
 type InitOptions = { globalOnly?: boolean };
+const SCOPE_GITIGNORE = `# Engram generated routing sidecars.
+memory.vec.sqlite
+memory.vec.sqlite-*
+`;
 
 /** Initialize a workspace .agents/.engram folder. */
 export async function initWorkspace(cwd: string, force = false, branch = 'main', globalPath = '', options: InitOptions = {}): Promise<string[]> {
@@ -81,14 +86,20 @@ export async function createScope(root: string, config: EngramConfig, scope: Sco
   result.files += await writeTextIfNeeded(path.join(root, HELP_FILE), renderHelp(), true) ? 1 : 0;
   result.files += await writeTextIfNeeded(path.join(root, README_FILE), renderMemoryReadme(), true) ? 1 : 0;
   result.files += await writeTextIfNeeded(path.join(root, CHANGELOG_FILE), `# Engram Changelog\n\n`, false) ? 1 : 0;
+  result.files += await reconcileScopeGitignore(root) ? 1 : 0;
   if (force || result.migrated || !(await exists(path.join(root, INDEX_FILE)))) {
     const index = await rebuildIndex(root, scope);
     await rebuildGraph(root, scope, index, config);
+    await ensureVectorIndex(root, scope, index.entries, config, { force: true });
     result.index = true;
   }
   else {
     result.files += await writeJsonIfNeeded(path.join(root, INDEX_FILE), emptyIndex(), false) ? 1 : 0;
-    if (!(await exists(path.join(root, GRAPH_FILE)))) await rebuildGraph(root, scope, await rebuildIndex(root, scope), config);
+    if (!(await exists(path.join(root, GRAPH_FILE)))) {
+      const index = await rebuildIndex(root, scope);
+      await rebuildGraph(root, scope, index, config);
+      await ensureVectorIndex(root, scope, index.entries, config);
+    }
   }
   return result;
 }
@@ -113,6 +124,7 @@ export async function writeApprovedMemory(input: {
   await updateHash(root, input.file, input.content);
   const index = await rebuildIndex(root, input.scope);
   await rebuildGraph(root, input.scope, index, config);
+  await ensureVectorIndex(root, input.scope, index.entries, config);
   await appendChangelog(root, input.file, input.message);
   if (globalGit) await gitCommitGlobal(root, input.message, globalGit, () => resolveGlobalConflicts(root));
   return full;
@@ -191,6 +203,20 @@ async function reconcileIgnoreFile(cwd: string, force: boolean): Promise<boolean
   const current = await readText(file);
   const existing = new Set(current.split(/\r?\n/u).map((line) => line.trim()).filter(Boolean));
   const missing = DEFAULT_IGNORE.split(/\r?\n/u).map((line) => line.trim()).filter(Boolean).filter((line) => !existing.has(line));
+  if (!missing.length) return false;
+  await writeText(file, `${current.trimEnd()}\n${missing.join('\n')}\n`);
+  return true;
+}
+
+async function reconcileScopeGitignore(root: string): Promise<boolean> {
+  const file = path.join(root, '.gitignore');
+  const current = await readText(file);
+  if (!current.trim()) {
+    await writeText(file, SCOPE_GITIGNORE);
+    return true;
+  }
+  const existing = new Set(current.split(/\r?\n/u).map((line) => line.trim()).filter(Boolean));
+  const missing = SCOPE_GITIGNORE.split(/\r?\n/u).map((line) => line.trim()).filter(Boolean).filter((line) => !line.startsWith('#') && !existing.has(line));
   if (!missing.length) return false;
   await writeText(file, `${current.trimEnd()}\n${missing.join('\n')}\n`);
   return true;

@@ -42,6 +42,7 @@ export function defaultConfig(): EngramConfig {
     global_git: { enabled: true, remote: 'origin', branch: 'main', auto_sync: true, auto_resolve: true },
     rule_variants: { enabled: false, active: 'balanced' },
     graph: { enabled: true, max_related: 4, min_related_score: 0.22 },
+    vector: { enabled: true, provider: 'sqlite-vec', auto_threshold: 100, candidate_pool: 24, dimensions: 64 },
     pattern_mining: { enabled: false, threshold: 3, lookback_sessions: 20 },
     pr_workflow: { enabled: false, target_branch: 'main' },
     encryption: { enabled: false, scope: 'global', key_source: 'portable-file' }
@@ -87,6 +88,7 @@ export function mergeConfig(base: EngramConfig, found: Partial<EngramConfig>): E
     global_git: { ...base.global_git, ...(found.global_git ?? {}) },
     rule_variants: { ...base.rule_variants, ...(found.rule_variants ?? {}) },
     graph: { ...base.graph, ...(found.graph ?? {}) },
+    vector: { ...base.vector, ...(found.vector ?? {}) },
     pattern_mining: { ...base.pattern_mining, ...(found.pattern_mining ?? {}) },
     pr_workflow: { ...base.pr_workflow, ...(found.pr_workflow ?? {}) },
     encryption: { ...base.encryption, ...(found.encryption ?? {}) }

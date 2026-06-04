@@ -9,6 +9,7 @@ import { today } from '../system/text.js';
 import { removeHash, updateHash } from '../safety/hash.js';
 import { rebuildIndex } from './index.js';
 import { rebuildGraph } from './graph.js';
+import { ensureVectorIndex } from './vector-db.js';
 import { appendChangelog } from './storage.js';
 import { gitCommitGlobal, pullGlobalGit } from '../vcs/git.js';
 import { resolveConflictsInRoot } from '../vcs/conflict.js';
@@ -77,6 +78,7 @@ export async function archiveMemory(ctx: EngramContext, plan: ArchivePlan, reaso
   await updateHash(root, plan.archiveFile, annotated);
   const index = await rebuildIndex(root, plan.entry.scope);
   await rebuildGraph(root, plan.entry.scope, index, ctx.config);
+  await ensureVectorIndex(root, plan.entry.scope, index.entries, ctx.config);
   await appendChangelog(root, plan.archiveFile, `archive ${plan.entry.id}: ${reason || 'No reason provided'}`);
   if (globalGit) await gitCommitGlobal(root, `archive memory: ${plan.entry.id}`, globalGit, () => resolveGlobalConflicts(root));
   return archivePath;

@@ -176,6 +176,7 @@ async function gitAddEngramOwned(root: string): Promise<void> {
     CHANGELOG_FILE,
     HELP_FILE,
     README_FILE,
+    '.gitignore',
     'engram.config.json'
   ];
   const owned = [];

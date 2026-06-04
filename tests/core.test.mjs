@@ -21,6 +21,8 @@ import { searchEntries } from '../dist/core/analysis/search.js';
 import { convertDocumentToMarkdown, isConvertibleDocument } from '../dist/core/integrations/markdown-them.js';
 import { mergeIndexes } from '../dist/core/memory/index.js';
 import { route } from '../dist/core/memory/routing.js';
+import { ensureVectorIndex } from '../dist/core/memory/vector-db.js';
+import { defaultConfig } from '../dist/core/runtime/config.js';
 import { tempWorkspace } from './helpers.mjs';
 
 test('init wordmark can render colored or plain', () => {
@@ -278,6 +280,33 @@ test('merged memory priority keeps workspace before global fallback', () => {
   assert.equal(route(index, 'deploy checklist', config)[0].scope, 'workspace');
 });
 
+test('routing blends vector candidates without dropping lexical matches', () => {
+  const lexical = routingEntry('deploy-checklist', 'workspace', ['deploy'], 'Deploy checklist lives local.');
+  const vectorOnly = routingEntry('release-runbook', 'workspace', ['release'], 'Cut production rollout safely.');
+  const index = { version: 'test', last_updated: 'now', entries: [vectorOnly, lexical] };
+  const config = { ...defaultConfig(), graph: { ...defaultConfig().graph, enabled: false }, vector: { ...defaultConfig().vector, candidate_pool: 8 } };
+
+  const routed = route(index, 'deploy checklist', config, false, {
+    vectorHits: [{ entry: vectorOnly, score: 0.99 }],
+    candidatePool: 8
+  });
+
+  assert.deepEqual(routed.map((entry) => entry.id), ['deploy-checklist', 'release-runbook']);
+});
+
+test('vector sidecar skips cleanly when sqlite-vec runtime is unavailable', async () => {
+  const { cwd } = await tempWorkspace('engram-vector-');
+  const entries = [
+    routingEntry('one', 'workspace', ['one'], 'One memory.'),
+    routingEntry('two', 'workspace', ['two'], 'Two memory.')
+  ];
+  const config = { ...defaultConfig(), vector: { ...defaultConfig().vector, auto_threshold: 2 } };
+  const status = await ensureVectorIndex(cwd, 'workspace', entries, config, { force: true });
+  assert.equal(status.action, 'skipped');
+  assert.match(status.reason ?? '', /sqlite-vec runtime unavailable|below threshold/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
 test('markdown-them bridge converts document results through common exports', async () => {
   assert.equal(isConvertibleDocument('docs/handbook.docx'), true);
   assert.equal(isConvertibleDocument('docs/notes.md'), false);
@@ -373,3 +402,18 @@ test('temporary workspace cleanup works for later CLI tests', async () => {
   await rm(cwd, { recursive: true, force: true });
   assert.ok(cwd.includes('engram-core-'));
 });
+
+function routingEntry(id, scope, tags, summary) {
+  return {
+    id,
+    type: 'knowledge',
+    scope,
+    tags,
+    summary,
+    file: `knowledge/${id}.md`,
+    author: 'test',
+    confidence: 'high',
+    ignored: false,
+    updated: '2026-06-05'
+  };
+}

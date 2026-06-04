@@ -1,0 +1,8 @@
+[
+  {
+    "query": "refresh auth tokens",
+    "expect": [
+      "knowledge/auth-tokens-refresh-before-expiry.md"
+    ]
+  }
+]

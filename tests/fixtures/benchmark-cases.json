@@ -1,0 +1,26 @@
+{
+  "cases": [
+    {
+      "query": "refresh auth tokens",
+      "expect": "knowledge\\auth-tokens-refresh-before-expiry.md"
+    },
+    {
+      "query": "middleware session validation",
+      "expect": [
+        "session-middleware-validates-auth-tokens"
+      ]
+    },
+    {
+      "query": "auth middleware tokens",
+      "expect": [
+        "workspace:knowledge/session-middleware-validates-auth-tokens.md"
+      ]
+    },
+    {
+      "query": "billing invoice export",
+      "expect": [
+        "knowledge/billing-invoice-export.md"
+      ]
+    }
+  ]
+}

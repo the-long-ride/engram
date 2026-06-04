@@ -39,7 +39,8 @@ export function renderSkillsetFile(target: SkillsetTarget, file: string): string
   if (target === 'opencode' && file === 'opencode.json') return opencodeConfig();
   if (target === 'slash' && file.endsWith('.toml')) return geminiSlashCommand();
   if (target === 'slash') return slashMarkdown(file.endsWith('SKILL.md') ? 'Engram Slash Skill' : 'Engram Slash Command', file.endsWith('SKILL.md'));
-  if (target === 'antigravity-cli') return antigravitySkill();
+  if ((target === 'agent-skill' || target === 'antigravity') && file.endsWith('SKILL.md')) return agentSkillFile();
+  if (target === 'antigravity' && file.endsWith('.antigravityrules')) return antigravityRules();
   return skillsetMarkdown('Engram Agent Skillset');
 }
 
@@ -62,9 +63,9 @@ function compactSkillInstructions(): string {
 - Keep token usage low: route-load narrow context, use \`--all\` only when broad context is explicitly requested, and prefer short summaries over pasted memory.
 - Speak only for confirmation, file-changing actions, command failures, and final result.
 - Preferred replies: \`Loaded: N memories.\`, \`Need confirm: <action>.\`, \`Ran: <command>. Result: <short result>.\`, \`Saved: <file>.\`, \`No write.\`
-- Read commands (\`load/search/graph/benchmark/verify/repair/health/stats/audit/entry\`): one-line summary. Use \`--all\` only when broad context is requested; use \`load --dry-run\` to preview routed files without printing memory contents.
+- Read commands (\`load/search/graph/benchmark/verify/repair/health/stats/audit/entry\`): one-line summary. Use \`--all\` only when broad context is requested; use \`load --dry-run\` to preview routed files and narrowing tags without printing memory contents.
 - Write/change commands (\`save/save-session/observe --propose/take-control/import/archive/resolve-conflicts/install-hooks/install-skillset/upgrade/sync/init --submodule|--global-remote\`): state the change first, then show Engram result.
-- Save flow: use \`engram save <rule|skill|workflow|knowledge> "<text>"\`. No text means brainstorm one concise candidate. Long session or AI chat context means \`engram save-session\` or \`engram ss\` with LLM-defined \`TYPE: ... | TEXT: ...\` lines.
+- Save flow: use \`engram save <rule|skill|workflow|knowledge> "<text>"\`. No text means brainstorm one concise candidate. Long session or AI chat context means \`engram save-session\` or \`engram ss\` with LLM-defined \`TYPE: ... | TEXT: ...\` lines. If the human passes \`--query-level <n>\`, or says a natural count such as \`ss -a last 50 sessions\`, include up to n recent accessible human-agent chat sessions; never invent unavailable history. Natural \`ss -a last 50 sessions\` means \`save-session --query-level 50 --accept-all\`.
 - Session end: if durable rules, knowledge, or workflows emerged, propose \`engram save\` or \`engram save-session\` instead of relying on private chat memory.
 - For raw notes, use \`engram observe\` to create sanitized inbox files; only \`observe --propose\` or \`save-session --file\` can convert them into approved memory.
 - Use \`engram graph\` or \`engram quality-check\` to detect contradiction candidates; use \`engram repair\` to find invalid memory files; use \`engram archive --reason <why> <id|file>\` to remove wrong memory from active routing after approval.
@@ -84,7 +85,7 @@ function slashMarkdown(title: string, skill = false): string {
   return agentSkill(title, 'engram', SLASH_DESCRIPTION);
 }
 
-function antigravitySkill(): string {
+function agentSkillFile(): string {
   return agentSkill(
     'Engram Memory Management Skill',
     'engram',
@@ -95,6 +96,10 @@ function antigravitySkill(): string {
 
 ${compactSkillInstructions()}`
   );
+}
+
+function antigravityRules(): string {
+  return skillsetMarkdown('Engram Antigravity Rules');
 }
 
 function agentSkill(title: string, name: string, description: string, body = slashBody(title)): string {
@@ -123,12 +128,12 @@ function slashInstructions(): string {
 - Prefer MCP for \`load\`, \`search\`, \`verify\`, \`status\`, \`save\`, and \`engram_save_session\` proposals when available.
 - Otherwise run \`engram <args>\` from the workspace root. Fallback: \`npx -y --package @the-long-ride/engram engram <args>\`.
 - Keep replies compact: confirmation needed, command failed, files changed, final result.
-- Normalize natural wording before running commands: \`take control\` means \`take-control\`, and \`accept all\` means \`--accept-all\`.
-- If the request is \`/engram save-session\` or \`/engram ss\` without a file or inline candidates, use the LLM to define concise candidates from the current AI agent chat/session, then pass \`TYPE: ... | TEXT: ...\` lines to Engram. Without \`--accept-all\`, show Engram's normal approval result; with human-requested \`--accept-all\`, pass the generated candidates to the CLI so Engram saves without another A/B/C prompt.
+- Normalize natural wording before running commands: \`take control\` means \`take-control\`, \`accept all\` means \`--accept-all\`, and save-session counts such as \`last 50 sessions\` mean \`--query-level 50\`.
+- If the request is \`/engram save-session\` or \`/engram ss\` without a file or inline candidates, use the LLM to define concise candidates from the current AI agent chat/session; when \`--query-level <n>\` or natural count wording is present, include up to n recent accessible human-agent chat sessions and do not invent unavailable history. Then pass \`TYPE: ... | TEXT: ...\` lines to Engram. Without \`--accept-all\`, show Engram's normal approval result; with human-requested \`--accept-all\`, pass the generated candidates to the CLI so Engram saves without another A/B/C prompt.
 - If the request is \`/engram take-control\`, run \`engram take-control\` with any provided \`--plan\`, \`--file\`, \`--dir\`, \`--include\`, \`--exclude\`, \`--max-sources\`, \`--max-chars\`, \`--all\`, or \`--accept-all\` options. For \`--plan\`, report the source plan only. Otherwise read the source pack and return concise \`TYPE: ... | TEXT: ...\` candidates when prompted. If the human included \`--accept-all\`, keep the source pack token-light, generate only the best concise candidates, pass them to the CLI, and do not paste sources or reasoning into chat. Document files are converted through optional \`@the-long-ride/markdown-them\` when available.
 - If the request is \`/engram observe\`, save the sanitized inbox note first; use \`--propose\` only when the human wants Engram to mine it through save-session.
 - If the request is \`/engram graph\` or \`/engram quality-check\`, report contradiction candidates compactly. Archive wrong memory only with \`/engram archive --reason <why> <id|file>\` and normal approval.
-- If the request is \`/engram ss -a\`, treat it as \`/engram save-session --accept-all\`; \`-a\` is the human's explicit accept-all approval for this shortcut.
+- If the request is \`/engram ss -a\`, treat it as \`/engram save-session --accept-all\`; if it includes a count such as \`/engram ss -a last 50 sessions\`, treat it as \`/engram save-session --query-level 50 --accept-all\`. \`-a\` is the human's explicit accept-all approval for this shortcut.
 - If the request is \`/engram save-session --accept-all\`, treat the flag as explicit approval: generate concise \`TYPE: ... | TEXT: ...\` candidates when needed, pass them to the CLI with \`--accept-all\`, and report saved files.
 - Never add \`--accept-all\` yourself. Otherwise never bypass Engram's approval gate. For writes, remotes, conflicts, hooks, import, sync, or adapter install, state the change first and show the short result.
 
@@ -150,7 +155,7 @@ description = "${SLASH_DESCRIPTION}"
 prompt = """
 Handle this as an Engram workspace memory request:
 /engram {{args}}
-Prefer MCP for load/search/verify/status/save and engram_save_session proposals. Normalize "take control" to "take-control" and "accept all" to "--accept-all". If args start with "save-session" or "ss" and no file or inline candidates are provided, use the LLM to define concise candidates from the current AI agent chat/session and pass TYPE/TEXT lines to Engram; with human-requested --accept-all, pass them to the CLI so Engram saves without another A/B/C prompt. If args start with "observe", save the sanitized inbox note first and use --propose only when requested. If args start with "graph" or "quality-check", report contradiction candidates compactly. If args start with "repair", report invalid memory files compactly. Archive wrong memory only with "archive --reason <why> <id|file>" and approval. If args start with "take-control", run engram <normalized args>; for --plan, report the plan only; otherwise read the source pack and provide concise TYPE/TEXT candidates when prompted. When take-control args contain "--accept-all", keep the source pack token-light, generate only the best concise candidates, pass them to the CLI, and do not paste sources or reasoning into chat. Document files use optional @the-long-ride/markdown-them when available. If args are "ss -a", treat them as "save-session --accept-all". Otherwise run: engram <normalized args>
+Prefer MCP for load/search/verify/status/save and engram_save_session proposals. Normalize "take control" to "take-control", "accept all" to "--accept-all", and save-session counts like "last 50 sessions" to "--query-level 50". If args start with "save-session" or "ss" and no file or inline candidates are provided, use the LLM to define concise candidates from the current AI agent chat/session; when "--query-level <n>" or natural count wording is present, include up to n recent accessible human-agent chat sessions and do not invent unavailable history. Pass TYPE/TEXT lines to Engram; with human-requested --accept-all, pass them to the CLI so Engram saves without another A/B/C prompt. If args start with "observe", save the sanitized inbox note first and use --propose only when requested. If args start with "graph" or "quality-check", report contradiction candidates compactly. If args start with "repair", report invalid memory files compactly. Archive wrong memory only with "archive --reason <why> <id|file>" and approval. If args start with "take-control", run engram <normalized args>; for --plan, report the plan only; otherwise read the source pack and provide concise TYPE/TEXT candidates when prompted. When take-control args contain "--accept-all", keep the source pack token-light, generate only the best concise candidates, pass them to the CLI, and do not paste sources or reasoning into chat. Document files use optional @the-long-ride/markdown-them when available. If args are "ss -a", treat them as "save-session --accept-all"; if args are "ss -a last 50 sessions", treat them as "save-session --query-level 50 --accept-all". Otherwise run: engram <normalized args>
 Fallback: npx -y --package @the-long-ride/engram engram {{args}}
 Keep replies compact. Never add --accept-all unless the human included it. Never bypass approval except explicit save-session/take-control --accept-all. State file-changing commands first, then show short result.
 """

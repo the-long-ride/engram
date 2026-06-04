@@ -9,7 +9,7 @@ import { globalSkillsetMarkdown, isGenerated, renderSkillsetFile } from './skill
 
 export type SkillsetTarget =
   | 'agents-md' | 'copilot' | 'claude' | 'cursor' | 'gemini'
-  | 'cline' | 'windsurf' | 'antigravity-cli' | 'opencode' | 'mcp' | 'slash';
+  | 'cline' | 'windsurf' | 'agent-skill' | 'antigravity' | 'opencode' | 'mcp' | 'slash';
 export type InstallAction = 'written' | 'updated' | 'skipped' | 'planned';
 export type InstallResult = { target: string; file: string; action: InstallAction; mode?: GlobalInstallMode; reason?: string; hash?: string };
 export type GlobalInstallMode = 'block' | 'file';
@@ -30,10 +30,14 @@ type GlobalSkillsetRegistry = {
 
 const GLOBAL_BEGIN = '<!-- BEGIN ENGRAM GLOBAL SKILLSET -->';
 const GLOBAL_END = '<!-- END ENGRAM GLOBAL SKILLSET -->';
+const hiddenTargets = new Set<SkillsetTarget>(['agent-skill']);
 const aliases: Record<string, SkillsetTarget[]> = {
-  antigravity: ['antigravity-cli'],
-  codex: ['agents-md', 'antigravity-cli'],
+  'antigravity-cli': ['antigravity'],
+  codex: ['agents-md', 'agent-skill'],
   'open-code': ['opencode']
+};
+const aliasLabels: Record<string, string> = {
+  'antigravity-cli': 'antigravity'
 };
 
 const targets: Record<SkillsetTarget, string[]> = {
@@ -44,7 +48,13 @@ const targets: Record<SkillsetTarget, string[]> = {
   gemini: ['GEMINI.md'],
   cline: ['.clinerules'],
   windsurf: ['.windsurfrules'],
-  'antigravity-cli': ['.agents/skills/engram/SKILL.md'],
+  'agent-skill': ['.agents/skills/engram/SKILL.md'],
+  antigravity: [
+    '.antigravity/skills/engram/SKILL.md',
+    '.antigravity-cli/skills/engram/SKILL.md',
+    '.antigravity-ide/skills/engram/SKILL.md',
+    '.antigravityrules'
+  ],
   opencode: ['opencode.json', '.opencode/engram.md'],
   mcp: ['.mcp.json'],
   slash: ['.claude/commands/engram.md', '.claude/skills/engram/SKILL.md', '.cursor/commands/engram.md', '.gemini/commands/engram.toml']
@@ -52,7 +62,7 @@ const targets: Record<SkillsetTarget, string[]> = {
 
 /** Return supported skillset adapter names. */
 export function skillsetTargets(): SkillsetTarget[] {
-  return Object.keys(targets) as SkillsetTarget[];
+  return (Object.keys(targets) as SkillsetTarget[]).filter((target) => !hiddenTargets.has(target));
 }
 
 /** Install one or all agent adapter files into a workspace. */
@@ -123,7 +133,8 @@ export async function refreshGlobalSkillsets(target = '', options: { force?: boo
 
 function resolveTargets(target: string): ResolvedTarget[] {
   const names = aliases[target] ?? [target as SkillsetTarget];
-  return names.map((name) => resolveTarget(name, target));
+  const label = aliasLabels[target] ?? target;
+  return names.map((name) => resolveTarget(name, label));
 }
 
 function resolveTarget(name: string, label: string): ResolvedTarget {
@@ -180,18 +191,24 @@ function globalFilesForTarget(target: ResolvedTarget, home: string): GlobalInsta
     case 'gemini':
       return [
         plan(path.join(home, '.gemini', 'GEMINI.md'), 'block'),
-        plan(path.join(home, '.gemini', 'skills', 'engram', 'SKILL.md'), 'file', 'antigravity-cli')
+        plan(path.join(home, '.gemini', 'skills', 'engram', 'SKILL.md'), 'file', 'agent-skill')
       ];
     case 'cline':
       return [plan(path.join(home, 'Documents', 'Cline', 'Rules', 'engram.md'), 'file')];
     case 'windsurf':
       return [skip('Windsurf user-level global rules are managed by app settings; only enterprise system paths are stable')];
-    case 'antigravity-cli':
+    case 'agent-skill':
       return [plan(path.join(home, '.agents', 'skills', 'engram', 'SKILL.md'), 'file')];
+    case 'antigravity':
+      return [
+        plan(path.join(home, '.antigravity', 'skills', 'engram', 'SKILL.md'), 'file'),
+        plan(path.join(home, '.antigravity-cli', 'skills', 'engram', 'SKILL.md'), 'file'),
+        plan(path.join(home, '.antigravity-ide', 'skills', 'engram', 'SKILL.md'), 'file')
+      ];
     case 'opencode':
       return [
         plan(path.join(configHome, 'opencode', 'AGENTS.md'), 'block', 'agents-md'),
-        plan(path.join(configHome, 'opencode', 'skills', 'engram', 'SKILL.md'), 'file', 'antigravity-cli')
+        plan(path.join(configHome, 'opencode', 'skills', 'engram', 'SKILL.md'), 'file', 'agent-skill')
       ];
     case 'mcp':
       return [skip('MCP is configured per agent host, not as one global Engram rule file')];
@@ -218,7 +235,7 @@ function globalAgentConfigHome(home: string): string {
 
 function renderGlobalInstallContent(plan: GlobalInstallPlan): string {
   if (plan.name === 'slash' || plan.renderTarget === 'slash') return renderSkillsetFile('slash', plan.file);
-  if (plan.file.endsWith('SKILL.md')) return renderSkillsetFile(plan.renderTarget ?? 'antigravity-cli', plan.file);
+  if (plan.file.endsWith('SKILL.md')) return renderSkillsetFile(plan.renderTarget ?? 'agent-skill', plan.file);
   return globalSkillsetMarkdown();
 }
 

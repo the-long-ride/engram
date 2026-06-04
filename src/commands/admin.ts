@@ -111,7 +111,24 @@ async function gitHookDir(cwd: string): Promise<string> {
 
 /** Install agent-host instruction files for Engram skillset integration. */
 export async function cmdInstallSkillset(args: string[], flags: Record<string, any> = {}): Promise<string> {
-  if (args[0] === 'list') return skillsetTargets().join('\n');
+  if (args[0] === 'list') {
+    const isTTY = process.stdout.isTTY;
+    const cyan = (text: string) => isTTY ? `\x1b[1;36m${text}\x1b[0m` : text;
+    const yellow = (text: string) => isTTY ? `\x1b[1;33m${text}\x1b[0m` : text;
+    const gray = (text: string) => isTTY ? `\x1b[90m${text}\x1b[0m` : text;
+
+    const listLines = skillsetTargets().map((target) => {
+      const padded = target.padEnd(16);
+      if (target === 'slash') {
+        return `  ${cyan('•')} ${yellow(padded)} ${gray('# Installs IDE/chat slash commands (/engram) for manual requests')}`;
+      }
+      return `  ${cyan('•')} ${yellow(padded)}`;
+    });
+    return [
+      'Currently, engram do support these agents and also mcp:',
+      ...listLines
+    ].join('\n');
+  }
   const target = args[0] ?? 'all';
   const global = flags.global === true;
   const results = global

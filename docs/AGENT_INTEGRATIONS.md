@@ -84,9 +84,11 @@ accepted as a compatibility alias for `antigravity`.
    or `engram init --global-only --global-path <path>` for a global memory folder
    without local workspace installation.
    Use `engram update-global-folder <new-path>` or `engram ugf <new-path>` when
-   the human only wants to update the configured global path. Add
-   `--move-from-path <old-path>` when they also want Engram to move the whole
-   old global root into the new location.
+   the human only wants to update the configured global path. Chat-style forms
+   such as `engram set global memory path to <new-path>` and
+   `engram move global folder from <old-path> to <new-path>` normalize to the
+   same command. Add `--move-from-path <old-path>` when they also want Engram to
+   move the whole old global root into the new location.
 
    If the human wants `.agents/.engram` tracked as a separate repository, ask whether to
    create a local submodule. When they approve, run:

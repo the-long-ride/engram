@@ -238,7 +238,7 @@ Tune how strictly rules are formatted when loaded by your AI assistant:
 
 ### Other Next Commands
 - **Check active settings & active paths:** `engram entry` (Agent: `/engram entry`)
-- **Update or move global memory folder:** `engram update-global-folder <new-path> [--move-from-path <old-path>]` / `engram ugf <new-path>` (Agent: `/engram update-global-folder <new-path>`)
+- **Update or move global memory folder:** `engram update-global-folder <new-path> [--move-from-path <old-path>]` / `engram ugf <new-path>` (Agent: `/engram set global memory path to <new-path>`)
 - **Sync local & global changes:** `engram sync` (Agent: `/engram sync`)
 - **Run checkup & clean broken links:** `engram verify` / `engram repair` (Agent: `/engram verify` / `/engram repair`)
 - **Advisory contradiction scan:** `engram quality-check` (Agent: `/engram quality-check`)
@@ -258,7 +258,7 @@ Tune how strictly rules are formatted when loaded by your AI assistant:
 | **Mine and Auto-Approve Recent Sessions** | `engram save-session --query-level 50 --accept-all` | `/engram ss -a last 50 sessions` |
 | **Import Existing Files / Docs** | `engram take-control --all` | `/engram take-control --all` |
 | **Check Config / Paths** | `engram entry` | `/engram entry` |
-| **Update Global Folder** | `engram update-global-folder <new-path>` / `engram ugf <new-path>` | `/engram update-global-folder <new-path>` |
+| **Update Global Folder** | `engram update-global-folder <new-path>` / `engram ugf <new-path>` | `/engram set global memory path to <new-path>` |
 | **Verify Memory Integrity** | `engram verify` | `/engram verify` |
 | **Set Active Roles** | `engram set-role <roles>` | `/engram set-role <roles>` |
 | **Set Rule Variant** | `engram set-rule-variant <variant>` | `/engram set-rule-variant <variant>` |

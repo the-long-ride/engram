@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.0.3
+
+- Added `engram update-global-folder` / `engram ugf` to retarget the configured
+  global memory folder and optionally move an old root safely.
+- Added natural phrase parsing for chat-style global memory path updates, such
+  as `engram set global memory path to <path>` and
+  `engram move global folder from <old> to <new>`.
+- Updated README, agent integration docs, and skillset contract entries for
+  global folder setup, aliases, and natural phrase usage.
+
 ## 1.0.1
 
 - Added optional sqlite-vec routing sidecars for large workspace and global

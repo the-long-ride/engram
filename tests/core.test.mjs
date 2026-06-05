@@ -236,6 +236,7 @@ test('command registry has topic help and stable aliases', () => {
   assert.equal(commandAliases().td, undefined);
   assert.equal(commandAliases().uh, undefined);
   assert.equal(commandAliases().tc, 'take-control');
+  assert.equal(commandAliases().ugf, 'update-global-folder');
   assert.equal(commandAliases()['-v'], '--version');
 });
 
@@ -374,6 +375,13 @@ test('argument parser preserves positional text after known boolean flags', () =
   const upgrade = parseArgs(['upgrade', '--plan', '--target', 'codex']);
   assert.equal(upgrade.flags.plan, true);
   assert.equal(upgrade.flags.target, 'codex');
+  const updateGlobal = parseArgs(['update-global-folder', 'C:\\new-global', '--move-from-path', 'C:\\old-global']);
+  assert.equal(updateGlobal.command, 'update-global-folder');
+  assert.deepEqual(updateGlobal.rest, ['C:\\new-global']);
+  assert.equal(updateGlobal.flags['move-from-path'], 'C:\\old-global');
+  const updateGlobalAlias = parseArgs(['ugf', 'C:\\new-global']);
+  assert.equal(commandAliases()[updateGlobalAlias.command], 'update-global-folder');
+  assert.deepEqual(updateGlobalAlias.rest, ['C:\\new-global']);
   const takeControl = parseArgs(['take-control', '--plan', '--include', 'docs/**/*.txt', '--include', 'notes/*.txt']);
   assert.equal(takeControl.flags.plan, true);
   assert.deepEqual(takeControl.flags.include, ['docs/**/*.txt', 'notes/*.txt']);

@@ -29,6 +29,8 @@ test('init, help, save reject, save accept, load, verify, audit', async () => {
   assert.match((await runEngram(cwd, env, ['help', 'search'])).stdout, /--semantic/);
   assert.match((await runEngram(cwd, env, ['help', 'take-control'])).stdout, /workspace guidance/);
   assert.match((await runEngram(cwd, env, ['help', 'load'])).stdout, /--dry-run/);
+  assert.match((await runEngram(cwd, env, ['help', 'update-global-folder'])).stdout, /--move-from-path/);
+  assert.match((await runEngram(cwd, env, ['help', 'ugf'])).stdout, /whole old root/);
   assert.doesNotMatch((await runEngram(cwd, env, ['help'])).stdout, /update-help|team-dashboard|engram dry-run|engram propose/);
   assert.match((await runEngram(cwd, env, ['-h', 'roles'])).stdout, /role: \[\.\.\.\]/);
   assert.match((await runEngram(cwd, env, ['save-session', '-h'])).stdout, /one candidate per line/);
@@ -200,6 +202,9 @@ test('completion emits shell helper with command suggestions', async () => {
   assert.match(bash.stdout, /--file --scope --role --roles/);
   assert.match(bash.stdout, /--query-level/);
   assert.match(bash.stdout, /--all --dry-run/);
+  assert.match(bash.stdout, /update-global-folder/);
+  assert.match(bash.stdout, /\bugf\b/);
+  assert.match(bash.stdout, /--move-from-path/);
   assert.match(bash.stdout, /\bantigravity\b/);
   assert.doesNotMatch(bash.stdout, /antigravity-cli/);
   assert.doesNotMatch(bash.stdout, /dry-run\|dr|propose\|p|team-dashboard|update-help/);
@@ -212,6 +217,8 @@ test('completion emits shell helper with command suggestions', async () => {
   assert.doesNotMatch(zsh.stdout, /save-session\|ss\|autosave/);
   assert.match(zsh.stdout, /--file\[read session summary file\]/);
   assert.match(zsh.stdout, /--query-level\[recent chat sessions to mine\]/);
+  assert.match(zsh.stdout, /update-global-folder/);
+  assert.match(zsh.stdout, /update-global-folder\|ugf/);
   const powershell = await runEngram(cwd, env, ['completion', 'powershell']);
   assert.equal(powershell.code, 0, powershell.stderr);
   assert.match(powershell.stdout, /Register-ArgumentCompleter/);
@@ -222,6 +229,8 @@ test('completion emits shell helper with command suggestions', async () => {
   assert.match(powershell.stdout, /\$engramSaveSessionArgs/);
   assert.match(powershell.stdout, /'--query-level'/);
   assert.match(powershell.stdout, /\$engramUpgradeArgs/);
+  assert.match(powershell.stdout, /\$engramGlobalFolderArgs/);
+  assert.match(powershell.stdout, /'ugf'/);
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -748,6 +757,76 @@ test('init can persist a custom global memory path', async () => {
   assert.equal(config.global_path, globalPath);
   const entry = await runEngram(cwd, customEnv, ['entry']);
   assert.match(entry.stdout.replace(/\x1b\[[0-9;]*m/g, ''), new RegExp(`roots\\.global:\\s*${globalPath.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')}`));
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('update-global-folder can retarget config without moving memory', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  const customEnv = { ...env };
+  delete customEnv.ENGRAM_GLOBAL_DIR;
+  const oldGlobal = path.join(cwd, 'old-global');
+  const newGlobal = path.join(cwd, 'new-global');
+  assert.equal((await runEngram(cwd, customEnv, ['init', '--global-path', oldGlobal, '--no-skillset'])).code, 0);
+
+  const updated = await runEngram(cwd, customEnv, ['update-global-folder', newGlobal]);
+  assert.equal(updated.code, 0, updated.stderr);
+  assert.match(updated.stdout, /global path updated/);
+  assert.match(updated.stdout, /global memory not moved/);
+  const config = JSON.parse(await readFile(path.join(workspaceMemoryRoot(cwd), 'engram.config.json'), 'utf8'));
+  assert.equal(config.global_path, newGlobal);
+  await readFile(path.join(oldGlobal, 'engram.config.json'), 'utf8');
+  const newConfig = JSON.parse(await readFile(path.join(newGlobal, 'engram.config.json'), 'utf8'));
+  assert.equal(newConfig.global_path, newGlobal);
+  const entry = await runEngram(cwd, customEnv, ['entry']);
+  assert.match(entry.stdout.replace(/\x1b\[[0-9;]*m/g, ''), new RegExp(`roots\\.global:\\s*${newGlobal.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')}`));
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('update-global-folder moves an old global root into a renamed path', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  const customEnv = { ...env };
+  delete customEnv.ENGRAM_GLOBAL_DIR;
+  const oldGlobal = path.join(cwd, 'old-global');
+  const newGlobal = path.join(cwd, 'renamed-global');
+  assert.equal((await runEngram(cwd, customEnv, ['init', '--global-path', oldGlobal, '--no-skillset'])).code, 0);
+  const saved = await runEngram(cwd, customEnv, ['save', 'knowledge', '--scope', 'global', 'Moved global memory survives'], 'A\n');
+  assert.equal(saved.code, 0, saved.stderr);
+  await writeFile(path.join(oldGlobal, 'custom-notes.txt'), 'custom root file\n');
+
+  const moved = await runEngram(cwd, customEnv, ['ugf', newGlobal, '--move-from-path', oldGlobal]);
+  assert.equal(moved.code, 0, moved.stderr);
+  assert.match(moved.stdout, /global memory moved/);
+  await assert.rejects(readdir(oldGlobal));
+  assert.match(await readFile(path.join(newGlobal, 'knowledge', 'moved-global-memory-survives.md'), 'utf8'), /Moved global memory survives/);
+  assert.equal(await readFile(path.join(newGlobal, 'custom-notes.txt'), 'utf8'), 'custom root file\n');
+  assert.equal(spawnSync('git', ['-C', newGlobal, 'rev-parse', '--is-inside-work-tree'], { encoding: 'utf8' }).stdout.trim(), 'true');
+  const loaded = await runEngram(cwd, customEnv, ['load', 'global memory survives']);
+  assert.equal(loaded.code, 0, loaded.stderr);
+  assert.match(loaded.stdout, /global: 1/);
+  assert.match((await runEngram(cwd, customEnv, ['verify', 'global'])).stdout, /OK global:knowledge\/moved-global-memory-survives\.md/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('update-global-folder refuses to move into a destination with memory files', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  const customEnv = { ...env };
+  delete customEnv.ENGRAM_GLOBAL_DIR;
+  const oldGlobal = path.join(cwd, 'old-global');
+  const newGlobal = path.join(cwd, 'existing-global');
+  assert.equal((await runEngram(cwd, customEnv, ['init', '--global-path', oldGlobal, '--no-skillset'])).code, 0);
+  await mkdir(path.join(newGlobal, 'knowledge'), { recursive: true });
+  await writeFile(path.join(newGlobal, 'knowledge', 'existing.md'), 'keep this\n');
+
+  const moved = await runEngram(cwd, customEnv, ['update-global-folder', newGlobal, '--move-from-path', oldGlobal]);
+  assert.equal(moved.code, 1);
+  assert.match(moved.stderr, /already contains memory or user files/);
+  await readFile(path.join(oldGlobal, 'engram.config.json'), 'utf8');
+  assert.equal(await readFile(path.join(newGlobal, 'knowledge', 'existing.md'), 'utf8'), 'keep this\n');
+  const fileTarget = path.join(cwd, 'global-file');
+  await writeFile(fileTarget, 'not a directory\n');
+  const fileMove = await runEngram(cwd, customEnv, ['update-global-folder', fileTarget, '--move-from-path', oldGlobal]);
+  assert.equal(fileMove.code, 1);
+  assert.match(fileMove.stderr, /not a directory/);
   await rm(cwd, { recursive: true, force: true });
 });
 

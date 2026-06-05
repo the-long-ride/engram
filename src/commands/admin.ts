@@ -2,8 +2,9 @@
 import { execFile } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { textArg } from '../cli/args.js';
 import { getContext } from '../core/memory/context.js';
-import { initWorkspace } from '../core/memory/storage.js';
+import { initWorkspace, updateGlobalFolder } from '../core/memory/storage.js';
 import { loadConfig, scopeRootsForConfig, workspaceRoot, writeConfig } from '../core/runtime/config.js';
 import { HELP_FILE, VERSION } from '../core/runtime/constants.js';
 import { isIgnored } from '../core/safety/ignore.js';
@@ -62,6 +63,15 @@ export async function cmdSetRuleVariant(args: string[]): Promise<string> {
   }
   await writeConfig(process.cwd(), ctx.config);
   return ruleVariantStatus(ctx.config.rule_variants);
+}
+
+/** Update the configured global memory folder, optionally moving the old root. */
+export async function cmdUpdateGlobalFolder(args: string[], flags: Record<string, any> = {}): Promise<string> {
+  const target = textArg(args);
+  if (!target) throw new Error('update-global-folder requires <new-path>');
+  if (flags['move-from-path'] === true) throw new Error('update-global-folder --move-from-path requires a path');
+  const moveFromPath = typeof flags['move-from-path'] === 'string' ? flags['move-from-path'] : undefined;
+  return (await updateGlobalFolder(process.cwd(), target, { moveFromPath })).join('\n');
 }
 
 /** Resolve or preview workspace memory merge conflicts. */

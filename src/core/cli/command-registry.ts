@@ -10,6 +10,7 @@ export const HELP_DATA: HelpSection[] = [
       { command: 'engram init [--force] [--global-only] [--no-skillset] [--skillset target] [--submodule] [--submodule-remote <git-url>] [--no-global] [--global-path path] [--global-remote <git-url>] [--global-branch main]', alias: 'i', purpose: 'Initialize or reconcile memory and install compact agent skillset instructions by default' },
       { command: 'engram help [topic]', alias: 'h', purpose: 'Show this help menu or specific topic details & example use-cases' },
       { command: 'engram entry', alias: 'e', purpose: 'Show runtime configurations and global Git repository status' },
+      { command: 'engram update-global-folder <new-path> [--move-from-path path]', alias: 'ugf', purpose: 'Update the configured global memory folder and optionally move an old global root' },
       { command: 'engram completion [bash|zsh|powershell]', alias: 'c', purpose: 'Generate shell completion support for Tab suggestions' },
       { command: 'engram upgrade [--plan] [--latest] [--self] [--memory-only|--global-skillsets-only] [--target agent]', alias: 'up', purpose: 'Recommend package update and refresh generated help, global memory, and registered global agent skillsets' }
     ]

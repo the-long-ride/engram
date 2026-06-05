@@ -30,6 +30,7 @@ test('init, help, save reject, save accept, load, verify, audit', async () => {
   assert.match((await runEngram(cwd, env, ['help', 'take-control'])).stdout, /workspace guidance/);
   assert.match((await runEngram(cwd, env, ['help', 'load'])).stdout, /--dry-run/);
   assert.match((await runEngram(cwd, env, ['help', 'update-global-folder'])).stdout, /--move-from-path/);
+  assert.match((await runEngram(cwd, env, ['help', 'update-global-folder'])).stdout, /set global memory path/);
   assert.match((await runEngram(cwd, env, ['help', 'ugf'])).stdout, /whole old root/);
   assert.doesNotMatch((await runEngram(cwd, env, ['help'])).stdout, /update-help|team-dashboard|engram dry-run|engram propose/);
   assert.match((await runEngram(cwd, env, ['-h', 'roles'])).stdout, /role: \[\.\.\.\]/);
@@ -768,7 +769,7 @@ test('update-global-folder can retarget config without moving memory', async () 
   const newGlobal = path.join(cwd, 'new-global');
   assert.equal((await runEngram(cwd, customEnv, ['init', '--global-path', oldGlobal, '--no-skillset'])).code, 0);
 
-  const updated = await runEngram(cwd, customEnv, ['update-global-folder', newGlobal]);
+  const updated = await runEngram(cwd, customEnv, ['set', 'global', 'memory', 'path', 'to', newGlobal]);
   assert.equal(updated.code, 0, updated.stderr);
   assert.match(updated.stdout, /global path updated/);
   assert.match(updated.stdout, /global memory not moved/);
@@ -793,7 +794,7 @@ test('update-global-folder moves an old global root into a renamed path', async 
   assert.equal(saved.code, 0, saved.stderr);
   await writeFile(path.join(oldGlobal, 'custom-notes.txt'), 'custom root file\n');
 
-  const moved = await runEngram(cwd, customEnv, ['ugf', newGlobal, '--move-from-path', oldGlobal]);
+  const moved = await runEngram(cwd, customEnv, ['move', 'global', 'folder', 'from', oldGlobal, 'to', newGlobal]);
   assert.equal(moved.code, 0, moved.stderr);
   assert.match(moved.stdout, /global memory moved/);
   await assert.rejects(readdir(oldGlobal));

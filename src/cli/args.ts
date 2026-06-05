@@ -14,6 +14,9 @@ const acceptAllCommands = new Set([...saveSessionCommands, ...takeControlCommand
 const repeatableFlags = new Set(['dir', 'exclude', 'file', 'include']);
 const recentSessionWords = new Set(['session', 'sessions', 'chat', 'chats', 'conversation', 'conversations']);
 const recentSessionPrefixes = new Set(['last', 'latest', 'past', 'previous', 'recent']);
+const globalFolderVerbs = new Set(['change', 'move', 'rename', 'set', 'update']);
+const globalFolderNouns = new Set(['dir', 'directory', 'folder', 'path', 'root']);
+const globalFolderFillers = new Set(['engram', 'my', 'the']);
 
 /** Parse argv into command, positional args, and --flags. */
 export function parseArgs(argv: string[]): ParsedArgs {
@@ -64,10 +67,60 @@ function setFlag(flags: Record<string, FlagValue>, name: string, value: string):
 }
 
 function normalizeNaturalArgs(argv: string[]): string[] {
-  const commandArgs = argv[0]?.toLowerCase() === 'take' && argv[1]?.toLowerCase() === 'control'
-    ? ['take-control', ...argv.slice(2)]
-    : argv;
+  const globalFolderArgs = normalizeNaturalGlobalFolder(argv);
+  const commandArgs = globalFolderArgs[0]?.toLowerCase() === 'take' && globalFolderArgs[1]?.toLowerCase() === 'control'
+    ? ['take-control', ...globalFolderArgs.slice(2)]
+    : globalFolderArgs;
   return normalizeSaveSessionQueryLevel(normalizeAcceptAll(commandArgs));
+}
+
+function normalizeNaturalGlobalFolder(argv: string[]): string[] {
+  const [verb = '', ...rawTokens] = argv;
+  if (!globalFolderVerbs.has(verb.toLowerCase())) return argv;
+  const tokens = dropGlobalFolderFillers(rawTokens);
+  const nounEnd = globalFolderNounEnd(tokens);
+  if (nounEnd < 0) return argv;
+  const rest = tokens.slice(nounEnd);
+  const move = normalizeNaturalGlobalFolderMove(rest);
+  if (move) return move;
+  const target = trimPathWords(dropWords(rest, ['to', 'as', 'at']));
+  return target ? ['update-global-folder', target] : argv;
+}
+
+function normalizeNaturalGlobalFolderMove(tokens: string[]): string[] | undefined {
+  const fromIndex = tokens.findIndex((token) => token.toLowerCase() === 'from');
+  if (fromIndex < 0) return undefined;
+  const toIndex = tokens.findIndex((token, index) => index > fromIndex && token.toLowerCase() === 'to');
+  if (toIndex <= fromIndex + 1 || toIndex >= tokens.length - 1) return undefined;
+  const source = trimPathWords(tokens.slice(fromIndex + 1, toIndex));
+  const target = trimPathWords(tokens.slice(toIndex + 1));
+  return source && target ? ['update-global-folder', target, '--move-from-path', source] : undefined;
+}
+
+function globalFolderNounEnd(tokens: string[]): number {
+  if (tokens[0]?.toLowerCase() !== 'global') return -1;
+  let index = 1;
+  if (['engram', 'memory'].includes(tokens[index]?.toLowerCase())) index += 1;
+  const firstNoun = index;
+  while (globalFolderNouns.has(tokens[index]?.toLowerCase())) index += 1;
+  return index > firstNoun ? index : -1;
+}
+
+function dropGlobalFolderFillers(tokens: string[]): string[] {
+  let index = 0;
+  while (globalFolderFillers.has(tokens[index]?.toLowerCase())) index += 1;
+  return tokens.slice(index);
+}
+
+function dropWords(tokens: string[], words: string[]): string[] {
+  const lower = new Set(words);
+  let index = 0;
+  while (lower.has(tokens[index]?.toLowerCase())) index += 1;
+  return tokens.slice(index);
+}
+
+function trimPathWords(tokens: string[]): string {
+  return tokens.join(' ').trim();
 }
 
 function normalizeAcceptAll(argv: string[]): string[] {

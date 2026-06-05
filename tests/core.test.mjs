@@ -382,6 +382,16 @@ test('argument parser preserves positional text after known boolean flags', () =
   const updateGlobalAlias = parseArgs(['ugf', 'C:\\new-global']);
   assert.equal(commandAliases()[updateGlobalAlias.command], 'update-global-folder');
   assert.deepEqual(updateGlobalAlias.rest, ['C:\\new-global']);
+  const naturalUpdateGlobal = parseArgs(['set', 'global', 'memory', 'path', 'to', 'C:\\new-global']);
+  assert.equal(naturalUpdateGlobal.command, 'update-global-folder');
+  assert.deepEqual(naturalUpdateGlobal.rest, ['C:\\new-global']);
+  const naturalMoveGlobal = parseArgs(['move', 'global', 'folder', 'from', 'C:\\old global', 'to', 'C:\\new global']);
+  assert.equal(naturalMoveGlobal.command, 'update-global-folder');
+  assert.deepEqual(naturalMoveGlobal.rest, ['C:\\new global']);
+  assert.equal(naturalMoveGlobal.flags['move-from-path'], 'C:\\old global');
+  const naturalChangeGlobal = parseArgs(['change', 'my', 'global', 'root', 'to', 'F:\\engram-global']);
+  assert.equal(naturalChangeGlobal.command, 'update-global-folder');
+  assert.deepEqual(naturalChangeGlobal.rest, ['F:\\engram-global']);
   const takeControl = parseArgs(['take-control', '--plan', '--include', 'docs/**/*.txt', '--include', 'notes/*.txt']);
   assert.equal(takeControl.flags.plan, true);
   assert.deepEqual(takeControl.flags.include, ['docs/**/*.txt', 'notes/*.txt']);

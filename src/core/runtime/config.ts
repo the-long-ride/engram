@@ -27,7 +27,7 @@ export function defaultConfig(): EngramConfig {
     version: VERSION,
     enabled: true,
     global_path: '',
-    scope: 'workspace',
+    scope: 'both',
     update: 'auto',
     read: 'auto',
     ignore: {
@@ -120,6 +120,18 @@ export function writeScopes(scope: EngramConfig['scope'], config?: EngramConfig)
   const scopes: Scope[] = scope === 'both' ? ['workspace', 'global'] : [scope];
   if (!config || resolveGlobalRoot(config.global_path)) return scopes;
   return scopes.filter((current) => current !== 'global');
+}
+
+/** Return true when a value can be used as the default save target. */
+export function isSaveTarget(value: string): value is EngramConfig['scope'] {
+  return ['workspace', 'global', 'both'].includes(value);
+}
+
+/** Parse a user-provided save target with a command-specific label. */
+export function parseSaveTarget(value: unknown, label = 'save target'): EngramConfig['scope'] {
+  const target = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (isSaveTarget(target)) return target;
+  throw new Error(`${label} must be workspace, global, or both`);
 }
 
 /** Return the configured workspace memory root. */

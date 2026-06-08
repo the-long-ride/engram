@@ -3,9 +3,10 @@ import { createInterface } from 'node:readline';
 import { cmdLoad, cmdVerify } from '../commands/read.js';
 import { cmdHealth, cmdSearch } from '../commands/ops.js';
 import { getContext } from '../core/memory/context.js';
-import { planMemorySave, previewSavePlans, withGlobalSaveCopy } from '../core/memory/save-plan.js';
+import { planMemorySave, previewSavePlans } from '../core/memory/save-plan.js';
 import { resolveAuthor } from '../core/memory/storage.js';
 import { normalizeMemoryType, parseMemoryCandidate, parseMemoryCandidates } from '../core/memory/memory-candidate.js';
+import { parseSaveTarget, writeScopes } from '../core/runtime/config.js';
 import type { Scope } from '../core/runtime/types.js';
 
 /** Handle one MCP-like request object. */
@@ -31,16 +32,15 @@ async function saveProposal(args: any): Promise<string> {
   const text = String(args.text ?? '').trim();
   const requestedType = String(args.type ?? '').trim();
   const explicitType = normalizeMemoryType(requestedType);
-  const scope = String(args.scope ?? 'workspace');
   if (!text) throw new Error('engram_save requires non-empty text');
   if (requestedType && !explicitType) throw new Error('engram_save type must be rule, skill, workflow, or knowledge');
-  if (!isScope(scope)) throw new Error('engram_save scope must be workspace or global');
+  const scopes = proposalScopes(ctx, args.scope, 'engram_save scope');
   const candidate = explicitType ? { type: explicitType, text } : parseMemoryCandidate(text);
   const plans = await planMemorySave({
     ctx,
     text: candidate.text,
     type: candidate.type,
-    scopes: withGlobalSaveCopy(ctx, [scope]),
+    scopes,
     author: await resolveAuthor(),
     role: rolesFromArgs(args)
   });
@@ -51,23 +51,28 @@ async function saveProposal(args: any): Promise<string> {
 async function saveSessionProposal(args: any): Promise<string> {
   const ctx = await getContext();
   const text = String(args.text ?? '').trim();
-  const scope = String(args.scope ?? 'workspace');
   if (!text) throw new Error('engram_save_session requires non-empty text');
-  if (!isScope(scope)) throw new Error('engram_save_session scope must be workspace or global');
+  const scopes = proposalScopes(ctx, args.scope, 'engram_save_session scope');
   const author = await resolveAuthor();
   const role = rolesFromArgs(args);
   const plans = [];
   let candidateIndex = 1;
   for (const candidate of parseMemoryCandidates(text)) {
-    const next = await planMemorySave({ ctx, text: candidate.text, type: candidate.type, scopes: withGlobalSaveCopy(ctx, [scope]), author, role });
+    const next = await planMemorySave({ ctx, text: candidate.text, type: candidate.type, scopes, author, role });
     plans.push(...next.map((plan) => ({ ...plan, candidateIndex })));
     candidateIndex += 1;
   }
   return `ENGRAM SAVE-SESSION PROPOSAL\n${previewSavePlans(plans)}\n\nHuman approval required before writing.`;
 }
 
-function isScope(value: string): value is Scope {
-  return ['workspace', 'global'].includes(value);
+function proposalScopes(ctx: Awaited<ReturnType<typeof getContext>>, rawScope: unknown, label: string): Scope[] {
+  const target = rawScope === undefined ? ctx.config.scope : parseSaveTarget(String(rawScope), label);
+  if (rawScope !== undefined && target !== 'workspace' && !ctx.roots.global) {
+    throw new Error(`${label} requires global memory; set ENGRAM_GLOBAL_DIR or run engram init --global-path <path>`);
+  }
+  const scopes = writeScopes(target, ctx.config);
+  if (!scopes.length) throw new Error('save target requires global memory; set ENGRAM_GLOBAL_DIR or run engram init --global-path <path>');
+  return scopes;
 }
 
 function rolesFromArgs(args: any): string[] | undefined {

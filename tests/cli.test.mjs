@@ -22,6 +22,7 @@ test('init, help, save reject, save accept, load, verify, audit', async () => {
   assert.match((await runEngram(cwd, env, ['-h'])).stdout, /engram --version/);
   assert.match((await runEngram(cwd, env, ['-h'])).stdout, /short: engram -v/);
   assert.match((await runEngram(cwd, env, ['help', 'set-rule-variant'])).stdout, /lower-tier models/);
+  assert.match((await runEngram(cwd, env, ['help', 'set-save-target'])).stdout, /workspace\|global\|both/);
   assert.match((await runEngram(cwd, env, ['help', 'set-role'])).stdout, /frontend-only memory/);
   assert.match((await runEngram(cwd, env, ['help', 'save-session'])).stdout, /--accept-all/);
   assert.match((await runEngram(cwd, env, ['help', 'save-session'])).stdout, /--query-level <n>/);
@@ -870,30 +871,43 @@ test('global-only init skips workspace install and saves to global by default', 
   await rm(cwd, { recursive: true, force: true });
 });
 
-test('workspace saves also write global copies without local init', async () => {
-  const { cwd, env } = await tempWorkspace('engram-global-copy-');
+test('normal saves default to both and explicit workspace stays local', async () => {
+  const { cwd, env } = await tempWorkspace('engram-save-target-');
   const saved = await runEngram(cwd, env, [
-    'save', 'knowledge', '--scope', 'workspace',
-    'Global twin keeps uninitialized workspace saves'
+    'save', 'knowledge',
+    'Default target keeps uninitialized workspace saves portable'
   ], 'A\n');
   assert.equal(saved.code, 0, saved.stderr);
   assert.match(saved.stdout, /Scope: workspace/);
   assert.match(saved.stdout, /Scope: global/);
 
-  const file = 'global-twin-keeps-uninitialized-workspace-saves.md';
+  const file = 'default-target-keeps-uninitialized-workspace-saves-portable.md';
   const workspaceFile = path.join(workspaceMemoryRoot(cwd), 'knowledge', file);
   const globalFile = path.join(env.ENGRAM_GLOBAL_DIR, 'knowledge', file);
   assert.match(await readFile(workspaceFile, 'utf8'), /scope: workspace/);
   assert.match(await readFile(globalFile, 'utf8'), /scope: global/);
 
-  const updated = await runEngram(cwd, env, [
+  const workspaceOnly = await runEngram(cwd, env, [
     'save', 'knowledge', '--scope', 'workspace',
-    'Global twin keeps updated workspace saves too'
+    'Workspace only save target'
   ], 'A\n');
-  assert.equal(updated.code, 0, updated.stderr);
-  assert.match(await readFile(globalFile, 'utf8'), /updated workspace saves too/);
-  assert.deepEqual((await readdir(path.join(env.ENGRAM_GLOBAL_DIR, 'knowledge'))).filter((name) => name.startsWith('global-twin-keeps')), [file]);
-  assert.match((await runEngram(cwd, env, ['stats'])).stdout, /Total: 1/);
+  assert.equal(workspaceOnly.code, 0, workspaceOnly.stderr);
+  assert.match(workspaceOnly.stdout, /Scope: workspace/);
+  assert.doesNotMatch(workspaceOnly.stdout, /Scope: global/);
+  await readFile(path.join(workspaceMemoryRoot(cwd), 'knowledge', 'workspace-only-save-target.md'), 'utf8');
+  await assert.rejects(readFile(path.join(env.ENGRAM_GLOBAL_DIR, 'knowledge', 'workspace-only-save-target.md'), 'utf8'));
+
+  const target = await runEngram(cwd, env, ['set-save-target', 'global']);
+  assert.equal(target.code, 0, target.stderr);
+  assert.match(target.stdout, /Save target: global/);
+  const globalOnly = await runEngram(cwd, env, ['save', 'knowledge', 'Configured global target only'], 'A\n');
+  assert.equal(globalOnly.code, 0, globalOnly.stderr);
+  assert.match(globalOnly.stdout, /Scope: global/);
+  assert.doesNotMatch(globalOnly.stdout, /Scope: workspace/);
+  await readFile(path.join(env.ENGRAM_GLOBAL_DIR, 'knowledge', 'configured-global-target-only.md'), 'utf8');
+  await assert.rejects(readFile(path.join(workspaceMemoryRoot(cwd), 'knowledge', 'configured-global-target-only.md'), 'utf8'));
+  assert.deepEqual((await readdir(path.join(env.ENGRAM_GLOBAL_DIR, 'knowledge'))).filter((name) => name.startsWith('default-target-keeps')), [file]);
+  assert.match((await runEngram(cwd, env, ['stats'])).stdout, /Total: 3/);
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -901,12 +915,16 @@ test('init does not require a global memory directory', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
   const localOnlyEnv = { ...env };
   delete localOnlyEnv.ENGRAM_GLOBAL_DIR;
+  const badGlobal = await runEngram(cwd, localOnlyEnv, ['init', '--scope', 'global', '--no-skillset']);
+  assert.equal(badGlobal.code, 1);
+  assert.match(badGlobal.stderr, /--scope global requires global memory/);
   const init = await runEngram(cwd, localOnlyEnv, ['init', '--no-skillset']);
   assert.equal(init.code, 0, init.stderr);
   assert.match(init.stdout, /engram global skipped/);
   const config = JSON.parse(await readFile(path.join(workspaceMemoryRoot(cwd), 'engram.config.json'), 'utf8'));
   assert.equal(config.global_path, '');
-  assert.equal(config.scope, 'workspace');
+  assert.equal(config.scope, 'both');
+  assert.match((await runEngram(cwd, localOnlyEnv, ['set-save-target', 'status'])).stdout, /workspace only until configured/);
   const entry = await runEngram(cwd, localOnlyEnv, ['entry']);
   assert.match(entry.stdout.replace(/\x1b\[[0-9;]*m/g, ''), /roots\.global:\s*<none>/);
   await rm(cwd, { recursive: true, force: true });

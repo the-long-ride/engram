@@ -6,7 +6,7 @@ import { textArg } from '../cli/args.js';
 import { getContext } from '../core/memory/context.js';
 import { updateGlobalFolder } from '../core/memory/global-folder.js';
 import { initWorkspace } from '../core/memory/storage.js';
-import { loadConfig, scopeRootsForConfig, workspaceRoot, writeConfig } from '../core/runtime/config.js';
+import { loadConfig, parseSaveTarget, scopeRootsForConfig, workspaceRoot, writeConfig } from '../core/runtime/config.js';
 import { HELP_FILE, VERSION } from '../core/runtime/constants.js';
 import { isIgnored } from '../core/safety/ignore.js';
 import { ensureDir, exists, readText, writeText } from '../core/system/fsx.js';
@@ -48,6 +48,20 @@ export async function cmdSetRole(args: string[]): Promise<string> {
   ctx.config.roles = args;
   await writeConfig(process.cwd(), ctx.config);
   return `Roles: ${args.join(', ') || '(none)'}`;
+}
+
+/** Configure where normal save writes by default. */
+export async function cmdSetSaveTarget(args: string[]): Promise<string> {
+  const ctx = await getContext();
+  const value = (args[0] ?? 'status').toLowerCase();
+  if (value === 'status') return saveTargetStatus(ctx.config.scope, Boolean(ctx.roots.global));
+  const target = parseSaveTarget(value, 'set-save-target');
+  if (target === 'global' && !ctx.roots.global) {
+    throw new Error('set-save-target global requires global memory; set ENGRAM_GLOBAL_DIR or run engram init --global-path <path>');
+  }
+  ctx.config.scope = target;
+  await writeConfig(process.cwd(), ctx.config);
+  return saveTargetStatus(ctx.config.scope, Boolean(ctx.roots.global));
 }
 
 /** Enable, disable, or inspect rule variant rendering. */
@@ -287,4 +301,9 @@ function isRuleVariant(value: string): value is RuleVariant {
 
 function ruleVariantStatus(config: { enabled: boolean; active: RuleVariant }): string {
   return `Rule variants: ${config.enabled ? config.active : 'off (balanced default)'}`;
+}
+
+function saveTargetStatus(scope: string, hasGlobal: boolean): string {
+  const fallback = scope === 'both' && !hasGlobal ? ' (global memory not configured; saves write workspace only until configured)' : '';
+  return `Save target: ${scope}${fallback}`;
 }

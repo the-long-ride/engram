@@ -16,7 +16,7 @@ import { ensureGlobalGit, gitCommitGlobal, gitUserEmail, pullGlobalGit } from '.
 import { resolveConflictsInRoot } from '../vcs/conflict.js';
 
 type ReconcileResult = { dirs: number; files: number; config: boolean; migrated: number; index: boolean };
-type InitOptions = { globalOnly?: boolean };
+type InitOptions = { globalOnly?: boolean; saveTarget?: EngramConfig['scope'] };
 const SCOPE_GITIGNORE = `# Engram generated routing sidecars.
 memory.vec.sqlite
 memory.vec.sqlite-*
@@ -27,7 +27,9 @@ export async function initWorkspace(cwd: string, force = false, branch = 'main',
   const root = workspaceRoot(cwd);
   const existing = await loadConfig(cwd);
   const globalOnly = Boolean(options.globalOnly);
-  const config = { ...existing, version: defaultConfig().version, global_path: globalPath, scope: globalOnly ? 'global' as const : existing.scope, global_git: { ...existing.global_git, branch } };
+  const hadWorkspaceMemory = await exists(root) || await exists(legacyWorkspaceRoot(cwd));
+  const scope = globalOnly ? 'global' : options.saveTarget ?? (hadWorkspaceMemory ? existing.scope : defaultConfig().scope);
+  const config = { ...existing, version: defaultConfig().version, global_path: globalPath, scope, global_git: { ...existing.global_git, branch } };
   const roots = scopeRootsForConfig(cwd, config);
   const lines: string[] = [];
   if (globalOnly) return initGlobalOnly(roots.global, config, force, branch, lines);

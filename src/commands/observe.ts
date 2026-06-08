@@ -2,16 +2,16 @@
 import path from 'node:path';
 import { getContext } from '../core/memory/context.js';
 import { writeObservation } from '../core/memory/observe.js';
-import { writeScopes } from '../core/runtime/config.js';
+import { parseSaveTarget, writeScopes } from '../core/runtime/config.js';
 import { readText } from '../core/system/fsx.js';
 import { cmdSaveSession } from './write.js';
-import type { Scope } from '../core/runtime/types.js';
 
 /** Capture a raw session note in inbox, optionally mining it through save-session. */
 export async function cmdObserve(args: string[], flags: Record<string, any> = {}): Promise<string> {
   const ctx = await getContext();
-  const scopes = flags.scope ? [flags.scope as Scope] : writeScopes(ctx.config.scope, ctx.config);
+  const scopes = flags.scope ? writeScopes(parseSaveTarget(flags.scope, 'observe --scope'), ctx.config) : writeScopes(ctx.config.scope, ctx.config);
   const scope = scopes[0];
+  if (!scope) throw new Error('observe --scope requires global memory; set ENGRAM_GLOBAL_DIR or run engram init --global-path <path>');
   const root = ctx.roots[scope];
   if (!root) throw new Error(`${scope} memory is not configured`);
   const sourceFile = observeFile(flags);

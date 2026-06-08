@@ -18,12 +18,6 @@ export type SavePlan = {
   candidateIndex?: number;
 };
 
-/** Add a global twin for workspace save plans when global memory is configured. */
-export function withGlobalSaveCopy(ctx: EngramContext, scopes: Scope[]): Scope[] {
-  if (!ctx.roots.global || !scopes.includes('workspace') || scopes.includes('global')) return scopes;
-  return [...scopes, 'global'];
-}
-
 /** Choose whether each scope should add a new memory or update an existing one. */
 export async function planMemorySave(input: {
   ctx: EngramContext; text: string; type: MemoryType; scopes: Scope[]; author: string; role?: string[]; source?: MemorySourceMeta;

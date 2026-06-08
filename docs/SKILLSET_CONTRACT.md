@@ -122,7 +122,7 @@ proposal and collect explicit human approval before invoking a CLI write flow.
 
 | Command | Purpose |
 | --- | --- |
-| `engram init [--global-only] [--no-skillset] [--skillset target] [--submodule] [--no-global] [--global-path path] [--global-remote <git-url>]` | Create or reconcile memory roots, install compact Codex skillset by default, optionally create `.agents/.engram` as a submodule, initialize global memory Git when configured, or create only global memory with `--global-only` |
+| `engram init [--global-only] [--scope workspace|global|both] [--no-skillset] [--skillset target] [--submodule] [--no-global] [--global-path path] [--global-remote <git-url>]` | Create or reconcile memory roots, install compact Codex skillset by default, optionally create `.agents/.engram` as a submodule, initialize global memory Git when configured, choose the default save target, or create only global memory with `--global-only` |
 | `engram --version` / `engram -v` | Print the installed CLI version |
 | `engram help [topic]` | Show compact help or detailed command-specific examples and use cases |
 | `engram entry` | Print resolved flags, paths, and detected global Git state |

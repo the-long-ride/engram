@@ -26,9 +26,10 @@ Existing human-authored files are skipped.
 Use `engram init --global-only --global-path <path>` when the human wants only
 portable global memory and no `.agents/.engram` or local skillset files in the
 current workspace. In that mode, default saves go to the global folder.
-When any global memory path is configured, approved workspace save flows also
-include a global copy in the approval preview, even if the current workspace has
-not run `engram init`.
+Fresh workspace installs default normal saves to both workspace and global when
+global memory is configured. Humans can change the default with
+`engram set-save-target workspace|global|both`, and agents can override one write
+with `--scope workspace|global|both`.
 
 To add or refresh adapters later:
 

@@ -1,7 +1,7 @@
 /** Core user-facing commands: init, help, and completion. */
 import { stdout as output } from 'node:process';
 import { initWorkspace } from '../core/memory/storage.js';
-import { loadConfig, scopeRootsForConfig } from '../core/runtime/config.js';
+import { loadConfig, parseSaveTarget, scopeRootsForConfig } from '../core/runtime/config.js';
 import { renderHelpTerminal } from '../core/cli/help.js';
 import { INIT_WORDMARK, renderInitWordmark } from '../core/cli/banner.js';
 import { completionScript } from '../core/cli/completion.js';
@@ -17,19 +17,28 @@ export async function cmdInit(flags: Record<string, any>): Promise<string> {
   const globalOnly = flags['global-only'] === true;
   if (globalOnly && flags['no-global'] === true) throw new Error('global-only init requires global memory; remove --no-global or pass --global-path <path>');
   if (globalOnly && (flags.submodule === true || typeof flags['submodule-remote'] === 'string')) throw new Error('global-only init cannot configure a workspace submodule');
+  const saveTarget = initSaveTarget(flags, globalOnly);
   const requestedBranch = typeof flags['global-branch'] === 'string' ? flags['global-branch'] : loaded.global_git.branch;
   const branch = normalizeBranchName(requestedBranch);
   const submodule = globalOnly ? undefined : await planWorkspaceSubmodule(flags);
   const globalPath = await resolveGlobalPath(flags, loaded.global_path);
+  if (saveTarget === 'global' && !globalPath) throw new Error('init --scope global requires global memory; set ENGRAM_GLOBAL_DIR or pass --global-path <path>');
   const config = { ...loaded, global_path: globalPath, global_git: { ...loaded.global_git, branch } };
   const roots = scopeRootsForConfig(process.cwd(), config);
   const globalRemote = await planGlobalRemote(flags, roots.global, branch, config.global_git);
-  const lines = await initWorkspace(process.cwd(), Boolean(flags.force), branch, globalPath, { globalOnly });
+  const lines = await initWorkspace(process.cwd(), Boolean(flags.force), branch, globalPath, { globalOnly, saveTarget });
   if (submodule) lines.push(...await applyWorkspaceSubmodule(submodule));
   lines.push(...await applyGlobalRemote(globalRemote, roots.global, config.global_git));
   lines.push(...await maybeInstallDefaultSkillset(flags, globalOnly));
   lines.push(...initSuccessSuggestions(globalOnly));
   return `${prelude}${lines.join('\n')}`;
+}
+
+function initSaveTarget(flags: Record<string, any>, globalOnly: boolean) {
+  if (typeof flags.scope !== 'string') return undefined;
+  const target = parseSaveTarget(flags.scope, 'init --scope');
+  if (globalOnly && target !== 'global') throw new Error('global-only init supports only --scope global');
+  return target;
 }
 function initWordmarkPrelude(): string {
   if (process.stdout.isTTY) {

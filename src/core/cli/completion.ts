@@ -4,10 +4,11 @@ import { commandNames } from './command-registry.js';
 export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'): string {
   const commands = commandNames().join(' ');
   const saveTypes = ['rule', 'skill', 'workflow', 'knowledge'].join(' ');
-  const scopes = ['workspace', 'global'].join(' ');
+  const scopes = ['workspace', 'global', 'both'].join(' ');
   const formats = ['agents-md', 'claude-md', 'cursorrules'].join(' ');
   const shells = ['bash', 'zsh', 'powershell'].join(' ');
   const ruleVariants = ['off', 'light', 'balanced', 'strict', 'status'].join(' ');
+  const saveTargets = ['workspace', 'global', 'both', 'status'].join(' ');
   const ignoreActions = ['status', 'check', 'add'].join(' ');
   const saveSessionArgs = ['--file', '--scope', '--role', '--roles', '--query-level', '--accept-all'].join(' ');
   const observeArgs = ['--file', '--scope', '--role', '--roles', '--propose', '--accept-all'].join(' ');
@@ -31,7 +32,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '  fi',
       '  case $words[2] in',
       '    init|i)',
-      '      _arguments "--force" "--global-only" "--no-skillset" "--skillset=[target]" "--submodule" "--submodule-remote=[git-url]" "--no-global" "--global-path=[path]" "--global-remote=[git-url]" "--global-branch=[branch]"',
+      `      _arguments "--force" "--global-only" "--scope[default save target]:scope:(${scopes})" "--no-skillset" "--skillset=[target]" "--submodule" "--submodule-remote=[git-url]" "--no-global" "--global-path=[path]" "--global-remote=[git-url]" "--global-branch=[branch]"`,
       '      ;;',
       '    completion|c)',
       `      _arguments "1:shell:(${shells})"`,
@@ -43,13 +44,13 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       `      _arguments "--scope[write scope]:scope:(${scopes})" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "1:memory type:(${saveTypes})"`,
       '      ;;',
       '    save-session|ss)',
-      '      _arguments "--file[read session summary file]:file:_files" "--scope[write scope]:scope:(workspace global)" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "--query-level[recent chat sessions to mine]:number:" "--accept-all[accept every save-session candidate]" "1:session summary: "',
+      `      _arguments "--file[read session summary file]:file:_files" "--scope[write scope]:scope:(${scopes})" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "--query-level[recent chat sessions to mine]:number:" "--accept-all[accept every save-session candidate]" "1:session summary: "`,
       '      ;;',
       '    observe|o)',
-      '      _arguments "--file[read raw note file]:file:_files" "--scope[write scope]:scope:(workspace global)" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "--propose[mine inbox note through save-session]" "--accept-all[accept every proposed candidate]" "1:note: "',
+      `      _arguments "--file[read raw note file]:file:_files" "--scope[write scope]:scope:(${scopes})" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "--propose[mine inbox note through save-session]" "--accept-all[accept every proposed candidate]" "1:note: "`,
       '      ;;',
       '    take-control|tc)',
-      '      _arguments "--file[read one source file]:file:_files" "--dir[scan one source directory]:dir:_files -/" "--include[include matching glob]:glob:" "--exclude[exclude matching glob]:glob:" "--max-sources[maximum source count]:number:" "--max-chars[maximum chars per source]:number:" "--scope[write scope]:scope:(workspace global)" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "--all[include README docs and library docs]" "--accept-all[accept every generated candidate]" "--dry-run[show source pack only]" "--plan[preview source plan only]"',
+      `      _arguments "--file[read one source file]:file:_files" "--dir[scan one source directory]:dir:_files -/" "--include[include matching glob]:glob:" "--exclude[exclude matching glob]:glob:" "--max-sources[maximum source count]:number:" "--max-chars[maximum chars per source]:number:" "--scope[write scope]:scope:(${scopes})" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "--all[include README docs and library docs]" "--accept-all[accept every generated candidate]" "--dry-run[show source pack only]" "--plan[preview source plan only]"`,
       '      ;;',
       '    load|l)',
       '      _arguments "--all" "--dry-run" "1:query: "',
@@ -78,6 +79,9 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '    set-rule-variant|rv)',
       `      _arguments "1:variant:(${ruleVariants})"`,
       '      ;;',
+      '    set-save-target)',
+      `      _arguments "1:target:(${saveTargets})"`,
+      '      ;;',
       '    resolve-conflicts|rc)',
       '      _arguments "--dry-run"',
       '      ;;',
@@ -97,7 +101,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '$engramCommands = @(',
       commandNames().map((command) => `  '${command}'`).join(',\n'),
       ')',
-      '$engramInitArgs = @(\'--force\', \'--global-only\', \'--no-skillset\', \'--skillset\', \'--submodule\', \'--submodule-remote\', \'--no-global\', \'--global-path\', \'--global-remote\', \'--global-branch\')',
+      '$engramInitArgs = @(\'--force\', \'--global-only\', \'--scope\', \'--no-skillset\', \'--skillset\', \'--submodule\', \'--submodule-remote\', \'--no-global\', \'--global-path\', \'--global-remote\', \'--global-branch\')',
       '$engramSaveTypes = @(\'rule\', \'skill\', \'workflow\', \'knowledge\', \'--scope\', \'--role\', \'--roles\')',
       `$engramSaveSessionArgs = @(${saveSessionArgs.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
       `$engramObserveArgs = @(${observeArgs.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
@@ -105,8 +109,9 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       `$engramUpgradeArgs = @(${upgradeArgs.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
       `$engramGlobalFolderArgs = @(${globalFolderArgs.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
       `$engramSkillsetTargets = @(${skillsetTargets.split(' ').map((target) => `'${target}'`).join(', ')})`,
-      '$engramScopes = @(\'workspace\', \'global\')',
+      '$engramScopes = @(\'workspace\', \'global\', \'both\')',
       '$engramRuleVariants = @(\'off\', \'light\', \'balanced\', \'strict\', \'status\')',
+      '$engramSaveTargets = @(\'workspace\', \'global\', \'both\', \'status\')',
       'Register-ArgumentCompleter -Native -CommandName engram -ScriptBlock {',
       '  param($wordToComplete, $commandAst, $cursorPosition)',
       '  $words = @($commandAst.CommandElements | ForEach-Object { $_.ToString() })',
@@ -133,6 +138,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '        { $_ -in @(\'install-skillset\', \'is\') } { $engramSkillsetTargets + \'--global\' + \'--force\'; break }',
       '        { $_ -in @(\'upgrade\', \'up\') } { $engramUpgradeArgs; break }',
       '        { $_ -in @(\'set-rule-variant\', \'rv\') } { $engramRuleVariants; break }',
+      '        { $_ -in @(\'set-save-target\') } { $engramSaveTargets; break }',
       '        { $_ -in @(\'verify\', \'vf\', \'rebuild-index\', \'ri\', \'repair\', \'rp\') } { $engramScopes; break }',
       '        default { $engramCommands }',
       '      }',
@@ -161,6 +167,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
     `  local formats="${formats}"`,
     `  local shells="${shells}"`,
     `  local rule_variants="${ruleVariants}"`,
+    `  local save_targets="${saveTargets}"`,
     `  local ignore_actions="${ignoreActions}"`,
     `  local upgrade_args="${upgradeArgs}"`,
     `  local global_folder_args="${globalFolderArgs}"`,
@@ -197,7 +204,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
     '  esac',
     '  case "${words[1]}" in',
     '    init|i)',
-    '      COMPREPLY=( $(compgen -W "--force --global-only --no-skillset --skillset --submodule --submodule-remote --no-global --global-path --global-remote --global-branch" -- "$cur") )',
+    '      COMPREPLY=( $(compgen -W "--force --global-only --scope --no-skillset --skillset --submodule --submodule-remote --no-global --global-path --global-remote --global-branch" -- "$cur") )',
     '      return',
     '      ;;',
     '    completion|c)',
@@ -254,6 +261,11 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
     '      ;;',
     '    set-rule-variant|rv)',
     '      if [[ $cword -eq 2 ]]; then COMPREPLY=( $(compgen -W "$rule_variants" -- "$cur") ); return; fi',
+    '      COMPREPLY=()',
+    '      return',
+    '      ;;',
+    '    set-save-target)',
+    '      if [[ $cword -eq 2 ]]; then COMPREPLY=( $(compgen -W "$save_targets" -- "$cur") ); return; fi',
     '      COMPREPLY=()',
     '      return',
     '      ;;',

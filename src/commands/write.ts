@@ -5,11 +5,11 @@ import { createInterface } from 'node:readline/promises';
 import { entryPath, getContext } from '../core/memory/context.js';
 import { generatedMemoryGuidance, inferMemoryType, normalizeMemoryType, parseMemoryCandidate, parseMemoryCandidates, saveSessionGuidance } from '../core/memory/memory-candidate.js';
 import type { MemorySourceMeta } from '../core/memory/memory-template.js';
-import { planMemorySave, previewSavePlans, withGlobalSaveCopy, type SavePlan } from '../core/memory/save-plan.js';
+import { planMemorySave, previewSavePlans, type SavePlan } from '../core/memory/save-plan.js';
 import { parseMemory } from '../core/memory/schema.js';
 import { resolveAuthor, writeApprovedMemory } from '../core/memory/storage.js';
 import { discoverTakeControlSources, planTakeControlSources, renderTakeControlPlan, takeControlGuidance } from '../core/memory/take-control.js';
-import { writeScopes } from '../core/runtime/config.js';
+import { parseSaveTarget, writeScopes } from '../core/runtime/config.js';
 import type { MemoryType, Scope } from '../core/runtime/types.js';
 import { applyApprovalEdit, requestApproval, requestGeneratedMemoryApproval, requestGeneratedSelectionApproval, requestGeneratedSelectionText, requestSelectionApproval, type SelectionApproval } from '../core/safety/approval.js';
 import { readText } from '../core/system/fsx.js';
@@ -213,11 +213,17 @@ function rolesFromFlags(flags: Record<string, any>): string[] | undefined {
 
 function saveScopes(ctx: Awaited<ReturnType<typeof getContext>>, flags: Record<string, any>): Scope[] {
   const requested = typeof flags.scope === 'string' ? flags.scope.trim() : '';
-  if (requested && requested !== 'workspace' && requested !== 'global' && requested !== 'both') throw new Error('save --scope must be workspace, global, or both');
-  const configured = requested === 'workspace' || requested === 'global' || requested === 'both'
-    ? writeScopes(requested, ctx.config)
+  const target = requested
+    ? parseSaveTarget(requested, 'save --scope')
+    : ctx.config.scope;
+  if (requested && target !== 'workspace' && !ctx.roots.global) {
+    throw new Error('save --scope requires global memory; set ENGRAM_GLOBAL_DIR or run engram init --global-path <path>');
+  }
+  const configured = requested
+    ? writeScopes(target, ctx.config)
     : writeScopes(ctx.config.scope, ctx.config);
-  return withGlobalSaveCopy(ctx, configured);
+  if (!configured.length) throw new Error('save target requires global memory; set ENGRAM_GLOBAL_DIR or run engram init --global-path <path>');
+  return configured;
 }
 
 function queryLevelFromFlags(flags: Record<string, any>): number | undefined {

@@ -92,9 +92,10 @@ Engram moves memory into files to solve these problems:
 | **Context drift in team projects** | Synchronizes rules and guidelines team-wide via Git. |
 | **Broken or outdated memory** | Provides validation and cleanup utilities (`engram repair`, `engram quality-check`). |
 
-Workspace memory loads first. Global memory is fallback. When global memory is
-configured, approved workspace save flows also keep a global copy so portable
-memory survives even in workspaces that have not run `engram init`.
+Workspace memory loads first. Global memory is fallback. Fresh installs default
+normal saves to both workspace and global when global memory is configured; use
+`engram set-save-target workspace|global|both` or per-command `--scope` to
+choose the target.
 When broad queries match more than eight memories, `engram load` reranks with
 tags, type, recency, graph, and optional sqlite-vec vector signals before loading
 the top eight. Use `engram load --dry-run "<task>"` to preview candidate counts

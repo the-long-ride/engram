@@ -15,7 +15,7 @@ import { contradictionEdges, renderGraphReport } from '../core/memory/graph.js';
 import { archiveMemory, planArchiveSet } from '../core/memory/archive.js';
 import { planMemorySave, previewSavePlans, type SavePlan } from '../core/memory/save-plan.js';
 import { normalizeMemoryType } from '../core/memory/memory-candidate.js';
-import { writeScopes } from '../core/runtime/config.js';
+import { parseSaveTarget, writeScopes } from '../core/runtime/config.js';
 import { formatRecords, type RecordBlock } from '../core/cli/format.js';
 import type { MemoryType, Scope } from '../core/runtime/types.js';
 
@@ -156,7 +156,8 @@ export async function cmdImport(args: string[], flags: Record<string, any> = {})
 
 async function importAgentMemoryBundle(bundle: any, flags: Record<string, any>): Promise<string> {
   const ctx = await getContext();
-  const scopes = flags.scope ? [flags.scope as Scope] : writeScopes(ctx.config.scope, ctx.config);
+  const scopes = flags.scope ? writeScopes(parseSaveTarget(flags.scope, 'import --scope'), ctx.config) : writeScopes(ctx.config.scope, ctx.config);
+  if (!scopes.length) throw new Error('import --scope requires global memory; set ENGRAM_GLOBAL_DIR or run engram init --global-path <path>');
   const author = await resolveAuthor();
   const max = flags.all === true ? Number.POSITIVE_INFINITY : Number(flags.max ?? 50);
   const candidates = agentMemoryCandidates(bundle).slice(0, Number.isFinite(max) ? Math.max(0, max) : undefined);

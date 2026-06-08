@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.0.7
+
+- Added publish-only package metadata checks so README packaging regressions are
+  caught before npm release.
+- Updated release automation to run package checks explicitly before dry-run
+  packing and keep `npm run publish` limited to the publish action.
+- Enabled Test and Code Coverage workflows on every push to origin.
+
 ## 0.0.6
 
 - Pinned optional peer dependencies for Markdown conversion and vector routing

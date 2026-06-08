@@ -36,6 +36,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Package publish test
+        run: npm run test:package
+
       - name: Pack dry-run
         run: npm run pack:dry-run
 

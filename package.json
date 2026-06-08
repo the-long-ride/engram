@@ -48,10 +48,12 @@
     "test:core": "npm run build && node --test tests/core.test.mjs tests/safety.test.mjs",
     "test:cli": "npm run build && node --test tests/cli.test.mjs",
     "test:mcp": "npm run build && node --test tests/mcp.test.mjs",
+    "test:package": "npm run build && node --test --test-isolation=none tests/publish/*.test.mjs",
     "coverage": "npm run generate:version && tsc --sourceMap false && node --experimental-test-coverage --test tests/*.test.mjs",
     "debug:cli": "npm run build && node --inspect-brk dist/bin/engram.js",
     "lint:lines": "node scripts/check-lines.mjs",
     "pack:dry-run": "npm pack --dry-run --ignore-scripts",
+    "prepublishOnly": "npm run test:package",
     "prepack": "npm run typecheck && npm test && npm run lint:lines"
   },
   "engines": {

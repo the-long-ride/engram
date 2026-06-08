@@ -175,6 +175,7 @@ function skillsetListTargets(): SkillsetTarget[] {
 
 const skillsetListNotes: Partial<Record<SkillsetTarget, string>> = {
   'agents-md': '# Generic AGENTS.md fallback for unlisted AGENTS.md-compatible agents',
+  gemini: '# Also covers current Antigravity 2.0, CLI, and IDE Gemini-compatible paths',
   slash: '# Installs IDE/chat slash commands (/engram) for manual requests'
 };
 
@@ -223,6 +224,9 @@ function skillsetInstallHints(results: InstallResult[], global = false): string[
   const hints = [];
   if (global) hints.push(`Registry: ${globalSkillsetRegistryPath()}`);
   if (results.some((result) => result.action === 'skipped')) hints.push('Skipped targets can be installed manually when the agent exposes a stable user/global rule path.');
+  if (results.some((result) => result.target === 'gemini')) {
+    hints.push('Note: gemini also covers current Antigravity 2.0, Antigravity CLI, and Antigravity IDE Gemini-compatible paths while Google keeps those surfaces in flux.');
+  }
   if (!results.some((result) => result.target === 'slash')) return hints;
   hints.push(
     'Hint: if /engram is not visible in an already-open chat, restart or reload the agent chat after the new slash files are written.',

@@ -41,13 +41,14 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsc",
-    "typecheck": "tsc --noEmit",
+    "generate:version": "node scripts/generate-version.mjs",
+    "build": "npm run generate:version && tsc",
+    "typecheck": "npm run generate:version && tsc --noEmit",
     "test": "npm run build && node --test tests/*.test.mjs",
     "test:core": "npm run build && node --test tests/core.test.mjs tests/safety.test.mjs",
     "test:cli": "npm run build && node --test tests/cli.test.mjs",
     "test:mcp": "npm run build && node --test tests/mcp.test.mjs",
-    "coverage": "tsc --sourceMap false && node --experimental-test-coverage --test tests/*.test.mjs",
+    "coverage": "npm run generate:version && tsc --sourceMap false && node --experimental-test-coverage --test tests/*.test.mjs",
     "debug:cli": "npm run build && node --inspect-brk dist/bin/engram.js",
     "lint:lines": "node scripts/check-lines.mjs",
     "pack:dry-run": "npm pack --dry-run --ignore-scripts",

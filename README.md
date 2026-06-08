@@ -182,12 +182,19 @@ engram is --global <your-agent>
 engram is --global agents-md
 ```
 *(Replace `<your-agent>` with your assistant name in result of `engram is list`; use `agents-md` when your agent is not listed but reads `AGENTS.md`.)*
+Global installs append one managed Engram block at the end of the assistant's
+shared instruction file and preserve your existing content. Agent `SKILL.md`
+files are written to the host's skill directory; for example, Claude Code uses
+`~/.claude/CLAUDE.md` plus `~/.claude/skills/engram/SKILL.md`.
 
-For Antigravity, use the unified ecosystem target:
+For Gemini CLI and the current Antigravity surfaces, use the Gemini target:
 ```bash
-engram install-skillset antigravity
+engram install-skillset gemini
 ```
-This writes `.antigravity/`, `.antigravity-cli/`, `.antigravity-ide/`, and `.antigravityrules` workspace guidance. The old `antigravity-cli` target name remains accepted only as a compatibility alias.
+Engram treats `gemini` as the advertised target for Gemini CLI plus the current
+Antigravity 2.0, Antigravity CLI, and Antigravity IDE Gemini-compatible paths.
+The older `antigravity` and `antigravity-cli` target names remain hidden
+compatibility aliases while Google's Antigravity paths settle.
 
 ### 3. Initialize Workspace
 Run this in the root folder of any project or workspace you want to enable Engram in:

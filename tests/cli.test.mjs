@@ -207,7 +207,7 @@ test('completion emits shell helper with command suggestions', async () => {
   assert.match(bash.stdout, /update-global-folder/);
   assert.match(bash.stdout, /\bugf\b/);
   assert.match(bash.stdout, /--move-from-path/);
-  assert.match(bash.stdout, /\bantigravity\b/);
+  assert.doesNotMatch(bash.stdout, /\bantigravity\b/);
   assert.doesNotMatch(bash.stdout, /antigravity-cli/);
   assert.doesNotMatch(bash.stdout, /dry-run\|dr|propose\|p|team-dashboard|update-help/);
   assert.match(bash.stdout, /upgrade\|up/);

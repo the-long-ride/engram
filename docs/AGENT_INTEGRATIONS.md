@@ -41,6 +41,11 @@ Use `--force` only when replacing generated Engram adapter files intentionally.
 Claude receives both `.claude/commands/engram.md` and
 `.claude/skills/engram/SKILL.md` so `/engram` appears in older command menus and
 newer skill-aware Claude Code sessions.
+With `--global`, Engram appends a single managed block at the end of each
+agent's shared instruction file instead of replacing human-authored content. If
+an older Engram block is already present, it is refreshed and moved to the end.
+Host-specific `SKILL.md` files are written to each agent's skill directory, such
+as `~/.claude/skills/engram/SKILL.md` for Claude Code.
 
 ## Supported Targets
 
@@ -51,17 +56,16 @@ newer skill-aware Claude Code sessions.
 | `copilot` | `.github/copilot-instructions.md` | GitHub Copilot repository instructions |
 | `claude` | `CLAUDE.md` | Claude Code project guidance |
 | `cursor` | `.cursor/rules/engram.mdc` | Cursor project rules |
-| `gemini` | `GEMINI.md` | Gemini CLI context |
+| `gemini` | `GEMINI.md` | Gemini CLI context, including current Antigravity Gemini-compatible surfaces |
 | `cline` | `.clinerules` | Cline-style workspace rules |
 | `windsurf` | `.windsurfrules` | Windsurf workspace rules |
-| `antigravity` | `.antigravity/skills/engram/SKILL.md`, `.antigravity-cli/skills/engram/SKILL.md`, `.antigravity-ide/skills/engram/SKILL.md`, `.antigravityrules` | Antigravity 2.0, CLI, IDE, and workspace rules |
 | `opencode` | `opencode.json`, `.opencode/engram.md` | OpenCode custom instructions |
 | `mcp` | `.mcp.json` | MCP-style JSON-lines wrapper registration |
 | `slash` | `.claude/commands/engram.md`, `.claude/skills/engram/SKILL.md`, `.cursor/commands/engram.md`, `.gemini/commands/engram.toml` | Native `/engram` slash adapters |
 
 Aliases: `codex` installs the `agents-md` adapter plus the generic Agent Skill
-file, `open-code` maps to `opencode`, and the old `antigravity-cli` spelling is
-accepted as a compatibility alias for `antigravity`.
+file, and `open-code` maps to `opencode`. The old `antigravity` and
+`antigravity-cli` targets are hidden compatibility aliases for now.
 
 ## Recommended Flow
 
@@ -261,6 +265,9 @@ registered through `.mcp.json` where that wrapper is accepted. The `slash`
 target also writes Claude and Cursor project-level command files for `/engram`.
 For Claude, Engram writes both the classic command file and the newer skill file
 because Claude Code supports both forms for slash invocation.
+For global Claude installs, Engram appends its managed block to
+`~/.claude/CLAUDE.md` and writes the Claude skill to
+`~/.claude/skills/engram/SKILL.md`.
 The generated slash description is: "Your knowledge memory manager, synced
 across every device with Git."
 MCP hosts should treat `engram_save` and `engram_autosave` as proposal-only
@@ -284,16 +291,12 @@ pools to the top 8, and reports narrowing tags in `--dry-run`.
 
 Gemini CLI searches for `GEMINI.md` files as context. The `slash` target writes
 `.gemini/commands/engram.toml` so `/engram <args>` becomes a project custom
-command in Gemini CLI.
-
-Antigravity now has three workspace surfaces. `engram install-skillset
-antigravity` writes the Engram skill to `.antigravity/skills/engram/SKILL.md`
-for Antigravity 2.0, `.antigravity-cli/skills/engram/SKILL.md` for the CLI,
-and `.antigravity-ide/skills/engram/SKILL.md` for the IDE. It also writes a
-root `.antigravityrules` file so local workspace rules can point Antigravity at
-the Engram protocol. The deprecated `antigravity-cli` target name still works as
-a compatibility alias, but generated docs and completions advertise
-`antigravity`.
+command in Gemini CLI. For now, Engram also treats `gemini` as the advertised
+target for Antigravity 2.0, Antigravity CLI, and Antigravity IDE because current
+Google docs still tie Antigravity context and skills to Gemini-compatible
+locations. The hidden `antigravity` and `antigravity-cli` target names remain
+explicit compatibility paths, but they are not shown in `engram is list`, help,
+completion, or `all`.
 
 OpenCode reads `AGENTS.md` rules, and it can also load reusable instruction
 files through the `instructions` field in `opencode.json`. Engram uses
@@ -311,6 +314,7 @@ files through the `instructions` field in `opencode.json`. Engram uses
 - [Gemini CLI custom commands](https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/custom-commands.md)
 - [AGENTS.md](https://github.com/openai/agents.md)
 - [Codex Agent Skills](https://developers.openai.com/codex/skills)
+- [Antigravity CLI migration from Gemini CLI](https://www.antigravity.google/docs/gcli-migration)
 - [Antigravity Agent Skills](https://antigravity.google/docs/skills)
 - [Antigravity CLI features](https://antigravity.google/docs/cli-features)
 - [OpenCode rules and custom instructions](https://opencode.ai/docs/rules/)

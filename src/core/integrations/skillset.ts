@@ -30,7 +30,7 @@ type GlobalSkillsetRegistry = {
 
 const GLOBAL_BEGIN = '<!-- BEGIN ENGRAM GLOBAL SKILLSET -->';
 const GLOBAL_END = '<!-- END ENGRAM GLOBAL SKILLSET -->';
-const hiddenTargets = new Set<SkillsetTarget>(['agent-skill']);
+const hiddenTargets = new Set<SkillsetTarget>(['agent-skill', 'antigravity']);
 const aliases: Record<string, SkillsetTarget[]> = {
   'antigravity-cli': ['antigravity'],
   codex: ['agents-md', 'agent-skill'],
@@ -185,7 +185,10 @@ function globalFilesForTarget(target: ResolvedTarget, home: string): GlobalInsta
     case 'copilot':
       return [skip('GitHub Copilot personal instructions do not expose a stable local global file path')];
     case 'claude':
-      return [plan(path.join(home, '.claude', 'CLAUDE.md'), 'block')];
+      return [
+        plan(path.join(home, '.claude', 'CLAUDE.md'), 'block'),
+        plan(path.join(home, '.claude', 'skills', 'engram', 'SKILL.md'), 'file', 'slash')
+      ];
     case 'cursor':
       return [skip('Cursor user rules are configured in app settings; no stable local global file path is published')];
     case 'gemini':
@@ -242,9 +245,9 @@ function renderGlobalInstallContent(plan: GlobalInstallPlan): string {
 function upsertManagedBlock(existing: string, content: string): { text: string; action: InstallAction } {
   const block = `${GLOBAL_BEGIN}\n${content.trim()}\n${GLOBAL_END}`;
   if (!existing.trim()) return { text: `${block}\n`, action: 'written' };
-  const pattern = new RegExp(`${escapeRegExp(GLOBAL_BEGIN)}[\\s\\S]*?${escapeRegExp(GLOBAL_END)}`);
-  if (pattern.test(existing)) return { text: existing.replace(pattern, block), action: 'updated' };
-  return { text: `${existing.trimEnd()}\n\n${block}\n`, action: 'updated' };
+  const pattern = new RegExp(`${escapeRegExp(GLOBAL_BEGIN)}[\\s\\S]*?${escapeRegExp(GLOBAL_END)}`, 'g');
+  const humanContent = existing.replace(pattern, '').trimEnd();
+  return { text: `${humanContent ? `${humanContent}\n\n` : ''}${block}\n`, action: 'updated' };
 }
 
 function normalizePath(file: string): string {

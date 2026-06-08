@@ -3,9 +3,9 @@
 Engram is a portable memory skillset for AI agents. Hosts can integrate it by
 calling the CLI, registering the MCP-style JSON-lines wrapper, or loading generated instruction
 files such as Codex-compatible `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, Copilot
-instructions, Antigravity ecosystem `SKILL.md` files plus `.antigravityrules`,
-and OpenCode custom instruction files. Hosts that support custom slash commands
-can also load generated `/engram` adapters.
+instructions, Gemini-compatible Antigravity context files, and OpenCode custom
+instruction files. Hosts that support custom slash commands can also load
+generated `/engram` adapters.
 
 ## Required Behaviors
 
@@ -71,15 +71,22 @@ can also load generated `/engram` adapters.
   agent-facing load/export/sync output, not what gets stored in memory files.
 - Treat `/engram <args>` as a human-visible router to `engram <args>` or the
   matching MCP read/proposal tool.
+- For global skillset installs, append exactly one Engram managed block at the
+  end of each host's shared instruction file. Preserve human-authored content;
+  when an older Engram block exists, refresh it and move it to the end instead
+  of replacing the whole file.
+- Write generated `SKILL.md` files to each host's skill directory. For Claude
+  Code global installs, use `~/.claude/skills/engram/SKILL.md` alongside the
+  appended `~/.claude/CLAUDE.md` instruction block.
 - Install Claude slash support in both `.claude/commands/engram.md` and
   `.claude/skills/engram/SKILL.md` so older command menus and newer skills both
   surface `/engram`.
-- Install Antigravity support through the public `antigravity` target. It must
-  write workspace skills for Antigravity 2.0 (`.antigravity/skills/`),
-  Antigravity CLI (`.antigravity-cli/skills/`), Antigravity IDE
-  (`.antigravity-ide/skills/`), and a root `.antigravityrules` file. The old
-  `antigravity-cli` target name may remain as a compatibility alias, but it
-  should not be the advertised target.
+- Do not advertise a public Antigravity target while Google's paths are in
+  flux. Hide `antigravity` and `antigravity-cli` from target lists, help,
+  completion, and `all`; keep them as explicit compatibility aliases only.
+  Advertise `gemini` as the current Gemini-compatible target for Antigravity
+  2.0, Antigravity CLI, and Antigravity IDE, and print a short note after
+  `gemini` installs so humans understand that coverage.
 - Treat `engram take-control` and `/engram take-control` as an agent-assisted
   source-discovery flow that converts existing workspace guidance into Engram
   candidates through the same approval gate as save-session.

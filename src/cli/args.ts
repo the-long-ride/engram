@@ -71,7 +71,13 @@ function normalizeNaturalArgs(argv: string[]): string[] {
   const commandArgs = globalFolderArgs[0]?.toLowerCase() === 'take' && globalFolderArgs[1]?.toLowerCase() === 'control'
     ? ['take-control', ...globalFolderArgs.slice(2)]
     : globalFolderArgs;
-  return normalizeSaveSessionQueryLevel(normalizeAcceptAll(commandArgs));
+  return normalizeSaveSessionQueryLevel(normalizeAcceptAll(normalizeInstallSkillset(commandArgs)));
+}
+
+function normalizeInstallSkillset(argv: string[]): string[] {
+  const [command = 'help', ...tokens] = argv;
+  if (command.toLowerCase() !== 'install-skill' || tokens[0]?.toLowerCase() !== 'set') return argv;
+  return ['install-skillset', ...tokens.slice(1)];
 }
 
 function normalizeNaturalGlobalFolder(argv: string[]): string[] {

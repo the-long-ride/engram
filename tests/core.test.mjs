@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { rm } from 'node:fs/promises';
+import { readFile, rm } from 'node:fs/promises';
 import {
   effectiveMemoryLines,
   parseMemory,
@@ -23,6 +23,7 @@ import { mergeIndexes } from '../dist/core/memory/index.js';
 import { route, routeDetailed } from '../dist/core/memory/routing.js';
 import { ensureVectorIndex } from '../dist/core/memory/vector-db.js';
 import { defaultConfig } from '../dist/core/runtime/config.js';
+import { VERSION } from '../dist/core/runtime/version.js';
 import { tempWorkspace } from './helpers.mjs';
 
 test('init wordmark can render colored or plain', () => {
@@ -31,6 +32,11 @@ test('init wordmark can render colored or plain', () => {
   assert.match(renderInitWordmark(true), /\x1b\[1;36m/);
   assert.match(renderInitWordmark(true).replace(/\x1b\[[0-9;]*m/g, ''), /SYNTHETIC MEMORY/);
   assert.match(renderInitWordmark(true).split('\n').at(-1) ?? '', /^\x1b\[1;36m/);
+});
+
+test('runtime version is generated from package manifest', async () => {
+  const manifest = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
+  assert.equal(VERSION, manifest.version);
 });
 
 test('schema parser reads required frontmatter and sections', () => {
@@ -372,6 +378,10 @@ test('argument parser preserves positional text after known boolean flags', () =
   const globalSkillset = parseArgs(['install-skillset', '--global', 'codex']);
   assert.equal(globalSkillset.flags.global, true);
   assert.deepEqual(globalSkillset.rest, ['codex']);
+  const splitSkillset = parseArgs(['install-skill', 'set', '--global', 'claude']);
+  assert.equal(splitSkillset.command, 'install-skillset');
+  assert.equal(splitSkillset.flags.global, true);
+  assert.deepEqual(splitSkillset.rest, ['claude']);
   const upgrade = parseArgs(['upgrade', '--plan', '--target', 'codex']);
   assert.equal(upgrade.flags.plan, true);
   assert.equal(upgrade.flags.target, 'codex');

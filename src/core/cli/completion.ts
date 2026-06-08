@@ -17,7 +17,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
   const globalFolderArgs = ['--move-from-path'].join(' ');
   const skillsetTargets = [
     'all', 'list', 'agents-md', 'codex', 'copilot', 'claude', 'cursor',
-    'gemini', 'cline', 'windsurf', 'antigravity',
+    'gemini', 'cline', 'windsurf',
     'opencode', 'open-code', 'mcp', 'slash'
   ].join(' ');
   if (shell === 'zsh') {

@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.0.5
+
+- Added generated runtime version support so `engram --version` follows
+  `package.json` during builds.
+- Updated global skillset installs to preserve human-authored shared instruction
+  files, refresh a single managed Engram block at the end, and write host
+  `SKILL.md` files where supported.
+- Changed Antigravity handling to keep dedicated targets as hidden
+  compatibility aliases while advertising the Gemini-compatible target.
+- Added `install skill set` natural parsing plus refreshed CLI help,
+  completions, docs, and tests for the updated skillset behavior.
+
 ## 0.0.4
 
 - Added configurable default save targets with `engram set-save-target

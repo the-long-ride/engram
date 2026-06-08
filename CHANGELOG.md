@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.0.4
+
+- Added configurable default save targets with `engram set-save-target
+  workspace|global|both|status`.
+- Changed fresh installs to default normal saves to both workspace and global
+  when global memory is configured.
+- Made `--scope workspace`, `--scope global`, and `--scope both` literal
+  per-command save targets instead of treating workspace saves as implicit
+  global copies.
+- Updated CLI help, completions, MCP save proposals, README, and integration
+  docs for the new save-target behavior.
+
 ## 0.0.3
 
 - Added `engram update-global-folder` / `engram ugf` to retarget the configured

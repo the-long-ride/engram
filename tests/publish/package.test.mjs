@@ -11,4 +11,6 @@ test('npm publish metadata declares a package README', async () => {
   assert.ok(readme.length > 1000);
   assert.ok(manifest.files.includes('README.md'));
   assert.equal(manifest.files.filter((file) => file === 'README.md').length, 1);
+  assert.equal(manifest.scripts.publish, 'npm publish --access public --ignore-scripts');
+  assert.equal(manifest.scripts.prepublishOnly, 'npm run test:package');
 });

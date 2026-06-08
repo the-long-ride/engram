@@ -1,6 +1,6 @@
 {
   "name": "@the-long-ride/engram",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Portable, human-approved memory for AI agents. Grow with you & your teams.",
   "keywords": [
     "cli",
@@ -58,9 +58,9 @@
     "node": ">=20"
   },
   "peerDependencies": {
-    "@the-long-ride/markdown-them": "*",
-    "better-sqlite3": "*",
-    "sqlite-vec": "*"
+    "@the-long-ride/markdown-them": "1.3.0",
+    "better-sqlite3": "12.10.0",
+    "sqlite-vec": "0.1.9"
   },
   "peerDependenciesMeta": {
     "@the-long-ride/markdown-them": {

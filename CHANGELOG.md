@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.0.6
+
+- Pinned optional peer dependencies for Markdown conversion and vector routing
+  to the current tested releases.
+
 ## 0.0.5
 
 - Added generated runtime version support so `engram --version` follows

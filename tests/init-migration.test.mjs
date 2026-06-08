@@ -96,7 +96,7 @@ test('init persists config migrations while preserving user settings', async () 
   const migrated = await runEngram(cwd, env, ['init', '--global-branch', 'team']);
   assert.equal(migrated.code, 0, migrated.stderr);
   const config = JSON.parse(await readFile(path.join(workspaceMemoryRoot(cwd), 'engram.config.json'), 'utf8'));
-  assert.equal(config.version, '0.0.5');
+  assert.equal(config.version, '0.0.6');
   assert.equal(config.scope, 'workspace');
   assert.deepEqual(config.roles, ['backend']);
   assert.equal(config.global_git.branch, 'team');

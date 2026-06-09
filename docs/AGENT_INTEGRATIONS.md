@@ -40,6 +40,13 @@ workspace default, workspace memory is disabled for the command so global memory
 does not cross profile boundaries. `engram profile merge <source> <target>
 --dry-run` previews cross-profile copies and duplicate candidates.
 
+After an npm package update, the next normal Engram command quietly reconciles
+already-initialized workspace/global roots once for the new version. This startup
+check is intentionally cheap after the first run: it only reads small config
+markers when the current version is already recorded. It does not run from npm
+postinstall, create new memory roots, or replace human-authored files. Use
+`--no-auto-upgrade` or `ENGRAM_NO_AUTO_UPGRADE=1` to skip it for a command.
+
 To add or refresh adapters later:
 
 ```bash
@@ -84,11 +91,12 @@ file, and `open-code` maps to `opencode`. The old `antigravity` and
    engram init
    ```
 
-   Rerun `engram init` after Engram upgrades. Existing workspaces are
-   reconciled in place: missing standard files/folders are restored, generated
-   help/readme/skillset files are refreshed, config defaults are merged, and
-   safe legacy folder migrations are applied without overwriting human-authored
-   agent files or memory audit data.
+   Normal commands run a quiet one-time safe reconcile after npm package
+   upgrades. You can still rerun `engram init` when you want an explicit manual
+   refresh. Existing workspaces are reconciled in place: missing standard
+   files/folders are restored, generated help/readme/skillset files are
+   refreshed, config defaults are merged, and safe legacy folder migrations are
+   applied without overwriting human-authored agent files or memory audit data.
    This includes refreshing `.agents/skills/engram/SKILL.md` when an older
    Engram-generated skill is present.
 

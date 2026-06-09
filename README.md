@@ -102,6 +102,10 @@ sets the user default for uninitialized folders, and
 `engram profile use <name> --workspace` pins a default profile for the current
 workspace. One-off commands can use `--profile <name>`; if that profile differs
 from the workspace default, workspace memory is disabled for that command.
+After an npm package update, the next normal Engram command performs a quiet,
+one-time safe reconcile for already-initialized roots. It does not run from npm
+postinstall, create new memory roots, or touch human-authored files. Use
+`--no-auto-upgrade` or `ENGRAM_NO_AUTO_UPGRADE=1` to skip that startup check.
 When broad queries match more than eight memories, `engram load` reranks with
 tags, type, recency, graph, and optional sqlite-vec vector signals before loading
 the top eight. Use `engram load --dry-run "<task>"` to preview candidate counts

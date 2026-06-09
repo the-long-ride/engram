@@ -241,6 +241,11 @@ engram -h set-rule-variant
 All commands listed in help include short aliases. Aliases must route to the same
 CLI behavior and approval gates as their canonical commands.
 
+Agents may normalize natural clone requests into `engram clone-memory`, for
+example "clone workspace memory to global" -> `engram clone-memory workspace
+global`. Reverse the scopes to copy global memory into a workspace; use
+`--force` only when the human explicitly asks to overwrite destination copies.
+
 Shell completion scripts are available for bash, zsh, and PowerShell:
 
 ```bash

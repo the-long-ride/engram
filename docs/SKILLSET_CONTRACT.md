@@ -152,6 +152,7 @@ proposal and collect explicit human approval before invoking a CLI write flow.
 | `engram stats` | Show visible memory counts, scope mix, and author ownership |
 | `engram install-skillset all` | Install agent-host instruction files |
 | `engram install-skillset slash` | Install slash-command adapters, including both Claude command and skill paths |
+| `engram clone-memory workspace global [--force] [--dry-run]` / `engram clone-memory global workspace [--force] [--dry-run]` | Clone active `rules/`, `skills/`, and `knowledge/` Markdown memories between workspace and global scopes while rewriting destination scope frontmatter and hashes |
 | `engram sync` | Sync global memory Git and refresh live-sync targets |
 
 ## Slash Contract

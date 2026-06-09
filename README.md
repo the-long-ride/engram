@@ -247,6 +247,7 @@ Tune how strictly rules are formatted when loaded by your AI assistant:
 ### Other Next Commands
 - **Check active settings & active paths:** `engram entry` (Agent: `/engram entry`)
 - **Update or move global memory folder:** `engram update-global-folder <new-path> [--move-from-path <old-path>]` / `engram ugf <new-path>` (Agent: `/engram set global memory path to <new-path>`)
+- **Clone workspace/global memory:** `engram clone-memory workspace global` or `engram clone-memory global workspace --force` (Agent: `/engram clone workspace memory to global`)
 - **Sync local & global changes:** `engram sync` (Agent: `/engram sync`)
 - **Run checkup & clean broken links:** `engram verify` / `engram repair` (Agent: `/engram verify` / `/engram repair`)
 - **Advisory contradiction scan:** `engram quality-check` (Agent: `/engram quality-check`)
@@ -267,6 +268,7 @@ Tune how strictly rules are formatted when loaded by your AI assistant:
 | **Import Existing Files / Docs** | `engram take-control --all` | `/engram take-control --all` |
 | **Check Config / Paths** | `engram entry` | `/engram entry` |
 | **Update Global Folder** | `engram update-global-folder <new-path>` / `engram ugf <new-path>` | `/engram set global memory path to <new-path>` |
+| **Clone Workspace/Global Memory** | `engram clone-memory workspace global` / `engram clone-memory global workspace --force` | `/engram clone workspace memory to global` |
 | **Verify Memory Integrity** | `engram verify` | `/engram verify` |
 | **Set Active Roles** | `engram set-role <roles>` | `/engram set-role <roles>` |
 | **Set Rule Variant** | `engram set-rule-variant <variant>` | `/engram set-rule-variant <variant>` |

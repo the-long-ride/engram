@@ -53,6 +53,7 @@ export const HELP_DATA: HelpSection[] = [
       { command: 'engram resolve-conflicts [--dry-run]', alias: 'rc', purpose: 'Preview or resolve Git conflicts in memory files' },
       { command: 'engram install-hooks', alias: 'ih', purpose: 'Install local Git hooks for Engram integrity checks' },
       { command: 'engram install-skillset [all|list|target] [--global] [--force]', alias: 'is', purpose: 'Generate workspace or global agent skillset instruction files and slash adapters' },
+      { command: 'engram clone-memory workspace global [--force] [--dry-run]', alias: 'cm', purpose: 'Clone active memory Markdown between workspace and global scopes; reverse the scopes to clone back' },
       { command: 'engram sync', alias: 'sy', purpose: 'Sync global memory with Git remote and refresh enabled live-sync targets' },
     ]
   }

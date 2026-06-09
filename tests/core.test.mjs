@@ -243,6 +243,7 @@ test('command registry has topic help and stable aliases', () => {
   assert.equal(commandAliases().uh, undefined);
   assert.equal(commandAliases().tc, 'take-control');
   assert.equal(commandAliases().ugf, 'update-global-folder');
+  assert.equal(commandAliases().cm, 'clone-memory');
   assert.equal(commandAliases()['-v'], '--version');
 });
 
@@ -402,6 +403,17 @@ test('argument parser preserves positional text after known boolean flags', () =
   const naturalChangeGlobal = parseArgs(['change', 'my', 'global', 'root', 'to', 'F:\\engram-global']);
   assert.equal(naturalChangeGlobal.command, 'update-global-folder');
   assert.deepEqual(naturalChangeGlobal.rest, ['F:\\engram-global']);
+  const cloneMemory = parseArgs(['clone-memory', 'workspace', 'global', '--force']);
+  assert.equal(cloneMemory.command, 'clone-memory');
+  assert.equal(cloneMemory.flags.force, true);
+  assert.deepEqual(cloneMemory.rest, ['workspace', 'global']);
+  const cloneNatural = parseArgs(['clone', 'workspace', 'memory', 'to', 'global', '--dry-run']);
+  assert.equal(cloneNatural.command, 'clone-memory');
+  assert.equal(cloneNatural.flags['dry-run'], true);
+  assert.deepEqual(cloneNatural.rest, ['workspace', 'global']);
+  const cloneNaturalReverse = parseArgs(['copy', 'global', 'memory', 'to', 'workspace']);
+  assert.equal(cloneNaturalReverse.command, 'clone-memory');
+  assert.deepEqual(cloneNaturalReverse.rest, ['global', 'workspace']);
   const takeControl = parseArgs(['take-control', '--plan', '--include', 'docs/**/*.txt', '--include', 'notes/*.txt']);
   assert.equal(takeControl.flags.plan, true);
   assert.deepEqual(takeControl.flags.include, ['docs/**/*.txt', 'notes/*.txt']);

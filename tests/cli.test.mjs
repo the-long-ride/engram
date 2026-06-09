@@ -4,6 +4,7 @@ import { rm, writeFile, mkdir, readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { initGit, runEngram, tempWorkspace, workspaceMemoryRoot } from './helpers.mjs';
 
 test('init, help, save reject, save accept, load, verify, audit', async () => {
@@ -33,6 +34,7 @@ test('init, help, save reject, save accept, load, verify, audit', async () => {
   assert.match((await runEngram(cwd, env, ['help', 'update-global-folder'])).stdout, /--move-from-path/);
   assert.match((await runEngram(cwd, env, ['help', 'update-global-folder'])).stdout, /set global memory path/);
   assert.match((await runEngram(cwd, env, ['help', 'ugf'])).stdout, /whole old root/);
+  assert.match((await runEngram(cwd, env, ['help', 'clone-memory'])).stdout, /Clone active memory Markdown/);
   assert.doesNotMatch((await runEngram(cwd, env, ['help'])).stdout, /update-help|team-dashboard|engram dry-run|engram propose/);
   assert.match((await runEngram(cwd, env, ['-h', 'roles'])).stdout, /role: \[\.\.\.\]/);
   assert.match((await runEngram(cwd, env, ['save-session', '-h'])).stdout, /one candidate per line/);
@@ -96,6 +98,51 @@ test('short command aliases dispatch to canonical commands', async () => {
   assert.doesNotMatch((await runEngram(cwd, env, ['search', 'Natural auto save'])).stdout, /Natural auto save should not save/);
   assert.match((await runEngram(cwd, env, ['search', 'Alias ss'])).stdout, /Alias ss accepts all save.?session candidates/);
   assert.match((await runEngram(cwd, env, ['vf'])).stdout, /OK workspace/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('clone-memory copies active memories between workspace and global', async () => {
+  const { cwd, env } = await tempWorkspace('engram-clone-');
+  await runEngram(cwd, env, ['init', '--no-skillset']);
+  const saved = await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Workspace clone source memory'], 'A\n');
+  assert.equal(saved.code, 0, saved.stderr);
+
+  const rel = 'knowledge/workspace-clone-source-memory.md';
+  const workspaceFile = path.join(workspaceMemoryRoot(cwd), rel);
+  const globalFile = path.join(env.ENGRAM_GLOBAL_DIR, rel);
+  const dryRun = await runEngram(cwd, env, ['clone', 'workspace', 'memory', 'to', 'global', '--dry-run']);
+  assert.equal(dryRun.code, 0, dryRun.stderr);
+  assert.match(dryRun.stdout, /Clone memory dry-run workspace -> global/);
+  assert.match(dryRun.stdout, /Planned: 1/);
+  await assert.rejects(readFile(globalFile, 'utf8'));
+
+  const cloned = await runEngram(cwd, env, ['clone-memory', 'workspace', 'global']);
+  assert.equal(cloned.code, 0, cloned.stderr);
+  assert.match(cloned.stdout, /Clone memory workspace -> global/);
+  assert.match(cloned.stdout, /Copied: 1/);
+  assert.match(await readFile(globalFile, 'utf8'), /scope: global/);
+  assert.match((await runEngram(cwd, env, ['verify', 'global'])).stdout, /OK global:knowledge\/workspace-clone-source-memory\.md/);
+
+  const skipped = await runEngram(cwd, env, ['clone', 'workspace', 'memory', 'to', 'global']);
+  assert.equal(skipped.code, 0, skipped.stderr);
+  assert.match(skipped.stdout, /Skipped: 1/);
+
+  const globalRaw = await readFile(globalFile, 'utf8');
+  const changedGlobal = globalRaw.replace('Workspace clone source memory', 'Workspace clone source memory updated globally');
+  await writeFile(globalFile, changedGlobal);
+  const hashesPath = path.join(env.ENGRAM_GLOBAL_DIR, 'memory.hashes.json');
+  const hashes = JSON.parse(await readFile(hashesPath, 'utf8'));
+  hashes[rel] = sha256(changedGlobal);
+  await writeFile(hashesPath, `${JSON.stringify(hashes, null, 2)}\n`);
+
+  const back = await runEngram(cwd, env, ['cm', 'global', 'workspace', '--force']);
+  assert.equal(back.code, 0, back.stderr);
+  assert.match(back.stdout, /Clone memory global -> workspace/);
+  assert.match(back.stdout, /Copied: 1/);
+  const workspaceRaw = await readFile(workspaceFile, 'utf8');
+  assert.match(workspaceRaw, /scope: workspace/);
+  assert.match(workspaceRaw, /updated globally/);
+  assert.match((await runEngram(cwd, env, ['verify', 'workspace'])).stdout, /OK workspace:knowledge\/workspace-clone-source-memory\.md/);
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -206,6 +253,9 @@ test('completion emits shell helper with command suggestions', async () => {
   assert.match(bash.stdout, /--all --dry-run/);
   assert.match(bash.stdout, /update-global-folder/);
   assert.match(bash.stdout, /\bugf\b/);
+  assert.match(bash.stdout, /clone-memory/);
+  assert.match(bash.stdout, /clone-memory\|cm/);
+  assert.match(bash.stdout, /\$clone_memory_args/);
   assert.match(bash.stdout, /--move-from-path/);
   assert.doesNotMatch(bash.stdout, /\bantigravity\b/);
   assert.doesNotMatch(bash.stdout, /antigravity-cli/);
@@ -221,6 +271,7 @@ test('completion emits shell helper with command suggestions', async () => {
   assert.match(zsh.stdout, /--query-level\[recent chat sessions to mine\]/);
   assert.match(zsh.stdout, /update-global-folder/);
   assert.match(zsh.stdout, /update-global-folder\|ugf/);
+  assert.match(zsh.stdout, /clone-memory\|cm/);
   const powershell = await runEngram(cwd, env, ['completion', 'powershell']);
   assert.equal(powershell.code, 0, powershell.stderr);
   assert.match(powershell.stdout, /Register-ArgumentCompleter/);
@@ -232,7 +283,9 @@ test('completion emits shell helper with command suggestions', async () => {
   assert.match(powershell.stdout, /'--query-level'/);
   assert.match(powershell.stdout, /\$engramUpgradeArgs/);
   assert.match(powershell.stdout, /\$engramGlobalFolderArgs/);
+  assert.match(powershell.stdout, /\$engramCloneMemoryArgs/);
   assert.match(powershell.stdout, /'ugf'/);
+  assert.match(powershell.stdout, /'cm'/);
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -988,4 +1041,8 @@ Test memory fixture.
 
 Use this memory when a future task touches: ${tags.slice(0, 3).join(', ')}.
 `;
+}
+
+function sha256(text) {
+  return createHash('sha256').update(text).digest('hex');
 }

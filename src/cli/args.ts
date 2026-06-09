@@ -14,6 +14,7 @@ const acceptAllCommands = new Set([...saveSessionCommands, ...takeControlCommand
 const repeatableFlags = new Set(['dir', 'exclude', 'file', 'include']);
 const recentSessionWords = new Set(['session', 'sessions', 'chat', 'chats', 'conversation', 'conversations']);
 const recentSessionPrefixes = new Set(['last', 'latest', 'past', 'previous', 'recent']);
+const cloneMemoryVerbs = new Set(['clone', 'copy']);
 const globalFolderVerbs = new Set(['change', 'move', 'rename', 'set', 'update']);
 const globalFolderNouns = new Set(['dir', 'directory', 'folder', 'path', 'root']);
 const globalFolderFillers = new Set(['engram', 'my', 'the']);
@@ -67,7 +68,8 @@ function setFlag(flags: Record<string, FlagValue>, name: string, value: string):
 }
 
 function normalizeNaturalArgs(argv: string[]): string[] {
-  const globalFolderArgs = normalizeNaturalGlobalFolder(argv);
+  const cloneMemoryArgs = normalizeNaturalCloneMemory(argv);
+  const globalFolderArgs = normalizeNaturalGlobalFolder(cloneMemoryArgs);
   const commandArgs = globalFolderArgs[0]?.toLowerCase() === 'take' && globalFolderArgs[1]?.toLowerCase() === 'control'
     ? ['take-control', ...globalFolderArgs.slice(2)]
     : globalFolderArgs;
@@ -78,6 +80,18 @@ function normalizeInstallSkillset(argv: string[]): string[] {
   const [command = 'help', ...tokens] = argv;
   if (command.toLowerCase() !== 'install-skill' || tokens[0]?.toLowerCase() !== 'set') return argv;
   return ['install-skillset', ...tokens.slice(1)];
+}
+
+function normalizeNaturalCloneMemory(argv: string[]): string[] {
+  const [verb = '', ...tokens] = argv;
+  if (!cloneMemoryVerbs.has(verb.toLowerCase())) return argv;
+  const flags = tokens.filter((token) => token.startsWith('-'));
+  const scopes = tokens
+    .filter((token) => !token.startsWith('-'))
+    .map((token) => token.toLowerCase())
+    .filter((token) => token === 'workspace' || token === 'global');
+  if (scopes.length < 2 || scopes[0] === scopes[1]) return argv;
+  return ['clone-memory', scopes[0], scopes[1], ...flags];
 }
 
 function normalizeNaturalGlobalFolder(argv: string[]): string[] {

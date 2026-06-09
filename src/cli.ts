@@ -7,6 +7,7 @@ import { cmdObserve } from './commands/observe.js';
 import { cmdAudit, cmdLoad, cmdRebuildIndex, cmdRepair, cmdVerify } from './commands/read.js';
 import { cmdSave, cmdSaveSession, cmdTakeControl } from './commands/write.js';
 import { cmdArchive, cmdBenchmark, cmdDeduplicate, cmdEntry, cmdExport, cmdGraph, cmdHealth, cmdImport, cmdQuality, cmdSearch, cmdStats, cmdSync } from './commands/ops.js';
+import { cmdCloneMemory } from './commands/clone.js';
 import { cmdIgnore, cmdInstallHooks, cmdInstallSkillset, cmdResolveConflicts, cmdSetRole, cmdSetRuleVariant, cmdSetSaveTarget, cmdUpdateGlobalFolder, cmdUpgrade } from './commands/admin.js';
 
 /** Execute a CLI invocation and return printable output. */
@@ -52,6 +53,7 @@ export async function runCli(argv: string[]): Promise<string> {
     case 'install-hooks': return cmdInstallHooks();
     case 'install-skillset': return cmdInstallSkillset(rest, flags);
     case 'upgrade': return cmdUpgrade(rest, flags);
+    case 'clone-memory': return cmdCloneMemory(rest, flags);
     case 'sync': return cmdSync();
     default: return cmdHelp();
   }

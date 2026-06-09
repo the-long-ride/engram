@@ -15,6 +15,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
   const takeControlArgs = ['--file', '--dir', '--include', '--exclude', '--max-sources', '--max-chars', '--scope', '--role', '--roles', '--all', '--accept-all', '--dry-run', '--plan'].join(' ');
   const upgradeArgs = ['--plan', '--latest', '--self', '--memory-only', '--global-skillsets-only', '--target', '--force', '--no-version-check'].join(' ');
   const globalFolderArgs = ['--move-from-path'].join(' ');
+  const cloneMemoryArgs = ['workspace', 'global', '--force', '--dry-run'].join(' ');
   const skillsetTargets = [
     'all', 'list', 'agents-md', 'codex', 'copilot', 'claude', 'cursor',
     'gemini', 'cline', 'windsurf',
@@ -88,6 +89,9 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '    install-skillset|is)',
       `      _arguments "--global" "--force" "1:target:(${skillsetTargets})"`,
       '      ;;',
+      '    clone-memory|cm)',
+      '      _arguments "--force[overwrite existing destination files]" "--dry-run[preview copy only]" "1:source:(workspace global)" "2:target:(workspace global)"',
+      '      ;;',
       '    upgrade|up)',
       `      _arguments "--plan" "--latest" "--self" "--memory-only" "--global-skillsets-only" "--target=[agent]:agent:(${skillsetTargets})" "--force" "--no-version-check"`,
       '      ;;',
@@ -108,6 +112,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       `$engramTakeControlArgs = @(${takeControlArgs.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
       `$engramUpgradeArgs = @(${upgradeArgs.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
       `$engramGlobalFolderArgs = @(${globalFolderArgs.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
+      `$engramCloneMemoryArgs = @(${cloneMemoryArgs.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
       `$engramSkillsetTargets = @(${skillsetTargets.split(' ').map((target) => `'${target}'`).join(', ')})`,
       '$engramScopes = @(\'workspace\', \'global\', \'both\')',
       '$engramRuleVariants = @(\'off\', \'light\', \'balanced\', \'strict\', \'status\')',
@@ -135,6 +140,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '        { $_ -in @(\'observe\', \'o\') } { $engramObserveArgs; break }',
       '        { $_ -in @(\'take-control\', \'tc\') } { $engramTakeControlArgs; break }',
       '        { $_ -in @(\'update-global-folder\', \'ugf\') } { $engramGlobalFolderArgs; break }',
+      '        { $_ -in @(\'clone-memory\', \'cm\') } { $engramCloneMemoryArgs; break }',
       '        { $_ -in @(\'install-skillset\', \'is\') } { $engramSkillsetTargets + \'--global\' + \'--force\'; break }',
       '        { $_ -in @(\'upgrade\', \'up\') } { $engramUpgradeArgs; break }',
       '        { $_ -in @(\'set-rule-variant\', \'rv\') } { $engramRuleVariants; break }',
@@ -171,6 +177,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
     `  local ignore_actions="${ignoreActions}"`,
     `  local upgrade_args="${upgradeArgs}"`,
     `  local global_folder_args="${globalFolderArgs}"`,
+    `  local clone_memory_args="${cloneMemoryArgs}"`,
     `  local skillset_targets="${skillsetTargets}"`,
     '  case "$prev" in',
     '    --format)',
@@ -271,6 +278,10 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
     '      ;;',
     '    resolve-conflicts|rc)',
     '      COMPREPLY=( $(compgen -W "--dry-run" -- "$cur") )',
+    '      return',
+    '      ;;',
+    '    clone-memory|cm)',
+    '      COMPREPLY=( $(compgen -W "$clone_memory_args" -- "$cur") )',
     '      return',
     '      ;;',
     '    install-skillset|is)',

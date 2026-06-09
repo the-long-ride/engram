@@ -244,6 +244,7 @@ test('command registry has topic help and stable aliases', () => {
   assert.equal(commandAliases().tc, 'take-control');
   assert.equal(commandAliases().ugf, 'update-global-folder');
   assert.equal(commandAliases().cm, 'clone-memory');
+  assert.equal(commandAliases().pf, 'profile');
   assert.equal(commandAliases()['-v'], '--version');
 });
 
@@ -414,6 +415,14 @@ test('argument parser preserves positional text after known boolean flags', () =
   const cloneNaturalReverse = parseArgs(['copy', 'global', 'memory', 'to', 'workspace']);
   assert.equal(cloneNaturalReverse.command, 'clone-memory');
   assert.deepEqual(cloneNaturalReverse.rest, ['global', 'workspace']);
+  const leadingProfile = parseArgs(['--profile', 'company', 'load', 'deployment']);
+  assert.equal(leadingProfile.command, 'load');
+  assert.equal(leadingProfile.flags.profile, 'company');
+  assert.deepEqual(leadingProfile.rest, ['deployment']);
+  const inlineProfile = parseArgs(['save', '--profile=personal', 'knowledge', 'Profile scoped memory']);
+  assert.equal(inlineProfile.command, 'save');
+  assert.equal(inlineProfile.flags.profile, 'personal');
+  assert.deepEqual(inlineProfile.rest, ['knowledge', 'Profile scoped memory']);
   const takeControl = parseArgs(['take-control', '--plan', '--include', 'docs/**/*.txt', '--include', 'notes/*.txt']);
   assert.equal(takeControl.flags.plan, true);
   assert.deepEqual(takeControl.flags.include, ['docs/**/*.txt', 'notes/*.txt']);

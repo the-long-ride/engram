@@ -213,17 +213,22 @@ function rolesFromFlags(flags: Record<string, any>): string[] | undefined {
 
 function saveScopes(ctx: Awaited<ReturnType<typeof getContext>>, flags: Record<string, any>): Scope[] {
   const requested = typeof flags.scope === 'string' ? flags.scope.trim() : '';
+  const explicitProfile = typeof flags.profile === 'string' ? flags.profile.trim() : '';
   const target = requested
     ? parseSaveTarget(requested, 'save --scope')
+    : explicitProfile && ctx.profile.workspace_default && explicitProfile !== ctx.profile.workspace_default
+      ? 'global'
     : ctx.config.scope;
   if (requested && target !== 'workspace' && !ctx.roots.global) {
     throw new Error('save --scope requires global memory; set ENGRAM_GLOBAL_DIR or run engram init --global-path <path>');
   }
-  const configured = requested
-    ? writeScopes(target, ctx.config)
-    : writeScopes(ctx.config.scope, ctx.config);
-  if (!configured.length) throw new Error('save target requires global memory; set ENGRAM_GLOBAL_DIR or run engram init --global-path <path>');
-  return configured;
+  const configured = writeScopes(target, ctx.config);
+  const available = configured.filter((scope) => Boolean(ctx.roots[scope]));
+  if (requested && available.length !== configured.length) {
+    throw new Error(`save --scope ${requested} is not available for active profile ${ctx.profile.active || '<none>'}`);
+  }
+  if (!available.length) throw new Error('save target requires global memory; set ENGRAM_GLOBAL_DIR, create a profile, or run engram init --global-path <path>');
+  return available;
 }
 
 function queryLevelFromFlags(flags: Record<string, any>): number | undefined {

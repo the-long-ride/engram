@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { CHANGELOG_FILE, DEFAULT_IGNORE, GRAPH_FILE, HASH_FILE, HELP_FILE, INDEX_FILE, MEMORY_DIRS, README_FILE, VECTOR_DB_FILE } from '../runtime/constants.js';
 import type { EngramConfig, Scope } from '../runtime/types.js';
-import { defaultConfig, legacyWorkspaceRoot, loadConfig, mergeConfig, scopeRootsForConfig, workspaceRoot, writeConfig, writeUserConfig } from '../runtime/config.js';
+import { defaultConfig, legacyWorkspaceRoot, loadConfig, mergeConfig, profileResolutionForConfig, scopeRootsForConfig, workspaceRoot, writeConfig, writeUserConfig } from '../runtime/config.js';
 import { ensureDir, exists, inside, listFiles, readJson, readText, writeJson, writeText } from '../system/fsx.js';
 import { renderHelp, renderMemoryReadme } from '../cli/help.js';
 import { emptyIndex, rebuildIndex } from './index.js';
@@ -26,6 +26,7 @@ memory.vec.sqlite-*
 export async function initWorkspace(cwd: string, force = false, branch = 'main', globalPath = '', options: InitOptions = {}): Promise<string[]> {
   const root = workspaceRoot(cwd);
   const existing = await loadConfig(cwd);
+  const profile = profileResolutionForConfig(existing);
   const globalOnly = Boolean(options.globalOnly);
   const hadWorkspaceMemory = await exists(root) || await exists(legacyWorkspaceRoot(cwd));
   const scope = globalOnly ? 'global' : options.saveTarget ?? (hadWorkspaceMemory ? existing.scope : defaultConfig().scope);
@@ -43,7 +44,10 @@ export async function initWorkspace(cwd: string, force = false, branch = 'main',
   else {
     lines.push(`engram initialized at ${root}`);
   }
-  const workspace = await createScope(root, config, 'workspace', force);
+  const workspaceConfigOverrides = profile.active && profile.global_path === path.resolve(globalPath || '')
+    ? { global_path: '' }
+    : {};
+  const workspace = await createScope(root, config, 'workspace', force, workspaceConfigOverrides);
   const ignoreUpdated = await reconcileIgnoreFile(cwd, force);
   if (workspaceExisted || force) lines.push(...scopeRepairLines('workspace', workspace, ignoreUpdated));
   if (roots.global) {

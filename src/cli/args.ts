@@ -6,7 +6,7 @@ const booleanFlags = new Set([
   'accept-all', 'all', 'auto', 'dry-run', 'force', 'h', 'help',
   'global', 'global-only', 'global-skillsets-only', 'latest', 'low-confidence', 'memory-only', 'no-global', 'no-skillset',
   'no-submodule', 'no-version-check', 'plan', 'propose', 'rebuild', 'self', 'semantic', 'stale',
-  'submodule', 'v', 'version'
+  'submodule', 'use', 'user', 'v', 'version', 'workspace'
 ]);
 const saveSessionCommands = new Set(['save-session', 'ss']);
 const takeControlCommands = new Set(['take-control', 'tc']);
@@ -21,13 +21,17 @@ const globalFolderFillers = new Set(['engram', 'my', 'the']);
 
 /** Parse argv into command, positional args, and --flags. */
 export function parseArgs(argv: string[]): ParsedArgs {
-  const [command = 'help', ...tokens] = normalizeNaturalArgs(argv);
+  const [command = 'help', ...tokens] = normalizeNaturalArgs(normalizeLeadingGlobalFlags(argv));
   const rest: string[] = [];
   const flags: Record<string, FlagValue> = {};
   for (let i = 0; i < tokens.length; i += 1) {
     const token = tokens[i];
     if (token === '-a' && saveSessionCommands.has(command)) flags['accept-all'] = true;
     else if (!token.startsWith('--')) rest.push(token);
+    else if (token.includes('=')) {
+      const [name, ...valueParts] = token.slice(2).split('=');
+      setFlag(flags, name, valueParts.join('='));
+    }
     else if (booleanFlags.has(token.slice(2))) flags[token.slice(2)] = true;
     else if (tokens[i + 1] && !tokens[i + 1].startsWith('--')) setFlag(flags, token.slice(2), tokens[++i]);
     else flags[token.slice(2)] = true;
@@ -65,6 +69,28 @@ function setFlag(flags: Record<string, FlagValue>, name: string, value: string):
   }
   const current = flags[name];
   flags[name] = Array.isArray(current) ? [...current, value] : typeof current === 'string' ? [current, value] : [value];
+}
+
+function normalizeLeadingGlobalFlags(argv: string[]): string[] {
+  const leading: string[] = [];
+  let index = 0;
+  while (index < argv.length) {
+    const token = argv[index];
+    if (token === '--profile' && argv[index + 1] && !argv[index + 1].startsWith('--')) {
+      leading.push('--profile', argv[index + 1]);
+      index += 2;
+      continue;
+    }
+    if (token.startsWith('--profile=')) {
+      leading.push('--profile', token.slice('--profile='.length));
+      index += 1;
+      continue;
+    }
+    break;
+  }
+  if (!leading.length) return argv;
+  const [command = 'help', ...rest] = argv.slice(index);
+  return [command, ...rest, ...leading];
 }
 
 function normalizeNaturalArgs(argv: string[]): string[] {

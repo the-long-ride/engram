@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { CHANGELOG_FILE, GRAPH_FILE, HASH_FILE, HELP_FILE, INDEX_FILE, MEMORY_DIRS, README_FILE, VECTOR_DB_FILE } from '../runtime/constants.js';
 import type { EngramConfig } from '../runtime/types.js';
-import { defaultConfig, loadConfig, scopeRootsForConfig, workspaceRoot, writeConfig, writeUserConfig } from '../runtime/config.js';
+import { defaultConfig, loadConfig, profileResolutionForConfig, readProfileStore, scopeRootsForConfig, workspaceRoot, writeConfig, writeProfileStore, writeUserConfig } from '../runtime/config.js';
 import { ensureDir, exists, listFiles } from '../system/fsx.js';
 import { ensureGlobalGit, gitCommitGlobal } from '../vcs/git.js';
 import { resolveConflictsInRoot } from '../vcs/conflict.js';
@@ -15,6 +15,7 @@ type GlobalFolderUpdateOptions = { moveFromPath?: string };
 export async function updateGlobalFolder(cwd: string, newPath: string, options: GlobalFolderUpdateOptions = {}): Promise<string[]> {
   const target = normalizeRequiredPath(newPath, 'a new global path');
   const current = await loadConfig(cwd);
+  const profile = profileResolutionForConfig(current);
   const previousRoot = scopeRootsForConfig(cwd, current).global;
   const lines: string[] = [];
   if (options.moveFromPath?.trim()) {
@@ -27,7 +28,9 @@ export async function updateGlobalFolder(cwd: string, newPath: string, options: 
   }
 
   const config = { ...current, version: defaultConfig().version, global_path: target };
-  const configFile = await writeGlobalFolderConfig(cwd, config);
+  const configFile = profile.active
+    ? await writeProfileGlobalFolderConfig(profile.active, target, config)
+    : await writeGlobalFolderConfig(cwd, config);
   const global = await createScope(target, config, 'global', false, { global_path: target });
   lines.push(...scopeRepairLines('global', global, false));
   const branch = await ensureGlobalGit(target, config.global_git.branch);
@@ -35,10 +38,18 @@ export async function updateGlobalFolder(cwd: string, newPath: string, options: 
   lines.push(`config updated: ${configFile}`);
   lines.push(`engram global ready at ${target} (git branch: ${branch})`);
   const env = process.env.ENGRAM_GLOBAL_DIR?.trim();
-  if (env && path.resolve(env) !== target) {
+  if (!profile.active && env && path.resolve(env) !== target) {
     lines.push(`warning: ENGRAM_GLOBAL_DIR still points at ${path.resolve(env)}; unset it to use the configured path`);
   }
   return lines;
+}
+
+async function writeProfileGlobalFolderConfig(name: string, target: string, config: EngramConfig): Promise<string> {
+  const store = await readProfileStore();
+  const profile = store.profiles[name];
+  if (!profile) throw new Error(`active profile is not configured: ${name}`);
+  store.profiles[name] = { ...profile, global_path: target, global_git: config.global_git };
+  return writeProfileStore(store);
 }
 
 async function resolveGlobalConflicts(root: string): Promise<number> {

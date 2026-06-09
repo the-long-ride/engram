@@ -1,7 +1,7 @@
 /** Shared command context: config, roots, ignore rules, and merged index. */
-import type { EngramConfig, MemoryIndex } from '../runtime/types.js';
+import type { EngramConfig, MemoryIndex, ProfileResolution } from '../runtime/types.js';
 import type { MemoryGraph } from '../runtime/types.js';
-import { loadConfig, scopeRoots, scopeRootsForConfig } from '../runtime/config.js';
+import { loadConfig, profileResolutionForConfig, scopeRoots, scopeRootsForConfig } from '../runtime/config.js';
 import { isIgnored, loadIgnore } from '../safety/ignore.js';
 import { emptyIndex, loadIndex, mergeIndexes, rebuildIndex } from './index.js';
 import { emptyGraph, loadGraph, mergeGraphs, rebuildGraph } from './graph.js';
@@ -12,6 +12,7 @@ export type EngramContext = {
   cwd: string;
   config: EngramConfig;
   roots: ReturnType<typeof scopeRoots>;
+  profile: ProfileResolution;
   scopeIndexes: { workspace: MemoryIndex; global: MemoryIndex };
   index: MemoryIndex;
   graph: MemoryGraph;
@@ -24,7 +25,9 @@ export type ContextOptions = { rebuild?: boolean };
 /** Load current config and merged index, rebuilding indexes when present. */
 export async function getContext(cwd = process.cwd(), options: ContextOptions = {}): Promise<EngramContext> {
   const config = await loadConfig(cwd);
-  const roots = scopeRootsForConfig(cwd, config);
+  const profile = profileResolutionForConfig(config);
+  const resolvedRoots = scopeRootsForConfig(cwd, config);
+  const roots = profile.workspace_allowed ? resolvedRoots : { ...resolvedRoots, workspace: '' };
   const ignore = await loadIgnore(cwd, config);
   const workspace = await readIndex(roots.workspace, 'workspace', ignore.patterns, Boolean(options.rebuild));
   const global = roots.global ? await readIndex(roots.global, 'global', ignore.patterns, Boolean(options.rebuild)) : emptyIndex();
@@ -33,7 +36,7 @@ export async function getContext(cwd = process.cwd(), options: ContextOptions = 
   const globalGraph = roots.global ? await readGraph(roots.global, 'global', global, config, Boolean(options.rebuild)) : emptyGraph();
   const graph = mergeGraphs(workspaceGraph, globalGraph);
   const hiddenCount = index.entries.filter((entry) => entry.ignored || isIgnored(entry.file, ignore.patterns)).length;
-  return { cwd, config, roots, scopeIndexes: { workspace, global }, index, graph, hiddenCount, ignorePatterns: ignore.patterns };
+  return { cwd, config, roots, profile, scopeIndexes: { workspace, global }, index, graph, hiddenCount, ignorePatterns: ignore.patterns };
 }
 
 /** Format the session-start load summary. */
@@ -60,16 +63,18 @@ export function loadSummary(entries: { type: string; id: string; scope: string }
 /** Resolve a memory entry to an absolute file path. */
 export function entryPath(ctx: EngramContext, scope: string, file: string): string {
   const root = ctx.roots[scope as 'workspace' | 'global'];
-  if (!root) throw new Error('global memory is not configured; set ENGRAM_GLOBAL_DIR or run engram init --global-path <path>');
+  if (!root) throw new Error(`${scope} memory is not available for the active profile`);
   return inside(root, file);
 }
 
 async function readIndex(root: string, scope: 'workspace' | 'global', patterns: string[], rebuild: boolean): Promise<MemoryIndex> {
+  if (!root) return emptyIndex();
   if (!(await exists(root))) return loadIndex(root);
   return rebuild ? rebuildIndex(root, scope, patterns) : loadIndex(root);
 }
 
 async function readGraph(root: string, scope: 'workspace' | 'global', index: MemoryIndex, config: EngramConfig, rebuild: boolean): Promise<MemoryGraph> {
+  if (!root) return emptyGraph();
   if (!(await exists(root))) return emptyGraph();
   return rebuild ? rebuildGraph(root, scope, index, config) : loadGraph(root);
 }

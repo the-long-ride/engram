@@ -3,11 +3,35 @@ export type MemoryType = 'rule' | 'skill' | 'knowledge';
 export type Scope = 'workspace' | 'global';
 export type Confidence = 'high' | 'medium' | 'low';
 export type RuleVariant = 'light' | 'balanced' | 'strict';
+export type ProfileSource = 'env' | 'workspace' | 'user' | 'none';
+
+export type EngramProfile = {
+  global_path: string;
+  scope?: 'both' | Scope;
+  global_git?: Partial<EngramConfig['global_git']>;
+};
+
+export type ProfileStore = {
+  active_profile?: string;
+  profiles: Record<string, EngramProfile>;
+};
+
+export type ProfileResolution = {
+  active: string;
+  source: ProfileSource;
+  configured: boolean;
+  global_path: string;
+  workspace_default: string;
+  user_default: string;
+  workspace_allowed: boolean;
+  profiles_path: string;
+};
 
 export type EngramConfig = {
   version: string;
   enabled: boolean;
   global_path: string;
+  default_profile?: string;
   scope: 'both' | Scope;
   update: 'auto' | 'manual';
   read: 'auto' | 'manual' | 'off';

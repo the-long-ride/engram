@@ -1,18 +1,24 @@
 /** Runtime entry report for resolved Engram flags and paths. */
 import { renderInitWordmark } from '../cli/banner.js';
 import { VERSION } from './constants.js';
-import { loadConfig, scopeRootsForConfig } from './config.js';
+import { loadConfig, profileResolutionForConfig, scopeRootsForConfig } from './config.js';
 import { globalGitInfo } from '../vcs/git.js';
 
 /** Print all resolved options currently applied by Engram. */
 export async function renderEntry(cwd = process.cwd()): Promise<string> {
   const config = await loadConfig(cwd);
-  const roots = scopeRootsForConfig(cwd, config);
+  const profile = profileResolutionForConfig(config);
+  const resolvedRoots = scopeRootsForConfig(cwd, config);
+  const roots = {
+    ...resolvedRoots,
+    workspace: profile.workspace_allowed ? resolvedRoots.workspace : '<disabled for active profile>'
+  };
   const info = roots.global
     ? await globalGitInfo(roots.global, config.global_git)
     : { repo: false, branch: config.global_git.branch, remote: config.global_git.remote, remoteUrl: '', dirty: false };
   const rows = flatten({
     version: VERSION,
+    profile,
     roots,
     config,
     global_git_detected: {
@@ -40,6 +46,7 @@ export async function renderEntry(cwd = process.cwd()): Promise<string> {
 
 function entryGroup(key: string): string {
   if (key === 'version') return 'Runtime';
+  if (key.startsWith('profile.')) return 'Profile';
   if (key.startsWith('roots.')) return 'Memory roots';
   if (key.startsWith('config.ignore.')) return 'Ignore rules';
   if (key === 'config.roles') return 'Routing roles';

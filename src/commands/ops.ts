@@ -156,7 +156,11 @@ export async function cmdImport(args: string[], flags: Record<string, any> = {})
 
 async function importAgentMemoryBundle(bundle: any, flags: Record<string, any>): Promise<string> {
   const ctx = await getContext();
-  const scopes = flags.scope ? writeScopes(parseSaveTarget(flags.scope, 'import --scope'), ctx.config) : writeScopes(ctx.config.scope, ctx.config);
+  const requestedScope = typeof flags.scope === 'string' ? flags.scope : '';
+  const scopes = (requestedScope
+    ? writeScopes(parseSaveTarget(requestedScope, 'import --scope'), ctx.config)
+    : writeScopes(ctx.config.scope, ctx.config)).filter((scope) => Boolean(ctx.roots[scope]));
+  if (requestedScope && !scopes.length) throw new Error(`import --scope ${requestedScope} is not available for active profile ${ctx.profile.active || '<none>'}`);
   if (!scopes.length) throw new Error('import --scope requires global memory; set ENGRAM_GLOBAL_DIR or run engram init --global-path <path>');
   const author = await resolveAuthor();
   const max = flags.all === true ? Number.POSITIVE_INFINITY : Number(flags.max ?? 50);

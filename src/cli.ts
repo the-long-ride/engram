@@ -8,6 +8,7 @@ import { cmdAudit, cmdLoad, cmdRebuildIndex, cmdRepair, cmdVerify } from './comm
 import { cmdSave, cmdSaveSession, cmdTakeControl } from './commands/write.js';
 import { cmdArchive, cmdBenchmark, cmdDeduplicate, cmdEntry, cmdExport, cmdGraph, cmdHealth, cmdImport, cmdQuality, cmdSearch, cmdStats, cmdSync } from './commands/ops.js';
 import { cmdCloneMemory } from './commands/clone.js';
+import { cmdProfile } from './commands/profile.js';
 import { cmdIgnore, cmdInstallHooks, cmdInstallSkillset, cmdResolveConflicts, cmdSetRole, cmdSetRuleVariant, cmdSetSaveTarget, cmdUpdateGlobalFolder, cmdUpgrade } from './commands/admin.js';
 
 /** Execute a CLI invocation and return printable output. */
@@ -15,47 +16,55 @@ export async function runCli(argv: string[]): Promise<string> {
   const parsed = parseArgs(argv);
   const command = canonicalCommand(parsed.command);
   const { rest, flags } = parsed;
-  if (flags.help || flags.h || command === '-h' || command === '--help' || rest.includes('-h') || rest.includes('--help')) {
-    const topic = (command !== '-h' && command !== '--help' && command !== 'help') ? command : rest.find((arg) => arg !== '-h' && arg !== '--help');
-    return cmdHelp(topic);
-  }
-  if (flags.version || flags.v || command === '--version' || command === '-v' || command === 'version') return VERSION;
-  switch (command) {
-    case 'init': return cmdInit(flags);
-    case 'help': return cmdHelp(rest[0]);
-    case 'completion': return cmdCompletion(rest[0]);
-    case 'save': return cmdSave(rest, flags);
-    case 'save-session': return cmdSaveSession(rest, flags);
-    case 'observe': return cmdObserve(rest, flags);
-    case 'take-control': return cmdTakeControl(rest, flags);
-    case 'load': return cmdLoad(rest, flags);
-    case 'verify': return cmdVerify(rest[0]);
-    case 'rebuild-index': return cmdRebuildIndex(rest[0]);
-    case 'repair': return cmdRepair(rest[0]);
-    case 'audit': return cmdAudit(flags);
-    case 'archive': return cmdArchive(rest, flags);
-    case 'benchmark': return cmdBenchmark(rest);
-    case 'health': return cmdHealth();
-    case 'graph': return cmdGraph(rest, flags);
-    case 'entry': return cmdEntry();
-    case 'quality-check': return cmdQuality();
-    case 'deduplicate': return cmdDeduplicate(flags);
-    case 'export': return cmdExport(flags);
-    case 'import': return cmdImport(rest, flags);
-    case 'search': return cmdSearch(rest, flags);
-    case 'stats': return cmdStats();
-    case 'ignore': return cmdIgnore(rest);
-    case 'set-role': return cmdSetRole(rest);
-    case 'set-save-target': return cmdSetSaveTarget(rest);
-    case 'set-rule-variant': return cmdSetRuleVariant(rest);
-    case 'update-global-folder': return cmdUpdateGlobalFolder(rest, flags);
-    case 'resolve-conflicts': return cmdResolveConflicts(flags);
-    case 'install-hooks': return cmdInstallHooks();
-    case 'install-skillset': return cmdInstallSkillset(rest, flags);
-    case 'upgrade': return cmdUpgrade(rest, flags);
-    case 'clone-memory': return cmdCloneMemory(rest, flags);
-    case 'sync': return cmdSync();
-    default: return cmdHelp();
+  const previousProfile = process.env.ENGRAM_PROFILE;
+  if (typeof flags.profile === 'string' && flags.profile.trim()) process.env.ENGRAM_PROFILE = flags.profile.trim();
+  try {
+    if (flags.help || flags.h || command === '-h' || command === '--help' || rest.includes('-h') || rest.includes('--help')) {
+      const topic = (command !== '-h' && command !== '--help' && command !== 'help') ? command : rest.find((arg) => arg !== '-h' && arg !== '--help');
+      return await cmdHelp(topic);
+    }
+    if (flags.version || flags.v || command === '--version' || command === '-v' || command === 'version') return VERSION;
+    switch (command) {
+      case 'init': return await cmdInit(flags);
+      case 'help': return await cmdHelp(rest[0]);
+      case 'completion': return await cmdCompletion(rest[0]);
+      case 'profile': return await cmdProfile(rest, flags);
+      case 'save': return await cmdSave(rest, flags);
+      case 'save-session': return await cmdSaveSession(rest, flags);
+      case 'observe': return await cmdObserve(rest, flags);
+      case 'take-control': return await cmdTakeControl(rest, flags);
+      case 'load': return await cmdLoad(rest, flags);
+      case 'verify': return await cmdVerify(rest[0]);
+      case 'rebuild-index': return await cmdRebuildIndex(rest[0]);
+      case 'repair': return await cmdRepair(rest[0]);
+      case 'audit': return await cmdAudit(flags);
+      case 'archive': return await cmdArchive(rest, flags);
+      case 'benchmark': return await cmdBenchmark(rest);
+      case 'health': return await cmdHealth();
+      case 'graph': return await cmdGraph(rest, flags);
+      case 'entry': return await cmdEntry();
+      case 'quality-check': return await cmdQuality();
+      case 'deduplicate': return await cmdDeduplicate(flags);
+      case 'export': return await cmdExport(flags);
+      case 'import': return await cmdImport(rest, flags);
+      case 'search': return await cmdSearch(rest, flags);
+      case 'stats': return await cmdStats();
+      case 'ignore': return await cmdIgnore(rest);
+      case 'set-role': return await cmdSetRole(rest);
+      case 'set-save-target': return await cmdSetSaveTarget(rest);
+      case 'set-rule-variant': return await cmdSetRuleVariant(rest);
+      case 'update-global-folder': return await cmdUpdateGlobalFolder(rest, flags);
+      case 'resolve-conflicts': return await cmdResolveConflicts(flags);
+      case 'install-hooks': return await cmdInstallHooks();
+      case 'install-skillset': return await cmdInstallSkillset(rest, flags);
+      case 'upgrade': return await cmdUpgrade(rest, flags);
+      case 'clone-memory': return await cmdCloneMemory(rest, flags);
+      case 'sync': return await cmdSync();
+      default: return await cmdHelp();
+    }
+  } finally {
+    if (previousProfile === undefined) delete process.env.ENGRAM_PROFILE;
+    else process.env.ENGRAM_PROFILE = previousProfile;
   }
 }
 

@@ -31,6 +31,15 @@ global memory is configured. Humans can change the default with
 `engram set-save-target workspace|global|both`, and agents can override one write
 with `--scope workspace|global|both`.
 
+Profiles isolate global memory roots for company, team, and personal contexts.
+Use `engram profile create <name> --global-path <path>` to register a profile,
+`engram profile use <name>` for the user default in uninitialized folders, and
+`engram profile use <name> --workspace` to pin the current workspace. Agents may
+pass `--profile <name>` for a one-off command; when that profile differs from the
+workspace default, workspace memory is disabled for the command so global memory
+does not cross profile boundaries. `engram profile merge <source> <target>
+--dry-run` previews cross-profile copies and duplicate candidates.
+
 To add or refresh adapters later:
 
 ```bash

@@ -96,6 +96,12 @@ Workspace memory loads first. Global memory is fallback. Fresh installs default
 normal saves to both workspace and global when global memory is configured; use
 `engram set-save-target workspace|global|both` or per-command `--scope` to
 choose the target.
+Use `engram profile create <name> --global-path <path>` when company, team, and
+personal memory must stay in separate global roots. `engram profile use <name>`
+sets the user default for uninitialized folders, and
+`engram profile use <name> --workspace` pins a default profile for the current
+workspace. One-off commands can use `--profile <name>`; if that profile differs
+from the workspace default, workspace memory is disabled for that command.
 When broad queries match more than eight memories, `engram load` reranks with
 tags, type, recency, graph, and optional sqlite-vec vector signals before loading
 the top eight. Use `engram load --dry-run "<task>"` to preview candidate counts
@@ -246,6 +252,7 @@ Tune how strictly rules are formatted when loaded by your AI assistant:
 
 ### Other Next Commands
 - **Check active settings & active paths:** `engram entry` (Agent: `/engram entry`)
+- **Manage isolated profiles:** `engram profile create personal --global-path <path>` / `engram profile use company --workspace`
 - **Update or move global memory folder:** `engram update-global-folder <new-path> [--move-from-path <old-path>]` / `engram ugf <new-path>` (Agent: `/engram set global memory path to <new-path>`)
 - **Clone workspace/global memory:** `engram clone-memory workspace global` or `engram clone-memory global workspace --force` (Agent: `/engram clone workspace memory to global`)
 - **Sync local & global changes:** `engram sync` (Agent: `/engram sync`)
@@ -267,6 +274,7 @@ Tune how strictly rules are formatted when loaded by your AI assistant:
 | **Mine and Auto-Approve Recent Sessions** | `engram save-session --query-level 50 --accept-all` | `/engram ss -a last 50 sessions` |
 | **Import Existing Files / Docs** | `engram take-control --all` | `/engram take-control --all` |
 | **Check Config / Paths** | `engram entry` | `/engram entry` |
+| **Manage Profiles** | `engram profile status` / `engram profile merge personal company --dry-run` | `/engram profile status` |
 | **Update Global Folder** | `engram update-global-folder <new-path>` / `engram ugf <new-path>` | `/engram set global memory path to <new-path>` |
 | **Clone Workspace/Global Memory** | `engram clone-memory workspace global` / `engram clone-memory global workspace --force` | `/engram clone workspace memory to global` |
 | **Verify Memory Integrity** | `engram verify` | `/engram verify` |

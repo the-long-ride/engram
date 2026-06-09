@@ -27,13 +27,19 @@ export type ProfileResolution = {
   profiles_path: string;
 };
 
+export type AutoUpgradeState = {
+  version: string;
+  checked_at: string;
+};
+
 export type EngramConfig = {
   version: string;
   enabled: boolean;
   global_path: string;
   default_profile?: string;
   scope: 'both' | Scope;
-  update: 'auto' | 'manual';
+  update: 'auto' | 'manual' | 'off';
+  auto_upgrade?: AutoUpgradeState;
   read: 'auto' | 'manual' | 'off';
   ignore: IgnoreConfig;
   roles: string[];

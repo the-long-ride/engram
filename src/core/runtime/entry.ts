@@ -87,5 +87,5 @@ function redactRemote(value: string): string {
 }
 
 function hiddenConfigRow(key: string): boolean {
-  return ['config.pattern_mining', 'config.pr_workflow', 'config.encryption'].some((prefix) => key.startsWith(prefix));
+  return ['config.auto_upgrade', 'config.pattern_mining', 'config.pr_workflow', 'config.encryption'].some((prefix) => key.startsWith(prefix));
 }

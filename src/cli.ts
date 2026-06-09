@@ -10,6 +10,7 @@ import { cmdArchive, cmdBenchmark, cmdDeduplicate, cmdEntry, cmdExport, cmdGraph
 import { cmdCloneMemory } from './commands/clone.js';
 import { cmdProfile } from './commands/profile.js';
 import { cmdIgnore, cmdInstallHooks, cmdInstallSkillset, cmdResolveConflicts, cmdSetRole, cmdSetRuleVariant, cmdSetSaveTarget, cmdUpdateGlobalFolder, cmdUpgrade } from './commands/admin.js';
+import { maybeAutoUpgrade } from './core/runtime/auto-upgrade.js';
 
 /** Execute a CLI invocation and return printable output. */
 export async function runCli(argv: string[]): Promise<string> {
@@ -24,6 +25,7 @@ export async function runCli(argv: string[]): Promise<string> {
       return await cmdHelp(topic);
     }
     if (flags.version || flags.v || command === '--version' || command === '-v' || command === 'version') return VERSION;
+    await maybeAutoUpgrade(process.cwd(), command, flags);
     switch (command) {
       case 'init': return await cmdInit(flags);
       case 'help': return await cmdHelp(rest[0]);

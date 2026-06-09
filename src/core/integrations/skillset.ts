@@ -85,6 +85,24 @@ export async function installSkillset(cwd: string, target = 'all', force = false
   return results;
 }
 
+/** Refresh only existing Engram-generated workspace adapter files. */
+export async function refreshGeneratedWorkspaceSkillsets(cwd: string): Promise<InstallResult[]> {
+  const results: InstallResult[] = [];
+  for (const name of Object.keys(targets) as SkillsetTarget[]) {
+    for (const relativeFile of targets[name]) {
+      const file = path.join(cwd, relativeFile);
+      const existing = await readText(file);
+      if (!existing || !isGenerated(existing, relativeFile)) continue;
+      const next = renderSkillsetFile(name, relativeFile);
+      const normalized = next.endsWith('\n') ? next : `${next}\n`;
+      if (existing === normalized) continue;
+      await writeText(file, normalized);
+      results.push({ target: name, file: relativeFile, action: 'updated' });
+    }
+  }
+  return results;
+}
+
 /** Return the registry file used to remember global skillset installs for upgrades. */
 export function globalSkillsetRegistryPath(): string {
   return path.join(userConfigDir(), 'global-skillsets.json');

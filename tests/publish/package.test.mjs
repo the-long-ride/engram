@@ -15,4 +15,7 @@ test('npm publish metadata declares a package README', async () => {
   assert.doesNotMatch(manifest.scripts['test:package'], /test-isolation/);
   assert.equal(manifest.scripts.publish, 'npm publish --access public --ignore-scripts');
   assert.equal(manifest.scripts.prepublishOnly, 'npm run test:package');
+  assert.equal(manifest.scripts.preinstall, undefined);
+  assert.equal(manifest.scripts.install, undefined);
+  assert.equal(manifest.scripts.postinstall, undefined);
 });

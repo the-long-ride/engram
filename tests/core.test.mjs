@@ -387,6 +387,9 @@ test('argument parser preserves positional text after known boolean flags', () =
   const upgrade = parseArgs(['upgrade', '--plan', '--target', 'codex']);
   assert.equal(upgrade.flags.plan, true);
   assert.equal(upgrade.flags.target, 'codex');
+  const noAutoUpgrade = parseArgs(['load', '--no-auto-upgrade', 'deployment']);
+  assert.equal(noAutoUpgrade.flags['no-auto-upgrade'], true);
+  assert.deepEqual(noAutoUpgrade.rest, ['deployment']);
   const updateGlobal = parseArgs(['update-global-folder', 'C:\\new-global', '--move-from-path', 'C:\\old-global']);
   assert.equal(updateGlobal.command, 'update-global-folder');
   assert.deepEqual(updateGlobal.rest, ['C:\\new-global']);

@@ -23,6 +23,7 @@ Engram 的协议契约：
 - **批准是信任的边界。**
 - **哈希是完整性校验。**
 - **忽略规则是隐私控制。**
+- **配置档隔离内存上下文。** 像浏览器配置档一样分开公司、客户和个人内存，避免外部 API 或公司提供的智能体把公司上下文泄漏到个人项目。
 - **Git 提供可移植性和审计历史。**
 - **智能体适配器是为了方便，而非权威。**
 - **严格规则约束智能体输出。** 使用严格规则（strict-rules）加载知识内存，以控制、引导和约束 AI 智能体的输出。
@@ -242,6 +243,9 @@ engram init
 ### 其他后续命令
 - **检查活动设置与活动路径：** `engram entry` (智能体: `/engram entry`)
 - **同步本地与全局更改：** `engram sync` (智能体: `/engram sync`)
+- **设置默认保存目标：** `engram set-save-target workspace|global|both|status` (智能体: `/engram set-save-target status`)
+- **管理隔离配置档：** `engram profile status` / `engram profile merge personal company --dry-run` (智能体: `/engram profile status`)
+- **克隆 workspace/global 内存：** `engram clone-memory workspace global` / `engram clone-memory global workspace --force` (智能体: `/engram clone workspace memory to global`)
 - **运行健康检查并清理坏链：** `engram verify` / `engram repair` (智能体: `/engram verify` / `/engram repair`)
 - **建议性矛盾冲突扫描：** `engram quality-check` (智能体: `/engram quality-check`)
 
@@ -263,6 +267,9 @@ engram init
 | **验证内存完整性** | `engram verify` | `/engram verify` |
 | **设置活动角色** | `engram set-role <角色>` | `/engram set-role <角色>` |
 | **设置规则变体** | `engram set-rule-variant <变体>` | `/engram set-rule-variant <变体>` |
+| **设置默认保存目标** | `engram set-save-target <目标>` | `/engram set-save-target <目标>` |
+| **管理配置档** | `engram profile status` / `engram profile merge personal company --dry-run` | `/engram profile status` |
+| **克隆 Workspace/Global 内存** | `engram clone-memory workspace global` | `/engram clone workspace memory to global` |
 | **同步内存** | `engram sync` | `/engram sync` |
 | **重建并修复索引** | `engram repair` | `/engram repair` |
 

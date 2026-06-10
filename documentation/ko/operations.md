@@ -21,11 +21,41 @@
 | 손상되었거나 스키마가 깨진 메모리 점검 | `engram repair` |
 | 잘못되었거나 불필요해진 메모리 아카이브 | `engram archive --reason "<사유>" <id-또는-파일명>` |
 | 규칙 적용 강조 강도 조정 | `engram set-rule-variant strict\|balanced\|light\|off` |
+| 기본 저장 대상 설정 | `engram set-save-target workspace\|global\|both\|status` |
+| 글로벌 프로필 관리 | `engram profile status\|create\|use\|merge` |
+| workspace/global 메모리 복제 | `engram clone-memory workspace global` |
 
 긴 개발 과정에서 여러 메모리 추천을 일괄 처리하고자 할 때는 `save-session`을 애용해 주십시오. 단축 형태는 `ss`입니다.
 현재 세션뿐 아니라 접근 가능한 최근 인간-에이전트 채팅 최대 n개에서 후보를 추출하고 싶다면 `--query-level <n>`을 사용하십시오. 자연어 표현 `engram ss -a last 50 sessions`는 `engram save-session --query-level 50 --accept-all`로 정규화됩니다.
 
 8개를 초과하는 메모리가 쿼리에 매칭되면 `load`는 더 넓은 후보군을 top 8 컨텍스트 팩으로 정제합니다. `load --dry-run`은 후보 수와 범위를 좁힐 수 있는 태그를 보여주며, `load --all`은 의도적으로 모든 표시 가능한 라우팅 메모리를 반환합니다.
+
+## 프로필, 저장 대상, 복제
+
+일반 저장이 어디에 기록될지 선택하려면 `set-save-target`을 사용하십시오:
+
+```bash
+engram set-save-target status
+engram set-save-target workspace
+engram set-save-target global
+engram set-save-target both
+```
+
+개인, 회사, 팀 글로벌 메모리를 서로 분리해야 할 때는 `profile`을 사용하십시오:
+
+```bash
+engram profile create personal --global-path ~/Documents/engram-personal --use
+engram profile use company --workspace
+engram profile merge personal company --dry-run
+```
+
+workspace와 global 범위 사이에서 활성 `rules/`, `skills/`, `knowledge/`
+Markdown을 복사하려면 `clone-memory`를 사용하십시오:
+
+```bash
+engram clone-memory workspace global
+engram clone-memory global workspace --force
+```
 
 ## 세션 저장 (Save Session)
 

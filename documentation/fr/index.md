@@ -15,6 +15,7 @@ Engram offre à la mémoire un contrat stable :
 - Les écritures nécessitent une approbation humaine.
 - Les hashes révèlent les modifications non sécurisées.
 - Les règles d'exclusion (ignore rules) protègent le contexte privé.
+- Les profils isolent la mémoire d'entreprise, de client et personnelle afin que les API externes ou les agents fournis par l'entreprise ne fassent pas fuiter le contexte entre projets.
 - Git fournit l'historique, la portabilité et la révision par l'équipe.
 
 ## Modèle Mental

@@ -15,6 +15,7 @@ Engram mang lại cho bộ nhớ một hợp đồng ổn định:
 - Mọi thao tác ghi bộ nhớ đều yêu cầu sự phê duyệt của con người.
 - Các mã băm (hashes) giúp phát hiện những sửa đổi không an toàn.
 - Các quy tắc bỏ qua (ignore rules) bảo vệ các ngữ cảnh riêng tư.
+- Profile tách biệt bộ nhớ công ty, khách hàng và cá nhân để API bên ngoài hoặc tác nhân do công ty cấp không làm rò rỉ ngữ cảnh giữa các dự án.
 - Git cung cấp lịch sử thay đổi, tính di động và khả năng xem xét trong nội bộ nhóm.
 
 ## Mô Hình Nhận Thức

@@ -21,11 +21,41 @@
 | 不正なメモリファイルを検出 | `engram repair` |
 | 誤ったメモリをアーカイブ | `engram archive --reason "<why>" <id-or-file>` |
 | ルールの適用強度を調整 | `engram set-rule-variant strict\|balanced\|light\|off` |
+| 既定の保存先を設定 | `engram set-save-target workspace\|global\|both\|status` |
+| グローバルプロファイルを管理 | `engram profile status\|create\|use\|merge` |
+| workspace/global メモリを複製 | `engram clone-memory workspace global` |
 
 長時間のセッションにおけるメモリ提案には `save-session` を使用します。短縮形：`ss`。
 現在のセッションだけでなく、アクセス可能な直近 n 件までの人間-エージェントチャットから候補を抽出してほしい場合は、`--query-level <n>` を使用します。自然な表現 `engram ss -a last 50 sessions` は `engram save-session --query-level 50 --accept-all` に正規化されます。
 
 8 件を超えるメモリがクエリに一致した場合、`load` は広い候補プールを top 8 のコンテキストパックへ絞り込みます。`load --dry-run` は候補数と絞り込み用タグを表示し、`load --all` は意図的にすべての表示可能なルーティング済みメモリを返します。
+
+## プロファイル、保存先、複製
+
+通常の保存先を選ぶには `set-save-target` を使います：
+
+```bash
+engram set-save-target status
+engram set-save-target workspace
+engram set-save-target global
+engram set-save-target both
+```
+
+個人、会社、チームのグローバルメモリを分離する必要がある場合は `profile` を使います：
+
+```bash
+engram profile create personal --global-path ~/Documents/engram-personal --use
+engram profile use company --workspace
+engram profile merge personal company --dry-run
+```
+
+workspace と global の間でアクティブな `rules/`、`skills/`、`knowledge/`
+Markdown をコピーするには `clone-memory` を使います：
+
+```bash
+engram clone-memory workspace global
+engram clone-memory global workspace --force
+```
 
 ## セッションの保存 (Save Session)
 

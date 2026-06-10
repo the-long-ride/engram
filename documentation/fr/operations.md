@@ -21,11 +21,42 @@ Cette page fournit des détails d'utilisation afin que le README puisse rester c
 | Trouver les fichiers de mémoire mal formés | `engram repair` |
 | Archiver une mémoire erronée | `engram archive --reason "<pourquoi>" <id-ou-fichier>` |
 | Ajuster la force des règles | `engram set-rule-variant strict\|balanced\|light\|off` |
+| Définir la cible d'enregistrement par défaut | `engram set-save-target workspace\|global\|both\|status` |
+| Gérer les profils globaux | `engram profile status\|create\|use\|merge` |
+| Cloner la mémoire workspace/global | `engram clone-memory workspace global` |
 
 Utilisez `save-session` pour les propositions de mémoire lors de longues sessions. Forme abrégée : `ss`.
 Utilisez `--query-level <n>` lorsque l'humain souhaite que l'agent exploite jusqu'à n conversations humain-agent récentes et accessibles, au lieu de la seule session actuelle. La formulation naturelle `engram ss -a last 50 sessions` se normalise en `engram save-session --query-level 50 --accept-all`.
 
 Lorsque plus de 8 mémoires correspondent à une requête, `load` affine le bassin de candidats en un pack de contexte top 8. `load --dry-run` affiche les comptes de candidats et les tags de resserrement; `load --all` renvoie volontairement toutes les mémoires visibles routées.
+
+## Profils, Cibles d'Enregistrement et Clonage
+
+Utilisez `set-save-target` pour choisir où vont les enregistrements normaux :
+
+```bash
+engram set-save-target status
+engram set-save-target workspace
+engram set-save-target global
+engram set-save-target both
+```
+
+Utilisez `profile` lorsque la mémoire globale personnelle, d'entreprise ou
+d'équipe doit rester isolée :
+
+```bash
+engram profile create personal --global-path ~/Documents/engram-personal --use
+engram profile use company --workspace
+engram profile merge personal company --dry-run
+```
+
+Utilisez `clone-memory` pour copier le Markdown actif `rules/`, `skills/` et
+`knowledge/` entre les portées workspace et global :
+
+```bash
+engram clone-memory workspace global
+engram clone-memory global workspace --force
+```
 
 ## Enregistrer Session (Save Session)
 

@@ -15,6 +15,7 @@ Engram gives memory a stable contract:
 - writes require human approval
 - hashes reveal unsafe edits
 - ignore rules protect private context
+- profiles isolate company, client, and personal memory so external APIs or company-provided agents do not leak context across projects
 - Git gives history, portability, and team review
 
 ## Mental Model

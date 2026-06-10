@@ -23,6 +23,7 @@ Le contrat d'Engram :
 - **L'approbation est la limite de confiance.**
 - **Les hashes sont des vérifications d'intégrité.**
 - **Les règles d'exclusion sont des contrôles de confidentialité.**
+- **Les profils isolent les contextes mémoire.** Gardez les mémoires d'entreprise, client et personnelle dans des profils type navigateur afin que le contexte utilisé avec des API externes ou des agents fournis par l'entreprise ne fuite pas vers les projets personnels.
 - **Git fournit la portabilité et l'historique d'audit.**
 - **Les adaptateurs sont des commodités, pas des autorités.**
 - **Des règles strictes régissent la sortie de l'agent.** Chargez la mémoire de connaissances avec des règles strictes (strict-rules) pour contrôler, guider et contraindre les sorties de l'agent d'IA.
@@ -242,6 +243,9 @@ Ajustez la rigueur de mise en forme des règles chargées par votre assistant IA
 ### Autres Commandes Suivantes
 - **Vérifier les paramètres actifs & les chemins actifs :** `engram entry` (Agent : `/engram entry`)
 - **Synchroniser les modifications locales & globales :** `engram sync` (Agent : `/engram sync`)
+- **Configurer la cible de sauvegarde :** `engram set-save-target workspace|global|both|status` (Agent : `/engram set-save-target status`)
+- **Gérer les profils isolés :** `engram profile status` / `engram profile merge personal company --dry-run` (Agent : `/engram profile status`)
+- **Cloner la mémoire workspace/global :** `engram clone-memory workspace global` / `engram clone-memory global workspace --force` (Agent : `/engram clone workspace memory to global`)
 - **Exécuter un contrôle & nettoyer les liens brisés :** `engram verify` / `engram repair` (Agent : `/engram verify` / `/engram repair`)
 - **Scan de contradiction consultatif :** `engram quality-check` (Agent : `/engram quality-check`)
 
@@ -263,6 +267,9 @@ Ajustez la rigueur de mise en forme des règles chargées par votre assistant IA
 | **Vérifier l'Intégrité de la Mémoire** | `engram verify` | `/engram verify` |
 | **Définir les Rôles Actifs** | `engram set-role <roles>` | `/engram set-role <roles>` |
 | **Définir la Variante de Règle** | `engram set-rule-variant <variant>` | `/engram set-rule-variant <variant>` |
+| **Configurer la Cible de Sauvegarde** | `engram set-save-target <cible>` | `/engram set-save-target <cible>` |
+| **Gérer les Profils** | `engram profile status` / `engram profile merge personal company --dry-run` | `/engram profile status` |
+| **Cloner la Mémoire Workspace/Global** | `engram clone-memory workspace global` | `/engram clone workspace memory to global` |
 | **Synchroniser les Mémoires** | `engram sync` | `/engram sync` |
 | **Reconstruire et Réparer l'Index** | `engram repair` | `/engram repair` |
 

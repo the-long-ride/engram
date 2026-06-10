@@ -21,11 +21,42 @@
 | Найти поврежденные файлы памяти | `engram repair` |
 | Отправить неверную память в архив | `engram archive --reason "<причина>" <id-или-файл>` |
 | Настроить силу фильтрации правил | `engram set-rule-variant strict\|balanced\|light\|off` |
+| Настроить цель сохранения по умолчанию | `engram set-save-target workspace\|global\|both\|status` |
+| Управлять глобальными профилями | `engram profile status\|create\|use\|merge` |
+| Клонировать память workspace/global | `engram clone-memory workspace global` |
 
 Используйте `save-session` для фиксации памяти по итогам длинных сессий взаимодействия. Короткая форма: `ss`.
 Используйте `--query-level <n>`, когда человек хочет, чтобы агент обработал до n доступных недавних сессий человек-агент, а не только текущую сессию. Естественная формулировка `engram ss -a last 50 sessions` нормализуется в `engram save-session --query-level 50 --accept-all`.
 
 Когда запросу соответствует больше 8 записей памяти, `load` уточняет широкий пул кандидатов до top-8 контекстного пакета. `load --dry-run` показывает число кандидатов и теги для сужения запроса; `load --all` намеренно возвращает все видимые маршрутизированные записи.
+
+## Профили, цели сохранения и клонирование
+
+Используйте `set-save-target`, чтобы выбрать, куда идут обычные сохранения:
+
+```bash
+engram set-save-target status
+engram set-save-target workspace
+engram set-save-target global
+engram set-save-target both
+```
+
+Используйте `profile`, когда личная, корпоративная или командная глобальная
+память должна оставаться изолированной:
+
+```bash
+engram profile create personal --global-path ~/Documents/engram-personal --use
+engram profile use company --workspace
+engram profile merge personal company --dry-run
+```
+
+Используйте `clone-memory`, чтобы копировать активные Markdown-файлы `rules/`,
+`skills/` и `knowledge/` между областями workspace и global:
+
+```bash
+engram clone-memory workspace global
+engram clone-memory global workspace --force
+```
 
 ## Сохранение сессии (Save Session)
 

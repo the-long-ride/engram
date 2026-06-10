@@ -23,6 +23,7 @@ Engram — это центр памяти знаний для проекта, р
 - **Одобрение человека — это граница доверия.**
 - **Хэши — это проверки целостности.**
 - **Правила игнорирования — это средства контроля конфиденциальности.**
+- **Профили изолируют контексты памяти.** Держите память компании, клиента и личных проектов в профилях как в браузере, чтобы контекст для внешних API или корпоративных агентов не попадал в личные проекты.
 - **Git обеспечивает переносимость и историю аудита.**
 - **Адаптеры агентов — это удобство, а не авторитет.**
 - **Строгие правила управляют выводом агента.** Загружайте память знаний со строгими правилами (strict-rules) для контроля, направления и ограничения ответов ИИ-агентов.
@@ -242,6 +243,9 @@ engram init
 ### Другие полезные команды
 - **Проверить активные настройки и пути:** `engram entry` (Агент: `/engram entry`)
 - **Синхронизировать локальные и глобальные изменения:** `engram sync` (Агент: `/engram sync`)
+- **Настроить цель сохранения по умолчанию:** `engram set-save-target workspace|global|both|status` (Агент: `/engram set-save-target status`)
+- **Управлять изолированными профилями:** `engram profile status` / `engram profile merge personal company --dry-run` (Агент: `/engram profile status`)
+- **Клонировать память workspace/global:** `engram clone-memory workspace global` / `engram clone-memory global workspace --force` (Агент: `/engram clone workspace memory to global`)
 - **Запустить проверку и очистить битые ссылки:** `engram verify` / `engram repair` (Агент: `/engram verify` / `/engram repair`)
 - **Проверить наличие противоречий:** `engram quality-check` (Агент: `/engram quality-check`)
 
@@ -263,6 +267,9 @@ engram init
 | **Проверить целостность памяти** | `engram verify` | `/engram verify` |
 | **Установить активные роли** | `engram set-role <роли>` | `/engram set-role <роли>` |
 | **Установить строгость правил** | `engram set-rule-variant <вариант>` | `/engram set-rule-variant <вариант>` |
+| **Настроить цель сохранения** | `engram set-save-target <цель>` | `/engram set-save-target <цель>` |
+| **Управлять профилями** | `engram profile status` / `engram profile merge personal company --dry-run` | `/engram profile status` |
+| **Клонировать память Workspace/Global** | `engram clone-memory workspace global` | `/engram clone workspace memory to global` |
 | **Синхронизировать память** | `engram sync` | `/engram sync` |
 | **Перестроить и исправить индекс** | `engram repair` | `/engram repair` |
 

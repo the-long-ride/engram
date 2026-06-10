@@ -21,11 +21,41 @@ Esta página contiene el uso detallado para que el README pueda seguir siendo br
 | Encontrar archivos de memoria mal formados | `engram repair` |
 | Archivar memoria errónea | `engram archive --reason "<motivo>" <id-o-archivo>` |
 | Ajustar la fuerza de las reglas | `engram set-rule-variant strict\|balanced\|light\|off` |
+| Definir destino de guardado predeterminado | `engram set-save-target workspace\|global\|both\|status` |
+| Gestionar perfiles globales | `engram profile status\|create\|use\|merge` |
+| Clonar memoria workspace/global | `engram clone-memory workspace global` |
 
 Use `save-session` para propuestas de memoria de sesiones largas. Forma corta: `ss`.
 Use `--query-level <n>` cuando el humano quiera que el agente extraiga memoria de hasta n chats humano-agente recientes y accesibles, en lugar de solo la sesión actual. La redacción natural `engram ss -a last 50 sessions` se normaliza a `engram save-session --query-level 50 --accept-all`.
 
 Cuando más de 8 memorias coinciden con una consulta, `load` refina el conjunto amplio de candidatos en un paquete de contexto top 8. `load --dry-run` muestra conteos de candidatos y etiquetas para acotar; `load --all` devuelve intencionalmente toda memoria visible enrutada.
+
+## Perfiles, Destinos de Guardado y Clonado
+
+Use `set-save-target` para elegir dónde se guardan las memorias normales:
+
+```bash
+engram set-save-target status
+engram set-save-target workspace
+engram set-save-target global
+engram set-save-target both
+```
+
+Use `profile` cuando la memoria global personal, de empresa o de equipo deba mantenerse aislada:
+
+```bash
+engram profile create personal --global-path ~/Documents/engram-personal --use
+engram profile use company --workspace
+engram profile merge personal company --dry-run
+```
+
+Use `clone-memory` para copiar Markdown activo de `rules/`, `skills/` y
+`knowledge/` entre los alcances workspace y global:
+
+```bash
+engram clone-memory workspace global
+engram clone-memory global workspace --force
+```
 
 ## Guardar Sesión (Save Session)
 

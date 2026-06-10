@@ -23,6 +23,7 @@ El contrato de Engram:
 - **La aprobación es el límite de confianza.**
 - **Los hashes son comprobaciones de integridad.**
 - **Las reglas de omisión son controles de privacidad.**
+- **Los perfiles aíslan contextos de memoria.** Mantén la memoria de empresa, cliente y personal en perfiles tipo navegador para que el contexto usado con API externas o agentes de la empresa no se filtre a proyectos personales.
 - **Git proporciona portabilidad e historial de auditoría.**
 - **Los adaptadores son conveniencia, no autoridad.**
 - **Las reglas estrictas rigen la salida del agente.** Cargue la memoria de conocimiento con reglas estrictas (strict-rules) para controlar, guiar y restringir las salidas del agente de IA.
@@ -242,6 +243,9 @@ Sintonice qué tan estrictamente se formatean las reglas cuando las carga su asi
 ### Siguientes Comandos Adicionales
 - **Comprobar la configuración activa y las rutas activas:** `engram entry` (Agente: `/engram entry`)
 - **Sincronizar cambios locales y globales:** `engram sync` (Agent: `/engram sync`)
+- **Configurar destino de guardado:** `engram set-save-target workspace|global|both|status` (Agente: `/engram set-save-target status`)
+- **Gestionar perfiles aislados:** `engram profile status` / `engram profile merge personal company --dry-run` (Agente: `/engram profile status`)
+- **Clonar memoria workspace/global:** `engram clone-memory workspace global` / `engram clone-memory global workspace --force` (Agente: `/engram clone workspace memory to global`)
 - **Ejecutar revisión y limpiar enlaces rotos:** `engram verify` / `engram repair` (Agente: `/engram verify` / `/engram repair`)
 - **Escaneo asesor de contradicciones:** `engram quality-check` (Agente: `/engram quality-check`)
 
@@ -263,6 +267,9 @@ Sintonice qué tan estrictamente se formatean las reglas cuando las carga su asi
 | **Verificar Integridad de la Memoria** | `engram verify` | `/engram verify` |
 | **Configurar Roles Activos** | `engram set-role <roles>` | `/engram set-role <roles>` |
 | **Configurar Variante de Regla** | `engram set-rule-variant <variante>` | `/engram set-rule-variant <variante>` |
+| **Configurar Destino de Guardado** | `engram set-save-target <destino>` | `/engram set-save-target <destino>` |
+| **Gestionar Perfiles** | `engram profile status` / `engram profile merge personal company --dry-run` | `/engram profile status` |
+| **Clonar Memoria Workspace/Global** | `engram clone-memory workspace global` | `/engram clone workspace memory to global` |
 | **Sincronizar Memorias** | `engram sync` | `/engram sync` |
 | **Reconstruir y Reparar Índice** | `engram repair` | `/engram repair` |
 

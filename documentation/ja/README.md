@@ -23,6 +23,7 @@ Engram の契約：
 - **承認は信頼의 境界線です。**
 - **ハッシュは整合性チェックです。**
 - **除外ルールはプライバシー管理です。**
+- **プロファイルはメモリコンテキストを分離します。** ブラウザのプロファイルのように会社、クライアント、個人のメモリを分け、外部 API や会社提供のエージェントで使う会社コンテキストが個人プロジェクトへ漏れないようにします。
 - **Git はポータビリティと変更履歴の監査性を提供します。**
 - **エージェントアダプターは便宜上のものであり、権限はありません。**
 - **厳格なルールがエージェントの出力を管理します。** AI エージェントの出力を制御、案内、および制約するために、厳格なルール（strict-rules）を伴って知識メモリをロードします。
@@ -242,6 +243,9 @@ engram init
 ### その他の追加コマンド
 - **현재 적용된 활성 설정 및 경로들 확인:** `engram entry` (에이전트: `/engram entry`)
 - **ローカルとグローバルの変更点の同期:** `engram sync` (エージェント: `/engram sync`)
+- **既定の保存先を設定：** `engram set-save-target workspace|global|both|status` (エージェント: `/engram set-save-target status`)
+- **分離プロファイルを管理：** `engram profile status` / `engram profile merge personal company --dry-run` (エージェント: `/engram profile status`)
+- **workspace/global メモリを複製：** `engram clone-memory workspace global` / `engram clone-memory global workspace --force` (エージェント: `/engram clone workspace memory to global`)
 - **整合性の自己診断およびインデックスの整理修復:** `engram verify` / `engram repair` (エージェント: `/engram verify` / `/engram repair`)
 - **矛盾の検出スキャン:** `engram quality-check` (エージェント: `/engram quality-check`)
 
@@ -263,6 +267,9 @@ engram init
 | **メモリ整合性の検証** | `engram verify` | `/engram verify` |
 | **開発役割の設定** | `engram set-role <役割名>` | `/engram set-role <役割名>` |
 | **ルール厳格度の設定** | `engram set-rule-variant <厳格度>` | `/engram set-rule-variant <厳格度>` |
+| **既定の保存先を設定** | `engram set-save-target <保存先>` | `/engram set-save-target <保存先>` |
+| **プロファイルを管理** | `engram profile status` / `engram profile merge personal company --dry-run` | `/engram profile status` |
+| **Workspace/Global メモリを複製** | `engram clone-memory workspace global` | `/engram clone workspace memory to global` |
 | **メモリの同期** | `engram sync` | `/engram sync` |
 | **インデックスの修復復旧** | `engram repair` | `/engram repair` |
 

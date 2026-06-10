@@ -131,6 +131,9 @@ engram save --scope global "Use pnpm for package management."
 engram install-skillset --global <agent-name>
 ```
 
+When init sees configured global memory, it creates or selects a user default
+profile for that global root so future workspaces can reuse it.
+
 ## Keep It Healthy
 
 Ask the agent at the end of meaningful work:

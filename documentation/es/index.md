@@ -15,6 +15,7 @@ Engram le da a la memoria un contrato estable:
 - Las escrituras requieren aprobación humana.
 - Los hashes revelan modificaciones inseguras.
 - Las reglas de omisión (ignore rules) protegen el contexto privado.
+- Los perfiles aíslan la memoria de empresa, cliente y personal para que las API externas o los agentes de la empresa no filtren contexto entre proyectos.
 - Git proporciona historial, portabilidad y revisión por parte del equipo.
 
 ## Modelo Mental

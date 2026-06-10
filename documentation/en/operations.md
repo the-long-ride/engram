@@ -21,7 +21,10 @@ This page holds detailed usage so the README can stay short.
 | Check hashes | `engram verify` |
 | Find malformed memory files | `engram repair` |
 | Archive wrong memory | `engram archive --reason "<why>" <id-or-file>` |
-| Tune rule strength | `engram set-rule-variant strict|balanced|light|off` |
+| Tune rule strength | `engram set-rule-variant strict\|balanced\|light\|off` |
+| Set default save target | `engram set-save-target workspace\|global\|both\|status` |
+| Manage global profiles | `engram profile status\|create\|use\|merge` |
+| Clone workspace/global memory | `engram clone-memory workspace global` |
 
 Use `save-session` for long-session memory proposals. Short form: `ss`.
 Use `--query-level <n>` when the human wants the agent to mine up to n recent accessible human-agent chats instead of only the current session. Natural wording such as `engram ss -a last 50 sessions` normalizes to `engram save-session --query-level 50 --accept-all`.
@@ -31,6 +34,33 @@ without printing their contents.
 When more than 8 memories match, `load` refines the wider candidate pool into a
 top-8 context pack. `load --dry-run` shows candidate counts and narrowing tags;
 `load --all` intentionally returns every visible routed memory.
+
+## Profiles, Save Targets, And Clone
+
+Use `set-save-target` to choose where normal saves go:
+
+```bash
+engram set-save-target status
+engram set-save-target workspace
+engram set-save-target global
+engram set-save-target both
+```
+
+Use `profile` when personal, company, or team global memory must stay isolated:
+
+```bash
+engram profile create personal --global-path ~/Documents/engram-personal --use
+engram profile use company --workspace
+engram profile merge personal company --dry-run
+```
+
+Use `clone-memory` to copy active `rules/`, `skills/`, and `knowledge/`
+Markdown between workspace and global scopes:
+
+```bash
+engram clone-memory workspace global
+engram clone-memory global workspace --force
+```
 
 ## Save Session
 

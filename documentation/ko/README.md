@@ -23,6 +23,7 @@ Engram의 계약:
 - **승인은 신뢰의 경계입니다.**
 - **해시는 무결성 체크입니다.**
 - **제외 규칙은 개인정보 보호 및 제어입니다.**
+- **프로필은 메모리 컨텍스트를 격리합니다.** 브라우저 프로필처럼 회사, 고객, 개인 메모리를 나누어 외부 API나 회사 제공 에이전트가 쓰는 회사 컨텍스트가 개인 프로젝트로 새지 않게 합니다.
 - **Git은 이식성 및 변경 이력 감사를 제공합니다.**
 - **에이전트 어댑터는 권한이 아닌 편의성을 제공합니다.**
 - **엄격한 규칙이 에이전트의 출력을 제어합니다.** AI 에이전트의 출력을 제어, 안내 및 제약하기 위해 엄격한 규칙(strict-rules)과 함께 지식 메모리를 로드합니다.
@@ -242,6 +243,9 @@ engram init
 ### 추가 명령어 가이드
 - **현재 적용된 활성 설정 및 경로들 확인:** `engram entry` (에이전트: `/engram entry`)
 - **로컬 및 글로벌 기억 변경본 상호 동기화:** `engram sync` (에이전트: `/engram sync`)
+- **기본 저장 대상 설정:** `engram set-save-target workspace|global|both|status` (에이전트: `/engram set-save-target status`)
+- **격리 프로필 관리:** `engram profile status` / `engram profile merge personal company --dry-run` (에이전트: `/engram profile status`)
+- **workspace/global 메모리 복제:** `engram clone-memory workspace global` / `engram clone-memory global workspace --force` (에이전트: `/engram clone workspace memory to global`)
 - **유효성 셀프 진단 및 망가진 인덱스 정리:** `engram verify` / `engram repair` (에이전트: `/engram verify` / `/engram repair`)
 - **메모리 간 모순 및 대립 체크:** `engram quality-check` (에이전트: `/engram quality-check`)
 
@@ -263,6 +267,9 @@ engram init
 | **메모리 정합성 검증** | `engram verify` | `/engram verify` |
 | **개발 역할 설정** | `engram set-role <역할이름들>` | `/engram set-role <역할이름들>` |
 | **규칙 엄격도 변체 설정** | `engram set-rule-variant <엄격도>` | `/engram set-rule-variant <엄격도>` |
+| **기본 저장 대상 설정** | `engram set-save-target <대상>` | `/engram set-save-target <대상>` |
+| **프로필 관리** | `engram profile status` / `engram profile merge personal company --dry-run` | `/engram profile status` |
+| **Workspace/Global 메모리 복제** | `engram clone-memory workspace global` | `/engram clone workspace memory to global` |
 | **기억 동기화** | `engram sync` | `/engram sync` |
 | **인덱스 파손 수리 복구** | `engram repair` | `/engram repair` |
 

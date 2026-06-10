@@ -54,6 +54,16 @@ export function machineProfileName(): string {
   return sanitizeProfileName(process.env.COMPUTERNAME || process.env.HOSTNAME || hostname() || process.env.USERNAME || process.env.USER || 'default');
 }
 
+/** Format user-facing lines for default-profile creation or selection. */
+export function defaultProfileLines(migration: DefaultProfileMigration | undefined): string[] {
+  if (!migration) return [];
+  return [
+    `default profile ${migration.created ? 'created' : 'selected'}: ${migration.active_profile}`,
+    `profile global path: ${migration.global_path}`,
+    `profile registry: ${migration.profiles_path}`
+  ];
+}
+
 async function legacyGlobalProfileSeed(cwd: string): Promise<{ global_path: string; config: EngramConfig } | undefined> {
   const roots = scopeRoots(cwd);
   const workspace = await readJson<Partial<EngramConfig>>(path.join(roots.workspace, 'engram.config.json'), {});

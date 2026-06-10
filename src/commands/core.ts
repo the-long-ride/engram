@@ -9,6 +9,7 @@ import { detectCompletionTarget } from '../core/cli/completion-target.js';
 import { normalizeBranchName } from '../core/vcs/git.js';
 import { installSkillset, type InstallResult } from '../core/integrations/skillset.js';
 import { applyGlobalRemote, applyWorkspaceSubmodule, planGlobalRemote, planWorkspaceSubmodule, resolveGlobalPath } from './init-plans.js';
+import { defaultProfileLines, ensureDefaultProfile } from '../core/runtime/profile-migration.js';
 
 /** Initialize workspace memory. */
 export async function cmdInit(flags: Record<string, any>): Promise<string> {
@@ -27,6 +28,9 @@ export async function cmdInit(flags: Record<string, any>): Promise<string> {
   const roots = scopeRootsForConfig(process.cwd(), config);
   const globalRemote = await planGlobalRemote(flags, roots.global, branch, config.global_git);
   const lines = await initWorkspace(process.cwd(), Boolean(flags.force), branch, globalPath, { globalOnly, saveTarget });
+  if (roots.global && flags['no-global'] !== true) {
+    lines.push(...defaultProfileLines(await ensureDefaultProfile(process.cwd())));
+  }
   if (submodule) lines.push(...await applyWorkspaceSubmodule(submodule));
   lines.push(...await applyGlobalRemote(globalRemote, roots.global, config.global_git));
   lines.push(...await maybeInstallDefaultSkillset(flags, globalOnly));

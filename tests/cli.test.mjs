@@ -536,6 +536,7 @@ test('upgrade creates a machine default profile for legacy global-only installs'
   const globalPath = path.join(cwd, 'portable-engram');
   const init = await runEngram(cwd, customEnv, ['init', '--global-only', '--global-path', globalPath]);
   assert.equal(init.code, 0, init.stderr);
+  await rm(path.join(customEnv.ENGRAM_CONFIG_DIR, 'profiles.json'), { force: true });
   const globalConfigFile = path.join(globalPath, 'engram.config.json');
   const globalConfig = JSON.parse(await readFile(globalConfigFile, 'utf8'));
   globalConfig.version = '0.0.0';
@@ -588,6 +589,7 @@ test('auto-upgrade creates a machine default profile for legacy global installs'
   const { cwd, env } = await tempWorkspace('engram-cli-autoprofile-');
   const init = await runEngram(cwd, env, ['init', '--no-skillset', '--scope', 'global']);
   assert.equal(init.code, 0, init.stderr);
+  await rm(path.join(env.ENGRAM_CONFIG_DIR, 'profiles.json'), { force: true });
   const root = workspaceMemoryRoot(cwd);
   const configFile = path.join(root, 'engram.config.json');
   const config = JSON.parse(await readFile(configFile, 'utf8'));
@@ -1105,6 +1107,12 @@ test('init prepares global git and entry reports detected branch', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
   const init = await runEngram(cwd, env, ['init']);
   assert.equal(init.code, 0, init.stderr);
+  assert.match(init.stdout, /default profile created/);
+  const expectedProfile = machineProfileName();
+  const profiles = JSON.parse(await readFile(path.join(env.ENGRAM_CONFIG_DIR, 'profiles.json'), 'utf8'));
+  assert.equal(profiles.active_profile, expectedProfile);
+  assert.equal(profiles.profiles[expectedProfile].global_path, env.ENGRAM_GLOBAL_DIR);
+  assert.equal(profiles.profiles[expectedProfile].scope, 'both');
   const repo = spawnSync('git', ['-C', env.ENGRAM_GLOBAL_DIR, 'rev-parse', '--is-inside-work-tree'], { encoding: 'utf8' });
   assert.equal(repo.stdout.trim(), 'true');
   assert.equal(spawnSync('git', ['-C', env.ENGRAM_GLOBAL_DIR, 'checkout', '-b', 'team'], { encoding: 'utf8' }).status, 0);
@@ -1152,8 +1160,8 @@ test('update-global-folder can retarget config without moving memory', async () 
   assert.equal(updated.code, 0, updated.stderr);
   assert.match(updated.stdout, /global path updated/);
   assert.match(updated.stdout, /global memory not moved/);
-  const config = JSON.parse(await readFile(path.join(workspaceMemoryRoot(cwd), 'engram.config.json'), 'utf8'));
-  assert.equal(config.global_path, newGlobal);
+  const profiles = JSON.parse(await readFile(path.join(customEnv.ENGRAM_CONFIG_DIR, 'profiles.json'), 'utf8'));
+  assert.equal(profiles.profiles[profiles.active_profile].global_path, newGlobal);
   await readFile(path.join(oldGlobal, 'engram.config.json'), 'utf8');
   const newConfig = JSON.parse(await readFile(path.join(newGlobal, 'engram.config.json'), 'utf8'));
   assert.equal(newConfig.global_path, newGlobal);
@@ -1218,6 +1226,7 @@ test('global-only init skips workspace install and saves to global by default', 
   const init = await runEngram(cwd, customEnv, ['init', '--global-only', '--global-path', globalPath]);
   assert.equal(init.code, 0, init.stderr);
   assert.match(init.stdout, /engram global-only initialized/);
+  assert.match(init.stdout, /default profile created/);
   assert.match(init.stdout, /Rule strict level/);
   assert.match(init.stdout, /Save session/);
   assert.match(init.stdout, /Take control/);
@@ -1231,6 +1240,11 @@ test('global-only init skips workspace install and saves to global by default', 
   const globalConfig = JSON.parse(await readFile(path.join(globalPath, 'engram.config.json'), 'utf8'));
   assert.equal(globalConfig.global_path, globalPath);
   assert.equal(globalConfig.scope, 'global');
+  const expectedProfile = machineProfileName();
+  const profiles = JSON.parse(await readFile(path.join(customEnv.ENGRAM_CONFIG_DIR, 'profiles.json'), 'utf8'));
+  assert.equal(profiles.active_profile, expectedProfile);
+  assert.equal(profiles.profiles[expectedProfile].global_path, globalPath);
+  assert.equal(profiles.profiles[expectedProfile].scope, 'global');
 
   const strict = await runEngram(cwd, customEnv, ['set-rule-variant', 'strict']);
   assert.equal(strict.code, 0, strict.stderr);

@@ -8,7 +8,10 @@ import { tempWorkspace } from './helpers.mjs';
 test('mcp status and save proposal do not write silently', async () => {
   const { cwd, env } = await tempWorkspace('engram-mcp-');
   const previous = process.cwd();
+  const previousGlobalDir = process.env.ENGRAM_GLOBAL_DIR;
+  const previousConfigDir = process.env.ENGRAM_CONFIG_DIR;
   process.chdir(cwd);
+  process.env.ENGRAM_CONFIG_DIR = env.ENGRAM_CONFIG_DIR;
   process.env.ENGRAM_GLOBAL_DIR = env.ENGRAM_GLOBAL_DIR;
   try {
     await runCli(['init']);
@@ -52,6 +55,10 @@ test('mcp status and save proposal do not write silently', async () => {
     assert.match(badType.error.message, /rule, skill, workflow, or knowledge/);
   } finally {
     process.chdir(previous);
+    if (previousConfigDir === undefined) delete process.env.ENGRAM_CONFIG_DIR;
+    else process.env.ENGRAM_CONFIG_DIR = previousConfigDir;
+    if (previousGlobalDir === undefined) delete process.env.ENGRAM_GLOBAL_DIR;
+    else process.env.ENGRAM_GLOBAL_DIR = previousGlobalDir;
     await rm(cwd, { recursive: true, force: true });
   }
 });

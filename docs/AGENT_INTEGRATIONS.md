@@ -50,9 +50,12 @@ postinstall, create new memory roots, or replace human-authored files. Use
 To add or refresh adapters later:
 
 ```bash
+engram upgrade
 engram install-skillset all
 ```
 
+`engram upgrade` refreshes existing Engram-generated workspace skillset files
+and registered global skillsets while preserving human-authored files.
 Use `--force` only when replacing generated Engram adapter files intentionally.
 Claude receives both `.claude/commands/engram.md` and
 `.claude/skills/engram/SKILL.md` so `/engram` appears in older command menus and

@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.0.8
+
+- Added upgrade migration that creates or selects a machine-named default
+  profile from an existing global memory path when older installs did not have
+  profiles configured.
+- Updated explicit `engram upgrade` and quiet startup auto-upgrade to preserve
+  global path, save target, and global Git settings for the migrated default
+  profile.
+- Updated `engram upgrade` to refresh existing generated workspace skillset
+  adapters, while preserving human-authored files.
+- Added a README link to the GitHub changelog for release history.
+- Added CLI regression coverage for legacy workspace/global and global-only
+  upgrade paths.
+
 ## 0.0.7
 
 - Added publish-only package metadata checks so README packaging regressions are

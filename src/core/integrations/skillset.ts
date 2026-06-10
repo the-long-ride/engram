@@ -86,7 +86,7 @@ export async function installSkillset(cwd: string, target = 'all', force = false
 }
 
 /** Refresh only existing Engram-generated workspace adapter files. */
-export async function refreshGeneratedWorkspaceSkillsets(cwd: string): Promise<InstallResult[]> {
+export async function refreshGeneratedWorkspaceSkillsets(cwd: string, options: { plan?: boolean } = {}): Promise<InstallResult[]> {
   const results: InstallResult[] = [];
   for (const name of Object.keys(targets) as SkillsetTarget[]) {
     for (const relativeFile of targets[name]) {
@@ -96,6 +96,10 @@ export async function refreshGeneratedWorkspaceSkillsets(cwd: string): Promise<I
       const next = renderSkillsetFile(name, relativeFile);
       const normalized = next.endsWith('\n') ? next : `${next}\n`;
       if (existing === normalized) continue;
+      if (options.plan) {
+        results.push({ target: name, file: relativeFile, action: 'planned' });
+        continue;
+      }
       await writeText(file, normalized);
       results.push({ target: name, file: relativeFile, action: 'updated' });
     }

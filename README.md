@@ -104,7 +104,8 @@ workspace. One-off commands can use `--profile <name>`; if that profile differs
 from the workspace default, workspace memory is disabled for that command.
 After an npm package update, the next normal Engram command performs a quiet,
 one-time safe reconcile for already-initialized roots. It does not run from npm
-postinstall, create new memory roots, or touch human-authored files. Use
+postinstall, create new memory roots, or touch human-authored files. Running
+`engram upgrade` also refreshes existing generated workspace skillsets. Use
 `--no-auto-upgrade` or `ENGRAM_NO_AUTO_UPGRADE=1` to skip that startup check.
 When broad queries match more than eight memories, `engram load` reranks with
 tags, type, recency, graph, and optional sqlite-vec vector signals before loading
@@ -196,6 +197,8 @@ Global installs append one managed Engram block at the end of the assistant's
 shared instruction file and preserve your existing content. Agent `SKILL.md`
 files are written to the host's skill directory; for example, Claude Code uses
 `~/.claude/CLAUDE.md` plus `~/.claude/skills/engram/SKILL.md`.
+Run `engram upgrade` after package updates to refresh existing generated
+workspace skillsets and registered global skillset installs.
 
 For Gemini CLI and the current Antigravity surfaces, use the Gemini target:
 ```bash
@@ -421,3 +424,7 @@ Need a visual way to navigate and search your Markdown files? Check out [Markdow
 ## License
 
 [GPL-3.0 License](LICENSE)
+
+## Changelog
+
+See the [GitHub changelog](https://github.com/the-long-ride/engram/blob/main/CHANGELOG.md).

@@ -154,7 +154,7 @@ test('global skillset installer writes managed rules, skills, and registry', asy
 
   const registry = JSON.parse(await readFile(path.join(globalEnv.ENGRAM_CONFIG_DIR, 'global-skillsets.json'), 'utf8'));
   assert.equal(registry.installs.codex.files.length, 2);
-  assert.equal(registry.installs.codex.engram_version, '0.0.7');
+  assert.equal(registry.installs.codex.engram_version, '0.0.8');
 
   const updated = await runEngram(cwd, globalEnv, ['install-skillset', '--global', 'codex']);
   assert.equal(updated.code, 0, updated.stderr);

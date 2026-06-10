@@ -17,6 +17,7 @@ import {
   installGlobalSkillset,
   installSkillset,
   readGlobalSkillsetRegistry,
+  refreshGeneratedWorkspaceSkillsets,
   refreshGlobalSkillsets,
   skillsetTargets,
   type SkillsetTarget,
@@ -180,7 +181,7 @@ const skillsetListNotes: Partial<Record<SkillsetTarget, string>> = {
   slash: '# Installs IDE/chat slash commands (/engram) for manual requests'
 };
 
-/** Upgrade Engram package guidance, global memory scaffold, and registered global skillsets. */
+/** Upgrade Engram package guidance, generated workspace assets, global memory scaffold, and registered global skillsets. */
 export async function cmdUpgrade(args: string[] = [], flags: Record<string, any> = {}): Promise<string> {
   if (flags['memory-only'] === true && flags['global-skillsets-only'] === true) throw new Error('upgrade cannot use --memory-only and --global-skillsets-only together');
   const plan = flags.plan === true || flags['dry-run'] === true;
@@ -188,6 +189,7 @@ export async function cmdUpgrade(args: string[] = [], flags: Record<string, any>
   records.push(await upgradePackageRecord(flags, plan));
   if (flags['global-skillsets-only'] !== true) {
     records.push(await workspaceHelpUpgradeRecord(plan));
+    records.push(await workspaceSkillsetUpgradeRecord(plan));
     records.push(...await globalMemoryUpgradeRecords(plan, Boolean(flags.force)));
   }
   if (flags['memory-only'] !== true) records.push(...await globalSkillsetUpgradeRecords(args, flags, plan));
@@ -209,6 +211,18 @@ async function workspaceHelpUpgradeRecord(plan: boolean): Promise<RecordBlock> {
   if (plan) return { title: 'PLAN workspace help', fields: [['Path', file], ['Action', 'refresh generated HELP.md']] };
   await writeText(file, renderHelp());
   return { title: 'UPDATED workspace help', fields: [['Path', file]] };
+}
+
+async function workspaceSkillsetUpgradeRecord(plan: boolean): Promise<RecordBlock> {
+  const results = await refreshGeneratedWorkspaceSkillsets(process.cwd(), { plan });
+  if (!results.length) {
+    return { title: 'SKIPPED workspace skillsets', fields: [['Reason', 'no generated workspace skillset files need refresh']] };
+  }
+  return {
+    title: plan ? 'PLAN workspace skillsets' : 'UPDATED workspace skillsets',
+    fields: [['Files', results.map((result) => result.file).join(', ')]],
+    lines: results.map((result) => `${result.action.toUpperCase()} ${result.target}: ${result.file}`)
+  };
 }
 
 function installResultRecords(results: InstallResult[]): RecordBlock[] {

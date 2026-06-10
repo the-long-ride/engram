@@ -7,6 +7,7 @@ import { getContext } from '../core/memory/context.js';
 import { updateGlobalFolder } from '../core/memory/global-folder.js';
 import { initWorkspace } from '../core/memory/storage.js';
 import { loadConfig, parseSaveTarget, scopeRootsForConfig, workspaceRoot, writeConfig } from '../core/runtime/config.js';
+import { ensureDefaultProfile, type DefaultProfileMigration } from '../core/runtime/profile-migration.js';
 import { HELP_FILE, VERSION } from '../core/runtime/constants.js';
 import { isIgnored } from '../core/safety/ignore.js';
 import { ensureDir, exists, readText, writeText } from '../core/system/fsx.js';
@@ -257,7 +258,17 @@ async function globalMemoryUpgradeRecords(plan: boolean, force: boolean): Promis
   if (!roots.global) return [{ title: 'SKIPPED global memory', fields: [['Reason', 'global memory is not configured; run engram init --global-only --global-path <path>']] }];
   if (plan) return [{ title: 'PLAN global memory', fields: [['Path', roots.global], ['Action', 'reconcile global-only scaffold']] }];
   const lines = await initWorkspace(process.cwd(), force, config.global_git.branch, roots.global, { globalOnly: true });
+  lines.push(...defaultProfileUpgradeLines(await ensureDefaultProfile(process.cwd())));
   return [{ title: 'UPDATED global memory', fields: [['Path', roots.global]], lines }];
+}
+
+function defaultProfileUpgradeLines(migration: DefaultProfileMigration | undefined): string[] {
+  if (!migration) return [];
+  return [
+    `default profile ${migration.created ? 'created' : 'selected'}: ${migration.active_profile}`,
+    `profile global path: ${migration.global_path}`,
+    `profile registry: ${migration.profiles_path}`
+  ];
 }
 
 async function globalSkillsetUpgradeRecords(args: string[], flags: Record<string, any>, plan: boolean): Promise<RecordBlock[]> {

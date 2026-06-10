@@ -5,6 +5,7 @@ import { createScope } from '../memory/storage.js';
 import { refreshGeneratedWorkspaceSkillsets } from '../integrations/skillset.js';
 import { exists, readJson, writeJson } from '../system/fsx.js';
 import { VERSION } from './constants.js';
+import { ensureDefaultProfile } from './profile-migration.js';
 import {
   legacyWorkspaceRoot,
   loadConfig,
@@ -20,10 +21,18 @@ const skipCommands = new Set(['', 'help', 'completion', 'init', 'upgrade', '--he
 export async function maybeAutoUpgrade(cwd = process.cwd(), command = '', flags: Record<string, any> = {}): Promise<void> {
   if (shouldSkipAutoUpgrade(command, flags)) return;
   try {
-    const config = await loadConfig(cwd);
+    let config = await loadConfig(cwd);
     if (config.update !== 'auto') return;
-    const roots = scopeRootsForConfig(cwd, config);
-    const profile = profileResolutionForConfig(config);
+    let roots = scopeRootsForConfig(cwd, config);
+    let profile = profileResolutionForConfig(config);
+    if (await hasProfileMigrationWork(cwd, roots, profile)) {
+      const migrated = await ensureDefaultProfile(cwd);
+      if (migrated) {
+        config = await loadConfig(cwd);
+        roots = scopeRootsForConfig(cwd, config);
+        profile = profileResolutionForConfig(config);
+      }
+    }
     if (profile.workspace_allowed) await maybeUpgradeWorkspace(cwd, config);
     if (roots.global) await maybeUpgradeRoot(roots.global, 'global', config);
   } catch (error) {
@@ -49,6 +58,19 @@ async function maybeUpgradeRoot(root: string, scope: Scope, config: EngramConfig
   if (!(await exists(root)) || !(await needsAutoUpgrade(root))) return;
   await createScope(root, config, scope, false);
   await writeAutoUpgradeMarker(root);
+}
+
+async function hasProfileMigrationWork(cwd: string, roots: Record<Scope, string>, profile: ReturnType<typeof profileResolutionForConfig>): Promise<boolean> {
+  if (profile.workspace_allowed && await rootNeedsProfileMigration(workspaceRoot(cwd))) return true;
+  if (profile.workspace_allowed && await rootNeedsProfileMigration(legacyWorkspaceRoot(cwd))) return true;
+  return rootNeedsProfileMigration(roots.global);
+}
+
+async function rootNeedsProfileMigration(root: string): Promise<boolean> {
+  if (!root || !(await exists(root))) return false;
+  const config = await readJson<Partial<EngramConfig>>(path.join(root, 'engram.config.json'), {});
+  return Boolean(config.version && config.version !== VERSION)
+    || Boolean(config.auto_upgrade?.version && config.auto_upgrade.version !== VERSION);
 }
 
 async function existingWorkspaceRoot(cwd: string): Promise<string> {

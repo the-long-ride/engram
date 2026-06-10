@@ -17,7 +17,7 @@ declare const Buffer: any;
 declare module 'node:fs/promises' { const mod: any; export = mod; }
 declare module 'node:fs' { export const existsSync: any; export const mkdirSync: any; }
 declare module 'node:path' { const mod: any; export = mod; }
-declare module 'node:os' { export const homedir: any; export const EOL: string; export const platform: any; }
+declare module 'node:os' { export const homedir: any; export const hostname: any; export const EOL: string; export const platform: any; }
 declare module 'node:crypto' {
   export const createHash: any;
   export const createCipheriv: any;

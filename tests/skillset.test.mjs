@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { installSkillset, skillsetTargets } from '../dist/core/integrations/skillset.js';
+import { VERSION } from '../dist/core/runtime/version.js';
 import { runEngram, tempWorkspace } from './helpers.mjs';
 
 test('skillset installer writes all supported agent adapter files', async () => {
@@ -154,7 +155,7 @@ test('global skillset installer writes managed rules, skills, and registry', asy
 
   const registry = JSON.parse(await readFile(path.join(globalEnv.ENGRAM_CONFIG_DIR, 'global-skillsets.json'), 'utf8'));
   assert.equal(registry.installs.codex.files.length, 2);
-  assert.equal(registry.installs.codex.engram_version, '0.0.8');
+  assert.equal(registry.installs.codex.engram_version, VERSION);
 
   const updated = await runEngram(cwd, globalEnv, ['install-skillset', '--global', 'codex']);
   assert.equal(updated.code, 0, updated.stderr);

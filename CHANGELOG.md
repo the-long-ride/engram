@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.0.9
+
+- Updated `engram init` to create or select the default profile when global
+  memory is configured, matching the existing upgrade migration behavior.
+- Documented profile isolation as the reason profiles exist: separate company,
+  client, and personal memory so context used with external APIs or
+  company-provided agents does not leak across projects.
+- Added missing documentation coverage for `engram profile`,
+  `engram set-save-target`, and `engram clone-memory` across README,
+  operations docs, and localized entrypoints.
+
 ## 0.0.8
 
 - Added upgrade migration that creates or selects a machine-named default

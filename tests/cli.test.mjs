@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { rm, writeFile, mkdir, readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
+import os from 'node:os';
 import { pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -498,6 +499,32 @@ test('upgrade plan reports quick package update and registered global skillset r
   await rm(cwd, { recursive: true, force: true });
 });
 
+test('upgrade creates a machine default profile for legacy global-only installs', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-upgrade-profile-');
+  const customEnv = { ...env };
+  delete customEnv.ENGRAM_GLOBAL_DIR;
+  const globalPath = path.join(cwd, 'portable-engram');
+  const init = await runEngram(cwd, customEnv, ['init', '--global-only', '--global-path', globalPath]);
+  assert.equal(init.code, 0, init.stderr);
+  const globalConfigFile = path.join(globalPath, 'engram.config.json');
+  const globalConfig = JSON.parse(await readFile(globalConfigFile, 'utf8'));
+  globalConfig.version = '0.0.0';
+  globalConfig.auto_upgrade = { version: '0.0.0', checked_at: '2026-01-01T00:00:00.000Z' };
+  await writeFile(globalConfigFile, `${JSON.stringify(globalConfig, null, 2)}\n`);
+
+  const upgraded = await runEngram(cwd, customEnv, ['upgrade', '--no-version-check']);
+  assert.equal(upgraded.code, 0, upgraded.stderr);
+  assert.match(upgraded.stdout, /default profile created/);
+  const profiles = JSON.parse(await readFile(path.join(customEnv.ENGRAM_CONFIG_DIR, 'profiles.json'), 'utf8'));
+  const expected = machineProfileName();
+  assert.equal(profiles.active_profile, expected);
+  assert.equal(profiles.profiles[expected].global_path, globalPath);
+  const entry = await runEngram(cwd, customEnv, ['entry']);
+  assert.equal(entry.code, 0, entry.stderr);
+  assert.match(entry.stdout.replace(/\x1b\[[0-9;]*m/g, ''), new RegExp(`profile\\.active:\\s*${expected.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')}`));
+  await rm(cwd, { recursive: true, force: true });
+});
+
 test('auto-upgrade quietly reconciles initialized roots once after package updates', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-autoupgrade-');
   const init = await runEngram(cwd, env, ['init']);
@@ -524,6 +551,38 @@ test('auto-upgrade quietly reconciles initialized roots once after package updat
   const second = await runEngram(cwd, env, ['search', 'auto upgrade probe']);
   assert.equal(second.code, 0, second.stderr);
   assert.equal(await readFile(configFile, 'utf8'), beforeSecondRun);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('auto-upgrade creates a machine default profile for legacy global installs', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-autoprofile-');
+  const init = await runEngram(cwd, env, ['init', '--no-skillset', '--scope', 'global']);
+  assert.equal(init.code, 0, init.stderr);
+  const root = workspaceMemoryRoot(cwd);
+  const configFile = path.join(root, 'engram.config.json');
+  const config = JSON.parse(await readFile(configFile, 'utf8'));
+  config.version = '0.0.0';
+  config.auto_upgrade = { version: '0.0.0', checked_at: '2026-01-01T00:00:00.000Z' };
+  config.scope = 'global';
+  config.global_git.branch = 'legacy-default';
+  await writeFile(configFile, `${JSON.stringify(config, null, 2)}\n`);
+
+  const loaded = await runEngram(cwd, env, ['load', '--dry-run', 'legacy default profile']);
+  assert.equal(loaded.code, 0, loaded.stderr);
+  const profiles = JSON.parse(await readFile(path.join(env.ENGRAM_CONFIG_DIR, 'profiles.json'), 'utf8'));
+  const expected = machineProfileName();
+  assert.equal(profiles.active_profile, expected);
+  assert.equal(profiles.profiles[expected].global_path, env.ENGRAM_GLOBAL_DIR);
+  assert.equal(profiles.profiles[expected].scope, 'global');
+  assert.equal(profiles.profiles[expected].global_git.branch, 'legacy-default');
+
+  const noEnv = { ...env };
+  delete noEnv.ENGRAM_GLOBAL_DIR;
+  const entry = await runEngram(cwd, noEnv, ['entry']);
+  assert.equal(entry.code, 0, entry.stderr);
+  const clean = entry.stdout.replace(/\x1b\[[0-9;]*m/g, '');
+  assert.match(clean, new RegExp(`profile\\.active:\\s*${expected.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')}`));
+  assert.match(clean, new RegExp(`roots\\.global:\\s*${env.ENGRAM_GLOBAL_DIR.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')}`));
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -1352,4 +1411,13 @@ async function packageVersion() {
 
 function sha256(text) {
   return createHash('sha256').update(text).digest('hex');
+}
+
+function machineProfileName() {
+  return (process.env.COMPUTERNAME || process.env.HOSTNAME || os.hostname() || process.env.USERNAME || process.env.USER || 'default')
+    .trim()
+    .replace(/[^a-zA-Z0-9._-]+/g, '-')
+    .replace(/^[^a-zA-Z0-9]+/g, '')
+    .replace(/[^a-zA-Z0-9]+$/g, '')
+    .slice(0, 64) || 'default';
 }

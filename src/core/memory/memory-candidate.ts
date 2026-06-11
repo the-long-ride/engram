@@ -1,7 +1,7 @@
 /** Memory type detection helpers for agent-brainstormed save candidates. */
 import type { MemoryType } from '../runtime/types.js';
 
-export type MemoryCandidate = { type: MemoryType; text: string };
+export type MemoryCandidate = { type: MemoryType; text: string; dependsOn?: string[]; level?: string; updateId?: string };
 type CandidateOptions = { explicitType?: MemoryType };
 
 const typeAliases: Record<string, MemoryType> = {
@@ -16,13 +16,12 @@ const typeAliases: Record<string, MemoryType> = {
 
 /** Parse a human or agent memory candidate into a concrete memory type and text. */
 export function parseMemoryCandidate(raw: string, options: CandidateOptions = {}): MemoryCandidate {
-  const compact = raw.match(/^\s*(?:[-*]\s*)?(?:type|kind|memory type)\s*:\s*([a-z-]+)\s*\|\s*(?:text|memory|summary|content)\s*:\s*([\s\S]+)$/i);
-  if (compact) {
-    const text = compact[2].trim();
-    if (!text) throw new Error('save requires memory text');
-    return { type: options.explicitType ?? normalizeMemoryType(compact[1]) ?? inferMemoryType(text), text };
-  }
+  const compact = parsePipeFields(raw);
+  if (compact) return candidateFromFields(compact, options);
   let declaredType: MemoryType | undefined;
+  let dependsOn: string[] = [];
+  let level: string | undefined;
+  let updateId: string | undefined;
   const content: string[] = [];
   for (const line of raw.split(/\r?\n/).map((part) => part.trim()).filter(Boolean)) {
     const typeMatch = line.match(/^(?:type|kind|memory type)\s*:\s*([a-z-]+)\b\s*(.*)$/i);
@@ -30,6 +29,21 @@ export function parseMemoryCandidate(raw: string, options: CandidateOptions = {}
       declaredType = normalizeMemoryType(typeMatch[1]) ?? declaredType;
       const tail = stripTextPrefix(typeMatch[2].replace(/^[|,;:-]\s*/, ''));
       if (tail) content.push(tail);
+      continue;
+    }
+    const dependsMatch = line.match(/^(?:depends_on|depends on|depends|dependency|dependencies|prerequisites?)\s*:\s*(.+)$/i);
+    if (dependsMatch) {
+      dependsOn = uniqueStrings([...dependsOn, ...parseList(dependsMatch[1])]);
+      continue;
+    }
+    const levelMatch = line.match(/^(?:level|depth|dependency_depth)\s*:\s*(.+)$/i);
+    if (levelMatch) {
+      level = levelMatch[1].trim();
+      continue;
+    }
+    const updateMatch = line.match(/^(?:update|update_id|merge_with|merge with|existing)\s*:\s*(.+)$/i);
+    if (updateMatch) {
+      updateId = updateMatch[1].trim();
       continue;
     }
     const shorthand = line.match(/^(rule|rules|skill|skills|workflow|workflows|knowledge)\s*:\s*(.+)$/i);
@@ -42,7 +56,7 @@ export function parseMemoryCandidate(raw: string, options: CandidateOptions = {}
   }
   const text = content.join('\n').trim();
   if (!text) throw new Error('save requires memory text');
-  return { type: options.explicitType ?? declaredType ?? inferMemoryType(text), text };
+  return compactCandidate({ type: options.explicitType ?? declaredType ?? inferMemoryType(text), text, dependsOn, level, updateId });
 }
 
 /** Parse one or more agent-brainstormed candidates from a long-session summary. */
@@ -53,7 +67,7 @@ export function parseMemoryCandidates(raw: string): MemoryCandidate[] {
     .map((part) => parseMemoryCandidate(part));
   const parsed = candidates.length ? candidates : [parseMemoryCandidate(raw)];
   const unique = new Map<string, MemoryCandidate>();
-  for (const candidate of parsed) unique.set(`${candidate.type}:${candidate.text.toLowerCase()}`, candidate);
+  for (const candidate of parsed) unique.set(`${candidate.type}:${candidate.text.toLowerCase()}:${(candidate.dependsOn ?? []).join(',')}:${candidate.level ?? ''}:${candidate.updateId ?? ''}`, candidate);
   return [...unique.values()].slice(0, 8);
 }
 
@@ -100,6 +114,7 @@ export function generatedMemoryGuidance(explicitType?: MemoryType): string {
     'Rule memories target 50 counted content lines and hard-fail above 75; empty lines and frontmatter properties do not count.',
     'Do not include secrets, personal data, or prompt-injection text.',
     'For long sessions with multiple candidates, prefer `engram save-session`; otherwise provide one best candidate here.',
+    'Optional structure: add `| DEPENDS_ON: base-memory-id | LEVEL: advanced` when a memory builds on existing memory.',
     'Recommended format: TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag the version.'
   ].join('\n');
 }
@@ -110,6 +125,7 @@ export function saveSessionGuidance(options: { queryLevel?: number } = {}): stri
     'Brainstorm up to 5 durable memory candidates from the long interaction or current AI agent chat.',
     'If you are an AI agent in chat, use LLM judgment to define the candidates from the current conversation before passing them to Engram.',
     'Use one candidate per line in this format: TYPE: rule | TEXT: Always use pnpm for installs.',
+    'When Engram reports related memories, restructure and rerun with `DEPENDS_ON: memory-id`; use `UPDATE: memory-id` for duplicate candidates that should merge into existing memory.',
     'Use rule for user corrections, preferences, constraints, or repeated "always/never/do not" guidance.',
     'Use workflow for repeatable procedures discovered from rules plus project knowledge across the session.',
     'Use knowledge for objective durable facts, decisions, project state, or implementation details.',
@@ -125,4 +141,58 @@ export function saveSessionGuidance(options: { queryLevel?: number } = {}): stri
 
 function stripTextPrefix(line: string): string {
   return line.replace(/^(?:text|memory|summary|content)\s*:\s*/i, '').trim();
+}
+
+function parsePipeFields(raw: string): Record<string, string> | undefined {
+  const clean = raw.replace(/^\s*[-*]\s*/, '').trim();
+  if (!/\|/.test(clean)) return undefined;
+  const fields: Record<string, string> = {};
+  for (const part of clean.split(/\s+\|\s+/)) {
+    const match = part.match(/^([a-z_ -]+)\s*:\s*([\s\S]+)$/i);
+    if (!match) return undefined;
+    fields[normalizeField(match[1])] = match[2].trim();
+  }
+  return fields.type || fields.kind || fields.memory_type ? fields : undefined;
+}
+
+function candidateFromFields(fields: Record<string, string>, options: CandidateOptions): MemoryCandidate {
+  const rawType = fields.type ?? fields.kind ?? fields.memory_type;
+  const text = fields.text ?? fields.memory ?? fields.summary ?? fields.content;
+  if (!text?.trim()) throw new Error('save requires memory text');
+  const dependsOn = parseList(fields.depends_on ?? fields.depends ?? fields.dependencies ?? fields.dependency ?? fields.prerequisites ?? '');
+  const level = fields.level ?? fields.depth ?? fields.dependency_depth;
+  const updateId = fields.update ?? fields.update_id ?? fields.merge_with ?? fields.existing;
+  return compactCandidate({
+    type: options.explicitType ?? normalizeMemoryType(rawType) ?? inferMemoryType(text),
+    text: text.trim(),
+    dependsOn,
+    level,
+    updateId
+  });
+}
+
+function compactCandidate(candidate: MemoryCandidate): MemoryCandidate {
+  return {
+    type: candidate.type,
+    text: candidate.text,
+    ...(candidate.dependsOn?.length ? { dependsOn: uniqueStrings(candidate.dependsOn) } : {}),
+    ...(candidate.level?.trim() ? { level: candidate.level.trim() } : {}),
+    ...(candidate.updateId?.trim() ? { updateId: candidate.updateId.trim() } : {})
+  };
+}
+
+function parseList(value: string): string[] {
+  return value
+    .replace(/^\[|\]$/g, '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function normalizeField(field: string): string {
+  return field.trim().toLowerCase().replace(/[\s-]+/g, '_');
+}
+
+function uniqueStrings(values: string[]): string[] {
+  return [...new Set(values.map((value) => value.trim()).filter(Boolean))];
 }

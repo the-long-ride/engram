@@ -21,6 +21,7 @@ import { scoreMemory } from '../dist/core/analysis/quality.js';
 import { searchEntries } from '../dist/core/analysis/search.js';
 import { convertDocumentToMarkdown, isConvertibleDocument } from '../dist/core/integrations/markdown-them.js';
 import { mergeIndexes } from '../dist/core/memory/index.js';
+import { parseMemoryCandidate } from '../dist/core/memory/memory-candidate.js';
 import { route, routeDetailed } from '../dist/core/memory/routing.js';
 import { ensureVectorIndex } from '../dist/core/memory/vector-db.js';
 import { defaultConfig } from '../dist/core/runtime/config.js';
@@ -94,6 +95,29 @@ engram load deploy
 `, 'rules/deploy-checklist.md', 'workspace');
   assert.deepEqual(entry.dependsOn, ['release-foundation', 'knowledge/team-release-context.md']);
   assert.equal(entry.dependencyDepth, 2);
+});
+
+test('memory candidates can carry dependency structure', () => {
+  const compact = parseMemoryCandidate('TYPE: rule | TEXT: OAuth rotation follows release foundations. | DEPENDS_ON: release-foundation | LEVEL: advanced');
+  assert.deepEqual(compact, {
+    type: 'rule',
+    text: 'OAuth rotation follows release foundations.',
+    dependsOn: ['release-foundation'],
+    level: 'advanced'
+  });
+
+  const multiline = parseMemoryCandidate([
+    'TYPE: knowledge',
+    'TEXT: Invoice retry policy extends the webhook baseline.',
+    'DEPENDS_ON: [webhook-baseline, retry-foundation]',
+    'UPDATE: invoice-retry-policy'
+  ].join('\n'));
+  assert.deepEqual(multiline, {
+    type: 'knowledge',
+    text: 'Invoice retry policy extends the webhook baseline.',
+    dependsOn: ['webhook-baseline', 'retry-foundation'],
+    updateId: 'invoice-retry-policy'
+  });
 });
 
 test('schema validator enforces standard memory Markdown', () => {

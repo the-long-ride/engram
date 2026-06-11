@@ -14,6 +14,8 @@ export function draftMemory(input: {
   scope: Scope;
   author: string;
   role?: string[];
+  dependsOn?: string[];
+  level?: string;
   source?: MemorySourceMeta;
 }, options: MemoryDraftOptions = {}): { file: string; id: string; content: string; tags: string[] } {
   const title = titleFor(input.text, input.type);
@@ -30,6 +32,8 @@ export function updateMemory(raw: string, input: {
   scope: Scope;
   author: string;
   role?: string[];
+  dependsOn?: string[];
+  level?: string;
   source?: MemorySourceMeta;
 }, options: MemoryDraftOptions = {}): string {
   const doc = parseMemory(raw);
@@ -44,6 +48,8 @@ export function updateMemory(raw: string, input: {
     tags,
     created: String(doc.frontmatter.created ?? today()),
     role: input.role?.length ? unique([...(doc.frontmatter.role ?? []), ...input.role]) : doc.frontmatter.role,
+    dependsOn: unique([...arrayFrontmatter(doc.frontmatter.depends_on), ...(input.dependsOn ?? [])]),
+    level: input.level ?? String(doc.frontmatter.level ?? doc.frontmatter.dependency_depth ?? doc.frontmatter.depth ?? ''),
     source: mergeSourceMeta(doc.frontmatter, input.source),
     bodyText: bullets.join('\n'),
     variantText: text,
@@ -59,7 +65,7 @@ function titleFor(text: string, type: MemoryType): string {
 
 function renderMemory(input: {
   text: string; type: MemoryType; scope: Scope; author: string; id: string; title: string;
-  tags: string[]; created: string; role?: string[]; source?: MemorySourceMeta; bodyText?: string; variantText?: string; variants?: Partial<Record<'light' | 'balanced' | 'strict', string>>;
+  tags: string[]; created: string; role?: string[]; dependsOn?: string[]; level?: string; source?: MemorySourceMeta; bodyText?: string; variantText?: string; variants?: Partial<Record<'light' | 'balanced' | 'strict', string>>;
 }, options: MemoryDraftOptions): string {
   const now = today();
   const metadata: Record<string, any> = {
@@ -68,6 +74,8 @@ function renderMemory(input: {
     source: input.source?.source ?? 'manual', confidence: 'high'
   };
   if (input.role?.length) metadata.role = input.role;
+  if (input.dependsOn?.length) metadata.depends_on = unique(input.dependsOn);
+  if (input.level?.trim()) metadata.level = input.level.trim();
   if (input.source?.sourceFiles?.length) metadata.source_files = unique(input.source.sourceFiles);
   if (input.source?.sourceHashes?.length) metadata.source_hashes = unique(input.source.sourceHashes);
   const meta = frontmatter(metadata);

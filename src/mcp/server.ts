@@ -35,14 +35,17 @@ async function saveProposal(args: any): Promise<string> {
   if (!text) throw new Error('engram_save requires non-empty text');
   if (requestedType && !explicitType) throw new Error('engram_save type must be rule, skill, workflow, or knowledge');
   const scopes = proposalScopes(ctx, args.scope, 'engram_save scope');
-  const candidate = explicitType ? { type: explicitType, text } : parseMemoryCandidate(text);
+  const candidate = parseMemoryCandidate(text, { explicitType });
   const plans = await planMemorySave({
     ctx,
     text: candidate.text,
     type: candidate.type,
     scopes,
     author: await resolveAuthor(),
-    role: rolesFromArgs(args)
+    role: rolesFromArgs(args),
+    dependsOn: candidate.dependsOn,
+    level: candidate.level,
+    updateId: candidate.updateId
   });
   return `ENGRAM SAVE PROPOSAL\n${previewSavePlans(plans)}\n\nHuman approval required before writing.`;
 }
@@ -58,7 +61,17 @@ async function saveSessionProposal(args: any): Promise<string> {
   const plans = [];
   let candidateIndex = 1;
   for (const candidate of parseMemoryCandidates(text)) {
-    const next = await planMemorySave({ ctx, text: candidate.text, type: candidate.type, scopes, author, role });
+    const next = await planMemorySave({
+      ctx,
+      text: candidate.text,
+      type: candidate.type,
+      scopes,
+      author,
+      role,
+      dependsOn: candidate.dependsOn,
+      level: candidate.level,
+      updateId: candidate.updateId
+    });
     plans.push(...next.map((plan) => ({ ...plan, candidateIndex })));
     candidateIndex += 1;
   }

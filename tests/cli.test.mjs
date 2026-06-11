@@ -1171,6 +1171,74 @@ test('save-session preview includes related-memory hints per candidate', async (
   await rm(cwd, { recursive: true, force: true });
 });
 
+test('save-session accept-all pauses for dependency restructuring and saves rerun structure', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, [
+    'save', 'knowledge', '--scope', 'workspace',
+    'Release foundation checklist lives in docs/release.md'
+  ], 'A\n');
+
+  const paused = await runEngram(cwd, env, [
+    'save-session', '--scope', 'workspace', '--accept-all',
+    'TYPE: rule | TEXT: OAuth rotation must follow the release foundation checklist'
+  ]);
+
+  assert.equal(paused.code, 0, paused.stderr);
+  assert.match(paused.stdout, /found related memories before writing/);
+  assert.match(paused.stdout, /No file written yet/);
+  assert.match(paused.stdout, /Suggested depends_on: \[release-foundation-checklist-lives-in-docs-release-md\]/);
+  assert.doesNotMatch(paused.stdout, /Saved ->/);
+  await assert.rejects(readFile(path.join(workspaceMemoryRoot(cwd), 'rules', 'oauth-rotation-must-follow-the-release-foundation-checklist.md'), 'utf8'));
+
+  const saved = await runEngram(cwd, env, [
+    'save-session', '--scope', 'workspace', '--accept-all',
+    'TYPE: rule | TEXT: OAuth rotation must follow the release foundation checklist | DEPENDS_ON: release-foundation-checklist-lives-in-docs-release-md | LEVEL: advanced'
+  ]);
+
+  assert.equal(saved.code, 0, saved.stderr);
+  assert.match(saved.stdout, /Accepted all save-session candidates/);
+  assert.match(saved.stdout, /Saved ->/);
+  const content = await readFile(path.join(workspaceMemoryRoot(cwd), 'rules', 'oauth-rotation-must-follow-the-release-foundation-checklist.md'), 'utf8');
+  assert.match(content, /depends_on: \[release-foundation-checklist-lives-in-docs-release-md\]/);
+  assert.match(content, /level: advanced/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('save-session accept-all pauses on possible duplicate and supports explicit update rerun', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['init']);
+  const existing = path.join(workspaceMemoryRoot(cwd), 'knowledge', 'invoice-webhook-retry-baseline.md');
+  await mkdir(path.dirname(existing), { recursive: true });
+  await writeFile(existing, duplicateFixtureMemory({
+    id: 'invoice-webhook-retry-baseline',
+    content: 'Invoice webhook retry baseline records retry and backoff guidance for payment failures.'
+  }));
+  await runEngram(cwd, env, ['rebuild-index', 'workspace']);
+
+  const paused = await runEngram(cwd, env, [
+    'save-session', '--scope', 'workspace', '--accept-all',
+    'TYPE: knowledge | TEXT: Invoice retry backoff policy for webhook failures'
+  ]);
+
+  assert.equal(paused.code, 0, paused.stderr);
+  assert.match(paused.stdout, /found related memories before writing/);
+  assert.match(paused.stdout, /Possible duplicate: consider updating or archiving instead of adding another memory/);
+  assert.match((await runEngram(cwd, env, ['stats'])).stdout, /Total: 1/);
+
+  const updated = await runEngram(cwd, env, [
+    'save-session', '--scope', 'workspace', '--accept-all',
+    'TYPE: knowledge | TEXT: Invoice retry backoff policy for webhook failures | UPDATE: invoice-webhook-retry-baseline'
+  ]);
+
+  assert.equal(updated.code, 0, updated.stderr);
+  assert.match(updated.stdout, /Accepted all save-session candidates/);
+  assert.match(updated.stdout, /Saved ->/);
+  assert.match((await runEngram(cwd, env, ['stats'])).stdout, /Total: 1/);
+  assert.match(await readFile(existing, 'utf8'), /Invoice retry backoff policy for webhook failures/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
 test('rule variants render the active compact variant', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
   await runEngram(cwd, env, ['init']);

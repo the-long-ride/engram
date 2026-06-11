@@ -31,7 +31,7 @@ export async function cmdSave(args: string[], flags: Record<string, any>): Promi
       const candidate = parseMemoryCandidate(generated, { explicitType });
       type = candidate.type;
       text = candidate.text;
-      plans = await planMemorySave({ ctx, text, type, scopes, author, role });
+      plans = await planMemorySave({ ctx, text, type, scopes, author, role, dependsOn: candidate.dependsOn, level: candidate.level, updateId: candidate.updateId });
       return previewSavePlans(plans);
     }, { explicitType, guidance: generatedMemoryGuidance(explicitType) });
     if (!captured) return 'Discarded. No file written.';
@@ -40,7 +40,7 @@ export async function cmdSave(args: string[], flags: Record<string, any>): Promi
     const candidate = parseMemoryCandidate(text, { explicitType });
     type = candidate.type;
     text = candidate.text;
-    plans = await planMemorySave({ ctx, text, type, scopes, author, role });
+    plans = await planMemorySave({ ctx, text, type, scopes, author, role, dependsOn: candidate.dependsOn, level: candidate.level, updateId: candidate.updateId });
     approval = await requestApproval(previewSavePlans(plans));
   }
   if (!approval.accepted) return 'Discarded. No file written.';
@@ -82,6 +82,10 @@ export async function cmdSaveSession(args: string[], flags: Record<string, any> 
   if (!approval?.accepted) return 'Discarded. No file written.';
   if (approval.selected?.length) plans = plans.filter((plan) => plan.candidateIndex === undefined || approval.selected?.includes(plan.candidateIndex));
   if (!plans.length) return 'Discarded. No selected candidates written.';
+  if (acceptAll) {
+    const restructure = acceptAllRestructureResponse(plans);
+    if (restructure) return restructure;
+  }
   const saved = await writeSavePlans(plans, approval.edits);
   return acceptAll ? `Accepted all save-session candidates (--accept-all).\n${saved}` : saved;
 }
@@ -133,11 +137,43 @@ async function planSaveSessionCandidates(ctx: Awaited<ReturnType<typeof getConte
   const plans: SavePlan[] = [];
   let candidateIndex = 1;
   for (const candidate of parseMemoryCandidates(text)) {
-    const candidatePlans = await planMemorySave({ ctx, text: candidate.text, type: candidate.type, scopes, author, role, source });
+    const candidatePlans = await planMemorySave({
+      ctx,
+      text: candidate.text,
+      type: candidate.type,
+      scopes,
+      author,
+      role,
+      dependsOn: candidate.dependsOn,
+      level: candidate.level,
+      updateId: candidate.updateId,
+      source
+    });
     plans.push(...candidatePlans.map((plan) => ({ ...plan, candidateIndex })));
     candidateIndex += 1;
   }
   return plans;
+}
+
+function acceptAllRestructureResponse(plans: SavePlan[]): string {
+  const pending = plans.filter((plan) => unresolvedRelatedHints(plan).length);
+  if (!pending.length) return '';
+  return [
+    'Accepted all save-session candidates (--accept-all), but Engram found related memories before writing.',
+    'No file written yet. Agent action: brainstorm a restructured candidate set and rerun `engram save-session --accept-all`.',
+    'Use `DEPENDS_ON: memory-id` when a candidate builds on existing memory; use `UPDATE: memory-id` when it should merge into a possible duplicate; omit candidates that are already covered.',
+    '',
+    previewSavePlans(pending)
+  ].join('\n');
+}
+
+function unresolvedRelatedHints(plan: SavePlan) {
+  const dependsOn = frontmatterStrings(parseMemory(plan.content).frontmatter.depends_on).map((ref) => normalizeRef(ref));
+  const dependencyIntent = hasDependencyIntent(plan.content);
+  return (plan.related ?? []).filter((hint) => {
+    if (hint.action === 'possible-duplicate') return plan.action !== 'update';
+    return dependencyIntent && !dependsOn.includes(normalizeRef(hint.id)) && !dependsOn.includes(normalizeRef(hint.file));
+  });
 }
 
 async function importedSourceHashes(ctx: Awaited<ReturnType<typeof getContext>>): Promise<Set<string>> {
@@ -166,6 +202,14 @@ function takeControlSourceMeta(sources: Awaited<ReturnType<typeof discoverTakeCo
 function frontmatterStrings(value: unknown): string[] {
   if (Array.isArray(value)) return value.filter((item): item is string => typeof item === 'string' && Boolean(item.trim()));
   return typeof value === 'string' && value.trim() ? [value] : [];
+}
+
+function normalizeRef(ref: string): string {
+  return ref.trim().replace(/\\/g, '/').replace(/\.md$/i, '').toLowerCase();
+}
+
+function hasDependencyIntent(text: string): boolean {
+  return /\b(depends? on|builds? on|based on|extends?|requires?|prerequisite|foundation|foundational|follow(?:s|ing)?|must follow)\b/i.test(text);
 }
 
 async function saveSessionInput(args: string[], flags: Record<string, any>): Promise<string> {

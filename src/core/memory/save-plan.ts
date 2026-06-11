@@ -34,18 +34,18 @@ export type SavePlan = {
 
 /** Choose whether each scope should add a new memory or update an existing one. */
 export async function planMemorySave(input: {
-  ctx: EngramContext; text: string; type: MemoryType; scopes: Scope[]; author: string; role?: string[]; source?: MemorySourceMeta;
+  ctx: EngramContext; text: string; type: MemoryType; scopes: Scope[]; author: string; role?: string[]; dependsOn?: string[]; level?: string; updateId?: string; source?: MemorySourceMeta;
 }): Promise<SavePlan[]> {
   const plans: SavePlan[] = [];
   const options = { ruleVariants: true };
   for (const scope of input.scopes) {
-    const match = await bestMatch(input.ctx, input.text, input.type, scope);
+    const match = await explicitMatch(input.ctx, input.updateId, input.type, scope) ?? await bestMatch(input.ctx, input.text, input.type, scope);
     const related = relatedMemoryHints(input.ctx, input.text, input.type, scope, match?.entry);
     if (match) {
-      const content = updateMemory(match.raw, { text: input.text, type: input.type, scope, author: input.author, role: input.role, source: input.source }, options);
+      const content = updateMemory(match.raw, { text: input.text, type: input.type, scope, author: input.author, role: input.role, dependsOn: input.dependsOn, level: input.level, source: input.source }, options);
       plans.push({ action: 'update', scope, file: match.entry.file, id: match.entry.id, content, matchScore: match.score, related, message: `update ${input.type}: ${match.entry.id}` });
     } else {
-      const draft = draftMemory({ text: input.text, type: input.type, scope, author: input.author, role: input.role, source: input.source }, options);
+      const draft = draftMemory({ text: input.text, type: input.type, scope, author: input.author, role: input.role, dependsOn: input.dependsOn, level: input.level, source: input.source }, options);
       const unique = await avoidCollision(input.ctx, scope, draft, input.text);
       plans.push({ action: 'add', scope, file: unique.file, id: unique.id, content: unique.content, related, message: `add ${input.type}: ${unique.id}` });
     }
@@ -60,6 +60,17 @@ export function previewSavePlans(plans: SavePlan[]): string {
     const candidate = plan.candidateIndex === undefined ? '' : `Candidate: ${plan.candidateIndex}\n`;
     return `${candidate}Action: ${plan.action === 'update' ? 'Update existing memory' : 'Add new memory'}\nType: ${kind(plan.file)}\nScope: ${plan.scope}\nFile: ${plan.file}${score}${relatedPreview(plan.related)}\n\n${plan.content}`;
   }).join('\n\n---\n\n');
+}
+
+async function explicitMatch(ctx: EngramContext, updateId: string | undefined, type: MemoryType, scope: Scope): Promise<{ entry: MemoryEntry; raw: string; score: number } | undefined> {
+  if (!updateId?.trim()) return undefined;
+  const requested = normalizeRef(updateId);
+  const entry = ctx.scopeIndexes[scope].entries.find((item) => item.scope === scope
+    && item.type === type
+    && !item.ignored
+    && [item.id, item.file, item.file.replace(/\.md$/i, '')].some((ref) => normalizeRef(ref) === requested));
+  if (!entry) return undefined;
+  return { entry, raw: await readText(entryPath(ctx, scope, entry.file)), score: 1 };
 }
 
 async function bestMatch(ctx: EngramContext, text: string, type: MemoryType, scope: Scope): Promise<{ entry: MemoryEntry; raw: string; score: number } | undefined> {
@@ -124,6 +135,10 @@ function relatedText(entry: MemoryEntry): string {
 
 function sameEntry(entry: MemoryEntry, other?: MemoryEntry): boolean {
   return Boolean(other) && entry.scope === other?.scope && entry.file === other.file;
+}
+
+function normalizeRef(ref: string): string {
+  return ref.trim().replace(/\\/g, '/').replace(/\.md$/i, '').toLowerCase();
 }
 
 function kind(file: string): MemoryType {

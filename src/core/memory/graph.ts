@@ -46,11 +46,12 @@ export function mergeGraphs(workspace: MemoryGraph, global: MemoryGraph): Memory
 export function routeWithGraph(entries: MemoryEntry[], graph: MemoryGraph, query: string, max = 8): MemoryEntry[] {
   if (!graph.nodes.length) return lexicalRoute(entries, query, max);
   const entryMap = new Map(entries.map((entry) => [`memory:${entry.scope}:${entry.id}`, entry]));
+  const nodeMap = new Map(graph.nodes.map((node) => [node.id, node]));
   const scores = new Map<string, number>();
   const queryVector = embed(query);
   const memoryNodes = graph.nodes.filter((node) => node.kind === 'memory' && entryMap.has(node.id));
   for (const node of memoryNodes) {
-    const text = `${node.memoryId} ${node.memoryType} ${(node.tags ?? []).join(' ')} ${node.summary ?? ''}`;
+    const text = `${node.memoryId} ${node.memoryType} ${(node.tags ?? []).join(' ')} ${(node.dependsOn ?? []).join(' ')} ${node.summary ?? ''}`;
     bump(scores, node.id, lexicalScore(query, text) + cosine(queryVector, node.embedding ?? []) * 0.35);
   }
   for (const topic of graph.nodes.filter((node) => node.kind === 'topic')) {
@@ -60,6 +61,10 @@ export function routeWithGraph(entries: MemoryEntry[], graph: MemoryGraph, query
       if (entryMap.has(edge.to)) bump(scores, edge.to, score * 0.55);
     }
   }
+  for (const edge of graph.edges.filter((edge) => edge.kind === 'depends_on')) {
+    const from = scores.get(edge.from) ?? 0;
+    if (from > 0 && entryMap.has(edge.to)) bump(scores, edge.to, from * edge.weight * 0.5);
+  }
   for (const edge of graph.edges.filter((edge) => edge.kind === 'related_to')) {
     const from = scores.get(edge.from) ?? 0;
     const to = scores.get(edge.to) ?? 0;
@@ -68,7 +73,10 @@ export function routeWithGraph(entries: MemoryEntry[], graph: MemoryGraph, query
   }
   return [...scores.entries()]
     .filter(([, score]) => score > 0)
-    .sort((a, b) => b[1] - a[1] || nodeScopePriority(a[0]) - nodeScopePriority(b[0]) || a[0].localeCompare(b[0]))
+    .sort((a, b) => b[1] - a[1]
+      || dependencyDepth(nodeMap.get(a[0])) - dependencyDepth(nodeMap.get(b[0]))
+      || nodeScopePriority(a[0]) - nodeScopePriority(b[0])
+      || a[0].localeCompare(b[0]))
     .slice(0, max)
     .map(([id]) => entryMap.get(id))
     .filter((entry): entry is MemoryEntry => Boolean(entry));
@@ -79,9 +87,64 @@ export function contradictionEdges(graph: MemoryGraph): MemoryGraphEdge[] {
   return graph.edges.filter((edge) => edge.kind === 'contradicts');
 }
 
+/** Return explicit memory prerequisite edges. */
+export function dependencyEdges(graph: MemoryGraph): MemoryGraphEdge[] {
+  return graph.edges.filter((edge) => edge.kind === 'depends_on');
+}
+
+/** Add selected prerequisites and return memories in foundation-to-deep order. */
+export function dependencyContextEntries(selected: MemoryEntry[], visible: MemoryEntry[], graph: MemoryGraph, max: number): MemoryEntry[] {
+  if (!selected.length || !dependencyEdges(graph).length) return orderByDependencies(selected, graph);
+  const visibleByNode = new Map(visible.map((entry) => [memoryNodeId(entry), entry]));
+  const selectedNodeIds = selected.map(memoryNodeId);
+  const dependencyNodeIds: string[] = [];
+  for (const nodeId of selectedNodeIds) collectPrerequisites(nodeId, graph, dependencyNodeIds, new Set());
+  const combined = uniqueStrings([...dependencyNodeIds, ...selectedNodeIds])
+    .map((nodeId) => visibleByNode.get(nodeId))
+    .filter((entry): entry is MemoryEntry => Boolean(entry));
+  if (combined.length <= max) return orderByDependencies(combined, graph);
+  const dependencySet = new Set(dependencyNodeIds);
+  const primary = selected[0];
+  const dependencyLimit = primary ? Math.max(0, max - 1) : max;
+  const keep = combined.filter((entry) => dependencySet.has(memoryNodeId(entry))).slice(0, dependencyLimit);
+  if (primary && keep.length < max && !keep.some((item) => entryKey(item) === entryKey(primary))) keep.push(primary);
+  for (const entry of selected) {
+    if (keep.length >= max) break;
+    if (!keep.some((item) => entryKey(item) === entryKey(entry))) keep.push(entry);
+  }
+  return orderByDependencies(keep, graph);
+}
+
+/** Sort routed memories so foundations appear before dependent memories. */
+export function orderByDependencies(entries: MemoryEntry[], graph: MemoryGraph): MemoryEntry[] {
+  if (entries.length < 2 || !dependencyEdges(graph).length) return entries;
+  const inputOrder = new Map(entries.map((entry, index) => [memoryNodeId(entry), index]));
+  const byNode = new Map(entries.map((entry) => [memoryNodeId(entry), entry]));
+  const nodeMap = new Map(graph.nodes.map((node) => [node.id, node]));
+  const ordered: MemoryEntry[] = [];
+  const visiting = new Set<string>();
+  const visited = new Set<string>();
+  const visit = (nodeId: string) => {
+    if (visited.has(nodeId) || !byNode.has(nodeId)) return;
+    if (visiting.has(nodeId)) return;
+    visiting.add(nodeId);
+    for (const dep of prerequisiteNodeIds(nodeId, graph)) visit(dep);
+    visiting.delete(nodeId);
+    visited.add(nodeId);
+    const entry = byNode.get(nodeId);
+    if (entry) ordered.push(entry);
+  };
+  [...byNode.keys()]
+    .sort((a, b) => dependencyDepth(nodeMap.get(a)) - dependencyDepth(nodeMap.get(b))
+      || (inputOrder.get(a) ?? 0) - (inputOrder.get(b) ?? 0))
+    .forEach(visit);
+  return ordered;
+}
+
 /** Render a compact graph report for CLI output. */
 export function renderGraphReport(graph: MemoryGraph, query = ''): string {
   const lines = [`engram graph: ${graph.nodes.length} nodes, ${graph.edges.length} edges`];
+  const nodeMap = new Map(graph.nodes.map((node) => [node.id, node]));
   if (query) {
     const matches = graph.nodes
       .filter((node) => node.kind === 'memory')
@@ -92,9 +155,19 @@ export function renderGraphReport(graph: MemoryGraph, query = ''): string {
     lines.push(`Query: ${query}`);
     if (matches.length) lines.push(formatRecords('Query matches', matches.map((row) => ({
       title: `${row.node.scope}:${row.node.file}`,
-      fields: [['Score', row.score.toFixed(2)], ['Summary', row.node.summary ?? '']]
+      fields: [
+        ['Score', row.score.toFixed(2)],
+        ['Depth', String(row.node.dependencyDepth ?? 0)],
+        ['Depends on', (row.node.dependsOn ?? []).join(', ') || '-'],
+        ['Summary', row.node.summary ?? '']
+      ]
     }))));
   }
+  const dependencies = dependencyEdges(graph).slice(0, 8);
+  if (dependencies.length) lines.push(formatRecords('Dependency layers', dependencies.map((edge) => ({
+    title: `${nodeLabel(nodeMap.get(edge.from))} depends on ${nodeLabel(nodeMap.get(edge.to))}`,
+    fields: [['Reason', edge.reason]]
+  }))));
   const contradictions = contradictionEdges(graph).slice(0, 8);
   if (contradictions.length) lines.push(formatRecords('Contradiction candidates', contradictions.map((edge) => ({
     title: `${edge.from} <-> ${edge.to}`,
@@ -106,6 +179,8 @@ export function renderGraphReport(graph: MemoryGraph, query = ''): string {
 function graphFromEntries(entries: MemoryEntry[], scope: Scope, config?: EngramConfig): MemoryGraph {
   const nodes = new Map<string, MemoryGraphNode>();
   const edges = new Map<string, MemoryGraphEdge>();
+  const refs = memoryReferenceMap(entries);
+  const depths = memoryDepths(entries, refs);
   const scopeId = `scope:${scope}`;
   nodes.set(scopeId, { id: scopeId, kind: 'scope', level: 0, label: scope, scope });
   for (const type of ['rule', 'skill', 'knowledge'] as const) {
@@ -115,10 +190,11 @@ function graphFromEntries(entries: MemoryEntry[], scope: Scope, config?: EngramC
   }
   for (const entry of entries) {
     const memoryId = memoryNodeId(entry);
+    const dependencyDepth = depths.get(memoryId) ?? entry.dependencyDepth ?? 0;
     nodes.set(memoryId, {
       id: memoryId,
       kind: 'memory',
-      level: 3,
+      level: 3 + dependencyDepth,
       label: entry.id,
       scope,
       memoryId: entry.id,
@@ -126,7 +202,9 @@ function graphFromEntries(entries: MemoryEntry[], scope: Scope, config?: EngramC
       file: entry.file,
       tags: entry.tags,
       summary: entry.summary,
-      embedding: embed(`${entry.id} ${entry.tags.join(' ')} ${entry.summary}`)
+      dependsOn: entry.dependsOn,
+      dependencyDepth,
+      embedding: embed(`${entry.id} ${entry.tags.join(' ')} ${(entry.dependsOn ?? []).join(' ')} ${entry.summary}`)
     });
     const typeId = `${scopeId}:type:${entry.type}`;
     for (const tag of entry.tags.length ? entry.tags : ['untagged']) {
@@ -137,8 +215,19 @@ function graphFromEntries(entries: MemoryEntry[], scope: Scope, config?: EngramC
       addEdge(edges, memoryId, topicId, 'tagged_as', 1, 'memory tagged by topic');
     }
   }
+  addDependencyRelations(entries, edges, refs);
   addMemoryRelations(entries, edges, config);
   return { ...emptyGraph(), nodes: [...nodes.values()], edges: [...edges.values()] };
+}
+
+function addDependencyRelations(entries: MemoryEntry[], edges: Map<string, MemoryGraphEdge>, refs: Map<string, MemoryEntry>): void {
+  for (const entry of entries) {
+    for (const ref of entry.dependsOn ?? []) {
+      const dependency = resolveDependency(entry, ref, refs);
+      if (!dependency || dependency.id === entry.id) continue;
+      addEdge(edges, memoryNodeId(entry), memoryNodeId(dependency), 'depends_on', 1, 'memory declares prerequisite dependency');
+    }
+  }
 }
 
 function addMemoryRelations(entries: MemoryEntry[], edges: Map<string, MemoryGraphEdge>, config?: EngramConfig): void {
@@ -189,7 +278,7 @@ function polarity(text: string): number {
 
 function lexicalRoute(entries: MemoryEntry[], query: string, max: number): MemoryEntry[] {
   return entries
-    .map((entry) => ({ entry, score: lexicalScore(query, `${entry.id} ${entry.type} ${entry.tags.join(' ')} ${entry.summary}`) }))
+    .map((entry) => ({ entry, score: lexicalScore(query, `${entry.id} ${entry.type} ${entry.tags.join(' ')} ${(entry.dependsOn ?? []).join(' ')} ${entry.summary}`) }))
     .filter((row) => row.score > 0)
     .sort((a, b) => b.score - a.score || scopePriority(a.entry) - scopePriority(b.entry) || a.entry.file.localeCompare(b.entry.file))
     .slice(0, max)
@@ -203,6 +292,85 @@ function addEdge(edges: Map<string, MemoryGraphEdge>, from: string, to: string, 
 
 function memoryNodeId(entry: MemoryEntry): string {
   return `memory:${entry.scope}:${entry.id}`;
+}
+
+function memoryReferenceMap(entries: MemoryEntry[]): Map<string, MemoryEntry> {
+  const refs = new Map<string, MemoryEntry>();
+  for (const entry of entries) {
+    for (const ref of [
+      entry.id,
+      entry.file,
+      `${entry.scope}:${entry.id}`,
+      `${entry.scope}:${entry.file}`,
+      memoryNodeId(entry),
+      path.basename(entry.file, '.md')
+    ]) {
+      refs.set(normalizeRef(ref), entry);
+    }
+  }
+  return refs;
+}
+
+function resolveDependency(entry: MemoryEntry, ref: string, refs: Map<string, MemoryEntry>): MemoryEntry | undefined {
+  return refs.get(normalizeRef(`${entry.scope}:${ref}`)) ?? refs.get(normalizeRef(ref));
+}
+
+function memoryDepths(entries: MemoryEntry[], refs: Map<string, MemoryEntry>): Map<string, number> {
+  const depths = new Map<string, number>();
+  const visiting = new Set<string>();
+  const depthFor = (entry: MemoryEntry): number => {
+    const id = memoryNodeId(entry);
+    if (depths.has(id)) return depths.get(id) ?? 0;
+    if (visiting.has(id)) return entry.dependencyDepth ?? 0;
+    visiting.add(id);
+    const dependencyDepths = (entry.dependsOn ?? [])
+      .map((ref) => resolveDependency(entry, ref, refs))
+      .filter((dependency): dependency is MemoryEntry => Boolean(dependency))
+      .map((dependency) => depthFor(dependency) + 1);
+    visiting.delete(id);
+    const depth = Math.max(entry.dependencyDepth ?? 0, ...dependencyDepths, 0);
+    depths.set(id, depth);
+    return depth;
+  };
+  for (const entry of entries) depthFor(entry);
+  return depths;
+}
+
+function prerequisiteNodeIds(nodeId: string, graph: MemoryGraph): string[] {
+  return graph.edges
+    .filter((edge) => edge.kind === 'depends_on' && edge.from === nodeId)
+    .map((edge) => edge.to);
+}
+
+function collectPrerequisites(nodeId: string, graph: MemoryGraph, out: string[], visiting: Set<string>): void {
+  if (visiting.has(nodeId)) return;
+  visiting.add(nodeId);
+  for (const dep of prerequisiteNodeIds(nodeId, graph)) {
+    collectPrerequisites(dep, graph, out, visiting);
+    if (!out.includes(dep)) out.push(dep);
+  }
+  visiting.delete(nodeId);
+}
+
+function normalizeRef(ref: string): string {
+  return ref.trim().replace(/\\/g, '/').replace(/\.md$/i, '').toLowerCase();
+}
+
+function entryKey(entry: MemoryEntry): string {
+  return `${entry.scope}:${entry.file}`;
+}
+
+function uniqueStrings(values: string[]): string[] {
+  return [...new Set(values)];
+}
+
+function dependencyDepth(node: MemoryGraphNode | undefined): number {
+  return node?.dependencyDepth ?? 0;
+}
+
+function nodeLabel(node: MemoryGraphNode | undefined): string {
+  if (!node) return '<missing>';
+  return node.file ? `${node.scope}:${node.file}` : node.label;
 }
 
 function bump(scores: Map<string, number>, key: string, amount: number): void {

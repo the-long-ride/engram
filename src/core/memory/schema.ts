@@ -29,6 +29,8 @@ export function parseMemory(raw: string): MemoryDoc {
 export function entryFromMemory(raw: string, file: string, fallbackScope: Scope): MemoryEntry {
   const doc = parseMemory(raw);
   validateMemory(doc);
+  const dependsOn = frontmatterStrings(doc.frontmatter.depends_on);
+  const dependencyDepth = frontmatterDepth(doc.frontmatter.dependency_depth ?? doc.frontmatter.level ?? doc.frontmatter.depth);
   return {
     id: String(doc.frontmatter.id),
     type: doc.frontmatter.type,
@@ -40,6 +42,8 @@ export function entryFromMemory(raw: string, file: string, fallbackScope: Scope)
     confidence: doc.frontmatter.confidence ?? 'medium',
     ignored: false,
     updated: String(doc.frontmatter.updated ?? doc.frontmatter.created ?? today()),
+    ...(dependsOn.length ? { dependsOn } : {}),
+    ...(dependencyDepth !== undefined ? { dependencyDepth } : {}),
     role: doc.frontmatter.role
   };
 }
@@ -79,6 +83,31 @@ function parseValue(value: string): any {
 
 function formatValue(value: any): string {
   return Array.isArray(value) ? `[${value.join(', ')}]` : String(value);
+}
+
+function frontmatterStrings(value: unknown): string[] {
+  const raw = Array.isArray(value) ? value : typeof value === 'string' ? [value] : [];
+  return raw.flatMap((item) => String(item).split(',')).map((item) => item.trim()).filter(Boolean);
+}
+
+function frontmatterDepth(value: unknown): number | undefined {
+  if (value === undefined || value === null || value === '') return undefined;
+  const text = String(value).trim().toLowerCase();
+  const named: Record<string, number> = {
+    base: 0,
+    basic: 0,
+    core: 0,
+    foundation: 0,
+    foundational: 0,
+    fundamental: 0,
+    intermediate: 1,
+    mid: 1,
+    advanced: 2,
+    deep: 2
+  };
+  if (text in named) return named[text];
+  const parsed = Number(text);
+  return Number.isInteger(parsed) && parsed >= 0 ? parsed : undefined;
 }
 
 function requireText(value: unknown, field: string): void {

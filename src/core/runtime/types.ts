@@ -72,6 +72,8 @@ export type MemoryEntry = {
   confidence: Confidence;
   ignored: boolean;
   updated: string;
+  dependsOn?: string[];
+  dependencyDepth?: number;
   role?: string[];
 };
 
@@ -81,7 +83,7 @@ export type ScanFinding = { line: number; reason: string; value: string; kind: s
 export type MemoryDoc = { frontmatter: Record<string, any>; title: string; body: string; raw: string };
 
 export type MemoryGraphNodeKind = 'scope' | 'type' | 'topic' | 'memory';
-export type MemoryGraphEdgeKind = 'contains' | 'tagged_as' | 'related_to' | 'contradicts';
+export type MemoryGraphEdgeKind = 'contains' | 'tagged_as' | 'depends_on' | 'related_to' | 'contradicts';
 
 export type MemoryGraphNode = {
   id: string;
@@ -94,6 +96,8 @@ export type MemoryGraphNode = {
   file?: string;
   tags?: string[];
   summary?: string;
+  dependsOn?: string[];
+  dependencyDepth?: number;
   embedding?: number[];
 };
 

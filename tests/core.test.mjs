@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile, rm } from 'node:fs/promises';
 import {
   effectiveMemoryLines,
+  entryFromMemory,
   parseMemory,
   RULE_EFFECTIVE_LINE_HARD_LIMIT,
   RULE_EFFECTIVE_LINE_TARGET,
@@ -64,6 +65,35 @@ pnpm install
 `);
   assert.equal(doc.frontmatter.id, 'use-pnpm');
   assert.equal(doc.title, 'Use pnpm');
+});
+
+test('schema indexes memory dependency metadata', () => {
+  const entry = entryFromMemory(`---
+id: deploy-checklist
+type: rule
+scope: workspace
+tags: [deploy, release]
+depends_on: [release-foundation, knowledge/team-release-context.md]
+level: advanced
+author: dev@example.com
+confidence: high
+---
+# Deploy checklist
+
+## Context
+
+Project release flow.
+
+## Content
+
+- Run deployment only after release foundations are satisfied.
+
+## Example
+
+engram load deploy
+`, 'rules/deploy-checklist.md', 'workspace');
+  assert.deepEqual(entry.dependsOn, ['release-foundation', 'knowledge/team-release-context.md']);
+  assert.equal(entry.dependencyDepth, 2);
 });
 
 test('schema validator enforces standard memory Markdown', () => {
@@ -324,6 +354,62 @@ test('routing refines broad matches and --all bypasses the top eight cap', () =>
   assert.equal(all.length, 10);
 });
 
+test('graph routing brings prerequisites before dependent memories', () => {
+  const foundation = routingEntry('release-foundation', 'workspace', ['foundation'], 'Canonical baseline policy for release readiness.');
+  const deep = routingEntry('oauth-rotation-runbook', 'workspace', ['oauth', 'rotation'], 'OAuth rotation runbook for retrying credentials after secret rollover.', {
+    dependsOn: ['release-foundation']
+  });
+  const graph = {
+    version: 'test',
+    last_updated: 'now',
+    nodes: [
+      {
+        id: 'memory:workspace:release-foundation',
+        kind: 'memory',
+        level: 3,
+        label: 'release-foundation',
+        scope: 'workspace',
+        memoryId: 'release-foundation',
+        memoryType: 'knowledge',
+        file: 'knowledge/release-foundation.md',
+        tags: foundation.tags,
+        summary: foundation.summary,
+        dependencyDepth: 0
+      },
+      {
+        id: 'memory:workspace:oauth-rotation-runbook',
+        kind: 'memory',
+        level: 4,
+        label: 'oauth-rotation-runbook',
+        scope: 'workspace',
+        memoryId: 'oauth-rotation-runbook',
+        memoryType: 'knowledge',
+        file: 'knowledge/oauth-rotation-runbook.md',
+        tags: deep.tags,
+        summary: deep.summary,
+        dependsOn: deep.dependsOn,
+        dependencyDepth: 1
+      }
+    ],
+    edges: [
+      {
+        id: 'depends_on:memory:workspace:oauth-rotation-runbook->memory:workspace:release-foundation',
+        kind: 'depends_on',
+        from: 'memory:workspace:oauth-rotation-runbook',
+        to: 'memory:workspace:release-foundation',
+        weight: 1,
+        reason: 'memory declares prerequisite dependency'
+      }
+    ]
+  };
+  const index = { version: 'test', last_updated: 'now', entries: [foundation, deep] };
+  const config = { ...defaultConfig(), vector: { ...defaultConfig().vector, enabled: false } };
+
+  const detail = routeDetailed(index, 'oauth rotation retry credentials', config, false, {}, graph);
+
+  assert.deepEqual(detail.entries.map((entry) => entry.id), ['release-foundation', 'oauth-rotation-runbook']);
+});
+
 test('vector sidecar skips cleanly when sqlite-vec runtime is unavailable', async () => {
   const { cwd } = await tempWorkspace('engram-vector-');
   const entries = [
@@ -486,7 +572,7 @@ test('temporary workspace cleanup works for later CLI tests', async () => {
   assert.ok(cwd.includes('engram-core-'));
 });
 
-function routingEntry(id, scope, tags, summary) {
+function routingEntry(id, scope, tags, summary, extra = {}) {
   return {
     id,
     type: 'knowledge',
@@ -497,6 +583,7 @@ function routingEntry(id, scope, tags, summary) {
     author: 'test',
     confidence: 'high',
     ignored: false,
-    updated: '2026-06-05'
+    updated: '2026-06-05',
+    ...extra
   };
 }

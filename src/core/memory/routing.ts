@@ -3,7 +3,7 @@ import type { EngramConfig, MemoryEntry, MemoryGraph, MemoryIndex } from '../run
 import { readGuardedMemory } from '../safety/safe-read.js';
 import { isIgnored } from '../safety/ignore.js';
 import { lexicalScore, words } from '../system/text.js';
-import { routeWithGraph } from './graph.js';
+import { dependencyContextEntries, routeWithGraph } from './graph.js';
 import type { VectorRouteHit } from './vector-db.js';
 
 type RouteOptions = { all?: boolean; ignorePatterns?: string[]; vectorHits?: VectorRouteHit[]; candidatePool?: number };
@@ -46,23 +46,25 @@ export function route(index: MemoryIndex, query: string, config: EngramConfig, m
 /** Select relevant entries and expose read-only refinement diagnostics. */
 export function routeDetailed(index: MemoryIndex, query: string, config: EngramConfig, manual = false, options: RouteOptions = {}, graph?: MemoryGraph): RouteDetail {
   const entries = prefilter(index, config, manual, options.ignorePatterns);
+  const activeGraph = config.graph.enabled ? graph : undefined;
   const max = ROUTE_LIMIT;
   const pool = Math.max(max, options.candidatePool ?? config.vector?.candidate_pool ?? max);
   if (options.all) {
     const selected = rankRows(entries.map((entry) => ({ entry, score: lexicalScore(query, entryText(entry)) })), query).map((row) => row.entry);
-    return detail(selected, selected, query, false);
+    const ordered = activeGraph ? dependencyContextEntries(selected, entries, activeGraph, selected.length) : selected;
+    return detail(ordered, selected, query, false);
   }
   if (!options.all && (config.graph.enabled && graph?.nodes.length || options.vectorHits?.length)) {
     const lexical = lexicalRoute(entries, query, pool);
     const graphHits = config.graph.enabled && graph?.nodes.length ? routeWithGraph(entries, graph, query, pool) : [];
     const candidates = blendCandidateRows(entries, query, lexical, graphHits, options.vectorHits ?? []);
-    return selectDetailed(candidates, query, max);
+    return selectDetailed(candidates, query, max, activeGraph, entries);
   }
   const scored = entries.map((entry) => ({
     entry,
-    score: lexicalScore(query, `${entry.id} ${entry.type} ${entry.tags.join(' ')} ${entry.summary}`)
+    score: lexicalScore(query, entryText(entry))
   }));
-  return selectDetailed(scored.filter((row) => row.score > 0), query, max);
+  return selectDetailed(scored.filter((row) => row.score > 0), query, max, activeGraph, entries);
 }
 
 function lexicalRoute(entries: MemoryEntry[], query: string, max: number): MemoryEntry[] {
@@ -95,10 +97,12 @@ function blendCandidateRows(
   return [...scores.values()];
 }
 
-function selectDetailed(candidates: Array<{ entry: MemoryEntry; score: number }>, query: string, max: number): RouteDetail {
+function selectDetailed(candidates: Array<{ entry: MemoryEntry; score: number }>, query: string, max: number, graph?: MemoryGraph, visible?: MemoryEntry[]): RouteDetail {
   const ranked = rankRows(candidates, query);
-  const selected = ranked.slice(0, max).map((row) => row.entry);
-  return detail(selected, ranked.map((row) => row.entry), query, ranked.length > max);
+  let selected = ranked.slice(0, max).map((row) => row.entry);
+  if (graph) selected = dependencyContextEntries(selected, visible ?? ranked.map((row) => row.entry), graph, max);
+  const candidateEntries = withSelected(ranked.map((row) => row.entry), selected);
+  return detail(selected, candidateEntries, query, candidateEntries.length > max);
 }
 
 function rankRows(rows: Array<{ entry: MemoryEntry; score: number }>, query: string): Array<{ entry: MemoryEntry; score: number }> {
@@ -170,7 +174,7 @@ function rankScore(index: number, total: number): number {
 }
 
 function entryText(entry: MemoryEntry): string {
-  return `${entry.id} ${entry.type} ${entry.tags.join(' ')} ${entry.summary}`;
+  return `${entry.id} ${entry.type} ${entry.tags.join(' ')} ${(entry.dependsOn ?? []).join(' ')} ${entry.summary}`;
 }
 
 function entryKey(entry: MemoryEntry): string {
@@ -188,4 +192,15 @@ export async function loadEntries(cwd: string, entries: MemoryEntry[], config: E
 
 function scopePriority(entry: MemoryEntry): number {
   return entry.scope === 'workspace' ? 0 : 1;
+}
+
+function withSelected(candidates: MemoryEntry[], selected: MemoryEntry[]): MemoryEntry[] {
+  const seen = new Set(candidates.map(entryKey));
+  const out = [...candidates];
+  for (const entry of selected) {
+    if (seen.has(entryKey(entry))) continue;
+    seen.add(entryKey(entry));
+    out.push(entry);
+  }
+  return out;
 }

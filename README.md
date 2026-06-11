@@ -130,6 +130,10 @@ avoid duplicating the same base guidance across many files.
 During `engram save`, the approval preview also reports related existing
 memories and suggests `depends_on` or duplicate cleanup when a new candidate
 looks like it should build on something already saved.
+For `engram save-session --accept-all`, those related-memory hints pause the
+write before any file is saved. Agents should use the response to rerun with
+structured candidates, for example `DEPENDS_ON: release-foundation` or `UPDATE:
+invoice-retry-baseline`.
 
 ## Example Use Cases
 

@@ -36,6 +36,10 @@ generated `/engram` adapters.
 - When save previews report related existing memories, treat those rows as
   advisory restructure hints. They may suggest `depends_on` or duplicate cleanup,
   but agents must not auto-archive or silently rewrite memory to apply them.
+  `save-session --accept-all` is the exception for agent restructuring: if the
+  CLI reports related memories before writing, no file was saved yet, and the
+  agent should brainstorm a better candidate set and rerun with `DEPENDS_ON:
+  memory-id` for dependencies or `UPDATE: memory-id` for duplicates.
 - Treat `engram save-session` (`engram ss`) as the explicit long-session proposal flow. It may
   propose multiple rule, knowledge, and workflow/skill candidates, but it must
   still require human approval before writing. Numbered approvals such as
@@ -48,9 +52,14 @@ generated `/engram` adapters.
 - Treat `/engram auto save` and legacy `/engram autosave` as natural wording for `/engram save-session`. In AI
   agent chat, the host should let the LLM define concise candidates from the
   current conversation and pass `TYPE: ... | TEXT: ...` lines to Engram.
+  Candidates may add `DEPENDS_ON: memory-id`, `LEVEL: advanced`, or `UPDATE:
+  memory-id` fields when restructuring related memories.
 - Treat `engram save-session --accept-all` as explicit human approval for every
   agent-recommended save-session candidate. Agents must not add this flag unless the
-  human requested it.
+  human requested it. When the CLI returns the related-memory no-write response,
+  the agent should use that response as routing context, generate a restructured
+  candidate set, and rerun the same accept-all command instead of reporting a
+  saved result.
 - Treat `engram observe` as raw inbox capture, not active memory. It may write a
   sanitized `inbox/` note, but converting that note into memory requires
   `observe --propose` or `save-session --file` and the normal approval flow unless

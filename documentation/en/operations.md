@@ -52,6 +52,11 @@ When `engram save` finds related active memories, the approval preview reports
 them with a suggested `depends_on` or possible-duplicate warning. Accepting saves
 the preview as-is; reject first if you want to restructure dependencies or
 archive duplicates before saving.
+For `save-session --accept-all`, Engram pauses before writing when those related
+memory hints appear. The agent should use the response to brainstorm a structured
+rerun: add `DEPENDS_ON: memory-id` for dependencies, `LEVEL: advanced` when a
+memory is deeper than its prerequisite, or `UPDATE: memory-id` when a candidate
+should merge into a possible duplicate.
 
 ## Profiles, Save Targets, And Clone
 
@@ -91,6 +96,14 @@ TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
 ```
 
 Without `--accept-all`, Engram asks which candidates to save. With `ss -a`, every generated candidate is saved because the human explicitly approved that shortcut.
+When an accept-all run reports related memories before writing, no file was
+saved yet. The agent should rerun with structured candidates such as:
+
+```text
+TYPE: rule | TEXT: OAuth rotation follows release foundations. | DEPENDS_ON: release-foundation | LEVEL: advanced
+TYPE: knowledge | TEXT: Invoice retries use exponential backoff. | UPDATE: invoice-retry-baseline
+```
+
 `--query-level` must be a positive integer. Agents should include only chats they can actually access and must not invent unavailable history. `engram ss -a last 50 sessions` uses `50` as the query level and `-a` as explicit human accept-all approval.
 
 ## Take Control

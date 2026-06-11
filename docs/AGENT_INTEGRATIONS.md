@@ -190,7 +190,13 @@ file, and `open-code` maps to `opencode`. The old `antigravity` and
   another A/B/C reply. If the shortcut includes a count such as
   `/engram ss -a last 50 sessions`, normalize it to
   `engram save-session --query-level 50 --accept-all` and mine only recent
-  human-agent chats the agent can actually access. For
+  human-agent chats the agent can actually access. If Engram returns a
+  related-memory response before writing, no file was saved yet; the adapter
+  should use those duplicate/dependency hints to generate a restructured
+  candidate set and rerun the same accept-all command. Use `DEPENDS_ON:
+  memory-id` when a candidate builds on existing memory, `LEVEL: advanced` for
+  deeper memory when useful, and `UPDATE: memory-id` when a candidate should
+  merge into a possible duplicate. For
   `/engram take-control --accept-all` or natural
   `/engram take control accept all`, the slash adapter should normalize the
   wording, keep the source pack token-light, generate only concise
@@ -200,7 +206,9 @@ file, and `open-code` maps to `opencode`. The old `antigravity` and
   For `/engram save-session`, `/engram ss`, legacy `/engram autosave`, or natural `/engram auto save` without a file or inline
   candidates, the slash adapter should use the LLM to define concise candidates
   from the current AI agent chat/session, then pass `TYPE: ... | TEXT: ...`
-  lines to Engram for the normal approval flow. If the human includes
+  lines to Engram for the normal approval flow. Candidates may add
+  `DEPENDS_ON`, `LEVEL`, or `UPDATE` fields when the agent is restructuring
+  related memory. If the human includes
   `--query-level <n>`, or natural count wording such as `last 50 sessions`, n
   must be a positive integer and the adapter should mine up to n recent
   accessible human-agent chat sessions, including the current session, without

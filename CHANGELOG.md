@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.0.10
+
+- Added `engram set-load-limit` / `engram ll` so normal loads can use a
+  configurable compact memory cap while `--all` still loads every routed
+  memory.
+- Updated load summaries and dry-run output to report selected and total
+  related memory counts, making agent-facing replies shorter by default.
+- Updated generated agent instructions to answer load requests with a compact
+  count line unless the human asks for IDs, rules, or raw memory output.
+- Added MCP regression coverage for save proposals that surface related memory
+  dependency hints.
+
 ## 0.0.9
 
 - Updated `engram init` to create or select the default profile when global

@@ -9,7 +9,7 @@ Choose a language. Each language has the same six pages:
 - `operations.md`: command and maintenance guide
 - `comparison.md`: pros, cons, comparisons, and roadmap
 
-New routing feature: memories can declare `depends_on` prerequisites so
+Dependency-aware routing: memories can declare `depends_on` prerequisites so
 `engram load` keeps foundational context before deeper memories, and
 `engram save` previews related memories or possible duplicates before approval.
 

@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { rm } from 'node:fs/promises';
+import { mkdir, rm, writeFile } from 'node:fs/promises';
+import path from 'node:path';
 import { handleMcp } from '../dist/mcp/server.js';
 import { runCli } from '../dist/cli.js';
-import { tempWorkspace } from './helpers.mjs';
+import { tempWorkspace, workspaceMemoryRoot } from './helpers.mjs';
 
 test('mcp status and save proposal do not write silently', async () => {
   const { cwd, env } = await tempWorkspace('engram-mcp-');
@@ -49,9 +50,32 @@ test('mcp status and save proposal do not write silently', async () => {
     assert.match(saveSession.result, /Human approval required/);
     assert.match(await runCli(['stats']), /Total: 0/);
 
-    const empty = await handleMcp({ id: 6, method: 'engram_save', params: { text: '' } });
+    const knowledgeDir = path.join(workspaceMemoryRoot(cwd), 'knowledge');
+    await mkdir(knowledgeDir, { recursive: true });
+    await writeFile(path.join(knowledgeDir, 'release-foundation-checklist.md'), mcpMemoryFixture({
+      id: 'release-foundation-checklist',
+      content: 'Release foundation checklist lives in docs/release.md.'
+    }));
+    await runCli(['rebuild-index', 'workspace']);
+
+    const related = await handleMcp({
+      id: 6,
+      method: 'engram_save',
+      params: {
+        text: 'OAuth rotation must follow the release foundation checklist',
+        type: 'rule',
+        scope: 'workspace'
+      }
+    });
+    assert.match(related.result, /ENGRAM SAVE PROPOSAL/);
+    assert.match(related.result, /Related memories found/);
+    assert.match(related.result, /Suggested depends_on: \[release-foundation-checklist\]/);
+    assert.match(related.result, /Human approval required/);
+    assert.match(await runCli(['stats']), /Total: 1/);
+
+    const empty = await handleMcp({ id: 7, method: 'engram_save', params: { text: '' } });
     assert.match(empty.error.message, /non-empty text/);
-    const badType = await handleMcp({ id: 7, method: 'engram_save', params: { text: 'Use Vitest', type: 'bogus' } });
+    const badType = await handleMcp({ id: 8, method: 'engram_save', params: { text: 'Use Vitest', type: 'bogus' } });
     assert.match(badType.error.message, /rule, skill, workflow, or knowledge/);
   } finally {
     process.chdir(previous);
@@ -62,3 +86,32 @@ test('mcp status and save proposal do not write silently', async () => {
     await rm(cwd, { recursive: true, force: true });
   }
 });
+
+function mcpMemoryFixture({ id, content }) {
+  return `---
+id: ${id}
+type: knowledge
+scope: workspace
+tags: [release, foundation, checklist]
+created: 2026-06-05
+updated: 2026-06-05
+author: test@example.com
+source: manual
+confidence: high
+---
+
+# Knowledge: ${id}
+
+## Context
+
+MCP test fixture.
+
+## Content
+
+- ${content}
+
+## Example
+
+Use this memory when validating MCP save proposals.
+`;
+}

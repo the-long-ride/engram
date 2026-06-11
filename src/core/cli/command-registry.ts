@@ -29,7 +29,7 @@ export const HELP_DATA: HelpSection[] = [
       { command: 'engram take-control [--plan] [--file path] [--dir path] [--include glob] [--exclude glob] [--max-sources n] [--max-chars n] [--all] [--accept-all]', alias: 'tc', purpose: 'Explore existing workspace guidance with agent help, token-light accept-all, and Engram memory writes' },
       { command: 'engram load [--all] [--dry-run] [query]', alias: 'l', purpose: 'Route, refine, and load relevant memories, or preview routed file paths with --dry-run' },
       { command: 'engram search [--semantic] <query>', alias: 'f', purpose: 'Search visible indexed memories with lexical or local semantic scoring' },
-      { command: 'engram graph [--rebuild] [query]', alias: 'g', purpose: 'Inspect the derived layered JSON memory graph and contradiction candidates' },
+      { command: 'engram graph [--rebuild] [query]', alias: 'g', purpose: 'Inspect the derived layered JSON memory graph, dependency layers, and contradiction candidates' },
       { command: 'engram verify [workspace|global]', alias: 'vf', purpose: 'Verify memory file integrity and hashes' },
       { command: 'engram rebuild-index [workspace|global]', alias: 'ri', purpose: 'Explicitly rebuild memory indexes from Markdown files' },
       { command: 'engram repair [workspace|global]', alias: 'rp', purpose: 'Report invalid memory files that index rebuild would skip' },

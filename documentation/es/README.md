@@ -100,6 +100,8 @@ Engram mueve la memoria a archivos para resolver estos problemas:
 La memoria del espacio de trabajo se carga primero. La memoria global es el respaldo. Cuando la memoria global está configurada, los flujos de guardado aprobados en el espacio de trabajo también mantienen una copia global, por lo que la memoria portátil sobrevive incluso en espacios de trabajo que no han ejecutado `engram init`.
 Cuando las consultas amplias coinciden con más de ocho memorias, `engram load` vuelve a clasificar con etiquetas, tipo, antigüedad, grafo y señales vectoriales sqlite-vec opcionales antes de cargar las ocho principales. Utilice `engram load --dry-run "<tarea>"` para obtener una vista previa del recuento de candidatos y las etiquetas de reducción sugeridas, o `--all` cuando el contexto amplio sea intencional.
 
+Las memorias también pueden declarar dependencias con `depends_on` y un nivel opcional como `level: advanced`. El grafo ordena esas memorias desde fundamentos hasta niveles profundos, y `engram load` mantiene los prerrequisitos junto a la memoria dependiente en el paquete compacto. Durante `engram save`, la vista previa avisa cuando una candidata se parece a memorias existentes y puede sugerir `depends_on` o limpieza de duplicados antes de guardar.
+
 ---
 
 ## Casos de Uso de Ejemplo

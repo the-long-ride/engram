@@ -116,6 +116,21 @@ tags, type, recency, graph, and optional sqlite-vec vector signals before loadin
 the top eight. Use `engram load --dry-run "<task>"` to preview candidate counts
 and suggested narrowing tags, or `--all` when broad context is intentional.
 
+Memories can also declare prerequisites in frontmatter:
+
+```yaml
+depends_on: [release-foundation, knowledge/team-release-context.md]
+level: advanced
+```
+
+The graph turns this into foundation-to-deep dependency layers. When a routed
+memory depends on a base rule or knowledge file, `engram load` keeps that
+prerequisite in the compact route before the dependent memory, so agents can
+avoid duplicating the same base guidance across many files.
+During `engram save`, the approval preview also reports related existing
+memories and suggests `depends_on` or duplicate cleanup when a new candidate
+looks like it should build on something already saved.
+
 ## Example Use Cases
 
 Engram is versatile and can be used for any personal, professional, or development memory.

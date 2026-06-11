@@ -96,6 +96,8 @@ Engram di chuyển bộ nhớ vào các tệp tin để giải quyết những v
 
 Workspace memory tải trước. Global memory là dự phòng. Khi global memory được định cấu hình, các quy trình lưu workspace được phê duyệt cũng giữ một bản sao toàn cục để bộ nhớ di động tồn tại ngay cả trong các không gian làm việc chưa chạy `engram init`.
 
+Các bộ nhớ cũng có thể khai báo phụ thuộc bằng `depends_on` và cấp độ tùy chọn như `level: advanced`. Đồ thị sắp xếp chúng từ nền tảng đến kiến thức sâu hơn, và `engram load` giữ bộ nhớ nền tảng đi cùng bộ nhớ phụ thuộc trong gói ngữ cảnh gọn. Khi chạy `engram save`, phần xem trước sẽ báo các bộ nhớ liên quan hoặc khả năng trùng lặp để bạn tái cấu trúc trước khi lưu.
+
 ---
 
 ## Example Use Cases (Các Trường Hợp Sử Dụng)

@@ -21,6 +21,10 @@ generated `/engram` adapters.
   lexical, tag, type, recency, graph, and vector signals, then load the compact
   top-8 pack. Use `load --dry-run` to report candidate counts and narrowing
   tags; use `--all` only when broad context is explicitly requested.
+- Preserve `depends_on: [...]` memory frontmatter when present. Graph routing
+  uses these prerequisite links to keep foundational memories before deeper
+  dependent memories inside the compact load pack, reducing duplicated guidance
+  across memory files.
 - For large memory scopes, maintain an optional per-scope sqlite-vec sidecar
   (`memory.vec.sqlite`) once the visible memory count reaches the configured
   threshold. Vector hits are candidate expansion only: lexical and graph routing
@@ -29,6 +33,9 @@ generated `/engram` adapters.
 - Never write memory silently.
 - Treat `engram_save` and `engram save` as proposal flows with human approval.
   Engram may automatically choose update-vs-new before presenting the preview.
+- When save previews report related existing memories, treat those rows as
+  advisory restructure hints. They may suggest `depends_on` or duplicate cleanup,
+  but agents must not auto-archive or silently rewrite memory to apply them.
 - Treat `engram save-session` (`engram ss`) as the explicit long-session proposal flow. It may
   propose multiple rule, knowledge, and workflow/skill candidates, but it must
   still require human approval before writing. Numbered approvals such as
@@ -140,7 +147,7 @@ proposal and collect explicit human approval before invoking a CLI write flow.
 | Startup auto-upgrade | After npm package updates, normal commands quietly reconcile already-initialized roots once per Engram version; skip with `--no-auto-upgrade` or `ENGRAM_NO_AUTO_UPGRADE=1`. The package must not rely on npm `postinstall` for migrations |
 | `engram load [--profile name] [--all] [--dry-run] "<task>"` | Load a refined top-8 context pack; `--profile` selects a global profile for one command, `--all` is the explicit broad-load mode, and `--dry-run` previews routed files, candidate counts, and narrowing tags without printing contents |
 | `engram search "<query>"` | Search visible memory by query |
-| `engram graph [--rebuild] ["<query>"]` | Inspect the derived layered JSON graph and contradiction candidates |
+| `engram graph [--rebuild] ["<query>"]` | Inspect the derived layered JSON graph, dependency layers, and contradiction candidates |
 | `engram save [rule|skill|workflow|knowledge] [--profile name] [--scope workspace|global|both] [--role role] "<text>"` | Propose one memory and write after A/B/C approval; `--profile` can save to another profile global root without changing the workspace default |
 | `engram save-session [--file transcript.md] [--role role] [--query-level n] [--accept-all] [session-summary]` / `engram ss` | Propose multiple memories from one or more recent sessions and write only after numbered A/B/C approval, or save every candidate when the human passed `--accept-all` |
 | `engram observe [--file session.md] [--propose] [note]` | Write sanitized raw notes into inbox; `--propose` mines them through save-session |

@@ -35,6 +35,24 @@ When more than 8 memories match, `load` refines the wider candidate pool into a
 top-8 context pack. `load --dry-run` shows candidate counts and narrowing tags;
 `load --all` intentionally returns every visible routed memory.
 
+## Dependency Layers
+
+Use `depends_on` frontmatter when a memory should build on another memory instead
+of repeating it:
+
+```yaml
+depends_on: [release-foundation]
+level: advanced
+```
+
+Run `engram graph --rebuild` after manual edits. The graph reports dependency
+layers, and `engram load` pulls routed prerequisites into the same compact
+context pack before deeper memories.
+When `engram save` finds related active memories, the approval preview reports
+them with a suggested `depends_on` or possible-duplicate warning. Accepting saves
+the preview as-is; reject first if you want to restructure dependencies or
+archive duplicates before saving.
+
 ## Profiles, Save Targets, And Clone
 
 Use `set-save-target` to choose where normal saves go:

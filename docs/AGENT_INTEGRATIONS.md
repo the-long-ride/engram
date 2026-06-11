@@ -148,6 +148,8 @@ file, and `open-code` maps to `opencode`. The old `antigravity` and
    the wider candidate pool into a compact top-8 context pack. Agents can use
    `engram load --dry-run "<query>"` to inspect candidate counts and suggested
    narrowing tags before loading broad context.
+   If memory files declare `depends_on: [...]`, graph routing keeps those
+   prerequisites before deeper dependent memories in the compact load pack.
 
 3. If the host supports external tool processes, register `.mcp.json` or equivalent host config.
 
@@ -311,7 +313,8 @@ workspace source discovery plus human-visible approval. Slash adapters normalize
 to `engram take-control --accept-all`.
 `/engram observe`, `/engram archive`, and `/engram benchmark` should use the CLI
 flow. `engram load` is graph-aware automatically because it reads the derived
-`memory.graph.json` when graph routing is enabled, refines broad candidate
+`memory.graph.json` when graph routing is enabled, includes declared
+`depends_on` prerequisites before dependent memories, refines broad candidate
 pools to the top 8, and reports narrowing tags in `--dry-run`.
 
 Gemini CLI searches for `GEMINI.md` files as context. The `slash` target writes

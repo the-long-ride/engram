@@ -5,8 +5,9 @@ import type { EngramConfig, MemoryEntry, MemoryGraph, MemoryGraphEdge, MemoryGra
 import { lexicalScore, words } from '../system/text.js';
 import { readJson, writeJson } from '../system/fsx.js';
 import { formatRecords } from '../cli/format.js';
+import { embed } from './graph-vector.js';
 
-const VECTOR_SIZE = 48;
+export { routeWithGraph } from './graph-route.js';
 
 /** Return an empty graph with current schema version. */
 export function emptyGraph(): MemoryGraph {
@@ -40,46 +41,6 @@ export function mergeGraphs(workspace: MemoryGraph, global: MemoryGraph): Memory
     for (const edge of graph.edges) edges.set(edge.id, edge);
   }
   return { ...emptyGraph(), nodes: [...nodes.values()], edges: [...edges.values()] };
-}
-
-/** Route memories by lexical score, local vectors, topic nodes, and related edges. */
-export function routeWithGraph(entries: MemoryEntry[], graph: MemoryGraph, query: string, max = 8): MemoryEntry[] {
-  if (!graph.nodes.length) return lexicalRoute(entries, query, max);
-  const entryMap = new Map(entries.map((entry) => [`memory:${entry.scope}:${entry.id}`, entry]));
-  const nodeMap = new Map(graph.nodes.map((node) => [node.id, node]));
-  const scores = new Map<string, number>();
-  const queryVector = embed(query);
-  const memoryNodes = graph.nodes.filter((node) => node.kind === 'memory' && entryMap.has(node.id));
-  for (const node of memoryNodes) {
-    const text = `${node.memoryId} ${node.memoryType} ${(node.tags ?? []).join(' ')} ${(node.dependsOn ?? []).join(' ')} ${node.summary ?? ''}`;
-    bump(scores, node.id, lexicalScore(query, text) + cosine(queryVector, node.embedding ?? []) * 0.35);
-  }
-  for (const topic of graph.nodes.filter((node) => node.kind === 'topic')) {
-    const score = lexicalScore(query, `${topic.label} ${(topic.tags ?? []).join(' ')}`);
-    if (score <= 0) continue;
-    for (const edge of graph.edges.filter((edge) => edge.kind === 'contains' && edge.from === topic.id)) {
-      if (entryMap.has(edge.to)) bump(scores, edge.to, score * 0.55);
-    }
-  }
-  for (const edge of graph.edges.filter((edge) => edge.kind === 'depends_on')) {
-    const from = scores.get(edge.from) ?? 0;
-    if (from > 0 && entryMap.has(edge.to)) bump(scores, edge.to, from * edge.weight * 0.5);
-  }
-  for (const edge of graph.edges.filter((edge) => edge.kind === 'related_to')) {
-    const from = scores.get(edge.from) ?? 0;
-    const to = scores.get(edge.to) ?? 0;
-    if (from > 0 && entryMap.has(edge.to)) bump(scores, edge.to, from * edge.weight * 0.25);
-    if (to > 0 && entryMap.has(edge.from)) bump(scores, edge.from, to * edge.weight * 0.25);
-  }
-  return [...scores.entries()]
-    .filter(([, score]) => score > 0)
-    .sort((a, b) => b[1] - a[1]
-      || dependencyDepth(nodeMap.get(a[0])) - dependencyDepth(nodeMap.get(b[0]))
-      || nodeScopePriority(a[0]) - nodeScopePriority(b[0])
-      || a[0].localeCompare(b[0]))
-    .slice(0, max)
-    .map(([id]) => entryMap.get(id))
-    .filter((entry): entry is MemoryEntry => Boolean(entry));
 }
 
 /** Return graph edges that probably indicate stale or wrong memory. */
@@ -276,15 +237,6 @@ function polarity(text: string): number {
   return positive + negative;
 }
 
-function lexicalRoute(entries: MemoryEntry[], query: string, max: number): MemoryEntry[] {
-  return entries
-    .map((entry) => ({ entry, score: lexicalScore(query, `${entry.id} ${entry.type} ${entry.tags.join(' ')} ${(entry.dependsOn ?? []).join(' ')} ${entry.summary}`) }))
-    .filter((row) => row.score > 0)
-    .sort((a, b) => b.score - a.score || scopePriority(a.entry) - scopePriority(b.entry) || a.entry.file.localeCompare(b.entry.file))
-    .slice(0, max)
-    .map((row) => row.entry);
-}
-
 function addEdge(edges: Map<string, MemoryGraphEdge>, from: string, to: string, kind: MemoryGraphEdge['kind'], weight: number, reason: string): void {
   const id = `${kind}:${from}->${to}`;
   edges.set(id, { id, kind, from, to, weight: Number(weight.toFixed(3)), reason });
@@ -371,38 +323,4 @@ function dependencyDepth(node: MemoryGraphNode | undefined): number {
 function nodeLabel(node: MemoryGraphNode | undefined): string {
   if (!node) return '<missing>';
   return node.file ? `${node.scope}:${node.file}` : node.label;
-}
-
-function bump(scores: Map<string, number>, key: string, amount: number): void {
-  scores.set(key, (scores.get(key) ?? 0) + amount);
-}
-
-function nodeScopePriority(nodeId: string): number {
-  return nodeId.startsWith('memory:workspace:') ? 0 : 1;
-}
-
-function scopePriority(entry: MemoryEntry): number {
-  return entry.scope === 'workspace' ? 0 : 1;
-}
-
-function embed(text: string): number[] {
-  const vector = Array(VECTOR_SIZE).fill(0);
-  for (const word of words(text)) vector[hash(word) % VECTOR_SIZE] += 1;
-  const norm = Math.sqrt(vector.reduce((sum, value) => sum + value * value, 0));
-  return norm ? vector.map((value) => Number((value / norm).toFixed(4))) : vector;
-}
-
-function cosine(a: number[], b: number[]): number {
-  let sum = 0;
-  for (let i = 0; i < Math.min(a.length, b.length); i += 1) sum += a[i] * b[i];
-  return sum;
-}
-
-function hash(input: string): number {
-  let value = 2166136261;
-  for (let i = 0; i < input.length; i += 1) {
-    value ^= input.charCodeAt(i);
-    value = Math.imul(value, 16777619);
-  }
-  return value >>> 0;
 }

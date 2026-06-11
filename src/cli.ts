@@ -9,7 +9,7 @@ import { cmdSave, cmdSaveSession, cmdTakeControl } from './commands/write.js';
 import { cmdArchive, cmdBenchmark, cmdDeduplicate, cmdEntry, cmdExport, cmdGraph, cmdHealth, cmdImport, cmdQuality, cmdSearch, cmdStats, cmdSync } from './commands/ops.js';
 import { cmdCloneMemory } from './commands/clone.js';
 import { cmdProfile } from './commands/profile.js';
-import { cmdIgnore, cmdInstallHooks, cmdInstallSkillset, cmdResolveConflicts, cmdSetRole, cmdSetRuleVariant, cmdSetSaveTarget, cmdUpdateGlobalFolder, cmdUpgrade } from './commands/admin.js';
+import { cmdIgnore, cmdInstallHooks, cmdInstallSkillset, cmdResolveConflicts, cmdSetLoadLimit, cmdSetRole, cmdSetRuleVariant, cmdSetSaveTarget, cmdUpdateGlobalFolder, cmdUpgrade } from './commands/admin.js';
 import { maybeAutoUpgrade } from './core/runtime/auto-upgrade.js';
 
 /** Execute a CLI invocation and return printable output. */
@@ -54,6 +54,7 @@ export async function runCli(argv: string[]): Promise<string> {
       case 'ignore': return await cmdIgnore(rest);
       case 'set-role': return await cmdSetRole(rest);
       case 'set-save-target': return await cmdSetSaveTarget(rest);
+      case 'set-load-limit': return await cmdSetLoadLimit(rest);
       case 'set-rule-variant': return await cmdSetRuleVariant(rest);
       case 'update-global-folder': return await cmdUpdateGlobalFolder(rest, flags);
       case 'resolve-conflicts': return await cmdResolveConflicts(flags);

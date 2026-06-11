@@ -40,7 +40,7 @@ export async function getContext(cwd = process.cwd(), options: ContextOptions = 
 }
 
 /** Format the session-start load summary. */
-export function loadSummary(entries: { type: string; id: string; scope: string }[], hidden: number): string {
+export function loadSummary(entries: { type: string; id: string; scope: string }[], hidden: number, relatedTotal?: number): string {
   const workspace = entries.filter((e) => e.scope === 'workspace').length;
   const global = entries.filter((e) => e.scope === 'global').length;
   const groups = entries.reduce<Record<string, string[]>>((acc, e) => {
@@ -51,8 +51,9 @@ export function loadSummary(entries: { type: string; id: string; scope: string }
   const wsStr = style.number(String(workspace));
   const glStr = style.number(String(global));
   const hidStr = style.number(String(hidden));
+  const related = relatedTotal === undefined ? '' : ` / ${style.number(String(relatedTotal))} total related memories`;
   const lines = [
-    `${style.heading('engram:')} loaded ${totalStr} memory files (${style.label('workspace:')} ${wsStr}, ${style.label('global:')} ${glStr}) [${hidStr} hidden by ignore]`
+    `${style.heading('engram:')} loaded ${totalStr} memory files${related} (${style.label('workspace:')} ${wsStr}, ${style.label('global:')} ${glStr}) [${hidStr} hidden by ignore]`
   ];
   for (const [type, ids] of Object.entries(groups)) {
     lines.push(`  ${style.label(type)}: ${ids.map((id) => style.value(id)).join(', ')}`);

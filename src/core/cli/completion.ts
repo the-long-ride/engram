@@ -9,6 +9,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
   const shells = ['bash', 'zsh', 'powershell'].join(' ');
   const ruleVariants = ['off', 'light', 'balanced', 'strict', 'status'].join(' ');
   const saveTargets = ['workspace', 'global', 'both', 'status'].join(' ');
+  const loadLimits = ['status', 'reset', '8', '12', '16', '24', '32'].join(' ');
   const profileActions = ['status', 'list', 'create', 'use', 'remove', 'merge'].join(' ');
   const ignoreActions = ['status', 'check', 'add'].join(' ');
   const saveSessionArgs = ['--file', '--scope', '--profile', '--role', '--roles', '--query-level', '--accept-all'].join(' ');
@@ -87,6 +88,9 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '    set-save-target)',
       `      _arguments "1:target:(${saveTargets})"`,
       '      ;;',
+      '    set-load-limit|ll)',
+      `      _arguments "1:limit:(${loadLimits})"`,
+      '      ;;',
       '    resolve-conflicts|rc)',
       '      _arguments "--dry-run"',
       '      ;;',
@@ -122,6 +126,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '$engramScopes = @(\'workspace\', \'global\', \'both\')',
       '$engramRuleVariants = @(\'off\', \'light\', \'balanced\', \'strict\', \'status\')',
       '$engramSaveTargets = @(\'workspace\', \'global\', \'both\', \'status\')',
+      `$engramLoadLimits = @(${loadLimits.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
       'Register-ArgumentCompleter -Native -CommandName engram -ScriptBlock {',
       '  param($wordToComplete, $commandAst, $cursorPosition)',
       '  $words = @($commandAst.CommandElements | ForEach-Object { $_.ToString() })',
@@ -154,6 +159,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '        { $_ -in @(\'upgrade\', \'up\') } { $engramUpgradeArgs; break }',
       '        { $_ -in @(\'set-rule-variant\', \'rv\') } { $engramRuleVariants; break }',
       '        { $_ -in @(\'set-save-target\') } { $engramSaveTargets; break }',
+      '        { $_ -in @(\'set-load-limit\', \'ll\') } { $engramLoadLimits; break }',
       '        { $_ -in @(\'verify\', \'vf\', \'rebuild-index\', \'ri\', \'repair\', \'rp\') } { $engramScopes; break }',
       '        default { $engramCommands }',
       '      }',
@@ -183,6 +189,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
     `  local shells="${shells}"`,
     `  local rule_variants="${ruleVariants}"`,
     `  local save_targets="${saveTargets}"`,
+    `  local load_limits="${loadLimits}"`,
     `  local profile_actions="${profileActions}"`,
     `  local ignore_actions="${ignoreActions}"`,
     `  local upgrade_args="${upgradeArgs}"`,
@@ -296,6 +303,11 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
     '      ;;',
     '    set-save-target)',
     '      if [[ $cword -eq 2 ]]; then COMPREPLY=( $(compgen -W "$save_targets" -- "$cur") ); return; fi',
+    '      COMPREPLY=()',
+    '      return',
+    '      ;;',
+    '    set-load-limit|ll)',
+    '      if [[ $cword -eq 2 ]]; then COMPREPLY=( $(compgen -W "$load_limits" -- "$cur") ); return; fi',
     '      COMPREPLY=()',
     '      return',
     '      ;;',

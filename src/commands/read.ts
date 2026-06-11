@@ -30,10 +30,10 @@ export async function cmdLoad(args: string[], flags: Record<string, any> = {}): 
       title: `${entry.scope}:${entry.file}`,
       fields: [['Type', entry.type], ['Summary', entry.summary]]
     })));
-    return formatRecords(routed.omitted ? `Routed memories (${entries.length} of ${routed.candidates})` : `Routed memories (${entries.length})`, rows);
+    return formatRecords(`Routed memories (${entries.length} of ${routed.candidates})`, rows);
   }
   const loaded = await loadEntries(process.cwd(), entries, ctx.config);
-  const summary = loadSummary(entries, ctx.hiddenCount);
+  const summary = loadSummary(entries, ctx.hiddenCount, routed.candidates);
   return `${summary}${routeHint(routed)}\n\n${loaded.map((row) => row.flagged ? `SKIPPED ${row.entry.file}: ${row.flagged}` : row.content).join('\n\n')}`.trim();
 }
 
@@ -113,5 +113,5 @@ function refinementRecord(routed: RouteDetail): RecordBlock {
 function routeHint(routed: RouteDetail): string {
   if (!routed.omitted) return '';
   const tags = routed.facets.map((facet) => facet.tag).join(', ');
-  return `\nengram: refined ${routed.selected} of ${routed.candidates} candidates${tags ? `; narrow with tags: ${tags}` : ''}`;
+  return `\nengram: refined ${routed.selected} of ${routed.candidates} related memories${tags ? `; narrow with tags: ${tags}` : ''}`;
 }

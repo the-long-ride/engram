@@ -7,6 +7,7 @@ import type { MemoryEntry, MemoryType, Scope } from '../runtime/types.js';
 import { lexicalScore, slugify, words } from '../system/text.js';
 import { sha256 } from '../safety/hash.js';
 import { routeDetailed } from './routing.js';
+import { DEFAULT_LOAD_LIMIT, normalizeLoadLimit } from '../runtime/load-limit.js';
 
 const RELATED_HINT_LIMIT = 3;
 
@@ -94,7 +95,8 @@ function relatedMemoryHints(ctx: EngramContext, text: string, type: MemoryType, 
   if (!index.entries.length) return [];
   const routed = routeDetailed(index, text, ctx.config, false, {
     ignorePatterns: ctx.ignorePatterns,
-    candidatePool: Math.max(8, ctx.config.vector?.candidate_pool ?? 8)
+    limit: Math.max(DEFAULT_LOAD_LIMIT, normalizeLoadLimit(ctx.config.load?.limit)),
+    candidatePool: Math.max(DEFAULT_LOAD_LIMIT, ctx.config.vector?.candidate_pool ?? DEFAULT_LOAD_LIMIT)
   }, ctx.graph).entries;
   const queryWords = words(text);
   return routed

@@ -22,13 +22,14 @@ Esta página contiene el uso detallado para que el README pueda seguir siendo br
 | Archivar memoria errónea | `engram archive --reason "<motivo>" <id-o-archivo>` |
 | Ajustar la fuerza de las reglas | `engram set-rule-variant strict\|balanced\|light\|off` |
 | Definir destino de guardado predeterminado | `engram set-save-target workspace\|global\|both\|status` |
+| Definir límite de carga compacta | `engram set-load-limit 1..32\|status\|reset` |
 | Gestionar perfiles globales | `engram profile status\|create\|use\|merge` |
 | Clonar memoria workspace/global | `engram clone-memory workspace global` |
 
 Use `save-session` para propuestas de memoria de sesiones largas. Forma corta: `ss`.
 Use `--query-level <n>` cuando el humano quiera que el agente extraiga memoria de hasta n chats humano-agente recientes y accesibles, en lugar de solo la sesión actual. La redacción natural `engram ss -a last 50 sessions` se normaliza a `engram save-session --query-level 50 --accept-all`.
 
-Cuando más de 8 memorias coinciden con una consulta, `load` refina el conjunto amplio de candidatos en un paquete de contexto top 8. `load --dry-run` muestra conteos de candidatos y etiquetas para acotar; `load --all` devuelve intencionalmente toda memoria visible enrutada.
+Cuando coinciden más memorias de las que permite el límite de carga configurado, `load` refina el conjunto amplio de candidatos en un paquete de contexto compacto. La carga normal informa las seleccionadas y el total relacionado, por ejemplo `loaded 8 memory files / 14 total related memories`. `load --dry-run` muestra conteos de candidatos y etiquetas para acotar; `load --all` devuelve intencionalmente toda memoria visible enrutada.
 
 ## Perfiles, Destinos de Guardado y Clonado
 

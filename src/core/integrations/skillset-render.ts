@@ -58,12 +58,12 @@ function compactSkillInstructions(): string {
 
 ## Protocol
 
-- Session start and task changes: run \`engram load "<current task>"\`; summarize only the relevant memory IDs/rules, not raw output.
+- Session start and task changes: run \`engram load "<current task>"\`; reply only with \`Engram loaded: X memories / Y total related memories.\` unless the human asks for IDs, rules, or raw output.
 - Before planning, researching, or implementing, use \`engram load\` or \`engram search\` with a specific query when project knowledge, user preference, or team rules could matter.
 - Keep token usage low: route-load narrow context, use \`--all\` only when broad context is explicitly requested, and prefer short summaries over pasted memory.
 - Speak only for confirmation, file-changing actions, command failures, and final result.
-- Preferred replies: \`Engram loaded: N memories.\`, \`Need confirm: <action>.\`, \`Ran: <command>. Result: <short result>.\`, \`Saved: <file>.\`, \`No write.\`
-- Read commands (\`load/search/graph/benchmark/verify/repair/health/stats/audit/entry\`): one-line summary. Use \`--all\` only when broad context is requested; use \`load --dry-run\` to preview routed files and narrowing tags without printing memory contents.
+- Preferred replies: \`Engram loaded: X memories / Y total related memories.\`, \`Need confirm: <action>.\`, \`Ran: <command>. Result: <short result>.\`, \`Saved: <file>.\`, \`No write.\`
+- Read commands (\`load/search/graph/benchmark/verify/repair/health/stats/audit/entry\`): one-line summary. For \`load\`, report only selected and total related counts by default. Use \`--all\` only when broad context is requested; use \`load --dry-run\` to preview routed files and narrowing tags without printing memory contents.
 - Write/change commands (\`save/save-session/observe --propose/take-control/import/archive/clone-memory/profile/resolve-conflicts/install-hooks/install-skillset/upgrade/sync/init --submodule|--global-remote\`): state the change first, then show Engram result.
 - Save flow: use \`engram save <rule|skill|workflow|knowledge> "<text>"\`. No text means brainstorm one concise candidate. Long session or AI chat context means \`engram save-session\` or \`engram ss\` with LLM-defined \`TYPE: ... | TEXT: ...\` lines; candidates may add \`DEPENDS_ON: memory-id\`, \`LEVEL: advanced\`, or \`UPDATE: memory-id\`. If the human passes \`--query-level <n>\`, or says a natural count such as \`ss -a last 50 sessions\`, include up to n recent accessible human-agent chat sessions; never invent unavailable history. Natural \`ss -a last 50 sessions\` means \`save-session --query-level 50 --accept-all\`.
 - Session end: if durable rules, knowledge, or workflows emerged, propose \`engram save\` or \`engram save-session\` instead of relying on private chat memory.

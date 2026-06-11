@@ -17,7 +17,8 @@ test('skillset installer writes all supported agent adapter files', async () => 
   assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /Default agent mode: compact/);
   assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /knowledge memory center/);
   assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /Keep token usage low/);
-  assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /Engram loaded: N memories\./);
+  assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /Engram loaded: X memories \/ Y total related memories\./);
+  assert.doesNotMatch(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /summarize only the relevant memory IDs\/rules/);
   const mcpConfig = await readFile(path.join(cwd, '.mcp.json'), 'utf8');
   assert.match(mcpConfig, /engram-mcp/);
   assert.equal(JSON.parse(mcpConfig).mcpServers.engram.command, 'npx');

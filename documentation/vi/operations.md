@@ -22,13 +22,14 @@ Trang này chứa thông tin chi tiết về cách sử dụng để tệp READM
 | Lưu trữ bộ nhớ sai lệch | `engram archive --reason "<lý do>" <id-hoặc-tên-tệp>` |
 | Điều chỉnh độ mạnh quy tắc | `engram set-rule-variant strict\|balanced\|light\|off` |
 | Đặt đích lưu mặc định | `engram set-save-target workspace\|global\|both\|status` |
+| Đặt giới hạn tải gọn | `engram set-load-limit 1..32\|status\|reset` |
 | Quản lý profile global | `engram profile status\|create\|use\|merge` |
 | Sao chép bộ nhớ workspace/global | `engram clone-memory workspace global` |
 
 Sử dụng lệnh `save-session` cho các đề xuất bộ nhớ từ các phiên làm việc dài. Dạng viết tắt: `ss`.
 Sử dụng `--query-level <n>` khi con người muốn tác nhân AI khai thác tối đa n phiên chat người-tác nhân gần đây có thể truy cập, thay vì chỉ phiên hiện tại. Cách nói tự nhiên `engram ss -a last 50 sessions` được chuẩn hóa thành `engram save-session --query-level 50 --accept-all`.
 
-Khi hơn 8 bộ nhớ khớp với truy vấn, `load` sẽ tinh chỉnh nhóm ứng viên rộng hơn thành gói ngữ cảnh top 8. `load --dry-run` hiển thị số lượng ứng viên và các tag gợi ý để thu hẹp; `load --all` chủ động trả về mọi bộ nhớ định tuyến đang hiển thị.
+Khi số bộ nhớ khớp vượt quá giới hạn tải đã cấu hình, `load` sẽ tinh chỉnh nhóm ứng viên rộng hơn thành gói ngữ cảnh gọn. Tải thông thường hiển thị số đã chọn và tổng số liên quan, ví dụ `loaded 8 memory files / 14 total related memories`. `load --dry-run` hiển thị số lượng ứng viên và các tag gợi ý để thu hẹp; `load --all` chủ động trả về mọi bộ nhớ định tuyến đang hiển thị.
 
 ## Profile, Đích Lưu Và Sao Chép
 

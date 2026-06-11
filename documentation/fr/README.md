@@ -90,7 +90,7 @@ Engram déplace la mémoire dans des fichiers pour résoudre ces problèmes :
 
 | Défi Tactique | Solution d'Engram |
 | --- | --- |
-| **Surcharge du contexte par trop de règles** | Route et affine la mémoire correspondant à la tâche dans un pack de contexte compact de 8 éléments maximum par défaut. |
+| **Surcharge du contexte par trop de règles** | Route et affine la mémoire correspondant à la tâche dans un pack de contexte compact, avec 8 mémoires par défaut. |
 | **Écritures silencieuses et fuite de secrets** | Requiert l'approbation humaine A/B/C et analyse les secrets/injections. |
 | **Verrouillage fournisseur** | Utilise des fichiers Markdown lisibles et portables pour tout agent ou modèle d'IA. |
 | **Aucun accès hors ligne** | Fonctionne entièrement en local en tant que protocole léger de fichiers, sans serveurs externes. |
@@ -98,7 +98,7 @@ Engram déplace la mémoire dans des fichiers pour résoudre ces problèmes :
 | **Mémoire corrompue ou obsolète** | Fournit des outils de validation et de nettoyage (`engram verify`, `engram repair`). |
 
 La mémoire de l'espace de travail est chargée en premier. La mémoire globale sert de secours. Lorsque la mémoire globale est configurée, les flux de sauvegarde approuvés dans l'espace de travail conservent également une copie globale afin que la mémoire portable survive même dans les espaces de travail qui n'ont pas exécuté `engram init`.
-Lorsque des requêtes larges correspondent à plus de huit mémoires, `engram load` effectue un nouveau classement avec les balises (tags), le type, la récence, le graphe et les signaux vectoriels sqlite-vec optionnels avant de charger les huit premières. Utilisez `engram load --dry-run "<tâche>"` pour prévisualiser le nombre de candidats et les balises d'affinement suggérées, ou `--all` lorsque le contexte large est intentionnel.
+Lorsque des requêtes larges correspondent à plus de mémoires que la limite de chargement configurée, `engram load` effectue un nouveau classement avec les balises (tags), le type, la récence, le graphe et les signaux vectoriels sqlite-vec optionnels avant de charger le paquet compact. Le chargement normal affiche le nombre sélectionné et le total lié, par exemple `loaded 8 memory files / 14 total related memories`. Utilisez `engram load --dry-run "<tâche>"` pour prévisualiser les comptes liés et les balises suggérées, `engram set-load-limit 1..32` pour ajuster la valeur, ou `--all` lorsque le contexte large est intentionnel.
 
 Les mémoires peuvent aussi déclarer des dépendances avec `depends_on` et un niveau optionnel comme `level: advanced`. Le graphe les ordonne des bases vers les niveaux plus profonds, et `engram load` garde les prérequis avec la mémoire dépendante dans le paquet compact. Pendant `engram save`, l'aperçu signale les mémoires liées ou les doublons possibles afin de restructurer avant l'enregistrement.
 
@@ -246,6 +246,7 @@ Ajustez la rigueur de mise en forme des règles chargées par votre assistant IA
 - **Vérifier les paramètres actifs & les chemins actifs :** `engram entry` (Agent : `/engram entry`)
 - **Synchroniser les modifications locales & globales :** `engram sync` (Agent : `/engram sync`)
 - **Configurer la cible de sauvegarde :** `engram set-save-target workspace|global|both|status` (Agent : `/engram set-save-target status`)
+- **Configurer la limite de chargement :** `engram set-load-limit 1..32|status|reset` (Agent : `/engram set-load-limit status`)
 - **Gérer les profils isolés :** `engram profile status` / `engram profile merge personal company --dry-run` (Agent : `/engram profile status`)
 - **Cloner la mémoire workspace/global :** `engram clone-memory workspace global` / `engram clone-memory global workspace --force` (Agent : `/engram clone workspace memory to global`)
 - **Exécuter un contrôle & nettoyer les liens brisés :** `engram verify` / `engram repair` (Agent : `/engram verify` / `/engram repair`)
@@ -270,6 +271,7 @@ Ajustez la rigueur de mise en forme des règles chargées par votre assistant IA
 | **Définir les Rôles Actifs** | `engram set-role <roles>` | `/engram set-role <roles>` |
 | **Définir la Variante de Règle** | `engram set-rule-variant <variant>` | `/engram set-rule-variant <variant>` |
 | **Configurer la Cible de Sauvegarde** | `engram set-save-target <cible>` | `/engram set-save-target <cible>` |
+| **Configurer la Limite de Chargement** | `engram set-load-limit <nombre>` | `/engram set-load-limit <nombre>` |
 | **Gérer les Profils** | `engram profile status` / `engram profile merge personal company --dry-run` | `/engram profile status` |
 | **Cloner la Mémoire Workspace/Global** | `engram clone-memory workspace global` | `/engram clone workspace memory to global` |
 | **Synchroniser les Mémoires** | `engram sync` | `/engram sync` |

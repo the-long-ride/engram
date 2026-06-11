@@ -50,6 +50,7 @@ function entryGroup(key: string): string {
   if (key.startsWith('roots.')) return 'Memory roots';
   if (key.startsWith('config.ignore.')) return 'Ignore rules';
   if (key === 'config.roles') return 'Routing roles';
+  if (key.startsWith('config.load.')) return 'Load routing';
   if (key.startsWith('config.live_sync.')) return 'Live sync';
   if (key.startsWith('config.global_git.')) return 'Global Git config';
   if (key.startsWith('config.rule_variants.')) return 'Rule variants';

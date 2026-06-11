@@ -7,6 +7,7 @@ import { getContext } from '../core/memory/context.js';
 import { updateGlobalFolder } from '../core/memory/global-folder.js';
 import { initWorkspace } from '../core/memory/storage.js';
 import { loadConfig, parseSaveTarget, scopeRootsForConfig, workspaceRoot, writeConfig } from '../core/runtime/config.js';
+import { DEFAULT_LOAD_LIMIT, MAX_LOAD_LIMIT, MIN_LOAD_LIMIT, parseLoadLimit } from '../core/runtime/load-limit.js';
 import { defaultProfileLines, ensureDefaultProfile } from '../core/runtime/profile-migration.js';
 import { HELP_FILE, VERSION } from '../core/runtime/constants.js';
 import { isIgnored } from '../core/safety/ignore.js';
@@ -64,6 +65,20 @@ export async function cmdSetSaveTarget(args: string[]): Promise<string> {
   ctx.config.scope = target;
   await writeConfig(process.cwd(), ctx.config);
   return saveTargetStatus(ctx.config.scope, Boolean(ctx.roots.global));
+}
+
+/** Configure the compact `engram load` memory cap. */
+export async function cmdSetLoadLimit(args: string[]): Promise<string> {
+  const ctx = await getContext();
+  const value = (args[0] ?? 'status').toLowerCase();
+  if (value === 'status') return loadLimitStatus(ctx.config.load.limit);
+  if (['default', 'reset'].includes(value)) {
+    ctx.config.load.limit = DEFAULT_LOAD_LIMIT;
+  } else {
+    ctx.config.load.limit = parseLoadLimit(value, 'set-load-limit');
+  }
+  await writeConfig(process.cwd(), ctx.config);
+  return loadLimitStatus(ctx.config.load.limit);
 }
 
 /** Enable, disable, or inspect rule variant rendering. */
@@ -326,4 +341,8 @@ function ruleVariantStatus(config: { enabled: boolean; active: RuleVariant }): s
 function saveTargetStatus(scope: string, hasGlobal: boolean): string {
   const fallback = scope === 'both' && !hasGlobal ? ' (global memory not configured; saves write workspace only until configured)' : '';
   return `Save target: ${scope}${fallback}`;
+}
+
+function loadLimitStatus(limit: number): string {
+  return `Load limit: ${limit} (default ${DEFAULT_LOAD_LIMIT}, range ${MIN_LOAD_LIMIT}-${MAX_LOAD_LIMIT})`;
 }

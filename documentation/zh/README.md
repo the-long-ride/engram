@@ -90,7 +90,7 @@ Engram 将内存移动到文件中以解决这些问题：
 
 | 战术挑战 | Engram 的解决方案 |
 | --- | --- |
-| **过多的规则使上下文膨胀** | 默认情况下，将与任务匹配 of 内存路由并精简为最多包含 8 个文件项目的紧凑上下文包。 |
+| **过多的规则使上下文膨胀** | 将与任务匹配的内存路由并精简为紧凑上下文包，默认 8 条。 |
 | **静默写入与密钥泄露** | 需要人类进行 A/B/C 批准，并扫描密钥和注入攻击。 |
 | **供应商锁死** | 使用纯文本、易读且可在任何智能体或模型之间移植的 Markdown 文件。 |
 | **无离线访问** | 作为轻量级文件协议在本地运行——不需要服务器或互联网。 |
@@ -98,7 +98,7 @@ Engram 将内存移动到文件中以解决这些问题：
 | **损坏或过时的内存** | 提供验证和清理工具（`engram verify`、`engram repair`）。 |
 
 工作区内存首先加载。全局内存是后备。配置全局内存后，经批准的工作区保存流也会保留全局副本，因此即使在未运行 `engram init` 的工作区中，可移植的内存也能保留下来。
-当宽泛的查询匹配超过八个内存时，`engram load` 会在加载前八个之前，使用标签、类型、新鲜度、图谱和可选的 sqlite-vec 向量信号对候选进行重新排序。使用 `engram load --dry-run "<任务>"` 来预览候选计数和建议的缩小范围标签，或者在有意使用宽泛上下文时使用 `--all`。
+当宽泛查询匹配的内存超过已配置加载上限时，`engram load` 会使用标签、类型、新鲜度、图谱和可选 sqlite-vec 向量信号重新排序，然后加载紧凑上下文包。普通加载会显示已选择数量和相关总数，例如 `loaded 8 memory files / 14 total related memories`。使用 `engram load --dry-run "<任务>"` 预览相关计数和建议标签，用 `engram set-load-limit 1..32` 调整默认值，或在确实需要宽泛上下文时使用 `--all`。
 
 内存也可以通过 `depends_on` 和可选的 `level: advanced` 等级声明依赖关系。图谱会把它们按基础到深入的层次排序，`engram load` 会在紧凑上下文包中保留依赖内存所需的前置基础。`engram save` 预览会提示相关的现有内存或可能的重复项，方便在保存前补充 `depends_on` 或清理重复内容。
 
@@ -246,6 +246,7 @@ engram init
 - **检查活动设置与活动路径：** `engram entry` (智能体: `/engram entry`)
 - **同步本地与全局更改：** `engram sync` (智能体: `/engram sync`)
 - **设置默认保存目标：** `engram set-save-target workspace|global|both|status` (智能体: `/engram set-save-target status`)
+- **设置加载上限：** `engram set-load-limit 1..32|status|reset` (智能体: `/engram set-load-limit status`)
 - **管理隔离配置档：** `engram profile status` / `engram profile merge personal company --dry-run` (智能体: `/engram profile status`)
 - **克隆 workspace/global 内存：** `engram clone-memory workspace global` / `engram clone-memory global workspace --force` (智能体: `/engram clone workspace memory to global`)
 - **运行健康检查并清理坏链：** `engram verify` / `engram repair` (智能体: `/engram verify` / `/engram repair`)
@@ -270,6 +271,7 @@ engram init
 | **设置活动角色** | `engram set-role <角色>` | `/engram set-role <角色>` |
 | **设置规则变体** | `engram set-rule-variant <变体>` | `/engram set-rule-variant <变体>` |
 | **设置默认保存目标** | `engram set-save-target <目标>` | `/engram set-save-target <目标>` |
+| **设置加载上限** | `engram set-load-limit <数量>` | `/engram set-load-limit <数量>` |
 | **管理配置档** | `engram profile status` / `engram profile merge personal company --dry-run` | `/engram profile status` |
 | **克隆 Workspace/Global 内存** | `engram clone-memory workspace global` | `/engram clone workspace memory to global` |
 | **同步内存** | `engram sync` | `/engram sync` |

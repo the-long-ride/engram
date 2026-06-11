@@ -143,9 +143,12 @@ file, and `open-code` maps to `opencode`. The old `antigravity` and
    Agents should treat Engram as the knowledge memory center for project,
    workspace, team, and personal context. They should load at session start,
    search or route-load again when the task changes or research depends on
-   project knowledge, then summarize only the relevant IDs/rules to keep token
-   usage low. When a query has more than 8 matching candidates, Engram refines
-   the wider candidate pool into a compact top-8 context pack. Agents can use
+   project knowledge, then reply only with a count line such as
+   `Engram loaded: 8 memories / 24 total related memories.` unless the human
+   asks for IDs, rules, or raw output. When a query has more matching
+   candidates than the configured load limit, Engram refines the wider
+   candidate pool into a compact context pack and reports selected versus total
+   related memories. Agents can use
    `engram load --dry-run "<query>"` to inspect candidate counts and suggested
    narrowing tags before loading broad context.
    If memory files declare `depends_on: [...]`, graph routing keeps those
@@ -323,7 +326,7 @@ to `engram take-control --accept-all`.
 flow. `engram load` is graph-aware automatically because it reads the derived
 `memory.graph.json` when graph routing is enabled, includes declared
 `depends_on` prerequisites before dependent memories, refines broad candidate
-pools to the top 8, and reports narrowing tags in `--dry-run`.
+pools to the configured load limit, and reports narrowing tags in `--dry-run`.
 
 Gemini CLI searches for `GEMINI.md` files as context. The `slash` target writes
 `.gemini/commands/engram.toml` so `/engram <args>` becomes a project custom

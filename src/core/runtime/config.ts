@@ -3,6 +3,7 @@ import path from 'node:path';
 import { homedir } from 'node:os';
 import { ENGRAM_DIR, LEGACY_ENGRAM_DIR, VERSION } from './constants.js';
 import type { EngramConfig, EngramProfile, ProfileResolution, ProfileStore, ProfileSource, Scope } from './types.js';
+import { DEFAULT_LOAD_LIMIT } from './load-limit.js';
 import { exists, readJson, writeJson } from '../system/fsx.js';
 
 const PROFILE_STORE_FILE = 'profiles.json';
@@ -49,6 +50,7 @@ export function defaultConfig(): EngramConfig {
     live_sync: { enabled: false, targets: ['agents-md', 'claude-md', 'cursorrules'] },
     global_git: { enabled: true, remote: 'origin', branch: 'main', auto_sync: true, auto_resolve: true },
     rule_variants: { enabled: false, active: 'balanced' },
+    load: { limit: DEFAULT_LOAD_LIMIT },
     graph: { enabled: true, max_related: 4, min_related_score: 0.22 },
     vector: { enabled: true, provider: 'sqlite-vec', auto_threshold: 100, candidate_pool: 24, dimensions: 64 },
     pattern_mining: { enabled: false, threshold: 3, lookback_sessions: 20 },
@@ -101,6 +103,7 @@ export function mergeConfig(base: EngramConfig, found: Partial<EngramConfig>): E
     live_sync: { ...base.live_sync, ...(found.live_sync ?? {}) },
     global_git: { ...base.global_git, ...(found.global_git ?? {}) },
     rule_variants: { ...base.rule_variants, ...(found.rule_variants ?? {}) },
+    load: { ...base.load, ...(found.load ?? {}) },
     graph: { ...base.graph, ...(found.graph ?? {}) },
     vector: { ...base.vector, ...(found.vector ?? {}) },
     pattern_mining: { ...base.pattern_mining, ...(found.pattern_mining ?? {}) },

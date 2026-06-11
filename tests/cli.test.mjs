@@ -25,6 +25,7 @@ test('init, help, save reject, save accept, load, verify, audit', async () => {
   assert.match((await runEngram(cwd, env, ['-h'])).stdout, /short: engram -v/);
   assert.match((await runEngram(cwd, env, ['help', 'set-rule-variant'])).stdout, /lower-tier models/);
   assert.match((await runEngram(cwd, env, ['help', 'set-save-target'])).stdout, /workspace\|global\|both/);
+  assert.match((await runEngram(cwd, env, ['help', 'set-load-limit'])).stdout, /1 to 32/);
   assert.match((await runEngram(cwd, env, ['help', 'set-role'])).stdout, /frontend-only memory/);
   assert.match((await runEngram(cwd, env, ['help', 'save-session'])).stdout, /--accept-all/);
   assert.match((await runEngram(cwd, env, ['help', 'save-session'])).stdout, /--query-level <n>/);
@@ -645,7 +646,7 @@ test('export, health, search, stats, load dry-run, and conflict dry-run work', a
   const stats = await runEngram(cwd, env, ['stats']);
   assert.match(stats.stdout, /Total: 1/);
   assert.match(stats.stdout, /By author:/);
-  assert.match((await runEngram(cwd, env, ['load', '--dry-run', 'React'])).stdout, /Routed memories \(1\)/);
+  assert.match((await runEngram(cwd, env, ['load', '--dry-run', 'React'])).stdout, /Routed memories \(1 of 1\)/);
   assert.match((await runEngram(cwd, env, ['export', '--format', 'agents-md'])).stdout, /AGENTS.md/);
   const conflictDir = path.join(workspaceMemoryRoot(cwd), 'rules');
   await mkdir(conflictDir, { recursive: true });
@@ -733,9 +734,35 @@ test('load dry-run reports broad-match refinement and --all loads every visible 
   assert.match(dry.stdout, /Refinement/);
   assert.match(dry.stdout, /Narrow with tags/);
 
+  const loaded = await runEngram(cwd, env, ['load', 'deploy']);
+  assert.equal(loaded.code, 0, loaded.stderr);
+  assert.match(loaded.stdout, /loaded 8 memory files \/ 10 total related memories/);
+
+  const status = await runEngram(cwd, env, ['set-load-limit', 'status']);
+  assert.equal(status.code, 0, status.stderr);
+  assert.match(status.stdout, /Load limit: 8 \(default 8, range 1-32\)/);
+  const changed = await runEngram(cwd, env, ['set-load-limit', '5']);
+  assert.equal(changed.code, 0, changed.stderr);
+  assert.match(changed.stdout, /Load limit: 5/);
+  const limitedDry = await runEngram(cwd, env, ['load', '--dry-run', 'deploy']);
+  assert.equal(limitedDry.code, 0, limitedDry.stderr);
+  assert.match(limitedDry.stdout, /Routed memories \(5 of 10\)/);
+  const limitedLoad = await runEngram(cwd, env, ['load', 'deploy']);
+  assert.equal(limitedLoad.code, 0, limitedLoad.stderr);
+  assert.match(limitedLoad.stdout, /loaded 5 memory files \/ 10 total related memories/);
+  const reset = await runEngram(cwd, env, ['ll', 'reset']);
+  assert.equal(reset.code, 0, reset.stderr);
+  assert.match(reset.stdout, /Load limit: 8/);
+  const badLow = await runEngram(cwd, env, ['set-load-limit', '0']);
+  assert.equal(badLow.code, 1);
+  assert.match(badLow.stderr, /integer from 1 to 32/);
+  const badHigh = await runEngram(cwd, env, ['set-load-limit', '33']);
+  assert.equal(badHigh.code, 1);
+  assert.match(badHigh.stderr, /integer from 1 to 32/);
+
   const all = await runEngram(cwd, env, ['load', '--all', '--dry-run', 'deploy']);
   assert.equal(all.code, 0, all.stderr);
-  assert.match(all.stdout, /Routed memories \(10\)/);
+  assert.match(all.stdout, /Routed memories \(10 of 10\)/);
   assert.doesNotMatch(all.stdout, /8 of 10/);
   await rm(cwd, { recursive: true, force: true });
 });

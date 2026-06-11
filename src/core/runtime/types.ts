@@ -46,6 +46,7 @@ export type EngramConfig = {
   live_sync: { enabled: boolean; targets: string[] };
   global_git: { enabled: boolean; remote: string; branch: string; auto_sync: boolean; auto_resolve: boolean };
   rule_variants: { enabled: boolean; active: RuleVariant };
+  load: { limit: number };
   graph: { enabled: boolean; max_related: number; min_related_score: number };
   vector: { enabled: boolean; provider: 'sqlite-vec'; auto_threshold: number; candidate_pool: number; dimensions: number };
   pattern_mining: { enabled: boolean; threshold: number; lookback_sessions: number };

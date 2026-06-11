@@ -17,9 +17,10 @@ generated `/engram` adapters.
   memory when project knowledge, user preferences, or team rules could matter.
 - Never load all memory blindly; route by task intent and summarize relevant
   IDs/rules instead of pasting raw output to reduce token usage.
-- When more than 8 memories match a load query, refine the candidate pool with
-  lexical, tag, type, recency, graph, and vector signals, then load the compact
-  top-8 pack. Use `load --dry-run` to report candidate counts and narrowing
+- When more memories match a load query than the configured load limit allows,
+  refine the candidate pool with lexical, tag, type, recency, graph, and vector
+  signals, then load the compact pack. Normal load reports selected and total
+  related counts. Use `load --dry-run` to report candidate counts and narrowing
   tags; use `--all` only when broad context is explicitly requested.
 - Preserve `depends_on: [...]` memory frontmatter when present. Graph routing
   uses these prerequisite links to keep foundational memories before deeper
@@ -151,10 +152,11 @@ proposal and collect explicit human approval before invoking a CLI write flow.
 | `engram entry` | Print resolved flags, active profile, paths, and detected global Git state |
 | `engram profile status|list|create|use|remove|merge` / `engram pf ...` | Manage isolated global memory profiles, including user defaults for uninitialized folders, workspace defaults for initialized repositories, one-off `--profile <name>` command routing, and profile-to-profile merge previews with duplicate reporting |
 | `engram set-save-target workspace|global|both|status` | Configure where normal saves write by default; per-command `--scope workspace|global|both` still overrides this setting |
+| `engram set-load-limit 1..32|status|reset` / `engram ll ...` | Configure how many related memories normal load returns; default is 8 and `--all` still bypasses the cap |
 | `engram update-global-folder <new-path> [--move-from-path path]` / `engram ugf <new-path>` / `engram set global memory path to <new-path>` | Update the configured global memory folder; with `--move-from-path` or `move global folder from <old> to <new>`, move the whole old global root first while refusing to overwrite destinations that already contain real memory or user files |
 | `engram upgrade [--plan]` | Refresh package guidance, workspace HELP.md, existing generated workspace skillset files, global memory scaffolding, and registered global skillsets while preserving human-authored files |
 | Startup auto-upgrade | After npm package updates, normal commands quietly reconcile already-initialized roots once per Engram version; skip with `--no-auto-upgrade` or `ENGRAM_NO_AUTO_UPGRADE=1`. The package must not rely on npm `postinstall` for migrations |
-| `engram load [--profile name] [--all] [--dry-run] "<task>"` | Load a refined top-8 context pack; `--profile` selects a global profile for one command, `--all` is the explicit broad-load mode, and `--dry-run` previews routed files, candidate counts, and narrowing tags without printing contents |
+| `engram load [--profile name] [--all] [--dry-run] "<task>"` | Load a refined compact context pack; `--profile` selects a global profile for one command, `--all` is the explicit broad-load mode, and `--dry-run` previews routed files, related counts, and narrowing tags without printing contents |
 | `engram search "<query>"` | Search visible memory by query |
 | `engram graph [--rebuild] ["<query>"]` | Inspect the derived layered JSON graph, dependency layers, and contradiction candidates |
 | `engram save [rule|skill|workflow|knowledge] [--profile name] [--scope workspace|global|both] [--role role] "<text>"` | Propose one memory and write after A/B/C approval; `--profile` can save to another profile global root without changing the workspace default |
@@ -162,7 +164,7 @@ proposal and collect explicit human approval before invoking a CLI write flow.
 | `engram observe [--file session.md] [--propose] [note]` | Write sanitized raw notes into inbox; `--propose` mines them through save-session |
 | `engram take-control [--plan] [--file path] [--dir path] [--include glob] [--exclude glob] [--max-sources n] [--max-chars n] [--all] [--accept-all]` | Explore existing workspace guidance, notes, and docs with agent help, preview source plans, and consume approved candidates as Engram memory |
 | `engram archive [--reason text] <memory-id|file>` | Move wrong or superseded memory out of active routing after approval |
-| `engram benchmark <cases.json>` | Run a read-only hit@8 routing benchmark over query/expected-memory cases |
+| `engram benchmark <cases.json>` | Run a read-only hit@<load-limit> routing benchmark over query/expected-memory cases |
 | `engram set-role <role...>` | Configure active developer roles for routing role-scoped memory |
 | `engram set-rule-variant light|balanced|strict|off` | Configure compact rule output for agents |
 | `engram verify` | Check hash integrity |

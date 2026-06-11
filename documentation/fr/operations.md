@@ -22,13 +22,14 @@ Cette page fournit des détails d'utilisation afin que le README puisse rester c
 | Archiver une mémoire erronée | `engram archive --reason "<pourquoi>" <id-ou-fichier>` |
 | Ajuster la force des règles | `engram set-rule-variant strict\|balanced\|light\|off` |
 | Définir la cible d'enregistrement par défaut | `engram set-save-target workspace\|global\|both\|status` |
+| Définir la limite de chargement compact | `engram set-load-limit 1..32\|status\|reset` |
 | Gérer les profils globaux | `engram profile status\|create\|use\|merge` |
 | Cloner la mémoire workspace/global | `engram clone-memory workspace global` |
 
 Utilisez `save-session` pour les propositions de mémoire lors de longues sessions. Forme abrégée : `ss`.
 Utilisez `--query-level <n>` lorsque l'humain souhaite que l'agent exploite jusqu'à n conversations humain-agent récentes et accessibles, au lieu de la seule session actuelle. La formulation naturelle `engram ss -a last 50 sessions` se normalise en `engram save-session --query-level 50 --accept-all`.
 
-Lorsque plus de 8 mémoires correspondent à une requête, `load` affine le bassin de candidats en un pack de contexte top 8. `load --dry-run` affiche les comptes de candidats et les tags de resserrement; `load --all` renvoie volontairement toutes les mémoires visibles routées.
+Lorsque davantage de mémoires correspondent que la limite de chargement configurée, `load` affine le bassin de candidats en un pack de contexte compact. Le chargement normal affiche le nombre sélectionné et le total lié, par exemple `loaded 8 memory files / 14 total related memories`. `load --dry-run` affiche les comptes de candidats et les tags de resserrement; `load --all` renvoie volontairement toutes les mémoires visibles routées.
 
 ## Profils, Cibles d'Enregistrement et Clonage
 

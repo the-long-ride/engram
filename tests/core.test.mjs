@@ -357,7 +357,7 @@ test('routing blends vector candidates without dropping lexical matches', () => 
   assert.deepEqual(routed.map((entry) => entry.id), ['deploy-checklist', 'release-runbook']);
 });
 
-test('routing refines broad matches and --all bypasses the top eight cap', () => {
+test('routing refines broad matches and --all bypasses the compact load cap', () => {
   const entries = Array.from({ length: 10 }, (_, index) => routingEntry(
     `deploy-memory-${index + 1}`,
     'workspace',
@@ -373,6 +373,12 @@ test('routing refines broad matches and --all bypasses the top eight cap', () =>
   assert.equal(detail.omitted, 2);
   assert.equal(detail.refined, true);
   assert.ok(detail.facets.some((facet) => facet.tag === 'release' || facet.tag === 'ops'));
+
+  const limited = routeDetailed(index, 'deploy', { ...config, load: { limit: 5 } });
+  assert.equal(limited.entries.length, 5);
+  assert.equal(limited.candidates, 10);
+  assert.equal(limited.omitted, 5);
+  assert.equal(limited.refined, true);
 
   const all = route(index, 'deploy', config, true, { all: true });
   assert.equal(all.length, 10);

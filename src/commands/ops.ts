@@ -16,6 +16,7 @@ import { archiveMemory, planArchiveSet } from '../core/memory/archive.js';
 import { planMemorySave, previewSavePlans, type SavePlan } from '../core/memory/save-plan.js';
 import { normalizeMemoryType } from '../core/memory/memory-candidate.js';
 import { parseSaveTarget, writeScopes } from '../core/runtime/config.js';
+import { normalizeLoadLimit } from '../core/runtime/load-limit.js';
 import { formatRecords, type RecordBlock } from '../core/cli/format.js';
 import type { MemoryType, Scope } from '../core/runtime/types.js';
 
@@ -70,6 +71,7 @@ export async function cmdBenchmark(args: string[]): Promise<string> {
   const rawCases = await readJson<any>(path.resolve(file), []);
   const cases: Array<{ query: string; expect: string[] }> = Array.isArray(rawCases) ? rawCases : rawCases.cases ?? [];
   const ctx = await getContext();
+  const limit = normalizeLoadLimit(ctx.config.load?.limit);
   let hits = 0;
   const rows: RecordBlock[] = [];
   for (const item of cases) {
@@ -89,7 +91,7 @@ export async function cmdBenchmark(args: string[]): Promise<string> {
     });
   }
   const total = cases.length || 1;
-  return formatRecords(`Benchmark: ${hits}/${cases.length} hit@8 (${Math.round((hits / total) * 100)}%)`, rows);
+  return formatRecords(`Benchmark: ${hits}/${cases.length} hit@${limit} (${Math.round((hits / total) * 100)}%)`, rows);
 }
 
 /** Archive one wrong or superseded memory after approval. */

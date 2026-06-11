@@ -23,6 +23,7 @@ This page holds detailed usage so the README can stay short.
 | Archive wrong memory | `engram archive --reason "<why>" <id-or-file>` |
 | Tune rule strength | `engram set-rule-variant strict\|balanced\|light\|off` |
 | Set default save target | `engram set-save-target workspace\|global\|both\|status` |
+| Set compact load limit | `engram set-load-limit 1..32\|status\|reset` |
 | Manage global profiles | `engram profile status\|create\|use\|merge` |
 | Clone workspace/global memory | `engram clone-memory workspace global` |
 
@@ -31,9 +32,11 @@ Use `--query-level <n>` when the human wants the agent to mine up to n recent ac
 
 Use `load --dry-run` when you want to inspect which memory files would route
 without printing their contents.
-When more than 8 memories match, `load` refines the wider candidate pool into a
-top-8 context pack. `load --dry-run` shows candidate counts and narrowing tags;
-`load --all` intentionally returns every visible routed memory.
+When more memories match than the configured load limit, `load` refines the
+wider candidate pool into a compact context pack. Normal load reports selected
+and total related counts, like `loaded 8 memory files / 14 total related
+memories`. `load --dry-run` shows candidate counts and narrowing tags; `load
+--all` intentionally returns every visible routed memory.
 
 ## Dependency Layers
 

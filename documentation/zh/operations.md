@@ -22,13 +22,14 @@
 | 归档错误的内存 | `engram archive --reason "<原因>" <id-或-文件>` |
 | 调整规则强度 | `engram set-rule-variant strict\|balanced\|light\|off` |
 | 设置默认保存目标 | `engram set-save-target workspace\|global\|both\|status` |
+| 设置紧凑加载上限 | `engram set-load-limit 1..32\|status\|reset` |
 | 管理全局配置档 | `engram profile status\|create\|use\|merge` |
 | 克隆工作区/全局内存 | `engram clone-memory workspace global` |
 
 对于较长时间会话的内存建议，请使用 `save-session`。简写形式：`ss`。
 当人类希望智能体从最多 n 个可访问的最近人类-智能体聊天中提取候选，而不是只使用当前会话时，请使用 `--query-level <n>`。自然写法 `engram ss -a last 50 sessions` 会规范化为 `engram save-session --query-level 50 --accept-all`。
 
-当超过 8 条内存匹配同一查询时，`load` 会将更大的候选池细化为 top 8 上下文包。`load --dry-run` 会显示候选数量和用于缩小范围的标签；`load --all` 会有意返回所有可见的已路由内存。
+当匹配内存数量超过已配置的加载上限时，`load` 会将更大的候选池细化为紧凑上下文包。普通加载会显示已选择数量和相关总数，例如 `loaded 8 memory files / 14 total related memories`。`load --dry-run` 会显示候选数量和用于缩小范围的标签；`load --all` 会有意返回所有可见的已路由内存。
 
 ## 配置档、保存目标与克隆
 

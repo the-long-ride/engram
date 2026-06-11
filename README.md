@@ -86,7 +86,7 @@ Engram moves memory into files to solve these problems:
 
 | Tactical Challenge | Engram Answer |
 | --- | --- |
-| **Too many rules bloating context** | Routes and refines task-matching memory into a compact top-8 context pack by default. |
+| **Too many rules bloating context** | Routes and refines task-matching memory into a compact context pack, defaulting to 8 memories. |
 | **Silent writes & secret leakage** | Requires human A/B/C approval and scans for secrets/injections. |
 | **Vendor lock-in** | Uses plain, readable Markdown files portable across any agent or model. |
 | **No offline access** | Runs locally as a lightweight file-based protocol—no server or internet required. |
@@ -111,10 +111,13 @@ one-time safe reconcile for already-initialized roots. It does not run from npm
 postinstall, create new memory roots, or touch human-authored files. Running
 `engram upgrade` also refreshes existing generated workspace skillsets. Use
 `--no-auto-upgrade` or `ENGRAM_NO_AUTO_UPGRADE=1` to skip that startup check.
-When broad queries match more than eight memories, `engram load` reranks with
-tags, type, recency, graph, and optional sqlite-vec vector signals before loading
-the top eight. Use `engram load --dry-run "<task>"` to preview candidate counts
-and suggested narrowing tags, or `--all` when broad context is intentional.
+When broad queries match more memories than the configured load limit, `engram
+load` reranks with tags, type, recency, graph, and optional sqlite-vec vector
+signals before loading the compact pack. Normal load shows the selected count
+and total related count, such as `loaded 8 memory files / 14 total related
+memories`. Use `engram load --dry-run "<task>"` to preview related counts and
+suggested narrowing tags, `engram set-load-limit 1..32` to tune the default, or
+`--all` when broad context is intentional.
 
 Memories can also declare prerequisites in frontmatter:
 
@@ -284,6 +287,7 @@ Tune how strictly rules are formatted when loaded by your AI assistant:
 - **Check active settings & active paths:** `engram entry` (Agent: `/engram entry`)
 - **Manage isolated profiles:** `engram profile create personal --global-path <path>` / `engram profile use company --workspace`
 - **Configure save target:** `engram set-save-target workspace|global|both|status` (Agent: `/engram set-save-target status`)
+- **Configure load limit:** `engram set-load-limit 1..32|status|reset` (Agent: `/engram set-load-limit status`)
 - **Update or move global memory folder:** `engram update-global-folder <new-path> [--move-from-path <old-path>]` / `engram ugf <new-path>` (Agent: `/engram set global memory path to <new-path>`)
 - **Clone workspace/global memory:** `engram clone-memory workspace global` or `engram clone-memory global workspace --force` (Agent: `/engram clone workspace memory to global`)
 - **Sync local & global changes:** `engram sync` (Agent: `/engram sync`)
@@ -307,6 +311,7 @@ Tune how strictly rules are formatted when loaded by your AI assistant:
 | **Check Config / Paths** | `engram entry` | `/engram entry` |
 | **Manage Profiles** | `engram profile status` / `engram profile merge personal company --dry-run` | `/engram profile status` |
 | **Configure Save Target** | `engram set-save-target <target>` | `/engram set-save-target <target>` |
+| **Configure Load Limit** | `engram set-load-limit <count>` | `/engram set-load-limit <count>` |
 | **Update Global Folder** | `engram update-global-folder <new-path>` / `engram ugf <new-path>` | `/engram set global memory path to <new-path>` |
 | **Clone Workspace/Global Memory** | `engram clone-memory workspace global` / `engram clone-memory global workspace --force` | `/engram clone workspace memory to global` |
 | **Verify Memory Integrity** | `engram verify` | `/engram verify` |

@@ -16,7 +16,7 @@ If slash adapters are installed:
 /engram load "<current task>"
 ```
 
-The agent should summarize only relevant memory IDs and rules, not paste every file.
+The agent should reply with a compact count line by default, such as `Engram loaded: 8 memories / 24 total related memories.`
 
 ## Recommended Setup Conversation
 

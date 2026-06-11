@@ -5,8 +5,9 @@ import { isIgnored } from '../safety/ignore.js';
 import { lexicalScore, words } from '../system/text.js';
 import { dependencyContextEntries, routeWithGraph } from './graph.js';
 import type { VectorRouteHit } from './vector-db.js';
+import { normalizeLoadLimit } from '../runtime/load-limit.js';
 
-type RouteOptions = { all?: boolean; ignorePatterns?: string[]; vectorHits?: VectorRouteHit[]; candidatePool?: number };
+type RouteOptions = { all?: boolean; ignorePatterns?: string[]; vectorHits?: VectorRouteHit[]; candidatePool?: number; limit?: number };
 export type RouteFacet = { tag: string; count: number };
 export type RouteDetail = {
   entries: MemoryEntry[];
@@ -17,7 +18,6 @@ export type RouteDetail = {
   facets: RouteFacet[];
 };
 
-const ROUTE_LIMIT = 8;
 const STOP_TAGS = new Set([
   'and', 'are', 'but', 'for', 'from', 'has', 'have', 'into', 'must', 'not', 'the', 'this', 'that',
   'use', 'uses', 'using', 'when', 'with', 'your'
@@ -38,7 +38,7 @@ export function visibleEntries(entries: MemoryEntry[], config: EngramConfig, man
   });
 }
 
-/** Select the 3-8 most relevant entries using lexical similarity. */
+/** Select the configured compact set of most relevant entries using lexical similarity. */
 export function route(index: MemoryIndex, query: string, config: EngramConfig, manual = false, options: RouteOptions = {}, graph?: MemoryGraph): MemoryEntry[] {
   return routeDetailed(index, query, config, manual, options, graph).entries;
 }
@@ -47,7 +47,7 @@ export function route(index: MemoryIndex, query: string, config: EngramConfig, m
 export function routeDetailed(index: MemoryIndex, query: string, config: EngramConfig, manual = false, options: RouteOptions = {}, graph?: MemoryGraph): RouteDetail {
   const entries = prefilter(index, config, manual, options.ignorePatterns);
   const activeGraph = config.graph.enabled ? graph : undefined;
-  const max = ROUTE_LIMIT;
+  const max = normalizeLoadLimit(options.limit ?? config.load?.limit);
   const pool = Math.max(max, options.candidatePool ?? config.vector?.candidate_pool ?? max);
   if (options.all) {
     const selected = rankRows(entries.map((entry) => ({ entry, score: lexicalScore(query, entryText(entry)) })), query).map((row) => row.entry);

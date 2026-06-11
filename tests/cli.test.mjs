@@ -37,6 +37,8 @@ test('init, help, save reject, save accept, load, verify, audit', async () => {
   assert.match((await runEngram(cwd, env, ['help', 'update-global-folder'])).stdout, /set global memory path/);
   assert.match((await runEngram(cwd, env, ['help', 'ugf'])).stdout, /whole old root/);
   assert.match((await runEngram(cwd, env, ['help', 'clone-memory'])).stdout, /Clone active memory Markdown/);
+  assert.match((await runEngram(cwd, env, ['help', 'clone-memory'])).stdout, /--restructure/);
+  assert.match((await runEngram(cwd, env, ['help', 'clone-memory'])).stdout, /proposal-first/);
   assert.match((await runEngram(cwd, env, ['help', 'profile'])).stdout, /isolated global memory profiles/);
   assert.match((await runEngram(cwd, env, ['help', 'upgrade'])).stdout, /generated workspace skillsets/);
   assert.doesNotMatch((await runEngram(cwd, env, ['help'])).stdout, /update-help|team-dashboard|engram dry-run|engram propose/);
@@ -147,6 +149,63 @@ test('clone-memory copies active memories between workspace and global', async (
   assert.match(workspaceRaw, /scope: workspace/);
   assert.match(workspaceRaw, /updated globally/);
   assert.match((await runEngram(cwd, env, ['verify', 'workspace'])).stdout, /OK workspace:knowledge\/workspace-clone-source-memory\.md/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('clone-memory restructure dry-run previews target save plans without writing', async () => {
+  const { cwd, env } = await tempWorkspace('engram-clone-restructure-');
+  await runEngram(cwd, env, ['init', '--no-skillset']);
+  const saved = await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Workspace restructure source memory'], 'A\n');
+  assert.equal(saved.code, 0, saved.stderr);
+
+  const globalFile = path.join(env.ENGRAM_GLOBAL_DIR, 'knowledge', 'workspace-restructure-source-memory.md');
+  const preview = await runEngram(cwd, env, ['clone-memory', 'workspace', 'global', '--restructure', '--dry-run']);
+  assert.equal(preview.code, 0, preview.stderr);
+  assert.match(preview.stdout, /Clone memory restructure dry-run workspace -> global/);
+  assert.match(preview.stdout, /Candidate: 1/);
+  assert.match(preview.stdout, /Action: Add new memory/);
+  assert.match(preview.stdout, /Scope: global/);
+  assert.match(preview.stdout, /Workspace restructure source memory/);
+  await assert.rejects(readFile(globalFile, 'utf8'));
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('clone-memory restructure uses numbered approval and writes selected candidates', async () => {
+  const { cwd, env } = await tempWorkspace('engram-clone-restructure-');
+  await runEngram(cwd, env, ['init', '--no-skillset']);
+  await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Workspace selected clone memory'], 'A\n');
+  await runEngram(cwd, env, ['save', 'rule', '--scope', 'workspace', 'Workspace skipped clone memory'], 'A\n');
+
+  const selected = await runEngram(cwd, env, ['clone-memory', 'workspace', 'global', '--restructure'], 'A 1\n');
+  assert.equal(selected.code, 0, selected.stderr);
+  assert.match(selected.stdout, /Saved ->/);
+  assert.match(await readFile(path.join(env.ENGRAM_GLOBAL_DIR, 'knowledge', 'workspace-selected-clone-memory.md'), 'utf8'), /scope: global/);
+  await assert.rejects(readFile(path.join(env.ENGRAM_GLOBAL_DIR, 'rules', 'workspace-skipped-clone-memory.md'), 'utf8'));
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('clone-memory restructure accept-all pauses when related memories need agent restructuring', async () => {
+  const { cwd, env } = await tempWorkspace('engram-clone-restructure-');
+  await runEngram(cwd, env, ['init', '--no-skillset']);
+  await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'global', 'Release foundation checklist lives in docs release md'], 'A\n');
+  await runEngram(cwd, env, ['save', 'rule', '--scope', 'workspace', 'OAuth rotation must follow the release foundation checklist'], 'A\n');
+
+  const paused = await runEngram(cwd, env, ['clone-memory', 'workspace', 'global', '--restructure', '--accept-all']);
+  assert.equal(paused.code, 0, paused.stderr);
+  assert.match(paused.stdout, /found related memories before writing/);
+  assert.match(paused.stdout, /No file written yet/);
+  assert.match(paused.stdout, /DEPENDS_ON/);
+  assert.doesNotMatch(paused.stdout, /Saved ->/);
+  await assert.rejects(readFile(path.join(env.ENGRAM_GLOBAL_DIR, 'rules', 'oauth-rotation-must-follow-the-release-foundation-checklist.md'), 'utf8'));
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('clone-memory rejects force with restructure', async () => {
+  const { cwd, env } = await tempWorkspace('engram-clone-restructure-');
+  await runEngram(cwd, env, ['init', '--no-skillset']);
+  const result = await runEngram(cwd, env, ['clone-memory', 'workspace', 'global', '--restructure', '--force']);
+  assert.equal(result.code, 1);
+  assert.match(result.stderr, /--force cannot be used with --restructure/);
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -442,6 +501,7 @@ test('completion emits shell helper with command suggestions', async () => {
   assert.match(bash.stdout, /clone-memory/);
   assert.match(bash.stdout, /clone-memory\|cm/);
   assert.match(bash.stdout, /\$clone_memory_args/);
+  assert.match(bash.stdout, /--restructure/);
   assert.match(bash.stdout, /profile\|pf/);
   assert.match(bash.stdout, /\$profile_actions/);
   assert.match(bash.stdout, /--from-profile --to-profile/);
@@ -462,6 +522,7 @@ test('completion emits shell helper with command suggestions', async () => {
   assert.match(zsh.stdout, /update-global-folder/);
   assert.match(zsh.stdout, /update-global-folder\|ugf/);
   assert.match(zsh.stdout, /clone-memory\|cm/);
+  assert.match(zsh.stdout, /--restructure/);
   assert.match(zsh.stdout, /profile\|pf/);
   assert.match(zsh.stdout, /--from-profile\[source profile\]/);
   const powershell = await runEngram(cwd, env, ['completion', 'powershell']);
@@ -476,6 +537,7 @@ test('completion emits shell helper with command suggestions', async () => {
   assert.match(powershell.stdout, /\$engramUpgradeArgs/);
   assert.match(powershell.stdout, /\$engramGlobalFolderArgs/);
   assert.match(powershell.stdout, /\$engramCloneMemoryArgs/);
+  assert.match(powershell.stdout, /'--restructure'/);
   assert.match(powershell.stdout, /\$engramProfileActions/);
   assert.match(powershell.stdout, /'ugf'/);
   assert.match(powershell.stdout, /'cm'/);

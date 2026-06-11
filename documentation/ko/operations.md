@@ -24,7 +24,7 @@
 | 기본 저장 대상 설정 | `engram set-save-target workspace\|global\|both\|status` |
 | 컴팩트 로드 제한 설정 | `engram set-load-limit 1..32\|status\|reset` |
 | 글로벌 프로필 관리 | `engram profile status\|create\|use\|merge` |
-| workspace/global 메모리 복제 | `engram clone-memory workspace global` |
+| workspace/global 메모리 복제 | `engram clone-memory workspace global [--restructure]` |
 
 긴 개발 과정에서 여러 메모리 추천을 일괄 처리하고자 할 때는 `save-session`을 애용해 주십시오. 단축 형태는 `ss`입니다.
 현재 세션뿐 아니라 접근 가능한 최근 인간-에이전트 채팅 최대 n개에서 후보를 추출하고 싶다면 `--query-level <n>`을 사용하십시오. 자연어 표현 `engram ss -a last 50 sessions`는 `engram save-session --query-level 50 --accept-all`로 정규화됩니다.
@@ -57,6 +57,9 @@ Markdown을 복사하려면 `clone-memory`를 사용하십시오:
 engram clone-memory workspace global
 engram clone-memory global workspace --force
 ```
+
+(`--restructure` routes cloned memories through save-session-style approval
+instead of raw copy.)
 
 ## 세션 저장 (Save Session)
 

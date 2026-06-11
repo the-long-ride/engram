@@ -278,6 +278,10 @@ Agents may normalize natural clone requests into `engram clone-memory`, for
 example "clone workspace memory to global" -> `engram clone-memory workspace
 global`. Reverse the scopes to copy global memory into a workspace; use
 `--force` only when the human explicitly asks to overwrite destination copies.
+For restructuring, normalize "clone workspace memory to global and restructure"
+to `engram clone-memory workspace global --restructure`. Do not add
+`--accept-all` unless the human said it. If accept-all reports related memories
+before writing, rerun with `DEPENDS_ON` or `UPDATE` candidates.
 
 Shell completion scripts are available for bash, zsh, and PowerShell:
 

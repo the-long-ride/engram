@@ -6,12 +6,15 @@ import { rebuildIndex } from '../core/memory/index.js';
 import { rebuildGraph } from '../core/memory/graph.js';
 import { ensureVectorIndex } from '../core/memory/vector-db.js';
 import { exists, inside, listFiles, readText, writeText } from '../core/system/fsx.js';
-import { updateHash, verifyMemoryHash } from '../core/safety/hash.js';
-import { validateMemoryRaw } from '../core/memory/schema.js';
-import type { Scope } from '../core/runtime/types.js';
+import { sha256, updateHash, verifyMemoryHash } from '../core/safety/hash.js';
+import { parseMemory, validateMemoryRaw } from '../core/memory/schema.js';
+import type { MemoryType, Scope } from '../core/runtime/types.js';
+import { runSaveSessionCandidates } from './write.js';
 
 type CloneAction = 'copied' | 'planned' | 'skipped' | 'unsafe' | 'invalid';
 type CloneResult = { action: CloneAction; file: string; reason?: string };
+type RestructureCandidate = { file: string; line: string; hash: string };
+type RestructureSkipped = { file: string; reason: string };
 
 const scopes = new Set<Scope>(['workspace', 'global']);
 const activeMemoryDirs = ['rules', 'skills', 'knowledge'];
@@ -26,6 +29,10 @@ export async function cmdCloneMemory(args: string[], flags: Record<string, any> 
   const targetRoot = ctx.roots[target];
   if (!sourceRoot || !(await exists(sourceRoot))) throw new Error(`${source} memory root not found; run engram init first`);
   if (!targetRoot) throw new Error('global memory is not configured; set ENGRAM_GLOBAL_DIR or run engram init --global-path <path>');
+  if (flags.restructure === true) {
+    if (force) throw new Error('--force cannot be used with --restructure');
+    return cloneMemoryRestructured(ctx, source, target, sourceRoot, targetRoot, flags);
+  }
   if (!dryRun) await createScope(targetRoot, ctx.config, target, false);
 
   const files = await activeMemoryFiles(sourceRoot);
@@ -51,6 +58,85 @@ async function activeMemoryFiles(root: string): Promise<string[]> {
     .map((file) => path.relative(root, file).replace(/\\/g, '/'))
     .filter((file) => file.endsWith('.md') && activeMemoryDirs.some((dir) => file.startsWith(`${dir}/`)))
     .sort();
+}
+
+async function cloneMemoryRestructured(
+  ctx: Awaited<ReturnType<typeof getContext>>,
+  source: Scope,
+  target: Scope,
+  sourceRoot: string,
+  targetRoot: string,
+  flags: Record<string, any>
+): Promise<string> {
+  const files = await activeMemoryFiles(sourceRoot);
+  const candidates: RestructureCandidate[] = [];
+  const skipped: RestructureSkipped[] = [];
+  for (const file of files) {
+    const result = await cloneCandidateFromMemory(sourceRoot, file);
+    if ('line' in result) candidates.push(result);
+    else skipped.push(result);
+  }
+  const header = [
+    `${flags['dry-run'] === true ? 'Clone memory restructure dry-run' : 'Clone memory restructure'} ${source} -> ${target}`,
+    `Source: ${sourceRoot}`,
+    `Target: ${targetRoot}`,
+    `Candidates: ${candidates.length}`,
+    `Skipped: ${skipped.length}`
+  ].join('\n');
+  const skipLines = skipped.map((item) => `SKIPPED ${item.file} (${item.reason})`).join('\n');
+  if (!candidates.length) return [header, skipLines || 'No memory candidates detected.'].filter(Boolean).join('\n');
+  const output = await runSaveSessionCandidates({
+    ctx,
+    text: candidates.map((candidate) => candidate.line).join('\n'),
+    scopes: [target],
+    flags,
+    source: {
+      source: 'clone-memory',
+      sourceFiles: candidates.map((candidate) => `${source}:${candidate.file}`),
+      sourceHashes: candidates.map((candidate) => candidate.hash)
+    },
+    dryRunLabel: header,
+    acceptAllLabel: 'Accepted all clone-memory restructure candidates (--accept-all).'
+  });
+  return skipLines ? `${output}\n${skipLines}` : output;
+}
+
+async function cloneCandidateFromMemory(root: string, file: string): Promise<RestructureCandidate | RestructureSkipped> {
+  const raw = await readText(inside(root, file));
+  const trusted = await verifyMemoryHash(root, file, raw);
+  if (!trusted.ok) return { file, reason: trusted.reason ?? 'hash verification failed' };
+  try {
+    validateMemoryRaw(raw);
+    const doc = parseMemory(raw);
+    const type = memoryTypeFor(file, doc.frontmatter.type);
+    const text = contentText(doc.body);
+    if (!text) return { file, reason: 'missing content text' };
+    return { file, hash: sha256(raw), line: `TYPE: ${type} | TEXT: ${candidateText(text)}` };
+  } catch (error: any) {
+    return { file, reason: error?.message ?? String(error) };
+  }
+}
+
+function memoryTypeFor(file: string, value: unknown): MemoryType {
+  if (value === 'rule' || value === 'skill' || value === 'knowledge') return value;
+  if (file.startsWith('rules/')) return 'rule';
+  if (file.startsWith('skills/')) return 'skill';
+  return 'knowledge';
+}
+
+function contentText(body: string): string {
+  const section = body.match(/\n## Content\r?\n([\s\S]*?)(?=\n## |\s*$)/)?.[1] ?? '';
+  return section
+    .split(/\r?\n/)
+    .map((line) => line.trim().replace(/^-\s*/, ''))
+    .filter((line) => line && !line.startsWith('### '))
+    .join(' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function candidateText(text: string): string {
+  return text.replace(/\s*\|\s*/g, ' / ').trim();
 }
 
 async function cloneOne(sourceRoot: string, targetRoot: string, source: Scope, target: Scope, file: string, options: { dryRun: boolean; force: boolean }): Promise<CloneResult> {

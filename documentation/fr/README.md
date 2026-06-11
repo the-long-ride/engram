@@ -248,7 +248,7 @@ Ajustez la rigueur de mise en forme des règles chargées par votre assistant IA
 - **Configurer la cible de sauvegarde :** `engram set-save-target workspace|global|both|status` (Agent : `/engram set-save-target status`)
 - **Configurer la limite de chargement :** `engram set-load-limit 1..32|status|reset` (Agent : `/engram set-load-limit status`)
 - **Gérer les profils isolés :** `engram profile status` / `engram profile merge personal company --dry-run` (Agent : `/engram profile status`)
-- **Cloner la mémoire workspace/global :** `engram clone-memory workspace global` / `engram clone-memory global workspace --force` (Agent : `/engram clone workspace memory to global`)
+- **Cloner la mémoire workspace/global :** `engram clone-memory workspace global` / `engram clone-memory global workspace --force` (Agent : `/engram clone workspace memory to global`) (`--restructure` routes cloned memories through save-session-style approval instead of raw copy.)
 - **Exécuter un contrôle & nettoyer les liens brisés :** `engram verify` / `engram repair` (Agent : `/engram verify` / `/engram repair`)
 - **Scan de contradiction consultatif :** `engram quality-check` (Agent : `/engram quality-check`)
 
@@ -273,7 +273,7 @@ Ajustez la rigueur de mise en forme des règles chargées par votre assistant IA
 | **Configurer la Cible de Sauvegarde** | `engram set-save-target <cible>` | `/engram set-save-target <cible>` |
 | **Configurer la Limite de Chargement** | `engram set-load-limit <nombre>` | `/engram set-load-limit <nombre>` |
 | **Gérer les Profils** | `engram profile status` / `engram profile merge personal company --dry-run` | `/engram profile status` |
-| **Cloner la Mémoire Workspace/Global** | `engram clone-memory workspace global` | `/engram clone workspace memory to global` |
+| **Cloner la Mémoire Workspace/Global** | `engram clone-memory workspace global` / `engram clone-memory workspace global --restructure` | `/engram clone workspace memory to global` |
 | **Synchroniser les Mémoires** | `engram sync` | `/engram sync` |
 | **Reconstruire et Réparer l'Index** | `engram repair` | `/engram repair` |
 

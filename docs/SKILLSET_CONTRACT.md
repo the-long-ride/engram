@@ -61,6 +61,11 @@ generated `/engram` adapters.
   the agent should use that response as routing context, generate a restructured
   candidate set, and rerun the same accept-all command instead of reporting a
   saved result.
+- Treat `engram clone-memory --restructure` as a proposal-first clone flow. It
+  converts verified source memories into save-session candidates for the target
+  scope and uses the same approval and accept-all restructuring rules as
+  save-session. `--force` is invalid with `--restructure`, and agents must not
+  add `--accept-all` unless the human requested it.
 - Treat `engram observe` as raw inbox capture, not active memory. It may write a
   sanitized `inbox/` note, but converting that note into memory requires
   `observe --propose` or `save-session --file` and the normal approval flow unless
@@ -174,7 +179,7 @@ proposal and collect explicit human approval before invoking a CLI write flow.
 | `engram stats` | Show visible memory counts, scope mix, and author ownership |
 | `engram install-skillset all` | Install agent-host instruction files |
 | `engram install-skillset slash` | Install slash-command adapters, including both Claude command and skill paths |
-| `engram clone-memory workspace global [--force] [--dry-run]` / `engram clone-memory global workspace [--force] [--dry-run]` | Clone active `rules/`, `skills/`, and `knowledge/` Markdown memories between workspace and global scopes while rewriting destination scope frontmatter and hashes |
+| `engram clone-memory workspace global [--force] [--dry-run] [--restructure] [--accept-all]` / `engram clone-memory global workspace [--force] [--dry-run] [--restructure] [--accept-all]` | Clone active `rules/`, `skills/`, and `knowledge/` Markdown memories between workspace and global scopes while rewriting destination scope frontmatter and hashes; `--restructure` routes verified source memories through save-session-style approval and cannot be combined with `--force` |
 | `engram sync` | Sync global memory Git and refresh live-sync targets |
 
 ## Slash Contract
@@ -196,6 +201,7 @@ hosts may prefer MCP-style tools:
 | `/engram graph ...` | `engram graph ...` CLI flow |
 | `/engram archive ...` | `engram archive ...` CLI approval flow |
 | `/engram take-control ...` | `engram take-control ...` CLI flow with agent-generated candidates and approval |
+| `/engram clone-memory ... --restructure` | `engram clone-memory ... --restructure` CLI flow with save-session-style candidate approval |
 | `/engram take control accept all` | `engram take-control --accept-all` CLI write flow with token-light source defaults |
 | `/engram ss -a` | `engram save-session --accept-all` CLI write flow |
 | `/engram ss -a last 50 sessions` | `engram save-session --query-level 50 --accept-all` CLI write flow |

@@ -248,7 +248,7 @@ engram init
 - **Настроить цель сохранения по умолчанию:** `engram set-save-target workspace|global|both|status` (Агент: `/engram set-save-target status`)
 - **Настроить лимит загрузки:** `engram set-load-limit 1..32|status|reset` (Агент: `/engram set-load-limit status`)
 - **Управлять изолированными профилями:** `engram profile status` / `engram profile merge personal company --dry-run` (Агент: `/engram profile status`)
-- **Клонировать память workspace/global:** `engram clone-memory workspace global` / `engram clone-memory global workspace --force` (Агент: `/engram clone workspace memory to global`)
+- **Клонировать память workspace/global:** `engram clone-memory workspace global` / `engram clone-memory global workspace --force` (Агент: `/engram clone workspace memory to global`) (`--restructure` routes cloned memories through save-session-style approval instead of raw copy.)
 - **Запустить проверку и очистить битые ссылки:** `engram verify` / `engram repair` (Агент: `/engram verify` / `/engram repair`)
 - **Проверить наличие противоречий:** `engram quality-check` (Агент: `/engram quality-check`)
 
@@ -273,7 +273,7 @@ engram init
 | **Настроить цель сохранения** | `engram set-save-target <цель>` | `/engram set-save-target <цель>` |
 | **Настроить лимит загрузки** | `engram set-load-limit <число>` | `/engram set-load-limit <число>` |
 | **Управлять профилями** | `engram profile status` / `engram profile merge personal company --dry-run` | `/engram profile status` |
-| **Клонировать память Workspace/Global** | `engram clone-memory workspace global` | `/engram clone workspace memory to global` |
+| **Клонировать память Workspace/Global** | `engram clone-memory workspace global` / `engram clone-memory workspace global --restructure` | `/engram clone workspace memory to global` |
 | **Синхронизировать память** | `engram sync` | `/engram sync` |
 | **Перестроить и исправить индекс** | `engram repair` | `/engram repair` |
 

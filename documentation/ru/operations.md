@@ -24,7 +24,7 @@
 | Настроить цель сохранения по умолчанию | `engram set-save-target workspace\|global\|both\|status` |
 | Настроить компактный лимит загрузки | `engram set-load-limit 1..32\|status\|reset` |
 | Управлять глобальными профилями | `engram profile status\|create\|use\|merge` |
-| Клонировать память workspace/global | `engram clone-memory workspace global` |
+| Клонировать память workspace/global | `engram clone-memory workspace global [--restructure]` |
 
 Используйте `save-session` для фиксации памяти по итогам длинных сессий взаимодействия. Короткая форма: `ss`.
 Используйте `--query-level <n>`, когда человек хочет, чтобы агент обработал до n доступных недавних сессий человек-агент, а не только текущую сессию. Естественная формулировка `engram ss -a last 50 sessions` нормализуется в `engram save-session --query-level 50 --accept-all`.
@@ -58,6 +58,9 @@ engram profile merge personal company --dry-run
 engram clone-memory workspace global
 engram clone-memory global workspace --force
 ```
+
+(`--restructure` routes cloned memories through save-session-style approval
+instead of raw copy.)
 
 ## Сохранение сессии (Save Session)
 

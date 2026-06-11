@@ -17,7 +17,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
   const takeControlArgs = ['--file', '--dir', '--include', '--exclude', '--max-sources', '--max-chars', '--scope', '--profile', '--role', '--roles', '--all', '--accept-all', '--dry-run', '--plan'].join(' ');
   const upgradeArgs = ['--plan', '--latest', '--self', '--memory-only', '--global-skillsets-only', '--target', '--force', '--no-version-check', '--no-auto-upgrade'].join(' ');
   const globalFolderArgs = ['--move-from-path'].join(' ');
-  const cloneMemoryArgs = ['workspace', 'global', '--force', '--dry-run'].join(' ');
+  const cloneMemoryArgs = ['workspace', 'global', '--force', '--dry-run', '--restructure', '--accept-all'].join(' ');
   const skillsetTargets = [
     'all', 'list', 'agents-md', 'codex', 'copilot', 'claude', 'cursor',
     'gemini', 'cline', 'windsurf',
@@ -98,7 +98,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       `      _arguments "--global" "--force" "1:target:(${skillsetTargets})"`,
       '      ;;',
       '    clone-memory|cm)',
-      '      _arguments "--force[overwrite existing destination files]" "--dry-run[preview copy only]" "1:source:(workspace global)" "2:target:(workspace global)"',
+      '      _arguments "--force[overwrite existing destination files]" "--dry-run[preview clone or proposal plan]" "--restructure[route clone candidates through save-session approval]" "--accept-all[accept every restructure candidate when human requested]" "1:source:(workspace global)" "2:target:(workspace global)"',
       '      ;;',
       '    upgrade|up)',
       `      _arguments "--plan" "--latest" "--self" "--memory-only" "--global-skillsets-only" "--target=[agent]:agent:(${skillsetTargets})" "--force" "--no-version-check"`,

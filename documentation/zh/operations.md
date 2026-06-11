@@ -24,7 +24,7 @@
 | 设置默认保存目标 | `engram set-save-target workspace\|global\|both\|status` |
 | 设置紧凑加载上限 | `engram set-load-limit 1..32\|status\|reset` |
 | 管理全局配置档 | `engram profile status\|create\|use\|merge` |
-| 克隆工作区/全局内存 | `engram clone-memory workspace global` |
+| 克隆工作区/全局内存 | `engram clone-memory workspace global [--restructure]` |
 
 对于较长时间会话的内存建议，请使用 `save-session`。简写形式：`ss`。
 当人类希望智能体从最多 n 个可访问的最近人类-智能体聊天中提取候选，而不是只使用当前会话时，请使用 `--query-level <n>`。自然写法 `engram ss -a last 50 sessions` 会规范化为 `engram save-session --query-level 50 --accept-all`。
@@ -57,6 +57,9 @@ engram profile merge personal company --dry-run
 engram clone-memory workspace global
 engram clone-memory global workspace --force
 ```
+
+(`--restructure` routes cloned memories through save-session-style approval
+instead of raw copy.)
 
 ## 保存会话 (Save Session)
 

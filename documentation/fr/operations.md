@@ -24,7 +24,7 @@ Cette page fournit des détails d'utilisation afin que le README puisse rester c
 | Définir la cible d'enregistrement par défaut | `engram set-save-target workspace\|global\|both\|status` |
 | Définir la limite de chargement compact | `engram set-load-limit 1..32\|status\|reset` |
 | Gérer les profils globaux | `engram profile status\|create\|use\|merge` |
-| Cloner la mémoire workspace/global | `engram clone-memory workspace global` |
+| Cloner la mémoire workspace/global | `engram clone-memory workspace global [--restructure]` |
 
 Utilisez `save-session` pour les propositions de mémoire lors de longues sessions. Forme abrégée : `ss`.
 Utilisez `--query-level <n>` lorsque l'humain souhaite que l'agent exploite jusqu'à n conversations humain-agent récentes et accessibles, au lieu de la seule session actuelle. La formulation naturelle `engram ss -a last 50 sessions` se normalise en `engram save-session --query-level 50 --accept-all`.
@@ -58,6 +58,9 @@ Utilisez `clone-memory` pour copier le Markdown actif `rules/`, `skills/` et
 engram clone-memory workspace global
 engram clone-memory global workspace --force
 ```
+
+(`--restructure` routes cloned memories through save-session-style approval
+instead of raw copy.)
 
 ## Enregistrer Session (Save Session)
 

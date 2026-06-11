@@ -248,7 +248,7 @@ engram init
 - **기본 저장 대상 설정:** `engram set-save-target workspace|global|both|status` (에이전트: `/engram set-save-target status`)
 - **로드 제한 설정:** `engram set-load-limit 1..32|status|reset` (에이전트: `/engram set-load-limit status`)
 - **격리 프로필 관리:** `engram profile status` / `engram profile merge personal company --dry-run` (에이전트: `/engram profile status`)
-- **workspace/global 메모리 복제:** `engram clone-memory workspace global` / `engram clone-memory global workspace --force` (에이전트: `/engram clone workspace memory to global`)
+- **workspace/global 메모리 복제:** `engram clone-memory workspace global` / `engram clone-memory global workspace --force` (에이전트: `/engram clone workspace memory to global`) (`--restructure` routes cloned memories through save-session-style approval instead of raw copy.)
 - **유효성 셀프 진단 및 망가진 인덱스 정리:** `engram verify` / `engram repair` (에이전트: `/engram verify` / `/engram repair`)
 - **메모리 간 모순 및 대립 체크:** `engram quality-check` (에이전트: `/engram quality-check`)
 
@@ -273,7 +273,7 @@ engram init
 | **기본 저장 대상 설정** | `engram set-save-target <대상>` | `/engram set-save-target <대상>` |
 | **로드 제한 설정** | `engram set-load-limit <개수>` | `/engram set-load-limit <개수>` |
 | **프로필 관리** | `engram profile status` / `engram profile merge personal company --dry-run` | `/engram profile status` |
-| **Workspace/Global 메모리 복제** | `engram clone-memory workspace global` | `/engram clone workspace memory to global` |
+| **Workspace/Global 메모리 복제** | `engram clone-memory workspace global` / `engram clone-memory workspace global --restructure` | `/engram clone workspace memory to global` |
 | **기억 동기화** | `engram sync` | `/engram sync` |
 | **인덱스 파손 수리 복구** | `engram repair` | `/engram repair` |
 

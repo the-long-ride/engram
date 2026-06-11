@@ -14,6 +14,16 @@ import type { MemoryType, Scope } from '../core/runtime/types.js';
 import { applyApprovalEdit, requestApproval, requestGeneratedMemoryApproval, requestGeneratedSelectionApproval, requestGeneratedSelectionText, requestSelectionApproval, type SelectionApproval } from '../core/safety/approval.js';
 import { readText } from '../core/system/fsx.js';
 
+export type SaveSessionCandidateRunOptions = {
+  ctx: Awaited<ReturnType<typeof getContext>>;
+  text: string;
+  scopes: Scope[];
+  flags?: Record<string, any>;
+  source?: MemorySourceMeta;
+  dryRunLabel?: string;
+  acceptAllLabel?: string;
+};
+
 /** Draft, approve, and write a memory. */
 export async function cmdSave(args: string[], flags: Record<string, any>): Promise<string> {
   const explicitType = normalizeMemoryType(args[0]);
@@ -88,6 +98,29 @@ export async function cmdSaveSession(args: string[], flags: Record<string, any> 
   }
   const saved = await writeSavePlans(plans, approval.edits);
   return acceptAll ? `Accepted all save-session candidates (--accept-all).\n${saved}` : saved;
+}
+
+/** Run supplied save-session candidate lines through the normal approval/write path. */
+export async function runSaveSessionCandidates(options: SaveSessionCandidateRunOptions): Promise<string> {
+  const author = await resolveAuthor();
+  const role = rolesFromFlags(options.flags ?? {});
+  const acceptAll = options.flags?.['accept-all'] === true;
+  const plans = await planSaveSessionCandidates(options.ctx, options.text, options.scopes, author, role, options.source);
+  if (!plans.length) return 'No memory candidates detected.';
+  if (options.flags?.['dry-run'] === true) return `${options.dryRunLabel ?? 'Save-session dry-run'}\n${previewSavePlans(plans)}`;
+  let approval: SelectionApproval | undefined = acceptAll ? { accepted: true } : await requestSelectionApproval(previewSavePlans(plans));
+  if (!approval?.accepted) return 'Discarded. No file written.';
+  let selectedPlans = plans;
+  if (approval.selected?.length) {
+    selectedPlans = plans.filter((plan) => plan.candidateIndex === undefined || approval.selected?.includes(plan.candidateIndex));
+  }
+  if (!selectedPlans.length) return 'Discarded. No selected candidates written.';
+  if (acceptAll) {
+    const restructure = acceptAllRestructureResponse(selectedPlans);
+    if (restructure) return restructure;
+  }
+  const saved = await writeSavePlans(selectedPlans, approval.edits);
+  return acceptAll ? `${options.acceptAllLabel ?? 'Accepted all save-session candidates (--accept-all).'}\n${saved}` : saved;
 }
 
 /** Convert existing workspace guidance into approved Engram memories with agent help. */

@@ -25,7 +25,7 @@ This page holds detailed usage so the README can stay short.
 | Set default save target | `engram set-save-target workspace\|global\|both\|status` |
 | Set compact load limit | `engram set-load-limit 1..32\|status\|reset` |
 | Manage global profiles | `engram profile status\|create\|use\|merge` |
-| Clone workspace/global memory | `engram clone-memory workspace global` |
+| Clone workspace/global memory | `engram clone-memory workspace global [--restructure]` |
 
 Use `save-session` for long-session memory proposals. Short form: `ss`.
 Use `--query-level <n>` when the human wants the agent to mine up to n recent accessible human-agent chats instead of only the current session. Natural wording such as `engram ss -a last 50 sessions` normalizes to `engram save-session --query-level 50 --accept-all`.
@@ -87,6 +87,9 @@ Markdown between workspace and global scopes:
 engram clone-memory workspace global
 engram clone-memory global workspace --force
 ```
+
+Add `--restructure` when you want cloned memories proposed through the
+save-session approval flow instead of copied verbatim.
 
 ## Save Session
 

@@ -248,7 +248,7 @@ engram init
 - **设置默认保存目标：** `engram set-save-target workspace|global|both|status` (智能体: `/engram set-save-target status`)
 - **设置加载上限：** `engram set-load-limit 1..32|status|reset` (智能体: `/engram set-load-limit status`)
 - **管理隔离配置档：** `engram profile status` / `engram profile merge personal company --dry-run` (智能体: `/engram profile status`)
-- **克隆 workspace/global 内存：** `engram clone-memory workspace global` / `engram clone-memory global workspace --force` (智能体: `/engram clone workspace memory to global`)
+- **克隆 workspace/global 内存：** `engram clone-memory workspace global` / `engram clone-memory global workspace --force` (智能体: `/engram clone workspace memory to global`) (`--restructure` routes cloned memories through save-session-style approval instead of raw copy.)
 - **运行健康检查并清理坏链：** `engram verify` / `engram repair` (智能体: `/engram verify` / `/engram repair`)
 - **建议性矛盾冲突扫描：** `engram quality-check` (智能体: `/engram quality-check`)
 
@@ -273,7 +273,7 @@ engram init
 | **设置默认保存目标** | `engram set-save-target <目标>` | `/engram set-save-target <目标>` |
 | **设置加载上限** | `engram set-load-limit <数量>` | `/engram set-load-limit <数量>` |
 | **管理配置档** | `engram profile status` / `engram profile merge personal company --dry-run` | `/engram profile status` |
-| **克隆 Workspace/Global 内存** | `engram clone-memory workspace global` | `/engram clone workspace memory to global` |
+| **克隆 Workspace/Global 内存** | `engram clone-memory workspace global` / `engram clone-memory workspace global --restructure` | `/engram clone workspace memory to global` |
 | **同步内存** | `engram sync` | `/engram sync` |
 | **重建并修复索引** | `engram repair` | `/engram repair` |
 

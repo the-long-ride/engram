@@ -6,6 +6,19 @@ import { draftMemory, updateMemory, type MemorySourceMeta } from './memory-templ
 import type { MemoryEntry, MemoryType, Scope } from '../runtime/types.js';
 import { lexicalScore, slugify, words } from '../system/text.js';
 import { sha256 } from '../safety/hash.js';
+import { routeDetailed } from './routing.js';
+
+const RELATED_HINT_LIMIT = 3;
+
+export type SaveRelatedHint = {
+  id: string;
+  type: MemoryType;
+  scope: Scope;
+  file: string;
+  summary: string;
+  score: number;
+  action: 'suggested-dependency' | 'possible-duplicate';
+};
 
 export type SavePlan = {
   action: 'add' | 'update';
@@ -16,6 +29,7 @@ export type SavePlan = {
   message: string;
   matchScore?: number;
   candidateIndex?: number;
+  related?: SaveRelatedHint[];
 };
 
 /** Choose whether each scope should add a new memory or update an existing one. */
@@ -26,13 +40,14 @@ export async function planMemorySave(input: {
   const options = { ruleVariants: true };
   for (const scope of input.scopes) {
     const match = await bestMatch(input.ctx, input.text, input.type, scope);
+    const related = relatedMemoryHints(input.ctx, input.text, input.type, scope, match?.entry);
     if (match) {
       const content = updateMemory(match.raw, { text: input.text, type: input.type, scope, author: input.author, role: input.role, source: input.source }, options);
-      plans.push({ action: 'update', scope, file: match.entry.file, id: match.entry.id, content, matchScore: match.score, message: `update ${input.type}: ${match.entry.id}` });
+      plans.push({ action: 'update', scope, file: match.entry.file, id: match.entry.id, content, matchScore: match.score, related, message: `update ${input.type}: ${match.entry.id}` });
     } else {
       const draft = draftMemory({ text: input.text, type: input.type, scope, author: input.author, role: input.role, source: input.source }, options);
       const unique = await avoidCollision(input.ctx, scope, draft, input.text);
-      plans.push({ action: 'add', scope, file: unique.file, id: unique.id, content: unique.content, message: `add ${input.type}: ${unique.id}` });
+      plans.push({ action: 'add', scope, file: unique.file, id: unique.id, content: unique.content, related, message: `add ${input.type}: ${unique.id}` });
     }
   }
   return plans;
@@ -43,7 +58,7 @@ export function previewSavePlans(plans: SavePlan[]): string {
   return plans.map((plan) => {
     const score = plan.matchScore === undefined ? '' : `\nMatch score: ${plan.matchScore.toFixed(2)}`;
     const candidate = plan.candidateIndex === undefined ? '' : `Candidate: ${plan.candidateIndex}\n`;
-    return `${candidate}Action: ${plan.action === 'update' ? 'Update existing memory' : 'Add new memory'}\nType: ${kind(plan.file)}\nScope: ${plan.scope}\nFile: ${plan.file}${score}\n\n${plan.content}`;
+    return `${candidate}Action: ${plan.action === 'update' ? 'Update existing memory' : 'Add new memory'}\nType: ${kind(plan.file)}\nScope: ${plan.scope}\nFile: ${plan.file}${score}${relatedPreview(plan.related)}\n\n${plan.content}`;
   }).join('\n\n---\n\n');
 }
 
@@ -61,6 +76,54 @@ async function bestMatch(ctx: EngramContext, text: string, type: MemoryType, sco
   }
   if (!best) return undefined;
   return best.score >= 0.25 && best.overlap >= 2 ? best : undefined;
+}
+
+function relatedMemoryHints(ctx: EngramContext, text: string, type: MemoryType, scope: Scope, exclude?: MemoryEntry): SaveRelatedHint[] {
+  const index = ctx.scopeIndexes[scope];
+  if (!index.entries.length) return [];
+  const routed = routeDetailed(index, text, ctx.config, false, {
+    ignorePatterns: ctx.ignorePatterns,
+    candidatePool: Math.max(8, ctx.config.vector?.candidate_pool ?? 8)
+  }, ctx.graph).entries;
+  const queryWords = words(text);
+  return routed
+    .filter((entry) => entry.scope === scope && !sameEntry(entry, exclude))
+    .map((entry) => {
+      const score = lexicalScore(text, relatedText(entry));
+      const overlap = [...queryWords].filter((word) => words(relatedText(entry)).has(word)).length;
+      return { entry, score, overlap };
+    })
+    .filter((row) => row.score >= 0.08 && row.overlap >= 1)
+    .sort((a, b) => b.score - a.score || a.entry.file.localeCompare(b.entry.file))
+    .slice(0, RELATED_HINT_LIMIT)
+    .map((row) => ({
+      id: row.entry.id,
+      type: row.entry.type,
+      scope: row.entry.scope,
+      file: row.entry.file,
+      summary: row.entry.summary,
+      score: row.score,
+      action: row.entry.type === type && row.score >= 0.18 && row.overlap >= 2 ? 'possible-duplicate' : 'suggested-dependency'
+    }));
+}
+
+function relatedPreview(related: SaveRelatedHint[] = []): string {
+  if (!related.length) return '';
+  const rows = related.map((hint) => {
+    const action = hint.action === 'possible-duplicate'
+      ? 'Possible duplicate: consider updating or archiving instead of adding another memory.'
+      : `Suggested depends_on: [${hint.id}]`;
+    return `- ${hint.scope}:${hint.file} (${hint.type}, score ${hint.score.toFixed(2)})\n  ${action}\n  Summary: ${hint.summary}`;
+  });
+  return `\nRelated memories found:\n${rows.join('\n')}\nRestructure hint: accept saves as previewed; reject if you want to rerun save after adding dependencies or archive duplicate memories after review.`;
+}
+
+function relatedText(entry: MemoryEntry): string {
+  return `${entry.id} ${entry.type} ${entry.tags.join(' ')} ${(entry.dependsOn ?? []).join(' ')} ${entry.summary}`;
+}
+
+function sameEntry(entry: MemoryEntry, other?: MemoryEntry): boolean {
+  return Boolean(other) && entry.scope === other?.scope && entry.file === other.file;
 }
 
 function kind(file: string): MemoryType {

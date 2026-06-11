@@ -1076,8 +1076,98 @@ test('save automatically updates matching memory instead of duplicating it', asy
   const updated = await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'React frontend uses pnpm workspace scripts'], 'A\n');
   assert.equal(updated.code, 0, updated.stderr);
   assert.match(updated.stdout, /Saved/);
+  assert.doesNotMatch(updated.stdout, /Related memories found/);
   assert.match((await runEngram(cwd, env, ['stats'])).stdout, /Total: 1/);
   assert.match(await readFile(path.join(workspaceMemoryRoot(cwd), 'knowledge', 'frontend-uses-react-and-pnpm.md'), 'utf8'), /workspace scripts/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('save preview marks weak same-type overlap as possible duplicate', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['init']);
+  const existing = path.join(workspaceMemoryRoot(cwd), 'knowledge', 'invoice-webhook-retry-baseline.md');
+  await mkdir(path.dirname(existing), { recursive: true });
+  await writeFile(existing, duplicateFixtureMemory({
+    id: 'invoice-webhook-retry-baseline',
+    content: 'Invoice webhook retry baseline records retry and backoff guidance for payment failures.'
+  }));
+  await runEngram(cwd, env, ['rebuild-index', 'workspace']);
+
+  const proposed = await runEngram(cwd, env, [
+    'save', 'knowledge', '--scope', 'workspace',
+    'Invoice retry backoff policy for webhook failures'
+  ], 'C\n');
+
+  assert.equal(proposed.code, 0, proposed.stderr);
+  assert.match(proposed.stdout, /Action: Add new memory/);
+  assert.match(proposed.stdout, /Related memories found/);
+  assert.match(proposed.stdout, /Possible duplicate: consider updating or archiving instead of adding another memory/);
+  assert.match(proposed.stdout, /workspace:knowledge\/invoice-webhook-retry-baseline\.md/);
+  assert.match(proposed.stdout, /Discarded\. No file written\./);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('save preview reports related memories for dependency restructuring', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, [
+    'save', 'knowledge', '--scope', 'workspace',
+    'Release foundation checklist lives in docs/release.md'
+  ], 'A\n');
+
+  const proposed = await runEngram(cwd, env, [
+    'save', 'rule', '--scope', 'workspace',
+    'OAuth rotation must follow the release foundation checklist'
+  ], 'C\n');
+
+  assert.equal(proposed.code, 0, proposed.stderr);
+  assert.match(proposed.stdout, /Related memories found/);
+  assert.match(proposed.stdout, /workspace:knowledge\/release-foundation-checklist-lives-in-docs-release-md\.md/);
+  assert.match(proposed.stdout, /Suggested depends_on: \[release-foundation-checklist-lives-in-docs-release-md\]/);
+  assert.match(proposed.stdout, /reject if you want to rerun save after adding dependencies/i);
+  assert.match(proposed.stdout, /Discarded\. No file written\./);
+  await assert.rejects(readFile(path.join(workspaceMemoryRoot(cwd), 'rules', 'oauth-rotation-must-follow-the-release-foundation-checklist.md'), 'utf8'));
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('save preview related-memory hints stay scoped to the save target', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, [
+    'save', 'knowledge', '--scope', 'global',
+    'Global launch checklist covers shared release approval'
+  ], 'A\n');
+
+  const proposed = await runEngram(cwd, env, [
+    'save', 'rule', '--scope', 'workspace',
+    'Workspace launch checklist must follow shared release approval'
+  ], 'C\n');
+
+  assert.equal(proposed.code, 0, proposed.stderr);
+  assert.doesNotMatch(proposed.stdout, /global:knowledge\/global-launch-checklist-covers-shared-release-approval\.md/);
+  assert.doesNotMatch(proposed.stdout, /Related memories found/);
+  assert.match(proposed.stdout, /Discarded\. No file written\./);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('save-session preview includes related-memory hints per candidate', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, [
+    'save', 'knowledge', '--scope', 'workspace',
+    'Release foundation checklist lives in docs/release.md'
+  ], 'A\n');
+
+  const proposed = await runEngram(cwd, env, [
+    'save-session', '--scope', 'workspace',
+    'TYPE: rule | TEXT: OAuth rotation must follow the release foundation checklist'
+  ], 'C\n');
+
+  assert.equal(proposed.code, 0, proposed.stderr);
+  assert.match(proposed.stdout, /Candidate: 1/);
+  assert.match(proposed.stdout, /Related memories found/);
+  assert.match(proposed.stdout, /Suggested depends_on: \[release-foundation-checklist-lives-in-docs-release-md\]/);
+  assert.match(proposed.stdout, /Discarded\. No file written\./);
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -1379,6 +1469,37 @@ Test memory fixture.
 ## Example
 
 Use this memory when a future task touches: ${tags.slice(0, 3).join(', ')}.
+`;
+}
+
+function duplicateFixtureMemory({ id, content }) {
+  const filler = Array.from({ length: 160 }, (_, index) => `unrelated-${index}`).join(' ');
+  return `---
+id: ${id}
+type: knowledge
+scope: workspace
+tags: [invoice, retry, backoff]
+created: 2026-06-05
+updated: 2026-06-05
+author: test@example.com
+source: manual
+confidence: high
+---
+
+# Knowledge: ${id}
+
+## Context
+
+Test memory fixture.
+
+## Content
+
+- ${content}
+- ${filler}
+
+## Example
+
+Use this memory when validating save duplicate hints.
 `;
 }
 

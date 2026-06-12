@@ -205,7 +205,7 @@ function globalFilesForTarget(target: ResolvedTarget, home: string): GlobalInsta
     case 'agents-md':
       return [plan(path.join(home, '.codex', 'AGENTS.md'), 'block')];
     case 'copilot':
-      return [skip('GitHub Copilot personal instructions do not expose a stable local global file path')];
+      return [plan(path.join(home, '.copilot', 'copilot-instructions.md'), 'block')];
     case 'claude':
       return [
         plan(path.join(home, '.claude', 'CLAUDE.md'), 'block'),

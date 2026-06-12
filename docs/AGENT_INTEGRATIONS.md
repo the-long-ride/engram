@@ -72,7 +72,7 @@ as `~/.claude/skills/engram/SKILL.md` for Claude Code.
 | --- | --- | --- |
 | `codex` | `AGENTS.md`, `.agents/skills/engram/SKILL.md` | OpenAI Codex project instructions and Agent Skill |
 | `agents-md` | `AGENTS.md` | Generic fallback for unlisted AGENTS.md-compatible agents |
-| `copilot` | `.github/copilot-instructions.md` | GitHub Copilot repository instructions |
+| `copilot` | `.github/copilot-instructions.md`; global: `~/.copilot/copilot-instructions.md` | GitHub Copilot repository and user instructions |
 | `claude` | `CLAUDE.md` | Claude Code project guidance |
 | `cursor` | `.cursor/rules/engram.mdc` | Cursor project rules |
 | `gemini` | `GEMINI.md` | Gemini CLI context, including current Antigravity Gemini-compatible surfaces |
@@ -326,6 +326,8 @@ engram completion powershell
 
 GitHub Copilot reads repository custom instructions from
 `.github/copilot-instructions.md`.
+For global Copilot installs, Engram appends its managed block to
+`~/.copilot/copilot-instructions.md`.
 
 OpenAI Codex and other AGENTS.md-compatible agents can use `AGENTS.md` as a
 project instruction file. Use `engram install-skillset codex` when you want the

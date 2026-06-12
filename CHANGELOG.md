@@ -7,7 +7,8 @@
   through a separate approval pass.
 - Renamed the clone-memory restructure flag to `--metacognize` and updated the
   related help, docs, and tests.
-- Bumped package and runtime version to `0.0.11`.
+- Fixed global Copilot skillset installs to append Engram instructions to
+  `~/.copilot/copilot-instructions.md`.
 
 ## 0.0.10
 

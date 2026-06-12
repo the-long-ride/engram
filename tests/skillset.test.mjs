@@ -216,6 +216,30 @@ test('global skill-capable targets write host skill folders', async () => {
   await rm(cwd, { recursive: true, force: true });
 });
 
+test('global copilot install appends user instruction file', async () => {
+  const { cwd, env } = await tempWorkspace('engram-skillset-global-');
+  const agentHome = path.join(cwd, 'agent-home');
+  const globalEnv = { ...env, ENGRAM_AGENT_HOME: agentHome, ENGRAM_AGENT_CONFIG_HOME: path.join(cwd, 'agent-config') };
+  const copilotFile = path.join(agentHome, '.copilot', 'copilot-instructions.md');
+  await mkdir(path.dirname(copilotFile), { recursive: true });
+  await writeFile(copilotFile, '# Copilot human rules\n\n- Keep this rule.\n');
+
+  const result = await runEngram(cwd, globalEnv, ['install-skillset', '--global', 'copilot']);
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /UPDATED copilot: .*\.copilot[\\/]copilot-instructions\.md/);
+
+  const copilot = await readFile(copilotFile, 'utf8');
+  assert.match(copilot, /# Copilot human rules/);
+  assert.match(copilot, /- Keep this rule\./);
+  assert.match(copilot, /BEGIN ENGRAM GLOBAL SKILLSET/);
+  assert.match(copilot, /engram load "<current task>"/);
+
+  const registry = JSON.parse(await readFile(path.join(globalEnv.ENGRAM_CONFIG_DIR, 'global-skillsets.json'), 'utf8'));
+  assert.equal(registry.installs.copilot.files.length, 1);
+  assert.equal(registry.installs.copilot.files[0].path, path.join(agentHome, '.copilot', 'copilot-instructions.md').replace(/\\/g, '/'));
+  await rm(cwd, { recursive: true, force: true });
+});
+
 test('global skillset installer preserves human-authored shared files with a managed block', async () => {
   const { cwd, env } = await tempWorkspace('engram-skillset-global-');
   const agentHome = path.join(cwd, 'agent-home');

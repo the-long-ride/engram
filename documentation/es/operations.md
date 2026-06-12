@@ -25,7 +25,7 @@ Esta página contiene el uso detallado para que el README pueda seguir siendo br
 | Definir destino de guardado predeterminado | `engram set-save-target workspace\|global\|both\|status` |
 | Definir límite de carga compacta | `engram set-load-limit 1..32\|status\|reset` |
 | Gestionar perfiles globales | `engram profile status\|create\|use\|merge` |
-| Clonar memoria workspace/global | `engram clone-memory workspace global [--restructure]` |
+| Clonar memoria workspace/global | `engram clone-memory workspace global [--metacognize]` |
 
 Use `save-session` para propuestas de memoria de sesiones largas. Forma corta: `ss`.
 Use `--query-level <n>` cuando el humano quiera que el agente extraiga memoria de hasta n chats humano-agente recientes y accesibles, en lugar de solo la sesión actual. La redacción natural `engram ss -a last 50 sessions` se normaliza a `engram save-session --query-level 50 --accept-all`.
@@ -59,7 +59,7 @@ engram clone-memory workspace global
 engram clone-memory global workspace --force
 ```
 
-(`--restructure` routes cloned memories through save-session-style approval
+(`--metacognize` routes cloned memories through save-session-style approval
 instead of raw copy.)
 
 Use `engram metacognize --workspace|--global|--all` when an AI agent should review an existing memory folder and propose `TYPE/TEXT` restructuring candidates with `UPDATE` or `DEPENDS_ON`; natural wording such as `engram restructure workspace memory accept all` maps to this command.

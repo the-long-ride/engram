@@ -58,7 +58,7 @@ export async function runCli(argv: string[]): Promise<string> {
       case 'set-load-limit': return await cmdSetLoadLimit(rest);
       case 'set-rule-variant': return await cmdSetRuleVariant(rest);
       case 'update-global-folder': return await cmdUpdateGlobalFolder(rest, flags);
-      case 'resolve-conflicts': return await cmdResolveConflicts(flags);
+      case 'resolve-conflicts': return await cmdResolveConflicts(rest, flags);
       case 'install-hooks': return await cmdInstallHooks();
       case 'install-skillset': return await cmdInstallSkillset(rest, flags);
       case 'upgrade': return await cmdUpgrade(rest, flags);

@@ -249,7 +249,7 @@ Sintonice qué tan estrictamente se formatean las reglas cuando las carga su asi
 - **Configurar límite de carga:** `engram set-load-limit 1..32|status|reset` (Agente: `/engram set-load-limit status`)
 - **Gestionar perfiles aislados:** `engram profile status` / `engram profile merge personal company --dry-run` (Agente: `/engram profile status`)
 - **Reestructurar carpeta de memoria:** `engram metacognize --workspace|--global|--all --accept-all` (Agente: `/engram restructure workspace memory accept all`)
-- **Clonar memoria workspace/global:** `engram clone-memory workspace global` / `engram clone-memory global workspace --force` (Agente: `/engram clone workspace memory to global`) (`--restructure` routes cloned memories through save-session-style approval instead of raw copy.)
+- **Clonar memoria workspace/global:** `engram clone-memory workspace global` / `engram clone-memory global workspace --force` (Agente: `/engram clone workspace memory to global`) (`--metacognize` routes cloned memories through save-session-style approval instead of raw copy.)
 - **Ejecutar revisión y limpiar enlaces rotos:** `engram verify` / `engram repair` (Agente: `/engram verify` / `/engram repair`)
 - **Escaneo asesor de contradicciones:** `engram quality-check` (Agente: `/engram quality-check`)
 
@@ -275,7 +275,7 @@ Sintonice qué tan estrictamente se formatean las reglas cuando las carga su asi
 | **Configurar Destino de Guardado** | `engram set-save-target <destino>` | `/engram set-save-target <destino>` |
 | **Configurar Límite de Carga** | `engram set-load-limit <cantidad>` | `/engram set-load-limit <cantidad>` |
 | **Gestionar Perfiles** | `engram profile status` / `engram profile merge personal company --dry-run` | `/engram profile status` |
-| **Clonar Memoria Workspace/Global** | `engram clone-memory workspace global` / `engram clone-memory workspace global --restructure` | `/engram clone workspace memory to global` |
+| **Clonar Memoria Workspace/Global** | `engram clone-memory workspace global` / `engram clone-memory workspace global --metacognize` | `/engram clone workspace memory to global` |
 | **Sincronizar Memorias** | `engram sync` | `/engram sync` |
 | **Reconstruir y Reparar Índice** | `engram repair` | `/engram repair` |
 

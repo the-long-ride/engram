@@ -3,6 +3,7 @@ import { execFile } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { textArg } from '../cli/args.js';
+import { cmdMetacognize } from './metacognize.js';
 import { getContext } from '../core/memory/context.js';
 import { updateGlobalFolder } from '../core/memory/global-folder.js';
 import { initWorkspace } from '../core/memory/storage.js';
@@ -107,19 +108,25 @@ export async function cmdUpdateGlobalFolder(args: string[], flags: Record<string
 }
 
 /** Resolve or preview workspace memory merge conflicts. */
-export async function cmdResolveConflicts(flags: Record<string, any> = {}): Promise<string> {
+export async function cmdResolveConflicts(args: string[] = [], flags: Record<string, any> = {}): Promise<string> {
   if (flags.auto) throw new Error('resolve-conflicts --auto is not supported; use --dry-run or resolve-conflicts');
   const conflicts = await findConflicts(process.cwd());
-  if (!conflicts.length) return 'No workspace Engram merge conflicts found';
-  if (flags['dry-run']) return formatRecords('Conflict dry-run', conflicts.map((conflict) => ({
-    title: `DRY-RUN ${conflict.kind} ${conflict.file}`,
-    fields: [['Summary', conflict.summary]]
-  })));
-  const results = await resolveConflicts(process.cwd(), false);
-  return formatRecords('Resolved conflicts', results.map((conflict) => ({
-    title: `RESOLVED ${conflict.kind} ${conflict.file}`,
-    fields: [['Decision', conflict.decision], ['Stage', conflict.staged ? 'staged' : 'stage skipped']]
-  })));
+  const sections = [];
+  if (!conflicts.length) sections.push('No workspace Engram merge conflicts found');
+  else if (flags['dry-run']) {
+    sections.push(formatRecords('Conflict dry-run', conflicts.map((conflict) => ({
+      title: `DRY-RUN ${conflict.kind} ${conflict.file}`,
+      fields: [['Summary', conflict.summary]]
+    }))));
+  } else {
+    const results = await resolveConflicts(process.cwd(), false);
+    sections.push(formatRecords('Resolved conflicts', results.map((conflict) => ({
+      title: `RESOLVED ${conflict.kind} ${conflict.file}`,
+      fields: [['Decision', conflict.decision], ['Stage', conflict.staged ? 'staged' : 'stage skipped']]
+    }))));
+  }
+  if (flags.metacognize === true) sections.push(await cmdMetacognize(['workspace', ...args], { ...flags, workspace: true }));
+  return sections.join('\n\n');
 }
 
 /** Install opt-in Git hooks that call Engram commands. */

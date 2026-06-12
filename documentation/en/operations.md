@@ -17,7 +17,9 @@ This page holds detailed usage so the README can stay short.
 | Capture raw note | `engram observe --file session.md` |
 | Convert existing docs/guidance | `engram take-control --all` |
 | Preview source takeover | `engram take-control --plan` |
+| Import and metacognize guidance | `engram take-control --all --metacognize --accept-all` |
 | Restructure existing memory folder | `engram metacognize --workspace\|--global\|--all` |
+| Resolve conflicts and metacognize | `engram resolve-conflicts --metacognize` |
 | Inspect graph routing | `engram graph "<topic>"` |
 | Check hashes | `engram verify` |
 | Find malformed memory files | `engram repair` |
@@ -26,7 +28,7 @@ This page holds detailed usage so the README can stay short.
 | Set default save target | `engram set-save-target workspace\|global\|both\|status` |
 | Set compact load limit | `engram set-load-limit 1..32\|status\|reset` |
 | Manage global profiles | `engram profile status\|create\|use\|merge` |
-| Clone workspace/global memory | `engram clone-memory workspace global [--restructure]` |
+| Clone workspace/global memory | `engram clone-memory workspace global [--metacognize]` |
 
 Use `save-session` for long-session memory proposals. Short form: `ss`.
 Use `--query-level <n>` when the human wants the agent to mine up to n recent accessible human-agent chats instead of only the current session. Natural wording such as `engram ss -a last 50 sessions` normalizes to `engram save-session --query-level 50 --accept-all`.
@@ -89,7 +91,7 @@ engram clone-memory workspace global
 engram clone-memory global workspace --force
 ```
 
-Add `--restructure` when you want cloned memories proposed through the
+Add `--metacognize` when you want cloned memories proposed through the
 save-session approval flow instead of copied verbatim.
 
 ## Metacognize Memory
@@ -145,9 +147,28 @@ engram take-control --file AGENTS.md
 engram take-control --dir docs
 engram take-control --include "docs/**/*.md" --exclude "docs/private/**"
 engram take-control --max-sources 5 --max-chars 900
+engram take-control --all --metacognize --accept-all
 ```
 
 Saved take-control memories record `source_files` and `source_hashes`, so unchanged sources are skipped later.
+Use `--metacognize` with human-requested accept-all when related-memory hints
+should pause the write and let the agent rerun with `UPDATE` or `DEPENDS_ON`.
+
+## Resolve Conflicts With Metacognition
+
+Use `resolve-conflicts` to preview or resolve only Engram-owned workspace memory
+conflicts. Add `--metacognize` when an agent should review the memory folder
+after conflict handling:
+
+```bash
+engram resolve-conflicts --dry-run --metacognize
+engram resolve-conflicts --metacognize
+engram resolve conflicts and metacognize
+```
+
+The command keeps deterministic conflict handling scoped to `.agents/.engram/`,
+then appends the workspace metacognize source pack for concise `TYPE/TEXT`
+candidates.
 
 ## Observe
 

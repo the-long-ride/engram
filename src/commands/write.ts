@@ -162,6 +162,10 @@ export async function cmdTakeControl(args: string[], flags: Record<string, any> 
   if (!approval?.accepted) return 'Discarded. No file written.';
   if (approval.selected?.length) plans = plans.filter((plan) => plan.candidateIndex === undefined || approval.selected?.includes(plan.candidateIndex));
   if (!plans.length) return 'Discarded. No selected candidates written.';
+  if (acceptAll && flags.metacognize === true) {
+    const restructure = acceptAllRestructureResponse(plans, takeControlMetacognizeRerunCommand(flags));
+    if (restructure) return restructure;
+  }
   const saved = await writeSavePlans(plans, approval.edits);
   const prefix = acceptAll ? 'Take-control accepted all candidates (--accept-all).' : `Take-control consumed ${sources.length} source file${sources.length === 1 ? '' : 's'}.`;
   return `${prefix}\n${saved}`;
@@ -244,6 +248,12 @@ function normalizeRef(ref: string): string {
 
 function hasDependencyIntent(text: string): boolean {
   return /\b(depends? on|builds? on|based on|extends?|requires?|prerequisite|foundation|foundational|follow(?:s|ing)?|must follow)\b/i.test(text);
+}
+
+function takeControlMetacognizeRerunCommand(flags: Record<string, any>): string {
+  const parts = ['engram take-control --metacognize --accept-all'];
+  if (typeof flags.scope === 'string' && flags.scope.trim()) parts.push(`--scope ${flags.scope.trim()}`);
+  return parts.join(' ');
 }
 
 async function saveSessionInput(args: string[], flags: Record<string, any>): Promise<string> {

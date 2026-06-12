@@ -2,7 +2,7 @@
 
 ## Goal
 
-Add an explicit `clone-memory --restructure` mode that lets Engram promote or
+Add an explicit `clone-memory --metacognize` mode that lets Engram promote or
 import memories between workspace and global scopes through the same
 approval-safe restructuring workflow used by `save-session`.
 
@@ -15,18 +15,18 @@ create duplicate, redundant, or poorly layered global/workspace memory.
 Supported examples:
 
 ```sh
-engram clone-memory workspace global --restructure
-engram clone-memory workspace global --restructure --accept-all
-engram clone-memory global workspace --restructure
-engram cm workspace global --restructure
-engram clone workspace memory to global --restructure
+engram clone-memory workspace global --metacognize
+engram clone-memory workspace global --metacognize --accept-all
+engram clone-memory global workspace --metacognize
+engram cm workspace global --metacognize
+engram clone workspace memory to global --metacognize
 ```
 
-Without `--restructure`, `clone-memory` continues to copy active Markdown files
+Without `--metacognize`, `clone-memory` continues to copy active Markdown files
 from `rules/`, `skills/`, and `knowledge/`, rewrite `scope:`, update hashes, and
 rebuild destination indexes.
 
-With `--restructure`, Engram:
+With `--metacognize`, Engram:
 
 1. Validates the same source and target scope pair as normal clone:
    `workspace -> global` or `global -> workspace`.
@@ -48,17 +48,17 @@ or by omitting already-covered content.
 
 ## Safety And Approval
 
-`--restructure` must never silently rewrite memory. It routes through the same
+`--metacognize` must never silently rewrite memory. It routes through the same
 candidate parsing, related-memory hints, duplicate/update planning, validation,
 sensitive-content checks, hash writes, index rebuilds, and approval gates already
 used by `save-session`.
 
-`--force` must not combine with `--restructure`. Mechanical clone uses
+`--force` must not combine with `--metacognize`. Mechanical clone uses
 `--force` to overwrite destination files, while restructure mode uses save
 planning to add or update memories. Combining both flags would imply two
 different write models, so the CLI rejects it with a clear error.
 
-`--dry-run --restructure` renders the planned save-session preview without
+`--dry-run --metacognize` renders the planned save-session preview without
 writing files or asking for approval. This gives manual users and agents a way
 to inspect proposed add/update decisions before running the write flow.
 
@@ -109,7 +109,7 @@ Update all places that describe clone-memory behavior:
 Generated agent instructions must say:
 
 - normal `clone-memory` is mechanical
-- `clone-memory --restructure` is proposal-first
+- `clone-memory --metacognize` is proposal-first
 - agents must not add `--accept-all`; they may use it only when the human
   explicitly included it
 - if the CLI reports related memories before writing, the agent reruns with
@@ -119,15 +119,15 @@ Generated agent instructions must say:
 
 Add tests before implementation:
 
-1. `clone-memory --restructure --dry-run` previews add/update plans for the
+1. `clone-memory --metacognize --dry-run` previews add/update plans for the
    target scope and does not create destination files.
-2. Manual `clone-memory --restructure` uses numbered save-session approval and
+2. Manual `clone-memory --metacognize` uses numbered save-session approval and
    writes only selected candidates.
-3. `clone-memory --restructure --accept-all` pauses without writing when related
+3. `clone-memory --metacognize --accept-all` pauses without writing when related
    memories require agent restructuring.
 4. A rerun with explicit `DEPENDS_ON` or `UPDATE` writes through the same
    approval-safe path.
-5. `--force --restructure` is rejected.
+5. `--force --metacognize` is rejected.
 6. Existing mechanical clone tests still pass unchanged.
 
 ## Non-Goals

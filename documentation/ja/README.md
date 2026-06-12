@@ -249,7 +249,7 @@ engram init
 - **ロード上限を設定：** `engram set-load-limit 1..32|status|reset` (エージェント: `/engram set-load-limit status`)
 - **分離プロファイルを管理：** `engram profile status` / `engram profile merge personal company --dry-run` (エージェント: `/engram profile status`)
 - **既存メモリフォルダを再構成：** `engram metacognize --workspace|--global|--all --accept-all` (エージェント: `/engram restructure workspace memory accept all`)
-- **workspace/global メモリを複製：** `engram clone-memory workspace global` / `engram clone-memory global workspace --force` (エージェント: `/engram clone workspace memory to global`) (`--restructure` routes cloned memories through save-session-style approval instead of raw copy.)
+- **workspace/global メモリを複製：** `engram clone-memory workspace global` / `engram clone-memory global workspace --force` (エージェント: `/engram clone workspace memory to global`) (`--metacognize` routes cloned memories through save-session-style approval instead of raw copy.)
 - **整合性の自己診断およびインデックスの整理修復:** `engram verify` / `engram repair` (エージェント: `/engram verify` / `/engram repair`)
 - **矛盾の検出スキャン:** `engram quality-check` (エージェント: `/engram quality-check`)
 
@@ -275,7 +275,7 @@ engram init
 | **既定の保存先を設定** | `engram set-save-target <保存先>` | `/engram set-save-target <保存先>` |
 | **ロード上限を設定** | `engram set-load-limit <件数>` | `/engram set-load-limit <件数>` |
 | **プロファイルを管理** | `engram profile status` / `engram profile merge personal company --dry-run` | `/engram profile status` |
-| **Workspace/Global メモリを複製** | `engram clone-memory workspace global` / `engram clone-memory workspace global --restructure` | `/engram clone workspace memory to global` |
+| **Workspace/Global メモリを複製** | `engram clone-memory workspace global` / `engram clone-memory workspace global --metacognize` | `/engram clone workspace memory to global` |
 | **メモリの同期** | `engram sync` | `/engram sync` |
 | **インデックスの修復復旧** | `engram repair` | `/engram repair` |
 

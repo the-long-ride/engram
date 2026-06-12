@@ -26,7 +26,7 @@ export const HELP_DATA: HelpSection[] = [
       { command: 'engram save [--scope workspace|global|both] [--role role] [text]', alias: 's', purpose: 'Auto-detect rule, workflow, skill, or knowledge memory from text' },
       { command: 'engram save-session [--file transcript.md] [--scope workspace|global|both] [--role role] [--query-level n] [--accept-all] [session-summary]', alias: 'ss', purpose: 'Propose multiple memories from one or more recent sessions before approval or explicit accept-all' },
       { command: 'engram observe [--file session.md] [--propose] [note]', alias: 'o', purpose: 'Capture sanitized raw notes in inbox, then optionally propose memories through save-session' },
-      { command: 'engram take-control [--plan] [--file path] [--dir path] [--include glob] [--exclude glob] [--max-sources n] [--max-chars n] [--all] [--accept-all]', alias: 'tc', purpose: 'Explore existing workspace guidance with agent help, token-light accept-all, and Engram memory writes' },
+      { command: 'engram take-control [--plan] [--file path] [--dir path] [--include glob] [--exclude glob] [--max-sources n] [--max-chars n] [--all] [--accept-all] [--metacognize]', alias: 'tc', purpose: 'Explore existing workspace guidance with agent help, token-light accept-all, optional metacognition, and Engram memory writes' },
       { command: 'engram metacognize --workspace|--global|--all [--accept-all] [--dry-run]', alias: 'mc', purpose: 'Let an agent restructure an existing memory folder through save-session-style candidates and approval' },
       { command: 'engram load [--all] [--dry-run] [query]', alias: 'l', purpose: 'Route, refine, and load the configured compact memory pack, or preview routed file paths with --dry-run' },
       { command: 'engram search [--semantic] <query>', alias: 'f', purpose: 'Search visible indexed memories with lexical or local semantic scoring' },
@@ -53,10 +53,10 @@ export const HELP_DATA: HelpSection[] = [
       { command: 'engram set-save-target workspace|global|both|status', purpose: 'Configure where normal save writes by default' },
       { command: 'engram set-load-limit 1..32|status|reset', alias: 'll', purpose: 'Configure how many related memories normal load returns before --all is needed' },
       { command: 'engram set-rule-variant off|light|balanced|strict|status', alias: 'rv', purpose: 'Tune rule strictness: strict helps lower-tier models stay controlled, while top-tier models often work better with light or balanced so strict wording does not limit their reasoning' },
-      { command: 'engram resolve-conflicts [--dry-run]', alias: 'rc', purpose: 'Preview or resolve Git conflicts in memory files' },
+      { command: 'engram resolve-conflicts [--dry-run] [--metacognize] [--accept-all]', alias: 'rc', purpose: 'Preview or resolve Git conflicts in memory files, then optionally run workspace metacognition' },
       { command: 'engram install-hooks', alias: 'ih', purpose: 'Install local Git hooks for Engram integrity checks' },
       { command: 'engram install-skillset [all|list|target] [--global] [--force]', alias: 'is', purpose: 'Generate workspace or global agent skillset instruction files and slash adapters' },
-      { command: 'engram clone-memory workspace global [--force] [--dry-run] [--restructure] [--accept-all]', alias: 'cm', purpose: 'Clone active memory Markdown between workspace and global scopes; --restructure uses save-session-style approval instead of raw file copy' },
+      { command: 'engram clone-memory workspace global [--force] [--dry-run] [--metacognize] [--accept-all]', alias: 'cm', purpose: 'Clone active memory Markdown between workspace and global scopes; --metacognize uses save-session-style approval instead of raw file copy' },
       { command: 'engram sync', alias: 'sy', purpose: 'Sync global memory with Git remote and refresh enabled live-sync targets' },
     ]
   }

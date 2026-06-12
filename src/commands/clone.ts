@@ -29,9 +29,9 @@ export async function cmdCloneMemory(args: string[], flags: Record<string, any> 
   const targetRoot = ctx.roots[target];
   if (!sourceRoot || !(await exists(sourceRoot))) throw new Error(`${source} memory root not found; run engram init first`);
   if (!targetRoot) throw new Error('global memory is not configured; set ENGRAM_GLOBAL_DIR or run engram init --global-path <path>');
-  if (flags.restructure === true) {
-    if (force) throw new Error('--force cannot be used with --restructure');
-    return cloneMemoryRestructured(ctx, source, target, sourceRoot, targetRoot, flags);
+  if (usesMetacognize(flags)) {
+    if (force) throw new Error('--force cannot be used with --metacognize');
+    return cloneMemoryMetacognized(ctx, source, target, sourceRoot, targetRoot, flags);
   }
   if (!dryRun) await createScope(targetRoot, ctx.config, target, false);
 
@@ -60,7 +60,7 @@ async function activeMemoryFiles(root: string): Promise<string[]> {
     .sort();
 }
 
-async function cloneMemoryRestructured(
+async function cloneMemoryMetacognized(
   ctx: Awaited<ReturnType<typeof getContext>>,
   source: Scope,
   target: Scope,
@@ -77,7 +77,7 @@ async function cloneMemoryRestructured(
     else skipped.push(result);
   }
   const header = [
-    `${flags['dry-run'] === true ? 'Clone memory restructure dry-run' : 'Clone memory restructure'} ${source} -> ${target}`,
+    `${flags['dry-run'] === true ? 'Clone memory metacognize dry-run' : 'Clone memory metacognize'} ${source} -> ${target}`,
     `Source: ${sourceRoot}`,
     `Target: ${targetRoot}`,
     `Candidates: ${candidates.length}`,
@@ -96,9 +96,13 @@ async function cloneMemoryRestructured(
       sourceHashes: candidates.map((candidate) => candidate.hash)
     },
     dryRunLabel: header,
-    acceptAllLabel: 'Accepted all clone-memory restructure candidates (--accept-all).'
+    acceptAllLabel: 'Accepted all clone-memory metacognize candidates (--accept-all).'
   });
   return skipLines ? `${output}\n${skipLines}` : output;
+}
+
+function usesMetacognize(flags: Record<string, any>): boolean {
+  return flags.metacognize === true || flags.restructure === true;
 }
 
 async function cloneCandidateFromMemory(root: string, file: string): Promise<RestructureCandidate | RestructureSkipped> {

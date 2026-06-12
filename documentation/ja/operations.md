@@ -25,7 +25,7 @@
 | 既定の保存先を設定 | `engram set-save-target workspace\|global\|both\|status` |
 | コンパクトロード上限を設定 | `engram set-load-limit 1..32\|status\|reset` |
 | グローバルプロファイルを管理 | `engram profile status\|create\|use\|merge` |
-| workspace/global メモリを複製 | `engram clone-memory workspace global [--restructure]` |
+| workspace/global メモリを複製 | `engram clone-memory workspace global [--metacognize]` |
 
 長時間のセッションにおけるメモリ提案には `save-session` を使用します。短縮形：`ss`。
 現在のセッションだけでなく、アクセス可能な直近 n 件までの人間-エージェントチャットから候補を抽出してほしい場合は、`--query-level <n>` を使用します。自然な表現 `engram ss -a last 50 sessions` は `engram save-session --query-level 50 --accept-all` に正規化されます。
@@ -59,7 +59,7 @@ engram clone-memory workspace global
 engram clone-memory global workspace --force
 ```
 
-(`--restructure` routes cloned memories through save-session-style approval
+(`--metacognize` routes cloned memories through save-session-style approval
 instead of raw copy.)
 
 Use `engram metacognize --workspace|--global|--all` when an AI agent should review an existing memory folder and propose `TYPE/TEXT` restructuring candidates with `UPDATE` or `DEPENDS_ON`; natural wording such as `engram restructure workspace memory accept all` maps to this command.

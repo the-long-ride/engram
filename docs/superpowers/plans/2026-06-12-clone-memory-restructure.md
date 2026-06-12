@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add `engram clone-memory --restructure` so workspace/global memory promotion can use save-session-style approval, related-memory hints, and agent restructuring.
+**Goal:** Add `engram clone-memory --metacognize` so workspace/global memory promotion can use save-session-style approval, related-memory hints, and agent restructuring.
 
 **Architecture:** Keep mechanical clone behavior unchanged in `src/commands/clone.ts`. Add an opt-in restructure branch that turns verified source memories into save-session candidates and delegates all preview, approval, accept-all, validation, and writes to a shared helper exported from `src/commands/write.ts`.
 
@@ -12,16 +12,16 @@
 
 ## File Structure
 
-- Modify `src/commands/clone.ts`: parse `--restructure`, reject incompatible flags, collect verified source memory candidates, and call the shared save-session helper for target scope writes.
+- Modify `src/commands/clone.ts`: parse `--metacognize`, reject incompatible flags, collect verified source memory candidates, and call the shared save-session helper for target scope writes.
 - Modify `src/commands/write.ts`: export a helper that runs the existing save-session plan/approval/write flow for supplied candidate text and caller-selected scopes.
-- Modify `src/cli/args.ts`: recognize `--restructure` as a boolean flag and preserve natural clone normalization.
+- Modify `src/cli/args.ts`: recognize `--metacognize` as a boolean flag and preserve natural clone normalization.
 - Modify `src/core/cli/command-registry.ts`: advertise the new flag in compact help.
 - Modify `src/core/cli/help-topics.ts`: document restructure behavior, dry-run, accept-all, and force incompatibility.
-- Modify `src/core/cli/completion.ts`: add `--restructure` to clone-memory completions.
+- Modify `src/core/cli/completion.ts`: add `--metacognize` to clone-memory completions.
 - Modify `src/core/integrations/skillset-render.ts`: teach generated agent instructions the proposal-first clone mode.
 - Modify `README.md`, `docs/SKILLSET_CONTRACT.md`, `docs/AGENT_INTEGRATIONS.md`, and localized operation/README clone-memory entries that already mention clone-memory.
 - Modify `tests/cli.test.mjs`: add CLI behavior coverage.
-- Modify `tests/core.test.mjs`: add parser/normalization coverage for `--restructure`.
+- Modify `tests/core.test.mjs`: add parser/normalization coverage for `--metacognize`.
 
 ---
 
@@ -36,13 +36,13 @@
 In `tests/core.test.mjs`, extend the existing clone-memory parse assertions near the current `cloneMemory` test:
 
 ```js
-  const cloneRestructure = parseArgs(['clone-memory', 'workspace', 'global', '--restructure', '--dry-run']);
+  const cloneRestructure = parseArgs(['clone-memory', 'workspace', 'global', '--metacognize', '--dry-run']);
   assert.equal(cloneRestructure.command, 'clone-memory');
   assert.equal(cloneRestructure.flags.restructure, true);
   assert.equal(cloneRestructure.flags['dry-run'], true);
   assert.deepEqual(cloneRestructure.rest, ['workspace', 'global']);
 
-  const cloneNaturalRestructure = parseArgs(['clone', 'workspace', 'memory', 'to', 'global', '--restructure']);
+  const cloneNaturalRestructure = parseArgs(['clone', 'workspace', 'memory', 'to', 'global', '--metacognize']);
   assert.equal(cloneNaturalRestructure.command, 'clone-memory');
   assert.equal(cloneNaturalRestructure.flags.restructure, true);
   assert.deepEqual(cloneNaturalRestructure.rest, ['workspace', 'global']);
@@ -53,16 +53,16 @@ In `tests/core.test.mjs`, extend the existing clone-memory parse assertions near
 In `tests/cli.test.mjs`, extend existing help assertions:
 
 ```js
-  assert.match((await runEngram(cwd, env, ['help', 'clone-memory'])).stdout, /--restructure/);
+  assert.match((await runEngram(cwd, env, ['help', 'clone-memory'])).stdout, /--metacognize/);
   assert.match((await runEngram(cwd, env, ['help', 'clone-memory'])).stdout, /proposal-first/);
 ```
 
 Extend the existing completion assertions for clone-memory:
 
 ```js
-  assert.match(bash.stdout, /--restructure/);
-  assert.match(zsh.stdout, /--restructure/);
-  assert.match(powershell.stdout, /--restructure/);
+  assert.match(bash.stdout, /--metacognize/);
+  assert.match(zsh.stdout, /--metacognize/);
+  assert.match(powershell.stdout, /--metacognize/);
 ```
 
 - [ ] **Step 3: Run tests and verify they fail for missing flag/help**
@@ -108,7 +108,7 @@ const booleanFlags = new Set([
 In `src/core/cli/command-registry.ts`, update the clone-memory row to include the new flag:
 
 ```ts
-{ command: 'engram clone-memory workspace global [--force] [--dry-run] [--restructure]', alias: 'cm', purpose: 'Clone active memory Markdown between workspace and global scopes; --restructure uses save-session-style approval instead of raw file copy' },
+{ command: 'engram clone-memory workspace global [--force] [--dry-run] [--metacognize]', alias: 'cm', purpose: 'Clone active memory Markdown between workspace and global scopes; --metacognize uses save-session-style approval instead of raw file copy' },
 ```
 
 - [ ] **Step 3: Update detailed clone-memory help**
@@ -116,12 +116,12 @@ In `src/core/cli/command-registry.ts`, update the clone-memory row to include th
 In `src/core/cli/help-topics.ts`, update the `clone-memory` topic examples and notes to include:
 
 ```ts
-'engram clone-memory workspace global --restructure',
-'engram clone-memory workspace global --restructure --dry-run',
-'engram clone-memory workspace global --restructure --accept-all',
+'engram clone-memory workspace global --metacognize',
+'engram clone-memory workspace global --metacognize --dry-run',
+'engram clone-memory workspace global --metacognize --accept-all',
 ```
 
-Add notes that normal clone is mechanical, restructure is proposal-first, `--force` is invalid with `--restructure`, and agents may use `--accept-all` only when the human supplied it.
+Add notes that normal clone is mechanical, restructure is proposal-first, `--force` is invalid with `--metacognize`, and agents may use `--accept-all` only when the human supplied it.
 
 - [ ] **Step 4: Update shell completion arguments**
 
@@ -134,7 +134,7 @@ const cloneMemoryArgs = ['workspace', 'global', '--force', '--dry-run'].join(' '
 to:
 
 ```ts
-const cloneMemoryArgs = ['workspace', 'global', '--force', '--dry-run', '--restructure', '--accept-all'].join(' ');
+const cloneMemoryArgs = ['workspace', 'global', '--force', '--dry-run', '--metacognize', '--accept-all'].join(' ');
 ```
 
 - [ ] **Step 5: Run parser/help tests and verify Task 1 passes as far as metadata**
@@ -174,7 +174,7 @@ test('clone-memory restructure dry-run previews target save plans without writin
   assert.equal(saved.code, 0, saved.stderr);
 
   const globalFile = path.join(env.ENGRAM_GLOBAL_DIR, 'knowledge', 'workspace-restructure-source-memory.md');
-  const preview = await runEngram(cwd, env, ['clone-memory', 'workspace', 'global', '--restructure', '--dry-run']);
+  const preview = await runEngram(cwd, env, ['clone-memory', 'workspace', 'global', '--metacognize', '--dry-run']);
   assert.equal(preview.code, 0, preview.stderr);
   assert.match(preview.stdout, /Clone memory restructure dry-run workspace -> global/);
   assert.match(preview.stdout, /Candidate: 1/);
@@ -195,7 +195,7 @@ test('clone-memory restructure uses numbered approval and writes selected candid
   await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Workspace selected clone memory'], 'A\n');
   await runEngram(cwd, env, ['save', 'rule', '--scope', 'workspace', 'Workspace skipped clone memory'], 'A\n');
 
-  const selected = await runEngram(cwd, env, ['clone-memory', 'workspace', 'global', '--restructure'], 'A 1\n');
+  const selected = await runEngram(cwd, env, ['clone-memory', 'workspace', 'global', '--metacognize'], 'A 1\n');
   assert.equal(selected.code, 0, selected.stderr);
   assert.match(selected.stdout, /Saved ->/);
   assert.match(await readFile(path.join(env.ENGRAM_GLOBAL_DIR, 'knowledge', 'workspace-selected-clone-memory.md'), 'utf8'), /scope: global/);
@@ -213,7 +213,7 @@ test('clone-memory restructure accept-all pauses when related memories need agen
   await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'global', 'Release foundation checklist lives in docs release md'], 'A\n');
   await runEngram(cwd, env, ['save', 'rule', '--scope', 'workspace', 'OAuth rotation must follow the release foundation checklist'], 'A\n');
 
-  const paused = await runEngram(cwd, env, ['clone-memory', 'workspace', 'global', '--restructure', '--accept-all']);
+  const paused = await runEngram(cwd, env, ['clone-memory', 'workspace', 'global', '--metacognize', '--accept-all']);
   assert.equal(paused.code, 0, paused.stderr);
   assert.match(paused.stdout, /Accepted all save-session candidates \("--accept-all"\)|Accepted all save-session candidates \(\-\-accept-all\)/);
   assert.match(paused.stdout, /found related memories before writing/);
@@ -229,9 +229,9 @@ test('clone-memory restructure accept-all pauses when related memories need agen
 test('clone-memory rejects force with restructure', async () => {
   const { cwd, env } = await tempWorkspace('engram-clone-restructure-');
   await runEngram(cwd, env, ['init', '--no-skillset']);
-  const result = await runEngram(cwd, env, ['clone-memory', 'workspace', 'global', '--restructure', '--force']);
+  const result = await runEngram(cwd, env, ['clone-memory', 'workspace', 'global', '--metacognize', '--force']);
   assert.equal(result.code, 1);
-  assert.match(result.stderr, /--force cannot be used with --restructure/);
+  assert.match(result.stderr, /--force cannot be used with --metacognize/);
   await rm(cwd, { recursive: true, force: true });
 });
 ```
@@ -245,7 +245,7 @@ npm run build
 node --test tests/cli.test.mjs
 ```
 
-Expected: failures show `--restructure` currently falls through to mechanical clone or missing behavior.
+Expected: failures show `--metacognize` currently falls through to mechanical clone or missing behavior.
 
 ---
 
@@ -340,7 +340,7 @@ Inside `cmdCloneMemory`, after `sourceRoot` and `targetRoot` validation, add:
 
 ```ts
   if (flags.restructure === true) {
-    if (flags.force === true) throw new Error('--force cannot be used with --restructure');
+    if (flags.force === true) throw new Error('--force cannot be used with --metacognize');
     return cloneMemoryRestructured(ctx, source, target, sourceRoot, targetRoot, flags);
   }
 ```
@@ -481,13 +481,13 @@ git commit -m "feat(clone): add restructure mode"
 In `src/core/integrations/skillset-render.ts`, update clone-memory mentions so agents know:
 
 ```md
-Use `engram clone-memory workspace global` or `engram clone-memory global workspace` for mechanical approved-memory copies. Use `--restructure` when the human wants clone candidates routed through save-session-style approval; never add `--accept-all` unless the human included it.
+Use `engram clone-memory workspace global` or `engram clone-memory global workspace` for mechanical approved-memory copies. Use `--metacognize` when the human wants clone candidates routed through save-session-style approval; never add `--accept-all` unless the human included it.
 ```
 
 Add a sentence to the long slash guidance:
 
 ```md
-If args start with "clone-memory" and include "--restructure --accept-all", run the CLI and, if related memories are reported before writing, generate a restructured candidate set and rerun with DEPENDS_ON or UPDATE exactly like save-session accept-all.
+If args start with "clone-memory" and include "--metacognize --accept-all", run the CLI and, if related memories are reported before writing, generate a restructured candidate set and rerun with DEPENDS_ON or UPDATE exactly like save-session accept-all.
 ```
 
 - [ ] **Step 2: Update skillset contract**
@@ -495,17 +495,17 @@ If args start with "clone-memory" and include "--restructure --accept-all", run 
 In `docs/SKILLSET_CONTRACT.md`, update the required behavior and CLI table:
 
 ```md
-- Treat `engram clone-memory --restructure` as a proposal-first clone flow. It converts verified source memories into save-session candidates for the target scope and uses the same approval and accept-all restructuring rules as save-session.
+- Treat `engram clone-memory --metacognize` as a proposal-first clone flow. It converts verified source memories into save-session candidates for the target scope and uses the same approval and accept-all restructuring rules as save-session.
 ```
 
-Update the clone-memory CLI row to include `[--restructure] [--accept-all]` and the force incompatibility.
+Update the clone-memory CLI row to include `[--metacognize] [--accept-all]` and the force incompatibility.
 
 - [ ] **Step 3: Update agent integrations**
 
 In `docs/AGENT_INTEGRATIONS.md`, expand the clone-memory section:
 
 ```md
-For restructuring, normalize "clone workspace memory to global and restructure" to `engram clone-memory workspace global --restructure`. Do not add `--accept-all` unless the human said it. If accept-all reports related memories before writing, rerun with `DEPENDS_ON` or `UPDATE` candidates.
+For restructuring, normalize "clone workspace memory to global and restructure" to `engram clone-memory workspace global --metacognize`. Do not add `--accept-all` unless the human said it. If accept-all reports related memories before writing, rerun with `DEPENDS_ON` or `UPDATE` candidates.
 ```
 
 - [ ] **Step 4: Update README clone-memory summary**
@@ -513,7 +513,7 @@ For restructuring, normalize "clone workspace memory to global and restructure" 
 In `README.md`, update the clone bullet and command table to include:
 
 ```md
-Use `--restructure` to route cloned memories through the save-session approval and related-memory hint flow instead of raw file copy.
+Use `--metacognize` to route cloned memories through the save-session approval and related-memory hint flow instead of raw file copy.
 ```
 
 - [ ] **Step 5: Run docs-sensitive tests**
@@ -564,17 +564,17 @@ Expected: list of operation and README files that already mention clone-memory.
 In `documentation/en/operations.md`, add:
 
 ```md
-Add `--restructure` when you want cloned memories proposed through the save-session approval flow instead of copied verbatim.
+Add `--metacognize` when you want cloned memories proposed through the save-session approval flow instead of copied verbatim.
 ```
 
-In `documentation/en/README.md`, update the clone-memory command cell to include `--restructure`.
+In `documentation/en/README.md`, update the clone-memory command cell to include `--metacognize`.
 
 - [ ] **Step 3: Update non-English docs conservatively**
 
 For each non-English localized file, append an English parenthetical if no translator is available:
 
 ```md
-(`--restructure` routes cloned memories through save-session-style approval instead of raw copy.)
+(`--metacognize` routes cloned memories through save-session-style approval instead of raw copy.)
 ```
 
 This avoids incorrect machine translation while preserving feature discoverability.
@@ -584,7 +584,7 @@ This avoids incorrect machine translation while preserving feature discoverabili
 Run:
 
 ```sh
-rg -n -- "--restructure" README.md docs documentation src/core
+rg -n -- "--metacognize" README.md docs documentation src/core
 ```
 
 Expected: clone-memory restructure appears in main README, contract, integrations, help, generated skillset, and localized docs.
@@ -639,7 +639,7 @@ Expected: clean worktree except intentional uncommitted changes if the user requ
 If this feature establishes a durable workflow rule, propose:
 
 ```sh
-engram save knowledge "clone-memory --restructure routes verified workspace/global memory copies through save-session-style approval and related-memory restructuring."
+engram save knowledge "clone-memory --metacognize routes verified workspace/global memory copies through save-session-style approval and related-memory restructuring."
 ```
 
 Do not save it without the normal approval flow unless the human explicitly requests accept-all.

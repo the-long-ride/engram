@@ -169,7 +169,9 @@ file, and `open-code` maps to `opencode`. The old `antigravity` and
    /engram observe --file session.md
    /engram take-control
    /engram take control accept all
+   /engram take control accept all metacognize
    /engram restructure workspace memory accept all
+   /engram resolve conflicts and metacognize
    /engram ss -a
    /engram ss -a last 50 sessions
    /engram save-session --accept-all
@@ -206,7 +208,9 @@ file, and `open-code` maps to `opencode`. The old `antigravity` and
   wording, keep the source pack token-light, generate only concise
   `TYPE: ... | TEXT: ...` candidates, pass them to the CLI, and let Engram save
   them without a second approval prompt. The adapter should not paste source
-  excerpts or reasoning back into chat.
+  excerpts or reasoning back into chat. If the human also says `metacognize` or
+  passes `--metacognize`, rerun with `UPDATE` or `DEPENDS_ON` when Engram
+  reports related memories before writing.
   For `/engram save-session`, `/engram ss`, legacy `/engram autosave`, or natural `/engram auto save` without a file or inline
   candidates, the slash adapter should use the LLM to define concise candidates
   from the current AI agent chat/session, then pass `TYPE: ... | TEXT: ...`
@@ -248,8 +252,11 @@ file, and `open-code` maps to `opencode`. The old `antigravity` and
    `engram take-control --dry-run` to inspect the source pack first, repeated
    `--file`, `--dir`, and `--include` selectors to combine sources, plus
    `--exclude`, `--max-sources`, and `--max-chars` to keep scans token-safe.
-   `--accept-all` uses smaller token-light source defaults unless explicit
-   `--max-sources` or `--max-chars` values are provided.
+  `--accept-all` uses smaller token-light source defaults unless explicit
+  `--max-sources` or `--max-chars` values are provided.
+  Add `--metacognize` when the human wants take-control accept-all to pause on
+  related-memory hints so the agent can rerun with `UPDATE` or `DEPENDS_ON`
+  before any file is written.
   Saved take-control memories record `source_files` and `source_hashes`
   frontmatter. Later scans skip unchanged imported sources, while an explicit
   `--file` import still lets the human force a specific source back through the
@@ -290,10 +297,16 @@ Agents may normalize natural clone requests into `engram clone-memory`, for
 example "clone workspace memory to global" -> `engram clone-memory workspace
 global`. Reverse the scopes to copy global memory into a workspace; use
 `--force` only when the human explicitly asks to overwrite destination copies.
-For restructuring, normalize "clone workspace memory to global and restructure"
-to `engram clone-memory workspace global --restructure`. Do not add
+For metacognition, normalize "clone workspace memory to global and metacognize"
+to `engram clone-memory workspace global --metacognize`. Do not add
 `--accept-all` unless the human said it. If accept-all reports related memories
 before writing, rerun with `DEPENDS_ON` or `UPDATE` candidates.
+
+Agents may normalize natural conflict requests into `engram resolve-conflicts`,
+for example "resolve conflicts and metacognize" ->
+`engram resolve-conflicts --metacognize`. Run the CLI so conflict handling stays
+scoped to Engram-owned memory files, then use the appended metacognize pack for
+concise `TYPE/TEXT` candidates.
 
 Agents may normalize natural metacognition requests into `engram metacognize`,
 for example "restructure workspace memory" -> `engram metacognize --workspace`
@@ -344,7 +357,11 @@ proposal-only. The counted shortcut `/engram ss -a last 50 sessions` should use
 workspace source discovery plus human-visible approval. Slash adapters normalize
 `/engram auto save` to `engram save-session` and `/engram take control accept all`
 to `engram take-control --accept-all`; normalize `/engram restructure workspace
-memory accept all` to `engram metacognize --workspace --accept-all`.
+memory accept all` to `engram metacognize --workspace --accept-all`,
+`/engram take control accept all metacognize` to
+`engram take-control --accept-all --metacognize`, and
+`/engram resolve conflicts and metacognize` to
+`engram resolve-conflicts --metacognize`.
 `/engram observe`, `/engram archive`, and `/engram benchmark` should use the CLI
 flow. `engram load` is graph-aware automatically because it reads the derived
 `memory.graph.json` when graph routing is enabled, includes declared

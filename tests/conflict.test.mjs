@@ -23,6 +23,22 @@ test('resolve-conflicts writes and stages only workspace memory files', async ()
   await rm(cwd, { recursive: true, force: true });
 });
 
+test('resolve-conflicts can append a metacognize source pack for agent restructuring', async () => {
+  const { cwd, env } = await tempWorkspace('engram-conflict-metacognize-');
+  initGit(cwd);
+  await runEngram(cwd, env, ['init', '--no-skillset']);
+  const memoryFile = path.join(workspaceMemoryRoot(cwd), 'rules', 'merge-rule.md');
+  await writeFile(memoryFile, conflictMemory());
+
+  const result = await runEngram(cwd, env, ['resolve', 'conflicts', 'and', 'metacognize', '--dry-run']);
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /Conflict dry-run/);
+  assert.match(result.stdout, /Metacognize workspace memory/);
+  assert.match(result.stdout, /Source pack:/);
+  assert.match(await readFile(memoryFile, 'utf8'), /<<<<<<< ours/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
 function conflictMemory() {
   return `---
 id: merge-rule

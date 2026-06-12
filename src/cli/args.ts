@@ -5,18 +5,23 @@ export type ParsedArgs = { command: string; rest: string[]; flags: Record<string
 const booleanFlags = new Set([
   'accept-all', 'all', 'auto', 'dry-run', 'force', 'h', 'help',
   'global', 'global-only', 'global-skillsets-only', 'latest', 'low-confidence', 'memory-only', 'no-auto-upgrade', 'no-global', 'no-skillset',
-  'no-submodule', 'no-version-check', 'plan', 'propose', 'rebuild', 'restructure', 'self', 'semantic', 'stale',
+  'no-submodule', 'no-version-check', 'plan', 'propose', 'rebuild', 'metacognize', 'restructure', 'self', 'semantic', 'stale',
   'submodule', 'use', 'user', 'v', 'version', 'workspace'
 ]);
 const saveSessionCommands = new Set(['save-session', 'ss']);
 const takeControlCommands = new Set(['take-control', 'tc']);
 const metacognizeCommands = new Set(['metacognize', 'mc']);
-const acceptAllCommands = new Set([...saveSessionCommands, ...takeControlCommands, ...metacognizeCommands]);
+const cloneMemoryCommands = new Set(['clone-memory', 'cm']);
+const resolveConflictCommands = new Set(['resolve-conflicts', 'rc']);
+const acceptAllCommands = new Set([...saveSessionCommands, ...takeControlCommands, ...metacognizeCommands, ...resolveConflictCommands]);
 const repeatableFlags = new Set(['dir', 'exclude', 'file', 'include']);
 const recentSessionWords = new Set(['session', 'sessions', 'chat', 'chats', 'conversation', 'conversations']);
 const recentSessionPrefixes = new Set(['last', 'latest', 'past', 'previous', 'recent']);
 const cloneMemoryVerbs = new Set(['clone', 'copy']);
 const metacognizeVerbs = new Set(['metacognize', 'metacognition', 'restructure', 'reorganize', 'organize']);
+const metacognizeOptionCommands = new Set([...cloneMemoryCommands, ...takeControlCommands, ...resolveConflictCommands]);
+const metacognizeOptionWords = new Set(['metacognize', 'metacognition', 'restructure', 'reorganize', 'organize']);
+const naturalOptionFillers = new Set(['and', 'then', 'with', 'using', 'use', 'agent', 'ai']);
 const metacognizeFillers = new Set(['engram', 'memory', 'memories', 'folder', 'folders', 'bank', 'store', 'root', 'the', 'my']);
 const globalFolderVerbs = new Set(['change', 'move', 'rename', 'set', 'update']);
 const globalFolderNouns = new Set(['dir', 'directory', 'folder', 'path', 'root']);
@@ -29,7 +34,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
   const flags: Record<string, FlagValue> = {};
   for (let i = 0; i < tokens.length; i += 1) {
     const token = tokens[i];
-    if (token === '-a' && (saveSessionCommands.has(command) || metacognizeCommands.has(command))) flags['accept-all'] = true;
+    if (token === '-a' && acceptAllCommands.has(command)) flags['accept-all'] = true;
     else if (!token.startsWith('--')) rest.push(token);
     else if (token.includes('=')) {
       const [name, ...valueParts] = token.slice(2).split('=');
@@ -100,10 +105,10 @@ function normalizeNaturalArgs(argv: string[]): string[] {
   const metacognizeArgs = normalizeNaturalMetacognize(argv);
   const cloneMemoryArgs = normalizeNaturalCloneMemory(metacognizeArgs);
   const globalFolderArgs = normalizeNaturalGlobalFolder(cloneMemoryArgs);
-  const commandArgs = globalFolderArgs[0]?.toLowerCase() === 'take' && globalFolderArgs[1]?.toLowerCase() === 'control'
-    ? ['take-control', ...globalFolderArgs.slice(2)]
-    : globalFolderArgs;
-  return normalizeSaveSessionQueryLevel(normalizeAcceptAll(normalizeInstallSkillset(commandArgs)));
+  const resolveConflictArgs = normalizeNaturalResolveConflicts(globalFolderArgs);
+  const takeControlArgs = normalizeNaturalTakeControl(resolveConflictArgs);
+  const optionArgs = normalizeNaturalCommandOptions(takeControlArgs);
+  return normalizeSaveSessionQueryLevel(normalizeAcceptAll(normalizeInstallSkillset(optionArgs)));
 }
 
 function normalizeInstallSkillset(argv: string[]): string[] {
@@ -115,13 +120,26 @@ function normalizeInstallSkillset(argv: string[]): string[] {
 function normalizeNaturalCloneMemory(argv: string[]): string[] {
   const [verb = '', ...tokens] = argv;
   if (!cloneMemoryVerbs.has(verb.toLowerCase())) return argv;
-  const flags = tokens.filter((token) => token.startsWith('-'));
+  const flags = naturalOptionTokens(tokens);
   const scopes = tokens
     .filter((token) => !token.startsWith('-'))
     .map((token) => token.toLowerCase())
     .filter((token) => token === 'workspace' || token === 'global');
   if (scopes.length < 2 || scopes[0] === scopes[1]) return argv;
   return ['clone-memory', scopes[0], scopes[1], ...flags];
+}
+
+function normalizeNaturalResolveConflicts(argv: string[]): string[] {
+  const [verb = '', first = '', ...tokens] = argv;
+  if (verb.toLowerCase() !== 'resolve' || !['conflict', 'conflicts'].includes(first.toLowerCase())) return argv;
+  return ['resolve-conflicts', ...tokens.filter((token) => token.toLowerCase() !== 'and')];
+}
+
+function normalizeNaturalTakeControl(argv: string[]): string[] {
+  const [verb = '', noun = '', ...tokens] = argv;
+  return verb.toLowerCase() === 'take' && noun.toLowerCase() === 'control'
+    ? ['take-control', ...tokens]
+    : argv;
 }
 
 function normalizeNaturalMetacognize(argv: string[]): string[] {
@@ -150,6 +168,44 @@ function normalizeMetacognizeTokens(tokens: string[]): string[] {
     else if (token.startsWith('-') || !metacognizeFillers.has(lower)) normalized.push(token);
   }
   return normalized;
+}
+
+function normalizeNaturalCommandOptions(argv: string[]): string[] {
+  const [command = 'help', ...tokens] = argv;
+  if (!metacognizeOptionCommands.has(command)) return argv;
+  const normalized = [command];
+  for (let i = 0; i < tokens.length; i += 1) {
+    const token = tokens[i];
+    const lower = token.toLowerCase();
+    if (looksLikeCandidateToken(token)) {
+      normalized.push(...tokens.slice(i));
+      break;
+    }
+    if (lower === 'accept-all') normalized.push('--accept-all');
+    else if (lower === 'accept' && tokens[i + 1]?.toLowerCase() === 'all') {
+      normalized.push('--accept-all');
+      i += 1;
+    }
+    else if (metacognizeOptionWords.has(lower)) normalized.push('--metacognize');
+    else if (token.startsWith('-') || !naturalOptionFillers.has(lower)) normalized.push(token);
+  }
+  return normalized;
+}
+
+function naturalOptionTokens(tokens: string[]): string[] {
+  const out: string[] = [];
+  for (let i = 0; i < tokens.length; i += 1) {
+    const token = tokens[i];
+    const lower = token.toLowerCase();
+    if (token.startsWith('-')) out.push(token);
+    else if (lower === 'accept-all') out.push('--accept-all');
+    else if (lower === 'accept' && tokens[i + 1]?.toLowerCase() === 'all') {
+      out.push('--accept-all');
+      i += 1;
+    }
+    else if (metacognizeOptionWords.has(lower)) out.push('--metacognize');
+  }
+  return out;
 }
 
 function looksLikeCandidateToken(token: string): boolean {

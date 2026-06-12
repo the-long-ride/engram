@@ -25,7 +25,7 @@ Trang này chứa thông tin chi tiết về cách sử dụng để tệp READM
 | Đặt đích lưu mặc định | `engram set-save-target workspace\|global\|both\|status` |
 | Đặt giới hạn tải gọn | `engram set-load-limit 1..32\|status\|reset` |
 | Quản lý profile global | `engram profile status\|create\|use\|merge` |
-| Sao chép bộ nhớ workspace/global | `engram clone-memory workspace global [--restructure]` |
+| Sao chép bộ nhớ workspace/global | `engram clone-memory workspace global [--metacognize]` |
 
 Sử dụng lệnh `save-session` cho các đề xuất bộ nhớ từ các phiên làm việc dài. Dạng viết tắt: `ss`.
 Sử dụng `--query-level <n>` khi con người muốn tác nhân AI khai thác tối đa n phiên chat người-tác nhân gần đây có thể truy cập, thay vì chỉ phiên hiện tại. Cách nói tự nhiên `engram ss -a last 50 sessions` được chuẩn hóa thành `engram save-session --query-level 50 --accept-all`.
@@ -59,7 +59,7 @@ engram clone-memory workspace global
 engram clone-memory global workspace --force
 ```
 
-(`--restructure` routes cloned memories through save-session-style approval
+(`--metacognize` routes cloned memories through save-session-style approval
 instead of raw copy.)
 
 Use `engram metacognize --workspace|--global|--all` when an AI agent should review an existing memory folder and propose `TYPE/TEXT` restructuring candidates with `UPDATE` or `DEPENDS_ON`; natural wording such as `engram restructure workspace memory accept all` maps to this command.

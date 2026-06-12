@@ -14,11 +14,12 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
   const ignoreActions = ['status', 'check', 'add'].join(' ');
   const saveSessionArgs = ['--file', '--scope', '--profile', '--role', '--roles', '--query-level', '--accept-all'].join(' ');
   const observeArgs = ['--file', '--scope', '--profile', '--role', '--roles', '--propose', '--accept-all'].join(' ');
-  const takeControlArgs = ['--file', '--dir', '--include', '--exclude', '--max-sources', '--max-chars', '--scope', '--profile', '--role', '--roles', '--all', '--accept-all', '--dry-run', '--plan'].join(' ');
+  const takeControlArgs = ['--file', '--dir', '--include', '--exclude', '--max-sources', '--max-chars', '--scope', '--profile', '--role', '--roles', '--all', '--accept-all', '--metacognize', '--dry-run', '--plan'].join(' ');
   const metacognizeArgs = ['--workspace', '--global', '--all', '--accept-all', '--dry-run'].join(' ');
+  const resolveConflictArgs = ['--dry-run', '--metacognize', '--accept-all'].join(' ');
   const upgradeArgs = ['--plan', '--latest', '--self', '--memory-only', '--global-skillsets-only', '--target', '--force', '--no-version-check', '--no-auto-upgrade'].join(' ');
   const globalFolderArgs = ['--move-from-path'].join(' ');
-  const cloneMemoryArgs = ['workspace', 'global', '--force', '--dry-run', '--restructure', '--accept-all'].join(' ');
+  const cloneMemoryArgs = ['workspace', 'global', '--force', '--dry-run', '--metacognize', '--accept-all'].join(' ');
   const skillsetTargets = [
     'all', 'list', 'agents-md', 'codex', 'copilot', 'claude', 'cursor',
     'gemini', 'cline', 'windsurf',
@@ -55,9 +56,9 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '      ;;',
       '    observe|o)',
       `      _arguments "--file[read raw note file]:file:_files" "--scope[write scope]:scope:(${scopes})" "--profile[run with profile]:profile:" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "--propose[mine inbox note through save-session]" "--accept-all[accept every proposed candidate]" "1:note: "`,
-      '      ;;',
-      '    take-control|tc)',
-      `      _arguments "--file[read one source file]:file:_files" "--dir[scan one source directory]:dir:_files -/" "--include[include matching glob]:glob:" "--exclude[exclude matching glob]:glob:" "--max-sources[maximum source count]:number:" "--max-chars[maximum chars per source]:number:" "--scope[write scope]:scope:(${scopes})" "--profile[run with profile]:profile:" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "--all[include README docs and library docs]" "--accept-all[accept every generated candidate]" "--dry-run[show source pack only]" "--plan[preview source plan only]"`,
+    '      ;;',
+    '    take-control|tc)',
+      `      _arguments "--file[read one source file]:file:_files" "--dir[scan one source directory]:dir:_files -/" "--include[include matching glob]:glob:" "--exclude[exclude matching glob]:glob:" "--max-sources[maximum source count]:number:" "--max-chars[maximum chars per source]:number:" "--scope[write scope]:scope:(${scopes})" "--profile[run with profile]:profile:" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "--all[include README docs and library docs]" "--accept-all[accept every generated candidate]" "--metacognize[pause accept-all writes for related-memory restructuring]" "--dry-run[show source pack only]" "--plan[preview source plan only]"`,
       '      ;;',
       '    metacognize|mc)',
       '      _arguments "--workspace[restructure workspace memory]" "--global[restructure global memory]" "--all[restructure workspace and global memory]" "--accept-all[accept every generated restructure candidate when human requested]" "--dry-run[show source pack or candidate preview without writing]"',
@@ -94,15 +95,15 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '      ;;',
       '    set-load-limit|ll)',
       `      _arguments "1:limit:(${loadLimits})"`,
-      '      ;;',
-      '    resolve-conflicts|rc)',
-      '      _arguments "--dry-run"',
+    '      ;;',
+    '    resolve-conflicts|rc)',
+      '      _arguments "--dry-run[preview conflicts]" "--metacognize[run workspace metacognition after conflict handling]" "--accept-all[accept generated metacognize candidates when human requested]"',
       '      ;;',
       '    install-skillset|is)',
       `      _arguments "--global" "--force" "1:target:(${skillsetTargets})"`,
-      '      ;;',
-      '    clone-memory|cm)',
-      '      _arguments "--force[overwrite existing destination files]" "--dry-run[preview clone or proposal plan]" "--restructure[route clone candidates through save-session approval]" "--accept-all[accept every restructure candidate when human requested]" "1:source:(workspace global)" "2:target:(workspace global)"',
+    '      ;;',
+    '    clone-memory|cm)',
+      '      _arguments "--force[overwrite existing destination files]" "--dry-run[preview clone or proposal plan]" "--metacognize[route clone candidates through save-session approval]" "--accept-all[accept every metacognize candidate when human requested]" "1:source:(workspace global)" "2:target:(workspace global)"',
       '      ;;',
       '    upgrade|up)',
       `      _arguments "--plan" "--latest" "--self" "--memory-only" "--global-skillsets-only" "--target=[agent]:agent:(${skillsetTargets})" "--force" "--no-version-check"`,
@@ -123,6 +124,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       `$engramObserveArgs = @(${observeArgs.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
       `$engramTakeControlArgs = @(${takeControlArgs.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
       `$engramMetacognizeArgs = @(${metacognizeArgs.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
+      `$engramResolveConflictArgs = @(${resolveConflictArgs.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
       `$engramUpgradeArgs = @(${upgradeArgs.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
       `$engramGlobalFolderArgs = @(${globalFolderArgs.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
       `$engramCloneMemoryArgs = @(${cloneMemoryArgs.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
@@ -159,6 +161,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '        { $_ -in @(\'observe\', \'o\') } { $engramObserveArgs; break }',
       '        { $_ -in @(\'take-control\', \'tc\') } { $engramTakeControlArgs; break }',
       '        { $_ -in @(\'metacognize\', \'mc\') } { $engramMetacognizeArgs; break }',
+      '        { $_ -in @(\'resolve-conflicts\', \'rc\') } { $engramResolveConflictArgs; break }',
       '        { $_ -in @(\'update-global-folder\', \'ugf\') } { $engramGlobalFolderArgs; break }',
       '        { $_ -in @(\'clone-memory\', \'cm\') } { $engramCloneMemoryArgs; break }',
       '        { $_ -in @(\'install-skillset\', \'is\') } { $engramSkillsetTargets + \'--global\' + \'--force\'; break }',
@@ -200,6 +203,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
     `  local ignore_actions="${ignoreActions}"`,
     `  local upgrade_args="${upgradeArgs}"`,
     `  local metacognize_args="${metacognizeArgs}"`,
+    `  local resolve_conflict_args="${resolveConflictArgs}"`,
     `  local global_folder_args="${globalFolderArgs}"`,
     `  local clone_memory_args="${cloneMemoryArgs}"`,
     `  local skillset_targets="${skillsetTargets}"`,
@@ -274,7 +278,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '      return',
       '      ;;',
     '    take-control|tc)',
-    '      COMPREPLY=( $(compgen -W "--file --dir --include --exclude --max-sources --max-chars --scope --profile --role --roles --all --accept-all --dry-run --plan" -- "$cur") )',
+    '      COMPREPLY=( $(compgen -W "--file --dir --include --exclude --max-sources --max-chars --scope --profile --role --roles --all --accept-all --metacognize --dry-run --plan" -- "$cur") )',
     '      return',
     '      ;;',
     '    metacognize|mc)',
@@ -323,7 +327,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
     '      return',
     '      ;;',
     '    resolve-conflicts|rc)',
-    '      COMPREPLY=( $(compgen -W "--dry-run" -- "$cur") )',
+    '      COMPREPLY=( $(compgen -W "$resolve_conflict_args" -- "$cur") )',
     '      return',
     '      ;;',
     '    clone-memory|cm)',

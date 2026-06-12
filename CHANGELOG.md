@@ -2,6 +2,11 @@
 
 ## 0.0.11
 
+- Added `engram metacognize` / `engram mc` for memory restructuring, so
+  save-session, take-control, and clone-memory can reroute related candidates
+  through a separate approval pass.
+- Renamed the clone-memory restructure flag to `--metacognize` and updated the
+  related help, docs, and tests.
 - Bumped package and runtime version to `0.0.11`.
 
 ## 0.0.10

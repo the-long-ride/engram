@@ -248,6 +248,7 @@ Ajustez la rigueur de mise en forme des règles chargées par votre assistant IA
 - **Configurer la cible de sauvegarde :** `engram set-save-target workspace|global|both|status` (Agent : `/engram set-save-target status`)
 - **Configurer la limite de chargement :** `engram set-load-limit 1..32|status|reset` (Agent : `/engram set-load-limit status`)
 - **Gérer les profils isolés :** `engram profile status` / `engram profile merge personal company --dry-run` (Agent : `/engram profile status`)
+- **Restructurer un dossier de mémoire :** `engram metacognize --workspace|--global|--all --accept-all` (Agent : `/engram restructure workspace memory accept all`)
 - **Cloner la mémoire workspace/global :** `engram clone-memory workspace global` / `engram clone-memory global workspace --force` (Agent : `/engram clone workspace memory to global`) (`--restructure` routes cloned memories through save-session-style approval instead of raw copy.)
 - **Exécuter un contrôle & nettoyer les liens brisés :** `engram verify` / `engram repair` (Agent : `/engram verify` / `/engram repair`)
 - **Scan de contradiction consultatif :** `engram quality-check` (Agent : `/engram quality-check`)
@@ -266,6 +267,7 @@ Ajustez la rigueur de mise en forme des règles chargées par votre assistant IA
 | **Auto-approuver les Candidats à la Sauvegarde** | `engram save-session --accept-all` | `/engram ss -a` |
 | **Analyser et Auto-approuver les Sessions Récentes** | `engram save-session --query-level 50 --accept-all` | `/engram ss -a last 50 sessions` |
 | **Importer les Fichiers / Documents Existants** | `engram take-control --all` | `/engram take-control --all` |
+| **Restructurer un Dossier de Mémoire** | `engram metacognize --workspace` / `engram metacognize --all --accept-all` | `/engram restructure workspace memory accept all` |
 | **Vérifier la Config / Chemins** | `engram entry` | `/engram entry` |
 | **Vérifier l'Intégrité de la Mémoire** | `engram verify` | `/engram verify` |
 | **Définir les Rôles Actifs** | `engram set-role <roles>` | `/engram set-role <roles>` |

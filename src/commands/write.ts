@@ -22,6 +22,7 @@ export type SaveSessionCandidateRunOptions = {
   source?: MemorySourceMeta;
   dryRunLabel?: string;
   acceptAllLabel?: string;
+  acceptAllRerunCommand?: string;
 };
 
 /** Draft, approve, and write a memory. */
@@ -116,7 +117,7 @@ export async function runSaveSessionCandidates(options: SaveSessionCandidateRunO
   }
   if (!selectedPlans.length) return 'Discarded. No selected candidates written.';
   if (acceptAll) {
-    const restructure = acceptAllRestructureResponse(selectedPlans);
+    const restructure = acceptAllRestructureResponse(selectedPlans, options.acceptAllRerunCommand);
     if (restructure) return restructure;
   }
   const saved = await writeSavePlans(selectedPlans, approval.edits);
@@ -188,12 +189,12 @@ async function planSaveSessionCandidates(ctx: Awaited<ReturnType<typeof getConte
   return plans;
 }
 
-function acceptAllRestructureResponse(plans: SavePlan[]): string {
+function acceptAllRestructureResponse(plans: SavePlan[], rerunCommand = 'engram save-session --accept-all'): string {
   const pending = plans.filter((plan) => unresolvedRelatedHints(plan).length);
   if (!pending.length) return '';
   return [
     'Accepted all save-session candidates (--accept-all), but Engram found related memories before writing.',
-    'No file written yet. Agent action: brainstorm a restructured candidate set and rerun `engram save-session --accept-all`.',
+    `No file written yet. Agent action: brainstorm a restructured candidate set and rerun \`${rerunCommand}\`.`,
     'Use `DEPENDS_ON: memory-id` when a candidate builds on existing memory; use `UPDATE: memory-id` when it should merge into a possible duplicate; omit candidates that are already covered.',
     '',
     previewSavePlans(pending)

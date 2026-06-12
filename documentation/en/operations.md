@@ -17,6 +17,7 @@ This page holds detailed usage so the README can stay short.
 | Capture raw note | `engram observe --file session.md` |
 | Convert existing docs/guidance | `engram take-control --all` |
 | Preview source takeover | `engram take-control --plan` |
+| Restructure existing memory folder | `engram metacognize --workspace\|--global\|--all` |
 | Inspect graph routing | `engram graph "<topic>"` |
 | Check hashes | `engram verify` |
 | Find malformed memory files | `engram repair` |
@@ -90,6 +91,25 @@ engram clone-memory global workspace --force
 
 Add `--restructure` when you want cloned memories proposed through the
 save-session approval flow instead of copied verbatim.
+
+## Metacognize Memory
+
+Use `metacognize` when you want an AI agent to review an existing Engram memory
+folder and propose safer structure through the same save-session approval flow:
+
+```bash
+engram metacognize --workspace
+engram metacognize --global --dry-run
+engram metacognize --all --accept-all
+```
+
+The command verifies active `rules/`, `skills/`, and `knowledge/` memories in the
+selected scope, returns a compact source pack when candidates are not provided,
+then writes only generated `TYPE: ... | TEXT: ...` lines after approval. Agents
+should use `UPDATE: memory-id` for consolidation or wording cleanup and
+`DEPENDS_ON: memory-id` for layered memories. Natural wording such as
+`engram restructure workspace memory accept all` normalizes to
+`engram metacognize --workspace --accept-all`.
 
 ## Save Session
 

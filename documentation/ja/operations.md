@@ -16,6 +16,7 @@
 | 生のメモをキャプチャ | `engram observe --file session.md` |
 | 既存のドキュメントやガイドラインを変換 | `engram take-control --all` |
 | 取り込み計画をプレビュー | `engram take-control --plan` |
+| 既存メモリフォルダを再構成 | `engram metacognize --workspace\|--global\|--all` |
 | グラフのルーティングを検査 | `engram graph "<topic>"` |
 | ハッシュ値をチェック | `engram verify` |
 | 不正なメモリファイルを検出 | `engram repair` |
@@ -60,6 +61,8 @@ engram clone-memory global workspace --force
 
 (`--restructure` routes cloned memories through save-session-style approval
 instead of raw copy.)
+
+Use `engram metacognize --workspace|--global|--all` when an AI agent should review an existing memory folder and propose `TYPE/TEXT` restructuring candidates with `UPDATE` or `DEPENDS_ON`; natural wording such as `engram restructure workspace memory accept all` maps to this command.
 
 ## セッションの保存 (Save Session)
 

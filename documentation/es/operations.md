@@ -16,6 +16,7 @@ Esta página contiene el uso detallado para que el README pueda seguir siendo br
 | Capturar nota cruda | `engram observe --file sesion.md` |
 | Convertir guías/documentos existentes | `engram take-control --all` |
 | Previsualizar toma de control | `engram take-control --plan` |
+| Reestructurar carpeta de memoria | `engram metacognize --workspace\|--global\|--all` |
 | Inspeccionar enrutamiento de grafos | `engram graph "<tema>"` |
 | Comprobar hashes | `engram verify` |
 | Encontrar archivos de memoria mal formados | `engram repair` |
@@ -60,6 +61,8 @@ engram clone-memory global workspace --force
 
 (`--restructure` routes cloned memories through save-session-style approval
 instead of raw copy.)
+
+Use `engram metacognize --workspace|--global|--all` when an AI agent should review an existing memory folder and propose `TYPE/TEXT` restructuring candidates with `UPDATE` or `DEPENDS_ON`; natural wording such as `engram restructure workspace memory accept all` maps to this command.
 
 ## Guardar Sesión (Save Session)
 

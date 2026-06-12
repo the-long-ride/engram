@@ -248,6 +248,7 @@ engram init
 - **Настроить цель сохранения по умолчанию:** `engram set-save-target workspace|global|both|status` (Агент: `/engram set-save-target status`)
 - **Настроить лимит загрузки:** `engram set-load-limit 1..32|status|reset` (Агент: `/engram set-load-limit status`)
 - **Управлять изолированными профилями:** `engram profile status` / `engram profile merge personal company --dry-run` (Агент: `/engram profile status`)
+- **Реструктурировать папку памяти:** `engram metacognize --workspace|--global|--all --accept-all` (Агент: `/engram restructure workspace memory accept all`)
 - **Клонировать память workspace/global:** `engram clone-memory workspace global` / `engram clone-memory global workspace --force` (Агент: `/engram clone workspace memory to global`) (`--restructure` routes cloned memories through save-session-style approval instead of raw copy.)
 - **Запустить проверку и очистить битые ссылки:** `engram verify` / `engram repair` (Агент: `/engram verify` / `/engram repair`)
 - **Проверить наличие противоречий:** `engram quality-check` (Агент: `/engram quality-check`)
@@ -266,6 +267,7 @@ engram init
 | **Автоматическое одобрение** | `engram save-session --accept-all` | `/engram ss -a` |
 | **Собрать и автоодобрить сессии** | `engram save-session --query-level 50 --accept-all` | `/engram ss -a last 50 sessions` |
 | **Импортировать файлы / доки** | `engram take-control --all` | `/engram take-control --all` |
+| **Реструктурировать Папку Памяти** | `engram metacognize --workspace` / `engram metacognize --all --accept-all` | `/engram restructure workspace memory accept all` |
 | **Проверить конфиг / пути** | `engram entry` | `/engram entry` |
 | **Проверить целостность памяти** | `engram verify` | `/engram verify` |
 | **Установить активные роли** | `engram set-role <роли>` | `/engram set-role <роли>` |

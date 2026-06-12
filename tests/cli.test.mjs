@@ -39,6 +39,9 @@ test('init, help, save reject, save accept, load, verify, audit', async () => {
   assert.match((await runEngram(cwd, env, ['help', 'clone-memory'])).stdout, /Clone active memory Markdown/);
   assert.match((await runEngram(cwd, env, ['help', 'clone-memory'])).stdout, /--restructure/);
   assert.match((await runEngram(cwd, env, ['help', 'clone-memory'])).stdout, /proposal-first/);
+  assert.match((await runEngram(cwd, env, ['help', 'metacognize'])).stdout, /restructure an existing Engram memory folder/);
+  assert.match((await runEngram(cwd, env, ['help', 'metacognize'])).stdout, /--workspace/);
+  assert.match((await runEngram(cwd, env, ['help', 'metacognize'])).stdout, /Natural wording/);
   assert.match((await runEngram(cwd, env, ['help', 'profile'])).stdout, /isolated global memory profiles/);
   assert.match((await runEngram(cwd, env, ['help', 'upgrade'])).stdout, /generated workspace skillsets/);
   assert.doesNotMatch((await runEngram(cwd, env, ['help'])).stdout, /update-help|team-dashboard|engram dry-run|engram propose/);
@@ -206,6 +209,56 @@ test('clone-memory rejects force with restructure', async () => {
   const result = await runEngram(cwd, env, ['clone-memory', 'workspace', 'global', '--restructure', '--force']);
   assert.equal(result.code, 1);
   assert.match(result.stderr, /--force cannot be used with --restructure/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('metacognize dry-run emits compact source pack for target memory', async () => {
+  const { cwd, env } = await tempWorkspace('engram-metacognize-');
+  await runEngram(cwd, env, ['init', '--no-skillset']);
+  const saved = await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Metacognize source memory keeps retries concise'], 'A\n');
+  assert.equal(saved.code, 0, saved.stderr);
+
+  const dryRun = await runEngram(cwd, env, ['metacognize', '--workspace', '--dry-run']);
+  assert.equal(dryRun.code, 0, dryRun.stderr);
+  assert.match(dryRun.stdout, /Metacognize workspace memory/);
+  assert.match(dryRun.stdout, /Source pack:/);
+  assert.match(dryRun.stdout, /workspace:knowledge\/metacognize-source-memory-keeps-retries-concise\.md/);
+  assert.match(dryRun.stdout, /TYPE: rule\|skill\|knowledge \| TEXT:/);
+  assert.match(dryRun.stdout, /UPDATE: existing-memory-id/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('metacognize accept-all writes inline restructure candidate and supports natural wording', async () => {
+  const { cwd, env } = await tempWorkspace('engram-metacognize-');
+  await runEngram(cwd, env, ['init', '--no-skillset']);
+  await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Metacognize duplicate memory baseline'], 'A\n');
+
+  const updated = await runEngram(cwd, env, [
+    'restructure', 'workspace', 'memory', 'accept', 'all',
+    'TYPE: knowledge | TEXT: Metacognize duplicate memory baseline now has clearer structure. | UPDATE: metacognize-duplicate-memory-baseline'
+  ]);
+  assert.equal(updated.code, 0, updated.stderr);
+  assert.match(updated.stdout, /Metacognize accepted all candidates/);
+  assert.match(updated.stdout, /Saved ->/);
+  assert.match(await readFile(path.join(workspaceMemoryRoot(cwd), 'knowledge', 'metacognize-duplicate-memory-baseline.md'), 'utf8'), /clearer structure/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('metacognize accept-all pauses when related memories need restructuring', async () => {
+  const { cwd, env } = await tempWorkspace('engram-metacognize-');
+  await runEngram(cwd, env, ['init', '--no-skillset']);
+  await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Release foundation checklist guides OAuth rotation'], 'A\n');
+  await runEngram(cwd, env, ['save', 'rule', '--scope', 'workspace', 'OAuth rotation must follow the release foundation checklist'], 'A\n');
+
+  const paused = await runEngram(cwd, env, [
+    'metacognize', '--workspace', '--accept-all',
+    'TYPE: rule | TEXT: OAuth rotation must follow the release foundation checklist.'
+  ]);
+  assert.equal(paused.code, 0, paused.stderr);
+  assert.match(paused.stdout, /found related memories before writing/);
+  assert.match(paused.stdout, /engram metacognize --workspace --accept-all/);
+  assert.match(paused.stdout, /DEPENDS_ON/);
+  assert.doesNotMatch(paused.stdout, /Saved ->/);
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -502,6 +555,9 @@ test('completion emits shell helper with command suggestions', async () => {
   assert.match(bash.stdout, /clone-memory\|cm/);
   assert.match(bash.stdout, /\$clone_memory_args/);
   assert.match(bash.stdout, /--restructure/);
+  assert.match(bash.stdout, /metacognize\|mc/);
+  assert.match(bash.stdout, /\$metacognize_args/);
+  assert.match(bash.stdout, /--workspace --global --all --accept-all --dry-run/);
   assert.match(bash.stdout, /profile\|pf/);
   assert.match(bash.stdout, /\$profile_actions/);
   assert.match(bash.stdout, /--from-profile --to-profile/);
@@ -523,6 +579,8 @@ test('completion emits shell helper with command suggestions', async () => {
   assert.match(zsh.stdout, /update-global-folder\|ugf/);
   assert.match(zsh.stdout, /clone-memory\|cm/);
   assert.match(zsh.stdout, /--restructure/);
+  assert.match(zsh.stdout, /metacognize\|mc/);
+  assert.match(zsh.stdout, /--workspace\[restructure workspace memory\]/);
   assert.match(zsh.stdout, /profile\|pf/);
   assert.match(zsh.stdout, /--from-profile\[source profile\]/);
   const powershell = await runEngram(cwd, env, ['completion', 'powershell']);
@@ -538,9 +596,12 @@ test('completion emits shell helper with command suggestions', async () => {
   assert.match(powershell.stdout, /\$engramGlobalFolderArgs/);
   assert.match(powershell.stdout, /\$engramCloneMemoryArgs/);
   assert.match(powershell.stdout, /'--restructure'/);
+  assert.match(powershell.stdout, /\$engramMetacognizeArgs/);
+  assert.match(powershell.stdout, /'--workspace'/);
   assert.match(powershell.stdout, /\$engramProfileActions/);
   assert.match(powershell.stdout, /'ugf'/);
   assert.match(powershell.stdout, /'cm'/);
+  assert.match(powershell.stdout, /'mc'/);
   assert.match(powershell.stdout, /'pf'/);
   await rm(cwd, { recursive: true, force: true });
 });

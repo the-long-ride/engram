@@ -61,6 +61,14 @@ generated `/engram` adapters.
   the agent should use that response as routing context, generate a restructured
   candidate set, and rerun the same accept-all command instead of reporting a
   saved result.
+- Treat `engram metacognize --workspace|--global|--all` as an agent-assisted
+  memory-folder restructuring flow. The CLI verifies active memories in the
+  selected scope, gives the agent a compact source pack, and writes only
+  generated `TYPE: ... | TEXT: ...` candidates through the same save-session
+  approval and related-memory restructuring rules. Natural wording such as
+  `/engram restructure workspace memory accept all` maps to
+  `engram metacognize --workspace --accept-all`; agents must not add
+  `--accept-all` unless the human requested it.
 - Treat `engram clone-memory --restructure` as a proposal-first clone flow. It
   converts verified source memories into save-session candidates for the target
   scope and uses the same approval and accept-all restructuring rules as
@@ -168,6 +176,7 @@ proposal and collect explicit human approval before invoking a CLI write flow.
 | `engram save-session [--file transcript.md] [--role role] [--query-level n] [--accept-all] [session-summary]` / `engram ss` | Propose multiple memories from one or more recent sessions and write only after numbered A/B/C approval, or save every candidate when the human passed `--accept-all` |
 | `engram observe [--file session.md] [--propose] [note]` | Write sanitized raw notes into inbox; `--propose` mines them through save-session |
 | `engram take-control [--plan] [--file path] [--dir path] [--include glob] [--exclude glob] [--max-sources n] [--max-chars n] [--all] [--accept-all]` | Explore existing workspace guidance, notes, and docs with agent help, preview source plans, and consume approved candidates as Engram memory |
+| `engram metacognize --workspace|--global|--all [--accept-all] [--dry-run]` / `engram mc ...` | Let an agent review an existing memory folder and return restructuring candidates with `UPDATE` or `DEPENDS_ON`; writes use save-session-style approval and accept-all no-write related-memory pauses |
 | `engram archive [--reason text] <memory-id|file>` | Move wrong or superseded memory out of active routing after approval |
 | `engram benchmark <cases.json>` | Run a read-only hit@<load-limit> routing benchmark over query/expected-memory cases |
 | `engram set-role <role...>` | Configure active developer roles for routing role-scoped memory |
@@ -201,6 +210,7 @@ hosts may prefer MCP-style tools:
 | `/engram graph ...` | `engram graph ...` CLI flow |
 | `/engram archive ...` | `engram archive ...` CLI approval flow |
 | `/engram take-control ...` | `engram take-control ...` CLI flow with agent-generated candidates and approval |
+| `/engram metacognize --workspace|--global|--all ...` / `/engram restructure workspace memory ...` | `engram metacognize ...` CLI flow; when no inline candidates are present, the adapter uses the source pack to generate concise `TYPE/TEXT` candidates and reruns the same scope |
 | `/engram clone-memory ... --restructure` | `engram clone-memory ... --restructure` CLI flow with save-session-style candidate approval |
 | `/engram take control accept all` | `engram take-control --accept-all` CLI write flow with token-light source defaults |
 | `/engram ss -a` | `engram save-session --accept-all` CLI write flow |
@@ -211,8 +221,10 @@ The slash adapter must not write memory by itself. It only asks the agent to run
 the same CLI/MCP flow the human could inspect directly. When the human includes
 `--accept-all` on save-session, the adapter may generate candidates and invoke the
 CLI accept-all path because the flag is the approval. Legacy `autosave`, `as`, and `at` remain aliases.
-The same applies to human-requested take-control accept-all, but adapters should
-preserve or tighten token limits and keep source excerpts out of chat output.
+The same applies to human-requested take-control and metacognize accept-all.
+Adapters should preserve or tighten token limits, keep source excerpts out of
+chat output, and rerun metacognize with `UPDATE` or `DEPENDS_ON` when related
+memories pause the write.
 
 ## Approval States
 

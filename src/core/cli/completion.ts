@@ -15,6 +15,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
   const saveSessionArgs = ['--file', '--scope', '--profile', '--role', '--roles', '--query-level', '--accept-all'].join(' ');
   const observeArgs = ['--file', '--scope', '--profile', '--role', '--roles', '--propose', '--accept-all'].join(' ');
   const takeControlArgs = ['--file', '--dir', '--include', '--exclude', '--max-sources', '--max-chars', '--scope', '--profile', '--role', '--roles', '--all', '--accept-all', '--dry-run', '--plan'].join(' ');
+  const metacognizeArgs = ['--workspace', '--global', '--all', '--accept-all', '--dry-run'].join(' ');
   const upgradeArgs = ['--plan', '--latest', '--self', '--memory-only', '--global-skillsets-only', '--target', '--force', '--no-version-check', '--no-auto-upgrade'].join(' ');
   const globalFolderArgs = ['--move-from-path'].join(' ');
   const cloneMemoryArgs = ['workspace', 'global', '--force', '--dry-run', '--restructure', '--accept-all'].join(' ');
@@ -57,6 +58,9 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '      ;;',
       '    take-control|tc)',
       `      _arguments "--file[read one source file]:file:_files" "--dir[scan one source directory]:dir:_files -/" "--include[include matching glob]:glob:" "--exclude[exclude matching glob]:glob:" "--max-sources[maximum source count]:number:" "--max-chars[maximum chars per source]:number:" "--scope[write scope]:scope:(${scopes})" "--profile[run with profile]:profile:" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "--all[include README docs and library docs]" "--accept-all[accept every generated candidate]" "--dry-run[show source pack only]" "--plan[preview source plan only]"`,
+      '      ;;',
+      '    metacognize|mc)',
+      '      _arguments "--workspace[restructure workspace memory]" "--global[restructure global memory]" "--all[restructure workspace and global memory]" "--accept-all[accept every generated restructure candidate when human requested]" "--dry-run[show source pack or candidate preview without writing]"',
       '      ;;',
       '    load|l)',
       '      _arguments "--all" "--dry-run" "1:query: "',
@@ -118,6 +122,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       `$engramSaveSessionArgs = @(${saveSessionArgs.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
       `$engramObserveArgs = @(${observeArgs.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
       `$engramTakeControlArgs = @(${takeControlArgs.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
+      `$engramMetacognizeArgs = @(${metacognizeArgs.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
       `$engramUpgradeArgs = @(${upgradeArgs.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
       `$engramGlobalFolderArgs = @(${globalFolderArgs.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
       `$engramCloneMemoryArgs = @(${cloneMemoryArgs.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
@@ -153,6 +158,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '        { $_ -in @(\'save-session\', \'ss\') } { $engramSaveSessionArgs; break }',
       '        { $_ -in @(\'observe\', \'o\') } { $engramObserveArgs; break }',
       '        { $_ -in @(\'take-control\', \'tc\') } { $engramTakeControlArgs; break }',
+      '        { $_ -in @(\'metacognize\', \'mc\') } { $engramMetacognizeArgs; break }',
       '        { $_ -in @(\'update-global-folder\', \'ugf\') } { $engramGlobalFolderArgs; break }',
       '        { $_ -in @(\'clone-memory\', \'cm\') } { $engramCloneMemoryArgs; break }',
       '        { $_ -in @(\'install-skillset\', \'is\') } { $engramSkillsetTargets + \'--global\' + \'--force\'; break }',
@@ -193,6 +199,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
     `  local profile_actions="${profileActions}"`,
     `  local ignore_actions="${ignoreActions}"`,
     `  local upgrade_args="${upgradeArgs}"`,
+    `  local metacognize_args="${metacognizeArgs}"`,
     `  local global_folder_args="${globalFolderArgs}"`,
     `  local clone_memory_args="${cloneMemoryArgs}"`,
     `  local skillset_targets="${skillsetTargets}"`,
@@ -268,6 +275,10 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '      ;;',
     '    take-control|tc)',
     '      COMPREPLY=( $(compgen -W "--file --dir --include --exclude --max-sources --max-chars --scope --profile --role --roles --all --accept-all --dry-run --plan" -- "$cur") )',
+    '      return',
+    '      ;;',
+    '    metacognize|mc)',
+    '      COMPREPLY=( $(compgen -W "$metacognize_args" -- "$cur") )',
     '      return',
     '      ;;',
     '    load|l)',

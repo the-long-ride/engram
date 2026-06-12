@@ -8,6 +8,7 @@ import { cmdAudit, cmdLoad, cmdRebuildIndex, cmdRepair, cmdVerify } from './comm
 import { cmdSave, cmdSaveSession, cmdTakeControl } from './commands/write.js';
 import { cmdArchive, cmdBenchmark, cmdDeduplicate, cmdEntry, cmdExport, cmdGraph, cmdHealth, cmdImport, cmdQuality, cmdSearch, cmdStats, cmdSync } from './commands/ops.js';
 import { cmdCloneMemory } from './commands/clone.js';
+import { cmdMetacognize } from './commands/metacognize.js';
 import { cmdProfile } from './commands/profile.js';
 import { cmdIgnore, cmdInstallHooks, cmdInstallSkillset, cmdResolveConflicts, cmdSetLoadLimit, cmdSetRole, cmdSetRuleVariant, cmdSetSaveTarget, cmdUpdateGlobalFolder, cmdUpgrade } from './commands/admin.js';
 import { maybeAutoUpgrade } from './core/runtime/auto-upgrade.js';
@@ -62,6 +63,7 @@ export async function runCli(argv: string[]): Promise<string> {
       case 'install-skillset': return await cmdInstallSkillset(rest, flags);
       case 'upgrade': return await cmdUpgrade(rest, flags);
       case 'clone-memory': return await cmdCloneMemory(rest, flags);
+      case 'metacognize': return await cmdMetacognize(rest, flags);
       case 'sync': return await cmdSync();
       default: return await cmdHelp();
     }

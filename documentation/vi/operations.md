@@ -16,6 +16,7 @@ Trang này chứa thông tin chi tiết về cách sử dụng để tệp READM
 | Ghi lại ghi chú thô | `engram observe --file session.md` |
 | Chuyển đổi tài liệu/hướng dẫn có sẵn | `engram take-control --all` |
 | Xem trước kế hoạch tiếp quản tài liệu | `engram take-control --plan` |
+| Tái cấu trúc thư mục bộ nhớ | `engram metacognize --workspace\|--global\|--all` |
 | Kiểm tra định tuyến đồ thị | `engram graph "<chủ đề>"` |
 | Kiểm tra mã băm bảo mật | `engram verify` |
 | Tìm các tệp bộ nhớ bị lỗi cấu trúc | `engram repair` |
@@ -60,6 +61,8 @@ engram clone-memory global workspace --force
 
 (`--restructure` routes cloned memories through save-session-style approval
 instead of raw copy.)
+
+Use `engram metacognize --workspace|--global|--all` when an AI agent should review an existing memory folder and propose `TYPE/TEXT` restructuring candidates with `UPDATE` or `DEPENDS_ON`; natural wording such as `engram restructure workspace memory accept all` maps to this command.
 
 ## Lưu Phiên Làm Việc (Save Session)
 

@@ -248,6 +248,7 @@ engram init
 - **既定の保存先を設定：** `engram set-save-target workspace|global|both|status` (エージェント: `/engram set-save-target status`)
 - **ロード上限を設定：** `engram set-load-limit 1..32|status|reset` (エージェント: `/engram set-load-limit status`)
 - **分離プロファイルを管理：** `engram profile status` / `engram profile merge personal company --dry-run` (エージェント: `/engram profile status`)
+- **既存メモリフォルダを再構成：** `engram metacognize --workspace|--global|--all --accept-all` (エージェント: `/engram restructure workspace memory accept all`)
 - **workspace/global メモリを複製：** `engram clone-memory workspace global` / `engram clone-memory global workspace --force` (エージェント: `/engram clone workspace memory to global`) (`--restructure` routes cloned memories through save-session-style approval instead of raw copy.)
 - **整合性の自己診断およびインデックスの整理修復:** `engram verify` / `engram repair` (エージェント: `/engram verify` / `/engram repair`)
 - **矛盾の検出スキャン:** `engram quality-check` (エージェント: `/engram quality-check`)
@@ -266,6 +267,7 @@ engram init
 | **メモリの自動承認保存** | `engram save-session --accept-all` | `/engram ss -a` |
 | **セッション自動保存承認** | `engram save-session --query-level 50 --accept-all` | `/engram ss -a last 50 sessions` |
 | **既存ファイルの取り込み** | `engram take-control --all` | `/engram take-control --all` |
+| **既存メモリフォルダを再構成** | `engram metacognize --workspace` / `engram metacognize --all --accept-all` | `/engram restructure workspace memory accept all` |
 | **設定およびパスの確認** | `engram entry` | `/engram entry` |
 | **メモリ整合性の検証** | `engram verify` | `/engram verify` |
 | **開発役割の設定** | `engram set-role <役割名>` | `/engram set-role <役割名>` |

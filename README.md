@@ -137,6 +137,9 @@ For `engram save-session --accept-all`, those related-memory hints pause the
 write before any file is saved. Agents should use the response to rerun with
 structured candidates, for example `DEPENDS_ON: release-foundation` or `UPDATE:
 invoice-retry-baseline`.
+Use `engram metacognize --workspace`, `--global`, or `--all` when you want an
+AI agent to review an existing memory folder and propose safer restructuring
+candidates through the same save-session approval model.
 
 ## Example Use Cases
 
@@ -289,6 +292,7 @@ Tune how strictly rules are formatted when loaded by your AI assistant:
 - **Configure save target:** `engram set-save-target workspace|global|both|status` (Agent: `/engram set-save-target status`)
 - **Configure load limit:** `engram set-load-limit 1..32|status|reset` (Agent: `/engram set-load-limit status`)
 - **Update or move global memory folder:** `engram update-global-folder <new-path> [--move-from-path <old-path>]` / `engram ugf <new-path>` (Agent: `/engram set global memory path to <new-path>`)
+- **Restructure a memory folder with an agent:** `engram metacognize --workspace|--global|--all --accept-all` routes generated `TYPE/TEXT` candidates through approval-safe saves (Agent: `/engram restructure workspace memory accept all`)
 - **Clone workspace/global memory:** `engram clone-memory workspace global` or `engram clone-memory global workspace --force`; use `--restructure` to route cloned memories through the save-session approval and related-memory hint flow instead of raw file copy (Agent: `/engram clone workspace memory to global`)
 - **Sync local & global changes:** `engram sync` (Agent: `/engram sync`)
 - **Run checkup & clean broken links:** `engram verify` / `engram repair` (Agent: `/engram verify` / `/engram repair`)
@@ -308,6 +312,7 @@ Tune how strictly rules are formatted when loaded by your AI assistant:
 | **Auto-Approve Save Candidates** | `engram save-session --accept-all` | `/engram ss -a` |
 | **Mine and Auto-Approve Recent Sessions** | `engram save-session --query-level 50 --accept-all` | `/engram ss -a last 50 sessions` |
 | **Import Existing Files / Docs** | `engram take-control --all` | `/engram take-control --all` |
+| **Restructure Memory Folder** | `engram metacognize --workspace` / `engram metacognize --all --accept-all` | `/engram restructure workspace memory accept all` |
 | **Check Config / Paths** | `engram entry` | `/engram entry` |
 | **Manage Profiles** | `engram profile status` / `engram profile merge personal company --dry-run` | `/engram profile status` |
 | **Configure Save Target** | `engram set-save-target <target>` | `/engram set-save-target <target>` |

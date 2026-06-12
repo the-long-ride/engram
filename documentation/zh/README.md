@@ -248,6 +248,7 @@ engram init
 - **设置默认保存目标：** `engram set-save-target workspace|global|both|status` (智能体: `/engram set-save-target status`)
 - **设置加载上限：** `engram set-load-limit 1..32|status|reset` (智能体: `/engram set-load-limit status`)
 - **管理隔离配置档：** `engram profile status` / `engram profile merge personal company --dry-run` (智能体: `/engram profile status`)
+- **重构现有内存文件夹：** `engram metacognize --workspace|--global|--all --accept-all` (智能体: `/engram restructure workspace memory accept all`)
 - **克隆 workspace/global 内存：** `engram clone-memory workspace global` / `engram clone-memory global workspace --force` (智能体: `/engram clone workspace memory to global`) (`--restructure` routes cloned memories through save-session-style approval instead of raw copy.)
 - **运行健康检查并清理坏链：** `engram verify` / `engram repair` (智能体: `/engram verify` / `/engram repair`)
 - **建议性矛盾冲突扫描：** `engram quality-check` (智能体: `/engram quality-check`)
@@ -266,6 +267,7 @@ engram init
 | **自动批准保存候选** | `engram save-session --accept-all` | `/engram ss -a` |
 | **挖掘并自动批准近期会话** | `engram save-session --query-level 50 --accept-all` | `/engram ss -a last 50 sessions` |
 | **导入现有文件/文档** | `engram take-control --all` | `/engram take-control --all` |
+| **重构现有内存文件夹** | `engram metacognize --workspace` / `engram metacognize --all --accept-all` | `/engram restructure workspace memory accept all` |
 | **检查配置/路径** | `engram entry` | `/engram entry` |
 | **验证内存完整性** | `engram verify` | `/engram verify` |
 | **设置活动角色** | `engram set-role <角色>` | `/engram set-role <角色>` |

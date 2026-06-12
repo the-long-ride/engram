@@ -16,6 +16,7 @@
 | 임시 원시 노트 기록 | `engram observe --file session.md` |
 | 기존 문서/가이드라인을 Engram 메모리로 이식 | `engram take-control --all` |
 | 가져오기 사전 계획 및 시뮬레이션 | `engram take-control --plan` |
+| 기존 메모리 폴더 재구성 | `engram metacognize --workspace\|--global\|--all` |
 | 그래프 라우팅 상태 및 구조 분석 | `engram graph "<topic>"` |
 | 해시 데이터 정합성 검증 | `engram verify` |
 | 손상되었거나 스키마가 깨진 메모리 점검 | `engram repair` |
@@ -60,6 +61,8 @@ engram clone-memory global workspace --force
 
 (`--restructure` routes cloned memories through save-session-style approval
 instead of raw copy.)
+
+Use `engram metacognize --workspace|--global|--all` when an AI agent should review an existing memory folder and propose `TYPE/TEXT` restructuring candidates with `UPDATE` or `DEPENDS_ON`; natural wording such as `engram restructure workspace memory accept all` maps to this command.
 
 ## 세션 저장 (Save Session)
 

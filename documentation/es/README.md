@@ -248,6 +248,7 @@ Sintonice qué tan estrictamente se formatean las reglas cuando las carga su asi
 - **Configurar destino de guardado:** `engram set-save-target workspace|global|both|status` (Agente: `/engram set-save-target status`)
 - **Configurar límite de carga:** `engram set-load-limit 1..32|status|reset` (Agente: `/engram set-load-limit status`)
 - **Gestionar perfiles aislados:** `engram profile status` / `engram profile merge personal company --dry-run` (Agente: `/engram profile status`)
+- **Reestructurar carpeta de memoria:** `engram metacognize --workspace|--global|--all --accept-all` (Agente: `/engram restructure workspace memory accept all`)
 - **Clonar memoria workspace/global:** `engram clone-memory workspace global` / `engram clone-memory global workspace --force` (Agente: `/engram clone workspace memory to global`) (`--restructure` routes cloned memories through save-session-style approval instead of raw copy.)
 - **Ejecutar revisión y limpiar enlaces rotos:** `engram verify` / `engram repair` (Agente: `/engram verify` / `/engram repair`)
 - **Escaneo asesor de contradicciones:** `engram quality-check` (Agente: `/engram quality-check`)
@@ -266,6 +267,7 @@ Sintonice qué tan estrictamente se formatean las reglas cuando las carga su asi
 | **Autoaprobar Candidatos para Guardar** | `engram save-session --accept-all` | `/engram ss -a` |
 | **Extraer y Autoaprobar Sesiones Recientes** | `engram save-session --query-level 50 --accept-all` | `/engram ss -a last 50 sessions` |
 | **Importar Archivos / Documentos Existentes** | `engram take-control --all` | `/engram take-control --all` |
+| **Reestructurar Carpeta de Memoria** | `engram metacognize --workspace` / `engram metacognize --all --accept-all` | `/engram restructure workspace memory accept all` |
 | **Comprobar Rutas / Configuración** | `engram entry` | `/engram entry` |
 | **Verificar Integridad de la Memoria** | `engram verify` | `/engram verify` |
 | **Configurar Roles Activos** | `engram set-role <roles>` | `/engram set-role <roles>` |

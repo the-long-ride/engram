@@ -169,6 +169,7 @@ file, and `open-code` maps to `opencode`. The old `antigravity` and
    /engram observe --file session.md
    /engram take-control
    /engram take control accept all
+   /engram restructure workspace memory accept all
    /engram ss -a
    /engram ss -a last 50 sessions
    /engram save-session --accept-all
@@ -249,10 +250,21 @@ file, and `open-code` maps to `opencode`. The old `antigravity` and
    `--exclude`, `--max-sources`, and `--max-chars` to keep scans token-safe.
    `--accept-all` uses smaller token-light source defaults unless explicit
    `--max-sources` or `--max-chars` values are provided.
-   Saved take-control memories record `source_files` and `source_hashes`
-   frontmatter. Later scans skip unchanged imported sources, while an explicit
-   `--file` import still lets the human force a specific source back through the
-   approval flow.
+  Saved take-control memories record `source_files` and `source_hashes`
+  frontmatter. Later scans skip unchanged imported sources, while an explicit
+  `--file` import still lets the human force a specific source back through the
+  approval flow.
+
+   `engram metacognize --workspace`, `--global`, or `--all` is the
+   agent-assisted restructuring flow for existing Engram memory folders. When
+   no inline candidates are provided, the CLI returns a compact source pack of
+   verified active memories. The adapter should use that pack to generate
+   concise `TYPE: ... | TEXT: ...` candidates, usually with `UPDATE:
+   existing-memory-id` for consolidation or wording cleanup and `DEPENDS_ON:
+   memory-id` for layered memories, then rerun the same scope. Natural wording
+   such as `/engram restructure workspace memory accept all` maps to
+   `engram metacognize --workspace --accept-all`. Agents must not add
+   `--accept-all` unless the human requested it.
 
    Engram always saves rule memories with light, balanced, and strict versions.
    Rule variant mode is a render lens for agent-facing memory. Strict helps
@@ -282,6 +294,12 @@ For restructuring, normalize "clone workspace memory to global and restructure"
 to `engram clone-memory workspace global --restructure`. Do not add
 `--accept-all` unless the human said it. If accept-all reports related memories
 before writing, rerun with `DEPENDS_ON` or `UPDATE` candidates.
+
+Agents may normalize natural metacognition requests into `engram metacognize`,
+for example "restructure workspace memory" -> `engram metacognize --workspace`
+and "organize all memories accept all" -> `engram metacognize --all
+--accept-all`. Run the CLI once to get the source pack when no inline
+candidates are present, then rerun with generated `TYPE/TEXT` lines.
 
 Shell completion scripts are available for bash, zsh, and PowerShell:
 
@@ -322,10 +340,11 @@ must not invent inaccessible history. Explicit
 `/engram ss -a`, should use the CLI write path because MCP autosave remains
 proposal-only. The counted shortcut `/engram ss -a last 50 sessions` should use
 `engram save-session --query-level 50 --accept-all`. Legacy
-`/engram autosave --accept-all` and `/engram at -a` remain compatible. `/engram take-control` should use the CLI flow because it needs
+`/engram autosave --accept-all` and `/engram at -a` remain compatible. `/engram take-control` and `/engram metacognize` should use the CLI flow because they need
 workspace source discovery plus human-visible approval. Slash adapters normalize
 `/engram auto save` to `engram save-session` and `/engram take control accept all`
-to `engram take-control --accept-all`.
+to `engram take-control --accept-all`; normalize `/engram restructure workspace
+memory accept all` to `engram metacognize --workspace --accept-all`.
 `/engram observe`, `/engram archive`, and `/engram benchmark` should use the CLI
 flow. `engram load` is graph-aware automatically because it reads the derived
 `memory.graph.json` when graph routing is enabled, includes declared

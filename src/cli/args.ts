@@ -10,11 +10,14 @@ const booleanFlags = new Set([
 ]);
 const saveSessionCommands = new Set(['save-session', 'ss']);
 const takeControlCommands = new Set(['take-control', 'tc']);
-const acceptAllCommands = new Set([...saveSessionCommands, ...takeControlCommands]);
+const metacognizeCommands = new Set(['metacognize', 'mc']);
+const acceptAllCommands = new Set([...saveSessionCommands, ...takeControlCommands, ...metacognizeCommands]);
 const repeatableFlags = new Set(['dir', 'exclude', 'file', 'include']);
 const recentSessionWords = new Set(['session', 'sessions', 'chat', 'chats', 'conversation', 'conversations']);
 const recentSessionPrefixes = new Set(['last', 'latest', 'past', 'previous', 'recent']);
 const cloneMemoryVerbs = new Set(['clone', 'copy']);
+const metacognizeVerbs = new Set(['metacognize', 'metacognition', 'restructure', 'reorganize', 'organize']);
+const metacognizeFillers = new Set(['engram', 'memory', 'memories', 'folder', 'folders', 'bank', 'store', 'root', 'the', 'my']);
 const globalFolderVerbs = new Set(['change', 'move', 'rename', 'set', 'update']);
 const globalFolderNouns = new Set(['dir', 'directory', 'folder', 'path', 'root']);
 const globalFolderFillers = new Set(['engram', 'my', 'the']);
@@ -26,7 +29,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
   const flags: Record<string, FlagValue> = {};
   for (let i = 0; i < tokens.length; i += 1) {
     const token = tokens[i];
-    if (token === '-a' && saveSessionCommands.has(command)) flags['accept-all'] = true;
+    if (token === '-a' && (saveSessionCommands.has(command) || metacognizeCommands.has(command))) flags['accept-all'] = true;
     else if (!token.startsWith('--')) rest.push(token);
     else if (token.includes('=')) {
       const [name, ...valueParts] = token.slice(2).split('=');
@@ -94,7 +97,8 @@ function normalizeLeadingGlobalFlags(argv: string[]): string[] {
 }
 
 function normalizeNaturalArgs(argv: string[]): string[] {
-  const cloneMemoryArgs = normalizeNaturalCloneMemory(argv);
+  const metacognizeArgs = normalizeNaturalMetacognize(argv);
+  const cloneMemoryArgs = normalizeNaturalCloneMemory(metacognizeArgs);
   const globalFolderArgs = normalizeNaturalGlobalFolder(cloneMemoryArgs);
   const commandArgs = globalFolderArgs[0]?.toLowerCase() === 'take' && globalFolderArgs[1]?.toLowerCase() === 'control'
     ? ['take-control', ...globalFolderArgs.slice(2)]
@@ -118,6 +122,38 @@ function normalizeNaturalCloneMemory(argv: string[]): string[] {
     .filter((token) => token === 'workspace' || token === 'global');
   if (scopes.length < 2 || scopes[0] === scopes[1]) return argv;
   return ['clone-memory', scopes[0], scopes[1], ...flags];
+}
+
+function normalizeNaturalMetacognize(argv: string[]): string[] {
+  const [verb = '', ...tokens] = argv;
+  const lowerVerb = verb.toLowerCase();
+  if (lowerVerb === 'meta' && tokens[0]?.toLowerCase() === 'cognize') return normalizeMetacognizeTokens(tokens.slice(1));
+  if (metacognizeCommands.has(lowerVerb) || metacognizeVerbs.has(lowerVerb)) return normalizeMetacognizeTokens(tokens);
+  return argv;
+}
+
+function normalizeMetacognizeTokens(tokens: string[]): string[] {
+  const normalized = ['metacognize'];
+  for (let i = 0; i < tokens.length; i += 1) {
+    const token = tokens[i];
+    const lower = token.toLowerCase();
+    if (looksLikeCandidateToken(token)) {
+      normalized.push(...tokens.slice(i));
+      break;
+    }
+    if (lower === 'accept-all') normalized.push('--accept-all');
+    else if (lower === 'accept' && tokens[i + 1]?.toLowerCase() === 'all') {
+      normalized.push('--accept-all');
+      i += 1;
+    }
+    else if (lower === 'workspace' || lower === 'global' || lower === 'all') normalized.push(`--${lower}`);
+    else if (token.startsWith('-') || !metacognizeFillers.has(lower)) normalized.push(token);
+  }
+  return normalized;
+}
+
+function looksLikeCandidateToken(token: string): boolean {
+  return /^\s*(?:[-*]\s*)?(?:type|kind|memory type|rule|rules|skill|skills|workflow|workflows|knowledge)\s*:/i.test(token);
 }
 
 function normalizeNaturalGlobalFolder(argv: string[]): string[] {

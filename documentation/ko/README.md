@@ -248,6 +248,7 @@ engram init
 - **기본 저장 대상 설정:** `engram set-save-target workspace|global|both|status` (에이전트: `/engram set-save-target status`)
 - **로드 제한 설정:** `engram set-load-limit 1..32|status|reset` (에이전트: `/engram set-load-limit status`)
 - **격리 프로필 관리:** `engram profile status` / `engram profile merge personal company --dry-run` (에이전트: `/engram profile status`)
+- **기존 메모리 폴더 재구성:** `engram metacognize --workspace|--global|--all --accept-all` (에이전트: `/engram restructure workspace memory accept all`)
 - **workspace/global 메모리 복제:** `engram clone-memory workspace global` / `engram clone-memory global workspace --force` (에이전트: `/engram clone workspace memory to global`) (`--restructure` routes cloned memories through save-session-style approval instead of raw copy.)
 - **유효성 셀프 진단 및 망가진 인덱스 정리:** `engram verify` / `engram repair` (에이전트: `/engram verify` / `/engram repair`)
 - **메모리 간 모순 및 대립 체크:** `engram quality-check` (에이전트: `/engram quality-check`)
@@ -266,6 +267,7 @@ engram init
 | **지식 메모리 자동 승인** | `engram save-session --accept-all` | `/engram ss -a` |
 | **세션 자동 저장 승인** | `engram save-session --query-level 50 --accept-all` | `/engram ss -a last 50 sessions` |
 | **기존 파일 가져오기** | `engram take-control --all` | `/engram take-control --all` |
+| **기존 메모리 폴더 재구성** | `engram metacognize --workspace` / `engram metacognize --all --accept-all` | `/engram restructure workspace memory accept all` |
 | **설정 및 경로 확인** | `engram entry` | `/engram entry` |
 | **메모리 정합성 검증** | `engram verify` | `/engram verify` |
 | **개발 역할 설정** | `engram set-role <역할이름들>` | `/engram set-role <역할이름들>` |

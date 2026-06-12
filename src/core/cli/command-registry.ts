@@ -27,6 +27,7 @@ export const HELP_DATA: HelpSection[] = [
       { command: 'engram save-session [--file transcript.md] [--scope workspace|global|both] [--role role] [--query-level n] [--accept-all] [session-summary]', alias: 'ss', purpose: 'Propose multiple memories from one or more recent sessions before approval or explicit accept-all' },
       { command: 'engram observe [--file session.md] [--propose] [note]', alias: 'o', purpose: 'Capture sanitized raw notes in inbox, then optionally propose memories through save-session' },
       { command: 'engram take-control [--plan] [--file path] [--dir path] [--include glob] [--exclude glob] [--max-sources n] [--max-chars n] [--all] [--accept-all]', alias: 'tc', purpose: 'Explore existing workspace guidance with agent help, token-light accept-all, and Engram memory writes' },
+      { command: 'engram metacognize --workspace|--global|--all [--accept-all] [--dry-run]', alias: 'mc', purpose: 'Let an agent restructure an existing memory folder through save-session-style candidates and approval' },
       { command: 'engram load [--all] [--dry-run] [query]', alias: 'l', purpose: 'Route, refine, and load the configured compact memory pack, or preview routed file paths with --dry-run' },
       { command: 'engram search [--semantic] <query>', alias: 'f', purpose: 'Search visible indexed memories with lexical or local semantic scoring' },
       { command: 'engram graph [--rebuild] [query]', alias: 'g', purpose: 'Inspect the derived layered JSON memory graph, dependency layers, and contradiction candidates' },

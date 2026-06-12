@@ -1,5 +1,4 @@
 import { commandNames } from './command-registry.js';
-
 /** Return a shell completion script for the current command surface. */
 export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'): string {
   const commands = commandNames().join(' ');
@@ -20,11 +19,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
   const upgradeArgs = ['--plan', '--latest', '--self', '--memory-only', '--global-skillsets-only', '--target', '--force', '--no-version-check', '--no-auto-upgrade'].join(' ');
   const globalFolderArgs = ['--move-from-path'].join(' ');
   const cloneMemoryArgs = ['workspace', 'global', '--force', '--dry-run', '--metacognize', '--accept-all'].join(' ');
-  const skillsetTargets = [
-    'all', 'list', 'agents-md', 'codex', 'copilot', 'claude', 'cursor',
-    'gemini', 'cline', 'windsurf',
-    'opencode', 'open-code', 'mcp', 'slash'
-  ].join(' ');
+  const skillsetTargets = ['all', 'list', 'agents-md', 'codex', 'copilot', 'claude', 'cursor', 'gemini', 'cline', 'windsurf', 'opencode', 'open-code', 'mcp', 'slash'].join(' ');
   if (shell === 'zsh') {
     return [
       '#compdef engram',

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.0.11
+
+- Bumped package and runtime version to `0.0.11`.
+
 ## 0.0.10
 
 - Added `engram set-load-limit` / `engram ll` so normal loads can use a

@@ -29,7 +29,6 @@ import { git } from '../core/vcs/git.js';
 import { formatRecords, type RecordBlock } from '../core/cli/format.js';
 import { renderHelp } from '../core/cli/help.js';
 import type { RuleVariant } from '../core/runtime/types.js';
-
 /** Inspect or update ignore patterns. */
 export async function cmdIgnore(args: string[]): Promise<string> {
   const ctx = await getContext();
@@ -45,7 +44,6 @@ export async function cmdIgnore(args: string[]): Promise<string> {
     fields: [['Also ignore', ctx.config.ignore.also_ignore.join(', ') || '(none)'], ['Hidden', ctx.hiddenCount]]
   }]);
 }
-
 /** Persist local developer roles in config. */
 export async function cmdSetRole(args: string[]): Promise<string> {
   const ctx = await getContext();
@@ -53,7 +51,6 @@ export async function cmdSetRole(args: string[]): Promise<string> {
   await writeConfig(process.cwd(), ctx.config);
   return `Roles: ${args.join(', ') || '(none)'}`;
 }
-
 /** Configure where normal save writes by default. */
 export async function cmdSetSaveTarget(args: string[]): Promise<string> {
   const ctx = await getContext();
@@ -67,7 +64,6 @@ export async function cmdSetSaveTarget(args: string[]): Promise<string> {
   await writeConfig(process.cwd(), ctx.config);
   return saveTargetStatus(ctx.config.scope, Boolean(ctx.roots.global));
 }
-
 /** Configure the compact `engram load` memory cap. */
 export async function cmdSetLoadLimit(args: string[]): Promise<string> {
   const ctx = await getContext();
@@ -81,7 +77,6 @@ export async function cmdSetLoadLimit(args: string[]): Promise<string> {
   await writeConfig(process.cwd(), ctx.config);
   return loadLimitStatus(ctx.config.load.limit);
 }
-
 /** Enable, disable, or inspect rule variant rendering. */
 export async function cmdSetRuleVariant(args: string[]): Promise<string> {
   const ctx = await getContext();
@@ -97,7 +92,6 @@ export async function cmdSetRuleVariant(args: string[]): Promise<string> {
   await writeConfig(process.cwd(), ctx.config);
   return ruleVariantStatus(ctx.config.rule_variants);
 }
-
 /** Update the configured global memory folder, optionally moving the old root. */
 export async function cmdUpdateGlobalFolder(args: string[], flags: Record<string, any> = {}): Promise<string> {
   const target = textArg(args);

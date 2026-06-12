@@ -40,6 +40,59 @@ Hãy sử dụng `Engram` khi bạn muốn bộ nhớ là một giao thức có 
 | Phù hợp nhất cho | Các nhóm cần quyền sở hữu và khả năng kiểm toán | Người dùng muốn tự động nhớ lại và phát lại |
 | Rủi ro | Đòi hỏi kỷ luật quản lý thủ công cao hơn | Nhiều trạng thái ẩn khó kiểm soát nếu thiếu quản lý |
 
+## So Với Hermes Agent
+
+### Tóm tắt (TL;DR)
+
+| | Engram | Hermes Agent |
+|---|---|---|
+| **Triết lý** | Giao thức ưu tiên tệp tin, do con người sở hữu (tự động hóa tùy chọn) | Bộ nhớ tự động, luôn hoạt động |
+| **Lưu trữ** | Các tệp Markdown phân loại trong `.agents/.engram/` | `MEMORY.md` + `USER.md` (giới hạn ký tự cứng) |
+| **Mô hình ghi** | Phê duyệt mặc định từ con người (cổng A/B/C; có thể tự động hóa qua quy tắc) | Tác nhân ghi tự động |
+| **Recall** | Theo nhu cầu: `engram load "<tác vụ>"` chèn các tệp liên quan | Luôn bật: các tệp cốt lõi được cố định vào system prompt của mỗi phiên |
+| **Tìm kiếm vector** | sqlite-vec cục bộ tùy chọn (mang tính quyết định, không dựa trên embedding) | Qua nhà cung cấp bên ngoài (ví dụ: agentmemory — BM25 + vector) |
+| **Đa tác nhân** | Bất kỳ tác nhân đọc tệp nào cũng có thể sử dụng bộ nhớ Engram | Lõi Hermes là đơn tác nhân; đa tác nhân qua plugin agentmemory |
+| **Tính di động** | Tích hợp Git tự nhiên, ngoại tuyến trước, Markdown thuần túy | Các tệp cục bộ; nhà cung cấp bên ngoài có thể gây khóa chặt đám mây |
+| **Chi phí vận hành** | Không cần daemon, đòi hỏi kỷ luật lưu trữ (trừ khi tự động hóa) | Tiến trình máy chủ + giao diện xem, REST API, máy chủ MCP |
+
+---
+
+### Định dạng lưu trữ
+
+**Engram** lưu trữ mỗi bộ nhớ dưới dạng một tệp Markdown phân loại có kèm YAML frontmatter, kiểm tra tính toàn vẹn bằng mã băm và đồ thị phụ thuộc tùy chọn (`depends_on`). Chỉ mục JSON, đồ thị và sidecar sqlite-vec đóng vai trò là các lớp tăng tốc — Markdown là nguồn sự thật duy nhất.
+
+**Hermes** nén tất cả bộ nhớ bền vững vào hai tệp giới hạn:
+- `~/.hermes/memories/MEMORY.md` — ghi chú tác nhân, giới hạn ở 2.200 ký tự
+- `~/.hermes/memories/USER.md` — hồ sơ người dùng, giới hạn ở 1.375 ký tự
+
+Giới hạn ký tự cứng buộc tác nhân phải tinh lọc thay vì tích tụ. Lịch sử phiên làm việc có thể tìm kiếm qua SQLite FTS5.
+
+---
+
+### Mô hình ghi
+
+**Engram** — cổng phê duyệt rõ ràng từ con người mặc định. Tác nhân đề xuất ứng viên; con người phải phê duyệt trước khi bất kỳ thứ gì được lưu vào đĩa. Quét thông tin nhạy cảm và chèn prompt diễn ra tại thời điểm lưu. *(Lưu ý: Người dùng có thể tự động hóa quy trình này bằng cách thiết lập một quy tắc tự động lưu các đề xuất bộ nhớ mới khi phiên phản hồi hoàn thành, tạo nên một luồng lưu tự động).*
+
+**Hermes** — tự động. Tác nhân quyết định viết gì và khi nào, chỉ bị giới hạn bởi các giới hạn ký tự. Không có sự phê duyệt của con người trong vòng lặp cốt lõi.
+
+---
+
+### Mô hình thu hồi (Recall)
+
+**Engram** — định tuyến theo nhu cầu. `engram load "<tác vụ>"` xếp hạng lại các ứng viên theo tag, loại, độ mới, đồ thị và tín hiệu vector tùy chọn, sau đó chèn một gói nhỏ gọn (mặc định: 8 tệp) vào ngữ cảnh.
+
+**Hermes** — chèn luôn hoạt động. Các tệp cốt lõi được cố định vào system prompt khi bắt đầu phiên. Một nhà cung cấp bên ngoài tùy chọn (ví dụ: agentmemory) chạy tìm nạp trước mỗi lượt LLM và đồng bộ sau đó.
+
+---
+
+### Khi nào nên sử dụng loại nào
+
+**Sử dụng Engram** khi bạn cần bộ nhớ có thể kiểm toán và được con người xem xét; chia sẻ nhóm qua Git; các đảm bảo quyền riêng tư; hoặc khả năng di động không phụ thuộc tác nhân trên các công cụ (với tùy chọn tự động hóa lưu qua các quy tắc tùy chỉnh).
+
+**Sử dụng Hermes** khi bạn muốn bộ nhớ tự động tích lũy mà không cần kỷ luật lưu trữ, chèn ngữ cảnh luôn bật hoặc môi trường chạy phong phú hơn với giao diện xem, REST API và các backend vector cắm thêm.
+
+---
+
 ## So Với Bộ Nhớ Tích Hợp Sẵn Của Tác Nhân AI
 
 Bộ nhớ tích hợp sẵn của tác nhân AI tuy tiện lợi nhưng thường bị khóa trong một máy chủ cụ thể. Rất khó để so sánh sự khác biệt (diff), xuất dữ liệu, kiểm duyệt hoặc chia sẻ nó với một tác nhân AI khác.

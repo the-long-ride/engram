@@ -40,6 +40,59 @@ Use `Engram` cuando desee que la memoria sea un protocolo legible por el reposit
 | Mejor ajuste | Equipos que necesitan propiedad y auditabilidad | Usuarios que desean recuerdo y reproducción automáticos |
 | Riesgo | Más disciplina manual | Más estado invisible a menos que se gobierne con cuidado |
 
+## Comparado con Hermes Agent
+
+### Resumen (TL;DR)
+
+| | Engram | Hermes Agent |
+|---|---|---|
+| **Filosofía** | Protocolo de archivos primero, propiedad humana (automatización opcional) | Memoria autónoma y siempre activa |
+| **Almacenamiento** | Archivos Markdown clasificados en `.agents/.engram/` | `MEMORY.md` + `USER.md` (límites estrictos de caracteres) |
+| **Modelo de escritura** | Aprobado por el humano por defecto (puerta A/B/C; automatizable mediante reglas) | El agente escribe de forma autónoma |
+| **Recuperación** | Bajo demanda: `engram load "<tarea>"` inyecta archivos relevantes | Siempre activo: archivos principales congelados en el prompt del sistema cada sesión |
+| **Búsqueda vectorial** | sqlite-vec local opcional (determinista, no respaldado por embeddings) | Vía proveedor externo (por ejemplo, agentmemory — BM25 + vector) |
+| **Multi-agente** | Cualquier agente lector de archivos puede consumir la memoria de Engram | El núcleo de Hermes es mono-agente; multi-agente vía plugin agentmemory |
+| **Portability** | Nativo de Git, primero sin conexión, Markdown simple | Archivos locales; los proveedores externos pueden añadir dependencia de la nube |
+| **Sobrecarga (Overhead)** | Sin daemon, requiere disciplina de guardado (a menos que se automatice) | Proceso de servidor + interfaz de usuario de visualización, API REST, servidor MCP |
+
+---
+
+### Formatos de almacenamiento
+
+**Engram** almacena cada memoria como un archivo Markdown clasificado con frontmatter YAML, comprobaciones de integridad hash y un gráfico de dependencias opcional (`depends_on`). Un índice JSON, un gráfico y un sidecar sqlite-vec actúan como capas de aceleración — Markdown es la fuente de verdad.
+
+**Hermes** comprime toda la memoria persistente en dos archivos limitados:
+- `~/.hermes/memories/MEMORY.md` — notas del agente, limitadas a 2,200 caracteres
+- `~/.hermes/memories/USER.md` — perfil de usuario, limitado a 1,375 caracteres
+
+Los límites estrictos de caracteres obligan al agente a curar en lugar de acumular. El historial de sesiones se puede buscar mediante SQLite FTS5.
+
+---
+
+### Modelo de escritura
+
+**Engram** — puerta humana explícita por defecto. Los agentes proponen candidatos; un humano debe aprobar antes de que algo se guarde en el disco. El escaneo de secretos y de inyección de prompts ocurren al momento de guardar. *(Nota: Los usuarios pueden optar por automatizar este proceso guardando una regla para guardar automáticamente las nuevas memorias propuestas cuando se completa una respuesta, lo que permite un flujo de guardado automático).*
+
+**Hermes** — autónomo. El agente decide qué escribir y cuándo, limitado únicamente por los topes de caracteres. Sin aprobación humana en el bucle principal.
+
+---
+
+### Modelo de recuperación
+
+**Engram** — enrutamiento bajo demanda. `engram load "<tarea>"` clasifica de nuevo los candidatos por etiquetas, tipo, antigüedad, gráfico y señales vectoriales opcionales, luego inyecta un paquete compacto (por defecto: 8 archivos) en el contexto.
+
+**Hermes** — inyección siempre activa. Los archivos principales se congelan en el prompt del sistema al inicio de la sesión. Un proveedor externo opcional (por ejemplo, agentmemory) realiza una búsqueda previa antes de cada turno del LLM y se sincroniza después.
+
+---
+
+### Cuándo usar cuál
+
+**Use Engram** cuando necesite una memoria almacenable y revisada por humanos; compartir en equipo a través de Git; garantías de privacidad; o portabilidad independiente del agente entre herramientas (con la opción de automatizar el guardado a través de reglas personalizadas).
+
+**Use Hermes** cuando desee una memoria que se acumule automáticamente sin disciplina de guardado, inyección de contexto siempre activa o un entorno de ejecución más rico con visualizadores, API REST y backends vectoriales acoplables.
+
+---
+
 ## Comparado con la Memoria Integrada del Agente
 
 La memoria integrada del agente es conveniente, pero a menudo está vinculada a un solo host. Puede ser difícil de comparar (diff), exportar, revisar o compartir con otro agente.

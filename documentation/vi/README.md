@@ -122,7 +122,7 @@ engram is --global <tên-tác-nhân-ai>
 
 Cho Gemini / Antigravity:
 ```bash
-engram install-skillset gemini
+engram link gemini
 ```
 
 ### 3. Khởi tạo Không gian làm việc

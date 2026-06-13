@@ -30,8 +30,8 @@ El agente puede ejecutar:
 
 ```bash
 engram init
-engram help install-skillset
-engram install-skillset <nombre-del-agente>
+engram help link
+engram link <nombre-del-agente>
 ```
 
 Para uso nativo del chat, pregunte:

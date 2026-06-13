@@ -30,8 +30,8 @@ Tác nhân AI có thể chạy:
 
 ```bash
 engram init
-engram help install-skillset
-engram install-skillset <tên-tác-nhân-ai>
+engram help link
+engram link <tên-tác-nhân-ai>
 ```
 
 Để sử dụng trực tiếp trong chat, hãy hỏi:

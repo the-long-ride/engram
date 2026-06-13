@@ -122,7 +122,7 @@ engram is --global <您的智能体名称>
 
 对于 Gemini / Antigravity 环境：
 ```bash
-engram install-skillset gemini
+engram link gemini
 ```
 
 ### 3. 初始化工作空间

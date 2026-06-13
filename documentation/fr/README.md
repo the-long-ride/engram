@@ -122,7 +122,7 @@ engram is --global <votre-agent>
 
 Pour Gemini / interfaces Antigravity :
 ```bash
-engram install-skillset gemini
+engram link gemini
 ```
 
 ### 3. Initialiser l'Espace de Travail

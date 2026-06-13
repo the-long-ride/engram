@@ -30,8 +30,8 @@
 
 ```bash
 engram init
-engram help install-skillset
-engram install-skillset <에이전트-이름>
+engram help link
+engram link <에이전트-이름>
 ```
 
 채팅창에서 바로 사용하고 싶다면 이렇게 질문하십시오:

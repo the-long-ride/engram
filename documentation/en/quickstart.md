@@ -31,14 +31,14 @@ The agent can run:
 
 ```bash
 engram init
-engram help install-skillset
-engram install-skillset <agent-name>
+engram help link
+engram link <agent-name>
 ```
 
 To teach the same agent globally, so new workspaces can load Engram global memory without running `engram init` first:
 
 ```bash
-engram install-skillset --global <agent-name>
+engram link --global <agent-name>
 ```
 
 For chat-native use, ask:
@@ -128,7 +128,7 @@ The agent may use:
 ```bash
 engram init --global-only --global-path <path>
 engram save --scope global "Use pnpm for package management."
-engram install-skillset --global <agent-name>
+engram link --global <agent-name>
 ```
 
 When init sees configured global memory, it creates or selects a user default

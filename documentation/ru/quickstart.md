@@ -30,8 +30,8 @@
 
 ```bash
 engram init
-engram help install-skillset
-engram install-skillset <имя-агента>
+engram help link
+engram link <имя-агента>
 ```
 
 Для использования прямо в чате спросите:

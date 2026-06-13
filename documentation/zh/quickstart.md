@@ -30,8 +30,8 @@
 
 ```bash
 engram init
-engram help install-skillset
-engram install-skillset <智能体名称>
+engram help link
+engram link <智能体名称>
 ```
 
 若要在聊天中直接使用，询问：

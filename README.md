@@ -109,20 +109,20 @@ Standard rule files get sent with every single message, bloating context, causin
 npm install -g @the-long-ride/engram
 ```
 
-### 2. Install Skillset Globally
+### 2. Link Engram to Your Agent
 Instruct your AI assistant on how to interact with Engram (read, write, maintain):
 ```bash
 # List supported agents
 engram is list
 
-# Install skillset globally to your agent
+# Link Engram globally to your agent (installs skillset + MCP)
 engram is --global <your-agent>
 ```
 *(Replace `<your-agent>` with your assistant name; use `agents-md` for unsupported agents that read `AGENTS.md`.)*
 
 For Gemini / Antigravity surfaces:
 ```bash
-engram install-skillset gemini
+engram link gemini
 ```
 
 ### 3. Initialize Workspace

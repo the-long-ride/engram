@@ -1,4 +1,5 @@
 /** Agent-host adapter files that let Engram behave as a portable skillset. */
+import fs from 'node:fs/promises';
 import path from 'node:path';
 import { homedir, platform } from 'node:os';
 import { VERSION } from '../runtime/constants.js';
@@ -12,6 +13,7 @@ export type SkillsetTarget =
   | 'cline' | 'windsurf' | 'agent-skill' | 'antigravity' | 'opencode' | 'mcp' | 'slash';
 export type InstallAction = 'written' | 'updated' | 'skipped' | 'planned';
 export type InstallResult = { target: string; file: string; action: InstallAction; mode?: GlobalInstallMode; reason?: string; hash?: string };
+export type UnlinkResult = { target: string; file: string; action: 'removed' | 'cleaned' | 'skipped'; reason?: string };
 export type GlobalInstallMode = 'block' | 'file';
 
 type ResolvedTarget = { name: SkillsetTarget; label: string };
@@ -236,7 +238,7 @@ function globalFilesForTarget(target: ResolvedTarget, home: string): GlobalInsta
         plan(path.join(configHome, 'opencode', 'skills', 'engram', 'SKILL.md'), 'file', 'agent-skill')
       ];
     case 'mcp':
-      return [skip('MCP is configured per agent host, not as one global Engram rule file')];
+      return [plan(path.join(home, '.claude', 'mcp.json'), 'file', 'mcp'), plan(path.join(configHome, 'gemini', 'mcp.json'), 'file', 'mcp')];
     case 'slash':
       return [
         plan(path.join(home, '.claude', 'commands', 'engram.md'), 'file'),
@@ -260,6 +262,7 @@ function globalAgentConfigHome(home: string): string {
 
 function renderGlobalInstallContent(plan: GlobalInstallPlan): string {
   if (plan.name === 'slash' || plan.renderTarget === 'slash') return renderSkillsetFile('slash', plan.file);
+  if (plan.renderTarget === 'mcp') return renderSkillsetFile('mcp', plan.file);
   if (plan.file.endsWith('SKILL.md')) return renderSkillsetFile(plan.renderTarget ?? 'agent-skill', plan.file);
   return globalSkillsetMarkdown();
 }
@@ -270,6 +273,83 @@ function upsertManagedBlock(existing: string, content: string): { text: string; 
   const pattern = new RegExp(`${escapeRegExp(GLOBAL_BEGIN)}[\\s\\S]*?${escapeRegExp(GLOBAL_END)}`, 'g');
   const humanContent = existing.replace(pattern, '').trimEnd();
   return { text: `${humanContent ? `${humanContent}\n\n` : ''}${block}\n`, action: 'updated' };
+}
+
+/** Remove one or all agent adapter files from a workspace. */
+export async function unlinkSkillset(cwd: string, target = 'all', force = false): Promise<UnlinkResult[]> {
+  const names = target === 'all' ? skillsetTargets().map((name) => ({ name, label: name })) : resolveTargets(target);
+  const results: UnlinkResult[] = [];
+  for (const { name, label } of names) {
+    for (const relativeFile of targets[name]) {
+      const file = path.join(cwd, relativeFile);
+      const existing = await readText(file);
+      if (!existing) {
+        results.push({ target: label, file: relativeFile, action: 'skipped', reason: 'file not found' });
+        continue;
+      }
+      if (!force && !isGenerated(existing, relativeFile)) {
+        results.push({ target: label, file: relativeFile, action: 'skipped', reason: 'human-authored file; use --force to remove' });
+        continue;
+      }
+      await fs.rm(file, { force: true });
+      results.push({ target: label, file: relativeFile, action: 'removed' });
+    }
+  }
+  return results;
+}
+
+/** Remove one or all global agent adapter files. */
+export async function unlinkGlobalSkillset(target = 'all', options: { force?: boolean; home?: string } = {}): Promise<UnlinkResult[]> {
+  const registry = await readGlobalSkillsetRegistry();
+  const targetsToRemove = target === 'all' ? Object.keys(registry.installs) : [target];
+  const results: UnlinkResult[] = [];
+  for (const current of targetsToRemove) {
+    const install = registry.installs[current];
+    if (!install) {
+      results.push({ target: current, file: '<none>', action: 'skipped', reason: 'not registered' });
+      continue;
+    }
+    for (const entry of install.files) {
+      const file = entry.path;
+      const existing = await readText(file);
+      if (!existing) {
+        results.push({ target: current, file, action: 'skipped', reason: 'file not found' });
+        continue;
+      }
+      if (entry.mode === 'block') {
+        const cleaned = removeManagedBlock(existing);
+        if (cleaned === existing) {
+          results.push({ target: current, file, action: 'skipped', reason: 'no Engram managed block found' });
+          continue;
+        }
+        const trimmed = cleaned.trimEnd();
+        if (!trimmed) {
+          await fs.rm(file, { force: true });
+          results.push({ target: current, file, action: 'removed' });
+        } else {
+          await writeText(file, `${trimmed}\n`);
+          results.push({ target: current, file, action: 'cleaned' });
+        }
+      } else {
+        if (!options.force && !isGenerated(existing, file)) {
+          results.push({ target: current, file, action: 'skipped', reason: 'human-authored file; use --force to remove' });
+          continue;
+        }
+        await fs.rm(file, { force: true });
+        results.push({ target: current, file, action: 'removed' });
+      }
+    }
+    delete registry.installs[current];
+  }
+  registry.updated = new Date().toISOString();
+  registry.engram_version = VERSION;
+  await writeJson(globalSkillsetRegistryPath(), registry);
+  return results;
+}
+
+function removeManagedBlock(content: string): string {
+  const pattern = new RegExp(`${escapeRegExp(GLOBAL_BEGIN)}[\\s\\S]*?${escapeRegExp(GLOBAL_END)}`, 'g');
+  return content.replace(pattern, '').replace(/\n{3,}/g, '\n\n');
 }
 
 function normalizePath(file: string): string {

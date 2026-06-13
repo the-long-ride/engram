@@ -10,7 +10,7 @@ import { cmdArchive, cmdBenchmark, cmdDeduplicate, cmdEntry, cmdExport, cmdGraph
 import { cmdCloneMemory } from './commands/clone.js';
 import { cmdMetacognize } from './commands/metacognize.js';
 import { cmdProfile } from './commands/profile.js';
-import { cmdIgnore, cmdInstallHooks, cmdInstallSkillset, cmdResolveConflicts, cmdSetLoadLimit, cmdSetRole, cmdSetRuleVariant, cmdSetSaveTarget, cmdUpdateGlobalFolder, cmdUpgrade } from './commands/admin.js';
+import { cmdIgnore, cmdInstallHooks, cmdLink, cmdUnlink, cmdResolveConflicts, cmdSetLoadLimit, cmdSetRole, cmdSetRuleVariant, cmdSetSaveTarget, cmdUpdateGlobalFolder, cmdUpgrade } from './commands/admin.js';
 import { maybeAutoUpgrade } from './core/runtime/auto-upgrade.js';
 
 /** Execute a CLI invocation and return printable output. */
@@ -60,7 +60,9 @@ export async function runCli(argv: string[]): Promise<string> {
       case 'update-global-folder': return await cmdUpdateGlobalFolder(rest, flags);
       case 'resolve-conflicts': return await cmdResolveConflicts(rest, flags);
       case 'install-hooks': return await cmdInstallHooks();
-      case 'install-skillset': return await cmdInstallSkillset(rest, flags);
+      case 'install-skillset': return await cmdLink(rest, flags);
+      case 'link': return await cmdLink(rest, flags);
+      case 'unlink': return await cmdUnlink(rest, flags);
       case 'upgrade': return await cmdUpgrade(rest, flags);
       case 'clone-memory': return await cmdCloneMemory(rest, flags);
       case 'metacognize': return await cmdMetacognize(rest, flags);

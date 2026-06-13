@@ -18,12 +18,15 @@ import {
   globalSkillsetRegistryPath,
   installGlobalSkillset,
   installSkillset,
+  unlinkSkillset,
+  unlinkGlobalSkillset,
   readGlobalSkillsetRegistry,
   refreshGeneratedWorkspaceSkillsets,
   refreshGlobalSkillsets,
   skillsetTargets,
   type SkillsetTarget,
-  type InstallResult
+  type InstallResult,
+  type UnlinkResult
 } from '../core/integrations/skillset.js';
 import { git } from '../core/vcs/git.js';
 import { formatRecords, type RecordBlock } from '../core/cli/format.js';
@@ -151,6 +154,54 @@ async function gitHookDir(cwd: string): Promise<string> {
   } catch {
     throw new Error('install-hooks requires a Git repository');
   }
+}
+
+/** Install agent-host instruction files and MCP config for Engram integration. */
+export async function cmdLink(args: string[], flags: Record<string, any> = {}): Promise<string> {
+  if (args[0] === 'list') {
+    const isTTY = process.stdout.isTTY;
+    const cyan = (text: string) => isTTY ? `\x1b[1;36m${text}\x1b[0m` : text;
+    const yellow = (text: string) => isTTY ? `\x1b[1;33m${text}\x1b[0m` : text;
+    const gray = (text: string) => isTTY ? `\x1b[90m${text}\x1b[0m` : text;
+    const listLines = skillsetListTargets().map((target) => {
+      const padded = target.padEnd(16);
+      const note = skillsetListNotes[target];
+      return `  ${cyan('•')} ${yellow(padded)}${note ? ` ${gray(note)}` : ''}`;
+    });
+    return ['Currently, engram supports these agents:', ...listLines].join('\n');
+  }
+  const target = args[0] ?? 'all';
+  const global = flags.global === true;
+  const results = global
+    ? await installGlobalSkillset(target, { force: Boolean(flags.force) })
+    : await installSkillset(process.cwd(), target, Boolean(flags.force));
+  const records = installResultRecords(results);
+  return [
+    formatRecords(global ? 'Global link install' : 'Link install', records),
+    ...skillsetInstallHints(results, global)
+  ].join('\n');
+}
+
+/** Remove Engram agent-host instruction files, MCP config, and managed blocks. */
+export async function cmdUnlink(args: string[], flags: Record<string, any> = {}): Promise<string> {
+  const target = args[0] ?? 'all';
+  const global = flags.global === true;
+  const results = global
+    ? await unlinkGlobalSkillset(target, { force: Boolean(flags.force) })
+    : await unlinkSkillset(process.cwd(), target);
+  const records = unlinkResultRecords(results);
+  return [
+    formatRecords(global ? 'Global unlink' : 'Unlink', records)
+  ].join('\n');
+}
+
+function unlinkResultRecords(results: UnlinkResult[]): RecordBlock[] {
+  return results.map((result) => ({
+    title: `${result.action.toUpperCase()} ${result.target}: ${result.file}`,
+    fields: [
+      ...(result.reason ? [['Reason', result.reason] as [string, string]] : [])
+    ]
+  }));
 }
 
 /** Install agent-host instruction files for Engram skillset integration. */

@@ -122,7 +122,7 @@ engram is --global <에이전트명>
 
 Gemini / Antigravity 환경의 경우:
 ```bash
-engram install-skillset gemini
+engram link gemini
 ```
 
 ### 3. 워크스페이스 초기화

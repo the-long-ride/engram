@@ -30,8 +30,8 @@
 
 ```bash
 engram init
-engram help install-skillset
-engram install-skillset <エージェント名>
+engram help link
+engram link <エージェント名>
 ```
 
 チャットで直接使う場合は、以下のように尋ねます：

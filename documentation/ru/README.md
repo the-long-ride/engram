@@ -122,7 +122,7 @@ engram is --global <имя_агента>
 
 Для сред Gemini / Antigravity:
 ```bash
-engram install-skillset gemini
+engram link gemini
 ```
 
 ### 3. Инициализируйте Рабочее Пространство

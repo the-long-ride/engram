@@ -28,7 +28,7 @@ export const HELP_DATA: HelpSection[] = [
       { command: 'engram observe [--file session.md] [--propose] [note]', alias: 'o', purpose: 'Capture sanitized raw notes in inbox, then optionally propose memories through save-session' },
       { command: 'engram take-control [--plan] [--file path] [--dir path] [--include glob] [--exclude glob] [--max-sources n] [--max-chars n] [--all] [--accept-all] [--metacognize]', alias: 'tc', purpose: 'Explore existing workspace guidance with agent help, token-light accept-all, optional metacognition, and Engram memory writes' },
       { command: 'engram metacognize --workspace|--global|--all [--accept-all] [--dry-run]', alias: 'mc', purpose: 'Let an agent restructure an existing memory folder through save-session-style candidates and approval' },
-      { command: 'engram load [--all] [--dry-run] [query]', alias: 'l', purpose: 'Route, refine, and load the configured compact memory pack, or preview routed file paths with --dry-run' },
+      { command: 'engram load [--all] [--dry-run] [query]', alias: 'ld', purpose: 'Route, refine, and load the configured compact memory pack, or preview routed file paths with --dry-run' },
       { command: 'engram search [--semantic] <query>', alias: 'f', purpose: 'Search visible indexed memories with lexical or local semantic scoring' },
       { command: 'engram graph [--rebuild] [query]', alias: 'g', purpose: 'Inspect the derived layered JSON memory graph, dependency layers, and contradiction candidates' },
       { command: 'engram verify [workspace|global]', alias: 'vf', purpose: 'Verify memory file integrity and hashes' },
@@ -55,7 +55,8 @@ export const HELP_DATA: HelpSection[] = [
       { command: 'engram set-rule-variant off|light|balanced|strict|status', alias: 'rv', purpose: 'Tune rule strictness: strict helps lower-tier models stay controlled, while top-tier models often work better with light or balanced so strict wording does not limit their reasoning' },
       { command: 'engram resolve-conflicts [--dry-run] [--metacognize] [--accept-all]', alias: 'rc', purpose: 'Preview or resolve Git conflicts in memory files, then optionally run workspace metacognition' },
       { command: 'engram install-hooks', alias: 'ih', purpose: 'Install local Git hooks for Engram integrity checks' },
-      { command: 'engram install-skillset [all|list|target] [--global] [--force]', alias: 'is', purpose: 'Generate workspace or global agent skillset instruction files and slash adapters' },
+      { command: 'engram link [all|list|target] [--global] [--force]', alias: 'l', purpose: 'Link Engram skillset, MCP config, and slash adapters to an AI agent' },
+      { command: 'engram unlink [all|target] [--global] [--force]', purpose: 'Remove Engram skillset, MCP config, and instruction content from an AI agent' },
       { command: 'engram clone-memory workspace global [--force] [--dry-run] [--metacognize] [--accept-all]', alias: 'cm', purpose: 'Clone active memory Markdown between workspace and global scopes; --metacognize uses save-session-style approval instead of raw file copy' },
       { command: 'engram sync', alias: 'sy', purpose: 'Sync global memory with Git remote and refresh enabled live-sync targets' },
     ]

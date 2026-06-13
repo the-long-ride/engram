@@ -122,7 +122,7 @@ engram is --global <エージェント名>
 
 Gemini / Antigravity 環境の場合：
 ```bash
-engram install-skillset gemini
+engram link gemini
 ```
 
 ### 3. ワークスペースの初期化

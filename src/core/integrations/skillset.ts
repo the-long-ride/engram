@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { homedir, platform } from 'node:os';
 import { VERSION } from '../runtime/constants.js';
-import { userConfigDir } from '../runtime/config.js';
+import { loadConfig, userConfigDir } from '../runtime/config.js';
 import { sha256 } from '../safety/hash.js';
 import { ensureDir, readJson, readText, writeJson, writeText } from '../system/fsx.js';
 import { globalSkillsetMarkdown, isGenerated, renderSkillsetFile } from './skillset-render.js';
@@ -69,6 +69,7 @@ export function skillsetTargets(): SkillsetTarget[] {
 
 /** Install one or all agent adapter files into a workspace. */
 export async function installSkillset(cwd: string, target = 'all', force = false): Promise<InstallResult[]> {
+  const config = await loadConfig(cwd);
   const names = target === 'all' ? skillsetTargets().map((name) => ({ name, label: name })) : resolveTargets(target);
   const results: InstallResult[] = [];
   for (const { name, label } of names) {
@@ -80,7 +81,7 @@ export async function installSkillset(cwd: string, target = 'all', force = false
         continue;
       }
       await ensureDir(path.dirname(file));
-      await writeText(file, renderSkillsetFile(name, relativeFile));
+      await writeText(file, renderSkillsetFile(name, relativeFile, config.read));
       results.push({ target: label, file: relativeFile, action: 'written' });
     }
   }
@@ -89,13 +90,14 @@ export async function installSkillset(cwd: string, target = 'all', force = false
 
 /** Refresh only existing Engram-generated workspace adapter files. */
 export async function refreshGeneratedWorkspaceSkillsets(cwd: string, options: { plan?: boolean } = {}): Promise<InstallResult[]> {
+  const config = await loadConfig(cwd);
   const results: InstallResult[] = [];
   for (const name of Object.keys(targets) as SkillsetTarget[]) {
     for (const relativeFile of targets[name]) {
       const file = path.join(cwd, relativeFile);
       const existing = await readText(file);
       if (!existing || !isGenerated(existing, relativeFile)) continue;
-      const next = renderSkillsetFile(name, relativeFile);
+      const next = renderSkillsetFile(name, relativeFile, config.read);
       const normalized = next.endsWith('\n') ? next : `${next}\n`;
       if (existing === normalized) continue;
       if (options.plan) {
@@ -121,6 +123,7 @@ export async function readGlobalSkillsetRegistry(): Promise<GlobalSkillsetRegist
 
 /** Install one or all agent adapter files into user/global agent locations. */
 export async function installGlobalSkillset(target = 'all', options: { force?: boolean; plan?: boolean; home?: string } = {}): Promise<InstallResult[]> {
+  const config = await loadConfig(process.cwd());
   const plans = globalInstallPlans(target, options.home);
   const results: InstallResult[] = [];
   for (const plan of plans) {
@@ -128,7 +131,7 @@ export async function installGlobalSkillset(target = 'all', options: { force?: b
       results.push({ target: plan.label, file: plan.file, action: 'skipped', reason: plan.reason ?? 'global install is not supported for this target yet' });
       continue;
     }
-    const content = renderGlobalInstallContent(plan);
+    const content = renderGlobalInstallContent(plan, config.read);
     if (options.plan) {
       results.push({ target: plan.label, file: plan.file, action: 'planned', mode: plan.mode, hash: sha256(content) });
       continue;
@@ -260,11 +263,11 @@ function globalAgentConfigHome(home: string): string {
   return path.join(home, '.config');
 }
 
-function renderGlobalInstallContent(plan: GlobalInstallPlan): string {
-  if (plan.name === 'slash' || plan.renderTarget === 'slash') return renderSkillsetFile('slash', plan.file);
-  if (plan.renderTarget === 'mcp') return renderSkillsetFile('mcp', plan.file);
-  if (plan.file.endsWith('SKILL.md')) return renderSkillsetFile(plan.renderTarget ?? 'agent-skill', plan.file);
-  return globalSkillsetMarkdown();
+function renderGlobalInstallContent(plan: GlobalInstallPlan, readMode = 'auto'): string {
+  if (plan.name === 'slash' || plan.renderTarget === 'slash') return renderSkillsetFile('slash', plan.file, readMode);
+  if (plan.renderTarget === 'mcp') return renderSkillsetFile('mcp', plan.file, readMode);
+  if (plan.file.endsWith('SKILL.md')) return renderSkillsetFile(plan.renderTarget ?? 'agent-skill', plan.file, readMode);
+  return globalSkillsetMarkdown(readMode);
 }
 
 function upsertManagedBlock(existing: string, content: string): { text: string; action: InstallAction } {

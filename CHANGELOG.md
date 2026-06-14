@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.0.12
+
+- Added `engram link` / `engram unlink` as the primary agent integration
+  commands for skillsets, MCP config, slash adapters, and global cleanup.
+- Added global MCP config generation for supported hosts and regression
+  coverage for link/unlink behavior.
+- Fixed MCP `tools/call` argument handling so `engram_load` uses the provided
+  query instead of falling back to `current session`.
+
 ## 0.0.11
 
 - Added `engram metacognize` / `engram mc` for memory restructuring, so

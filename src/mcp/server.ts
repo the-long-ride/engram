@@ -11,8 +11,8 @@ import type { Scope } from '../core/runtime/types.js';
 
 /** Handle one MCP-like request object. */
 export async function handleMcp(request: any): Promise<any> {
-  const method = request.method ?? request.tool;
-  const args = request.params ?? request.arguments ?? {};
+  const method = mcpMethod(request);
+  const args = mcpArgs(request);
   try {
     if (method === 'engram_load') return ok(request.id, await cmdLoad([args.query ?? 'current session'], {}));
     if (method === 'engram_search') return ok(request.id, await cmdSearch([args.query ?? '']));
@@ -24,6 +24,17 @@ export async function handleMcp(request: any): Promise<any> {
   } catch (error: any) {
     return fail(request.id, error.message);
   }
+}
+
+function mcpMethod(request: any): string | undefined {
+  if (request.method === 'tools/call') return request.params?.name;
+  return request.method ?? request.tool;
+}
+
+function mcpArgs(request: any): any {
+  if (request.method === 'tools/call') return request.params?.arguments ?? {};
+  if (request.params?.arguments && typeof request.params.arguments === 'object') return request.params.arguments;
+  return request.arguments ?? request.params ?? {};
 }
 
 /** Return a proposal only; MCP never writes memory silently. */

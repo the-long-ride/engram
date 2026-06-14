@@ -73,9 +73,24 @@ test('mcp status and save proposal do not write silently', async () => {
     assert.match(related.result, /Human approval required/);
     assert.match(await runCli(['stats']), /Total: 1/);
 
-    const empty = await handleMcp({ id: 7, method: 'engram_save', params: { text: '' } });
+    const cliLoad = await runCli(['load', 'release foundation checklist']);
+    assert.match(cliLoad, /loaded 1 memory files/);
+    assert.match(cliLoad, /release-foundation-checklist/);
+
+    const mcpLoad = await handleMcp({
+      id: 7,
+      method: 'tools/call',
+      params: {
+        name: 'engram_load',
+        arguments: { query: 'release foundation checklist' }
+      }
+    });
+    assert.match(mcpLoad.result, /loaded 1 memory files/);
+    assert.match(mcpLoad.result, /release-foundation-checklist/);
+
+    const empty = await handleMcp({ id: 8, method: 'engram_save', params: { text: '' } });
     assert.match(empty.error.message, /non-empty text/);
-    const badType = await handleMcp({ id: 8, method: 'engram_save', params: { text: 'Use Vitest', type: 'bogus' } });
+    const badType = await handleMcp({ id: 9, method: 'engram_save', params: { text: 'Use Vitest', type: 'bogus' } });
     assert.match(badType.error.message, /rule, skill, workflow, or knowledge/);
   } finally {
     process.chdir(previous);

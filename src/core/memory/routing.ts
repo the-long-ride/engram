@@ -38,6 +38,12 @@ export function visibleEntries(entries: MemoryEntry[], config: EngramConfig, man
   });
 }
 
+function isStartSession(entry: MemoryEntry): boolean {
+  if (entry.type === 'rule') return true;
+  const startTags = ['session-start', 'always-load', 'start-session', 'always'];
+  return entry.tags.some((t) => startTags.includes(t.toLowerCase()));
+}
+
 /** Select the configured compact set of most relevant entries using lexical similarity. */
 export function route(index: MemoryIndex, query: string, config: EngramConfig, manual = false, options: RouteOptions = {}, graph?: MemoryGraph): MemoryEntry[] {
   return routeDetailed(index, query, config, manual, options, graph).entries;
@@ -49,8 +55,15 @@ export function routeDetailed(index: MemoryIndex, query: string, config: EngramC
   const activeGraph = config.graph.enabled ? graph : undefined;
   const max = normalizeLoadLimit(options.limit ?? config.load?.limit);
   const pool = Math.max(max, options.candidatePool ?? config.vector?.candidate_pool ?? max);
+  const isCurrentSession = query.trim().toLowerCase() === 'current session';
   if (options.all) {
-    const selected = rankRows(entries.map((entry) => ({ entry, score: lexicalScore(query, entryText(entry)) })), query).map((row) => row.entry);
+    const selected = rankRows(entries.map((entry) => {
+      let score = lexicalScore(query, entryText(entry));
+      if (isCurrentSession && isStartSession(entry)) {
+        score = Math.max(0.5, score);
+      }
+      return { entry, score };
+    }), query).map((row) => row.entry);
     const ordered = activeGraph ? dependencyContextEntries(selected, entries, activeGraph, selected.length) : selected;
     return detail(ordered, selected, query, false);
   }
@@ -60,16 +73,26 @@ export function routeDetailed(index: MemoryIndex, query: string, config: EngramC
     const candidates = blendCandidateRows(entries, query, lexical, graphHits, options.vectorHits ?? []);
     return selectDetailed(candidates, query, max, activeGraph, entries);
   }
-  const scored = entries.map((entry) => ({
-    entry,
-    score: lexicalScore(query, entryText(entry))
-  }));
+  const scored = entries.map((entry) => {
+    let score = lexicalScore(query, entryText(entry));
+    if (isCurrentSession && isStartSession(entry)) {
+      score = Math.max(0.5, score);
+    }
+    return { entry, score };
+  });
   return selectDetailed(scored.filter((row) => row.score > 0), query, max, activeGraph, entries);
 }
 
 function lexicalRoute(entries: MemoryEntry[], query: string, max: number): MemoryEntry[] {
+  const isCurrentSession = query.trim().toLowerCase() === 'current session';
   return entries
-    .map((entry) => ({ entry, score: lexicalScore(query, entryText(entry)) }))
+    .map((entry) => {
+      let score = lexicalScore(query, entryText(entry));
+      if (isCurrentSession && isStartSession(entry)) {
+        score = Math.max(0.5, score);
+      }
+      return { entry, score };
+    })
     .filter((row) => row.score > 0)
     .sort((a, b) => b.score - a.score || scopePriority(a.entry) - scopePriority(b.entry) || a.entry.file.localeCompare(b.entry.file))
     .slice(0, max)
@@ -91,7 +114,14 @@ function blendCandidateRows(
     const current = scores.get(key)?.score ?? 0;
     scores.set(key, { entry, score: current + score });
   };
-  for (const entry of lexical) bump(entry, lexicalScore(query, entryText(entry)) + 0.22);
+  const isCurrentSession = query.trim().toLowerCase() === 'current session';
+  for (const entry of lexical) {
+    let baseLexicalScore = lexicalScore(query, entryText(entry));
+    if (isCurrentSession && isStartSession(entry)) {
+      baseLexicalScore = Math.max(0.5, baseLexicalScore);
+    }
+    bump(entry, baseLexicalScore + 0.22);
+  }
   graph.forEach((entry, index) => bump(entry, 0.4 * rankScore(index, graph.length)));
   vector.forEach((hit, index) => bump(hit.entry, 0.36 * Math.max(hit.score, rankScore(index, vector.length) * 0.75)));
   return [...scores.values()];

@@ -15,22 +15,16 @@ import { isIgnored } from '../core/safety/ignore.js';
 import { ensureDir, exists, readText, writeText } from '../core/system/fsx.js';
 import { findConflicts, resolveConflicts } from '../core/vcs/conflict.js';
 import {
-  globalSkillsetRegistryPath,
   installGlobalSkillset,
-  installSkillset,
-  unlinkSkillset,
-  unlinkGlobalSkillset,
   readGlobalSkillsetRegistry,
   refreshGeneratedWorkspaceSkillsets,
   refreshGlobalSkillsets,
-  skillsetTargets,
-  type SkillsetTarget,
-  type InstallResult,
-  type UnlinkResult
+  type InstallResult
 } from '../core/integrations/skillset.js';
 import { git } from '../core/vcs/git.js';
 import { formatRecords, type RecordBlock } from '../core/cli/format.js';
 import { renderHelp } from '../core/cli/help.js';
+import { installResultRecords } from './skillset-link.js';
 import type { RuleVariant } from '../core/runtime/types.js';
 /** Inspect or update ignore patterns. */
 export async function cmdIgnore(args: string[]): Promise<string> {
@@ -95,6 +89,23 @@ export async function cmdSetRuleVariant(args: string[]): Promise<string> {
   await writeConfig(process.cwd(), ctx.config);
   return ruleVariantStatus(ctx.config.rule_variants);
 }
+/** Configure how and when engram load is used. */
+export async function cmdSetRead(args: string[]): Promise<string> {
+  const ctx = await getContext();
+  const value = (args[0] ?? 'status').toLowerCase();
+  if (value === 'status') return readStatus(ctx.config.read);
+  if (['auto', 'manual', 'off', 'always'].includes(value)) {
+    ctx.config.read = value as 'auto' | 'manual' | 'off' | 'always';
+  } else {
+    throw new Error('set-read expects auto, manual, off, always, or status');
+  }
+  await writeConfig(process.cwd(), ctx.config);
+  return readStatus(ctx.config.read);
+}
+
+function readStatus(value: string): string {
+  return `Read behavior: ${value}`;
+}
 /** Update the configured global memory folder, optionally moving the old root. */
 export async function cmdUpdateGlobalFolder(args: string[], flags: Record<string, any> = {}): Promise<string> {
   const target = textArg(args);
@@ -156,98 +167,6 @@ async function gitHookDir(cwd: string): Promise<string> {
   }
 }
 
-/** Install agent-host instruction files and MCP config for Engram integration. */
-export async function cmdLink(args: string[], flags: Record<string, any> = {}): Promise<string> {
-  if (args[0] === 'list') {
-    const isTTY = process.stdout.isTTY;
-    const cyan = (text: string) => isTTY ? `\x1b[1;36m${text}\x1b[0m` : text;
-    const yellow = (text: string) => isTTY ? `\x1b[1;33m${text}\x1b[0m` : text;
-    const gray = (text: string) => isTTY ? `\x1b[90m${text}\x1b[0m` : text;
-    const listLines = skillsetListTargets().map((target) => {
-      const padded = target.padEnd(16);
-      const note = skillsetListNotes[target];
-      return `  ${cyan('•')} ${yellow(padded)}${note ? ` ${gray(note)}` : ''}`;
-    });
-    return ['Currently, engram supports these agents:', ...listLines].join('\n');
-  }
-  const target = args[0] ?? 'all';
-  const global = flags.global === true;
-  const results = global
-    ? await installGlobalSkillset(target, { force: Boolean(flags.force) })
-    : await installSkillset(process.cwd(), target, Boolean(flags.force));
-  const records = installResultRecords(results);
-  return [
-    formatRecords(global ? 'Global link install' : 'Link install', records),
-    ...skillsetInstallHints(results, global)
-  ].join('\n');
-}
-
-/** Remove Engram agent-host instruction files, MCP config, and managed blocks. */
-export async function cmdUnlink(args: string[], flags: Record<string, any> = {}): Promise<string> {
-  const target = args[0] ?? 'all';
-  const global = flags.global === true;
-  const results = global
-    ? await unlinkGlobalSkillset(target, { force: Boolean(flags.force) })
-    : await unlinkSkillset(process.cwd(), target);
-  const records = unlinkResultRecords(results);
-  return [
-    formatRecords(global ? 'Global unlink' : 'Unlink', records)
-  ].join('\n');
-}
-
-function unlinkResultRecords(results: UnlinkResult[]): RecordBlock[] {
-  return results.map((result) => ({
-    title: `${result.action.toUpperCase()} ${result.target}: ${result.file}`,
-    fields: [
-      ...(result.reason ? [['Reason', result.reason] as [string, string]] : [])
-    ]
-  }));
-}
-
-/** Install agent-host instruction files for Engram skillset integration. */
-export async function cmdInstallSkillset(args: string[], flags: Record<string, any> = {}): Promise<string> {
-  if (args[0] === 'list') {
-    const isTTY = process.stdout.isTTY;
-    const cyan = (text: string) => isTTY ? `\x1b[1;36m${text}\x1b[0m` : text;
-    const yellow = (text: string) => isTTY ? `\x1b[1;33m${text}\x1b[0m` : text;
-    const gray = (text: string) => isTTY ? `\x1b[90m${text}\x1b[0m` : text;
-
-    const listLines = skillsetListTargets().map((target) => {
-      const padded = target.padEnd(16);
-      const note = skillsetListNotes[target];
-      return `  ${cyan('•')} ${yellow(padded)}${note ? ` ${gray(note)}` : ''}`;
-    });
-    return [
-      'Currently, engram do support these agents and also mcp:',
-      ...listLines
-    ].join('\n');
-  }
-  const target = args[0] ?? 'all';
-  const global = flags.global === true;
-  const results = global
-    ? await installGlobalSkillset(target, { force: Boolean(flags.force) })
-    : await installSkillset(process.cwd(), target, Boolean(flags.force));
-  const records = installResultRecords(results);
-  return [
-    formatRecords(global ? 'Global skillset install' : 'Skillset install', records),
-    ...skillsetInstallHints(results, global)
-  ].join('\n');
-}
-
-function skillsetListTargets(): SkillsetTarget[] {
-  const targets: SkillsetTarget[] = skillsetTargets().filter((target) => target !== 'agents-md');
-  const mcpIndex = targets.indexOf('mcp');
-  if (mcpIndex >= 0) targets.splice(mcpIndex + 1, 0, 'agents-md');
-  else targets.push('agents-md');
-  return targets;
-}
-
-const skillsetListNotes: Partial<Record<SkillsetTarget, string>> = {
-  'agents-md': '# Generic AGENTS.md fallback for unlisted AGENTS.md-compatible agents',
-  gemini: '# Also covers current Antigravity 2.0, CLI, and IDE Gemini-compatible paths',
-  slash: '# Installs IDE/chat slash commands (/engram) for manual requests'
-};
-
 /** Upgrade Engram package guidance, generated workspace assets, global memory scaffold, and registered global skillsets. */
 export async function cmdUpgrade(args: string[] = [], flags: Record<string, any> = {}): Promise<string> {
   if (flags['memory-only'] === true && flags['global-skillsets-only'] === true) throw new Error('upgrade cannot use --memory-only and --global-skillsets-only together');
@@ -290,31 +209,6 @@ async function workspaceSkillsetUpgradeRecord(plan: boolean): Promise<RecordBloc
     fields: [['Files', results.map((result) => result.file).join(', ')]],
     lines: results.map((result) => `${result.action.toUpperCase()} ${result.target}: ${result.file}`)
   };
-}
-
-function installResultRecords(results: InstallResult[]): RecordBlock[] {
-  return results.map((result) => ({
-    title: `${result.action.toUpperCase()} ${result.target}: ${result.file}`,
-    fields: [
-      ...(result.mode ? [['Mode', result.mode] as [string, string]] : []),
-      ...(result.reason ? [['Reason', result.reason] as [string, string]] : [])
-    ]
-  }));
-}
-
-function skillsetInstallHints(results: InstallResult[], global = false): string[] {
-  const hints = [];
-  if (global) hints.push(`Registry: ${globalSkillsetRegistryPath()}`);
-  if (results.some((result) => result.action === 'skipped')) hints.push('Skipped targets can be installed manually when the agent exposes a stable user/global rule path.');
-  if (results.some((result) => result.target === 'gemini')) {
-    hints.push('Note: gemini also covers current Antigravity 2.0, Antigravity CLI, and Antigravity IDE Gemini-compatible paths while Google keeps those surfaces in flux.');
-  }
-  if (!results.some((result) => result.target === 'slash')) return hints;
-  hints.push(
-    'Hint: if /engram is not visible in an already-open chat, restart or reload the agent chat after the new slash files are written.',
-    global ? 'Global Claude paths: ~/.claude/commands/engram.md and ~/.claude/skills/engram/SKILL.md' : 'Claude paths: .claude/commands/engram.md and .claude/skills/engram/SKILL.md'
-  );
-  return hints;
 }
 
 async function upgradePackageRecord(flags: Record<string, any>, plan: boolean): Promise<RecordBlock> {

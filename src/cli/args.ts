@@ -102,7 +102,8 @@ function normalizeLeadingGlobalFlags(argv: string[]): string[] {
 }
 
 function normalizeNaturalArgs(argv: string[]): string[] {
-  const metacognizeArgs = normalizeNaturalMetacognize(argv);
+  const rehashArgs = normalizeNaturalRehash(argv);
+  const metacognizeArgs = normalizeNaturalMetacognize(rehashArgs);
   const cloneMemoryArgs = normalizeNaturalCloneMemory(metacognizeArgs);
   const globalFolderArgs = normalizeNaturalGlobalFolder(cloneMemoryArgs);
   const resolveConflictArgs = normalizeNaturalResolveConflicts(globalFolderArgs);
@@ -115,6 +116,24 @@ function normalizeInstallSkillset(argv: string[]): string[] {
   const [command = 'help', ...tokens] = argv;
   if (command.toLowerCase() !== 'install-skill' || tokens[0]?.toLowerCase() !== 'set') return argv;
   return ['install-skillset', ...tokens.slice(1)];
+}
+
+const rehashVerbs = new Set(['rehash', 'refresh', 'recalculate', 'recompute']);
+function normalizeNaturalRehash(argv: string[]): string[] {
+  const [verb = '', ...tokens] = argv;
+  const lower = verb.toLowerCase();
+  if (rehashVerbs.has(lower)) {
+    const scopes = tokens.filter((t) => !t.startsWith('-'));
+    if (scopes.length === 0 || scopes.every((s) => ['memory', 'hash', 'hashes', 'all'].includes(s.toLowerCase()))) {
+      const flags = tokens.filter((t) => t.startsWith('-'));
+      return ['rehash', ...flags];
+    }
+  }
+  if (lower === 'refresh' && tokens[0]?.toLowerCase() === 'hashes') {
+    const rest = tokens.slice(1).filter((t) => t.startsWith('-'));
+    return ['rehash', ...rest];
+  }
+  return argv;
 }
 
 function normalizeNaturalCloneMemory(argv: string[]): string[] {

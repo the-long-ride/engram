@@ -1682,6 +1682,207 @@ test('global remote flag validates URL and save pushes global memory', async () 
   await rm(fresh.cwd, { recursive: true, force: true });
 });
 
+test('rehash recomputes hashes for all memory files and fixes mismatches', async () => {
+  const { cwd, env } = await tempWorkspace('engram-rehash-');
+  await runEngram(cwd, env, ['init', '--no-skillset']);
+  const root = workspaceMemoryRoot(cwd);
+  const memoryDir = path.join(root, 'knowledge');
+  await mkdir(memoryDir, { recursive: true });
+  await writeFile(path.join(memoryDir, 'test-kb.md'), `---
+id: test-kb
+type: knowledge
+scope: workspace
+tags: [test]
+created: 2026-06-05
+updated: 2026-06-05
+author: test
+source: manual
+confidence: high
+---
+
+# Knowledge: test
+
+## Context
+
+Test.
+
+## Content
+
+- Some content.
+
+## Example
+
+Use this memory when a future task touches: test.
+`);
+  // First, save creates a hash.
+  const rehash1 = await runEngram(cwd, env, ['rehash']);
+  assert.equal(rehash1.code, 0, rehash1.stderr);
+  assert.match(rehash1.stdout, /Hashed/);
+  assert.match(rehash1.stdout, /Changed:\s+1/);
+  // Tamper with the file.
+  const filePath = path.join(memoryDir, 'test-kb.md');
+  await writeFile(filePath, (await readFile(filePath, 'utf8')).replace('Some content', 'Tampered content'));
+  // Rehash should detect the change.
+  const rehash2 = await runEngram(cwd, env, ['rehash']);
+  assert.equal(rehash2.code, 0, rehash2.stderr);
+  assert.match(rehash2.stdout, /Changed:\s+1/);
+  // Verify should pass after rehash.
+  const verify = await runEngram(cwd, env, ['verify']);
+  assert.equal(verify.code, 0, verify.stderr);
+  assert.match(verify.stdout, /OK/);
+  assert.doesNotMatch(verify.stdout, /MISMATCH/);
+});
+
+test('rehash scopes work individually', async () => {
+  const { cwd, env } = await tempWorkspace('engram-rehash-scope-');
+  await runEngram(cwd, env, ['init', '--no-skillset']);
+  const rehashWorkspace = await runEngram(cwd, env, ['rehash', 'workspace']);
+  assert.equal(rehashWorkspace.code, 0, rehashWorkspace.stderr);
+  assert.match(rehashWorkspace.stdout, /Hashed/);
+  // global is configured via ENGRAM_GLOBAL_DIR in tempWorkspace env
+  const rehashGlobal = await runEngram(cwd, env, ['rehash', 'global']);
+  assert.equal(rehashGlobal.code, 0, rehashGlobal.stderr);
+  assert.match(rehashGlobal.stdout, /Hashed/);
+});
+
+test('ignore add and check manage visibility', async () => {
+  const { cwd, env } = await tempWorkspace('engram-ignore-');
+  await runEngram(cwd, env, ['init', '--no-skillset']);
+  // Check a path that is not ignored.
+  const check1 = await runEngram(cwd, env, ['ignore', 'check', 'knowledge/public.md']);
+  assert.equal(check1.stdout.trim(), 'visible');
+  // Add an ignore pattern.
+  const add = await runEngram(cwd, env, ['ignore', 'add', 'private/**']);
+  assert.match(add.stdout, /Added ignore pattern/);
+  // Check a path that is now ignored.
+  const check2 = await runEngram(cwd, env, ['ignore', 'check', 'private/secret.md']);
+  assert.equal(check2.stdout.trim(), 'ignored');
+  // Status shows the pattern.
+  const status = await runEngram(cwd, env, ['ignore', 'status']);
+  assert.match(status.stdout, /private\/\*\*/);
+});
+
+test('set-role configures developer roles', async () => {
+  const { cwd, env } = await tempWorkspace('engram-role-');
+  await runEngram(cwd, env, ['init', '--no-skillset']);
+  // Default status shows no roles.
+  const status1 = await runEngram(cwd, env, ['set-role']);
+  assert.match(status1.stdout, /Roles:\s*\(?none\)?/i);
+  // Set roles — returns confirmation.
+  const set = await runEngram(cwd, env, ['set-role', 'frontend', 'design']);
+  assert.match(set.stdout, /frontend, design/);
+  // Calling with no args clears roles (command behavior).
+  const clear = await runEngram(cwd, env, ['set-role']);
+  assert.match(clear.stdout, /Roles:\s*\(?none\)?/i);
+});
+
+test('set-read configures read behavior', async () => {
+  const { cwd, env } = await tempWorkspace('engram-read-');
+  await runEngram(cwd, env, ['init', '--no-skillset']);
+  // Default.
+  const s1 = await runEngram(cwd, env, ['set-read', 'status']);
+  assert.match(s1.stdout, /Read behavior: auto/);
+  // Change to always.
+  const set = await runEngram(cwd, env, ['set-read', 'always']);
+  assert.match(set.stdout, /Read behavior: always/);
+  // Bad value fails.
+  const bad = await runEngram(cwd, env, ['set-read', 'invalid']);
+  assert.ok(bad.code !== 0);
+});
+
+test('set-rule-variant configures rule strictness', async () => {
+  const { cwd, env } = await tempWorkspace('engram-rv-');
+  await runEngram(cwd, env, ['init', '--no-skillset']);
+  // Default.
+  const s1 = await runEngram(cwd, env, ['set-rule-variant', 'status']);
+  assert.match(s1.stdout, /Rule variants:/);
+  // Set strict.
+  const set = await runEngram(cwd, env, ['set-rule-variant', 'strict']);
+  assert.match(set.stdout, /strict/);
+  // Set off.
+  const off = await runEngram(cwd, env, ['set-rule-variant', 'off']);
+  assert.match(off.stdout, /off/);
+});
+
+test('set-save-target configures default save scope', async () => {
+  const { cwd, env } = await tempWorkspace('engram-st-');
+  await runEngram(cwd, env, ['init', '--no-skillset']);
+  // Status default.
+  const s1 = await runEngram(cwd, env, ['set-save-target', 'status']);
+  assert.match(s1.stdout, /Save target:/);
+  // Change to workspace.
+  const set = await runEngram(cwd, env, ['set-save-target', 'workspace']);
+  assert.match(set.stdout, /Save target: workspace/);
+  // global with ENGRAM_GLOBAL_DIR works.
+  const globalOk = await runEngram(cwd, env, ['set-save-target', 'global']);
+  assert.match(globalOk.stdout, /Save target: global/);
+});
+
+test('set-load-limit configures the compact load cap', async () => {
+  const { cwd, env } = await tempWorkspace('engram-ll-');
+  await runEngram(cwd, env, ['init', '--no-skillset']);
+  // Default.
+  const s1 = await runEngram(cwd, env, ['set-load-limit', 'status']);
+  assert.match(s1.stdout, /Load limit: 8/);
+  // Change.
+  const set = await runEngram(cwd, env, ['set-load-limit', '5']);
+  assert.match(set.stdout, /Load limit: 5/);
+  // Reset.
+  const reset = await runEngram(cwd, env, ['set-load-limit', 'reset']);
+  assert.match(reset.stdout, /Load limit: 8/);
+  // Out of range fails.
+  const bad = await runEngram(cwd, env, ['set-load-limit', '0']);
+  assert.ok(bad.code !== 0);
+});
+
+test('unlink reports skipped when no files exist', async () => {
+  const { cwd, env } = await tempWorkspace('engram-unlink-');
+  await runEngram(cwd, env, ['init', '--no-skillset']);
+  // Unlink should report skipped files (nothing to unlink).
+  const unlink = await runEngram(cwd, env, ['unlink', 'codex']);
+  assert.equal(unlink.code, 0, unlink.stderr);
+  assert.match(unlink.stdout, /SKIPPED|not found/);
+});
+
+test('natural language rehash normalizes to engram rehash', async () => {
+  const { cwd, env } = await tempWorkspace('engram-nat-rehash-');
+  await runEngram(cwd, env, ['init', '--no-skillset']);
+  const rehash = await runEngram(cwd, env, ['rehash', 'memory']);
+  assert.equal(rehash.code, 0, rehash.stderr);
+  assert.match(rehash.stdout, /Hashed/);
+});
+
+test('help rehash shows topic help with alias', async () => {
+  const { cwd, env } = await tempWorkspace('engram-help-rh-');
+  const h = await runEngram(cwd, env, ['help', 'rehash']);
+  assert.match(h.stdout, /Recompute and store hashes/);
+  assert.match(h.stdout, /rh/);
+});
+
+test('all registered commands have topic help entries', async () => {
+  const { HELP_DATA } = await import('../dist/core/cli/command-registry.js');
+  const { COMMAND_TOPICS } = await import('../dist/core/cli/help-topics.js');
+  for (const section of HELP_DATA) {
+    for (const item of section.commands) {
+      const name = item.command.replace(/^engram\s+/, '').trim().split(/\s+/)[0];
+      assert.ok(COMMAND_TOPICS[name], `missing help topic for command: ${name}`);
+    }
+  }
+});
+
+test('all registered commands appear in engram -h output', async () => {
+  const { cwd, env } = await tempWorkspace('engram-h-all-');
+  const { HELP_DATA } = await import('../dist/core/cli/command-registry.js');
+  const help = await runEngram(cwd, env, ['-h']);
+  const output = help.stdout.replace(/\x1b\[[0-9;]*m/g, '');
+  for (const section of HELP_DATA) {
+    for (const item of section.commands) {
+      const name = item.command.replace(/^engram\s+/, '').trim().split(/\s+/)[0];
+      assert.match(output, new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), `command ${name} missing from -h output`);
+    }
+  }
+});
+
 function testMemory({ id, tags, content }) {
   return `---
 id: ${id}

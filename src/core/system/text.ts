@@ -6,7 +6,7 @@ export function slugify(input: string): string {
 
 /** Split comma/list text into clean tags. */
 export function tagsFrom(text: string): string[] {
-  return [...new Set(text.toLowerCase().match(/[a-z0-9][a-z0-9-]{1,}/g) ?? [])].slice(0, 8);
+  return [...new Set(text.toLowerCase().match(/[a-z0-9][a-z0-9-]{2,}/g) ?? [])].slice(0, 6);
 }
 
 /** Return today in YYYY-MM-DD form. */

@@ -144,7 +144,7 @@ function dirFor(type: MemoryType): string {
 }
 
 function unique(values: string[]): string[] {
-  return [...new Set(values.map((value) => value.trim()).filter(Boolean))].slice(0, 8);
+  return [...new Set(values.map((value) => value.trim()).filter(Boolean))].slice(0, 6);
 }
 
 function mergeSourceMeta(frontmatter: Record<string, any>, source?: MemorySourceMeta): MemorySourceMeta | undefined {

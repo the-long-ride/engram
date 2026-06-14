@@ -20,7 +20,10 @@ export type RouteDetail = {
 
 const STOP_TAGS = new Set([
   'and', 'are', 'but', 'for', 'from', 'has', 'have', 'into', 'must', 'not', 'the', 'this', 'that',
-  'use', 'uses', 'using', 'when', 'with', 'your'
+  'use', 'uses', 'using', 'when', 'with', 'your', 'also', 'only', 'each', 'just', 'does',
+  'used', 'make', 'made', 'been', 'being', 'same', 'such', 'take', 'very', 'much', 'well',
+  'back', 'over', 'come', 'keep', 'them', 'they', 'their', 'both', 'some', 'more', 'most',
+  'here', 'where', 'able', 'else', 'ever', 'lives', 'new'
 ]);
 
 /** Filter index entries before scoring. */
@@ -129,7 +132,12 @@ function blendCandidateRows(
 
 function selectDetailed(candidates: Array<{ entry: MemoryEntry; score: number }>, query: string, max: number, graph?: MemoryGraph, visible?: MemoryEntry[]): RouteDetail {
   const ranked = rankRows(candidates, query);
-  let selected = ranked.slice(0, max).map((row) => row.entry);
+  // When there are many candidates, drop entries scoring below 40% of the top score.
+  // For small pools (< 2× max), keep all entries — the floor is only for large pools.
+  const topScore = ranked[0]?.score ?? 0;
+  const minScore = ranked.length > max * 2 ? topScore * 0.40 : 0;
+  const relevant = ranked.filter((row) => row.score >= minScore).slice(0, max);
+  let selected = relevant.map((row) => row.entry);
   if (graph) selected = dependencyContextEntries(selected, visible ?? ranked.map((row) => row.entry), graph, max);
   const candidateEntries = withSelected(ranked.map((row) => row.entry), selected);
   return detail(selected, candidateEntries, query, candidateEntries.length > max);
@@ -146,7 +154,8 @@ function refinementScore(entry: MemoryEntry, query: string): number {
   if (!queryWords.size) return 0;
   const tagHits = entry.tags.filter((tag) => tagMatchesQuery(tag, queryWords)).length;
   const typeHit = typeMatchesQuery(entry.type, queryWords) ? 1 : 0;
-  return tagHits * 0.08 + typeHit * 0.06 + lexicalScore(query, entry.summary) * 0.08 + recencyScore(entry.updated) * 0.015;
+  // Boost entries with tag overlap, don't penalize — the floor handles filtering in large pools.
+  return tagHits * 0.15 + typeHit * 0.08 + lexicalScore(query, entry.summary) * 0.06 + recencyScore(entry.updated) * 0.01;
 }
 
 function detail(selected: MemoryEntry[], candidates: MemoryEntry[], query: string, refined: boolean): RouteDetail {
@@ -204,7 +213,7 @@ function rankScore(index: number, total: number): number {
 }
 
 function entryText(entry: MemoryEntry): string {
-  return `${entry.id} ${entry.type} ${entry.tags.join(' ')} ${(entry.dependsOn ?? []).join(' ')} ${entry.summary}`;
+  return `${entry.type} ${entry.tags.join(' ')} ${(entry.dependsOn ?? []).join(' ')} ${entry.summary}`;
 }
 
 function entryKey(entry: MemoryEntry): string {

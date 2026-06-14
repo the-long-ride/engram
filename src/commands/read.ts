@@ -1,4 +1,5 @@
-/** Read-oriented commands: load, rebuild-index, verify, and audit. */
+/** Read-oriented commands: load, rebuild-index, verify, audit, and rehash. */
+import path from 'node:path';
 import { getContext, loadSummary } from '../core/memory/context.js';
 import { rebuildGraph } from '../core/memory/graph.js';
 import { invalidMemoryFiles, rebuildIndex } from '../core/memory/index.js';
@@ -6,7 +7,10 @@ import { loadEntries, routeDetailed, visibleEntries, type RouteDetail } from '..
 import { ensureVectorIndex, vectorRouteHits } from '../core/memory/vector-db.js';
 import { formatRecords, type RecordBlock } from '../core/cli/format.js';
 import type { Scope } from '../core/runtime/types.js';
-import { verifyRoot } from '../core/safety/hash.js';
+import { loadHashes, updateHash, verifyRoot, sha256 } from '../core/safety/hash.js';
+import { inside, listFiles, readText, writeJson } from '../core/system/fsx.js';
+import { scopeRootsForConfig } from '../core/runtime/config.js';
+import { HASH_FILE } from '../core/runtime/constants.js';
 
 /** Load routed memory for a query. */
 export async function cmdLoad(args: string[], flags: Record<string, any> = {}): Promise<string> {
@@ -34,7 +38,11 @@ export async function cmdLoad(args: string[], flags: Record<string, any> = {}): 
   }
   const loaded = await loadEntries(process.cwd(), entries, ctx.config);
   const summary = loadSummary(entries, ctx.hiddenCount, routed.candidates);
-  return `${summary}${routeHint(routed)}\n\n${loaded.map((row) => row.flagged ? `SKIPPED ${row.entry.file}: ${row.flagged}` : row.content).join('\n\n')}`.trim();
+  return `${summary}${routeHint(routed)}\n\n${loaded.map((row) => {
+    if (!row.content) return `SKIPPED ${row.entry.file}: ${row.flagged ?? 'empty'}`;
+    if (row.flagged) return `⚠ ${row.entry.file}: ${row.flagged} (run \`engram rehash ${row.entry.scope}\` to re-hash)\n\n${row.content}`;
+    return row.content;
+  }).join('\n\n')}`.trim();
 }
 
 /** Explicitly rebuild one or both indexes from memory files. */
@@ -114,4 +122,41 @@ function routeHint(routed: RouteDetail): string {
   if (!routed.omitted) return '';
   const tags = routed.facets.map((facet) => facet.tag).join(', ');
   return `\nengram: refined ${routed.selected} of ${routed.candidates} related memories${tags ? `; narrow with tags: ${tags}` : ''}`;
+}
+
+/** Recompute hashes for all memory files in one or both scopes. */
+export async function cmdRehash(scope?: string): Promise<string> {
+  const ctx = await getContext();
+  const scopes = scope === 'workspace' || scope === 'global' ? [scope] : ['workspace', 'global'];
+  const rows: RecordBlock[] = [];
+  for (const current of scopes) {
+    const root = ctx.roots[current as Scope];
+    if (!root) {
+      rows.push({ title: current, fields: [['Status', 'not configured']] });
+      continue;
+    }
+    let updated = 0;
+    let unchanged = 0;
+    const files = (await listFiles(root)).filter((file) => file.endsWith('.md'));
+    const newHashes: Record<string, string> = {};
+    for (const file of files) {
+      const rel = path.relative(root, file).replace(/\\/g, '/');
+      if (!/^(rules|skills|knowledge)\//.test(rel)) continue;
+      if (rel === 'HELP.md' || rel === 'README.md' || rel === 'changelog.md') continue;
+      const content = await readText(file);
+      const hash = sha256(content);
+      newHashes[rel] = hash;
+      updated += 1;
+    }
+    // Compare with existing hashes to report changes.
+    const oldHashes = await loadHashes(root);
+    let changed = 0;
+    for (const [file, hash] of Object.entries(newHashes)) {
+      if (oldHashes[file] !== hash) changed += 1;
+    }
+    // Write the full hash store.
+    await writeJson(path.join(root, HASH_FILE), newHashes);
+    rows.push({ title: current, fields: [['Hashed', updated], ['Changed', changed], ['Unchanged', updated - changed]] });
+  }
+  return formatRecords('engram: rehashed memory files', rows);
 }

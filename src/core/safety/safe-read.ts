@@ -27,7 +27,7 @@ export async function readGuardedMemory(
   if (!root) return { entry, content: '', flagged: 'global memory is not configured' };
   const raw = await readText(inside(root, entry.file));
   const verify = options.verifyHashes !== false ? await verifyMemoryHash(root, entry.file, raw) : { ok: true };
-  if (!verify.ok) return { entry, content: '', flagged: verify.reason };
+  const flagged = verify.ok ? undefined : verify.reason;
   if (options.scanSensitive !== false) {
     const sensitive = scanSensitive(raw);
     if (sensitive.length) return { entry, content: '', flagged: `sensitive data: ${sensitive[0].reason}` };
@@ -36,5 +36,5 @@ export async function readGuardedMemory(
     const injection = scanInjection(raw);
     if (injection.length) return { entry, content: '', flagged: injection[0].value };
   }
-  return { entry, content: options.render === false ? raw : renderMemoryForConfig(raw, entry, config) };
+  return { entry, content: options.render === false ? raw : renderMemoryForConfig(raw, entry, config), flagged };
 }

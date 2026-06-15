@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.13
+
+- Added `engram route` to classify tasks before the first action and surface the `task_type:*` tag a save will receive.
+- Updated save flows to tag memories with `task_type:*` and prompt for an explicit task type when the text is unclear.
+- Updated `engram link` to register the known MCP config for a target AI agent by default, including Gemini-compatible and Claude global paths.
+
 ## 0.0.12
 
 - Added `engram link` / `engram unlink` as the primary agent integration

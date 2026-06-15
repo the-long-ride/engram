@@ -1,3 +1,4 @@
+/** Tiny deterministic vector helpers for memory graph similarity. */
 import { words } from '../system/text.js';
 
 const VECTOR_SIZE = 48;

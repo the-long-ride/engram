@@ -28,6 +28,7 @@ export async function readGuardedMemory(
   const raw = await readText(inside(root, entry.file));
   const verify = options.verifyHashes !== false ? await verifyMemoryHash(root, entry.file, raw) : { ok: true };
   const flagged = verify.ok ? undefined : verify.reason;
+  if (flagged) return { entry, content: '', flagged };
   if (options.scanSensitive !== false) {
     const sensitive = scanSensitive(raw);
     if (sensitive.length) return { entry, content: '', flagged: `sensitive data: ${sensitive[0].reason}` };

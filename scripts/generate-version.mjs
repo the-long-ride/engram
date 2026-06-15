@@ -1,3 +1,4 @@
+/** Generate the runtime version module from package metadata. */
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';

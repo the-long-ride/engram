@@ -1,3 +1,4 @@
+/** Minimal Node global declarations for dependency-free TypeScript builds. */
 declare const process: {
   argv: string[];
   cwd(): string;

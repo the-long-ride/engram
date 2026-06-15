@@ -1,3 +1,4 @@
+/** Shell completion script rendering for the CLI command surface. */
 import { commandNames } from './command-registry.js';
 /** Return a shell completion script for the current command surface. */
 export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'): string {

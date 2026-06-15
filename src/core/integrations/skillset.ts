@@ -18,17 +18,7 @@ export type GlobalInstallMode = 'block' | 'file';
 
 type ResolvedTarget = { name: SkillsetTarget; label: string };
 type GlobalInstallPlan = ResolvedTarget & { file: string; mode?: GlobalInstallMode; renderTarget?: SkillsetTarget; reason?: string };
-type GlobalSkillsetRegistry = {
-  version: 1;
-  updated: string;
-  engram_version: string;
-  installs: Record<string, {
-    target: string;
-    updated: string;
-    engram_version: string;
-    files: Array<{ path: string; mode: GlobalInstallMode; hash: string }>;
-  }>;
-};
+type GlobalSkillsetRegistry = { version: 1; updated: string; engram_version: string; installs: Record<string, { target: string; updated: string; engram_version: string; files: Array<{ path: string; mode: GlobalInstallMode; hash: string }> }> };
 
 const GLOBAL_BEGIN = '<!-- BEGIN ENGRAM GLOBAL SKILLSET -->';
 const GLOBAL_END = '<!-- END ENGRAM GLOBAL SKILLSET -->';

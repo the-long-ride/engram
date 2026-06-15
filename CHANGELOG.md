@@ -13,8 +13,7 @@
 - Improved broad `engram load` routing with lexical + vector blending,
   refined dry-run candidate counts, and better top-match relevance.
 - Added repository metadata to `package.json` for package publishing context.
-- Refreshed README and localized README comparison pages for the current
-  Hermes Agent positioning.
+- Refreshed README and localized README comparison pages for the current Hermes Agent positioning.
 - Split CLI tests into scoped files by command/feature area and updated
   `npm run test:cli` to cover `tests/cli/**/*.test.mjs`.
 - Fixed MCP `tools/call` argument handling so `engram_load` uses the provided

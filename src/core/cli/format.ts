@@ -1,3 +1,4 @@
+/** Terminal text styling helpers with plain output fallback. */
 const ANSI_PATTERN = /\x1b\[[0-9;]*m/g;
 
 const color = process.stdout.isTTY

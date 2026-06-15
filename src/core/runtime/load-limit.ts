@@ -1,3 +1,4 @@
+/** Normalize and validate memory load limit values. */
 export const DEFAULT_LOAD_LIMIT = 8;
 export const MIN_LOAD_LIMIT = 1;
 export const MAX_LOAD_LIMIT = 32;

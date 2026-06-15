@@ -45,8 +45,9 @@ npm run lint:lines
 
 ## Coding Rules
 
-- Keep source and tooling code files under 350 lines, matching
-  `npm run lint:lines`; test files are exempt.
+- Keep each source and tooling file focused on its own responsibility and start
+  it with a short file summary, matching `npm run lint:lines`; test files are
+  exempt.
 - Add a short file summary and concise function summaries.
 - Do not add runtime dependencies unless they remove real operational risk.
 - Never bypass the A/B/C approval gate on write paths except the explicit

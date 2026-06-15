@@ -3,6 +3,7 @@ import type { MemoryType, Scope } from '../runtime/types.js';
 import { frontmatter, parseMemory } from './schema.js';
 import { defaultRuleVariants, extractRuleVariants } from './rule-variants.js';
 import { slugify, tagsFrom, today } from '../system/text.js';
+import type { TaskType } from './task-classifier.js';
 
 export type MemoryDraftOptions = { ruleVariants?: boolean };
 export type MemorySourceMeta = { source?: string; sourceFiles?: string[]; sourceHashes?: string[] };
@@ -17,10 +18,11 @@ export function draftMemory(input: {
   dependsOn?: string[];
   level?: string;
   source?: MemorySourceMeta;
+  taskType?: TaskType;
 }, options: MemoryDraftOptions = {}): { file: string; id: string; content: string; tags: string[] } {
   const title = titleFor(input.text, input.type);
   const id = slugify(title);
-  const tags = tagsFrom(input.text);
+  const tags = unique([...taskTypeTags(input.taskType), ...tagsFrom(input.text)]);
   const content = renderMemory({ ...input, id, title, tags, created: today() }, options);
   return { file: `${dirFor(input.type)}/${id}.md`, id, content, tags };
 }
@@ -35,9 +37,10 @@ export function updateMemory(raw: string, input: {
   dependsOn?: string[];
   level?: string;
   source?: MemorySourceMeta;
+  taskType?: TaskType;
 }, options: MemoryDraftOptions = {}): string {
   const doc = parseMemory(raw);
-  const tags = unique([...(doc.frontmatter.tags ?? []), ...tagsFrom(input.text)]);
+  const tags = unique([...(doc.frontmatter.tags ?? []), ...taskTypeTags(input.taskType), ...tagsFrom(input.text)]);
   const bullets = unique([...contentBullets(doc.body), ...plainBullets(input.text)]).slice(0, 8);
   const text = bullets.map((line) => line.replace(/^-\s*/, '')).join(' ');
   const variants = input.type === 'rule' && !options.ruleVariants ? extractRuleVariants(raw) : undefined;
@@ -145,6 +148,10 @@ function dirFor(type: MemoryType): string {
 
 function unique(values: string[]): string[] {
   return [...new Set(values.map((value) => value.trim()).filter(Boolean))].slice(0, 6);
+}
+
+function taskTypeTags(taskType?: TaskType): string[] {
+  return taskType ? [`task_type:${taskType}`] : [];
 }
 
 function mergeSourceMeta(frontmatter: Record<string, any>, source?: MemorySourceMeta): MemorySourceMeta | undefined {

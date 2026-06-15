@@ -6,6 +6,24 @@ export type Approval = { accepted: boolean; edits?: string; redacted?: boolean }
 export type SelectionApproval = Approval & { selected?: number[] };
 type PreviewRenderer = (text: string) => string | Promise<string>;
 type GeneratedMemoryOptions = { explicitType?: string; guidance?: string; acceptAll?: boolean };
+const queuedPromptAnswers: string[] = [];
+let pipedPromptAnswers: string[] | undefined;
+
+/** Reuse a piped answer that was read speculatively by an earlier prompt. */
+export function queuePromptAnswer(answer: string): void {
+  const trimmed = answer.trim();
+  if (trimmed) queuedPromptAnswers.unshift(trimmed);
+}
+
+/** Read one answer line from piped stdin while preserving later lines for later prompts. */
+export async function readPipedPromptAnswer(prompt: string): Promise<string> {
+  output.write(prompt);
+  if (queuedPromptAnswers.length) return queuedPromptAnswers.shift() ?? '';
+  if (!pipedPromptAnswers) {
+    pipedPromptAnswers = (await readPipe()).split(/\r?\n/);
+  }
+  return (pipedPromptAnswers.shift() ?? '').trim();
+}
 
 /** Ask for generated knowledge, then approve the rendered memory preview. */
 export async function requestGeneratedKnowledgeApproval(
@@ -89,6 +107,7 @@ async function requestGeneratedSelectionPipe(
 /** Show the blueprint-style approval prompt and parse A/B/C. */
 export async function requestApproval(preview: string): Promise<Approval> {
   writeApprovalPreview(preview);
+  if (!input.isTTY) return parseApproval(await readPipedPromptAnswer('Reply: A / B <your note> / C: '));
   const rl = createInterface({ input, output });
   const approval = await readApproval(rl);
   rl.close();
@@ -98,6 +117,7 @@ export async function requestApproval(preview: string): Promise<Approval> {
 /** Show an approval prompt that can select numbered candidates. */
 export async function requestSelectionApproval(preview: string): Promise<SelectionApproval> {
   writeSelectionApprovalPreview(preview);
+  if (!input.isTTY) return parseSelectionApproval(await readPipedPromptAnswer('Reply: A / A 1,3 / B <note> / C: '));
   const rl = createInterface({ input, output });
   const approval = await readSelectionApproval(rl);
   rl.close();

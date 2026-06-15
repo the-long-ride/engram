@@ -38,6 +38,33 @@ test('save auto-detects rules and workflow candidates', async () => {
   await rm(cwd, { recursive: true, force: true });
 });
 
+test('save stores task_type tags and prompts when task is unclear', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['init']);
+  const saved = await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Debug auth middleware refreshes tokens before expiry'], 'A\n');
+  assert.equal(saved.code, 0, saved.stderr);
+  const content = await readFile(path.join(workspaceMemoryRoot(cwd), 'knowledge', 'debug-auth-middleware-refreshes-tokens-before-expiry.md'), 'utf8');
+  assert.match(content, /tags: \[task_type:debugging, debug, auth, middleware, refreshes, tokens\]/);
+
+  const prompt = await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Remember this vague preference'], 'planning\nA\n');
+  assert.equal(prompt.code, 0, prompt.stderr);
+  assert.match(prompt.stdout, /Task type unclear/);
+  const promptContent = await readFile(path.join(workspaceMemoryRoot(cwd), 'knowledge', 'remember-this-vague-preference.md'), 'utf8');
+  assert.match(promptContent, /tags: \[task_type:planning, remember, this, vague, preference\]/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('save can skip unclear task type prompt and still tag unknown', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['init']);
+  const saved = await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', '--skip-task-type-prompt', 'Remember this vague preference'], 'A\n');
+  assert.equal(saved.code, 0, saved.stderr);
+  assert.doesNotMatch(saved.stdout, /Task type unclear/);
+  const content = await readFile(path.join(workspaceMemoryRoot(cwd), 'knowledge', 'remember-this-vague-preference.md'), 'utf8');
+  assert.match(content, /tags: \[task_type:unknown, remember, this, vague, preference\]/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
 test('save stores role metadata for routing', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
   await runEngram(cwd, env, ['init']);
@@ -85,6 +112,23 @@ test('save-session proposes multiple agent-brainstormed memories', async () => {
   assert.match(saved.stdout, /Type: rule/);
   assert.match(saved.stdout, /Type: skill/);
   assert.match((await runEngram(cwd, env, ['stats'])).stdout, /Total: 2/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('save-session classifies each candidate text independently', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['init']);
+  const input = [
+    'TYPE: workflow | TEXT: When releasing, first run tests. Then update changelog.',
+    'TYPE: knowledge | TEXT: Auth rotation requires scoped secrets.',
+    ''
+  ].join('\n');
+  const saved = await runEngram(cwd, env, ['save-session', '--scope', 'workspace', '--accept-all'], input);
+  assert.equal(saved.code, 0, saved.stderr);
+  const workflowContent = await readFile(path.join(workspaceMemoryRoot(cwd), 'skills', 'when-releasing-first-run-tests-then-update-changelog.md'), 'utf8');
+  assert.match(workflowContent, /tags: \[task_type:release, when, releasing, first, run, tests\]/);
+  const knowledgeContent = await readFile(path.join(workspaceMemoryRoot(cwd), 'knowledge', 'auth-rotation-requires-scoped-secrets.md'), 'utf8');
+  assert.match(knowledgeContent, /tags: \[task_type:security, auth, rotation, requires, scoped, secrets\]/);
   await rm(cwd, { recursive: true, force: true });
 });
 

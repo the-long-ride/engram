@@ -75,16 +75,21 @@ as `~/.claude/skills/engram/SKILL.md` for Claude Code.
 | `copilot` | `.github/copilot-instructions.md`; global: `~/.copilot/copilot-instructions.md` | GitHub Copilot repository and user instructions |
 | `claude` | `CLAUDE.md` | Claude Code project guidance |
 | `cursor` | `.cursor/rules/engram.mdc` | Cursor project rules |
-| `gemini` | `GEMINI.md` | Gemini CLI context, including current Antigravity Gemini-compatible surfaces |
+| `gemini` | `GEMINI.md`; global: `~/.gemini/GEMINI.md`, `~/.gemini/skills/engram/SKILL.md`, Gemini MCP config | Gemini CLI context, including current Antigravity Gemini-compatible surfaces |
 | `cline` | `.clinerules` | Cline-style workspace rules |
 | `windsurf` | `.windsurfrules` | Windsurf workspace rules |
 | `opencode` | `opencode.json`, `.opencode/engram.md` | OpenCode custom instructions |
-| `mcp` | `.mcp.json` | MCP-style JSON-lines wrapper registration |
+| `mcp` | `.mcp.json`; global: Claude and Gemini MCP config files | MCP-style JSON-lines wrapper registration |
 | `slash` | `.claude/commands/engram.md`, `.claude/skills/engram/SKILL.md`, `.cursor/commands/engram.md`, `.gemini/commands/engram.toml` | Native `/engram` slash adapters |
 
 Aliases: `codex` installs the `agents-md` adapter plus the generic Agent Skill
 file, and `open-code` maps to `opencode`. The old `antigravity` and
 `antigravity-cli` targets are hidden compatibility aliases for now.
+
+`engram link <target>` also installs the known MCP registration for that target
+by default. Workspace target links write `.mcp.json`; global Claude links write
+`~/.claude/mcp.json`; global Gemini and Antigravity-compatible links write the
+Gemini MCP config file.
 
 ## Recommended Flow
 

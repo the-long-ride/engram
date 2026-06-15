@@ -62,8 +62,12 @@ export async function installSkillset(cwd: string, target = 'all', force = false
   const config = await loadConfig(cwd);
   const names = target === 'all' ? skillsetTargets().map((name) => ({ name, label: name })) : resolveTargets(target);
   const results: InstallResult[] = [];
+  const plannedFiles = new Set<string>();
   for (const { name, label } of names) {
-    for (const relativeFile of targets[name]) {
+    const files = target === 'all' ? targets[name] : [...targets[name], ...workspaceMcpFilesForTarget(name)];
+    for (const relativeFile of files) {
+      if (plannedFiles.has(relativeFile)) continue;
+      plannedFiles.add(relativeFile);
       const file = path.join(cwd, relativeFile);
       const existing = await readText(file);
       if (existing && !force && !isGenerated(existing, relativeFile)) {
@@ -71,7 +75,7 @@ export async function installSkillset(cwd: string, target = 'all', force = false
         continue;
       }
       await ensureDir(path.dirname(file));
-      await writeText(file, renderSkillsetFile(name, relativeFile, config.read));
+      await writeText(file, renderSkillsetFile(renderTargetForFile(name, relativeFile), relativeFile, config.read));
       results.push({ target: label, file: relativeFile, action: 'written' });
     }
   }
@@ -189,7 +193,10 @@ function groupedResults(results: InstallResult[]): Map<string, InstallResult[]> 
 
 function globalInstallPlans(target: string, home = globalAgentHome()): GlobalInstallPlan[] {
   const names = target === 'all' ? skillsetTargets().map((name) => ({ name, label: name })) : resolveTargets(target);
-  return names.flatMap((item) => globalFilesForTarget(item, home));
+  return names.flatMap((item) => [
+    ...globalFilesForTarget(item, home),
+    ...(target === 'all' ? [] : globalMcpFilesForTarget(item, home))
+  ]);
 }
 
 function globalFilesForTarget(target: ResolvedTarget, home: string): GlobalInstallPlan[] {
@@ -238,6 +245,28 @@ function globalFilesForTarget(target: ResolvedTarget, home: string): GlobalInsta
         plan(path.join(home, '.claude', 'skills', 'engram', 'SKILL.md'), 'file'),
         plan(path.join(home, '.gemini', 'commands', 'engram.toml'), 'file')
       ];
+  }
+}
+
+function workspaceMcpFilesForTarget(target: SkillsetTarget): string[] {
+  return target === 'mcp' || target === 'slash' ? [] : targets.mcp;
+}
+
+function renderTargetForFile(target: SkillsetTarget, relativeFile: string): SkillsetTarget {
+  return targets.mcp.includes(relativeFile) ? 'mcp' : target;
+}
+
+function globalMcpFilesForTarget(target: ResolvedTarget, home: string): GlobalInstallPlan[] {
+  const configHome = globalAgentConfigHome(home);
+  const plan = (file: string): GlobalInstallPlan => ({ ...target, file, mode: 'file', renderTarget: 'mcp' });
+  switch (target.name) {
+    case 'claude':
+      return [plan(path.join(home, '.claude', 'mcp.json'))];
+    case 'gemini':
+    case 'antigravity':
+      return [plan(path.join(configHome, 'gemini', 'mcp.json'))];
+    default:
+      return [];
   }
 }
 

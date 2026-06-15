@@ -116,6 +116,10 @@ generated `/engram` adapters.
 - Write generated `SKILL.md` files to each host's skill directory. For Claude
   Code global installs, use `~/.claude/skills/engram/SKILL.md` alongside the
   appended `~/.claude/CLAUDE.md` instruction block.
+- Bundle MCP registration with target-specific `link` installs whenever Engram
+  knows a stable MCP config path for that target. Workspace target links write
+  `.mcp.json`; global Claude links write `~/.claude/mcp.json`; global Gemini
+  and Antigravity-compatible links write the Gemini MCP config file.
 - Install Claude slash support in both `.claude/commands/engram.md` and
   `.claude/skills/engram/SKILL.md` so older command menus and newer skills both
   surface `/engram`.

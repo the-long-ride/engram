@@ -14,7 +14,7 @@ test('init, help, save reject, save accept, load, verify, audit', async () => {
   assert.equal(init.code, 0, init.stderr);
   assert.match(init.stdout, /█████████╗███╗   ██╗/);
   assert.match(init.stdout, /SYNTHETIC MEMORY \/\/ NEURAL ARCHIVE :: @the-long-ride with <3/);
-  assert.match(init.stdout, /skillset: written AGENTS\.md, \.agents\/skills\/engram\/SKILL\.md/);
+  assert.match(init.stdout, /skillset: written AGENTS\.md, \.mcp\.json, \.agents\/skills\/engram\/SKILL\.md/);
   assert.match(init.stdout, /More help: run engram -h for all commands, or engram help <command> for deeper examples\./);
   assert.match(init.stdout, /Completion: run engram completion (bash|zsh|powershell) and add it to your shell profile\./);
   assert.match((await runEngram(cwd, env, ['help'])).stdout, /Memory Commands/);
@@ -88,7 +88,7 @@ test('init skips human-authored skillset files', async () => {
   await writeFile(path.join(cwd, 'AGENTS.md'), '# Human agent instructions\n');
   const result = await runEngram(cwd, env, ['init']);
   assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /skillset: written \.agents\/skills\/engram\/SKILL\.md; skipped AGENTS\.md/);
+  assert.match(result.stdout, /skillset: written \.mcp\.json, \.agents\/skills\/engram\/SKILL\.md; skipped AGENTS\.md/);
   assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /Human agent instructions/);
   await rm(cwd, { recursive: true, force: true });
 });

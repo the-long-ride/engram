@@ -1,6 +1,7 @@
 /** Read-oriented commands: load, rebuild-index, verify, audit, and rehash. */
 import path from 'node:path';
 import { getContext, loadSummary } from '../core/memory/context.js';
+import { classifyTaskType } from '../core/memory/task-classifier.js';
 import { rebuildGraph } from '../core/memory/graph.js';
 import { invalidMemoryFiles, rebuildIndex } from '../core/memory/index.js';
 import { loadEntries, routeDetailed, visibleEntries, type RouteDetail } from '../core/memory/routing.js';
@@ -43,6 +44,18 @@ export async function cmdLoad(args: string[], flags: Record<string, any> = {}): 
     if (row.flagged) return `⚠ ${row.entry.file}: ${row.flagged} (run \`engram rehash ${row.entry.scope}\` to re-hash)\n\n${row.content}`;
     return row.content;
   }).join('\n\n')}`.trim();
+}
+
+/** Classify a user task for `engram load` and save tags. */
+export function cmdRoute(args: string[]): string {
+  const text = args.join(' ').trim();
+  const classification = classifyTaskType(text);
+  return [
+    `Task type: ${classification.taskType}`,
+    `Confidence: ${classification.confidence.toFixed(2)}`,
+    `Load query: ${classification.loadQuery}`,
+    `Save tags: ${classification.saveTags.join(', ') || '-'}`
+  ].join('\n');
 }
 
 /** Explicitly rebuild one or both indexes from memory files. */

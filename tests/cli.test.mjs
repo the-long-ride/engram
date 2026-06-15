@@ -33,6 +33,7 @@ test('init, help, save reject, save accept, load, verify, audit', async () => {
   assert.match((await runEngram(cwd, env, ['help', 'search'])).stdout, /--semantic/);
   assert.match((await runEngram(cwd, env, ['help', 'take-control'])).stdout, /workspace guidance/);
   assert.match((await runEngram(cwd, env, ['help', 'load'])).stdout, /--dry-run/);
+  assert.match((await runEngram(cwd, env, ['help', 'route'])).stdout, /Task type/);
   assert.match((await runEngram(cwd, env, ['help', 'update-global-folder'])).stdout, /--move-from-path/);
   assert.match((await runEngram(cwd, env, ['help', 'update-global-folder'])).stdout, /set global memory path/);
   assert.match((await runEngram(cwd, env, ['help', 'ugf'])).stdout, /whole old root/);
@@ -53,6 +54,7 @@ test('init, help, save reject, save accept, load, verify, audit', async () => {
   assert.match((await runEngram(cwd, env, ['h', 'save'])).stdout, /engram save/);
   assert.match((await runEngram(cwd, env, ['save', '-h'])).stdout, /engram save rule/);
   assert.match((await runEngram(cwd, env, ['save', 'rule', 'Use pnpm for installs'], 'C\n')).stdout, /Discarded/);
+  assert.match((await runEngram(cwd, env, ['route', 'fix the CLI parser bug'])).stdout, /Task type: debugging/);
   const saved = await runEngram(cwd, env, ['save', 'rule', '--scope', 'workspace', 'Use pnpm for installs'], 'A\n');
   assert.equal(saved.code, 0, saved.stderr);
   assert.match(saved.stdout, /Saved/);

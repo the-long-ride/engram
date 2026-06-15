@@ -1,11 +1,12 @@
 /** Minimal JSON-line MCP wrapper for Engram tools. */
 import { createInterface } from 'node:readline';
-import { cmdLoad, cmdVerify } from '../commands/read.js';
+import { cmdLoad, cmdRoute, cmdVerify } from '../commands/read.js';
 import { cmdHealth, cmdSearch } from '../commands/ops.js';
 import { getContext } from '../core/memory/context.js';
 import { planMemorySave, previewSavePlans } from '../core/memory/save-plan.js';
 import { resolveAuthor } from '../core/memory/storage.js';
 import { normalizeMemoryType, parseMemoryCandidate, parseMemoryCandidates } from '../core/memory/memory-candidate.js';
+import { normalizeTaskType } from '../core/memory/task-classifier.js';
 import { parseSaveTarget, writeScopes } from '../core/runtime/config.js';
 import type { Scope } from '../core/runtime/types.js';
 
@@ -15,6 +16,7 @@ export async function handleMcp(request: any): Promise<any> {
   const args = mcpArgs(request);
   try {
     if (method === 'engram_load') return ok(request.id, await cmdLoad([args.query ?? 'current session'], {}));
+    if (method === 'engram_route') return ok(request.id, cmdRoute([String(args.query ?? args.task ?? '')]));
     if (method === 'engram_search') return ok(request.id, await cmdSearch([args.query ?? '']));
     if (method === 'engram_verify') return ok(request.id, await cmdVerify(args.scope));
     if (method === 'engram_status') return ok(request.id, await cmdHealth());
@@ -54,6 +56,7 @@ async function saveProposal(args: any): Promise<string> {
     scopes,
     author: await resolveAuthor(),
     role: rolesFromArgs(args),
+    taskType: normalizeTaskType(args.taskType ?? args['task-type']),
     dependsOn: candidate.dependsOn,
     level: candidate.level,
     updateId: candidate.updateId

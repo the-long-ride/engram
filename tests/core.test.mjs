@@ -23,6 +23,7 @@ import { convertDocumentToMarkdown, isConvertibleDocument } from '../dist/core/i
 import { mergeIndexes } from '../dist/core/memory/index.js';
 import { parseMemoryCandidate } from '../dist/core/memory/memory-candidate.js';
 import { route, routeDetailed } from '../dist/core/memory/routing.js';
+import { classifyTaskType, normalizeTaskType } from '../dist/core/memory/task-classifier.js';
 import { ensureVectorIndex } from '../dist/core/memory/vector-db.js';
 import { defaultConfig } from '../dist/core/runtime/config.js';
 import { VERSION } from '../dist/core/runtime/version.js';
@@ -118,6 +119,14 @@ test('memory candidates can carry dependency structure', () => {
     dependsOn: ['webhook-baseline', 'retry-foundation'],
     updateId: 'invoice-retry-policy'
   });
+});
+
+test('task classifier returns stable labels for route and save tags', () => {
+  assert.equal(classifyTaskType('fix the CLI parser bug').taskType, 'debugging');
+  assert.equal(classifyTaskType('plan the release workflow').taskType, 'release');
+  assert.equal(classifyTaskType('task_type:security').taskType, 'security');
+  assert.equal(classifyTaskType('random vague request').taskType, 'unknown');
+  assert.equal(normalizeTaskType('deploying'), 'deploying');
 });
 
 test('schema validator enforces standard memory Markdown', () => {

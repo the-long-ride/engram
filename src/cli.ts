@@ -4,7 +4,7 @@ import { VERSION } from './core/runtime/constants.js';
 import { canonicalCommand } from './core/cli/command-registry.js';
 import { cmdCompletion, cmdHelp, cmdInit } from './commands/core.js';
 import { cmdObserve } from './commands/observe.js';
-import { cmdAudit, cmdLoad, cmdRebuildIndex, cmdRehash, cmdRepair, cmdVerify } from './commands/read.js';
+import { cmdAudit, cmdLoad, cmdRebuildIndex, cmdRehash, cmdRepair, cmdRoute, cmdVerify } from './commands/read.js';
 import { cmdSave, cmdSaveSession, cmdTakeControl } from './commands/write.js';
 import { cmdArchive, cmdBenchmark, cmdDeduplicate, cmdEntry, cmdExport, cmdGraph, cmdHealth, cmdImport, cmdQuality, cmdSearch, cmdStats, cmdSync } from './commands/ops.js';
 import { cmdCloneMemory } from './commands/clone.js';
@@ -40,6 +40,7 @@ export async function runCli(argv: string[]): Promise<string> {
       case 'load': return await cmdLoad(rest, flags);
       case 'verify': return await cmdVerify(rest[0]);
       case 'rehash': return await cmdRehash(rest[0]);
+      case 'route': return cmdRoute(rest);
       case 'rebuild-index': return await cmdRebuildIndex(rest[0]);
       case 'repair': return await cmdRepair(rest[0]);
       case 'audit': return await cmdAudit(flags);

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.15
+
+- Added `engram install-agent-hooks`, `engram uninstall-agent-hooks`, and the internal `engram agent-hook` runtime for opt-in Codex, Claude, and Gemini context injection.
+- Extended `engram set-read` with `startup`, `auto`, `always`, `manual`, and `off` so automatic memory loading can follow host hook behavior and only reinject when routed context changes.
+- Documented the v1 hook capability matrix, including Gemini as the current public Antigravity fallback and deterministic skip reasons for Cursor, Copilot, Cline, and Windsurf or Cascade.
+
 ## 0.0.14
 
 - Bumped the package release version to `0.0.14`.

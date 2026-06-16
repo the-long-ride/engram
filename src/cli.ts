@@ -10,7 +10,7 @@ import { cmdArchive, cmdBenchmark, cmdDeduplicate, cmdEntry, cmdExport, cmdGraph
 import { cmdCloneMemory } from './commands/clone.js';
 import { cmdMetacognize } from './commands/metacognize.js';
 import { cmdProfile } from './commands/profile.js';
-import { cmdIgnore, cmdInstallHooks, cmdResolveConflicts, cmdSetLoadLimit, cmdSetRead, cmdSetRole, cmdSetRuleVariant, cmdSetSaveTarget, cmdUpdateGlobalFolder, cmdUpgrade } from './commands/admin.js';
+import { cmdAgentHook, cmdIgnore, cmdInstallAgentHooks, cmdInstallHooks, cmdResolveConflicts, cmdSetLoadLimit, cmdSetRead, cmdSetRole, cmdSetRuleVariant, cmdSetSaveTarget, cmdUninstallAgentHooks, cmdUpdateGlobalFolder, cmdUpgrade } from './commands/admin.js';
 import { cmdLink, cmdUnlink } from './commands/skillset-link.js';
 import { maybeAutoUpgrade } from './core/runtime/auto-upgrade.js';
 
@@ -64,6 +64,9 @@ export async function runCli(argv: string[]): Promise<string> {
       case 'update-global-folder': return await cmdUpdateGlobalFolder(rest, flags);
       case 'resolve-conflicts': return await cmdResolveConflicts(rest, flags);
       case 'install-hooks': return await cmdInstallHooks();
+      case 'install-agent-hooks': return await cmdInstallAgentHooks(rest, flags);
+      case 'uninstall-agent-hooks': return await cmdUninstallAgentHooks(rest, flags);
+      case 'agent-hook': return await cmdAgentHook(flags, await readStdin());
       case 'install-skillset': return await cmdLink(rest, flags);
       case 'link': return await cmdLink(rest, flags);
       case 'unlink': return await cmdUnlink(rest, flags);
@@ -77,6 +80,17 @@ export async function runCli(argv: string[]): Promise<string> {
     if (previousProfile === undefined) delete process.env.ENGRAM_PROFILE;
     else process.env.ENGRAM_PROFILE = previousProfile;
   }
+}
+
+function readStdin(): Promise<string> {
+  if (process.stdin.isTTY) return Promise.resolve('');
+  return new Promise((resolve) => {
+    let input = '';
+    process.stdin.setEncoding('utf8');
+    process.stdin.on('data', (chunk: string) => input += chunk);
+    process.stdin.on('end', () => resolve(input));
+    process.stdin.on('error', () => resolve(''));
+  });
 }
 
 /** Main process entrypoint with clear errors. */

@@ -40,7 +40,7 @@ export type EngramConfig = {
   scope: 'both' | Scope;
   update: 'auto' | 'manual' | 'off';
   auto_upgrade?: AutoUpgradeState;
-  read: 'auto' | 'manual' | 'off' | 'always';
+  read: 'startup' | 'auto' | 'manual' | 'off' | 'always';
   ignore: IgnoreConfig;
   roles: string[];
   live_sync: { enabled: boolean; targets: string[] };

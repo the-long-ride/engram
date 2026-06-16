@@ -21,6 +21,8 @@ import {
   refreshGlobalSkillsets,
   type InstallResult
 } from '../core/integrations/skillset.js';
+import { applyAgentHookAction, normalizeTarget } from '../core/integrations/agent-hooks.js';
+import { runAgentHook } from '../core/integrations/agent-hook-runtime.js';
 import { git } from '../core/vcs/git.js';
 import { formatRecords, type RecordBlock } from '../core/cli/format.js';
 import { renderHelp } from '../core/cli/help.js';
@@ -94,10 +96,10 @@ export async function cmdSetRead(args: string[]): Promise<string> {
   const ctx = await getContext();
   const value = (args[0] ?? 'status').toLowerCase();
   if (value === 'status') return readStatus(ctx.config.read);
-  if (['auto', 'manual', 'off', 'always'].includes(value)) {
-    ctx.config.read = value as 'auto' | 'manual' | 'off' | 'always';
+  if (['startup', 'auto', 'manual', 'off', 'always'].includes(value)) {
+    ctx.config.read = value as 'startup' | 'auto' | 'manual' | 'off' | 'always';
   } else {
-    throw new Error('set-read expects auto, manual, off, always, or status');
+    throw new Error('set-read expects startup, auto, manual, off, always, or status');
   }
   await writeConfig(process.cwd(), ctx.config);
   return readStatus(ctx.config.read);
@@ -145,6 +147,30 @@ export async function cmdInstallHooks(): Promise<string> {
   results.push(await writeGeneratedHook(path.join(hookDir, 'post-merge'), '#!/bin/sh\nnpx @the-long-ride/engram resolve-conflicts\n'));
   results.push(await writeGeneratedHook(path.join(hookDir, 'pre-commit'), '#!/bin/sh\nnpx @the-long-ride/engram verify workspace\n'));
   return formatRecords('Engram Git hooks', results.map((result) => ({ title: result })));
+}
+
+/** Install opt-in AI agent hooks that inject routed Engram context. */
+export async function cmdInstallAgentHooks(args: string[] = [], flags: Record<string, any> = {}): Promise<string> {
+  return applyAgentHookAction('install', args[0] ?? 'all', {
+    global: flags.global === true,
+    plan: flags.plan === true,
+    force: flags.force === true
+  });
+}
+
+/** Remove only Engram-managed AI agent hook entries. */
+export async function cmdUninstallAgentHooks(args: string[] = [], flags: Record<string, any> = {}): Promise<string> {
+  return applyAgentHookAction('uninstall', args[0] ?? 'all', {
+    global: flags.global === true
+  });
+}
+
+/** Internal hook runtime used by host hook JSON configs. */
+export async function cmdAgentHook(flags: Record<string, any> = {}, stdin = ''): Promise<string> {
+  const hostFlag = typeof flags.host === 'string' ? flags.host : '';
+  const normalized = normalizeTarget(hostFlag);
+  if (typeof normalized !== 'string') return '{}';
+  return runAgentHook(normalized, stdin);
 }
 
 async function writeGeneratedHook(file: string, body: string): Promise<string> {

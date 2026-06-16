@@ -7,6 +7,9 @@ Engram supports two integration layers:
   support project slash commands or Agent Skills.
 - **MCP-style tools:** a JSON-lines wrapper for agents that can register
   external tool processes.
+- **Agent hooks:** opt-in host hooks that can inject routed Engram context at
+  session start and later task-change turns when the host exposes a safe
+  prompt-time context channel.
 
 Run:
 
@@ -66,6 +69,21 @@ an older Engram block is already present, it is refreshed and moved to the end.
 Host-specific `SKILL.md` files are written to each agent's skill directory, such
 as `~/.claude/skills/engram/SKILL.md` for Claude Code.
 
+To install automatic context injection hooks where v1 supports them:
+
+```bash
+engram install-agent-hooks codex --plan
+engram install-agent-hooks codex
+engram install-agent-hooks claude
+engram install-agent-hooks gemini
+```
+
+Use `--global` for user-level hook config and `uninstall-agent-hooks` to remove
+only Engram-managed hook entries. `engram set-read startup|auto|always|manual|off`
+controls runtime behavior. `auto` loads on session start and later injects again
+only when routed Engram context changes; the hook cache stores hashes,
+session ids, host, cwd, and routed signatures, never raw prompt text.
+
 ## Supported Targets
 
 | Target | File | Main use |
@@ -90,6 +108,24 @@ file, and `open-code` maps to `opencode`. The old `antigravity` and
 by default. Workspace target links write `.mcp.json`; global Claude links write
 `~/.claude/mcp.json`; global Gemini and Antigravity-compatible links write the
 Gemini MCP config file.
+
+## Agent Hook Capability Matrix
+
+| Host | Hook install in v1 | Config path | Events | Reason |
+| --- | --- | --- | --- | --- |
+| `codex` | Yes | `.codex/hooks.json`; global `~/.codex/hooks.json` | `SessionStart`, `UserPromptSubmit` | Supports startup and prompt-time additional context injection |
+| `claude` | Yes | `.claude/settings.json`; global `~/.claude/settings.json` | `SessionStart`, `UserPromptSubmit` | Supports startup and prompt-time additional context injection |
+| `gemini` | Yes | `.gemini/settings.json`; global `~/.gemini/settings.json` | `SessionStart`, `BeforeAgent` | Supports startup and prompt-time `hookSpecificOutput.additionalContext` |
+| `antigravity`, `antigravity-cli` | Hidden alias | Gemini paths | Gemini events | Normalized to `gemini` until stable primary Antigravity hook/config docs are verified |
+| `cursor` | Skipped | None written | N/A | Current hook support is partial/startup-only for context injection; prompt hooks are blocking-oriented |
+| `copilot` | Skipped | None written | N/A | Current hooks expose session-start context but no reliable prompt-time context injection |
+| `cline` | Skipped | None written | N/A | Hook support is plugin-based, not aligned with Engram's file-first adapter installer in v1 |
+| `windsurf` / `cascade` | Skipped | None written | N/A | Cascade hooks are blocking/audit hooks, not reliable context injection hooks |
+
+`engram install-agent-hooks all --plan` reports supported writes and deterministic
+`SKIPPED` reasons for partial hosts. This is separate from `engram link`, which
+continues to install instruction, slash, and MCP adapters for broader host
+coverage.
 
 ## Recommended Flow
 
@@ -391,6 +427,11 @@ locations. The hidden `antigravity` and `antigravity-cli` target names remain
 explicit compatibility paths, but they are not shown in `engram is list`, help,
 completion, or `all`.
 
+For hooks, `gemini` is also the public Antigravity fallback. The hidden
+`antigravity` and `antigravity-cli` hook targets normalize to Gemini hook
+behavior and paths until Google publishes stable primary Antigravity hook/config
+documentation.
+
 OpenCode reads `AGENTS.md` rules, and it can also load reusable instruction
 files through the `instructions` field in `opencode.json`. Engram uses
 `opencode.json` so it can add its guidance without replacing a human-authored
@@ -399,12 +440,17 @@ files through the `instructions` field in `opencode.json`. Engram uses
 ## References
 
 - [GitHub Copilot repository custom instructions](https://docs.github.com/en/copilot/how-tos/custom-instructions/adding-repository-custom-instructions-for-github-copilot)
+- [GitHub Copilot CLI hooks](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/use-hooks)
 - [Claude Code MCP](https://code.claude.com/docs/en/mcp)
 - [Claude Code skills and custom slash commands](https://code.claude.com/docs/en/slash-commands)
 - [Cursor MCP](https://docs.cursor.com/context/model-context-protocol)
+- [Cursor hooks](https://cursor.com/docs/hooks)
 - [Cursor custom commands](https://docs.cursor.com/en/agent/chat/commands)
 - [Gemini CLI context files](https://google-gemini.github.io/gemini-cli/docs/cli/gemini-md.html)
+- [Gemini CLI hooks](https://geminicli.com/docs/hooks/)
 - [Gemini CLI custom commands](https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/custom-commands.md)
+- [Cline hooks](https://docs.cline.bot/customization/hooks)
+- [Windsurf Cascade hooks](https://docs.devin.ai/desktop/cascade/hooks)
 - [AGENTS.md](https://github.com/openai/agents.md)
 - [Codex Agent Skills](https://developers.openai.com/codex/skills)
 - [Antigravity CLI migration from Gemini CLI](https://www.antigravity.google/docs/gcli-migration)

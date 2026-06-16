@@ -425,3 +425,115 @@ test('rule variants render the active compact variant', async () => {
   assert.doesNotMatch(loaded.stdout, /### Light/);
   await rm(cwd, { recursive: true, force: true });
 });
+
+test('save preview hides stored rule variants by default and can show them on demand', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['init']);
+
+  const hidden = await runEngram(cwd, env, [
+    'save', 'rule', '--scope', 'workspace',
+    'Use pnpm for package management'
+  ], 'C\n');
+
+  assert.equal(hidden.code, 0, hidden.stderr);
+  assert.match(hidden.stdout, /Rule variants: light, balanced, strict will be saved\. Preview shows balanced\./);
+  assert.doesNotMatch(hidden.stdout, /## Rule Variants/);
+  assert.doesNotMatch(hidden.stdout, /### Light/);
+  assert.doesNotMatch(hidden.stdout, /### Strict/);
+
+  const shown = await runEngram(cwd, env, [
+    'save', 'rule', '--scope', 'workspace', '--show-rule-variants',
+    'Use pnpm for package management'
+  ], 'C\n');
+
+  assert.equal(shown.code, 0, shown.stderr);
+  assert.match(shown.stdout, /## Rule Variants/);
+  assert.match(shown.stdout, /### Light/);
+  assert.match(shown.stdout, /### Strict/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('save preserves customized rule variants on update', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, ['save', 'rule', '--scope', 'workspace', 'Use pnpm for package management'], 'A\n');
+  const file = path.join(workspaceMemoryRoot(cwd), 'rules', 'use-pnpm-for-package-management.md');
+  const raw = await readFile(file, 'utf8');
+  const customized = raw
+    .replace(/### Light\r?\n\r?\n[\s\S]*?(?=\r?\n### Balanced)/, '### Light\n\n- Mention pnpm only when dependency tooling is part of the task.\n')
+    .replace(/### Balanced\r?\n\r?\n[\s\S]*?(?=\r?\n### Strict)/, '### Balanced\n\n- Prefer pnpm unless the repo already enforces another package manager.\n')
+    .replace(/### Strict\r?\n\r?\n[\s\S]*?(?=\r?\n## Example)/, '### Strict\n\n- Block npm and yarn suggestions unless the human asks for them.\n');
+  await writeFile(file, customized);
+
+  const updated = await runEngram(cwd, env, [
+    'save', 'rule', '--scope', 'workspace',
+    'Use pnpm for package management in workspace scripts'
+  ], 'A\n');
+
+  assert.equal(updated.code, 0, updated.stderr);
+  const next = await readFile(file, 'utf8');
+  assert.match(next, /- Mention pnpm only when dependency tooling is part of the task\./);
+  assert.match(next, /- Prefer pnpm unless the repo already enforces another package manager\./);
+  assert.match(next, /- Block npm and yarn suggestions unless the human asks for them\./);
+  assert.match(next, /Use pnpm for package management in workspace scripts/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('weak rule overlap stays a possible duplicate instead of auto-updating from stored variants', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['init']);
+  const existing = path.join(workspaceMemoryRoot(cwd), 'rules', 'use-pnpm-for-installs.md');
+  await mkdir(path.dirname(existing), { recursive: true });
+  await writeFile(existing, `---
+id: use-pnpm-for-installs
+type: rule
+scope: workspace
+tags: [pnpm, installs, package]
+created: 2026-06-05
+updated: 2026-06-05
+author: test@example.com
+source: manual
+confidence: high
+---
+# Use pnpm for installs
+
+## Context
+
+CLI test fixture.
+
+## Content
+
+- Use pnpm for installs.
+
+## Rule Variants
+
+### Light
+
+- Consider this rule when the task context matches: Use pnpm for installs.
+
+### Balanced
+
+- Use pnpm for installs.
+
+### Strict
+
+- Treat this rule as mandatory unless the human explicitly overrides it: Use pnpm for installs.
+
+## Example
+
+Use this memory when the task touches package management.
+`);
+  await runEngram(cwd, env, ['rebuild-index', 'workspace']);
+
+  const proposed = await runEngram(cwd, env, [
+    'save', 'rule', '--scope', 'workspace',
+    'Use pnpm lockfiles in CI'
+  ], 'C\n');
+
+  assert.equal(proposed.code, 0, proposed.stderr);
+  assert.match(proposed.stdout, /Action: Add new memory/);
+  assert.match(proposed.stdout, /Related memories found/);
+  assert.match(proposed.stdout, /Possible duplicate: consider updating or archiving instead of adding another memory/);
+  assert.doesNotMatch(proposed.stdout, /Action: Update existing memory/);
+  await rm(cwd, { recursive: true, force: true });
+});

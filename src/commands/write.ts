@@ -5,7 +5,7 @@ import { createInterface } from 'node:readline/promises';
 import { entryPath, getContext } from '../core/memory/context.js';
 import { generatedMemoryGuidance, inferMemoryType, normalizeMemoryType, parseMemoryCandidate, parseMemoryCandidates, saveSessionGuidance } from '../core/memory/memory-candidate.js';
 import type { MemorySourceMeta } from '../core/memory/memory-template.js';
-import { planMemorySave, previewSavePlans, type SavePlan } from '../core/memory/save-plan.js';
+import { planMemorySave, previewSavePlans, type SavePlan, type SavePreviewOptions } from '../core/memory/save-plan.js';
 import { parseMemory } from '../core/memory/schema.js';
 import { classifyTaskType, normalizeTaskType, TASK_TYPES, type TaskType } from '../core/memory/task-classifier.js';
 import { resolveAuthor, writeApprovedMemory } from '../core/memory/storage.js';
@@ -37,6 +37,7 @@ export async function cmdSave(args: string[], flags: Record<string, any>): Promi
   const author = await resolveAuthor();
   const role = rolesFromFlags(flags);
   const explicitTaskType = explicitTaskTypeFromFlags(flags);
+  const previewOptions = previewOptionsFromFlags(flags);
   let approval;
   let plans: SavePlan[] = [];
   if (!text) {
@@ -46,7 +47,7 @@ export async function cmdSave(args: string[], flags: Record<string, any>): Promi
       text = candidate.text;
       const resolvedTaskType = await saveTaskType(text, flags, explicitTaskType);
       plans = await planMemorySave({ ctx, text, type, scopes, author, role, dependsOn: candidate.dependsOn, level: candidate.level, updateId: candidate.updateId, taskType: resolvedTaskType });
-      return previewSavePlans(plans);
+      return previewSavePlans(plans, previewOptions);
     }, { explicitType, guidance: generatedMemoryGuidance(explicitType) });
     if (!captured) return 'Discarded. No file written.';
     approval = captured.approval;
@@ -56,7 +57,7 @@ export async function cmdSave(args: string[], flags: Record<string, any>): Promi
     type = candidate.type;
     text = candidate.text;
     plans = await planMemorySave({ ctx, text, type, scopes, author, role, dependsOn: candidate.dependsOn, level: candidate.level, updateId: candidate.updateId, taskType });
-    approval = await requestApproval(previewSavePlans(plans));
+    approval = await requestApproval(previewSavePlans(plans, previewOptions));
   }
   if (!approval.accepted) return 'Discarded. No file written.';
   return writeSavePlans(plans, approval.edits);
@@ -72,6 +73,7 @@ export async function cmdSaveSession(args: string[], flags: Record<string, any> 
   const acceptAll = flags['accept-all'] === true;
   const queryLevel = queryLevelFromFlags(flags);
   const guidance = saveSessionGuidance({ queryLevel });
+  const previewOptions = previewOptionsFromFlags(flags);
   let text = await saveSessionInput(args, flags);
   let plans: SavePlan[] = [];
   let approval: SelectionApproval | undefined = acceptAll ? { accepted: true } : undefined;
@@ -84,14 +86,14 @@ export async function cmdSaveSession(args: string[], flags: Record<string, any> 
       const captured = await requestGeneratedSelectionApproval(async (generated) => {
         text = generated;
         plans = await planSaveSessionCandidates(ctx, generated, scopes, author, role, undefined, explicitTaskType);
-        return previewSavePlans(plans);
+        return previewSavePlans(plans, previewOptions);
       }, { guidance });
       if (!captured) return 'Discarded. No file written.';
       approval = captured.approval;
     }
   } else {
     plans = await planSaveSessionCandidates(ctx, text, scopes, author, role, undefined, explicitTaskType);
-    if (!acceptAll) approval = await requestSelectionApproval(previewSavePlans(plans));
+    if (!acceptAll) approval = await requestSelectionApproval(previewSavePlans(plans, previewOptions));
   }
   if (acceptAll && text && !plans.length) plans = await planSaveSessionCandidates(ctx, text, scopes, author, role, undefined, explicitTaskType);
   if (!plans.length) return 'No memory candidates detected.';
@@ -99,7 +101,7 @@ export async function cmdSaveSession(args: string[], flags: Record<string, any> 
   if (approval.selected?.length) plans = plans.filter((plan) => plan.candidateIndex === undefined || approval.selected?.includes(plan.candidateIndex));
   if (!plans.length) return 'Discarded. No selected candidates written.';
   if (acceptAll) {
-    const restructure = acceptAllRestructureResponse(plans);
+    const restructure = acceptAllRestructureResponse(plans, undefined, previewOptions);
     if (restructure) return restructure;
   }
   const saved = await writeSavePlans(plans, approval.edits);
@@ -111,10 +113,11 @@ export async function runSaveSessionCandidates(options: SaveSessionCandidateRunO
   const author = await resolveAuthor();
   const role = rolesFromFlags(options.flags ?? {});
   const acceptAll = options.flags?.['accept-all'] === true;
+  const previewOptions = previewOptionsFromFlags(options.flags ?? {});
   const plans = await planSaveSessionCandidates(options.ctx, options.text, options.scopes, author, role, options.source, explicitTaskTypeFromFlags(options.flags ?? {}));
   if (!plans.length) return 'No memory candidates detected.';
-  if (options.flags?.['dry-run'] === true) return `${options.dryRunLabel ?? 'Save-session dry-run'}\n${previewSavePlans(plans)}`;
-  let approval: SelectionApproval | undefined = acceptAll ? { accepted: true } : await requestSelectionApproval(previewSavePlans(plans));
+  if (options.flags?.['dry-run'] === true) return `${options.dryRunLabel ?? 'Save-session dry-run'}\n${previewSavePlans(plans, previewOptions)}`;
+  let approval: SelectionApproval | undefined = acceptAll ? { accepted: true } : await requestSelectionApproval(previewSavePlans(plans, previewOptions));
   if (!approval?.accepted) return 'Discarded. No file written.';
   let selectedPlans = plans;
   if (approval.selected?.length) {
@@ -122,7 +125,7 @@ export async function runSaveSessionCandidates(options: SaveSessionCandidateRunO
   }
   if (!selectedPlans.length) return 'Discarded. No selected candidates written.';
   if (acceptAll) {
-    const restructure = acceptAllRestructureResponse(selectedPlans, options.acceptAllRerunCommand);
+    const restructure = acceptAllRestructureResponse(selectedPlans, options.acceptAllRerunCommand, previewOptions);
     if (restructure) return restructure;
   }
   const saved = await writeSavePlans(selectedPlans, approval.edits);
@@ -144,6 +147,7 @@ export async function cmdTakeControl(args: string[], flags: Record<string, any> 
   const author = await resolveAuthor();
   const role = rolesFromFlags(flags);
   const explicitTaskType = explicitTaskTypeFromFlags(flags);
+  const previewOptions = previewOptionsFromFlags(flags);
   let text = args.join(' ').trim();
   let plans: SavePlan[] = [];
   let approval: SelectionApproval | undefined = acceptAll ? { accepted: true } : undefined;
@@ -154,14 +158,14 @@ export async function cmdTakeControl(args: string[], flags: Record<string, any> 
       const captured = await requestGeneratedSelectionApproval(async (generated) => {
         text = generated;
         plans = await planSaveSessionCandidates(ctx, generated, scopes, author, role, source, explicitTaskType);
-        return previewSavePlans(plans);
+        return previewSavePlans(plans, previewOptions);
       }, { guidance });
       if (!captured) return 'Discarded. No file written.';
       approval = captured.approval;
     }
   } else {
     plans = await planSaveSessionCandidates(ctx, text, scopes, author, role, source, explicitTaskType);
-    if (!acceptAll) approval = await requestSelectionApproval(previewSavePlans(plans));
+    if (!acceptAll) approval = await requestSelectionApproval(previewSavePlans(plans, previewOptions));
   }
   if (acceptAll && text && !plans.length) plans = await planSaveSessionCandidates(ctx, text, scopes, author, role, source, explicitTaskType);
   if (!plans.length) return 'No memory candidates detected.';
@@ -169,7 +173,7 @@ export async function cmdTakeControl(args: string[], flags: Record<string, any> 
   if (approval.selected?.length) plans = plans.filter((plan) => plan.candidateIndex === undefined || approval.selected?.includes(plan.candidateIndex));
   if (!plans.length) return 'Discarded. No selected candidates written.';
   if (acceptAll && flags.metacognize === true) {
-    const restructure = acceptAllRestructureResponse(plans, takeControlMetacognizeRerunCommand(flags));
+    const restructure = acceptAllRestructureResponse(plans, takeControlMetacognizeRerunCommand(flags), previewOptions);
     if (restructure) return restructure;
   }
   const saved = await writeSavePlans(plans, approval.edits);
@@ -201,7 +205,7 @@ async function planSaveSessionCandidates(ctx: Awaited<ReturnType<typeof getConte
   return plans;
 }
 
-function acceptAllRestructureResponse(plans: SavePlan[], rerunCommand = 'engram save-session --accept-all'): string {
+function acceptAllRestructureResponse(plans: SavePlan[], rerunCommand = 'engram save-session --accept-all', previewOptions: SavePreviewOptions = {}): string {
   const pending = plans.filter((plan) => unresolvedRelatedHints(plan).length);
   if (!pending.length) return '';
   return [
@@ -209,7 +213,7 @@ function acceptAllRestructureResponse(plans: SavePlan[], rerunCommand = 'engram 
     `No file written yet. Agent action: brainstorm a restructured candidate set and rerun \`${rerunCommand}\`.`,
     'Use `DEPENDS_ON: memory-id` when a candidate builds on existing memory; use `UPDATE: memory-id` when it should merge into a possible duplicate; omit candidates that are already covered.',
     '',
-    previewSavePlans(pending)
+    previewSavePlans(pending, previewOptions)
   ].join('\n');
 }
 
@@ -334,6 +338,10 @@ function queryLevelFromFlags(flags: Record<string, any>): number | undefined {
   const parsed = Number(value);
   if (!Number.isSafeInteger(parsed) || parsed <= 0) throw new Error('save-session --query-level must be a positive integer');
   return parsed;
+}
+
+function previewOptionsFromFlags(flags: Record<string, any>): SavePreviewOptions {
+  return { showRuleVariants: flags['show-rule-variants'] === true };
 }
 
 function explicitTaskTypeFromFlags(flags: Record<string, any>): TaskType | undefined {

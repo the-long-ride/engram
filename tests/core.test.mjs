@@ -22,6 +22,7 @@ import { searchEntries } from '../dist/core/analysis/search.js';
 import { convertDocumentToMarkdown, isConvertibleDocument } from '../dist/core/integrations/markdown-them.js';
 import { mergeIndexes } from '../dist/core/memory/index.js';
 import { parseMemoryCandidate } from '../dist/core/memory/memory-candidate.js';
+import { canonicalRuleText, ruleVariantsAreCustomized, stripRuleVariantSection } from '../dist/core/memory/rule-variants.js';
 import { route, routeDetailed } from '../dist/core/memory/routing.js';
 import { classifyTaskType, normalizeTaskType } from '../dist/core/memory/task-classifier.js';
 import { ensureVectorIndex } from '../dist/core/memory/vector-db.js';
@@ -96,6 +97,96 @@ engram load deploy
 `, 'rules/deploy-checklist.md', 'workspace');
   assert.deepEqual(entry.dependsOn, ['release-foundation', 'knowledge/team-release-context.md']);
   assert.equal(entry.dependencyDepth, 2);
+});
+
+test('rule variant helpers expose canonical balanced text and detect customized variants', () => {
+  const auto = `---
+id: use-pnpm
+type: rule
+scope: workspace
+tags: [node, package]
+author: dev@example.com
+confidence: high
+---
+# Use pnpm
+
+## Context
+
+Project package manager.
+
+## Content
+
+- Use pnpm for installs.
+
+## Rule Variants
+
+### Light
+
+- Consider this rule when the task context matches: Use pnpm for installs.
+
+### Balanced
+
+- Use pnpm for installs.
+
+### Strict
+
+- Treat this rule as mandatory unless the human explicitly overrides it: Use pnpm for installs.
+
+## Example
+
+pnpm install
+`;
+  const customized = auto
+    .replace('- Consider this rule when the task context matches: Use pnpm for installs.', '- Mention pnpm only when dependency tooling is part of the task.')
+    .replace('- Use pnpm for installs.', '- Prefer pnpm unless the repo already enforces another package manager.')
+    .replace('- Treat this rule as mandatory unless the human explicitly overrides it: Use pnpm for installs.', '- Block npm and yarn suggestions unless the human asks for them.');
+
+  assert.equal(canonicalRuleText(auto), '- Use pnpm for installs.');
+  assert.doesNotMatch(stripRuleVariantSection(auto), /## Rule Variants/);
+  assert.equal(ruleVariantsAreCustomized(auto), false);
+  assert.equal(ruleVariantsAreCustomized(customized), true);
+});
+
+test('rule memory summaries ignore stored variant duplication', () => {
+  const entry = entryFromMemory(`---
+id: use-pnpm
+type: rule
+scope: workspace
+tags: [node, package]
+author: dev@example.com
+confidence: high
+---
+# Use pnpm
+
+## Context
+
+Project package manager.
+
+## Content
+
+- Use pnpm for installs.
+
+## Rule Variants
+
+### Light
+
+- Consider this rule when the task context matches: Use pnpm for installs.
+
+### Balanced
+
+- Use pnpm for installs.
+
+### Strict
+
+- Treat this rule as mandatory unless the human explicitly overrides it: Use pnpm for installs.
+
+## Example
+
+pnpm install
+`, 'rules/use-pnpm.md', 'workspace');
+  assert.match(entry.summary, /Use pnpm for installs/);
+  assert.doesNotMatch(entry.summary, /mandatory unless the human explicitly overrides it/);
+  assert.doesNotMatch(entry.summary, /Consider this rule when the task context matches/);
 });
 
 test('memory candidates can carry dependency structure', () => {
@@ -494,6 +585,9 @@ test('argument parser preserves positional text after known boolean flags', () =
   const shortcut = parseArgs(['ss', '-a', 'TYPE: rule | TEXT: Always test releases.']);
   assert.equal(shortcut.flags['accept-all'], true);
   assert.deepEqual(shortcut.rest, ['TYPE: rule | TEXT: Always test releases.']);
+  const showRuleVariants = parseArgs(['save-session', '--show-rule-variants', 'TYPE: rule | TEXT: Always test releases.']);
+  assert.equal(showRuleVariants.flags['show-rule-variants'], true);
+  assert.deepEqual(showRuleVariants.rest, ['TYPE: rule | TEXT: Always test releases.']);
   const removedLegacy = parseArgs(['autosave', '-a', 'TYPE: rule | TEXT: Always test releases.']);
   assert.equal(removedLegacy.command, 'autosave');
   assert.deepEqual(removedLegacy.rest, ['-a', 'TYPE: rule | TEXT: Always test releases.']);

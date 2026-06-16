@@ -1,7 +1,7 @@
 /** Deterministic memory drafting for manual saves. */
 import type { MemoryType, Scope } from '../runtime/types.js';
 import { frontmatter, parseMemory } from './schema.js';
-import { defaultRuleVariants, extractRuleVariants } from './rule-variants.js';
+import { defaultRuleVariants, extractRuleVariants, ruleVariantsAreCustomized } from './rule-variants.js';
 import { slugify, tagsFrom, today } from '../system/text.js';
 import type { TaskType } from './task-classifier.js';
 
@@ -43,7 +43,7 @@ export function updateMemory(raw: string, input: {
   const tags = unique([...(doc.frontmatter.tags ?? []), ...taskTypeTags(input.taskType), ...tagsFrom(input.text)]);
   const bullets = unique([...contentBullets(doc.body), ...plainBullets(input.text)]).slice(0, 8);
   const text = bullets.map((line) => line.replace(/^-\s*/, '')).join(' ');
-  const variants = input.type === 'rule' && !options.ruleVariants ? extractRuleVariants(raw) : undefined;
+  const variants = preservedRuleVariants(raw, input.type, options);
   return renderMemory({
     ...input,
     id: String(doc.frontmatter.id),
@@ -121,7 +121,7 @@ function variantSection(input: {
   type: MemoryType; text: string; variantText?: string; variants?: Partial<Record<'light' | 'balanced' | 'strict', string>>;
 }, options: MemoryDraftOptions): string {
   if (input.type !== 'rule') return '\n';
-  const variants = options.ruleVariants ? defaultRuleVariants(input.variantText ?? input.text) : input.variants;
+  const variants = input.variants ?? (options.ruleVariants ? defaultRuleVariants(input.variantText ?? input.text) : undefined);
   if (!variants?.balanced && !variants?.light && !variants?.strict) return '\n';
   const fallback = variants.balanced ?? variants.light ?? variants.strict ?? '';
   return `
@@ -152,6 +152,14 @@ function unique(values: string[]): string[] {
 
 function taskTypeTags(taskType?: TaskType): string[] {
   return taskType ? [`task_type:${taskType}`] : [];
+}
+
+function preservedRuleVariants(raw: string, type: MemoryType, options: MemoryDraftOptions): Partial<Record<'light' | 'balanced' | 'strict', string>> | undefined {
+  if (type !== 'rule') return undefined;
+  const variants = extractRuleVariants(raw);
+  if (!variants.balanced && !variants.light && !variants.strict) return undefined;
+  if (!options.ruleVariants) return variants;
+  return ruleVariantsAreCustomized(raw) ? variants : undefined;
 }
 
 function mergeSourceMeta(frontmatter: Record<string, any>, source?: MemorySourceMeta): MemorySourceMeta | undefined {

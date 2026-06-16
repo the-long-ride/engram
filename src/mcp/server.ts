@@ -4,7 +4,7 @@ import { cmdSetRole, cmdSetRuleVariant } from '../commands/admin.js';
 import { cmdLoad, cmdRoute, cmdVerify } from '../commands/read.js';
 import { cmdHealth, cmdSearch } from '../commands/ops.js';
 import { getContext } from '../core/memory/context.js';
-import { planMemorySave, previewSavePlans } from '../core/memory/save-plan.js';
+import { planMemorySave, previewSavePlans, type SavePreviewOptions } from '../core/memory/save-plan.js';
 import { resolveAuthor } from '../core/memory/storage.js';
 import { normalizeMemoryType, parseMemoryCandidate, parseMemoryCandidates } from '../core/memory/memory-candidate.js';
 import { normalizeTaskType } from '../core/memory/task-classifier.js';
@@ -64,7 +64,7 @@ async function saveProposal(args: any): Promise<string> {
     level: candidate.level,
     updateId: candidate.updateId
   });
-  return `ENGRAM SAVE PROPOSAL\n${previewSavePlans(plans)}\n\nHuman approval required before writing.`;
+  return `ENGRAM SAVE PROPOSAL\n${previewSavePlans(plans, previewOptionsFromArgs(args))}\n\nHuman approval required before writing.`;
 }
 
 /** Return a save-session proposal only; MCP never writes memory silently. */
@@ -92,7 +92,7 @@ async function saveSessionProposal(args: any): Promise<string> {
     plans.push(...next.map((plan) => ({ ...plan, candidateIndex })));
     candidateIndex += 1;
   }
-  return `ENGRAM SAVE-SESSION PROPOSAL\n${previewSavePlans(plans)}\n\nHuman approval required before writing.`;
+  return `ENGRAM SAVE-SESSION PROPOSAL\n${previewSavePlans(plans, previewOptionsFromArgs(args))}\n\nHuman approval required before writing.`;
 }
 
 function proposalScopes(ctx: Awaited<ReturnType<typeof getContext>>, rawScope: unknown, label: string): Scope[] {
@@ -122,6 +122,10 @@ function roleArgs(args: any): string[] {
 function ruleVariantArgs(args: any): string[] {
   const value = String(args.variant ?? args.value ?? 'status').trim();
   return value ? [value] : [];
+}
+
+function previewOptionsFromArgs(args: any): SavePreviewOptions {
+  return { showRuleVariants: args.showRuleVariants === true || args['show-rule-variants'] === true };
 }
 
 /** Run a JSON-lines stdio server. */

@@ -12,7 +12,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
   const loadLimits = ['status', 'reset', '8', '12', '16', '24', '32'].join(' ');
   const profileActions = ['status', 'list', 'create', 'use', 'remove', 'merge'].join(' ');
   const ignoreActions = ['status', 'check', 'add'].join(' ');
-  const saveSessionArgs = ['--file', '--scope', '--profile', '--role', '--roles', '--query-level', '--accept-all'].join(' ');
+  const saveSessionArgs = ['--file', '--scope', '--profile', '--role', '--roles', '--query-level', '--accept-all', '--show-rule-variants'].join(' ');
   const observeArgs = ['--file', '--scope', '--profile', '--role', '--roles', '--propose', '--accept-all'].join(' ');
   const takeControlArgs = ['--file', '--dir', '--include', '--exclude', '--max-sources', '--max-chars', '--scope', '--profile', '--role', '--roles', '--all', '--accept-all', '--metacognize', '--dry-run', '--plan'].join(' ');
   const metacognizeArgs = ['--workspace', '--global', '--all', '--accept-all', '--dry-run'].join(' ');
@@ -41,7 +41,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '      ;;',
       '    update-global-folder|ugf)\n      _arguments "--move-from-path[old global root]:path:_files -/" "1:new global root:_files -/"\n      ;;',
       '    save|s)',
-      `      _arguments "--scope[write scope]:scope:(${scopes})" "--profile[run with profile]:profile:" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "1:memory type:(${saveTypes})"`,
+      `      _arguments "--scope[write scope]:scope:(${scopes})" "--profile[run with profile]:profile:" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "--show-rule-variants[show stored rule variant blocks in previews]" "1:memory type:(${saveTypes})"`,
       '      ;;',
       '    save-session|ss)',
       `      _arguments "--file[read session summary file]:file:_files" "--scope[write scope]:scope:(${scopes})" "--profile[run with profile]:profile:" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "--query-level[recent chat sessions to mine]:number:" "--accept-all[accept every save-session candidate]" "1:session summary: "`,
@@ -104,7 +104,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       commandNames().map((command) => `  '${command}'`).join(',\n'),
       ')',
       '$engramInitArgs = @(\'--force\', \'--global-only\', \'--scope\', \'--no-skillset\', \'--skillset\', \'--submodule\', \'--submodule-remote\', \'--no-global\', \'--global-path\', \'--global-remote\', \'--global-branch\')',
-      '$engramSaveTypes = @(\'rule\', \'skill\', \'workflow\', \'knowledge\', \'--scope\', \'--profile\', \'--role\', \'--roles\')',
+      '$engramSaveTypes = @(\'rule\', \'skill\', \'workflow\', \'knowledge\', \'--scope\', \'--profile\', \'--role\', \'--roles\', \'--show-rule-variants\')',
       `$engramSaveSessionArgs = @(${saveSessionArgs.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
       `$engramObserveArgs = @(${observeArgs.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
       `$engramTakeControlArgs = @(${takeControlArgs.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
@@ -251,12 +251,12 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
     '      return',
     '      ;;',
     '    save|s)',
-    '      if [[ $cword -eq 2 ]]; then COMPREPLY=( $(compgen -W "$save_types --scope --profile --role --roles" -- "$cur") ); return; fi',
-    '      COMPREPLY=( $(compgen -W "--scope --profile --role --roles" -- "$cur") )',
+    '      if [[ $cword -eq 2 ]]; then COMPREPLY=( $(compgen -W "$save_types --scope --profile --role --roles --show-rule-variants" -- "$cur") ); return; fi',
+    '      COMPREPLY=( $(compgen -W "--scope --profile --role --roles --show-rule-variants" -- "$cur") )',
       '      return',
       '      ;;',
     '    save-session|ss)',
-    '      COMPREPLY=( $(compgen -W "--file --scope --profile --role --roles --query-level --accept-all" -- "$cur") )',
+    '      COMPREPLY=( $(compgen -W "--file --scope --profile --role --roles --query-level --accept-all --show-rule-variants" -- "$cur") )',
       '      return',
       '      ;;',
     '    observe|o)',

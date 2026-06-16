@@ -1,6 +1,7 @@
 /** Memory Markdown frontmatter parser and validator. */
 import type { MemoryDoc, MemoryEntry, MemoryType, Scope, Confidence } from '../runtime/types.js';
 import { summarize, tagsFrom, today } from '../system/text.js';
+import { canonicalRuleMemory } from './rule-variants.js';
 
 const memoryTypes = new Set(['rule', 'skill', 'knowledge']);
 const scopes = new Set(['workspace', 'global']);
@@ -31,12 +32,13 @@ export function entryFromMemory(raw: string, file: string, fallbackScope: Scope)
   validateMemory(doc);
   const dependsOn = frontmatterStrings(doc.frontmatter.depends_on);
   const dependencyDepth = frontmatterDepth(doc.frontmatter.dependency_depth ?? doc.frontmatter.level ?? doc.frontmatter.depth);
+  const summaryBody = doc.frontmatter.type === 'rule' ? parseMemory(canonicalRuleMemory(raw)).body : doc.body;
   return {
     id: String(doc.frontmatter.id),
     type: doc.frontmatter.type,
     scope: doc.frontmatter.scope ?? fallbackScope,
     tags: doc.frontmatter.tags ?? tagsFrom(doc.title),
-    summary: summarize(doc.body),
+    summary: summarize(summaryBody),
     file,
     author: String(doc.frontmatter.author ?? 'unknown'),
     confidence: doc.frontmatter.confidence ?? 'medium',

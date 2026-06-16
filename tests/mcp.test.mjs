@@ -32,6 +32,14 @@ test('mcp status and save proposal do not write silently', async () => {
 
     const detected = await handleMcp({ id: 4, method: 'engram_save', params: { text: 'Always use pnpm for installs' } });
     assert.match(detected.result, /Type: rule/);
+    assert.doesNotMatch(detected.result, /## Rule Variants/);
+
+    const detectedWithVariants = await handleMcp({
+      id: 4.1,
+      method: 'engram_save',
+      params: { text: 'Always use pnpm for installs', showRuleVariants: true }
+    });
+    assert.match(detectedWithVariants.result, /## Rule Variants/);
 
     const saveSession = await handleMcp({
       id: 5,

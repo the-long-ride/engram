@@ -9,6 +9,7 @@ import { sha256 } from '../safety/hash.js';
 import { routeDetailed } from './routing.js';
 import { DEFAULT_LOAD_LIMIT, normalizeLoadLimit } from '../runtime/load-limit.js';
 import type { TaskType } from './task-classifier.js';
+import { canonicalRuleMemory } from './rule-variants.js';
 
 const RELATED_HINT_LIMIT = 3;
 
@@ -34,6 +35,10 @@ export type SavePlan = {
   related?: SaveRelatedHint[];
 };
 
+export type SavePreviewOptions = {
+  showRuleVariants?: boolean;
+};
+
 /** Choose whether each scope should add a new memory or update an existing one. */
 export async function planMemorySave(input: {
   ctx: EngramContext; text: string; type: MemoryType; scopes: Scope[]; author: string; role?: string[]; dependsOn?: string[]; level?: string; updateId?: string; source?: MemorySourceMeta; taskType?: TaskType;
@@ -56,11 +61,14 @@ export async function planMemorySave(input: {
 }
 
 /** Render the automatically chosen add/update plan for human approval. */
-export function previewSavePlans(plans: SavePlan[]): string {
+export function previewSavePlans(plans: SavePlan[], options: SavePreviewOptions = {}): string {
   return plans.map((plan) => {
     const score = plan.matchScore === undefined ? '' : `\nMatch score: ${plan.matchScore.toFixed(2)}`;
     const candidate = plan.candidateIndex === undefined ? '' : `Candidate: ${plan.candidateIndex}\n`;
-    return `${candidate}Action: ${plan.action === 'update' ? 'Update existing memory' : 'Add new memory'}\nType: ${kind(plan.file)}\nScope: ${plan.scope}\nFile: ${plan.file}${score}${relatedPreview(plan.related)}\n\n${plan.content}`;
+    const rulePreview = kind(plan.file) === 'rule' && !options.showRuleVariants;
+    const content = rulePreview ? canonicalRuleMemory(plan.content) : plan.content;
+    const previewNote = rulePreview ? '\nRule variants: light, balanced, strict will be saved. Preview shows balanced.' : '';
+    return `${candidate}Action: ${plan.action === 'update' ? 'Update existing memory' : 'Add new memory'}\nType: ${kind(plan.file)}\nScope: ${plan.scope}\nFile: ${plan.file}${score}${relatedPreview(plan.related)}${previewNote}\n\n${content}`;
   }).join('\n\n---\n\n');
 }
 
@@ -81,7 +89,8 @@ async function bestMatch(ctx: EngramContext, text: string, type: MemoryType, sco
   let best: { entry: MemoryEntry; raw: string; score: number; overlap: number } | undefined;
   for (const entry of index.entries.filter((item) => item.scope === scope && item.type === type && !item.ignored)) {
     const raw = await readText(entryPath(ctx, scope, entry.file));
-    const candidate = `${entry.id} ${entry.tags.join(' ')} ${entry.summary} ${raw}`;
+    const candidateRaw = type === 'rule' ? canonicalRuleMemory(raw) : raw;
+    const candidate = `${entry.id} ${entry.tags.join(' ')} ${entry.summary} ${candidateRaw}`;
     const score = entry.id === slugify(text) ? 1 : lexicalScore(text, candidate);
     const candidateWords = words(candidate);
     const overlap = [...queryWords].filter((word) => candidateWords.has(word)).length;

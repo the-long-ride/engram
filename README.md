@@ -125,6 +125,20 @@ For Gemini / Antigravity surfaces:
 engram link gemini
 ```
 
+Optional auto-load hooks are available for hosts that can inject context at both
+session start and later prompt turns:
+```bash
+engram install-agent-hooks codex --plan
+engram install-agent-hooks codex
+engram install-agent-hooks claude
+engram install-agent-hooks gemini
+engram set-read auto
+```
+v1 hook installs are limited to `codex`, `claude`, and `gemini`. Antigravity
+compatibility currently routes through `gemini`; Cursor, Copilot, Cline, and
+Windsurf/Cascade remain instruction/skillset/manual-load driven until their
+hook surfaces support reliable prompt-time context injection.
+
 ### 3. Initialize Workspace
 Run this in the root of any project:
 ```bash
@@ -162,6 +176,8 @@ You can instruct your agent to use the following slash commands in chat:
 | **Manage Profiles** | `engram profile status` / `create` / `use` | `/engram profile status` |
 | **Configure Save Target** | `engram set-save-target <workspace/global/both>` | `/engram set-save-target <target>` |
 | **Configure Load Limit** | `engram set-load-limit <1..32>` | `/engram set-load-limit <count>` |
+| **Configure Auto Read** | `engram set-read startup|auto|always|manual|off` | `/engram set-read auto` |
+| **Install Agent Hooks** | `engram install-agent-hooks codex|claude|gemini` | Run once from terminal |
 | **Update Global Path** | `engram update-global-folder <new-path>` | `/engram set global memory path to <new-path>` |
 | **Clone Memory** | `engram clone-memory <src> <dest>` | `/engram clone workspace memory to global` |
 | **Set Active Roles** | `engram set-role <roles>` | `/engram set-role <roles>` |

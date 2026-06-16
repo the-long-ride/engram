@@ -13,6 +13,11 @@ generated `/engram` adapters.
   personal context.
 - Load memory with workspace-first, global-fallback resolution.
 - Load memory at session start and when the task changes.
+- For hook-capable hosts, honor `engram set-read`:
+  `startup` injects only on session start, `auto` injects on session start and
+  later only when routed context changes, `always` injects on every eligible
+  prompt, `manual` disables automatic hooks while preserving manual
+  `engram load`, and `off` keeps automatic read surfaces quiet.
 - Before planning, researching, or implementing, search or route-load specific
   memory when project knowledge, user preferences, or team rules could matter.
 - If `engram set-role ...` or `engram set-rule-variant ...` returns an
@@ -126,6 +131,21 @@ generated `/engram` adapters.
   knows a stable MCP config path for that target. Workspace target links write
   `.mcp.json`; global Claude links write `~/.claude/mcp.json`; global Gemini
   and Antigravity-compatible links write the Gemini MCP config file.
+- Treat AI agent hooks as opt-in and narrower than skillset links. v1 may
+  install hooks only for `codex`, `claude`, and `gemini` because those hosts
+  expose both session-start and later prompt-turn context injection. Hook
+  installers must preserve human-authored JSON config by merging/removing only
+  Engram-managed entries named `engram-auto-load`.
+- Treat `antigravity` and `antigravity-cli` hook targets as hidden compatibility
+  aliases that normalize to Gemini hook behavior and paths until stable primary
+  Antigravity hook/config docs are verified.
+- For `cursor`, `copilot`, `cline`, and `windsurf`/`cascade`, hook installers
+  must return deterministic `SKIPPED` records with host-specific reasons and
+  keep those hosts instruction/skillset/manual-load driven in v1.
+- Hook runtimes must fail open. On malformed input, load failure, or unsupported
+  host/event, emit an empty JSON object and do not block the agent session.
+- Hook caches must not store raw prompt text. Store only prompt hashes, session
+  ids, host, cwd, and routed memory signatures.
 - Install Claude slash support in both `.claude/commands/engram.md` and
   `.claude/skills/engram/SKILL.md` so older command menus and newer skills both
   surface `/engram`.
@@ -205,6 +225,7 @@ proposal and collect explicit human approval before invoking a CLI write flow.
 | `engram benchmark <cases.json>` | Run a read-only hit@<load-limit> routing benchmark over query/expected-memory cases |
 | `engram set-role <role...>` | Configure active developer roles for routing role-scoped memory and return an `Agent action:` reload cue for Engram-aware hosts |
 | `engram set-rule-variant light|balanced|strict|off` | Configure compact rule output for agents and return an `Agent action:` reload cue for Engram-aware hosts |
+| `engram set-read startup|auto|always|manual|off|status` | Configure hook and manual read behavior |
 | `engram verify` | Check hash integrity |
 | `engram repair [workspace|global]` | Report invalid memory files that index rebuild would skip |
 | `engram rebuild-index [workspace|global]` | Explicitly rebuild memory indexes, graph files, and eligible vector sidecars |
@@ -212,6 +233,9 @@ proposal and collect explicit human approval before invoking a CLI write flow.
 | `engram stats` | Show visible memory counts, scope mix, and author ownership |
 | `engram install-skillset all` | Install agent-host instruction files |
 | `engram install-skillset slash` | Install slash-command adapters, including both Claude command and skill paths |
+| `engram install-agent-hooks [target|all] [--global] [--plan] [--force]` | Install opt-in managed hooks for `codex`, `claude`, or `gemini`; report skipped reasons for partial hosts |
+| `engram uninstall-agent-hooks [target|all] [--global]` | Remove only Engram-managed hook entries |
+| `engram agent-hook --host codex|claude|gemini` | Internal JSON hook runtime; reads hook payload from stdin and emits host-compatible JSON to stdout |
 | `engram clone-memory workspace global [--force] [--dry-run] [--metacognize] [--accept-all]` / `engram clone-memory global workspace [--force] [--dry-run] [--metacognize] [--accept-all]` | Clone active `rules/`, `skills/`, and `knowledge/` Markdown memories between workspace and global scopes while rewriting destination scope frontmatter and hashes; `--metacognize` routes verified source memories through save-session-style approval and cannot be combined with `--force` |
 | `engram sync` | Sync global memory Git and refresh live-sync targets |
 

@@ -1,0 +1,160 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+import { runEngram, tempWorkspace } from '../helpers.mjs';
+
+async function hookJson(cwd, env, args, payload) {
+  const result = await runEngram(cwd, env, args, `${JSON.stringify(payload)}\n`);
+  assert.equal(result.code, 0, result.stderr);
+  return result.stdout.trim() ? JSON.parse(result.stdout) : {};
+}
+
+function additionalContext(output) {
+  return output?.hookSpecificOutput?.additionalContext ?? '';
+}
+
+test('set-read supports startup auto always manual and off policies', async () => {
+  const { cwd, env } = await tempWorkspace('engram-agent-hooks-read-');
+  await runEngram(cwd, env, ['init', '--no-skillset']);
+  for (const mode of ['startup', 'auto', 'always', 'manual', 'off']) {
+    const result = await runEngram(cwd, env, ['set-read', mode]);
+    assert.equal(result.code, 0, result.stderr);
+    assert.match(result.stdout, new RegExp(`Read behavior: ${mode}`));
+  }
+  const status = await runEngram(cwd, env, ['set-read', 'status']);
+  assert.match(status.stdout, /Read behavior: off/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('install-agent-hooks plan reports supported writes, aliases, and skipped targets', async () => {
+  const { cwd, env } = await tempWorkspace('engram-agent-hooks-plan-');
+  const codex = await runEngram(cwd, env, ['install-agent-hooks', 'codex', '--plan']);
+  assert.equal(codex.code, 0, codex.stderr);
+  assert.match(codex.stdout, /PLAN codex/);
+  assert.match(codex.stdout, /\.codex[\\/]hooks\.json/);
+  assert.match(codex.stdout, /SessionStart, UserPromptSubmit/);
+
+  const alias = await runEngram(cwd, env, ['install-agent-hooks', 'antigravity', '--plan']);
+  assert.equal(alias.code, 0, alias.stderr);
+  assert.match(alias.stdout, /PLAN gemini/);
+  assert.match(alias.stdout, /\.gemini[\\/]settings\.json/);
+
+  const skipped = await runEngram(cwd, env, ['install-agent-hooks', 'cursor', '--plan']);
+  assert.equal(skipped.code, 0, skipped.stderr);
+  assert.match(skipped.stdout, /SKIPPED cursor/);
+  assert.match(skipped.stdout, /startup-only|partial/i);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('install-agent-hooks preserves human config and uninstall removes only Engram hooks', async () => {
+  const { cwd, env } = await tempWorkspace('engram-agent-hooks-merge-');
+  const codexDir = path.join(cwd, '.codex');
+  await mkdir(codexDir, { recursive: true });
+  const file = path.join(codexDir, 'hooks.json');
+  await writeFile(file, `${JSON.stringify({
+    hooks: {
+      SessionStart: [{
+        matcher: 'startup',
+        hooks: [{ name: 'human-start', type: 'command', command: 'echo human' }]
+      }]
+    }
+  }, null, 2)}\n`);
+
+  const install = await runEngram(cwd, env, ['install-agent-hooks', 'codex']);
+  assert.equal(install.code, 0, install.stderr);
+  assert.match(install.stdout, /UPDATED codex/);
+  const installed = JSON.parse(await readFile(file, 'utf8'));
+  assert.equal(installed.hooks.SessionStart.length, 2);
+  assert.equal(installed.hooks.SessionStart[0].hooks[0].name, 'human-start');
+  assert.equal(installed.hooks.UserPromptSubmit[0].hooks[0].name, 'engram-auto-load');
+
+  const uninstall = await runEngram(cwd, env, ['uninstall-agent-hooks', 'codex']);
+  assert.equal(uninstall.code, 0, uninstall.stderr);
+  assert.match(uninstall.stdout, /REMOVED codex/);
+  const after = JSON.parse(await readFile(file, 'utf8'));
+  assert.deepEqual(after.hooks, {
+    SessionStart: [{
+      matcher: 'startup',
+      hooks: [{ name: 'human-start', type: 'command', command: 'echo human' }]
+    }]
+  });
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('agent-hook runtime injects startup, skips repeated auto signatures, and respects manual/off', async () => {
+  const { cwd, env } = await tempWorkspace('engram-agent-hooks-runtime-');
+  await runEngram(cwd, env, ['init', '--no-skillset']);
+  await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Auth tokens refresh before expiry'], 'A\n');
+
+  await runEngram(cwd, env, ['set-read', 'startup']);
+  const startup = await hookJson(cwd, env, ['agent-hook', '--host', 'codex'], {
+    hook_event_name: 'SessionStart',
+    session_id: 's1',
+    cwd,
+    source: 'startup'
+  });
+  assert.match(additionalContext(startup), /Auth tokens refresh before expiry/);
+  const laterStartupMode = await hookJson(cwd, env, ['agent-hook', '--host', 'codex'], {
+    hook_event_name: 'UserPromptSubmit',
+    session_id: 's1',
+    cwd,
+    prompt: 'auth token work'
+  });
+  assert.equal(additionalContext(laterStartupMode), '');
+
+  await runEngram(cwd, env, ['set-read', 'auto']);
+  const firstAuto = await hookJson(cwd, env, ['agent-hook', '--host', 'codex'], {
+    hook_event_name: 'UserPromptSubmit',
+    session_id: 's2',
+    cwd,
+    prompt: 'auth token work'
+  });
+  assert.match(additionalContext(firstAuto), /Auth tokens refresh before expiry/);
+  const repeatAuto = await hookJson(cwd, env, ['agent-hook', '--host', 'codex'], {
+    hook_event_name: 'UserPromptSubmit',
+    session_id: 's2',
+    cwd,
+    prompt: 'auth token work'
+  });
+  assert.equal(additionalContext(repeatAuto), '');
+
+  await runEngram(cwd, env, ['set-read', 'manual']);
+  const manual = await hookJson(cwd, env, ['agent-hook', '--host', 'codex'], {
+    hook_event_name: 'SessionStart',
+    session_id: 's3',
+    cwd,
+    prompt: 'auth token work'
+  });
+  assert.equal(additionalContext(manual), '');
+
+  await runEngram(cwd, env, ['set-read', 'off']);
+  const off = await hookJson(cwd, env, ['agent-hook', '--host', 'gemini'], {
+    hook_event_name: 'BeforeAgent',
+    session_id: 's4',
+    cwd,
+    prompt: 'auth token work'
+  });
+  assert.equal(additionalContext(off), '');
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('agent-hook emits host-specific event names and fails open on bad input', async () => {
+  const { cwd, env } = await tempWorkspace('engram-agent-hooks-shapes-');
+  await runEngram(cwd, env, ['init', '--no-skillset']);
+  await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Gemini planning context'], 'A\n');
+
+  const gemini = await hookJson(cwd, env, ['agent-hook', '--host', 'gemini'], {
+    hook_event_name: 'BeforeAgent',
+    session_id: 'g1',
+    cwd,
+    prompt: 'gemini planning'
+  });
+  assert.equal(gemini.hookSpecificOutput.hookEventName, 'BeforeAgent');
+  assert.match(gemini.hookSpecificOutput.additionalContext, /Gemini planning context/);
+
+  const bad = await runEngram(cwd, env, ['agent-hook', '--host', 'claude'], '{not json');
+  assert.equal(bad.code, 0, bad.stderr);
+  assert.equal(bad.stdout.trim(), '{}');
+  await rm(cwd, { recursive: true, force: true });
+});

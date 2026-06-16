@@ -244,6 +244,13 @@ Gemini MCP config file.
    `engram save-session --role backend ...`. Role routing can be tuned with
    `engram set-role frontend`, `engram set-role backend security`, or
    `engram set-role` to clear active roles.
+   When `engram set-role ...` or `engram set-rule-variant ...` succeeds, the
+   CLI returns an `Agent action:` line. Engram-aware slash adapters and MCP
+   hosts should immediately rerun `engram load "<current task/request>"` and
+   treat that result as replacing prior Engram-loaded context in the current
+   conversation while leaving non-Engram host/system instructions unchanged.
+   This is an after-command reload, not a mid-response mutation of the model's
+   hidden prompt.
 
    `engram take-control` is the agent-assisted takeover flow for existing
    workspace guidance. It builds a compact source pack from files such as

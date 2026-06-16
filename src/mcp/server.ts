@@ -1,5 +1,6 @@
 /** Minimal JSON-line MCP wrapper for Engram tools. */
 import { createInterface } from 'node:readline';
+import { cmdSetRole, cmdSetRuleVariant } from '../commands/admin.js';
 import { cmdLoad, cmdRoute, cmdVerify } from '../commands/read.js';
 import { cmdHealth, cmdSearch } from '../commands/ops.js';
 import { getContext } from '../core/memory/context.js';
@@ -19,6 +20,8 @@ export async function handleMcp(request: any): Promise<any> {
     if (method === 'engram_route') return ok(request.id, cmdRoute([String(args.query ?? args.task ?? '')]));
     if (method === 'engram_search') return ok(request.id, await cmdSearch([args.query ?? '']));
     if (method === 'engram_verify') return ok(request.id, await cmdVerify(args.scope));
+    if (method === 'engram_set_role') return ok(request.id, await cmdSetRole(roleArgs(args)));
+    if (method === 'engram_set_rule_variant') return ok(request.id, await cmdSetRuleVariant(ruleVariantArgs(args)));
     if (method === 'engram_status') return ok(request.id, await cmdHealth());
     if (method === 'engram_save') return ok(request.id, await saveProposal(args));
     if (method === 'engram_save_session') return ok(request.id, await saveSessionProposal(args));
@@ -106,6 +109,19 @@ function rolesFromArgs(args: any): string[] | undefined {
   const raw = Array.isArray(args.role) ? (args.role as unknown[]).map((role) => String(role)).join(',') : String(args.role ?? args.roles ?? '');
   const roles = raw.split(',').map((role) => role.trim()).filter(Boolean);
   return roles.length ? roles : undefined;
+}
+
+function roleArgs(args: any): string[] {
+  if (Array.isArray(args.roles)) {
+    return args.roles.map((role: unknown) => String(role).trim()).filter(Boolean);
+  }
+  const raw = String(args.roles ?? args.role ?? '').trim();
+  return raw ? raw.split(/[,\s]+/u).map((role) => role.trim()).filter(Boolean) : [];
+}
+
+function ruleVariantArgs(args: any): string[] {
+  const value = String(args.variant ?? args.value ?? 'status').trim();
+  return value ? [value] : [];
 }
 
 /** Run a JSON-lines stdio server. */

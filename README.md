@@ -170,6 +170,8 @@ You can instruct your agent to use the following slash commands in chat:
 | **Scan Contradictions** | `engram quality-check` | `/engram quality-check` |
 | **Sync Memories** | `engram sync` | `/engram sync` |
 
+When `engram set-role ...` or `engram set-rule-variant ...` succeeds, Engram now returns an `Agent action:` line. Engram-aware adapters and MCP hosts should immediately rerun `engram load "<current task/request>"` and replace earlier Engram-derived context in the same conversation. This happens after the command completes, not in the middle of a response, and installed skillset files still control future or reloaded chats.
+
 ---
 
 ## Comparisons

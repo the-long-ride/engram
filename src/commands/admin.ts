@@ -46,7 +46,7 @@ export async function cmdSetRole(args: string[]): Promise<string> {
   const ctx = await getContext();
   ctx.config.roles = args;
   await writeConfig(process.cwd(), ctx.config);
-  return `Roles: ${args.join(', ') || '(none)'}`;
+  return configUpdateResult(`Roles: ${args.join(', ') || '(none)'}`);
 }
 /** Configure where normal save writes by default. */
 export async function cmdSetSaveTarget(args: string[]): Promise<string> {
@@ -87,7 +87,7 @@ export async function cmdSetRuleVariant(args: string[]): Promise<string> {
     throw new Error('set-rule-variant expects off, light, balanced, strict, or status');
   }
   await writeConfig(process.cwd(), ctx.config);
-  return ruleVariantStatus(ctx.config.rule_variants);
+  return configUpdateResult(ruleVariantStatus(ctx.config.rule_variants));
 }
 /** Configure how and when engram load is used. */
 export async function cmdSetRead(args: string[]): Promise<string> {
@@ -274,6 +274,14 @@ function runNpm(args: string[], timeout: number): Promise<string> {
 
 function compact(value: string): string {
   return value.trim().replace(/\s+/g, ' ') || '-';
+}
+
+function configUpdateResult(statusLine: string): string {
+  return `${statusLine}\n${agentReloadAction()}`;
+}
+
+function agentReloadAction(): string {
+  return 'Agent action: rerun `engram load "<current task/request>"` now and replace prior Engram-loaded context for the rest of this conversation. Keep any non-Engram host or system instructions unchanged.';
 }
 
 function isRuleVariant(value: string): value is RuleVariant {

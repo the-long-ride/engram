@@ -18,6 +18,8 @@ test('skillset installer writes all supported agent adapter files', async () => 
   assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /knowledge memory center/);
   assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /Keep token usage low/);
   assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /Engram loaded: X memories \/ Y total related memories\./);
+  assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /Agent action:/);
+  assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /replace earlier Engram-derived context in the current conversation/i);
   assert.doesNotMatch(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /summarize only the relevant memory IDs\/rules/);
   const mcpConfig = await readFile(path.join(cwd, '.mcp.json'), 'utf8');
   assert.match(mcpConfig, /engram-mcp/);
@@ -30,6 +32,8 @@ test('skillset installer writes all supported agent adapter files', async () => 
   assert.match(await readFile(path.join(cwd, '.claude/commands/engram.md'), 'utf8'), /save-session --query-level 50 --accept-all/);
   assert.match(await readFile(path.join(cwd, '.claude/commands/engram.md'), 'utf8'), /metacognize --workspace/);
   assert.match(await readFile(path.join(cwd, '.claude/commands/engram.md'), 'utf8'), /restructure workspace memory/);
+  assert.match(await readFile(path.join(cwd, '.claude/commands/engram.md'), 'utf8'), /Agent action:/);
+  assert.match(await readFile(path.join(cwd, '.claude/commands/engram.md'), 'utf8'), /replace prior Engram-loaded context/i);
   assert.match(await readFile(path.join(cwd, '.claude/skills/engram/SKILL.md'), 'utf8'), /any `engram` CLI arguments/);
   assert.match(await readFile(path.join(cwd, '.claude/skills/engram/SKILL.md'), 'utf8'), /Your knowledge memory manager, synced across every device with Git/);
   assert.match(await readFile(path.join(cwd, '.claude/skills/engram/SKILL.md'), 'utf8'), /take-control/);
@@ -51,6 +55,8 @@ test('skillset installer writes all supported agent adapter files', async () => 
   assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /ss -a last 50 sessions/);
   assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /save-session --accept-all/);
   assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /metacognize accept-all/);
+  assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /Agent action:/);
+  assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /replace prior Engram-loaded context/i);
   const opencodeConfig = await readFile(path.join(cwd, 'opencode.json'), 'utf8');
   assert.match(opencodeConfig, /\.opencode\/engram\.md/);
   assert.deepEqual(JSON.parse(opencodeConfig).instructions, ['.opencode/engram.md']);

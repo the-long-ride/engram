@@ -88,9 +88,41 @@ test('mcp status and save proposal do not write silently', async () => {
     assert.match(mcpLoad.result, /loaded 1 memory files/);
     assert.match(mcpLoad.result, /release-foundation-checklist/);
 
-    const empty = await handleMcp({ id: 8, method: 'engram_save', params: { text: '' } });
+    const setRole = await handleMcp({
+      id: 8,
+      method: 'engram_set_role',
+      params: { roles: ['frontend', 'design'] }
+    });
+    assert.match(setRole.result, /Roles: frontend, design/);
+    assert.match(setRole.result, /Agent action:/);
+
+    const clearRole = await handleMcp({
+      id: 9,
+      method: 'engram_set_role',
+      params: { roles: [] }
+    });
+    assert.match(clearRole.result, /Roles: \(none\)/);
+    assert.match(clearRole.result, /Agent action:/);
+
+    const setVariant = await handleMcp({
+      id: 10,
+      method: 'engram_set_rule_variant',
+      params: { variant: 'strict' }
+    });
+    assert.match(setVariant.result, /Rule variants: strict/);
+    assert.match(setVariant.result, /Agent action:/);
+
+    const statusVariant = await handleMcp({
+      id: 11,
+      method: 'engram_set_rule_variant',
+      params: { variant: 'status' }
+    });
+    assert.match(statusVariant.result, /Rule variants:/);
+    assert.doesNotMatch(statusVariant.result, /Agent action:/);
+
+    const empty = await handleMcp({ id: 12, method: 'engram_save', params: { text: '' } });
     assert.match(empty.error.message, /non-empty text/);
-    const badType = await handleMcp({ id: 9, method: 'engram_save', params: { text: 'Use Vitest', type: 'bogus' } });
+    const badType = await handleMcp({ id: 13, method: 'engram_save', params: { text: 'Use Vitest', type: 'bogus' } });
     assert.match(badType.error.message, /rule, skill, workflow, or knowledge/);
   } finally {
     process.chdir(previous);

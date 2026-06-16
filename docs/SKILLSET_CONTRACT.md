@@ -15,6 +15,12 @@ generated `/engram` adapters.
 - Load memory at session start and when the task changes.
 - Before planning, researching, or implementing, search or route-load specific
   memory when project knowledge, user preferences, or team rules could matter.
+- If `engram set-role ...` or `engram set-rule-variant ...` returns an
+  `Agent action:` line, rerun `engram load "<current task/request>"` or
+  `engram_load` immediately after the command completes, replace earlier
+  Engram-derived context in the current conversation, and keep non-Engram
+  host/system instructions unchanged. This is not a mid-response prompt
+  mutation.
 - Never load all memory blindly; route by task intent and summarize relevant
   IDs/rules instead of pasting raw output to reduce token usage.
 - When more memories match a load query than the configured load limit allows,
@@ -167,6 +173,8 @@ generated `/engram` adapters.
 | `engram_status` | Return health and counts | No |
 | `engram_save` | Return a memory proposal for human review | No |
 | `engram_autosave` | Return multiple numbered memory proposals for human review | No |
+| `engram_set_role` | Update active developer roles and return immediate reload guidance | Yes |
+| `engram_set_rule_variant` | Update active rule-variant mode and return immediate reload guidance | Yes |
 
 The MCP save/autosave proposal tools intentionally do not write. A host must display the
 proposal and collect explicit human approval before invoking a CLI write flow.
@@ -195,8 +203,8 @@ proposal and collect explicit human approval before invoking a CLI write flow.
 | `engram metacognize --workspace|--global|--all [--accept-all] [--dry-run]` / `engram mc ...` | Let an agent review an existing memory folder and return restructuring candidates with `UPDATE` or `DEPENDS_ON`; writes use save-session-style approval and accept-all no-write related-memory pauses |
 | `engram archive [--reason text] <memory-id|file>` | Move wrong or superseded memory out of active routing after approval |
 | `engram benchmark <cases.json>` | Run a read-only hit@<load-limit> routing benchmark over query/expected-memory cases |
-| `engram set-role <role...>` | Configure active developer roles for routing role-scoped memory |
-| `engram set-rule-variant light|balanced|strict|off` | Configure compact rule output for agents |
+| `engram set-role <role...>` | Configure active developer roles for routing role-scoped memory and return an `Agent action:` reload cue for Engram-aware hosts |
+| `engram set-rule-variant light|balanced|strict|off` | Configure compact rule output for agents and return an `Agent action:` reload cue for Engram-aware hosts |
 | `engram verify` | Check hash integrity |
 | `engram repair [workspace|global]` | Report invalid memory files that index rebuild would skip |
 | `engram rebuild-index [workspace|global]` | Explicitly rebuild memory indexes, graph files, and eligible vector sidecars |

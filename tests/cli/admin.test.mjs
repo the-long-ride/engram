@@ -113,12 +113,18 @@ test('set-role configures developer roles', async () => {
   // Default status shows no roles.
   const status1 = await runEngram(cwd, env, ['set-role']);
   assert.match(status1.stdout, /Roles:\s*\(?none\)?/i);
+  assert.match(status1.stdout, /Agent action:/);
+  assert.match(status1.stdout, /engram load "<current task\/request>"/);
+  assert.match(status1.stdout, /replace prior Engram-loaded context/i);
   // Set roles — returns confirmation.
   const set = await runEngram(cwd, env, ['set-role', 'frontend', 'design']);
   assert.match(set.stdout, /frontend, design/);
+  assert.match(set.stdout, /Agent action:/);
+  assert.match(set.stdout, /engram load "<current task\/request>"/);
   // Calling with no args clears roles (command behavior).
   const clear = await runEngram(cwd, env, ['set-role']);
   assert.match(clear.stdout, /Roles:\s*\(?none\)?/i);
+  assert.match(clear.stdout, /Agent action:/);
 });
 
 test('set-read configures read behavior', async () => {
@@ -141,12 +147,16 @@ test('set-rule-variant configures rule strictness', async () => {
   // Default.
   const s1 = await runEngram(cwd, env, ['set-rule-variant', 'status']);
   assert.match(s1.stdout, /Rule variants:/);
+  assert.doesNotMatch(s1.stdout, /Agent action:/);
   // Set strict.
   const set = await runEngram(cwd, env, ['set-rule-variant', 'strict']);
   assert.match(set.stdout, /strict/);
+  assert.match(set.stdout, /Agent action:/);
+  assert.match(set.stdout, /engram load "<current task\/request>"/);
   // Set off.
   const off = await runEngram(cwd, env, ['set-rule-variant', 'off']);
   assert.match(off.stdout, /off/);
+  assert.match(off.stdout, /Agent action:/);
 });
 
 test('set-save-target configures default save scope', async () => {

@@ -18,6 +18,15 @@ Si los adaptadores de comando slash están instalados:
 
 El agente debe resumir únicamente los identificadores de memoria (IDs) y las reglas relevantes, no pegar cada archivo.
 
+Cuando un agente necesite una guía de uso de Engram autónoma, ejecute:
+
+```bash
+engram llm
+```
+
+Esto imprime la guía empaquetada `llm.txt` y no requiere `engram init`.
+
+
 ## Conversación de Configuración Recomendada
 
 Pregunte al agente:
@@ -33,6 +42,13 @@ engram init
 engram help link
 engram link <nombre-del-agente>
 ```
+
+Para enseñar al mismo agente de forma global, de modo que los nuevos espacios de trabajo puedan cargar la memoria global de Engram sin ejecutar `engram init` primero:
+
+```bash
+engram link --global <nombre-del-agente>
+```
+
 
 Para uso nativo del chat, pregunte:
 
@@ -121,7 +137,11 @@ El agente puede usar:
 ```bash
 engram init --global-only --global-path <ruta>
 engram save --scope global "Use pnpm para la gestión de paquetes."
+engram link --global <nombre-del-agente>
 ```
+
+Cuando init detecta una memoria global configurada, crea o selecciona un perfil de usuario predeterminado para esa raíz global para que los futuros espacios de trabajo puedan reutilizarla.
+
 
 ## Mantenerlo Sano
 
@@ -134,11 +154,14 @@ Compruebe la salud de Engram, informe sobre memorias no válidas y proponga cual
 Comandos útiles:
 
 ```bash
+engram upgrade
+engram upgrade --plan
 engram verify
 engram repair
 engram graph "<tema>"
 engram quality-check
 engram archive --reason "<motivo>" <id-o-archivo>
 ```
+
 
 Siguiente: [Protocolo de memoria de propiedad humana](protocol.md).

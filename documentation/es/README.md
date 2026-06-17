@@ -157,6 +157,19 @@ Para Gemini / superficies Antigravity:
 engram link gemini
 ```
 
+Los hooks de carga automática opcionales están disponibles para hosts que pueden inyectar contexto tanto al inicio de la sesión como en los turnos de prompt posteriores:
+```bash
+engram install-agent-hooks codex --plan
+engram install-agent-hooks codex
+engram install-agent-hooks claude
+engram install-agent-hooks gemini
+engram set-read auto
+engram set-proof compact
+```
+Las instalaciones de hooks v1 están limitadas a `codex`, `claude` y `gemini`. La compatibilidad con Antigravity actualmente se enruta a través de `gemini`; Cursor, Copilot, Cline y Windsurf/Cascade siguen siendo impulsados por instrucciones/skillset/carga manual hasta que sus superficies de hook admitan una inyección de contexto confiable en el momento del prompt.
+Use `engram set-proof compact` cuando desee que los hooks compatibles agreguen una línea corta `Engram proof:` en cada turno elegible para mostrar si la memoria de Engram fue cargada, reutilizada o omitida sin cambiar el comportamiento de inyección de `set-read`.
+
+
 ### 3. Inicializar el Espacio de Trabajo
 Ejecuta esto en la raíz del proyecto:
 ```bash
@@ -173,6 +186,11 @@ Puedes indicarle al agente en el chat que use los siguientes comandos:
 - **Inicio de tarea**: `/engram load "design pricing table component"`
 - **Guardar decisiones importantes**: `/engram save knowledge "Webhook secret is process.env.STRIPE_WEBHOOK"`
 - **Resumir y guardar sesión**: `/engram save-session` (o `--query-level 3`, o `ss -a last 50 sessions` para autoaprobar)
+
+Cuando un agente pregunte cómo usar Engram, ejecute `engram llm`. Imprime la guía empaquetada del agente de IA `llm.txt`, que es segura de usar antes de `engram init`.
+
+Cuando un agente de IA propone candidatos a memoria con formato `TYPE: ... | TEXT: ...`, puede agregar opcionalmente `CONTEXT: ...` cuando eso ayude a explicar por qué existe la memoria. Los hechos simples pueden omitirlo y usar el contexto de aprobación predeterminado.
+
 
 ---
 
@@ -191,6 +209,7 @@ Puedes indicarle al agente en el chat que use los siguientes comandos:
 | **Reestructurar Memoria** | `engram metacognize --workspace` | `/engram restructure workspace memory accept all` |
 | **Resolver Conflictos** | `engram resolve-conflicts --metacognize` | `/engram resolve conflicts and metacognize` |
 | **Ver Configuración** | `engram entry` | `/engram entry` |
+| **Guía del Agente** | `engram llm` | Ejecutar una vez cuando el agente necesite guía de uso de Engram |
 | **Administrar Perfiles** | `engram profile status` / `create` / `use` | `/engram profile status` |
 | **Destino de Guardado** | `engram set-save-target <workspace/global/both>` | `/engram set-save-target <target>` |
 | **Límite de Tải** | `engram set-load-limit <1..32>` | `/engram set-load-limit <count>` |
@@ -204,6 +223,8 @@ Puedes indicarle al agente en el chat que use los siguientes comandos:
 | **Verificar y Reparar** | `engram verify` / `engram repair` | `/engram verify` / `/engram repair` |
 | **Escanear Conflictos** | `engram quality-check` | `/engram quality-check` |
 | **Sincronizar Memorias** | `engram sync` | `/engram sync` |
+
+Cuando `engram set-role ...` o `engram set-rule-variant ...` tiene éxito, Engram ahora devuelve una línea `Agent action:`. Los adaptadores compatibles con Engram y los hosts MCP deben volver a ejecutar inmediatamente `engram load "<tarea/solicitud actual>"` y reemplazar el contexto anterior derivado de Engram en la misma conversación. Esto ocurre después de que se completa el comando, no en medio de una respuesta, y los archivos de skillset instalados siguen controlando los chats futuros o recargados.
 
 ---
 

@@ -41,7 +41,7 @@ export async function cmdLoad(args: string[], flags: Record<string, any> = {}): 
     })));
     return formatRecords(`Routed memories (${entries.length} of ${routed.candidates})`, rows);
   }
-  const loaded = await loadEntries(process.cwd(), entries, ctx.config);
+  const loaded = await loadEntries(process.cwd(), entries, ctx.config, { forAgents: flags['for-agents'] === true });
   const summary = loadSummary(entries, ctx.hiddenCount, routed.candidates);
   return `${summary}${routeHint(routed)}\n\n${loaded.map((row) => {
     if (!row.content) return `SKIPPED ${row.entry.file}: ${row.flagged ?? 'empty'}`;

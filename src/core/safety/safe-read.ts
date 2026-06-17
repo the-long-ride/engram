@@ -2,7 +2,7 @@
 import { defaultConfig, scopeRootsForConfig } from '../runtime/config.js';
 import { inside, readText } from '../system/fsx.js';
 import { verifyMemoryHash } from './hash.js';
-import { renderMemoryForConfig } from '../memory/rule-variants.js';
+import { renderMemoryForAgent, renderMemoryForConfig } from '../memory/rule-variants.js';
 import { scanInjection, scanSensitive } from './security.js';
 import type { EngramConfig, MemoryEntry, Scope } from '../runtime/types.js';
 
@@ -13,6 +13,7 @@ export type GuardedReadOptions = {
   verifyHashes?: boolean;
   scanInjection?: boolean;
   scanSensitive?: boolean;
+  forAgents?: boolean;
 };
 
 /** Read one memory file only after integrity and safety checks pass. */
@@ -37,5 +38,8 @@ export async function readGuardedMemory(
     const injection = scanInjection(raw);
     if (injection.length) return { entry, content: '', flagged: injection[0].value };
   }
-  return { entry, content: options.render === false ? raw : renderMemoryForConfig(raw, entry, config), flagged };
+  const content = options.render === false ? raw : options.forAgents
+    ? renderMemoryForAgent(raw, entry, config)
+    : renderMemoryForConfig(raw, entry, config);
+  return { entry, content, flagged };
 }

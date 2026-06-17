@@ -288,11 +288,13 @@ function entryKey(entry: MemoryEntry): string {
   return `${entry.scope}:${entry.file}`;
 }
 
+type LoadEntriesOptions = { forAgents?: boolean };
+
 /** Load routed files and quarantine prompt-injection matches by skipping them. */
-export async function loadEntries(cwd: string, entries: MemoryEntry[], config: EngramConfig): Promise<Array<{ entry: MemoryEntry; content: string; flagged?: string }>> {
+export async function loadEntries(cwd: string, entries: MemoryEntry[], config: EngramConfig, options: LoadEntriesOptions = {}): Promise<Array<{ entry: MemoryEntry; content: string; flagged?: string }>> {
   const loaded = [];
   for (const entry of entries) {
-    loaded.push(await readGuardedMemory(cwd, entry, config));
+    loaded.push(await readGuardedMemory(cwd, entry, config, { forAgents: options.forAgents }));
   }
   return loaded;
 }

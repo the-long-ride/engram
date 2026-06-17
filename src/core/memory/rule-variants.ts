@@ -64,6 +64,16 @@ export function renderMemoryForConfig(raw: string, entry: MemoryEntry, config: E
   return replaceContent(stripRuleVariantSection(raw), content);
 }
 
+/** Render one compact agent-facing rule variant and slim frontmatter metadata. */
+export function renderMemoryForAgent(raw: string, entry: MemoryEntry, config: EngramConfig): string {
+  const rendered = renderMemoryForConfig(raw, entry, config);
+  const slim = slimFrontmatter(rendered);
+  if (entry.type !== 'rule') return slim;
+  const variants = extractRuleVariants(raw);
+  const total = (variants.light ? 1 : 0) + (variants.balanced ? 1 : 0) + (variants.strict ? 1 : 0);
+  return renameContentHeading(slim, config, total || 1);
+}
+
 /** Build deterministic variants when an agent has not supplied richer wording. */
 export function defaultRuleVariants(text: string): Record<RuleVariant, string> {
   const sentence = text.replace(/\s+/g, ' ').trim().replace(/[.?!]+$/, '.');
@@ -102,4 +112,21 @@ function replaceContent(raw: string, content: string): string {
     return raw.replace(/\n## Content\r?\n[\s\S]*?(?=\n## |\s*$)/, replacement);
   }
   return `${raw.trimEnd()}${replacement}`;
+}
+
+function slimFrontmatter(raw: string): string {
+  const match = raw.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
+  if (!match) return raw;
+  const keep = new Set(['id', 'type', 'tags', 'confidence', 'depends_on']);
+  const lines = match[1].split(/\r?\n/).filter((line) => {
+    const key = line.split(':')[0].trim();
+    return keep.has(key);
+  });
+  return `---\n${lines.join('\n')}\n---\n${raw.slice(match[0].length)}`;
+}
+
+function renameContentHeading(raw: string, config: EngramConfig, total: number): string {
+  const selected = config.rule_variants.enabled ? config.rule_variants.active : 'balanced';
+  const label = headings[selected];
+  return raw.replace(/\n## Content\r?\n/, `\n## Rule variants (1/${total} based on current: ${label})\n`);
 }

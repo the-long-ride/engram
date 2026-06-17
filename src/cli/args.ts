@@ -3,7 +3,7 @@ export type FlagValue = string | boolean | string[];
 export type ParsedArgs = { command: string; rest: string[]; flags: Record<string, FlagValue> };
 
 const booleanFlags = new Set([
-  'accept-all', 'all', 'auto', 'dry-run', 'force', 'h', 'help',
+  'accept-all', 'all', 'auto', 'dry-run', 'for-agents', 'force', 'h', 'help',
   'global', 'global-only', 'global-skillsets-only', 'latest', 'low-confidence', 'memory-only', 'no-auto-upgrade', 'no-global', 'no-skillset',
   'no-submodule', 'no-version-check', 'plan', 'propose', 'rebuild', 'metacognize', 'restructure', 'self', 'semantic', 'show-rule-variants', 'skip-task-type-prompt', 'stale',
   'submodule', 'use', 'user', 'v', 'version', 'workspace'
@@ -23,6 +23,7 @@ const metacognizeOptionCommands = new Set([...cloneMemoryCommands, ...takeContro
 const metacognizeOptionWords = new Set(['metacognize', 'metacognition', 'restructure', 'reorganize', 'organize']);
 const naturalOptionFillers = new Set(['and', 'then', 'with', 'using', 'use', 'agent', 'ai']);
 const metacognizeFillers = new Set(['engram', 'memory', 'memories', 'folder', 'folders', 'bank', 'store', 'root', 'the', 'my']);
+const forAgentsFillers = new Set(['for', 'to', 'use', 'using', 'agent', 'ai']);
 const globalFolderVerbs = new Set(['change', 'move', 'rename', 'set', 'update']);
 const globalFolderNouns = new Set(['dir', 'directory', 'folder', 'path', 'root']);
 const globalFolderFillers = new Set(['engram', 'my', 'the']);
@@ -105,7 +106,8 @@ function normalizeNaturalArgs(argv: string[]): string[] {
   const rehashArgs = normalizeNaturalRehash(argv);
   const metacognizeArgs = normalizeNaturalMetacognize(rehashArgs);
   const cloneMemoryArgs = normalizeNaturalCloneMemory(metacognizeArgs);
-  const globalFolderArgs = normalizeNaturalGlobalFolder(cloneMemoryArgs);
+  const forAgentsArgs = normalizeNaturalForAgents(cloneMemoryArgs);
+  const globalFolderArgs = normalizeNaturalGlobalFolder(forAgentsArgs);
   const resolveConflictArgs = normalizeNaturalResolveConflicts(globalFolderArgs);
   const takeControlArgs = normalizeNaturalTakeControl(resolveConflictArgs);
   const optionArgs = normalizeNaturalCommandOptions(takeControlArgs);
@@ -229,6 +231,26 @@ function naturalOptionTokens(tokens: string[]): string[] {
 
 function looksLikeCandidateToken(token: string): boolean {
   return /^\s*(?:[-*]\s*)?(?:type|kind|memory type|rule|rules|skill|skills|workflow|workflows|knowledge)\s*:/i.test(token);
+}
+
+function normalizeNaturalForAgents(argv: string[]): string[] {
+  const [command = 'help', ...tokens] = argv;
+  if (command.toLowerCase() !== 'load') return argv;
+  const normalized = ['load'];
+  let hasFlag = false;
+  let sawFiller = false;
+  for (const token of tokens) {
+    const lower = token.toLowerCase();
+    if (lower === '--for-agents' || lower === '--for_agents') {
+      normalized.push('--for-agents');
+      hasFlag = true;
+      continue;
+    }
+    if (forAgentsFillers.has(lower)) { sawFiller = true; continue; }
+    if (sawFiller && !hasFlag) { normalized.push('--for-agents'); hasFlag = true; }
+    normalized.push(token);
+  }
+  return hasFlag ? normalized : argv;
 }
 
 function normalizeNaturalGlobalFolder(argv: string[]): string[] {

@@ -204,6 +204,7 @@ When an AI agent proposes `TYPE: ... | TEXT: ...` memory candidates, it may add 
 | Task | CLI Command | AI Agent Suggestion |
 | --- | --- | --- |
 | **Load Memory** | `engram load "<task>"` | `/engram load "<task>"` |
+| **Agent-Facing Load** | `engram load --for-agents "<task>"` | `/engram load --for-agents "<task>"` |
 | **Dry Run Load** | `engram load --dry-run "<task>"` | `/engram load --dry-run "<task>"` |
 | **Save Single Memory** | `engram save <type> "<text>"` | `/engram save <type> "<text>"` |
 | **Propose Memories** | `engram save-session` | `/engram ss` |
@@ -229,7 +230,7 @@ When an AI agent proposes `TYPE: ... | TEXT: ...` memory candidates, it may add 
 | **Scan Contradictions** | `engram quality-check` | `/engram quality-check` |
 | **Sync Memories** | `engram sync` | `/engram sync` |
 
-When `engram set-role ...` or `engram set-rule-variant ...` succeeds, Engram now returns an `Agent action:` line. Engram-aware adapters and MCP hosts should immediately rerun `engram load "<current task/request>"` and replace earlier Engram-derived context in the same conversation. This happens after the command completes, not in the middle of a response, and installed skillset files still control future or reloaded chats.
+When `engram set-role ...` or `engram set-rule-variant ...` succeeds, Engram now returns an `Agent action:` line. Engram-aware adapters and MCP hosts should immediately rerun `engram load --for-agents "<current task/request>"` and replace earlier Engram-derived context in the same conversation. This happens after the command completes, not in the middle of a response, and installed skillset files still control future or reloaded chats.
 
 ---
 
@@ -296,7 +297,7 @@ Full documentation lives in `documentation/`:
 - [English](documentation/en/index.md) | [Tiếng Việt](documentation/vi/index.md) | [Español](documentation/es/index.md) | [Français](documentation/fr/index.md) | [中文](documentation/zh/index.md) | [한국어](documentation/ko/index.md) | [日本語](documentation/ja/index.md) | [Русский](documentation/ru/index.md)
 
 ## Roadmap & Companion Project
-We are working on "Inject engram memory to the beginning of sessions", **Documentation site**, **AI Web Chat Integration** and **Improving Natural Language Command Mapping**. 
+We are working on **Documentation site**, **AI Web Chat Integration** and **Improving Natural Language Command Mapping**. 
 For visual Markdown vault navigation, use [Markdown Explorer](https://the-long-ride.github.io/markdown-explorer/).
 
 ## License & Changelog

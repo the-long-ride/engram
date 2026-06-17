@@ -7,6 +7,7 @@ Cette page contient l'utilisation détaillée afin que le README puisse rester c
 | Besoin | Commande |
 | --- | --- |
 | Charger la mémoire de tâche | `engram load "<tâche>"` |
+| Charger la mémoire compacte pour l'agent | `engram load --for-agents "<tâche>"` |
 | Imprimer le guide de l'agent IA | `engram llm` |
 | Aperçu des fichiers routés | `engram load --dry-run "<tâche>"` |
 | Rechercher dans la mémoire | `engram search "<sujet>"` |
@@ -38,6 +39,8 @@ Utilisez `save-session` pour les propositions de mémoire lors de sessions longu
 Utilisez `--query-level <n>` lorsque l'humain souhaite que l'agent extraie jusqu'à n sessions récentes accessibles entre l'humain et l'agent, au lieu de seulement la session en cours. Une formulation naturelle comme `engram ss -a last 50 sessions` se normalise en `engram save-session --query-level 50 --accept-all`.
 
 Utilisez `load --dry-run` lorsque vous souhaitez inspecter quels fichiers de mémoire seraient routés sans afficher leur contenu.
+Utilisez `load --for-agents` pour le contexte d'agent IA : il ne garde que `id`, `type`, `tags` et `confidence` dans le frontmatter, rend une variante de règle sélectionnée et l'étiquette comme `## Rule variants (1/3 based on current: <active>)`.
+`load` conserve par défaut la même route compacte pour les hôtes orientés agents. La méthode MCP `engram_load` utilise `--for-agents` par défaut, donc les hôtes d'agents reçoivent la forme compacte sans répéter l'option. Les hooks SessionStart appellent cette route routée au démarrage, puis réutilisent ou sautent les routes lorsque la signature routée n'a pas changé.
 `load` commence par ancrer le routage sur des termes de requête significatifs, en ignorant les mots de mémoire génériques comme `rule`, `knowledge` et les stopwords courants. Il affine ensuite le pool de candidats plus large en un pack de contexte compact. Le chargement normal signale les nombres sélectionnés et totaux associés, comme `loaded 8 memory files / 14 total related memories`. `load --dry-run` affiche les nombres de candidats, les tags d'affinement et les raisons de correspondance ; `load --all` renvoie chaque correspondance routée visible au lieu d'appliquer la limite compacte.
 `workflow` et `workflows` s'orientent toujours vers des mémoires de compétences, mais les mots de type générique ne créent pas de correspondance large par eux-mêmes.
 

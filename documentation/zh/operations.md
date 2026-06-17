@@ -7,6 +7,7 @@
 | 需求 | 命令 |
 | --- | --- |
 | 加载任务内存 | `engram load "<任务内容>"` |
+| 加载智能体紧凑内存 | `engram load --for-agents "<任务内容>"` |
 | 打印 AI 智能体使用指南 | `engram llm` |
 | 预览路由的内存文件 | `engram load --dry-run "<任务内容>"` |
 | 搜索内存 | `engram search "<主题>"` |
@@ -38,6 +39,8 @@
 当人类希望智能体挖掘多达 n 个近期可访问的人类-智能体聊天，而不是仅当前会话时，使用 `--query-level <n>`。自然语言表述如 `engram ss -a last 50 sessions` 会被标准化为 `engram save-session --query-level 50 --accept-all`。
 
 当您想检查哪些内存文件会被路由而不打印其内容时，请使用 `load --dry-run`。
+对于 AI 智能体上下文，请使用 `load --for-agents`：它仅保留 frontmatter 中的 `id`、`type`、`tags` 和 `confidence`，渲染一个选定的规则变体，并标注为 `## Rule variants (1/3 based on current: <active>)`。
+`load` 默认为面向智能体的主机使用相同的紧凑路由。MCP `engram_load` 方法默认使用 `--for-agents`，因此智能体主机无需重复该标志即可接收紧凑形式。SessionStart hook 在启动时调用相同的路由加载路径，当路由签名未变化时则复用或跳过。
 `load` 首先在有意义的查询词上定位路由，忽略如 `rule`、`knowledge` 等通用内存词汇以及常见停用词 (stopwords)。然后它将更广泛的候选池提炼为紧凑的上下文包。正常加载会报告选定和相关的总数，例如 `loaded 8 memory files / 14 total related memories`。`load --dry-run` 显示候选数量、收窄标签和匹配原因；`load --all` 返回每个可见的路由匹配，而不是应用紧凑限制。
 `workflow` 和 `workflows` 仍会路由 to 技能内存，但通用类型词汇本身不会创建广泛匹配。
 

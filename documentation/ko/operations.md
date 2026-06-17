@@ -7,6 +7,7 @@
 | 필요 작업 | 명령어 |
 | --- | --- |
 | 태스크 메모리 로드 | `engram load "<태스크>"` |
+| 에이전트용 컴팩트 메모리 로드 | `engram load --for-agents "<태스크>"` |
 | AI 에이전트 가이드 인쇄 | `engram llm` |
 | 로드 예정 메모리 파일 미리보기 | `engram load --dry-run "<태스크>"` |
 | 메모리 검색 | `engram search "<주제>"` |
@@ -38,6 +39,8 @@
 사용자가 현재 세션뿐만 아니라 최근 접근 가능한 n개의 인간-에이전트 대화까지 탐색하기를 원하면 `--query-level <n>`을 사용하십시오. `engram ss -a last 50 sessions`와 같은 자연스러운 표현은 `engram save-session --query-level 50 --accept-all`로 자동 변환됩니다.
 
 내용을 인쇄하지 않고 어떤 메모리 파일이 라우팅되는지 확인하려면 `load --dry-run`을 사용하십시오.
+AI 에이전트용 컨텍스트에는 `load --for-agents`를 사용하십시오. 이 옵션은 frontmatter에 `id`, `type`, `tags`, `confidence`만 남기고, 선택된 규칙 변형을 하나 렌더링하며 `## Rule variants (1/3 based on current: <active>)`로 표시합니다.
+`load`는 에이전트 대상 호스트에도 기본적으로 같은 컴팩트 경로를 유지합니다. MCP `engram_load` 메서드는 기본적으로 `--for-agents`를 사용하므로 에이전트 호스트는 플래그를 반복하지 않고도 컴팩트 형식을 받습니다. SessionStart 훅은 시작 시 같은 라우팅 로드 경로를 호출하고, 라우팅 서명이 변하지 않으면 재사용하거나 건너뜁니다.
 `load` 명령어는 먼저 의미 있는 검색어에 의존하여 라우팅을 진행하며, `rule`, `knowledge` 같은 일반적인 단어와 불용어(stopwords)는 무시합니다. 그 후 더 넓은 후보군을 정밀 정제하여 컴팩트한 컨텍스트 팩으로 만듭니다. 일반적인 로드는 선택된 개수와 연관 메모리 총수를 `loaded 8 memory files / 14 total related memories` 형태로 보고합니다. `load --dry-run`은 후보 수, 좁히기 태그 및 매칭 이유를 표시하며, `load --all`은 컴팩트 한도를 우회하여 로드 가능한 모든 매칭 결과를 반환합니다.
 `workflow` 및 `workflows`는 여전히 스킬 메모리로 라우팅되지만, 일반적인 타입 단어만으로는 광범위한 매칭을 만들지 않습니다.
 

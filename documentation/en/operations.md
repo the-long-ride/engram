@@ -7,6 +7,7 @@ This page holds detailed usage so the README can stay short.
 | Need | Command |
 | --- | --- |
 | Load task memory | `engram load "<task>"` |
+| Load agent-facing compact memory | `engram load --for-agents "<task>"` |
 | Print AI-agent usage guide | `engram llm` |
 | Preview routed memory files | `engram load --dry-run "<task>"` |
 | Search memory | `engram search "<topic>"` |
@@ -39,6 +40,13 @@ Use `--query-level <n>` when the human wants the agent to mine up to n recent ac
 
 Use `load --dry-run` when you want to inspect which memory files would route
 without printing their contents.
+Use `load --for-agents` for AI-agent context: it keeps only `id`, `type`,
+`tags`, and `confidence` in frontmatter, renders one selected rule variant, and
+labels it as `## Rule variants (1/3 based on current: <active>)`.
+Default `load` keeps the same compact route for agent-facing hosts. The MCP
+`engram_load` method uses `--for-agents` by default, so agent hosts receive the
+compact form without repeating the flag. SessionStart hooks call the same routed
+load path at startup, then reuse or skip it when the routed signature is unchanged.
 `load` first anchors routing on meaningful query terms, ignoring generic memory
 words such as `rule`, `knowledge`, and common stopwords. It then refines the
 wider candidate pool into a compact context pack. Normal load reports selected

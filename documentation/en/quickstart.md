@@ -13,10 +13,10 @@ Use Engram for this task. Load memory for: <what we are doing>.
 If slash adapters are installed:
 
 ```text
-/engram load "<current task>"
+/engram load --for-agents "<current task>"
 ```
 
-The agent should reply with a compact count line by default, such as `Engram loaded: 8 memories / 24 total related memories.`
+The agent should reply with a compact count line by default, such as `Engram loaded: 8 memories / 24 total related memories.` With slash adapters, `load --for-agents` is the agent-facing route.
 
 When an agent needs a self-contained Engram usage guide, run:
 
@@ -60,7 +60,7 @@ Install slash support so I can use /engram directly from this agent.
 Start:
 
 ```text
-/engram load "current task"
+/engram load --for-agents "current task"
 ```
 
 During work:

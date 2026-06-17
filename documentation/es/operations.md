@@ -7,6 +7,7 @@ Esta página contiene el uso detallado para que el README pueda mantenerse corto
 | Necesidad | Comando |
 | --- | --- |
 | Cargar memoria de tarea | `engram load "<tarea>"` |
+| Cargar memoria compacta para agente | `engram load --for-agents "<tarea>"` |
 | Imprimir guía del agente de IA | `engram llm` |
 | Vista previa de archivos enrutados | `engram load --dry-run "<tarea>"` |
 | Buscar en la memoria | `engram search "<tema>"` |
@@ -38,6 +39,8 @@ Use `save-session` para propuestas de memoria en sesiones largas. Forma corta: `
 Use `--query-level <n>` cuando el humano desee que el agente mine hasta n chats recientes humano-agente accesibles en lugar de solo la sesión actual. La redacción natural como `engram ss -a last 50 sessions` se normaliza a `engram save-session --query-level 50 --accept-all`.
 
 Use `load --dry-run` cuando desee inspeccionar qué archivos de memoria se enrutarían sin imprimir sus contenidos.
+Use `load --for-agents` para contexto de agente de IA: conserva solo `id`, `type`, `tags` y `confidence` en el frontmatter, renderiza una variante de regla seleccionada y la etiqueta como `## Rule variants (1/3 based on current: <active>)`.
+`load` mantiene por defecto la misma ruta compacta para hosts orientados a agentes. El método MCP `engram_load` usa `--for-agents` por defecto, así que los hosts de agentes reciben la forma compacta sin repetir la bandera. Los hooks SessionStart llaman la misma ruta enrutada al inicio y luego reutilizan u omiten rutas cuando la firma enrutada no cambia.
 `load` primero ancla el enrutamiento en términos de consulta significativos, ignorando palabras de memoria genéricas como `rule`, `knowledge` y stopwords comunes. Luego refina el grupo de candidatos más amplio en un paquete de contexto compacto. La carga normal informa de los recuentos seleccionados y totales relacionados, como `loaded 8 memory files / 14 total related memories`. `load --dry-run` muestra los recuentos de candidatos, las etiquetas de estrechamiento y los motivos de coincidencia; `load --all` devuelve cada coincidencia enrutada visible en lugar de aplicar el límite compacto.
 `workflow` y `workflows` todavía se enrutan a memorias de habilidades, pero las palabras de tipo genérico no crean una coincidencia amplia por sí mismas.
 

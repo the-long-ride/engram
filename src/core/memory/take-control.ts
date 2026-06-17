@@ -124,6 +124,7 @@ export function takeControlGuidance(sources: TakeControlSource[], options: { acc
     'Use rule for durable human preferences or constraints.',
     'Use workflow for repeatable procedures or operating playbooks.',
     'Use knowledge for objective project facts, decisions, architecture, and conventions.',
+    'Add optional CONTEXT only when it explains why the memory exists, the source situation, intended use, or boundary.',
     'Skip generated Engram adapter protocol, secrets, transient chat, raw logs, and speculation.',
     '',
     'Workspace sources:',

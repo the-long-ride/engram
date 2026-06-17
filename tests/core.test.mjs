@@ -195,10 +195,11 @@ pnpm install
 });
 
 test('memory candidates can carry dependency structure', () => {
-  const compact = parseMemoryCandidate('TYPE: rule | TEXT: OAuth rotation follows release foundations. | DEPENDS_ON: release-foundation | LEVEL: advanced');
+  const compact = parseMemoryCandidate('TYPE: rule | TEXT: OAuth rotation follows release foundations. | CONTEXT: Created after release planning clarified the dependency order. | DEPENDS_ON: release-foundation | LEVEL: advanced');
   assert.deepEqual(compact, {
     type: 'rule',
     text: 'OAuth rotation follows release foundations.',
+    context: 'Created after release planning clarified the dependency order.',
     dependsOn: ['release-foundation'],
     level: 'advanced'
   });
@@ -206,12 +207,14 @@ test('memory candidates can carry dependency structure', () => {
   const multiline = parseMemoryCandidate([
     'TYPE: knowledge',
     'TEXT: Invoice retry policy extends the webhook baseline.',
+    'CONTEXT: Created after debugging payment retries showed the baseline needed follow-up knowledge.',
     'DEPENDS_ON: [webhook-baseline, retry-foundation]',
     'UPDATE: invoice-retry-policy'
   ].join('\n'));
   assert.deepEqual(multiline, {
     type: 'knowledge',
     text: 'Invoice retry policy extends the webhook baseline.',
+    context: 'Created after debugging payment retries showed the baseline needed follow-up knowledge.',
     dependsOn: ['webhook-baseline', 'retry-foundation'],
     updateId: 'invoice-retry-policy'
   });

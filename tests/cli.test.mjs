@@ -49,6 +49,7 @@ test('init, help, save reject, save accept, load, verify, audit', async () => {
   assert.doesNotMatch((await runEngram(cwd, env, ['help'])).stdout, /update-help|team-dashboard|engram dry-run|engram propose/);
   assert.match((await runEngram(cwd, env, ['-h', 'roles'])).stdout, /role: \[\.\.\.\]/);
   assert.match((await runEngram(cwd, env, ['save-session', '-h'])).stdout, /one candidate per line/);
+  assert.match((await runEngram(cwd, env, ['save-session', '-h'])).stdout, /CONTEXT:/);
   assert.match((await runEngram(cwd, env, ['save-session', '-h'])).stdout, /positive integer/);
   assert.doesNotMatch((await runEngram(cwd, env, ['autosave', '-h'])).stdout, /one candidate per line/);
   assert.match((await runEngram(cwd, env, ['h', 'save'])).stdout, /engram save/);

@@ -132,6 +132,23 @@ test('save-session classifies each candidate text independently', async () => {
   await rm(cwd, { recursive: true, force: true });
 });
 
+test('save-session preserves optional AI-generated context and falls back when omitted', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['init']);
+  const input = [
+    'TYPE: rule | TEXT: Always explain why durable memories exist. | CONTEXT: Created after the user clarified that Context should help humans and agents remember why a memory exists.',
+    'TYPE: knowledge | TEXT: Simple factual memories may use default context.',
+    ''
+  ].join('\n');
+  const saved = await runEngram(cwd, env, ['save-session', '--scope', 'workspace', '--accept-all'], input);
+  assert.equal(saved.code, 0, saved.stderr);
+  const contextual = await readFile(path.join(workspaceMemoryRoot(cwd), 'rules', 'always-explain-why-durable-memories-exist.md'), 'utf8');
+  assert.match(contextual, /## Context\r?\n\r?\nCreated after the user clarified that Context should help humans and agents remember why a memory exists\./);
+  const fallback = await readFile(path.join(workspaceMemoryRoot(cwd), 'knowledge', 'simple-factual-memories-may-use-default-context.md'), 'utf8');
+  assert.match(fallback, /## Context\r?\n\r?\nApproved from a human\/agent conversation on \d{4}-\d{2}-\d{2}; content is written as objective durable memory\./);
+  await rm(cwd, { recursive: true, force: true });
+});
+
 test('save-session query-level validates integer and expands agent guidance', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
   await runEngram(cwd, env, ['init']);

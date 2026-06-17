@@ -15,6 +15,7 @@ export function draftMemory(input: {
   scope: Scope;
   author: string;
   role?: string[];
+  context?: string;
   dependsOn?: string[];
   level?: string;
   source?: MemorySourceMeta;
@@ -34,6 +35,7 @@ export function updateMemory(raw: string, input: {
   scope: Scope;
   author: string;
   role?: string[];
+  context?: string;
   dependsOn?: string[];
   level?: string;
   source?: MemorySourceMeta;
@@ -44,6 +46,7 @@ export function updateMemory(raw: string, input: {
   const bullets = unique([...contentBullets(doc.body), ...plainBullets(input.text)]).slice(0, 8);
   const text = bullets.map((line) => line.replace(/^-\s*/, '')).join(' ');
   const variants = preservedRuleVariants(raw, input.type, options);
+  const context = input.context?.trim() ? input.context : contextSection(doc.body);
   return renderMemory({
     ...input,
     id: String(doc.frontmatter.id),
@@ -51,6 +54,7 @@ export function updateMemory(raw: string, input: {
     tags,
     created: String(doc.frontmatter.created ?? today()),
     role: input.role?.length ? unique([...(doc.frontmatter.role ?? []), ...input.role]) : doc.frontmatter.role,
+    context,
     dependsOn: unique([...arrayFrontmatter(doc.frontmatter.depends_on), ...(input.dependsOn ?? [])]),
     level: input.level ?? String(doc.frontmatter.level ?? doc.frontmatter.dependency_depth ?? doc.frontmatter.depth ?? ''),
     source: mergeSourceMeta(doc.frontmatter, input.source),
@@ -68,7 +72,7 @@ function titleFor(text: string, type: MemoryType): string {
 
 function renderMemory(input: {
   text: string; type: MemoryType; scope: Scope; author: string; id: string; title: string;
-  tags: string[]; created: string; role?: string[]; dependsOn?: string[]; level?: string; source?: MemorySourceMeta; bodyText?: string; variantText?: string; variants?: Partial<Record<'light' | 'balanced' | 'strict', string>>;
+  tags: string[]; created: string; role?: string[]; context?: string; dependsOn?: string[]; level?: string; source?: MemorySourceMeta; bodyText?: string; variantText?: string; variants?: Partial<Record<'light' | 'balanced' | 'strict', string>>;
 }, options: MemoryDraftOptions): string {
   const now = today();
   const metadata: Record<string, any> = {
@@ -87,7 +91,7 @@ function renderMemory(input: {
 
 ## Context
 
-Approved from a human/agent conversation on ${now}; content is written as objective durable memory.
+${memoryContext(input.context, now)}
 
 ## Content
 
@@ -115,6 +119,16 @@ function plainBullets(text: string): string[] {
 function contentBullets(body: string): string[] {
   const section = body.match(/\n## Content\r?\n([\s\S]*?)(?=\n## |\s*$)/)?.[1] ?? '';
   return section.split(/\r?\n/).map((line) => line.trim()).filter((line) => line.startsWith('- '));
+}
+
+function contextSection(body: string): string {
+  return body.match(/\n## Context\r?\n([\s\S]*?)(?=\n## |\s*$)/)?.[1]?.trim() ?? '';
+}
+
+function memoryContext(context: string | undefined, fallbackDate: string): string {
+  const clean = context?.replace(/\s+/g, ' ').trim();
+  if (!clean) return `Approved from a human/agent conversation on ${fallbackDate}; content is written as objective durable memory.`;
+  return formatInlineMarkdown(clean.slice(0, 600));
 }
 
 function variantSection(input: {

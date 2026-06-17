@@ -41,7 +41,7 @@ export type SavePreviewOptions = {
 
 /** Choose whether each scope should add a new memory or update an existing one. */
 export async function planMemorySave(input: {
-  ctx: EngramContext; text: string; type: MemoryType; scopes: Scope[]; author: string; role?: string[]; dependsOn?: string[]; level?: string; updateId?: string; source?: MemorySourceMeta; taskType?: TaskType;
+  ctx: EngramContext; text: string; type: MemoryType; scopes: Scope[]; author: string; role?: string[]; context?: string; dependsOn?: string[]; level?: string; updateId?: string; source?: MemorySourceMeta; taskType?: TaskType;
 }): Promise<SavePlan[]> {
   const plans: SavePlan[] = [];
   const options = { ruleVariants: true };
@@ -49,10 +49,10 @@ export async function planMemorySave(input: {
     const match = await explicitMatch(input.ctx, input.updateId, input.type, scope) ?? await bestMatch(input.ctx, input.text, input.type, scope);
     const related = relatedMemoryHints(input.ctx, input.text, input.type, scope, match?.entry);
     if (match) {
-      const content = updateMemory(match.raw, { text: input.text, type: input.type, scope, author: input.author, role: input.role, dependsOn: input.dependsOn, level: input.level, source: input.source, taskType: input.taskType }, options);
+      const content = updateMemory(match.raw, { text: input.text, type: input.type, scope, author: input.author, role: input.role, context: input.context, dependsOn: input.dependsOn, level: input.level, source: input.source, taskType: input.taskType }, options);
       plans.push({ action: 'update', scope, file: match.entry.file, id: match.entry.id, content, matchScore: match.score, related, message: `update ${input.type}: ${match.entry.id}` });
     } else {
-      const draft = draftMemory({ text: input.text, type: input.type, scope, author: input.author, role: input.role, dependsOn: input.dependsOn, level: input.level, source: input.source, taskType: input.taskType }, options);
+      const draft = draftMemory({ text: input.text, type: input.type, scope, author: input.author, role: input.role, context: input.context, dependsOn: input.dependsOn, level: input.level, source: input.source, taskType: input.taskType }, options);
       const unique = await avoidCollision(input.ctx, scope, draft, input.text);
       plans.push({ action: 'add', scope, file: unique.file, id: unique.id, content: unique.content, related, message: `add ${input.type}: ${unique.id}` });
     }

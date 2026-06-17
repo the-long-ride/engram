@@ -46,7 +46,7 @@ export async function cmdSave(args: string[], flags: Record<string, any>): Promi
       type = candidate.type;
       text = candidate.text;
       const resolvedTaskType = await saveTaskType(text, flags, explicitTaskType);
-      plans = await planMemorySave({ ctx, text, type, scopes, author, role, dependsOn: candidate.dependsOn, level: candidate.level, updateId: candidate.updateId, taskType: resolvedTaskType });
+      plans = await planMemorySave({ ctx, text, type, scopes, author, role, context: candidate.context, dependsOn: candidate.dependsOn, level: candidate.level, updateId: candidate.updateId, taskType: resolvedTaskType });
       return previewSavePlans(plans, previewOptions);
     }, { explicitType, guidance: generatedMemoryGuidance(explicitType) });
     if (!captured) return 'Discarded. No file written.';
@@ -56,7 +56,7 @@ export async function cmdSave(args: string[], flags: Record<string, any>): Promi
     const candidate = parseMemoryCandidate(text, { explicitType });
     type = candidate.type;
     text = candidate.text;
-    plans = await planMemorySave({ ctx, text, type, scopes, author, role, dependsOn: candidate.dependsOn, level: candidate.level, updateId: candidate.updateId, taskType });
+    plans = await planMemorySave({ ctx, text, type, scopes, author, role, context: candidate.context, dependsOn: candidate.dependsOn, level: candidate.level, updateId: candidate.updateId, taskType });
     approval = await requestApproval(previewSavePlans(plans, previewOptions));
   }
   if (!approval.accepted) return 'Discarded. No file written.';
@@ -193,6 +193,7 @@ async function planSaveSessionCandidates(ctx: Awaited<ReturnType<typeof getConte
       scopes,
       author,
       role,
+      context: candidate.context,
       dependsOn: candidate.dependsOn,
       level: candidate.level,
       updateId: candidate.updateId,

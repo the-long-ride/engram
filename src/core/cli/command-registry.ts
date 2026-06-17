@@ -29,7 +29,7 @@ export const HELP_DATA: HelpSection[] = [
       { command: 'engram observe [--file session.md] [--propose] [note]', alias: 'o', purpose: 'Capture sanitized raw notes in inbox, then optionally propose memories through save-session' },
       { command: 'engram take-control [--plan] [--file path] [--dir path] [--include glob] [--exclude glob] [--max-sources n] [--max-chars n] [--all] [--accept-all] [--metacognize]', alias: 'tc', purpose: 'Explore existing workspace guidance with agent help, token-light accept-all, optional metacognition, and Engram memory writes' },
       { command: 'engram metacognize --workspace|--global|--all [--accept-all] [--dry-run]', alias: 'mc', purpose: 'Let an agent restructure an existing memory folder through save-session-style candidates and approval' },
-      { command: 'engram load [--all] [--dry-run] [query]', alias: 'ld', purpose: 'Route, refine, and load the configured compact memory pack, or preview routed file paths with --dry-run' },
+      { command: 'engram load [--all] [--dry-run] [--for-agents] [query]', alias: 'ld', purpose: 'Route, refine, and load the configured compact memory pack, or preview routed file paths with --dry-run' },
       { command: 'engram route [task]', alias: 'rt', purpose: 'Classify a task into the stable task type used by load and save tags' },
       { command: 'engram search [--semantic] <query>', alias: 'f', purpose: 'Search visible indexed memories with lexical or local semantic scoring' },
       { command: 'engram graph [--rebuild] [query]', alias: 'g', purpose: 'Inspect the derived layered JSON memory graph, dependency layers, and contradiction candidates' },

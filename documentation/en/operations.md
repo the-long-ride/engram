@@ -7,6 +7,7 @@ This page holds detailed usage so the README can stay short.
 | Need | Command |
 | --- | --- |
 | Load task memory | `engram load "<task>"` |
+| Print AI-agent usage guide | `engram llm` |
 | Preview routed memory files | `engram load --dry-run "<task>"` |
 | Search memory | `engram search "<topic>"` |
 | Save one memory | `engram save [rule|workflow|knowledge] "<text>"` |

@@ -1,0 +1,392 @@
+Engram LLM Guide
+
+Purpose
+
+Engram is a portable, human-approved memory layer for AI agents. It stores
+durable rules, workflows, skills, and knowledge as Markdown files, then routes
+only the relevant memory for the current task.
+
+Treat Engram as the knowledge memory center for project, workspace, team, and
+personal context.
+
+Core operating model
+
+- Workspace memory is preferred first.
+- Global memory is fallback for cross-repo personal or team context.
+- Read commands are compact by default.
+- Write commands require human-visible approval unless the human explicitly
+  requested an accept-all path for that command.
+- Markdown memory files are the source of truth. Indexes, graphs, and optional
+  vector sidecars are acceleration layers.
+
+What AI agents should do first
+
+At the start of a task, run:
+
+engram load "<current task>"
+
+Default reply shape:
+
+Engram loaded: X memories / Y total related memories.
+
+Do not paste large memory blocks into chat unless the human explicitly asked for
+raw output, file IDs, or exact rule text.
+
+When to load again
+
+Run `engram load` again when:
+
+- the task changes materially
+- the human switches domain or scope
+- you changed active roles or rule-variant mode
+- research or implementation depends on project knowledge that may not already
+  be in the current compact memory pack
+
+If `engram set-role ...` or `engram set-rule-variant ...` returns `Agent action:`
+then rerun:
+
+engram load "<current task/request>"
+
+That reload replaces earlier Engram-derived context in the current conversation.
+
+Read path
+
+Primary read commands:
+
+- `engram load "<task>"`: route relevant memory for the current task
+- `engram load --dry-run "<task>"`: preview routed files, candidate counts, and
+  narrowing tags without printing memory contents
+- `engram load --all "<task>"`: bypass the compact load cap only when broad
+  context is explicitly requested
+- `engram search "<query>"`: search visible memory
+- `engram route "<task>"`: classify a task into the stable task type used by
+  routing and save tags
+- `engram graph "<query>"`: inspect dependency layers and contradiction hints
+- `engram verify`: verify memory hashes before trusting files
+- `engram repair`: report malformed memory files
+- `engram entry`: show active roots, profile, and runtime configuration
+- `engram stats`, `engram health`, `engram quality-check`: inspect memory health
+
+How routing works
+
+`engram load` does not blindly load all memory. It:
+
+1. Anchors on meaningful query terms.
+2. Filters broad matches with lexical, tag, recency, graph, and optional vector
+   signals.
+3. Refines results to a compact context pack.
+4. Reports selected memory count and total related matches.
+
+If memory files declare `depends_on: [...]`, routed prerequisites are kept before
+deeper dependent memories in the compact load pack.
+
+`workflow` queries may route to skill memories. Generic words such as `rule`,
+`knowledge`, or common stopwords should not by themselves trigger broad matches.
+
+Read behavior and proof
+
+Hook-capable hosts can use:
+
+- `engram set-read startup`
+- `engram set-read auto`
+- `engram set-read always`
+- `engram set-read manual`
+- `engram set-read off`
+
+Meaning:
+
+- `startup`: inject only at session start
+- `auto`: inject at session start and again only when routed context changes
+- `always`: inject on every eligible prompt
+- `manual`: disable automatic hook reads but keep manual `engram load`
+- `off`: suppress automatic read surfaces
+
+Proof visibility is separate:
+
+- `engram set-proof off`
+- `engram set-proof compact`
+
+With `compact`, supported hooks may append a short `Engram proof:` line showing
+whether memory was loaded, reused, or skipped.
+
+Write path and approval
+
+Never write memory silently.
+
+Write and proposal commands:
+
+- `engram save rule "<text>"`
+- `engram save knowledge "<text>"`
+- `engram save skill "<text>"`
+- `engram save workflow "<text>"`
+- `engram save-session`
+- `engram save-session --file transcript.md`
+- `engram observe "note"`
+- `engram take-control --plan`
+- `engram take-control --all`
+- `engram metacognize --workspace|--global|--all`
+- `engram clone-memory ... --metacognize`
+- `engram archive --reason "<why>" <id-or-file>`
+- `engram resolve-conflicts --metacognize`
+
+How to choose memory type
+
+- Rule: a durable instruction, correction, or preference agents must follow
+- Knowledge: an objective project fact or stable context
+- Skill: a repeatable capability or habit
+- Workflow: a repeatable multi-step procedure
+
+Save behavior
+
+`engram save` proposes one memory. Engram may automatically choose update-vs-new
+before showing the approval preview.
+
+`engram save-session` is for long sessions that produced multiple durable
+memories.
+
+`engram observe` writes sanitized raw notes into inbox only. It does not create
+active memory unless routed through proposal flows later.
+
+`engram take-control` converts existing guidance, notes, and docs into Engram
+memory candidates.
+
+`engram metacognize` restructures existing Engram memory through proposal-first
+candidate generation.
+
+Candidate format
+
+When generating save-session, take-control, metacognize, or proposal-first clone
+candidates, use one candidate per line:
+
+TYPE: rule | TEXT: Always run tests before release.
+TYPE: knowledge | TEXT: Release notes live in CHANGELOG.md.
+TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
+
+Optional fields:
+
+- `CONTEXT: ...` explains why the memory exists or what boundary it came from
+- `DEPENDS_ON: memory-id` links deeper memory to a prerequisite
+- `LEVEL: advanced` marks a deeper memory layer
+- `UPDATE: memory-id` asks Engram to update an existing memory
+
+Examples:
+
+TYPE: rule | TEXT: OAuth rotation follows release foundations. | DEPENDS_ON: release-foundation | LEVEL: advanced
+TYPE: knowledge | TEXT: Invoice retries use exponential backoff. | UPDATE: invoice-retry-baseline
+TYPE: knowledge | TEXT: Release notes live in CHANGELOG.md. | CONTEXT: Created after release planning clarified where final notes are kept.
+
+Approval boundary
+
+Normal writes require human review. Agents should treat Engram as approval-first
+unless the human explicitly requested an accept-all path.
+
+Accept-all boundaries
+
+Use `--accept-all` only when the human explicitly included it.
+
+Examples:
+
+- `engram save-session --accept-all`
+- `engram ss -a`
+- `engram take-control --accept-all`
+- `engram metacognize --workspace --accept-all`
+
+Natural wording such as:
+
+engram ss -a last 50 sessions
+
+means:
+
+engram save-session --query-level 50 --accept-all
+
+Only include recent human-agent chats the agent can actually access. Never
+invent unavailable history.
+
+If an accept-all command reports related memories before writing, no file was
+saved yet. Use those hints to rerun with `DEPENDS_ON` or `UPDATE` instead of
+claiming a save happened.
+
+Related memory hints
+
+Save previews may surface:
+
+- dependency hints
+- possible duplicate warnings
+- suggested restructure opportunities
+
+These are advisory unless you are in an accept-all restructuring flow that
+explicitly pauses before writing. Do not auto-archive memory or silently rewrite
+memory just because a related-memory hint exists.
+
+Profiles, scope, and save targets
+
+Global memory can be isolated into profiles for company, team, or personal use.
+
+Useful commands:
+
+- `engram profile create <name> --global-path <path>`
+- `engram profile use <name>`
+- `engram profile use <name> --workspace`
+- `engram profile merge <from> <to> --dry-run`
+
+When a command uses `--profile <name>` and that profile differs from the
+workspace default, workspace memory is disabled for that command to avoid
+cross-profile leaks.
+
+Save targets:
+
+- `engram set-save-target workspace`
+- `engram set-save-target global`
+- `engram set-save-target both`
+- `engram set-save-target status`
+
+Per-command `--scope workspace|global|both` overrides the default target.
+
+Agent setup and integration
+
+This guide is intentionally safe before initialization:
+
+engram llm
+
+does not require `engram init`.
+
+To initialize memory and install default workspace instructions:
+
+engram init
+
+To initialize only global memory:
+
+engram init --global-only --global-path <path>
+
+To link Engram to a host:
+
+- `engram link codex`
+- `engram link claude`
+- `engram link gemini`
+- `engram link slash`
+- `engram link mcp`
+- `engram link --global <target>`
+
+`engram link <target>` also installs known MCP registration for that target when
+supported.
+
+Hook installation
+
+Opt-in hook installation is currently intended for:
+
+- `codex`
+- `claude`
+- `gemini`
+
+Useful commands:
+
+- `engram install-agent-hooks codex --plan`
+- `engram install-agent-hooks codex`
+- `engram install-agent-hooks claude`
+- `engram install-agent-hooks gemini`
+- `engram uninstall-agent-hooks <target>`
+
+The current public Antigravity fallback is `gemini`. Hidden compatibility aliases
+may still exist, but they should not be the default public recommendation.
+
+Slash and natural language mapping
+
+Agents may normalize human wording into canonical Engram commands.
+
+Examples:
+
+- `auto save` -> `save-session`
+- `take control accept all` -> `take-control --accept-all`
+- `take control accept all metacognize` -> `take-control --accept-all --metacognize`
+- `restructure workspace memory accept all` -> `metacognize --workspace --accept-all`
+- `clone workspace memory to global` -> `clone-memory workspace global`
+- `clone workspace memory to global and metacognize` -> `clone-memory workspace global --metacognize`
+- `resolve conflicts and metacognize` -> `resolve-conflicts --metacognize`
+- `set global memory path to <path>` -> `update-global-folder <path>`
+
+Short aliases must preserve the same safety behavior as canonical commands.
+
+Response style for Engram-aware agents
+
+Prefer compact user-facing responses for read commands.
+
+Good examples:
+
+- `Engram loaded: 8 memories / 24 total related memories.`
+- `Ran: engram verify. Result: OK workspace and global.`
+- `Saved: knowledge/release-notes-location.md.`
+
+Avoid:
+
+- dumping full memory bodies into chat by default
+- presenting hidden write behavior as if it already happened
+- inventing extra approval beyond what Engram already requires
+
+Health, maintenance, and safety
+
+Useful maintenance commands:
+
+- `engram verify`
+- `engram repair`
+- `engram rebuild-index`
+- `engram graph "<topic>"`
+- `engram quality-check`
+- `engram health`
+- `engram stats`
+- `engram upgrade`
+- `engram sync`
+
+After npm package updates, normal Engram commands may run a quiet one-time
+auto-upgrade for already-initialized roots. This refreshes generated help,
+indexes, graph files, and eligible vector sidecars when metadata is old.
+
+Do not assume upgrade means publish. In this repository, `npm run publish`
+should stay limited to the publish action itself; tests and pack checks should be
+run explicitly before publishing.
+
+Session-end behavior
+
+When durable rules, facts, or workflows emerged, propose:
+
+- `engram save`
+- `engram save-session`
+
+instead of relying on private chat memory.
+
+Keep proposals:
+
+- concise
+- objective
+- durable
+- reviewable
+
+Agent checklist
+
+1. Load Engram memory at task start.
+2. Keep read responses compact unless the human asked for raw detail.
+3. Reload when the task changes materially or after `Agent action:` commands.
+4. Never write memory silently.
+5. Use accept-all only when the human explicitly included it.
+6. Never invent inaccessible recent chat history.
+7. Use `DEPENDS_ON`, `LEVEL`, `UPDATE`, and optional `CONTEXT` when restructuring
+   related memory.
+8. Suggest `save` or `save-session` at the end of meaningful work.
+
+Useful examples
+
+engram load "fix the CLI parser bug"
+engram load --dry-run "release workflow"
+engram search "profile merge behavior"
+engram route "bump version to v0.0.16"
+engram save knowledge "The release workflow runs npm run test:package before publish."
+engram save-session
+engram save-session --file transcript.md
+engram ss -a last 50 sessions
+engram take-control --plan
+engram take-control --all
+engram metacognize --workspace
+engram clone-memory workspace global --metacognize
+engram resolve-conflicts --metacognize
+engram verify
+engram help save-session
+engram help llm

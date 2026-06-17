@@ -7,9 +7,13 @@ test('npm publish metadata declares a package README', async () => {
   const root = path.resolve('.');
   const manifest = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
   const readme = await readFile(path.join(root, 'README.md'), 'utf8');
+  const llm = await readFile(path.join(root, 'llm.txt'), 'utf8');
   assert.match(readme, /^# Engram/m);
   assert.ok(readme.length > 1000);
   assert.ok(manifest.files.includes('README.md'));
+  assert.ok(manifest.files.includes('llm.txt'));
+  assert.match(llm, /Engram LLM Guide/);
+  assert.match(llm, /AI agents/);
   assert.equal(manifest.files.filter((file) => file === 'README.md').length, 1);
   assert.equal(manifest.scripts['test:package'], 'npm run build && node --test tests/publish/*.test.mjs');
   assert.doesNotMatch(manifest.scripts['test:package'], /test-isolation/);

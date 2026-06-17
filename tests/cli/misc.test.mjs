@@ -33,6 +33,18 @@ test('unsupported public flags fail instead of silently degrading', async () => 
   await rm(cwd, { recursive: true, force: true });
 });
 
+test('llm command prints packaged AI agent guide', async () => {
+  const { cwd, env } = await tempWorkspace('engram-llm-');
+  const expected = await readFile(path.resolve('llm.txt'), 'utf8');
+  const result = await runEngram(cwd, env, ['llm']);
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(result.stdout.trimEnd(), expected.trimEnd());
+  assert.match(result.stdout, /Engram LLM Guide/);
+  assert.match(result.stdout, /engram load "<current task>"/);
+  assert.match((await runEngram(cwd, env, ['help', 'llm'])).stdout, /AI agent usage guide/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
 test('all registered commands have topic help entries', async () => {
   const { HELP_DATA } = await import('../../dist/core/cli/command-registry.js');
   const { COMMAND_TOPICS } = await import('../../dist/core/cli/help-topics.js');

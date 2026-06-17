@@ -192,6 +192,9 @@ You can instruct your agent to use the following slash commands in chat:
 - **Save key decisions/facts**: `/engram save knowledge "Webhook secret is process.env.STRIPE_WEBHOOK"`
 - **Summarize & save session**: `/engram save-session` (or `--query-level 3`, or `ss -a last 50 sessions` to auto-approve)
 
+When an agent asks how to use Engram, run `engram llm`. It prints the packaged
+`llm.txt` AI-agent guide, which is safe to use before `engram init`.
+
 When an AI agent proposes `TYPE: ... | TEXT: ...` memory candidates, it may add optional `CONTEXT: ...` when that helps explain why the memory exists. Simple facts can omit it and use the default approval context.
 
 ---
@@ -211,6 +214,7 @@ When an AI agent proposes `TYPE: ... | TEXT: ...` memory candidates, it may add 
 | **Restructure Memory** | `engram metacognize --workspace` | `/engram restructure workspace memory accept all` |
 | **Resolve Conflicts** | `engram resolve-conflicts --metacognize` | `/engram resolve conflicts and metacognize` |
 | **Check Config / Paths** | `engram entry` | `/engram entry` |
+| **Show Agent Guide** | `engram llm` | Run once when an agent needs Engram usage guidance |
 | **Manage Profiles** | `engram profile status` / `create` / `use` | `/engram profile status` |
 | **Configure Save Target** | `engram set-save-target <workspace/global/both>` | `/engram set-save-target <target>` |
 | **Configure Load Limit** | `engram set-load-limit <1..32>` | `/engram set-load-limit <count>` |

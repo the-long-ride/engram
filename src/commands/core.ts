@@ -1,5 +1,7 @@
 /** Core user-facing commands: init, help, and completion. */
+import fs from 'node:fs/promises';
 import { stdout as output } from 'node:process';
+import path from 'node:path';
 import { initWorkspace } from '../core/memory/storage.js';
 import { loadConfig, parseSaveTarget, scopeRootsForConfig } from '../core/runtime/config.js';
 import { renderHelpTerminal } from '../core/cli/help.js';
@@ -133,6 +135,12 @@ function summarizeSkillsetInstall(results: InstallResult[]): string {
 /** Show cached help or refresh it. */
 export async function cmdHelp(topic = ''): Promise<string> {
   return renderHelpTerminal(topic);
+}
+
+/** Print the packaged AI-agent usage guide. */
+export async function cmdLlm(): Promise<string> {
+  const binDir = path.dirname(process.argv[1] || process.cwd());
+  return fs.readFile(path.resolve(binDir, '../../llm.txt'), 'utf8');
 }
 
 /** Generate shell completion support for Tab suggestions. */

@@ -2,7 +2,7 @@
 import { parseArgs } from './cli/args.js';
 import { VERSION } from './core/runtime/constants.js';
 import { canonicalCommand } from './core/cli/command-registry.js';
-import { cmdCompletion, cmdHelp, cmdInit } from './commands/core.js';
+import { cmdCompletion, cmdHelp, cmdInit, cmdLlm } from './commands/core.js';
 import { cmdObserve } from './commands/observe.js';
 import { cmdAudit, cmdLoad, cmdRebuildIndex, cmdRehash, cmdRepair, cmdRoute, cmdVerify } from './commands/read.js';
 import { cmdSave, cmdSaveSession, cmdTakeControl } from './commands/write.js';
@@ -31,6 +31,7 @@ export async function runCli(argv: string[]): Promise<string> {
     switch (command) {
       case 'init': return await cmdInit(flags);
       case 'help': return await cmdHelp(rest[0]);
+      case 'llm': return await cmdLlm();
       case 'completion': return await cmdCompletion(rest[0]);
       case 'profile': return await cmdProfile(rest, flags);
       case 'save': return await cmdSave(rest, flags);

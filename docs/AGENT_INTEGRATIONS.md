@@ -17,6 +17,10 @@ Run:
 engram init
 ```
 
+If an agent needs a compact, package-local guide before setup, run
+`engram llm`. It prints the committed `llm.txt` AI-agent usage guide and does
+not require an initialized workspace.
+
 This creates `.agents/.engram/` and installs the compact Codex target by default:
 `AGENTS.md` plus `.agents/skills/engram/SKILL.md`. The generated instructions
 tell agents to load memory, keep Engram replies short, ask only for required

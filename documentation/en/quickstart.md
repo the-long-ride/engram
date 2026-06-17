@@ -18,6 +18,14 @@ If slash adapters are installed:
 
 The agent should reply with a compact count line by default, such as `Engram loaded: 8 memories / 24 total related memories.`
 
+When an agent needs a self-contained Engram usage guide, run:
+
+```bash
+engram llm
+```
+
+This prints the packaged `llm.txt` guide and does not require `engram init`.
+
 ## Recommended Setup Conversation
 
 Ask the agent:

@@ -157,6 +157,19 @@ Gemini / Antigravity 環境の場合：
 engram link gemini
 ```
 
+セッション開始時とそれ以降의プロンプトターンの両方でコンテキストを注入できるホスト向けに、オプションの自動ロードフックが利用可能です。
+```bash
+engram install-agent-hooks codex --plan
+engram install-agent-hooks codex
+engram install-agent-hooks claude
+engram install-agent-hooks gemini
+engram set-read auto
+engram set-proof compact
+```
+v1 フックのインストールは `codex`、`claude`、`gemini` に限定されています。Antigravity との互換性は現在 `gemini` を経由してルーティングされます。Cursor、Copilot、Cline、Windsurf/Cascade は、フックのインターフェースがプロンプト実行時の信頼性の高いコンテキスト注入をサポートするまで、指示/スキルセット/手動ロード駆動のままとなります。
+`set-read` の注入動作を変更せずに、サポートされているフックが対象となるターンごとに Engram メモリがロード、再利用、またはスキップされたかを示す短い `Engram proof:` 行を追加したい場合は、`engram set-proof compact` を使用します。
+
+
 ### 3. ワークスペースの初期化
 プロジェクトのルートディレクトリで実行します：
 ```bash
@@ -173,6 +186,11 @@ engram init
 - **タスク開始時**：`/engram load "design pricing table component"`
 - **重要な決定の保存**：`/engram save knowledge "Webhook secret is process.env.STRIPE_WEBHOOK"`
 - **セッションの集約保存**：`/engram save-session`（または `--query-level 3`、または自動承認用の `ss -a last 50 sessions`）
+
+エージェントが Engram の使用方法を尋ねてきた場合は、`engram llm` を実行します。パッケージ化された AI エージェントガイド `llm.txt` が出力され、これは `engram init` の実行前でも安全に使用できます。
+
+AIエージェントが `TYPE: ... | TEXT: ...` のメモリ候補を提案する際、そのメモリが存在する理由を说明するのに役立つ場合は、オプションで `CONTEXT: ...` を追加できます。単純な事実であればこれを省略し、デフォルトの承認コンテキストを使用できます。
+
 
 ---
 
@@ -191,6 +209,7 @@ engram init
 | **メモリの再構築** | `engram metacognize --workspace` | `/engram restructure workspace memory accept all` |
 | **競合の解決** | `engram resolve-conflicts --metacognize` | `/engram resolve conflicts and metacognize` |
 | **設定の確認** | `engram entry` | `/engram entry` |
+| **エージェントガイド表示** | `engram llm` | エージェントが Engram の使用ガイドを必要とするときに一度実行 |
 | **プロファイルの管理** | `engram profile status` / `create` / `use` | `/engram profile status` |
 | **保存ターゲット設定** | `engram set-save-target <workspace/global/both>` | `/engram set-save-target <target>` |
 | **読み込み上限設定** | `engram set-load-limit <1..32>` | `/engram set-load-limit <count>` |
@@ -204,6 +223,8 @@ engram init
 | **整合性検証と修復** | `engram verify` / `engram repair` | `/engram verify` / `/engram repair` |
 | **競合の検出** | `engram quality-check` | `/engram quality-check` |
 | **メモリの同期** | `engram sync` | `/engram sync` |
+
+`engram set-role ...` または `engram set-rule-variant ...` が成功すると、Engram は `Agent action:` 行を返すようになります。Engram 対応のアダプターや MCP ホストは、ただちに `engram load "<現在のタスク/リクエスト>"` を再実行し、同じ会話内の以前の Engram 由来のコンテキストを置き換える必要があります。これはコマンド完了後に発生し、レスポンスの途中では発生しません。また、インストールされたスキルセットファイルは、将来のチャットや再ロードされたチャットを引き続き制御します。
 
 ---
 

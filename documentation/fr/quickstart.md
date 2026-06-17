@@ -16,7 +16,15 @@ Si les adaptateurs slash sont installés :
 /engram load "<tâche actuelle>"
 ```
 
-L'agent doit résumer uniquement les identifiants de mémoire (IDs) et les règles pertinentes, et non coller l'intégralité de chaque fichier.
+L'agent doit uniquement résumer les identifiants de mémoire (IDs) et les règles pertinentes, pas coller chaque fichier.
+
+Lorsqu'un agent a besoin d'un guide d'utilisation d'Engram autonome, exécutez :
+
+```bash
+engram llm
+```
+
+Cela affiche le guide `llm.txt` empaqueté et ne nécessite pas `engram init`.
 
 ## Conversation de Configuration Recommandée
 
@@ -33,6 +41,13 @@ engram init
 engram help link
 engram link <nom-de-l-agent>
 ```
+
+Pour enseigner au même agent de manière globale, afin que les nouveaux espaces de travail puissent charger la mémoire globale d'Engram sans exécuter `engram init` au préalable :
+
+```bash
+engram link --global <nom-de-l-agent>
+```
+
 
 Pour une utilisation native dans le chat, demandez :
 
@@ -120,8 +135,12 @@ L'agent peut utiliser :
 
 ```bash
 engram init --global-only --global-path <chemin>
-engram save --scope global "Use pnpm for package management."
+engram save --scope global "Utiliser pnpm pour la gestion des paquets."
+engram link --global <nom-de-l-agent>
 ```
+
+Lorsque init détecte une mémoire globale configurée, il crée ou sélectionne un profil utilisateur par défaut pour cette racine globale afin que les futurs espaces de travail puissent la réutiliser.
+
 
 ## Garder le Système Sain
 
@@ -134,11 +153,14 @@ Vérifie la santé d'Engram, signale les mémoires invalides et propose tout ce 
 Commandes utiles :
 
 ```bash
+engram upgrade
+engram upgrade --plan
 engram verify
 engram repair
 engram graph "<sujet>"
 engram quality-check
 engram archive --reason "<pourquoi>" <id-ou-fichier>
 ```
+
 
 Suivant : [Protocole de mémoire humaine](protocol.md).

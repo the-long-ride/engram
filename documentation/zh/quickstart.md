@@ -16,7 +16,15 @@
 /engram load "<当前任务>"
 ```
 
-智能体应该只总结相关的内存 ID 和规则，而不是粘贴每一个文件的内容。
+智能体应当仅概括相关的内存标识符 (IDs) 和规则，而不是粘贴每个文件。
+
+当代理需要独立的 Engram 使用指南时，运行：
+
+```bash
+engram llm
+```
+
+这会打印打包的 `llm.txt` 指南，并且不需要 `engram init`。
 
 ## 推荐的设置对话
 
@@ -33,6 +41,13 @@ engram init
 engram help link
 engram link <智能体名称>
 ```
+
+要在全局范围内教授相同的智能体，以便新工作区可以在不先运行 `engram init` 的情况下加载 Engram 全局内存：
+
+```bash
+engram link --global <智能体名称>
+```
+
 
 若要在聊天中直接使用，询问：
 
@@ -119,9 +134,12 @@ Use pnpm for package management.
 智能体可以使用：
 
 ```bash
-engram init --global-only --global-path <path>
-engram save --scope global "Use pnpm for package management."
+engram init --global-only --global-path <路径>
+engram save --scope global "使用 pnpm 进行包管理。"
+engram link --global <智能体名称>
 ```
+
+当 init 检测到配置好的全局内存时，它会为该全局根目录创建或选择一个用户默认的 profile，以便未来的工作区可以重复使用它。
 
 ## 保持健康状态
 
@@ -134,11 +152,13 @@ engram save --scope global "Use pnpm for package management."
 常用命令：
 
 ```bash
+engram upgrade
+engram upgrade --plan
 engram verify
 engram repair
 engram graph "<主题>"
 engram quality-check
-engram archive --reason "<原因>" <id-或-文件>
+engram archive --reason "<原因>" <id 或文件>
 ```
 
 下一步：[人类拥有的内存协议](protocol.md)。

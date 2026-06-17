@@ -157,6 +157,19 @@ engram is --global <您的智能体名称>
 engram link gemini
 ```
 
+可选的自动加载钩子适用于能够在会话开始和后续提示轮次中注入上下文的主机：
+```bash
+engram install-agent-hooks codex --plan
+engram install-agent-hooks codex
+engram install-agent-hooks claude
+engram install-agent-hooks gemini
+engram set-read auto
+engram set-proof compact
+```
+v1 钩子安装仅限于 `codex`、`claude` 和 `gemini`。Antigravity 的兼容性目前通过 `gemini` 进行路由；Cursor、Copilot、Cline 和 Windsurf/Cascade 仍由指令/技能集/手动加载驱动，直到它们的钩子表面支持在提示时进行可靠的上下文注入。
+当您希望支持的钩子在每个符合条件的轮次中追加一行简短的 `Engram proof:`，以显示 Engram 内存是被加载、重用还是跳过，而不改变 `set-read` 的注入行为时，请使用 `engram set-proof compact`。
+
+
 ### 3. 初始化工作空间
 在项目根目录下运行：
 ```bash
@@ -172,7 +185,12 @@ engram init
 
 - **开始任务**：`/engram load "design pricing table component"`
 - **保存重要决策/事实**：`/engram save knowledge "Webhook secret is process.env.STRIPE_WEBHOOK"`
-- **总结并保存会话**：`/engram save-session`（或 `--query-level 3`，或使用 `ss -a last 50 sessions` 自动批准）
+- **总结并保存会话**：`/engram save-session`（or `--query-level 3`，或使用 `ss -a last 50 sessions` 自动批准）
+
+当代理询问如何使用 Engram 时，运行 `engram llm`。它会打印打包的 `llm.txt` AI 代理指南，在 `engram init` 之前运行也是安全的。
+
+当 AI 代理提出 `TYPE: ... | TEXT: ...` 内存候选时，如果有助于解释内存存在的原因，它可以添加可选的 `CONTEXT: ...`。简单的事实可以省略它并使用默认的批准上下文。
+
 
 ---
 
@@ -191,6 +209,7 @@ engram init
 | **重构内存文件夹** | `engram metacognize --workspace` | `/engram restructure workspace memory accept all` |
 | **解决内存冲突** | `engram resolve-conflicts --metacognize` | `/engram resolve conflicts and metacognize` |
 | **检查路径配置** | `engram entry` | `/engram entry` |
+| **显示代理指南** | `engram llm` | 当代理需要 Engram 使用指南时运行一次 |
 | **管理隔离配置** | `engram profile status` / `create` / `use` | `/engram profile status` |
 | **配置保存目标** | `engram set-save-target <workspace/global/both>` | `/engram set-save-target <target>` |
 | **配置加载上限** | `engram set-load-limit <1..32>` | `/engram set-load-limit <count>` |
@@ -204,6 +223,8 @@ engram init
 | **验证与修复** | `engram verify` / `engram repair` | `/engram verify` / `/engram repair` |
 | **检测矛盾规则** | `engram quality-check` | `/engram quality-check` |
 | **同步内存** | `engram sync` | `/engram sync` |
+
+当 `engram set-role ...` 或 `engram set-rule-variant ...` 成功时，Engram 现在会返回一个 `Agent action:` 行。感知 Engram 的适配器和 MCP 主机应立即重新运行 `engram load "<当前任务/请求>"` 并替换同一对话中早期由 Engram 派生的上下文。这发生在命令完成后，而不是在响应的中间，并且安装的技能集文件仍然控制未来或重新加载的聊天。
 
 ---
 

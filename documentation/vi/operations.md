@@ -7,6 +7,8 @@ Trang này chứa thông tin chi tiết về cách sử dụng để tệp READM
 | Nhu cầu | Câu lệnh |
 | --- | --- |
 | Tải bộ nhớ tác vụ | `engram load "<tác vụ>"` |
+| Hiển thị hướng dẫn tác nhân | `engram llm` |
+| Xem trước các tệp bộ nhớ được định tuyến | `engram load --dry-run "<tác vụ>"` |
 | Tìm kiếm bộ nhớ | `engram search "<chủ đề>"` |
 | Lưu một bộ nhớ | `engram save [rule\|workflow\|knowledge] "<nội dung>"` |
 | Lưu nhiều bộ nhớ phiên làm việc | `engram save-session` hoặc `engram ss` |
@@ -16,7 +18,9 @@ Trang này chứa thông tin chi tiết về cách sử dụng để tệp READM
 | Ghi lại ghi chú thô | `engram observe --file session.md` |
 | Chuyển đổi tài liệu/hướng dẫn có sẵn | `engram take-control --all` |
 | Xem trước kế hoạch tiếp quản tài liệu | `engram take-control --plan` |
-| Tái cấu trúc thư mục bộ nhớ | `engram metacognize --workspace\|--global\|--all` |
+| Nhập và tự đánh giá tài liệu | `engram take-control --all --metacognize --accept-all` |
+| Tái cấu trúc thư mục bộ nhớ hiện tại | `engram metacognize --workspace\|--global\|--all` |
+| Giải quyết xung đột và tự đánh giá | `engram resolve-conflicts --metacognize` |
 | Kiểm tra định tuyến đồ thị | `engram graph "<chủ đề>"` |
 | Kiểm tra mã băm bảo mật | `engram verify` |
 | Tìm các tệp bộ nhớ bị lỗi cấu trúc | `engram repair` |
@@ -33,7 +37,26 @@ Trang này chứa thông tin chi tiết về cách sử dụng để tệp READM
 Sử dụng lệnh `save-session` cho các đề xuất bộ nhớ từ các phiên làm việc dài. Dạng viết tắt: `ss`.
 Sử dụng `--query-level <n>` khi con người muốn tác nhân AI khai thác tối đa n phiên chat người-tác nhân gần đây có thể truy cập, thay vì chỉ phiên hiện tại. Cách nói tự nhiên `engram ss -a last 50 sessions` được chuẩn hóa thành `engram save-session --query-level 50 --accept-all`.
 
-Khi số bộ nhớ khớp vượt quá giới hạn tải đã cấu hình, `load` sẽ tinh chỉnh nhóm ứng viên rộng hơn thành gói ngữ cảnh gọn. Tải thông thường hiển thị số đã chọn và tổng số liên quan, ví dụ `loaded 8 memory files / 14 total related memories`. `load --dry-run` hiển thị số lượng ứng viên và các tag gợi ý để thu hẹp; `load --all` chủ động trả về mọi bộ nhớ định tuyến đang hiển thị.
+Sử dụng `load --dry-run` khi bạn muốn kiểm tra xem những tệp bộ nhớ nào sẽ được định tuyến mà không cần in nội dung của chúng.
+`load` trước tiên neo định tuyến vào các từ khóa truy vấn có ý nghĩa, bỏ qua các từ nhớ chung chung như `rule`, `knowledge` và các từ dừng (stopwords) phổ biến. Sau đó, nó tinh chỉnh nhóm ứng viên rộng hơn thành gói ngữ cảnh gọn. Tải thông thường hiển thị số đã chọn và tổng số liên quan, ví dụ `loaded 8 memory files / 14 total related memories`. `load --dry-run` hiển thị số lượng ứng viên, các tag gợi ý để thu hẹp và lý do khớp; `load --all` trả về mọi kết quả khớp định tuyến thay vì áp dụng giới hạn gói gọn.
+`workflow` và `workflows` vẫn định tuyến đến các bộ nhớ kỹ năng, nhưng các từ loại chung chung tự bản thân chúng không tạo nên một kết quả khớp rộng.
+
+## Đồ Thị Phụ Thuộc (Dependency Layers)
+
+Sử dụng frontmatter `depends_on` khi một bộ nhớ cần được xây dựng dựa trên một bộ nhớ khác thay vì lặp lại nó:
+
+```yaml
+depends_on: [release-foundation]
+level: advanced
+```
+
+Chạy `engram graph --rebuild` sau khi chỉnh sửa thủ công. Đồ thị sẽ báo cáo các lớp phụ thuộc, và `engram load` sẽ kéo các điều kiện tiên quyết được định tuyến vào cùng một gói ngữ cảnh gọn trước các bộ nhớ sâu hơn. Các cạnh liên quan trong đồ thị và kết quả khớp vector không tự động tải các bộ nhớ không liên quan; chúng chỉ giúp xếp hạng lại hoặc mở rộng các bộ nhớ đã trùng khớp với các từ khóa truy vấn có ý nghĩa. Các điều kiện tiên quyết `depends_on` rõ ràng vẫn có thể tải mà không cần từ khóa trùng khớp riêng của chúng.
+
+## Đối Soát Nâng Cấp (Upgrade Reconciliation)
+
+Sử dụng `engram upgrade` sau khi cài đặt gói Engram mới hơn. Lệnh này so sánh các thư mục gốc bộ nhớ đã khởi tạo từ v0.0.8 trở đi với lược đồ phát hành hiện tại và làm mới các tệp HELP.md được tạo, chỉ mục bộ nhớ, tệp đồ thị, sidecar vector đủ điều kiện, bộ kỹ năng workspace được tạo, khung bộ nhớ toàn cục và bộ kỹ năng tác nhân toàn cục đã đăng ký trong khi vẫn bảo tồn các tệp do con người viết. Các lệnh thông thường cũng chạy đối soát thư mục gốc một cách âm thầm mỗi phiên bản gói trừ khi `--no-auto-upgrade` hoặc `ENGRAM_NO_AUTO_UPGRADE=1` được đặt.
+Khi `engram save` tìm thấy các bộ nhớ đang hoạt động có liên quan, bản xem trước phê duyệt sẽ báo cáo chúng kèm theo gợi ý `depends_on` hoặc cảnh báo trùng lặp tiềm ẩn. Việc chấp nhận sẽ lưu bản xem trước nguyên trạng; hãy từ chối trước nếu bạn muốn cấu trúc lại các phụ thuộc hoặc lưu trữ các bộ nhớ trùng lặp trước khi lưu.
+Đối với `save-session --accept-all`, Engram sẽ tạm dừng trước khi ghi khi các gợi ý bộ nhớ liên quan đó xuất hiện. Tác nhân nên sử dụng phản hồi để brainstorm một lượt chạy lại có cấu trúc: thêm `DEPENDS_ON: memory-id` cho các phụ thuộc, `LEVEL: advanced` khi một bộ nhớ sâu hơn điều kiện tiên quyết của nó, hoặc `UPDATE: memory-id` khi một ứng viên nên được hợp nhất vào một bộ nhớ trùng lặp tiềm ẩn.
 
 ## Profile, Đích Lưu Và Sao Chép
 
@@ -54,30 +77,47 @@ engram profile use company --workspace
 engram profile merge personal company --dry-run
 ```
 
-Dùng `clone-memory` để sao chép Markdown đang hoạt động trong `rules/`,
-`skills/` và `knowledge/` giữa phạm vi workspace và global:
+Dùng `clone-memory` để sao chép Markdown đang hoạt động trong `rules/`, `skills/` và `knowledge/` giữa phạm vi workspace và global:
 
 ```bash
 engram clone-memory workspace global
 engram clone-memory global workspace --force
 ```
 
-(`--metacognize` routes cloned memories through save-session-style approval
-instead of raw copy.)
+Thêm `--metacognize` khi bạn muốn các bộ nhớ được sao chép đề xuất thông qua luồng phê duyệt save-session thay vì được sao chép nguyên văn.
 
-Use `engram metacognize --workspace|--global|--all` when an AI agent should review an existing memory folder and propose `TYPE/TEXT` restructuring candidates with `UPDATE` or `DEPENDS_ON`; natural wording such as `engram restructure workspace memory accept all` maps to this command.
+## Tự Đánh Giá Bộ Nhớ (Metacognize Memory)
+
+Sử dụng `metacognize` khi bạn muốn một tác nhân AI xem xét một thư mục bộ nhớ Engram hiện có và đề xuất cấu trúc an sau khi phê duyệt luồng save-session:
+
+```bash
+engram metacognize --workspace
+engram metacognize --global --dry-run
+engram metacognize --all --accept-all
+```
+
+Lệnh xác minh các bộ nhớ `rules/`, `skills/` và `knowledge/` đang hoạt động trong phạm vi đã chọn, trả về một gói nguồn gọn khi các ứng viên không được cung cấp, sau đó chỉ ghi các dòng `TYPE: ... | TEXT: ...` được tạo sau khi phê duyệt. Các tác nhân nên sử dụng `UPDATE: memory-id` để hợp nhất hoặc dọn dẹp cách diễn đạt và `DEPENDS_ON: memory-id` cho các bộ nhớ phân lớp. Cách diễn đạt tự nhiên như `engram restructure workspace memory accept all` sẽ được chuẩn hóa thành `engram metacognize --workspace --accept-all`.
 
 ## Lưu Phiên Làm Việc (Save Session)
 
 Sử dụng `save-session` khi một tương tác dài tạo ra nhiều ứng viên bộ nhớ:
 
 ```text
-TYPE: rule | TEXT: Always run tests before release.
+TYPE: rule | TEXT: Always run tests before release. | CONTEXT: Created from release planning so future agents preserve the test gate.
 TYPE: knowledge | TEXT: Release notes live in CHANGELOG.md.
 TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
 ```
 
+`CONTEXT: ...` là tùy chọn. Chỉ thêm nó khi nó giải thích lý do tại sao bộ nhớ tồn tại, tình huống nguồn, mục đích sử dụng hoặc ranh giới. Các bộ nhớ sự thật đơn giản có thể bỏ qua nó và sử dụng ngữ cảnh phê duyệt mặc định của Engram.
+
 Nếu không có cờ `--accept-all`, Engram sẽ hỏi ứng viên nào cần lưu. Với `ss -a`, mọi ứng viên được tạo ra sẽ được lưu lại vì con người đã phê duyệt rõ ràng cho phím tắt đó.
+Khi một lượt chạy accept-all báo cáo các bộ nhớ liên quan trước khi ghi, không có tệp nào được lưu. Tác nhân nên chạy lại với các ứng viên có cấu trúc như:
+
+```text
+TYPE: rule | TEXT: OAuth rotation follows release foundations. | DEPENDS_ON: release-foundation | LEVEL: advanced
+TYPE: knowledge | TEXT: Invoice retries use exponential backoff. | UPDATE: invoice-retry-baseline
+```
+
 `--query-level` phải là số nguyên dương. Tác nhân AI chỉ nên dùng các phiên chat mà nó thật sự có thể truy cập và không được bịa lịch sử không có sẵn. `engram ss -a last 50 sessions` dùng `50` làm query level và `-a` làm phê duyệt rõ ràng của con người.
 
 ## Tiếp Quản Bộ Nhớ (Take Control)
@@ -93,9 +133,23 @@ engram take-control --file AGENTS.md
 engram take-control --dir docs
 engram take-control --include "docs/**/*.md" --exclude "docs/private/**"
 engram take-control --max-sources 5 --max-chars 900
+engram take-control --all --metacognize --accept-all
 ```
 
 Các bộ nhớ được lưu bởi take-control ghi lại `source_files` và `source_hashes`, nhờ đó các nguồn không thay đổi sẽ được bỏ qua trong các lần quét sau.
+Sử dụng `--metacognize` với yêu cầu accept-all của con người khi các gợi ý bộ nhớ liên quan sẽ tạm dừng ghi và cho phép tác nhân chạy lại với `UPDATE` or `DEPENDS_ON`.
+
+## Giải Quyết Xung Đột Bằng Tự Đánh Giá (Resolve Conflicts With Metacognition)
+
+Sử dụng `resolve-conflicts` để xem trước hoặc chỉ giải quyết các xung đột bộ nhớ workspace do Engram sở hữu. Thêm `--metacognize` khi tác nhân nên xem xét thư mục bộ nhớ sau khi xử lý xung đột:
+
+```bash
+engram resolve-conflicts --dry-run --metacognize
+engram resolve-conflicts --metacognize
+engram resolve conflicts and metacognize
+```
+
+Lệnh này giữ việc xử lý xung đột mang tính quyết định trong phạm vi `.agents/.engram/`, sau đó nối thêm gói nguồn tự đánh giá workspace cho các ứng viên `TYPE/TEXT` ngắn gọn.
 
 ## Ghi Nhận (Observe)
 
@@ -103,7 +157,7 @@ Các bộ nhớ được lưu bởi take-control ghi lại `source_files` và `s
 
 ```bash
 engram observe --file session.md
-engram save-session --file .agents/.engram/inbox/<tên_ghi_chú>.md
+engram save-session --file .agents/.engram/inbox/<ghi-chú>.md
 ```
 
 Sử dụng tính năng này khi bạn muốn lưu giữ các ghi chú sơ bộ trước khi quyết định những gì sẽ trở thành bộ nhớ bền vững.

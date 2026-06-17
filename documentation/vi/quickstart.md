@@ -18,6 +18,15 @@ Nếu các bộ điều hợp lệnh slash đã được cài đặt:
 
 Tác nhân AI chỉ nên tóm tắt các mã định danh bộ nhớ (IDs) và các quy tắc liên quan, chứ không dán toàn bộ nội dung của từng tệp tin vào cửa sổ chat.
 
+Khi tác nhân cần một hướng dẫn sử dụng Engram độc lập, hãy chạy:
+
+```bash
+engram llm
+```
+
+Lệnh này sẽ in hướng dẫn `llm.txt` được đóng gói sẵn và không yêu cầu `engram init`.
+
+
 ## Đoạn Hội Thoại Thiết Lập Được Đề Xuất
 
 Yêu cầu tác nhân AI:
@@ -33,6 +42,13 @@ engram init
 engram help link
 engram link <tên-tác-nhân-ai>
 ```
+
+Để cấu hình tác nhân đó trên toàn cục (globally), giúp các không gian làm việc mới có thể tải bộ nhớ toàn cục Engram mà không cần chạy `engram init` trước tiên:
+
+```bash
+engram link --global <tên-tác-nhân-ai>
+```
+
 
 Để sử dụng trực tiếp trong chat, hãy hỏi:
 
@@ -121,7 +137,11 @@ Tác nhân AI có thể sử dụng:
 ```bash
 engram init --global-only --global-path <đường_dẫn>
 engram save --scope global "Sử dụng pnpm để quản lý gói."
+engram link --global <tên-tác-nhân-ai>
 ```
+
+Khi init phát hiện bộ nhớ toàn cục đã được cấu hình, nó sẽ tạo hoặc chọn một profile người dùng mặc định cho thư mục gốc toàn cục đó để các không gian làm việc trong tương lai có thể tái sử dụng.
+
 
 ## Giữ Cho Bộ Nhớ Luôn Khỏe Mạnh
 
@@ -134,11 +154,14 @@ Hãy kiểm tra sức khỏe Engram, báo cáo các bộ nhớ không hợp lệ
 Các lệnh hữu ích:
 
 ```bash
+engram upgrade
+engram upgrade --plan
 engram verify
 engram repair
 engram graph "<chủ đề>"
 engram quality-check
 engram archive --reason "<lý do>" <id-hoặc-tên-tệp>
 ```
+
 
 Tiếp theo: [Giao thức bộ nhớ do con người sở hữu](protocol.md).

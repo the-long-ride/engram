@@ -157,6 +157,18 @@ Cho Gemini / Antigravity:
 engram link gemini
 ```
 
+Các hook tự động tải tùy chọn khả dụng cho các host có thể bơm ngữ cảnh ở cả thời điểm bắt đầu phiên và các lượt prompt sau đó:
+```bash
+engram install-agent-hooks codex --plan
+engram install-agent-hooks codex
+engram install-agent-hooks claude
+engram install-agent-hooks gemini
+engram set-read auto
+engram set-proof compact
+```
+Cài đặt hook v1 bị giới hạn ở `codex`, `claude` và `gemini`. Khả năng tương thích với Antigravity hiện định tuyến qua `gemini`; Cursor, Copilot, Cline và Windsurf/Cascade vẫn hoạt động dựa trên hướng dẫn/skillset/tải thủ công cho đến khi các bề mặt hook của chúng hỗ trợ bơm ngữ cảnh đáng tin cậy tại thời điểm prompt.
+Sử dụng `engram set-proof compact` khi bạn muốn các hook được hỗ trợ nối thêm một dòng ngắn `Engram proof:` vào mỗi lượt đủ điều kiện để hiển thị xem bộ nhớ Engram đã được tải, sử dụng lại hay bỏ qua mà không làm thay đổi hành vi bơm của `set-read`.
+
 ### 3. Khởi tạo Không gian làm việc
 Chạy lệnh này tại thư mục gốc của dự án:
 ```bash
@@ -173,6 +185,11 @@ Bạn có thể yêu cầu tác nhân sử dụng các lệnh slesh sau trong ch
 - **Bắt đầu nhiệm vụ**: `/engram load "design pricing table component"`
 - **Lưu quyết định/kiến thức quan trọng**: `/engram save knowledge "Webhook secret is process.env.STRIPE_WEBHOOK"`
 - **Tóm tắt & lưu phiên**: `/engram save-session` (hoặc `--query-level 3`, hoặc `ss -a last 50 sessions` để tự động phê duyệt)
+
+Khi tác nhân AI hỏi cách sử dụng Engram, hãy chạy `engram llm`. Lệnh này sẽ in ra hướng dẫn tác nhân AI `llm.txt` được đóng gói sẵn, an toàn để sử dụng trước khi chạy `engram init`.
+
+Khi một tác nhân AI đề xuất các ứng viên bộ nhớ dạng `TYPE: ... | TEXT: ...`, nó có thể thêm tùy chọn `CONTEXT: ...` khi điều đó giúp giải thích lý do bộ nhớ tồn tại. Các sự kiện đơn giản có thể bỏ qua phần này và sử dụng ngữ cảnh phê duyệt mặc định.
+
 
 ---
 
@@ -191,6 +208,7 @@ Bạn có thể yêu cầu tác nhân sử dụng các lệnh slesh sau trong ch
 | **Tái Cấu Trúc Thư Mục** | `engram metacognize --workspace` | `/engram restructure workspace memory accept all` |
 | **Giải Quyết Xung Đột** | `engram resolve-conflicts --metacognize` | `/engram resolve conflicts and metacognize` |
 | **Kiểm Tra Cấu Hình** | `engram entry` | `/engram entry` |
+| **Hiển Thị Hướng Dẫn Tác Nhân** | `engram llm` | Chạy một lần khi tác nhân cần hướng dẫn sử dụng Engram |
 | **Quản Lý Profile** | `engram profile status` / `create` / `use` | `/engram profile status` |
 | **Cấu Hình Nơi Lưu** | `engram set-save-target <workspace/global/both>` | `/engram set-save-target <target>` |
 | **Cấu Hình Giới Hạn Tải** | `engram set-load-limit <1..32>` | `/engram set-load-limit <count>` |
@@ -204,6 +222,8 @@ Bạn có thể yêu cầu tác nhân sử dụng các lệnh slesh sau trong ch
 | **Kiểm Tra & Sửa Lỗi** | `engram verify` / `engram repair` | `/engram verify` / `/engram repair` |
 | **Quét Mâu Thuẫn** | `engram quality-check` | `/engram quality-check` |
 | **Đồng Bộ Bộ Nhớ** | `engram sync` | `/engram sync` |
+
+Khi `engram set-role ...` hoặc `engram set-rule-variant ...` thành công, Engram giờ đây sẽ trả về một dòng `Agent action:`. Các bộ điều hợp hỗ trợ Engram và host MCP nên chạy lại ngay lập tức `engram load "<tác vụ/yêu cầu hiện tại>"` và thay thế ngữ cảnh cũ bắt nguồn từ Engram trong cùng một cuộc trò chuyện. Việc này diễn ra sau khi lệnh hoàn tất, không phải ở giữa phản hồi, và các tệp skillset đã cài đặt vẫn kiểm soát các cuộc trò chuyện trong tương lai hoặc đã tải lại.
 
 ---
 

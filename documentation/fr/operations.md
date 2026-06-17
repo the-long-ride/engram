@@ -24,6 +24,9 @@ Cette page fournit des détails d'utilisation afin que le README puisse rester c
 | Ajuster la force des règles | `engram set-rule-variant strict\|balanced\|light\|off` |
 | Définir la cible d'enregistrement par défaut | `engram set-save-target workspace\|global\|both\|status` |
 | Définir la limite de chargement compact | `engram set-load-limit 1..32\|status\|reset` |
+| Configurer la lecture auto par hook | `engram set-read startup\|auto\|always\|manual\|off\|status` |
+| Configurer la visibilité de preuve | `engram set-proof off\|compact\|status` |
+| Installer les hooks agent | `engram install-agent-hooks codex\|claude\|gemini` |
 | Gérer les profils globaux | `engram profile status\|create\|use\|merge` |
 | Cloner la mémoire workspace/global | `engram clone-memory workspace global [--metacognize]` |
 

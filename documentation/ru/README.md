@@ -22,46 +22,78 @@
 
 ---
 
-### Схема Работы Системы (System Flow)
+### Общий Поток Системы
 
 ```mermaid
 graph TD
-    %% Styling
-    classDef default fill:#111,stroke:#333,stroke-width:1px,color:#fff;
     classDef human fill:#1a3a5f,stroke:#3182ce,stroke-width:2px,color:#fff;
     classDef agent fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#fff;
     classDef storage fill:#234e52,stroke:#319795,stroke-width:2px,color:#fff;
     classDef action fill:#2c5282,stroke:#4299e1,stroke-width:1px,color:#fff;
 
-    User["👤 Вы (Пользователь)"]:::human
-    AI["🤖 ИИ-ассистент (ChatGPT, Claude и т. д.)"]:::agent
+    User["👤 Вы"]:::human
+    AI["🤖 AI-хост\n(Codex, Claude, Gemini и др.)"]:::agent
 
-    subgraph Engram ["Система памяти Engram"]
-        Load["Загрузка памяти (engram load)"]:::action
-        Propose["Предложение записи (engram save)"]:::action
-        Review["Шлюз одобрения (Вы проверяете и подтверждаете)"]:::action
+    subgraph Entry ["Как Engram попадает в агента"]
+        Links["Связанные инструкции,\nslash-команды, MCP"]:::action
+        Hooks["Опциональные хуки\n(SessionStart и ходы prompt)"]:::action
     end
 
-    subgraph Storage ["Постоянное хранилище (Файлы Markdown)"]
-        LocalStore["📁 Память проекта (.agents/.engram/)"]:::storage
-        GlobalStore["🌐 Личная глобальная память ($ENGRAM_GLOBAL_DIR)"]:::storage
-        SyncStore["☁️ Облако / Git-синхронизация (GitHub, OneDrive и др.)"]:::storage
+    subgraph Read ["Путь чтения"]
+        Trigger["Запрос задачи или ход промпта"]:::action
+        Load["Запрос на загрузку/поиск\n(engram load, search, graph)"]:::action
+        Route["Маршрутизация по тегам, типу, свежести,\nграфу зависимостей, sqlite-vec"]:::action
+        Refine["Сужение до компактного top-N пакета\n(по умолчанию 8, кроме --all)"]:::action
+        Cache["Кэш хуков проверяет сигнатуру маршрута"]:::action
+        Inject["Внедрение компактного пакета памяти"]:::action
+        Proof["Строка доказательства\nloaded, reused, skipped"]:::action
     end
 
-    %% Interactions
-    User <-->|Диалог и сотрудничество| AI
-    AI -->|1. Загрузка контекста| Load
-    Load -->|Чтение воспоминаний| LocalStore
-    Load -->|Чтение предпочтений| GlobalStore
-    LocalStore & GlobalStore -->|Предоставление контекста| AI
+    subgraph Write ["Путь записи"]
+        Proposal["Потоки предложений\n(save, save-session, take-control, metacognize)"]:::action
+        Scan["Проверки безопасности\n(PII, секреты, prompt injection)"]:::action
+        Review["Шлюз человеческого одобрения\n(A / B / C или явный accept-all)"]:::action
+        Persist["Запись одобренной Markdown-памяти"]:::action
+        Rebuild["Обновление hashes, index, graph,\nи опционального sqlite-vec"]:::action
+    end
 
-    AI -->|2. Предложение воспоминаний| Propose
-    Propose -->|Создание черновика| Review
-    User -->|3. Одобрение или отклонение| Review
-    Review -->|4. Сохранение в Markdown| LocalStore
-    Review -->|Опциональное сохранение| GlobalStore
-    LocalStore -->|5. Облачная копия| SyncStore
-    GlobalStore -->|5. Облачная копия| SyncStore
+    subgraph Memory ["Слой памяти"]
+        Workspace["📁 Память workspace\n(.agents/.engram/)"]:::storage
+        Global["🌐 Глобальная память и профили\n($ENGRAM_GLOBAL_DIR)"]:::storage
+        Derived["🧠 Производные данные\n(hashes, index, graph, sqlite-vec)"]:::storage
+        Sync["☁️ Git / облачная синхронизация"]:::storage
+    end
+
+    User <-->|Чат и совместная работа| AI
+    AI --> Links
+    AI --> Hooks
+    Links --> Trigger
+    Hooks --> Trigger
+    Trigger --> Load
+    Load --> Route
+    Route --> Workspace
+    Route --> Global
+    Workspace --> Derived
+    Global --> Derived
+    Derived -->|Сигналы ранжирования| Route
+    Route --> Refine
+    Refine --> Cache
+    Cache -->|Новый или изменившийся контекст| Inject
+    Cache -->|Тот же маршрутный контекст| Proof
+    Inject -->|Пакет памяти| AI
+    Inject --> Proof
+    Proof -->|Только видимость| AI
+    AI -->|Предлагает долговечную память| Proposal
+    Proposal --> Scan
+    Scan --> Review
+    User -->|Одобряет, отклоняет или редактирует| Review
+    Review --> Persist
+    Persist --> Workspace
+    Persist --> Global
+    Persist --> Rebuild
+    Rebuild --> Derived
+    Workspace --> Sync
+    Global --> Sync
 ```
 
 ---
@@ -162,6 +194,9 @@ engram init
 | **Управление профилями** | `engram profile status` / `create` / `use` | `/engram profile status` |
 | **Куда сохранять** | `engram set-save-target <workspace/global/both>` | `/engram set-save-target <target>` |
 | **Лимит загрузки** | `engram set-load-limit <1..32>` | `/engram set-load-limit <count>` |
+| **Настроить Авточтение** | `engram set-read startup|auto|always|manual|off` | `/engram set-read auto` |
+| **Показ Доказательства** | `engram set-proof off|compact` | `/engram set-proof compact` |
+| **Установить Хуки Агента** | `engram install-agent-hooks codex|claude|gemini` | Один раз запустить в терминале |
 | **Путь к глобальной памяти** | `engram update-global-folder <новый-путь>` | `/engram set global memory path to <new-path>` |
 | **Клонирование памяти** | `engram clone-memory <источник> <цель>` | `/engram clone workspace memory to global` |
 | **Назначение роли** | `engram set-role <роли>` | `/engram set-role <roles>` |

@@ -76,6 +76,7 @@ engram install-agent-hooks codex --plan
 engram install-agent-hooks codex
 engram install-agent-hooks claude
 engram install-agent-hooks gemini
+engram set-proof compact
 ```
 
 Use `--global` for user-level hook config and `uninstall-agent-hooks` to remove
@@ -83,6 +84,10 @@ only Engram-managed hook entries. `engram set-read startup|auto|always|manual|of
 controls runtime behavior. `auto` loads on session start and later injects again
 only when routed Engram context changes; the hook cache stores hashes,
 session ids, host, cwd, and routed signatures, never raw prompt text.
+`engram set-proof off|compact` controls whether supported hooks also append a
+compact `Engram proof:` line on each eligible turn. Proof visibility is
+separate from `set-read`: `compact` can report loaded, reused, or skipped turns
+without changing when full Engram memory is injected.
 
 ## Supported Targets
 

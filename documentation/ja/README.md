@@ -22,46 +22,78 @@
 
 ---
 
-### システムの概要フロー (System Flow)
+### システム全体フロー
 
 ```mermaid
 graph TD
-    %% Styling
-    classDef default fill:#111,stroke:#333,stroke-width:1px,color:#fff;
     classDef human fill:#1a3a5f,stroke:#3182ce,stroke-width:2px,color:#fff;
     classDef agent fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#fff;
     classDef storage fill:#234e52,stroke:#319795,stroke-width:2px,color:#fff;
     classDef action fill:#2c5282,stroke:#4299e1,stroke-width:1px,color:#fff;
 
-    User["👤 あなた (ユーザー)"]:::human
-    AI["🤖 AIアシスタント (ChatGPT, Claudeなど)"]:::agent
+    User["👤 あなた"]:::human
+    AI["🤖 AIホスト\n(Codex, Claude, Gemini など)"]:::agent
 
-    subgraph Engram ["Engramメモリシステム"]
-        Load["メモリの読み込み (engram load)"]:::action
-        Propose["メモリの提案 (engram save)"]:::action
-        Review["承認ゲート (人間が確認 & 承認)"]:::action
+    subgraph Entry ["Engram がエージェントに届く経路"]
+        Links["リンク済み指示、\nスラッシュコマンド、MCP"]:::action
+        Hooks["任意フック\n(SessionStart と各プロンプトターン)"]:::action
     end
 
-    subgraph Storage ["永続メモリの保存 (Markdownファイル)"]
-        LocalStore["📁 ローカルプロジェクトメモリ (.agents/.engram/)"]:::storage
-        GlobalStore["🌐 個人グローバルメモリ ($ENGRAM_GLOBAL_DIR)"]:::storage
-        SyncStore["☁️ クラウド / Git同期 (GitHub, OneDriveなど)"]:::storage
+    subgraph Read ["読み込み経路"]
+        Trigger["タスク要求またはプロンプトターン"]:::action
+        Load["読み込み/検索リクエスト\n(engram load, search, graph)"]:::action
+        Route["タグ、種別、新しさ、\n依存グラフ、sqlite-vec でルーティング"]:::action
+        Refine["コンパクトな top-N パックに絞り込み\n(--all 以外は既定 8)"]:::action
+        Cache["フックキャッシュがルーティング署名を確認"]:::action
+        Inject["コンパクトなメモリパックを注入"]:::action
+        Proof["証明行\nloaded, reused, skipped"]:::action
     end
 
-    %% Interactions
-    User <-->|チャット & 共同作業| AI
-    AI -->|1. コンテキストのロード| Load
-    Load -->|メモリ読み込み| LocalStore
-    Load -->|優先設定の読み込み| GlobalStore
-    LocalStore & GlobalStore -->|コンテキストを提供| AI
+    subgraph Write ["書き込み経路"]
+        Proposal["提案フロー\n(save, save-session, take-control, metacognize)"]:::action
+        Scan["安全性チェック\n(PII、secrets、prompt injection)"]:::action
+        Review["人間の承認ゲート\n(A / B / C または明示的な accept-all)"]:::action
+        Persist["承認済み Markdown メモリを書き込み"]:::action
+        Rebuild["hashes、index、graph、\n任意の sqlite-vec を更新"]:::action
+    end
 
-    AI -->|2. 新しいメモリの提案| Propose
-    Propose -->|ドラフトメモリの作成| Review
-    User -->|3. 承認または却下| Review
-    Review -->|4. Markdownとして保存| LocalStore
-    Review -->|オプション保存| GlobalStore
-    LocalStore -->|5. クラウドへのコピー| SyncStore
-    GlobalStore -->|5. クラウドへのコピー| SyncStore
+    subgraph Memory ["メモリ層"]
+        Workspace["📁 Workspace メモリ\n(.agents/.engram/)"]:::storage
+        Global["🌐 グローバルメモリとプロファイル\n($ENGRAM_GLOBAL_DIR)"]:::storage
+        Derived["🧠 派生データ\n(hashes, index, graph, sqlite-vec)"]:::storage
+        Sync["☁️ Git / クラウド同期"]:::storage
+    end
+
+    User <-->|対話と協業| AI
+    AI --> Links
+    AI --> Hooks
+    Links --> Trigger
+    Hooks --> Trigger
+    Trigger --> Load
+    Load --> Route
+    Route --> Workspace
+    Route --> Global
+    Workspace --> Derived
+    Global --> Derived
+    Derived -->|ランキング信号| Route
+    Route --> Refine
+    Refine --> Cache
+    Cache -->|新規または変更あり| Inject
+    Cache -->|同じルーティング結果| Proof
+    Inject -->|メモリパック| AI
+    Inject --> Proof
+    Proof -->|表示のみ| AI
+    AI -->|永続メモリを提案| Proposal
+    Proposal --> Scan
+    Scan --> Review
+    User -->|承認・却下・編集| Review
+    Review --> Persist
+    Persist --> Workspace
+    Persist --> Global
+    Persist --> Rebuild
+    Rebuild --> Derived
+    Workspace --> Sync
+    Global --> Sync
 ```
 
 ---
@@ -162,6 +194,9 @@ engram init
 | **プロファイルの管理** | `engram profile status` / `create` / `use` | `/engram profile status` |
 | **保存ターゲット設定** | `engram set-save-target <workspace/global/both>` | `/engram set-save-target <target>` |
 | **読み込み上限設定** | `engram set-load-limit <1..32>` | `/engram set-load-limit <count>` |
+| **自動読み込み設定** | `engram set-read startup|auto|always|manual|off` | `/engram set-read auto` |
+| **証明表示設定** | `engram set-proof off|compact` | `/engram set-proof compact` |
+| **エージェントフック導入** | `engram install-agent-hooks codex|claude|gemini` | 一度だけターミナルで実行 |
 | **グローバルフォルダ変更** | `engram update-global-folder <新しいパス>` | `/engram set global memory path to <new-path>` |
 | **メモリの複製** | `engram clone-memory <コピー元> <コピー先>` | `/engram clone workspace memory to global` |
 | **開発ロールの設定** | `engram set-role <ロールリスト>` | `/engram set-role <roles>` |

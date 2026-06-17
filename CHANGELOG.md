@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Added `engram set-proof off|compact|status` so supported agent hooks can append a compact `Engram proof:` line showing whether Engram memory was loaded, reused, or skipped on each eligible turn.
+- Kept proof visibility separate from `engram set-read`, so teams can expose proof without changing the existing hook injection rules.
+
 ## 0.0.15
 
 - Added `engram install-agent-hooks`, `engram uninstall-agent-hooks`, and the internal `engram agent-hook` runtime for opt-in Codex, Claude, and Gemini context injection.

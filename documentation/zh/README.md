@@ -22,46 +22,78 @@
 
 ---
 
-### 系统高层流程图 (System Flow)
+### 高层系统流程
 
 ```mermaid
 graph TD
-    %% Styling
-    classDef default fill:#111,stroke:#333,stroke-width:1px,color:#fff;
     classDef human fill:#1a3a5f,stroke:#3182ce,stroke-width:2px,color:#fff;
     classDef agent fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#fff;
     classDef storage fill:#234e52,stroke:#319795,stroke-width:2px,color:#fff;
     classDef action fill:#2c5282,stroke:#4299e1,stroke-width:1px,color:#fff;
 
-    User["👤 您 (用户)"]:::human
-    AI["🤖 AI 助手 (ChatGPT, Claude 等)"]:::agent
+    User["👤 您"]:::human
+    AI["🤖 AI 宿主\n(Codex、Claude、Gemini 等)"]:::agent
 
-    subgraph Engram ["Engram 内存系统"]
-        Load["加载内存 (engram load)"]:::action
-        Propose["提议内存 (engram save)"]:::action
-        Review["批准闸口 (您审查并批准)"]:::action
+    subgraph Entry ["Engram 如何进入智能体"]
+        Links["已链接指令、\n斜杠命令、MCP"]:::action
+        Hooks["可选 Hook\n(SessionStart 与提示轮次)"]:::action
     end
 
-    subgraph Storage ["持久内存存储 (Markdown 文件)"]
-        LocalStore["📁 本地项目内存 (.agents/.engram/)"]:::storage
-        GlobalStore["🌐 个人全局内存 ($ENGRAM_GLOBAL_DIR)"]:::storage
-        SyncStore["☁️ 云端 / Git 同步 (GitHub, OneDrive 等)"]:::storage
+    subgraph Read ["读取路径"]
+        Trigger["任务请求或提示轮次"]:::action
+        Load["加载/搜索请求\n(engram load, search, graph)"]:::action
+        Route["按标签、类型、时效、\n依赖图、sqlite-vec 路由"]:::action
+        Refine["精炼为紧凑的 top-N 包\n(默认 8，除非 --all)"]:::action
+        Cache["Hook 缓存检查路由签名"]:::action
+        Inject["注入紧凑记忆包"]:::action
+        Proof["证明行\nloaded, reused, skipped"]:::action
     end
 
-    %% Interactions
+    subgraph Write ["写入路径"]
+        Proposal["提议流程\n(save, save-session, take-control, metacognize)"]:::action
+        Scan["安全检查\n(PII、secrets、prompt injection)"]:::action
+        Review["人工审批关口\n(A / B / C 或显式 accept-all)"]:::action
+        Persist["写入已批准的 Markdown 记忆"]:::action
+        Rebuild["刷新 hashes、index、graph、\n以及可选 sqlite-vec"]:::action
+    end
+
+    subgraph Memory ["内存层"]
+        Workspace["📁 Workspace 内存\n(.agents/.engram/)"]:::storage
+        Global["🌐 全局内存与配置档\n($ENGRAM_GLOBAL_DIR)"]:::storage
+        Derived["🧠 派生数据\n(hashes, index, graph, sqlite-vec)"]:::storage
+        Sync["☁️ Git / 云同步"]:::storage
+    end
+
     User <-->|聊天与协作| AI
-    AI -->|1. 加载上下文| Load
-    Load -->|读取内存| LocalStore
-    Load -->|读取偏好| GlobalStore
-    LocalStore & GlobalStore -->|提供内存上下文| AI
-
-    AI -->|2. 提议新内存| Propose
-    Propose -->|创建草稿| Review
-    User -->|3. 批准或拒绝| Review
-    Review -->|4. 保存为 Markdown| LocalStore
-    Review -->|可选保存| GlobalStore
-    LocalStore -->|5. 云端备份| SyncStore
-    GlobalStore -->|5. 云端备份| SyncStore
+    AI --> Links
+    AI --> Hooks
+    Links --> Trigger
+    Hooks --> Trigger
+    Trigger --> Load
+    Load --> Route
+    Route --> Workspace
+    Route --> Global
+    Workspace --> Derived
+    Global --> Derived
+    Derived -->|排序信号| Route
+    Route --> Refine
+    Refine --> Cache
+    Cache -->|新建或已变化的上下文| Inject
+    Cache -->|相同路由上下文| Proof
+    Inject -->|记忆包| AI
+    Inject --> Proof
+    Proof -->|仅用于可见性| AI
+    AI -->|提议持久内存| Proposal
+    Proposal --> Scan
+    Scan --> Review
+    User -->|批准、拒绝或编辑| Review
+    Review --> Persist
+    Persist --> Workspace
+    Persist --> Global
+    Persist --> Rebuild
+    Rebuild --> Derived
+    Workspace --> Sync
+    Global --> Sync
 ```
 
 ---
@@ -162,6 +194,9 @@ engram init
 | **管理隔离配置** | `engram profile status` / `create` / `use` | `/engram profile status` |
 | **配置保存目标** | `engram set-save-target <workspace/global/both>` | `/engram set-save-target <target>` |
 | **配置加载上限** | `engram set-load-limit <1..32>` | `/engram set-load-limit <count>` |
+| **配置自动读取** | `engram set-read startup|auto|always|manual|off` | `/engram set-read auto` |
+| **配置证明显示** | `engram set-proof off|compact` | `/engram set-proof compact` |
+| **安装智能体 Hooks** | `engram install-agent-hooks codex|claude|gemini` | 在终端执行一次 |
 | **更新全局路径** | `engram update-global-folder <新路径>` | `/engram set global memory path to <new-path>` |
 | **复制内存文件** | `engram clone-memory <源> <目的>` | `/engram clone workspace memory to global` |
 | **设定开发角色** | `engram set-role <角色列表>` | `/engram set-role <roles>` |

@@ -24,6 +24,9 @@
 | Настроить силу фильтрации правил | `engram set-rule-variant strict\|balanced\|light\|off` |
 | Настроить цель сохранения по умолчанию | `engram set-save-target workspace\|global\|both\|status` |
 | Настроить компактный лимит загрузки | `engram set-load-limit 1..32\|status\|reset` |
+| Настроить автоматическое чтение через хуки | `engram set-read startup\|auto\|always\|manual\|off\|status` |
+| Настроить показ доказательства | `engram set-proof off\|compact\|status` |
+| Установить хуки агента | `engram install-agent-hooks codex\|claude\|gemini` |
 | Управлять глобальными профилями | `engram profile status\|create\|use\|merge` |
 | Клонировать память workspace/global | `engram clone-memory workspace global [--metacognize]` |
 

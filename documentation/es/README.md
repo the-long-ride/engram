@@ -22,46 +22,78 @@ Proporciona memoria a los agentes sin darles la propiedad de la misma. Las regla
 
 ---
 
-### Flujo del Sistema (System Flow)
+### Flujo General del Sistema
 
 ```mermaid
 graph TD
-    %% Styling
-    classDef default fill:#111,stroke:#333,stroke-width:1px,color:#fff;
     classDef human fill:#1a3a5f,stroke:#3182ce,stroke-width:2px,color:#fff;
     classDef agent fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#fff;
     classDef storage fill:#234e52,stroke:#319795,stroke-width:2px,color:#fff;
     classDef action fill:#2c5282,stroke:#4299e1,stroke-width:1px,color:#fff;
 
-    User["👤 Tú (El Usuario)"]:::human
-    AI["🤖 Asistente de IA (ChatGPT, Claude, etc.)"]:::agent
+    User["👤 Tú"]:::human
+    AI["🤖 Host de IA\n(Codex, Claude, Gemini, etc.)"]:::agent
 
-    subgraph Engram ["Sistema de Memoria Engram"]
-        Load["Cargar Memoria (engram load)"]:::action
-        Propose["Proponer Memoria (engram save)"]:::action
-        Review["Puerta de Aprobación (Tú revisas y apruebas)"]:::action
+    subgraph Entry ["Cómo Engram llega al agente"]
+        Links["Instrucciones enlazadas,\ncomandos slash, MCP"]:::action
+        Hooks["Hooks opcionales\n(SessionStart y turnos de prompt)"]:::action
     end
 
-    subgraph Storage ["Almacenamiento de Memoria (Archivos Markdown)"]
-        LocalStore["📁 Memoria del Proyecto (.agents/.engram/)"]:::storage
-        GlobalStore["🌐 Memoria Global ($ENGRAM_GLOBAL_DIR)"]:::storage
-        SyncStore["☁️ Sincronización en la Nube / Git (GitHub, OneDrive, etc.)"]:::storage
+    subgraph Read ["Ruta de lectura"]
+        Trigger["Solicitud de tarea o turno de prompt"]:::action
+        Load["Solicitud de carga/búsqueda\n(engram load, search, graph)"]:::action
+        Route["Enrutar por etiquetas, tipo, recencia,\ngrafo de dependencias, sqlite-vec"]:::action
+        Refine["Refinar a un paquete compacto top-N\n(8 por defecto salvo --all)"]:::action
+        Cache["La caché del hook verifica la firma enrutada"]:::action
+        Inject["Inyectar paquete compacto de memoria"]:::action
+        Proof["Línea de prueba\nloaded, reused o skipped"]:::action
     end
 
-    %% Interactions
-    User <-->|Chatear & Colaborar| AI
-    AI -->|1. Cargar contexto| Load
-    Load -->|Leer memorias| LocalStore
-    Load -->|Leer preferencias| GlobalStore
-    LocalStore & GlobalStore -->|Proporcionar contexto| AI
+    subgraph Write ["Ruta de escritura"]
+        Proposal["Flujos de propuesta\n(save, save-session, take-control, metacognize)"]:::action
+        Scan["Revisiones de seguridad\n(PII, secretos, prompt injection)"]:::action
+        Review["Puerta de aprobación humana\n(A / B / C o flujos accept-all explícitos)"]:::action
+        Persist["Escribir memoria Markdown aprobada"]:::action
+        Rebuild["Actualizar hashes, index, graph,\ny sqlite-vec opcional"]:::action
+    end
 
-    AI -->|2. Proponer memorias| Propose
-    Propose -->|Crear borrador| Review
-    User -->|3. Aprobar o Rechazar| Review
-    Review -->|4. Guardar Markdown| LocalStore
-    Review -->|Guardado opcional| GlobalStore
-    LocalStore -->|5. Copia en la nube| SyncStore
-    GlobalStore -->|5. Copia en la nube| SyncStore
+    subgraph Memory ["Capa de Memoria"]
+        Workspace["📁 Memoria del workspace\n(.agents/.engram/)"]:::storage
+        Global["🌐 Memoria global y perfiles\n($ENGRAM_GLOBAL_DIR)"]:::storage
+        Derived["🧠 Datos derivados\n(hashes, index, graph, sqlite-vec)"]:::storage
+        Sync["☁️ Sync con Git / nube"]:::storage
+    end
+
+    User <-->|Chat y colaboración| AI
+    AI --> Links
+    AI --> Hooks
+    Links --> Trigger
+    Hooks --> Trigger
+    Trigger --> Load
+    Load --> Route
+    Route --> Workspace
+    Route --> Global
+    Workspace --> Derived
+    Global --> Derived
+    Derived -->|Señales de ranking| Route
+    Route --> Refine
+    Refine --> Cache
+    Cache -->|Contexto nuevo o cambiado| Inject
+    Cache -->|Mismo contexto enrutado| Proof
+    Inject -->|Paquete de memoria| AI
+    Inject --> Proof
+    Proof -->|Solo visibilidad| AI
+    AI -->|Propone memoria duradera| Proposal
+    Proposal --> Scan
+    Scan --> Review
+    User -->|Aprueba, rechaza o edita| Review
+    Review --> Persist
+    Persist --> Workspace
+    Persist --> Global
+    Persist --> Rebuild
+    Rebuild --> Derived
+    Workspace --> Sync
+    Global --> Sync
 ```
 
 ---
@@ -162,6 +194,9 @@ Puedes indicarle al agente en el chat que use los siguientes comandos:
 | **Administrar Perfiles** | `engram profile status` / `create` / `use` | `/engram profile status` |
 | **Destino de Guardado** | `engram set-save-target <workspace/global/both>` | `/engram set-save-target <target>` |
 | **Límite de Tải** | `engram set-load-limit <1..32>` | `/engram set-load-limit <count>` |
+| **Configurar Lectura Automática** | `engram set-read startup|auto|always|manual|off` | `/engram set-read auto` |
+| **Visibilidad de Prueba** | `engram set-proof off|compact` | `/engram set-proof compact` |
+| **Instalar Hooks del Agente** | `engram install-agent-hooks codex|claude|gemini` | Ejecutar una vez desde terminal |
 | **Actualizar Ruta Global** | `engram update-global-folder <nueva-ruta>` | `/engram set global memory path to <new-path>` |
 | **Clonar Memoria** | `engram clone-memory <origen> <destino>` | `/engram clone workspace memory to global` |
 | **Establecer Roles** | `engram set-role <roles>` | `/engram set-role <roles>` |

@@ -24,6 +24,9 @@ Trang này chứa thông tin chi tiết về cách sử dụng để tệp READM
 | Điều chỉnh độ mạnh quy tắc | `engram set-rule-variant strict\|balanced\|light\|off` |
 | Đặt đích lưu mặc định | `engram set-save-target workspace\|global\|both\|status` |
 | Đặt giới hạn tải gọn | `engram set-load-limit 1..32\|status\|reset` |
+| Cấu hình tự động đọc qua hook | `engram set-read startup\|auto\|always\|manual\|off\|status` |
+| Cấu hình hiển thị bằng chứng | `engram set-proof off\|compact\|status` |
+| Cài hook tác nhân | `engram install-agent-hooks codex\|claude\|gemini` |
 | Quản lý profile global | `engram profile status\|create\|use\|merge` |
 | Sao chép bộ nhớ workspace/global | `engram clone-memory workspace global [--metacognize]` |
 

@@ -24,6 +24,9 @@
 | 调整规则强度 | `engram set-rule-variant strict\|balanced\|light\|off` |
 | 设置默认保存目标 | `engram set-save-target workspace\|global\|both\|status` |
 | 设置紧凑加载上限 | `engram set-load-limit 1..32\|status\|reset` |
+| 配置自动 hook 读取 | `engram set-read startup\|auto\|always\|manual\|off\|status` |
+| 配置证明显示 | `engram set-proof off\|compact\|status` |
+| 安装智能体 hooks | `engram install-agent-hooks codex\|claude\|gemini` |
 | 管理全局配置档 | `engram profile status\|create\|use\|merge` |
 | 克隆工作区/全局内存 | `engram clone-memory workspace global [--metacognize]` |
 

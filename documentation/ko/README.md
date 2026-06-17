@@ -22,46 +22,78 @@
 
 ---
 
-### 시스템 개요 흐름도 (System Flow)
+### 시스템 전체 흐름
 
 ```mermaid
 graph TD
-    %% Styling
-    classDef default fill:#111,stroke:#333,stroke-width:1px,color:#fff;
     classDef human fill:#1a3a5f,stroke:#3182ce,stroke-width:2px,color:#fff;
     classDef agent fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#fff;
     classDef storage fill:#234e52,stroke:#319795,stroke-width:2px,color:#fff;
     classDef action fill:#2c5282,stroke:#4299e1,stroke-width:1px,color:#fff;
 
-    User["👤 사용자 (당신)"]:::human
-    AI["🤖 AI 어시스턴트 (ChatGPT, Claude, 에이전트)"]:::agent
+    User["👤 사용자"]:::human
+    AI["🤖 AI 호스트\n(Codex, Claude, Gemini 등)"]:::agent
 
-    subgraph Engram ["Engram 메모리 시스템"]
-        Load["메모리 로드 (engram load)"]:::action
-        Propose["메모리 제안 (engram save)"]:::action
-        Review["승인 단계 (검토 후 승인 여부 결정)"]:::action
+    subgraph Entry ["Engram이 에이전트에 전달되는 경로"]
+        Links["연결된 지침,\n슬래시 명령, MCP"]:::action
+        Hooks["선택형 훅\n(SessionStart 및 프롬프트 턴)"]:::action
     end
 
-    subgraph Storage ["영구 메모리 저장소 (Markdown 파일)"]
-        LocalStore["📁 로컬 프로젝트 메모리 (.agents/.engram/)"]:::storage
-        GlobalStore["🌐 개인 글로벌 메모리 ($ENGRAM_GLOBAL_DIR)"]:::storage
-        SyncStore["☁️ 클라우드 / Git 동기화 (GitHub, OneDrive 등)"]:::storage
+    subgraph Read ["읽기 경로"]
+        Trigger["작업 요청 또는 프롬프트 턴"]:::action
+        Load["로드/검색 요청\n(engram load, search, graph)"]:::action
+        Route["태그, 유형, 최신성,\n의존 그래프, sqlite-vec로 라우팅"]:::action
+        Refine["압축된 top-N 팩으로 정제\n(--all 이 아니면 기본 8)"]:::action
+        Cache["훅 캐시가 라우팅 서명을 확인"]:::action
+        Inject["압축 메모리 팩 주입"]:::action
+        Proof["증명 줄\nloaded, reused, skipped"]:::action
     end
 
-    %% Interactions
-    User <-->|대화 및 협업| AI
-    AI -->|1. 컨텍스트 로드| Load
-    Load -->|메모리 읽기| LocalStore
-    Load -->|개인 설정 읽기| GlobalStore
-    LocalStore & GlobalStore -->|메모리 컨텍스트 제공| AI
+    subgraph Write ["쓰기 경로"]
+        Proposal["제안 흐름\n(save, save-session, take-control, metacognize)"]:::action
+        Scan["안전성 검사\n(PII, 비밀정보, prompt injection)"]:::action
+        Review["사람 승인 게이트\n(A / B / C 또는 명시적 accept-all)"]:::action
+        Persist["승인된 Markdown 메모리 기록"]:::action
+        Rebuild["hashes, index, graph,\n선택적 sqlite-vec 갱신"]:::action
+    end
 
-    AI -->|2. 신규 메모리 제안| Propose
-    Propose -->|임시 메모리 생성| Review
-    User -->|3. 승인 또는 반려| Review
-    Review -->|4. Markdown으로 저장| LocalStore
-    Review -->|옵션 저장| GlobalStore
-    LocalStore -->|5. 클라우드 백업| SyncStore
-    GlobalStore -->|5. 클라우드 백업| SyncStore
+    subgraph Memory ["메모리 계층"]
+        Workspace["📁 워크스페이스 메모리\n(.agents/.engram/)"]:::storage
+        Global["🌐 글로벌 메모리와 프로필\n($ENGRAM_GLOBAL_DIR)"]:::storage
+        Derived["🧠 파생 데이터\n(hashes, index, graph, sqlite-vec)"]:::storage
+        Sync["☁️ Git / 클라우드 동기화"]:::storage
+    end
+
+    User <-->|대화와 협업| AI
+    AI --> Links
+    AI --> Hooks
+    Links --> Trigger
+    Hooks --> Trigger
+    Trigger --> Load
+    Load --> Route
+    Route --> Workspace
+    Route --> Global
+    Workspace --> Derived
+    Global --> Derived
+    Derived -->|랭킹 신호| Route
+    Route --> Refine
+    Refine --> Cache
+    Cache -->|새롭거나 변경된 컨텍스트| Inject
+    Cache -->|같은 라우팅 컨텍스트| Proof
+    Inject -->|메모리 팩| AI
+    Inject --> Proof
+    Proof -->|표시만| AI
+    AI -->|지속 메모리 제안| Proposal
+    Proposal --> Scan
+    Scan --> Review
+    User -->|승인, 거절, 편집| Review
+    Review --> Persist
+    Persist --> Workspace
+    Persist --> Global
+    Persist --> Rebuild
+    Rebuild --> Derived
+    Workspace --> Sync
+    Global --> Sync
 ```
 
 ---
@@ -162,6 +194,9 @@ engram init
 | **프로파일 격리 관리** | `engram profile status` / `create` / `use` | `/engram profile status` |
 | **저장 대상 설정** | `engram set-save-target <workspace/global/both>` | `/engram set-save-target <target>` |
 | **로드 제한 설정** | `engram set-load-limit <1..32>` | `/engram set-load-limit <count>` |
+| **자동 읽기 설정** | `engram set-read startup|auto|always|manual|off` | `/engram set-read auto` |
+| **증명 표시 설정** | `engram set-proof off|compact` | `/engram set-proof compact` |
+| **에이전트 훅 설치** | `engram install-agent-hooks codex|claude|gemini` | 터미널에서 한 번 실행 |
 | **글로벌 경로 변경** | `engram update-global-folder <신규경로>` | `/engram set global memory path to <new-path>` |
 | **메모리 복제** | `engram clone-memory <원본> <대상>` | `/engram clone workspace memory to global` |
 | **개발 역할 설정** | `engram set-role <역할리스트>` | `/engram set-role <roles>` |

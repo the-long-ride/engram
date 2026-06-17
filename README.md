@@ -26,42 +26,74 @@ It gives agents memory without giving agents ownership of memory. Durable rules,
 
 ```mermaid
 graph TD
-    %% Styling
-    classDef default fill:#111,stroke:#333,stroke-width:1px,color:#fff;
     classDef human fill:#1a3a5f,stroke:#3182ce,stroke-width:2px,color:#fff;
     classDef agent fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#fff;
     classDef storage fill:#234e52,stroke:#319795,stroke-width:2px,color:#fff;
     classDef action fill:#2c5282,stroke:#4299e1,stroke-width:1px,color:#fff;
 
-    User["👤 You (The User)"]:::human
-    AI["🤖 AI Assistant (ChatGPT, Claude, Agents)"]:::agent
+    User["👤 You"]:::human
+    AI["🤖 AI Host\n(Codex, Claude, Gemini, etc.)"]:::agent
 
-    subgraph Engram ["Engram Memory System"]
-        Load["Recall Memory (engram load)"]:::action
-        Propose["Suggest Memory (engram save)"]:::action
-        Review["Approval Gate (You review & approve)"]:::action
+    subgraph Entry ["How Engram Reaches the Agent"]
+        Links["Linked instructions,\nslash commands, MCP"]:::action
+        Hooks["Optional hooks\n(SessionStart and prompt turns)"]:::action
     end
 
-    subgraph Storage ["Durable Memory Storage (Plain Markdown Files)"]
-        LocalStore["📁 Local Project Memory (.agents/.engram/)"]:::storage
-        GlobalStore["🌐 Personal Global Memory ($ENGRAM_GLOBAL_DIR)"]:::storage
-        SyncStore["☁️ Cloud / Git Sync (GitHub, Google Drive, OneDrive, etc.)"]:::storage
+    subgraph Read ["Read Path"]
+        Trigger["Task request or prompt turn"]:::action
+        Load["Load/search request\n(engram load, search, graph)"]:::action
+        Route["Route by tags, type, recency,\ndependency graph, sqlite-vec"]:::action
+        Refine["Refine to compact top-N pack\n(default 8 unless --all)"]:::action
+        Cache["Hook cache checks routed signature"]:::action
+        Inject["Inject compact memory pack"]:::action
+        Proof["Proof line\nloaded, reused, or skipped"]:::action
     end
 
-    %% Interactions
-    User <-->|Chat & Collaborate| AI
-    AI -->|1. Load Context| Load
-    Load -->|Read memories| LocalStore
-    Load -->|Read preferences| GlobalStore
-    LocalStore & GlobalStore -->|Provide memory context| AI
+    subgraph Write ["Write Path"]
+        Proposal["Proposal flows\n(save, save-session, take-control, metacognize)"]:::action
+        Scan["Safety checks\n(PII, secrets, prompt injection)"]:::action
+        Review["Human approval gate\n(A / B / C or explicit accept-all flows)"]:::action
+        Persist["Write approved Markdown memory"]:::action
+        Rebuild["Refresh hashes, index, graph,\noptional sqlite-vec"]:::action
+    end
 
-    AI -->|2. Suggest new memories| Propose
-    Propose -->|Create draft memory| Review
-    User -->|3. Approve or Reject| Review
-    Review -->|4. Save as markdown| LocalStore
-    Review -->|Optional save| GlobalStore
-    LocalStore -->|5. Cloud backup & sync| SyncStore
-    GlobalStore -->|5. Cloud backup & sync| SyncStore
+    subgraph Memory ["Memory Layer"]
+        Workspace["📁 Workspace memory\n(.agents/.engram/)"]:::storage
+        Global["🌐 Global memory and profiles\n($ENGRAM_GLOBAL_DIR)"]:::storage
+        Derived["🧠 Derived data\n(hashes, index, graph, sqlite-vec)"]:::storage
+        Sync["☁️ Git / cloud sync"]:::storage
+    end
+
+    User <-->|Chat and collaborate| AI
+    AI --> Links
+    AI --> Hooks
+    Links --> Trigger
+    Hooks --> Trigger
+    Trigger --> Load
+    Load --> Route
+    Route --> Workspace
+    Route --> Global
+    Workspace --> Derived
+    Global --> Derived
+    Derived -->|Ranking signals| Route
+    Route --> Refine
+    Refine --> Cache
+    Cache -->|New or changed context| Inject
+    Cache -->|Same routed context| Proof
+    Inject -->|Memory pack| AI
+    Inject --> Proof
+    Proof -->|Visibility only| AI
+    AI -->|Propose durable memory| Proposal
+    Proposal --> Scan
+    Scan --> Review
+    User -->|Approve, reject, or edit| Review
+    Review --> Persist
+    Persist --> Workspace
+    Persist --> Global
+    Persist --> Rebuild
+    Rebuild --> Derived
+    Workspace --> Sync
+    Global --> Sync
 ```
 
 ---
@@ -133,11 +165,15 @@ engram install-agent-hooks codex
 engram install-agent-hooks claude
 engram install-agent-hooks gemini
 engram set-read auto
+engram set-proof compact
 ```
 v1 hook installs are limited to `codex`, `claude`, and `gemini`. Antigravity
 compatibility currently routes through `gemini`; Cursor, Copilot, Cline, and
 Windsurf/Cascade remain instruction/skillset/manual-load driven until their
 hook surfaces support reliable prompt-time context injection.
+Use `engram set-proof compact` when you want supported hooks to append a short
+`Engram proof:` line on each eligible turn showing whether Engram memory was
+loaded, reused, or skipped without changing `set-read` injection behavior.
 
 ### 3. Initialize Workspace
 Run this in the root of any project:
@@ -177,6 +213,7 @@ You can instruct your agent to use the following slash commands in chat:
 | **Configure Save Target** | `engram set-save-target <workspace/global/both>` | `/engram set-save-target <target>` |
 | **Configure Load Limit** | `engram set-load-limit <1..32>` | `/engram set-load-limit <count>` |
 | **Configure Auto Read** | `engram set-read startup|auto|always|manual|off` | `/engram set-read auto` |
+| **Configure Proof Visibility** | `engram set-proof off|compact` | `/engram set-proof compact` |
 | **Install Agent Hooks** | `engram install-agent-hooks codex|claude|gemini` | Run once from terminal |
 | **Update Global Path** | `engram update-global-folder <new-path>` | `/engram set global memory path to <new-path>` |
 | **Clone Memory** | `engram clone-memory <src> <dest>` | `/engram clone workspace memory to global` |

@@ -24,6 +24,9 @@
 | 규칙 적용 강조 강도 조정 | `engram set-rule-variant strict\|balanced\|light\|off` |
 | 기본 저장 대상 설정 | `engram set-save-target workspace\|global\|both\|status` |
 | 컴팩트 로드 제한 설정 | `engram set-load-limit 1..32\|status\|reset` |
+| 자동 훅 읽기 설정 | `engram set-read startup\|auto\|always\|manual\|off\|status` |
+| 증명 표시 설정 | `engram set-proof off\|compact\|status` |
+| 에이전트 훅 설치 | `engram install-agent-hooks codex\|claude\|gemini` |
 | 글로벌 프로필 관리 | `engram profile status\|create\|use\|merge` |
 | workspace/global 메모리 복제 | `engram clone-memory workspace global [--metacognize]` |
 

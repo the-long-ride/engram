@@ -27,6 +27,9 @@ This page holds detailed usage so the README can stay short.
 | Tune rule strength | `engram set-rule-variant strict\|balanced\|light\|off` |
 | Set default save target | `engram set-save-target workspace\|global\|both\|status` |
 | Set compact load limit | `engram set-load-limit 1..32\|status\|reset` |
+| Set automatic hook reads | `engram set-read startup\|auto\|always\|manual\|off\|status` |
+| Set hook proof visibility | `engram set-proof off\|compact\|status` |
+| Install agent hooks | `engram install-agent-hooks codex\|claude\|gemini` |
 | Manage global profiles | `engram profile status\|create\|use\|merge` |
 | Clone workspace/global memory | `engram clone-memory workspace global [--metacognize]` |
 

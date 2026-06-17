@@ -18,6 +18,10 @@ generated `/engram` adapters.
   later only when routed context changes, `always` injects on every eligible
   prompt, `manual` disables automatic hooks while preserving manual
   `engram load`, and `off` keeps automatic read surfaces quiet.
+- Honor `engram set-proof` separately from `set-read`: `off` suppresses proof
+  lines, and `compact` lets supported hooks append a short `Engram proof:` line
+  on each eligible turn so the assistant can show whether Engram loaded,
+  reused, or skipped memory without changing full-context injection rules.
 - Before planning, researching, or implementing, search or route-load specific
   memory when project knowledge, user preferences, or team rules could matter.
 - If `engram set-role ...` or `engram set-rule-variant ...` returns an
@@ -210,6 +214,7 @@ proposal and collect explicit human approval before invoking a CLI write flow.
 | `engram profile status|list|create|use|remove|merge` / `engram pf ...` | Manage isolated global memory profiles, including user defaults for uninitialized folders, workspace defaults for initialized repositories, one-off `--profile <name>` command routing, and profile-to-profile merge previews with duplicate reporting |
 | `engram set-save-target workspace|global|both|status` | Configure where normal saves write by default; per-command `--scope workspace|global|both` still overrides this setting |
 | `engram set-load-limit 1..32|status|reset` / `engram ll ...` | Configure how many related memories normal load returns; default is 8 and `--all` still bypasses the cap |
+| `engram set-proof off|compact|status` | Configure whether supported hooks append compact per-response Engram proof lines |
 | `engram update-global-folder <new-path> [--move-from-path path]` / `engram ugf <new-path>` / `engram set global memory path to <new-path>` | Update the configured global memory folder; with `--move-from-path` or `move global folder from <old> to <new>`, move the whole old global root first while refusing to overwrite destinations that already contain real memory or user files |
 | `engram upgrade [--plan]` | Refresh package guidance, workspace HELP.md, existing generated workspace skillset files, global memory scaffolding, and registered global skillsets while preserving human-authored files |
 | Startup auto-upgrade | After npm package updates, normal commands quietly reconcile already-initialized roots once per Engram version; skip with `--no-auto-upgrade` or `ENGRAM_NO_AUTO_UPGRADE=1`. The package must not rely on npm `postinstall` for migrations |

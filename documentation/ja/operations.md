@@ -24,6 +24,9 @@
 | ルールの適用強度を調整 | `engram set-rule-variant strict\|balanced\|light\|off` |
 | 既定の保存先を設定 | `engram set-save-target workspace\|global\|both\|status` |
 | コンパクトロード上限を設定 | `engram set-load-limit 1..32\|status\|reset` |
+| 自動フック読み込みを設定 | `engram set-read startup\|auto\|always\|manual\|off\|status` |
+| 証明表示を設定 | `engram set-proof off\|compact\|status` |
+| エージェントフックを導入 | `engram install-agent-hooks codex\|claude\|gemini` |
 | グローバルプロファイルを管理 | `engram profile status\|create\|use\|merge` |
 | workspace/global メモリを複製 | `engram clone-memory workspace global [--metacognize]` |
 

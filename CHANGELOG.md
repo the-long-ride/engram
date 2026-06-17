@@ -2,8 +2,13 @@
 
 ## Unreleased
 
+## 0.0.16
+
 - Added `engram set-proof off|compact|status` so supported agent hooks can append a compact `Engram proof:` line showing whether Engram memory was loaded, reused, or skipped on each eligible turn.
 - Kept proof visibility separate from `engram set-read`, so teams can expose proof without changing the existing hook injection rules.
+- Improved broad `engram load` routing and upgrade reconciliation, including stronger query term anchoring, better dry-run reporting, and refreshed release-to-release root maintenance coverage.
+- Added optional `CONTEXT: ...` support for generated save-session, take-control, and metacognize memory candidates.
+- Added `engram llm` and packaged `llm.txt` so AI agents can print a stable local Engram usage guide before workspace initialization.
 
 ## 0.0.15
 

@@ -1,6 +1,6 @@
 {
   "name": "@the-long-ride/engram",
-  "version": "0.0.15",
+  "version": "0.0.16",
   "description": "Portable, human-approved memory for AI agents. Grow with you & your teams.",
   "keywords": [
     "cli",
@@ -41,6 +41,7 @@
     "prompts",
     "templates",
     "README.md",
+    "llm.txt",
     "GUIDELINE.md",
     "CHANGELOG.md",
     "LICENSE"

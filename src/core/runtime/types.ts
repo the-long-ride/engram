@@ -119,3 +119,22 @@ export type MemoryGraph = {
   nodes: MemoryGraphNode[];
   edges: MemoryGraphEdge[];
 };
+
+export type WorkspaceRow = {
+  id: number;
+  path: string;
+  name: string;
+  is_linked: boolean;
+  created_at: string;
+  updated_at: string;
+  last_seen: string;
+};
+
+export type ProfileRow = {
+  name: string;
+  global_path: string;
+  scope: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};

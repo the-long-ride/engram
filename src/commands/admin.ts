@@ -338,7 +338,7 @@ function configUpdateResult(statusLine: string): string {
 }
 
 function agentReloadAction(): string {
-  return 'Agent action: rerun `engram load "<current task/request>"` now and replace prior Engram-loaded context for the rest of this conversation. Keep any non-Engram host or system instructions unchanged.';
+  return 'Agent action: rerun `engram load --for-agents "<current task/request>"` now and replace prior Engram-loaded context for the rest of this conversation. Keep any non-Engram host or system instructions unchanged.';
 }
 
 function isRuleVariant(value: string): value is RuleVariant {

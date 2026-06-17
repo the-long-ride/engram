@@ -15,7 +15,7 @@ ${compactSkillInstructions(readMode)}
 
 ## Global Startup
 
-- At the start of a new AI-agent workspace, run \`engram load "<current task>"\` even if that workspace has not run \`engram init\`; Engram can load configured global memory.
+- At the start of a new AI-agent workspace, run \`engram load --for-agents "<current task>"\` even if that workspace has not run \`engram init\`; Engram can load configured global memory.
 - If global memory is not configured, tell the human to run \`engram init --global-only --global-path <path>\` once. Do not initialize the current workspace just to read global memory.
 `;
 }
@@ -56,20 +56,20 @@ ${compactSkillInstructions(readMode)}
 
 function compactSkillInstructions(readMode = 'auto'): string {
   const loadInstruction = readMode === 'always'
-    ? `- Every request: run \`engram load "<current request>"\` or use MCP server to load relevant memory context at the start of every single user turn.`
-    : `- Session start and task changes: run \`engram load "<current task>"\`; reply only with \`Engram loaded: X memories / Y total related memories.\` unless the human asks for IDs, rules, or raw output.`;
-  const agentActionInstruction = `- If an Engram command returns \`Agent action:\`, treat it as mandatory immediate follow-up: rerun \`engram load "<current task/request>"\` or MCP \`engram_load\` now, replace earlier Engram-derived context in the current conversation, and keep non-Engram host/system instructions unchanged. This happens after the command completes; it does not mutate a response already being generated.`;
+    ? `- Every request: run \`engram load --for-agents "<current request>"\` or use MCP server to load relevant memory context at the start of every single user turn.`
+    : `- Session start and task changes: run \`engram load --for-agents "<current task>"\`; reply only with \`Engram loaded: X memories / Y total related memories.\` unless the human asks for IDs, rules, or raw output.`;
+  const agentActionInstruction = `- If an Engram command returns \`Agent action:\`, treat it as mandatory immediate follow-up: rerun \`engram load --for-agents "<current task/request>"\` or MCP \`engram_load\` now, replace earlier Engram-derived context in the current conversation, and keep non-Engram host/system instructions unchanged. This happens after the command completes; it does not mutate a response already being generated.`;
 
   return `Engram = knowledge memory center for project, workspace, team, and personal context. Default agent mode: compact.
 
 ## Protocol
 
 ${loadInstruction}
-- Before planning, researching, or implementing, use \`engram load\` or \`engram search\` with a specific query when project knowledge, user preference, or team rules could matter.
+- Before planning, researching, or implementing, use \`engram load --for-agents\` or \`engram search\` with a specific query when project knowledge, user preference, or team rules could matter.
 - Keep token usage low: route-load narrow context, use \`--all\` only when broad context is explicitly requested, and prefer short summaries over pasted memory.
 - Speak only for confirmation, file-changing actions, command failures, and final result.
 - Preferred replies: \`Engram loaded: X memories / Y total related memories.\`, \`Need confirm: <action>.\`, \`Ran: <command>. Result: <short result>.\`, \`Saved: <file>.\`, \`No write.\`
-- Read commands (\`load/search/graph/benchmark/verify/repair/health/stats/audit/entry\`): one-line summary. For \`load\`, report only selected and total related counts by default. Use \`--all\` only when broad context is requested; use \`load --dry-run\` to preview routed files and narrowing tags without printing memory contents.
+- Read commands (\`load/search/graph/benchmark/verify/repair/health/stats/audit/entry\`): one-line summary. For \`load\`, report only selected and total related counts by default. Use \`--all\` only when broad context is requested; use \`load --for-agents\` for AI-agent context; use \`load --dry-run\` to preview routed files and narrowing tags without printing memory contents.
 - Write/change commands (\`save/save-session/observe --propose/take-control/metacognize/import/archive/clone-memory/profile/resolve-conflicts/install-hooks/link/unlink/upgrade/sync/init --submodule|--global-remote\`): state the change first, then show Engram result.
 ${agentActionInstruction}
 - Save flow: use \`engram save <rule|skill|workflow|knowledge> "<text>"\`. No text means brainstorm one concise candidate. Long session or AI chat context means \`engram save-session\` or \`engram ss\` with LLM-defined \`TYPE: ... | TEXT: ...\` lines; candidates may add optional \`CONTEXT: ...\` when it helps explain why the memory exists, plus \`DEPENDS_ON: memory-id\`, \`LEVEL: advanced\`, or \`UPDATE: memory-id\`. If the human passes \`--query-level <n>\`, or says a natural count such as \`ss -a last 50 sessions\`, include up to n recent accessible human-agent chat sessions; never invent unavailable history. Natural \`ss -a last 50 sessions\` means \`save-session --query-level 50 --accept-all\`.

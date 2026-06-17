@@ -16,7 +16,7 @@ export async function handleMcp(request: any): Promise<any> {
   const method = mcpMethod(request);
   const args = mcpArgs(request);
   try {
-    if (method === 'engram_load') return ok(request.id, await cmdLoad([args.query ?? 'current session'], {}));
+    if (method === 'engram_load') return ok(request.id, await cmdLoad([args.query ?? 'current session'], { 'for-agents': args.forAgents ?? true }));
     if (method === 'engram_route') return ok(request.id, cmdRoute([String(args.query ?? args.task ?? '')]));
     if (method === 'engram_search') return ok(request.id, await cmdSearch([args.query ?? '']));
     if (method === 'engram_verify') return ok(request.id, await cmdVerify(args.scope));

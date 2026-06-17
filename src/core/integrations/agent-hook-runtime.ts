@@ -58,7 +58,7 @@ async function computeHookOutput(host: AgentHookHost, payload: HookPayload, cwd:
   }
 
   const query = queryText(payload, event);
-  const context = await cmdLoad([query], {});
+  const context = await cmdLoad([query], { 'for-agents': true });
   if (!context.trim()) return proofOnlyOutput(event, proofMode, skippedProof(configMode, 'no-context'));
 
   const signature = sha256(context);

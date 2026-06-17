@@ -192,6 +192,8 @@ You can instruct your agent to use the following slash commands in chat:
 - **Save key decisions/facts**: `/engram save knowledge "Webhook secret is process.env.STRIPE_WEBHOOK"`
 - **Summarize & save session**: `/engram save-session` (or `--query-level 3`, or `ss -a last 50 sessions` to auto-approve)
 
+When an AI agent proposes `TYPE: ... | TEXT: ...` memory candidates, it may add optional `CONTEXT: ...` when that helps explain why the memory exists. Simple facts can omit it and use the default approval context.
+
 ---
 
 ## CLI Command vs. AI Agent Cheat Sheet

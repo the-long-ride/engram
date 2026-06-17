@@ -69,8 +69,10 @@ generated `/engram` adapters.
 - Treat `/engram auto save` and legacy `/engram autosave` as natural wording for `/engram save-session`. In AI
   agent chat, the host should let the LLM define concise candidates from the
   current conversation and pass `TYPE: ... | TEXT: ...` lines to Engram.
-  Candidates may add `DEPENDS_ON: memory-id`, `LEVEL: advanced`, or `UPDATE:
-  memory-id` fields when restructuring related memories.
+  Candidates may add optional `CONTEXT: ...` when it helps explain why the
+  memory exists, its source situation, intended use, or boundary. They may also
+  add `DEPENDS_ON: memory-id`, `LEVEL: advanced`, or `UPDATE: memory-id` fields
+  when restructuring related memories.
 - Treat `engram save-session --accept-all` as explicit human approval for every
   agent-recommended save-session candidate. Agents must not add this flag unless the
   human requested it. When the CLI returns the related-memory no-write response,
@@ -81,7 +83,9 @@ generated `/engram` adapters.
   memory-folder restructuring flow. The CLI verifies active memories in the
   selected scope, gives the agent a compact source pack, and writes only
   generated `TYPE: ... | TEXT: ...` candidates through the same save-session
-  approval and related-memory restructuring rules. Natural wording such as
+  approval and related-memory restructuring rules. Candidates may include
+  optional `CONTEXT: ...` when the source pack explains why the memory exists.
+  Natural wording such as
   `/engram restructure workspace memory accept all` maps to
   `engram metacognize --workspace --accept-all`; agents must not add
   `--accept-all` unless the human requested it.

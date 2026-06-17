@@ -256,7 +256,8 @@ coverage.
   `/engram take-control --accept-all` or natural
   `/engram take control accept all`, the slash adapter should normalize the
   wording, keep the source pack token-light, generate only concise
-  `TYPE: ... | TEXT: ...` candidates, pass them to the CLI, and let Engram save
+  `TYPE: ... | TEXT: ...` candidates, add optional `CONTEXT: ...` only when it
+  helps explain why the memory exists, pass them to the CLI, and let Engram save
   them without a second approval prompt. The adapter should not paste source
   excerpts or reasoning back into chat. If the human also says `metacognize` or
   passes `--metacognize`, rerun with `UPDATE` or `DEPENDS_ON` when Engram
@@ -264,7 +265,8 @@ coverage.
   For `/engram save-session`, `/engram ss`, legacy `/engram autosave`, or natural `/engram auto save` without a file or inline
   candidates, the slash adapter should use the LLM to define concise candidates
   from the current AI agent chat/session, then pass `TYPE: ... | TEXT: ...`
-  lines to Engram for the normal approval flow. Candidates may add
+  lines to Engram for the normal approval flow. Candidates may add optional
+  `CONTEXT: ...` when it explains why the memory exists; they may also add
   `DEPENDS_ON`, `LEVEL`, or `UPDATE` fields when the agent is restructuring
   related memory. If the human includes
   `--query-level <n>`, or natural count wording such as `last 50 sessions`, n

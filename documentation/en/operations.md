@@ -138,10 +138,14 @@ should use `UPDATE: memory-id` for consolidation or wording cleanup and
 Use `save-session` when a long interaction produced multiple candidates:
 
 ```text
-TYPE: rule | TEXT: Always run tests before release.
+TYPE: rule | TEXT: Always run tests before release. | CONTEXT: Created from release planning so future agents preserve the test gate.
 TYPE: knowledge | TEXT: Release notes live in CHANGELOG.md.
 TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
 ```
+
+`CONTEXT: ...` is optional. Add it only when it explains why the memory exists,
+the source situation, intended use, or boundary. Simple factual memories can omit
+it and use Engram's default approval context.
 
 Without `--accept-all`, Engram asks which candidates to save. With `ss -a`, every generated candidate is saved because the human explicitly approved that shortcut.
 When an accept-all run reports related memories before writing, no file was

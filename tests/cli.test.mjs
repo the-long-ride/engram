@@ -587,6 +587,7 @@ test('completion emits shell helper with command suggestions', async () => {
   assert.doesNotMatch(bash.stdout, /antigravity-cli/);
   assert.doesNotMatch(bash.stdout, /dry-run\|dr|propose\|p|team-dashboard|update-help/);
   assert.match(bash.stdout, /upgrade\|up/);
+  assert.match(bash.stdout, /set-proof\|sp/);
   assert.match(bash.stdout, /--no-auto-upgrade/);
   assert.match(bash.stdout, /--global --force/);
   const zsh = await runEngram(cwd, env, ['completion', 'zsh']);
@@ -605,6 +606,7 @@ test('completion emits shell helper with command suggestions', async () => {
   assert.match(zsh.stdout, /--workspace\[restructure workspace memory\]/);
   assert.match(zsh.stdout, /profile\|pf/);
   assert.match(zsh.stdout, /--from-profile\[source profile\]/);
+  assert.match(zsh.stdout, /set-proof\|sp/);
   const powershell = await runEngram(cwd, env, ['completion', 'powershell']);
   assert.equal(powershell.code, 0, powershell.stderr);
   assert.match(powershell.stdout, /Register-ArgumentCompleter/);
@@ -626,6 +628,8 @@ test('completion emits shell helper with command suggestions', async () => {
   assert.match(powershell.stdout, /'cm'/);
   assert.match(powershell.stdout, /'mc'/);
   assert.match(powershell.stdout, /'pf'/);
+  assert.match(powershell.stdout, /'set-proof'/);
+  assert.match(powershell.stdout, /'sp'/);
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -1372,7 +1376,11 @@ test('save-session accept-all pauses for dependency restructuring and saves reru
   assert.equal(saved.code, 0, saved.stderr);
   assert.match(saved.stdout, /Accepted all save-session candidates/);
   assert.match(saved.stdout, /Saved ->/);
+  assert.doesNotMatch(saved.stdout, /id:\s*undefined/i);
+  assert.doesNotMatch(saved.stdout, /undefined\.md/i);
+  assert.match(saved.stdout, /rules[\\/]+oauth-rotation-must-follow-the-release-foundation-checklist\.md/i);
   const content = await readFile(path.join(workspaceMemoryRoot(cwd), 'rules', 'oauth-rotation-must-follow-the-release-foundation-checklist.md'), 'utf8');
+  assert.match(content, /^id: oauth-rotation-must-follow-the-release-foundation-checklist$/m);
   assert.match(content, /depends_on: \[release-foundation-checklist-lives-in-docs-release-md\]/);
   assert.match(content, /level: advanced/);
   await rm(cwd, { recursive: true, force: true });
@@ -1792,6 +1800,17 @@ test('set-read configures read behavior', async () => {
   assert.ok(bad.code !== 0);
 });
 
+test('set-proof configures per-response proof behavior', async () => {
+  const { cwd, env } = await tempWorkspace('engram-proof-');
+  await runEngram(cwd, env, ['init', '--no-skillset']);
+  const status = await runEngram(cwd, env, ['set-proof', 'status']);
+  assert.match(status.stdout, /Proof behavior: off/);
+  const set = await runEngram(cwd, env, ['set-proof', 'compact']);
+  assert.match(set.stdout, /Proof behavior: compact/);
+  const bad = await runEngram(cwd, env, ['set-proof', 'verbose']);
+  assert.ok(bad.code !== 0);
+});
+
 test('set-rule-variant configures rule strictness', async () => {
   const { cwd, env } = await tempWorkspace('engram-rv-');
   await runEngram(cwd, env, ['init', '--no-skillset']);
@@ -1859,6 +1878,13 @@ test('help rehash shows topic help with alias', async () => {
   const h = await runEngram(cwd, env, ['help', 'rehash']);
   assert.match(h.stdout, /Recompute and store hashes/);
   assert.match(h.stdout, /rh/);
+});
+
+test('help set-proof shows topic help with alias', async () => {
+  const { cwd, env } = await tempWorkspace('engram-help-sp-');
+  const h = await runEngram(cwd, env, ['help', 'set-proof']);
+  assert.match(h.stdout, /proof/i);
+  assert.match(h.stdout, /sp/);
 });
 
 test('all registered commands have topic help entries', async () => {

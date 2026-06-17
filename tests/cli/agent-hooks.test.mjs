@@ -14,6 +14,10 @@ function additionalContext(output) {
   return output?.hookSpecificOutput?.additionalContext ?? '';
 }
 
+function proofLine(output) {
+  return additionalContext(output).split(/\r?\n/u).find((line) => line.startsWith('Engram proof:')) ?? '';
+}
+
 test('set-read supports startup auto always manual and off policies', async () => {
   const { cwd, env } = await tempWorkspace('engram-agent-hooks-read-');
   await runEngram(cwd, env, ['init', '--no-skillset']);
@@ -136,6 +140,44 @@ test('agent-hook runtime injects startup, skips repeated auto signatures, and re
     prompt: 'auth token work'
   });
   assert.equal(additionalContext(off), '');
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('agent-hook emits compact proof for loaded reused and skipped turns', async () => {
+  const { cwd, env } = await tempWorkspace('engram-agent-hooks-proof-');
+  await runEngram(cwd, env, ['init', '--no-skillset']);
+  await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Proof line uses routed Engram memory'], 'A\n');
+  await runEngram(cwd, env, ['set-proof', 'compact']);
+  await runEngram(cwd, env, ['set-read', 'auto']);
+
+  const first = await hookJson(cwd, env, ['agent-hook', '--host', 'codex'], {
+    hook_event_name: 'UserPromptSubmit',
+    session_id: 'p1',
+    cwd,
+    prompt: 'proof routing'
+  });
+  assert.match(proofLine(first), /Engram proof: loaded/i);
+  assert.match(proofLine(first), /\d+\/\d+/);
+  assert.match(additionalContext(first), /Proof line uses routed Engram memory/);
+
+  const repeat = await hookJson(cwd, env, ['agent-hook', '--host', 'codex'], {
+    hook_event_name: 'UserPromptSubmit',
+    session_id: 'p1',
+    cwd,
+    prompt: 'proof routing'
+  });
+  assert.match(proofLine(repeat), /reused prior Engram context/i);
+  assert.equal(additionalContext(repeat).includes('Proof line uses routed Engram memory'), false);
+
+  await runEngram(cwd, env, ['set-read', 'manual']);
+  const manual = await hookJson(cwd, env, ['agent-hook', '--host', 'codex'], {
+    hook_event_name: 'UserPromptSubmit',
+    session_id: 'p2',
+    cwd,
+    prompt: 'proof routing'
+  });
+  assert.match(proofLine(manual), /no Engram load this turn/i);
+  assert.match(proofLine(manual), /manual/i);
   await rm(cwd, { recursive: true, force: true });
 });
 

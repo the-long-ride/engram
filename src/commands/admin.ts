@@ -108,6 +108,24 @@ export async function cmdSetRead(args: string[]): Promise<string> {
 function readStatus(value: string): string {
   return `Read behavior: ${value}`;
 }
+
+/** Configure whether supported hooks append compact per-turn Engram proof. */
+export async function cmdSetProof(args: string[]): Promise<string> {
+  const ctx = await getContext();
+  const value = (args[0] ?? 'status').toLowerCase();
+  if (value === 'status') return proofStatus(ctx.config.proof);
+  if (['off', 'compact'].includes(value)) {
+    ctx.config.proof = value as 'off' | 'compact';
+  } else {
+    throw new Error('set-proof expects off, compact, or status');
+  }
+  await writeConfig(process.cwd(), ctx.config);
+  return proofStatus(ctx.config.proof);
+}
+
+function proofStatus(value: string): string {
+  return `Proof behavior: ${value}`;
+}
 /** Update the configured global memory folder, optionally moving the old root. */
 export async function cmdUpdateGlobalFolder(args: string[], flags: Record<string, any> = {}): Promise<string> {
   const target = textArg(args);

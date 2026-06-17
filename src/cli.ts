@@ -10,7 +10,7 @@ import { cmdArchive, cmdBenchmark, cmdDeduplicate, cmdEntry, cmdExport, cmdGraph
 import { cmdCloneMemory } from './commands/clone.js';
 import { cmdMetacognize } from './commands/metacognize.js';
 import { cmdProfile } from './commands/profile.js';
-import { cmdAgentHook, cmdIgnore, cmdInstallAgentHooks, cmdInstallHooks, cmdResolveConflicts, cmdSetLoadLimit, cmdSetRead, cmdSetRole, cmdSetRuleVariant, cmdSetSaveTarget, cmdUninstallAgentHooks, cmdUpdateGlobalFolder, cmdUpgrade } from './commands/admin.js';
+import { cmdAgentHook, cmdIgnore, cmdInstallAgentHooks, cmdInstallHooks, cmdResolveConflicts, cmdSetLoadLimit, cmdSetProof, cmdSetRead, cmdSetRole, cmdSetRuleVariant, cmdSetSaveTarget, cmdUninstallAgentHooks, cmdUpdateGlobalFolder, cmdUpgrade } from './commands/admin.js';
 import { cmdLink, cmdUnlink } from './commands/skillset-link.js';
 import { maybeAutoUpgrade } from './core/runtime/auto-upgrade.js';
 
@@ -59,6 +59,7 @@ export async function runCli(argv: string[]): Promise<string> {
       case 'set-role': return await cmdSetRole(rest);
       case 'set-save-target': return await cmdSetSaveTarget(rest);
       case 'set-load-limit': return await cmdSetLoadLimit(rest);
+      case 'set-proof': return await cmdSetProof(rest);
       case 'set-read': return await cmdSetRead(rest);
       case 'set-rule-variant': return await cmdSetRuleVariant(rest);
       case 'update-global-folder': return await cmdUpdateGlobalFolder(rest, flags);

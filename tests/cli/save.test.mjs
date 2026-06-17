@@ -364,7 +364,11 @@ test('save-session accept-all pauses for dependency restructuring and saves reru
   assert.equal(saved.code, 0, saved.stderr);
   assert.match(saved.stdout, /Accepted all save-session candidates/);
   assert.match(saved.stdout, /Saved ->/);
+  assert.doesNotMatch(saved.stdout, /id:\s*undefined/i);
+  assert.doesNotMatch(saved.stdout, /undefined\.md/i);
+  assert.match(saved.stdout, /rules[\\/]+oauth-rotation-must-follow-the-release-foundation-checklist\.md/i);
   const content = await readFile(path.join(workspaceMemoryRoot(cwd), 'rules', 'oauth-rotation-must-follow-the-release-foundation-checklist.md'), 'utf8');
+  assert.match(content, /^id: oauth-rotation-must-follow-the-release-foundation-checklist$/m);
   assert.match(content, /depends_on: \[release-foundation-checklist-lives-in-docs-release-md\]/);
   assert.match(content, /level: advanced/);
   await rm(cwd, { recursive: true, force: true });

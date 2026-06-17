@@ -35,6 +35,7 @@ test('completion emits shell helper with command suggestions', async () => {
   assert.doesNotMatch(bash.stdout, /antigravity-cli/);
   assert.doesNotMatch(bash.stdout, /dry-run\|dr|propose\|p|team-dashboard|update-help/);
   assert.match(bash.stdout, /upgrade\|up/);
+  assert.match(bash.stdout, /set-proof\|sp/);
   assert.match(bash.stdout, /--no-auto-upgrade/);
   assert.match(bash.stdout, /--global --force/);
   const zsh = await runEngram(cwd, env, ['completion', 'zsh']);
@@ -53,6 +54,7 @@ test('completion emits shell helper with command suggestions', async () => {
   assert.match(zsh.stdout, /--workspace\[restructure workspace memory\]/);
   assert.match(zsh.stdout, /profile\|pf/);
   assert.match(zsh.stdout, /--from-profile\[source profile\]/);
+  assert.match(zsh.stdout, /set-proof\|sp/);
   const powershell = await runEngram(cwd, env, ['completion', 'powershell']);
   assert.equal(powershell.code, 0, powershell.stderr);
   assert.match(powershell.stdout, /Register-ArgumentCompleter/);
@@ -74,6 +76,8 @@ test('completion emits shell helper with command suggestions', async () => {
   assert.match(powershell.stdout, /'cm'/);
   assert.match(powershell.stdout, /'mc'/);
   assert.match(powershell.stdout, /'pf'/);
+  assert.match(powershell.stdout, /'set-proof'/);
+  assert.match(powershell.stdout, /'sp'/);
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -82,4 +86,11 @@ test('help rehash shows topic help with alias', async () => {
   const h = await runEngram(cwd, env, ['help', 'rehash']);
   assert.match(h.stdout, /Recompute and store hashes/);
   assert.match(h.stdout, /rh/);
+});
+
+test('help set-proof shows topic help with alias', async () => {
+  const { cwd, env } = await tempWorkspace('engram-help-sp-');
+  const h = await runEngram(cwd, env, ['help', 'set-proof']);
+  assert.match(h.stdout, /proof/i);
+  assert.match(h.stdout, /sp/);
 });

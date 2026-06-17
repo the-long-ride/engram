@@ -9,6 +9,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
   const shells = ['bash', 'zsh', 'powershell'].join(' ');
   const ruleVariants = ['off', 'light', 'balanced', 'strict', 'status'].join(' ');
   const readModes = ['startup', 'auto', 'always', 'manual', 'off', 'status'].join(' ');
+  const proofModes = ['off', 'compact', 'status'].join(' ');
   const saveTargets = ['workspace', 'global', 'both', 'status'].join(' ');
   const loadLimits = ['status', 'reset', '8', '12', '16', '24', '32'].join(' ');
   const profileActions = ['status', 'list', 'create', 'use', 'remove', 'merge'].join(' ');
@@ -77,6 +78,9 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '    set-save-target)',
       `      _arguments "1:target:(${saveTargets})"`,
       '      ;;',
+    '    set-proof|sp)',
+      `      _arguments "1:mode:(${proofModes})"`,
+      '      ;;',
     '    set-load-limit|ll)',
       `      _arguments "1:limit:(${loadLimits})"`,
     '      ;;',
@@ -132,6 +136,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       `$engramAgentHookTargets = @(${agentHookTargets.split(' ').map((target) => `'${target}'`).join(', ')})`,
       '$engramScopes = @(\'workspace\', \'global\', \'both\')',
       '$engramRuleVariants = @(\'off\', \'light\', \'balanced\', \'strict\', \'status\')',
+      `$engramProofModes = @(${proofModes.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
       `$engramReadModes = @(${readModes.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
       '$engramSaveTargets = @(\'workspace\', \'global\', \'both\', \'status\')',
       `$engramLoadLimits = @(${loadLimits.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
@@ -171,6 +176,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '        { $_ -in @(\'upgrade\', \'up\') } { $engramUpgradeArgs; break }',
       '        { $_ -in @(\'set-rule-variant\', \'rv\') } { $engramRuleVariants; break }',
       '        { $_ -in @(\'set-save-target\') } { $engramSaveTargets; break }',
+      '        { $_ -in @(\'set-proof\', \'sp\') } { $engramProofModes; break }',
       '        { $_ -in @(\'set-load-limit\', \'ll\') } { $engramLoadLimits; break }',
       '        { $_ -in @(\'set-read\', \'rd\') } { $engramReadModes; break }',
       '        { $_ -in @(\'install-agent-hooks\', \'iah\') } { $engramAgentHookTargets + \'--global\' + \'--plan\' + \'--force\'; break }',
@@ -204,6 +210,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
     `  local formats="${formats}"`,
     `  local shells="${shells}"`,
     `  local rule_variants="${ruleVariants}"`,
+    `  local proof_modes="${proofModes}"`,
     `  local read_modes="${readModes}"`,
     `  local save_targets="${saveTargets}"`,
     `  local load_limits="${loadLimits}"`,
@@ -334,6 +341,11 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
     '      COMPREPLY=()',
     '      return',
     '      ;;',
+    '    set-proof|sp)',
+      '      if [[ $cword -eq 2 ]]; then COMPREPLY=( $(compgen -W "$proof_modes" -- "$cur") ); return; fi',
+      '      COMPREPLY=()',
+      '      return',
+      '      ;;',
     '    set-load-limit|ll)',
       '      if [[ $cword -eq 2 ]]; then COMPREPLY=( $(compgen -W "$load_limits" -- "$cur") ); return; fi',
       '      COMPREPLY=()',

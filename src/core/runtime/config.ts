@@ -39,6 +39,7 @@ export function defaultConfig(): EngramConfig {
     scope: 'both',
     update: 'auto',
     read: 'auto',
+    proof: 'off',
     ignore: {
       source: 'engramignore',
       gitignore_path: '.gitignore',

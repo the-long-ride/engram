@@ -54,6 +54,7 @@ export const HELP_DATA: HelpSection[] = [
       { command: 'engram set-role <role...>', alias: 'sr', purpose: 'Configure active developer roles for context routing and emit immediate reload guidance for Engram-aware hosts' },
       { command: 'engram set-save-target workspace|global|both|status', purpose: 'Configure where normal save writes by default' },
       { command: 'engram set-load-limit 1..32|status|reset', alias: 'll', purpose: 'Configure how many related memories normal load returns before --all is needed' },
+      { command: 'engram set-proof off|compact|status', alias: 'sp', purpose: 'Configure whether supported hooks append compact per-response Engram proof lines' },
       { command: 'engram set-read startup|auto|always|manual|off|status', alias: 'rd', purpose: 'Configure hook and manual read behavior for startup, changed prompts, every prompt, manual, or off' },
       { command: 'engram set-rule-variant off|light|balanced|strict|status', alias: 'rv', purpose: 'Tune rule strictness and emit immediate reload guidance: strict helps lower-tier models stay controlled, while top-tier models often work better with light or balanced so strict wording does not limit their reasoning' },
       { command: 'engram resolve-conflicts [--dry-run] [--metacognize] [--accept-all]', alias: 'rc', purpose: 'Preview or resolve Git conflicts in memory files, then optionally run workspace metacognition' },

@@ -141,6 +141,17 @@ test('set-read configures read behavior', async () => {
   assert.ok(bad.code !== 0);
 });
 
+test('set-proof configures per-response proof behavior', async () => {
+  const { cwd, env } = await tempWorkspace('engram-proof-');
+  await runEngram(cwd, env, ['init', '--no-skillset']);
+  const status = await runEngram(cwd, env, ['set-proof', 'status']);
+  assert.match(status.stdout, /Proof behavior: off/);
+  const set = await runEngram(cwd, env, ['set-proof', 'compact']);
+  assert.match(set.stdout, /Proof behavior: compact/);
+  const bad = await runEngram(cwd, env, ['set-proof', 'verbose']);
+  assert.ok(bad.code !== 0);
+});
+
 test('set-rule-variant configures rule strictness', async () => {
   const { cwd, env } = await tempWorkspace('engram-rv-');
   await runEngram(cwd, env, ['init', '--no-skillset']);

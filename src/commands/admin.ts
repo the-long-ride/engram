@@ -26,6 +26,7 @@ import { runAgentHook } from '../core/integrations/agent-hook-runtime.js';
 import { git } from '../core/vcs/git.js';
 import { formatRecords, type RecordBlock } from '../core/cli/format.js';
 import { installResultRecords } from './skillset-link.js';
+import { needsMigration, runMigration, formatMigrationResult } from '../core/config-db/migrate.js';
 import type { RuleVariant } from '../core/runtime/types.js';
 /** Inspect or update ignore patterns. */
 export async function cmdIgnore(args: string[]): Promise<string> {
@@ -214,14 +215,39 @@ async function gitHookDir(cwd: string): Promise<string> {
 export async function cmdUpgrade(args: string[] = [], flags: Record<string, any> = {}): Promise<string> {
   if (flags['memory-only'] === true && flags['global-skillsets-only'] === true) throw new Error('upgrade cannot use --memory-only and --global-skillsets-only together');
   const plan = flags.plan === true || flags['dry-run'] === true;
+  const dbMigrate = flags['db-migrate'] === true;
   const records: RecordBlock[] = [];
   records.push(await upgradePackageRecord(flags, plan));
-  if (flags['global-skillsets-only'] !== true) {
+  if (flags['global-skillsets-only'] !== true && !dbMigrate) {
     records.push(await workspaceMemoryUpgradeRecord(plan, Boolean(flags.force)));
     records.push(await workspaceSkillsetUpgradeRecord(plan));
     records.push(...await globalMemoryUpgradeRecords(plan, Boolean(flags.force)));
   }
-  if (flags['memory-only'] !== true) records.push(...await globalSkillsetUpgradeRecords(args, flags, plan));
+  if (flags['memory-only'] !== true && !dbMigrate) records.push(...await globalSkillsetUpgradeRecords(args, flags, plan));
+
+  // DB migration via --db-migrate flag
+  if (dbMigrate) {
+    const dryRun = flags['dry-run'] === true;
+    if (dryRun || flags.force) {
+      const workspacePaths = typeof flags['workspace-path'] === 'string'
+        ? [flags['workspace-path']]
+        : Array.isArray(flags['workspace-path']) ? flags['workspace-path'] : undefined;
+      const result = await runMigration({ dryRun, force: Boolean(flags.force), workspacePaths });
+      records.push({ title: formatMigrationResult(result, dryRun), fields: [] });
+    } else if (await needsMigration()) {
+      records.push({
+        title: 'SQLite config DB migration available',
+        fields: [
+          ['Action', 'Run `engram upgrade --db-migrate --dry-run` to preview'],
+          ['Apply', 'Run `engram upgrade --db-migrate --force` to migrate'],
+          ['Workspace path', 'Pass --workspace-path <path> to include specific workspaces']
+        ]
+      });
+    } else {
+      records.push({ title: 'SQLite config DB migration', fields: [['Status', 'No JSON configs to migrate']] });
+    }
+  }
+
   return [
     formatRecords(plan ? 'Upgrade plan' : 'Upgrade', records),
     '',

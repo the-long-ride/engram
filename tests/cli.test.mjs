@@ -917,6 +917,32 @@ test('load dry-run reports broad-match refinement and --all loads every visible 
   await rm(cwd, { recursive: true, force: true });
 });
 
+test('load routes memories by full content terms after index rebuild', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['init', '--no-skillset']);
+  const configFile = path.join(workspaceMemoryRoot(cwd), 'engram.config.json');
+  const config = JSON.parse(await readFile(configFile, 'utf8'));
+  config.graph = { ...config.graph, enabled: false };
+  config.vector = { ...config.vector, enabled: false };
+  await writeFile(configFile, JSON.stringify(config, null, 2));
+  const dir = path.join(workspaceMemoryRoot(cwd), 'knowledge');
+  await mkdir(dir, { recursive: true });
+  const filler = Array.from({ length: 80 }, (_, index) => `ordinary-${index}`).join(' ');
+  await writeFile(path.join(dir, 'late-keyword.md'), testMemory({
+    id: 'late-keyword',
+    tags: ['routing'],
+    content: `${filler} zanzibar-routing-token appears after the compact summary cutoff.`
+  }));
+  await runEngram(cwd, env, ['rebuild-index']);
+
+  const dry = await runEngram(cwd, env, ['load', '--dry-run', 'zanzibar-routing-token']);
+
+  assert.equal(dry.code, 0, dry.stderr);
+  assert.match(dry.stdout, /Routed memories \(1 of 1\)/);
+  assert.match(dry.stdout, /late-keyword/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
 test('repair reports invalid memory files skipped by index rebuild', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
   await runEngram(cwd, env, ['init', '--no-skillset']);

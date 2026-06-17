@@ -50,7 +50,7 @@ test('save stores task_type tags and prompts when task is unclear', async () => 
   assert.equal(prompt.code, 0, prompt.stderr);
   assert.match(prompt.stdout, /Task type unclear/);
   const promptContent = await readFile(path.join(workspaceMemoryRoot(cwd), 'knowledge', 'remember-this-vague-preference.md'), 'utf8');
-  assert.match(promptContent, /tags: \[task_type:planning, remember, this, vague, preference\]/);
+  assert.match(promptContent, /tags: \[task_type:planning, remember, vague, preference\]/);
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -61,7 +61,7 @@ test('save can skip unclear task type prompt and still tag unknown', async () =>
   assert.equal(saved.code, 0, saved.stderr);
   assert.doesNotMatch(saved.stdout, /Task type unclear/);
   const content = await readFile(path.join(workspaceMemoryRoot(cwd), 'knowledge', 'remember-this-vague-preference.md'), 'utf8');
-  assert.match(content, /tags: \[task_type:unknown, remember, this, vague, preference\]/);
+  assert.match(content, /tags: \[task_type:unknown, remember, vague, preference\]/);
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -126,7 +126,7 @@ test('save-session classifies each candidate text independently', async () => {
   const saved = await runEngram(cwd, env, ['save-session', '--scope', 'workspace', '--accept-all'], input);
   assert.equal(saved.code, 0, saved.stderr);
   const workflowContent = await readFile(path.join(workspaceMemoryRoot(cwd), 'skills', 'when-releasing-first-run-tests-then-update-changelog.md'), 'utf8');
-  assert.match(workflowContent, /tags: \[task_type:release, when, releasing, first, run, tests\]/);
+  assert.match(workflowContent, /tags: \[task_type:release, releasing, first, run, tests, update\]/);
   const knowledgeContent = await readFile(path.join(workspaceMemoryRoot(cwd), 'knowledge', 'auth-rotation-requires-scoped-secrets.md'), 'utf8');
   assert.match(knowledgeContent, /tags: \[task_type:security, auth, rotation, requires, scoped, secrets\]/);
   await rm(cwd, { recursive: true, force: true });

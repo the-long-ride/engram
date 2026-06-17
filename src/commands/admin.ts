@@ -6,11 +6,11 @@ import { textArg } from '../cli/args.js';
 import { cmdMetacognize } from './metacognize.js';
 import { getContext } from '../core/memory/context.js';
 import { updateGlobalFolder } from '../core/memory/global-folder.js';
-import { initWorkspace } from '../core/memory/storage.js';
+import { createScope, initWorkspace } from '../core/memory/storage.js';
 import { loadConfig, parseSaveTarget, scopeRootsForConfig, workspaceRoot, writeConfig } from '../core/runtime/config.js';
 import { DEFAULT_LOAD_LIMIT, MAX_LOAD_LIMIT, MIN_LOAD_LIMIT, parseLoadLimit } from '../core/runtime/load-limit.js';
 import { defaultProfileLines, ensureDefaultProfile } from '../core/runtime/profile-migration.js';
-import { HELP_FILE, VERSION } from '../core/runtime/constants.js';
+import { VERSION } from '../core/runtime/constants.js';
 import { isIgnored } from '../core/safety/ignore.js';
 import { ensureDir, exists, readText, writeText } from '../core/system/fsx.js';
 import { findConflicts, resolveConflicts } from '../core/vcs/conflict.js';
@@ -25,7 +25,6 @@ import { applyAgentHookAction, normalizeTarget } from '../core/integrations/agen
 import { runAgentHook } from '../core/integrations/agent-hook-runtime.js';
 import { git } from '../core/vcs/git.js';
 import { formatRecords, type RecordBlock } from '../core/cli/format.js';
-import { renderHelp } from '../core/cli/help.js';
 import { installResultRecords } from './skillset-link.js';
 import type { RuleVariant } from '../core/runtime/types.js';
 /** Inspect or update ignore patterns. */
@@ -218,7 +217,7 @@ export async function cmdUpgrade(args: string[] = [], flags: Record<string, any>
   const records: RecordBlock[] = [];
   records.push(await upgradePackageRecord(flags, plan));
   if (flags['global-skillsets-only'] !== true) {
-    records.push(await workspaceHelpUpgradeRecord(plan));
+    records.push(await workspaceMemoryUpgradeRecord(plan, Boolean(flags.force)));
     records.push(await workspaceSkillsetUpgradeRecord(plan));
     records.push(...await globalMemoryUpgradeRecords(plan, Boolean(flags.force)));
   }
@@ -232,15 +231,29 @@ export async function cmdUpgrade(args: string[] = [], flags: Record<string, any>
   ].join('\n');
 }
 
-async function workspaceHelpUpgradeRecord(plan: boolean): Promise<RecordBlock> {
+async function workspaceMemoryUpgradeRecord(plan: boolean, force: boolean): Promise<RecordBlock> {
   const root = workspaceRoot(process.cwd());
-  const file = path.join(root, HELP_FILE);
   if (!(await exists(root))) {
-    return { title: 'SKIPPED workspace help', fields: [['Reason', 'workspace memory is not initialized; run engram init']] };
+    return { title: 'SKIPPED workspace memory', fields: [['Reason', 'workspace memory is not initialized; run engram init']] };
   }
-  if (plan) return { title: 'PLAN workspace help', fields: [['Path', file], ['Action', 'refresh generated HELP.md']] };
-  await writeText(file, renderHelp());
-  return { title: 'UPDATED workspace help', fields: [['Path', file]] };
+  if (plan) {
+    return {
+      title: 'PLAN workspace memory',
+      fields: [
+        ['Path', root],
+        ['Action', 'refresh generated HELP.md and reconcile indexes, graph files, and vector sidecars for release schema changes']
+      ]
+    };
+  }
+  const config = { ...await loadConfig(process.cwd()), version: VERSION };
+  const result = await createScope(root, config, 'workspace', force);
+  const reconciled = [
+    result.files ? 'generated files' : '',
+    result.config ? 'config' : '',
+    result.migrated ? 'legacy dirs' : '',
+    result.index ? 'index/graph/vector' : ''
+  ].filter(Boolean).join(', ') || 'already current';
+  return { title: 'UPDATED workspace memory', fields: [['Path', root], ['Reconciled', reconciled]] };
 }
 
 async function workspaceSkillsetUpgradeRecord(plan: boolean): Promise<RecordBlock> {

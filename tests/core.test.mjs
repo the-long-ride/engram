@@ -19,6 +19,7 @@ import { scanInjection, scanSensitive, redactSensitive } from '../dist/core/safe
 import { sha256 } from '../dist/core/safety/hash.js';
 import { scoreMemory } from '../dist/core/analysis/quality.js';
 import { searchEntries } from '../dist/core/analysis/search.js';
+import { tagsFrom } from '../dist/core/system/text.js';
 import { convertDocumentToMarkdown, isConvertibleDocument } from '../dist/core/integrations/markdown-them.js';
 import { mergeIndexes } from '../dist/core/memory/index.js';
 import { parseMemoryCandidate } from '../dist/core/memory/memory-candidate.js';
@@ -68,6 +69,10 @@ pnpm install
 `);
   assert.equal(doc.frontmatter.id, 'use-pnpm');
   assert.equal(doc.title, 'Use pnpm');
+});
+
+test('tag extraction skips routing stopwords', () => {
+  assert.deepEqual(tagsFrom('When the user is working with Engram load routing'), ['user', 'working', 'load', 'routing']);
 });
 
 test('schema indexes memory dependency metadata', () => {
@@ -444,7 +449,7 @@ test('merged memory priority keeps workspace before global fallback', () => {
   assert.equal(route(index, 'deploy checklist', config)[0].scope, 'workspace');
 });
 
-test('routing blends vector candidates without dropping lexical matches', () => {
+test('routing ignores vector candidates without direct query overlap', () => {
   const lexical = routingEntry('deploy-checklist', 'workspace', ['deploy'], 'Deploy checklist lives local.');
   const vectorOnly = routingEntry('release-runbook', 'workspace', ['release'], 'Cut production rollout safely.');
   const index = { version: 'test', last_updated: 'now', entries: [vectorOnly, lexical] };
@@ -455,7 +460,83 @@ test('routing blends vector candidates without dropping lexical matches', () => 
     candidatePool: 8
   });
 
-  assert.deepEqual(routed.map((entry) => entry.id), ['deploy-checklist', 'release-runbook']);
+  assert.deepEqual(routed.map((entry) => entry.id), ['deploy-checklist']);
+});
+
+test('routing ignores generic memory type words as anchors', () => {
+  const rule = routingEntry('release-rule', 'workspace', ['release'], 'Release checklist lives local.', { type: 'rule', file: 'rules/release-rule.md' });
+  const knowledge = routingEntry('deploy-knowledge', 'workspace', ['deploy'], 'Deploy checklist lives local.');
+  const index = { version: 'test', last_updated: 'now', entries: [rule, knowledge] };
+  const config = { ...defaultConfig(), graph: { ...defaultConfig().graph, enabled: false } };
+
+  const routed = route(index, 'rule knowledge', config);
+
+  assert.deepEqual(routed.map((entry) => entry.id), []);
+});
+
+test('routing treats workflow query as a skill type match', () => {
+  const skill = routingEntry('release-runbook', 'workspace', ['release'], 'Release checklist lives local.', {
+    type: 'skill',
+    file: 'skills/release-runbook.md'
+  });
+  const knowledge = routingEntry('deploy-knowledge', 'workspace', ['deploy'], 'Deploy checklist lives local.');
+  const index = { version: 'test', last_updated: 'now', entries: [knowledge, skill] };
+  const config = { ...defaultConfig(), graph: { ...defaultConfig().graph, enabled: false } };
+
+  const routed = route(index, 'workflow', config);
+
+  assert.deepEqual(routed.map((entry) => entry.id), ['release-runbook']);
+});
+
+test('routing ignores related graph entries without direct query overlap', () => {
+  const direct = routingEntry('deploy-checklist', 'workspace', ['deploy'], 'Deploy checklist lives local.');
+  const related = routingEntry('release-runbook', 'workspace', ['release'], 'Cut production rollout safely.');
+  const graph = {
+    version: 'test',
+    last_updated: 'now',
+    nodes: [
+      {
+        id: 'memory:workspace:deploy-checklist',
+        kind: 'memory',
+        level: 3,
+        label: direct.id,
+        scope: 'workspace',
+        memoryId: direct.id,
+        memoryType: 'knowledge',
+        file: direct.file,
+        tags: direct.tags,
+        summary: direct.summary
+      },
+      {
+        id: 'memory:workspace:release-runbook',
+        kind: 'memory',
+        level: 3,
+        label: related.id,
+        scope: 'workspace',
+        memoryId: related.id,
+        memoryType: 'knowledge',
+        file: related.file,
+        tags: related.tags,
+        summary: related.summary
+      }
+    ],
+    edges: [
+      {
+        id: 'related_to:memory:workspace:deploy-checklist->memory:workspace:release-runbook',
+        kind: 'related_to',
+        from: 'memory:workspace:deploy-checklist',
+        to: 'memory:workspace:release-runbook',
+        weight: 1,
+        reason: 'shared tags or summary overlap'
+      }
+    ]
+  };
+  const index = { version: 'test', last_updated: 'now', entries: [related, direct] };
+  const config = { ...defaultConfig(), vector: { ...defaultConfig().vector, enabled: false } };
+
+  const detail = routeDetailed(index, 'deploy checklist', config, false, {}, graph);
+
+  assert.deepEqual(detail.entries.map((entry) => entry.id), ['deploy-checklist']);
 });
 
 test('routing refines broad matches and --all bypasses the compact load cap', () => {

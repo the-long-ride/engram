@@ -33,7 +33,11 @@ export async function cmdLoad(args: string[], flags: Record<string, any> = {}): 
     if (routed.omitted) rows.push(refinementRecord(routed));
     rows.push(...entries.map((entry): RecordBlock => ({
       title: `${entry.scope}:${entry.file}`,
-      fields: [['Type', entry.type], ['Summary', entry.summary]]
+      fields: [
+        ['Type', entry.type],
+        ['Summary', entry.summary],
+        ['Matched by', matchReason(routed, entry)]
+      ]
     })));
     return formatRecords(`Routed memories (${entries.length} of ${routed.candidates})`, rows);
   }
@@ -135,6 +139,15 @@ function routeHint(routed: RouteDetail): string {
   if (!routed.omitted) return '';
   const tags = routed.facets.map((facet) => facet.tag).join(', ');
   return `\nengram: refined ${routed.selected} of ${routed.candidates} related memories${tags ? `; narrow with tags: ${tags}` : ''}`;
+}
+
+function matchReason(routed: RouteDetail, entry: { scope: string; file: string }): string {
+  const reason = routed.reasons?.find((item) => item.key === `${entry.scope}:${entry.file}`);
+  if (!reason) return '-';
+  if (reason.kind === 'dependency') return `dependency prerequisite${reason.source ? ` (${reason.source})` : ''}`;
+  const terms = reason.terms?.join(', ') || '-';
+  const score = reason.score === undefined ? '' : `, score ${reason.score.toFixed(3)}`;
+  return `${reason.kind} terms: ${terms}${score}`;
 }
 
 /** Recompute hashes for all memory files in one or both scopes. */

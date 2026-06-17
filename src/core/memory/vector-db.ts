@@ -223,12 +223,13 @@ function entrySignature(entry: MemoryEntry): string {
     entry.confidence,
     entry.tags.join(','),
     entry.role?.join(',') ?? '',
-    entry.summary
+    entry.summary,
+    entry.routingTerms?.join(',') ?? ''
   ].join('|');
 }
 
 function entryText(entry: MemoryEntry): string {
-  return `${entry.id} ${entry.type} ${entry.tags.join(' ')} ${entry.summary}`;
+  return `${entry.id} ${entry.tags.join(' ')} ${entry.summary} ${(entry.routingTerms ?? []).join(' ')}`;
 }
 
 function skipped(scope: Scope, file: string, entries: number, reason: string): VectorIndexStatus {

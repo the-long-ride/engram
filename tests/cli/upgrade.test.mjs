@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { rm, writeFile, mkdir, readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { initGit, runEngram, tempWorkspace, workspaceMemoryRoot } from '../helpers.mjs';
-import { machineProfileName, packageVersion } from './fixtures.mjs';
+import { machineProfileName, packageVersion, testMemory } from './fixtures.mjs';
 
 test('upgrade plan reports quick package update and registered global skillset refresh', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-upgrade-');
@@ -105,6 +105,53 @@ test('auto-upgrade quietly reconciles initialized roots once after package updat
   const second = await runEngram(cwd, env, ['search', 'auto upgrade probe']);
   assert.equal(second.code, 0, second.stderr);
   assert.equal(await readFile(configFile, 'utf8'), beforeSecondRun);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('auto-upgrade reconciles v0.0.8 roots through current routing metadata', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-autoupgrade-index-');
+  const init = await runEngram(cwd, env, ['init', '--no-skillset']);
+  assert.equal(init.code, 0, init.stderr);
+  const root = workspaceMemoryRoot(cwd);
+  const configFile = path.join(root, 'engram.config.json');
+  const config = JSON.parse(await readFile(configFile, 'utf8'));
+  config.version = '0.0.8';
+  config.auto_upgrade = { version: '0.0.8', checked_at: '2026-01-01T00:00:00.000Z' };
+  config.graph = { ...config.graph, enabled: false };
+  config.vector = { ...config.vector, enabled: false };
+  delete config.proof;
+  delete config.load;
+  await writeFile(configFile, `${JSON.stringify(config, null, 2)}\n`);
+  const dir = path.join(root, 'knowledge');
+  await mkdir(dir, { recursive: true });
+  const filler = Array.from({ length: 80 }, (_, index) => `ordinary-${index}`).join(' ');
+  await writeFile(path.join(dir, 'late-upgrade-keyword.md'), testMemory({
+    id: 'late-upgrade-keyword',
+    tags: ['routing'],
+    content: `${filler} upgrade-routing-token appears after the compact summary cutoff.`
+  }));
+  const rebuilt = await runEngram(cwd, env, ['rebuild-index', 'workspace', '--no-auto-upgrade']);
+  assert.equal(rebuilt.code, 0, rebuilt.stderr);
+  const indexFile = path.join(root, 'memory.index.json');
+  const oldIndex = JSON.parse(await readFile(indexFile, 'utf8'));
+  oldIndex.version = '0.0.8';
+  oldIndex.entries = oldIndex.entries.map((entry) => {
+    const { routingTerms, ...rest } = entry;
+    return rest;
+  });
+  await writeFile(indexFile, `${JSON.stringify(oldIndex, null, 2)}\n`);
+
+  const loaded = await runEngram(cwd, env, ['load', '--dry-run', 'upgrade-routing-token']);
+
+  assert.equal(loaded.code, 0, loaded.stderr);
+  assert.match(loaded.stdout, /late-upgrade-keyword/);
+  const upgradedIndex = JSON.parse(await readFile(indexFile, 'utf8'));
+  assert.ok(upgradedIndex.entries.every((entry) => Array.isArray(entry.routingTerms)));
+  const upgradedConfig = JSON.parse(await readFile(configFile, 'utf8'));
+  assert.equal(upgradedConfig.version, await packageVersion());
+  assert.equal(upgradedConfig.auto_upgrade.version, await packageVersion());
+  assert.equal(upgradedConfig.proof, 'off');
+  assert.equal(upgradedConfig.load.limit, 8);
   await rm(cwd, { recursive: true, force: true });
 });
 

@@ -89,7 +89,7 @@ test('install-agent-hooks preserves human config and uninstall removes only Engr
 test('agent-hook runtime injects startup, skips repeated auto signatures, and respects manual/off', async () => {
   const { cwd, env } = await tempWorkspace('engram-agent-hooks-runtime-');
   await runEngram(cwd, env, ['init', '--no-skillset']);
-  await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Auth tokens refresh before expiry'], 'A\n');
+  await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Session startup auth tokens refresh before expiry'], 'A\n');
 
   await runEngram(cwd, env, ['set-read', 'startup']);
   const startup = await hookJson(cwd, env, ['agent-hook', '--host', 'codex'], {
@@ -98,7 +98,7 @@ test('agent-hook runtime injects startup, skips repeated auto signatures, and re
     cwd,
     source: 'startup'
   });
-  assert.match(additionalContext(startup), /Auth tokens refresh before expiry/);
+  assert.match(additionalContext(startup), /Session startup auth tokens refresh before expiry/);
   const laterStartupMode = await hookJson(cwd, env, ['agent-hook', '--host', 'codex'], {
     hook_event_name: 'UserPromptSubmit',
     session_id: 's1',
@@ -114,7 +114,7 @@ test('agent-hook runtime injects startup, skips repeated auto signatures, and re
     cwd,
     prompt: 'auth token work'
   });
-  assert.match(additionalContext(firstAuto), /Auth tokens refresh before expiry/);
+  assert.match(additionalContext(firstAuto), /Session startup auth tokens refresh before expiry/);
   const repeatAuto = await hookJson(cwd, env, ['agent-hook', '--host', 'codex'], {
     hook_event_name: 'UserPromptSubmit',
     session_id: 's2',

@@ -1,6 +1,6 @@
 /** Memory Markdown frontmatter parser and validator. */
 import type { MemoryDoc, MemoryEntry, MemoryType, Scope, Confidence } from '../runtime/types.js';
-import { summarize, tagsFrom, today } from '../system/text.js';
+import { meaningfulWordList, summarize, tagsFrom, today } from '../system/text.js';
 import { canonicalRuleMemory } from './rule-variants.js';
 
 const memoryTypes = new Set(['rule', 'skill', 'knowledge']);
@@ -39,6 +39,7 @@ export function entryFromMemory(raw: string, file: string, fallbackScope: Scope)
     scope: doc.frontmatter.scope ?? fallbackScope,
     tags: doc.frontmatter.tags ?? tagsFrom(doc.title),
     summary: summarize(summaryBody),
+    routingTerms: meaningfulWordList(summaryBody).slice(0, 256),
     file,
     author: String(doc.frontmatter.author ?? 'unknown'),
     confidence: doc.frontmatter.confidence ?? 'medium',

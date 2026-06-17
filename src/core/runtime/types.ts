@@ -69,6 +69,7 @@ export type MemoryEntry = {
   scope: Scope;
   tags: string[];
   summary: string;
+  routingTerms?: string[];
   file: string;
   author: string;
   confidence: Confidence;

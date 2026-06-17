@@ -6,7 +6,7 @@ export function slugify(input: string): string {
 
 /** Split comma/list text into clean tags. */
 export function tagsFrom(text: string): string[] {
-  return [...new Set(text.toLowerCase().match(/[a-z0-9][a-z0-9-]{2,}/g) ?? [])].slice(0, 6);
+  return meaningfulWordList(text).slice(0, 6);
 }
 
 /** Return today in YYYY-MM-DD form. */
@@ -17,6 +17,48 @@ export function today(): string {
 /** Extract lowercase words for deterministic search and routing. */
 export function words(text: string): Set<string> {
   return new Set((text.toLowerCase().match(/[a-z0-9][a-z0-9-]{1,}/g) ?? []).filter((w) => w.length > 2));
+}
+
+const ROUTING_STOPWORDS = new Set([
+  'about', 'after', 'again', 'all', 'also', 'and', 'any', 'are', 'before', 'being',
+  'both', 'but', 'can', 'come', 'current', 'does', 'done', 'each', 'else', 'ever',
+  'for', 'from', 'had', 'has', 'have', 'here', 'into', 'its', 'just', 'keep',
+  'made', 'make', 'more', 'most', 'much', 'must', 'new', 'not', 'off', 'only',
+  'other', 'over', 'same', 'some', 'such', 'take', 'than', 'that', 'the', 'their',
+  'them', 'then', 'they', 'this', 'very', 'was', 'well', 'when', 'where', 'which',
+  'with', 'work', 'written', 'your'
+]);
+
+const ROUTING_GENERIC_WORDS = new Set([
+  'agent', 'agents', 'approved', 'content', 'context', 'durable', 'engram',
+  'example', 'future', 'knowledge', 'memories', 'memory', 'rule', 'rules',
+  'skill', 'skills', 'task', 'touch', 'type', 'use', 'used', 'uses',
+  'using'
+]);
+
+/** Return stable routing terms, excluding stopwords and generic memory terms. */
+export function meaningfulWords(text: string): Set<string> {
+  return new Set(meaningfulWordList(text));
+}
+
+/** Return stable routing terms in first-seen order. */
+export function meaningfulWordList(text: string): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const token of words(text)) {
+    for (const term of [token, ...token.split('-')]) {
+      if (!isMeaningfulRoutingWord(term) || seen.has(term)) continue;
+      seen.add(term);
+      out.push(term);
+    }
+  }
+  return out;
+}
+
+function isMeaningfulRoutingWord(word: string): boolean {
+  if (word.length <= 2) return false;
+  if (/^\d+(?:-\d+)*$/.test(word)) return false;
+  return !ROUTING_STOPWORDS.has(word) && !ROUTING_GENERIC_WORDS.has(word);
 }
 
 /** Jaccard-ish score between a query and candidate text. */

@@ -1,7 +1,7 @@
 /** Workspace/global storage setup and approved memory writes. */
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { CHANGELOG_FILE, DEFAULT_IGNORE, GRAPH_FILE, HASH_FILE, HELP_FILE, INDEX_FILE, MEMORY_DIRS, README_FILE, VECTOR_DB_FILE } from '../runtime/constants.js';
+import { CHANGELOG_FILE, DEFAULT_IGNORE, GRAPH_FILE, HASH_FILE, HELP_FILE, INDEX_FILE, MEMORY_DIRS, README_FILE, VECTOR_DB_FILE, VERSION } from '../runtime/constants.js';
 import type { EngramConfig, Scope } from '../runtime/types.js';
 import { defaultConfig, legacyWorkspaceRoot, loadConfig, mergeConfig, profileResolutionForConfig, scopeRootsForConfig, workspaceRoot, writeConfig, writeUserConfig } from '../runtime/config.js';
 import { ensureDir, exists, inside, listFiles, readJson, readText, writeJson, writeText } from '../system/fsx.js';
@@ -93,7 +93,7 @@ export async function createScope(root: string, config: EngramConfig, scope: Sco
   result.files += await writeTextIfNeeded(path.join(root, README_FILE), renderMemoryReadme(), true) ? 1 : 0;
   result.files += await writeTextIfNeeded(path.join(root, CHANGELOG_FILE), `# Engram Changelog\n\n`, false) ? 1 : 0;
   result.files += await reconcileScopeGitignore(root) ? 1 : 0;
-  if (force || result.migrated || !(await exists(path.join(root, INDEX_FILE)))) {
+  if (force || result.migrated || !(await exists(path.join(root, INDEX_FILE))) || await needsIndexRefresh(root)) {
     const index = await rebuildIndex(root, scope);
     await rebuildGraph(root, scope, index, config);
     await ensureVectorIndex(root, scope, index.entries, config, { force: true });
@@ -108,6 +108,12 @@ export async function createScope(root: string, config: EngramConfig, scope: Sco
     }
   }
   return result;
+}
+
+async function needsIndexRefresh(root: string): Promise<boolean> {
+  const index = await readJson<{ version?: string; entries?: Array<{ routingTerms?: unknown }> }>(path.join(root, INDEX_FILE), {});
+  if (index.version !== VERSION) return true;
+  return (index.entries ?? []).some((entry) => !Array.isArray(entry.routingTerms));
 }
 
 /** Write a memory after all approval and safety checks have passed. */

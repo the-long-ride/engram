@@ -44,11 +44,14 @@ does not cross profile boundaries. `engram profile merge <source> <target>
 --dry-run` previews cross-profile copies and duplicate candidates.
 
 After an npm package update, the next normal Engram command quietly reconciles
-already-initialized workspace/global roots once for the new version. This startup
-check is intentionally cheap after the first run: it only reads small config
-markers when the current version is already recorded. It does not run from npm
-postinstall, create new memory roots, or replace human-authored files. Use
-`--no-auto-upgrade` or `ENGRAM_NO_AUTO_UPGRADE=1` to skip it for a command.
+already-initialized workspace/global roots once for the new version. This covers
+release-to-release memory schema changes from v0.0.8 onward by refreshing
+generated help, memory indexes, graph files, and eligible vector sidecars when
+older metadata is detected. The startup check is intentionally cheap after the
+first run: it only reads small config markers when the current version is already
+recorded. It does not run from npm postinstall, create new memory roots, or
+replace human-authored files. Use `--no-auto-upgrade` or
+`ENGRAM_NO_AUTO_UPGRADE=1` to skip it for a command.
 
 To add or refresh adapters later:
 
@@ -57,8 +60,9 @@ engram upgrade
 engram install-skillset all
 ```
 
-`engram upgrade` refreshes existing Engram-generated workspace skillset files
-and registered global skillsets while preserving human-authored files.
+`engram upgrade` refreshes generated workspace help, memory indexes, graph
+files, eligible vector sidecars, existing Engram-generated workspace skillset
+files, and registered global skillsets while preserving human-authored files.
 Use `--force` only when replacing generated Engram adapter files intentionally.
 Claude receives both `.claude/commands/engram.md` and
 `.claude/skills/engram/SKILL.md` so `/engram` appears in older command menus and

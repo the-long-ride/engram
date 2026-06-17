@@ -15,7 +15,7 @@ It gives agents memory without giving agents ownership of memory. Durable rules,
 ## Key Highlights
 
 - **Human in the Loop**: AI proposes memory candidates; humans review and approve (A/B/C gate, automatable via rules).
-- **Context-Optimized**: Routes and refines task-matching memories into a compact pack (default: 8 files) to avoid context bloat.
+- **Context-Optimized**: Routes meaningful task matches plus prerequisites into a compact pack (default: 8 files) to avoid context bloat.
 - **Git-Native & Portable**: Plain Markdown files stored in `.agents/.engram/` synced via Git—completely vendor-agnostic and offline-first.
 - **Privacy & Security Control**: Runs 100% locally and scans for PII/secrets before writing.
 - **Prerequisite Graphs**: Declares dependencies (`depends_on`) so agents load foundational rules before advanced tasks automatically.
@@ -42,7 +42,7 @@ graph TD
     subgraph Read ["Read Path"]
         Trigger["Task request or prompt turn"]:::action
         Load["Load/search request\n(engram load, search, graph)"]:::action
-        Route["Route by tags, type, recency,\ndependency graph, sqlite-vec"]:::action
+        Route["Anchor on meaningful terms\nthen rerank by tags, recency,\ndependency graph, sqlite-vec"]:::action
         Refine["Refine to compact top-N pack\n(default 8 unless --all)"]:::action
         Cache["Hook cache checks routed signature"]:::action
         Inject["Inject compact memory pack"]:::action
@@ -117,7 +117,7 @@ Standard rule files get sent with every single message, bloating context, causin
 
 | Tactical Challenge | Engram Answer |
 | --- | --- |
-| **Too many rules bloating context** | Routes and refines task-matching memory into a compact context pack, defaulting to 8 memories. |
+| **Too many rules bloating context** | Routes meaningful task matches and explicit prerequisites into a compact context pack, defaulting to 8 memories. |
 | **Silent writes & secret leakage** | Requires human A/B/C approval and scans for secrets/injections. |
 | **Vendor lock-in** | Uses plain, readable Markdown files portable across any agent or model. |
 | **No offline access** | Runs locally as a lightweight file-based protocol—no server or internet required. |

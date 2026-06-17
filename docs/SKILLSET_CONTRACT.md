@@ -33,19 +33,20 @@ generated `/engram` adapters.
 - Never load all memory blindly; route by task intent and summarize relevant
   IDs/rules instead of pasting raw output to reduce token usage.
 - When more memories match a load query than the configured load limit allows,
-  refine the candidate pool with lexical, tag, type, recency, graph, and vector
-  signals, then load the compact pack. Normal load reports selected and total
-  related counts. Use `load --dry-run` to report candidate counts and narrowing
-  tags; use `--all` only when broad context is explicitly requested.
+  first require direct overlap with meaningful query terms, then refine the
+  candidate pool with lexical, tag, recency, graph, and vector signals. Normal
+  load reports selected and total related counts. Use `load --dry-run` to report
+  candidate counts, narrowing tags, and match reasons; use `--all` only when
+  broad context is explicitly requested.
 - Preserve `depends_on: [...]` memory frontmatter when present. Graph routing
   uses these prerequisite links to keep foundational memories before deeper
   dependent memories inside the compact load pack, reducing duplicated guidance
   across memory files.
 - For large memory scopes, maintain an optional per-scope sqlite-vec sidecar
   (`memory.vec.sqlite`) once the visible memory count reaches the configured
-  threshold. Vector hits are candidate expansion only: lexical and graph routing
-  remain active so a missing, stale, or unavailable vector DB cannot hide saved
-  memories.
+  threshold. Vector hits rerank or expand only memories that already overlap a
+  meaningful query term; a missing, stale, noisy, or unavailable vector DB cannot
+  hide saved memories or load unrelated ones by itself.
 - Never write memory silently.
 - Treat `engram_save` and `engram save` as proposal flows with human approval.
   Engram may automatically choose update-vs-new before presenting the preview.
@@ -216,9 +217,9 @@ proposal and collect explicit human approval before invoking a CLI write flow.
 | `engram set-load-limit 1..32|status|reset` / `engram ll ...` | Configure how many related memories normal load returns; default is 8 and `--all` still bypasses the cap |
 | `engram set-proof off|compact|status` | Configure whether supported hooks append compact per-response Engram proof lines |
 | `engram update-global-folder <new-path> [--move-from-path path]` / `engram ugf <new-path>` / `engram set global memory path to <new-path>` | Update the configured global memory folder; with `--move-from-path` or `move global folder from <old> to <new>`, move the whole old global root first while refusing to overwrite destinations that already contain real memory or user files |
-| `engram upgrade [--plan]` | Refresh package guidance, workspace HELP.md, existing generated workspace skillset files, global memory scaffolding, and registered global skillsets while preserving human-authored files |
-| Startup auto-upgrade | After npm package updates, normal commands quietly reconcile already-initialized roots once per Engram version; skip with `--no-auto-upgrade` or `ENGRAM_NO_AUTO_UPGRADE=1`. The package must not rely on npm `postinstall` for migrations |
-| `engram load [--profile name] [--all] [--dry-run] "<task>"` | Load a refined compact context pack; `--profile` selects a global profile for one command, `--all` is the explicit broad-load mode, and `--dry-run` previews routed files, related counts, and narrowing tags without printing contents |
+| `engram upgrade [--plan]` | Refresh package guidance, workspace HELP.md, memory indexes, graph files, eligible vector sidecars, existing generated workspace skillset files, global memory scaffolding, and registered global skillsets while preserving human-authored files |
+| Startup auto-upgrade | After npm package updates, normal commands quietly reconcile already-initialized roots once per Engram version, including release-to-release memory schema/index refreshes from v0.0.8 onward; skip with `--no-auto-upgrade` or `ENGRAM_NO_AUTO_UPGRADE=1`. The package must not rely on npm `postinstall` for migrations |
+| `engram load [--profile name] [--all] [--dry-run] "<task>"` | Load a refined compact context pack from meaningful direct query matches plus explicit prerequisites; `--profile` selects a global profile for one command, `--all` bypasses the load limit for routed matches, and `--dry-run` previews routed files, related counts, narrowing tags, and match reasons without printing contents |
 | `engram search "<query>"` | Search visible memory by query |
 | `engram graph [--rebuild] ["<query>"]` | Inspect the derived layered JSON graph, dependency layers, and contradiction candidates |
 | `engram save [rule|skill|workflow|knowledge] [--profile name] [--scope workspace|global|both] [--role role] "<text>"` | Propose one memory and write after A/B/C approval; `--profile` can save to another profile global root without changing the workspace default |

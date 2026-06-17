@@ -38,11 +38,15 @@ Use `--query-level <n>` when the human wants the agent to mine up to n recent ac
 
 Use `load --dry-run` when you want to inspect which memory files would route
 without printing their contents.
-When more memories match than the configured load limit, `load` refines the
+`load` first anchors routing on meaningful query terms, ignoring generic memory
+words such as `rule`, `knowledge`, and common stopwords. It then refines the
 wider candidate pool into a compact context pack. Normal load reports selected
 and total related counts, like `loaded 8 memory files / 14 total related
-memories`. `load --dry-run` shows candidate counts and narrowing tags; `load
---all` intentionally returns every visible routed memory.
+memories`. `load --dry-run` shows candidate counts, narrowing tags, and match
+reasons; `load --all` returns every visible routed match instead of applying the
+compact limit.
+`workflow` and `workflows` still route to skill memories, but generic type words
+do not make a broad match by themselves.
 
 ## Dependency Layers
 
@@ -56,7 +60,20 @@ level: advanced
 
 Run `engram graph --rebuild` after manual edits. The graph reports dependency
 layers, and `engram load` pulls routed prerequisites into the same compact
-context pack before deeper memories.
+context pack before deeper memories. Graph related edges and vector hits cannot
+load unrelated memories by themselves; they only help rerank or expand memories
+that already overlap meaningful query terms. Explicit `depends_on` prerequisites
+may still load without their own keyword overlap.
+
+## Upgrade Reconciliation
+
+Use `engram upgrade` after installing a newer Engram package. The command
+compares initialized memory roots from v0.0.8 onward to the current release
+schema and refreshes generated HELP.md, memory indexes, graph files, eligible
+vector sidecars, generated workspace skillsets, global memory scaffolding, and
+registered global agent skillsets while preserving human-authored files. Normal
+commands also run the same root reconciliation quietly once per package version unless
+`--no-auto-upgrade` or `ENGRAM_NO_AUTO_UPGRADE=1` is set.
 When `engram save` finds related active memories, the approval preview reports
 them with a suggested `depends_on` or possible-duplicate warning. Accepting saves
 the preview as-is; reject first if you want to restructure dependencies or

@@ -157,6 +157,19 @@ engram is --global <имя_агента>
 engram link gemini
 ```
 
+Необязательные хуки автозагрузки доступны для хостов, которые могут внедрять контекст как при запуске сессии, так и при последующих ходах промпта:
+```bash
+engram install-agent-hooks codex --plan
+engram install-agent-hooks codex
+engram install-agent-hooks claude
+engram install-agent-hooks gemini
+engram set-read auto
+engram set-proof compact
+```
+Установка хуков v1 ограничена `codex`, `claude` и `gemini`. Совместимость с Antigravity в настоящее время маршрутизируется через `gemini`; Cursor, Copilot, Cline и Windsurf/Cascade остаются управляемыми через инструкции/набор навыков/ручную загрузку до тех пор, пока поверхности их хуков не станут поддерживать надежное внедрение контекста во время промпта.
+Используйте `engram set-proof compact`, если вы хотите, чтобы поддерживаемые хуки добавляли короткую строку `Engram proof:` при каждом подходящем ходе, показывая, была ли память Engram загружена, повторно использована или пропущена, без изменения поведения внедрения `set-read`.
+
+
 ### 3. Инициализируйте Рабочее Пространство
 Запустите в корневом каталоге проекта:
 ```bash
@@ -173,6 +186,11 @@ engram init
 - **Начало задачи**: `/engram load "design pricing table component"`
 - **Сохранение решения/факта**: `/engram save knowledge "Webhook secret is process.env.STRIPE_WEBHOOK"`
 - **Сборка и архивация сессии**: `/engram save-session` (или `--query-level 3`, или автосогласие `ss -a last 50 sessions`)
+
+Когда агент спрашивает, как использовать Engram, запустите `engram llm`. Это выведет упакованное руководство для ИИ-агента `llm.txt`, которое безопасно использовать до выполнения `engram init`.
+
+Когда ИИ-агент предлагает кандидатов в память в формате `TYPE: ... | TEXT: ...`, он может по желанию добавить `CONTEXT: ...`, если это помогает объяснить, почему память существует. Простые факты могут опускать это поле и использовать контекст утверждения по умолчанию.
+
 
 ---
 
@@ -191,6 +209,7 @@ engram init
 | **Реструктуризация памяти** | `engram metacognize --workspace` | `/engram restructure workspace memory accept all` |
 | **Разрешение конфликтов** | `engram resolve-conflicts --metacognize` | `/engram resolve conflicts and metacognize` |
 | **Проверка путей** | `engram entry` | `/engram entry` |
+| **Показать руководство агента** | `engram llm` | Запустить один раз, когда агенту требуется руководство по использованию Engram |
 | **Управление профилями** | `engram profile status` / `create` / `use` | `/engram profile status` |
 | **Куда сохранять** | `engram set-save-target <workspace/global/both>` | `/engram set-save-target <target>` |
 | **Лимит загрузки** | `engram set-load-limit <1..32>` | `/engram set-load-limit <count>` |
@@ -204,6 +223,8 @@ engram init
 | **Проверка и ремонт** | `engram verify` / `engram repair` | `/engram verify` / `/engram repair` |
 | **Поиск противоречий** | `engram quality-check` | `/engram quality-check` |
 | **Синхронизация памяти** | `engram sync` | `/engram sync` |
+
+При успешном выполнении `engram set-role ...` или `engram set-rule-variant ...` Engram теперь возвращает строку `Agent action:`. Совместимые с Engram адаптеры и хосты MCP должны немедленно перезапустить `engram load "<текущая задача/запрос>"` и заменить прежний контекст, полученный от Engram, в том же разговоре. Это происходит после завершения команды, а не посреди ответа, и установленные файлы набора навыков по-прежнему управляют будущими или перезагруженными чатами.
 
 ---
 

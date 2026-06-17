@@ -16,7 +16,7 @@ test('completion emits shell helper with command suggestions', async () => {
   assert.doesNotMatch(bash.stdout, /local commands="[^"]*save rule/);
   assert.match(bash.stdout, /--file --scope --profile --role --roles/);
   assert.match(bash.stdout, /--query-level/);
-  assert.match(bash.stdout, /--all --dry-run/);
+  assert.match(bash.stdout, /--all --dry-run --for-agents/);
   assert.match(bash.stdout, /update-global-folder/);
   assert.match(bash.stdout, /\bugf\b/);
   assert.match(bash.stdout, /clone-memory/);
@@ -44,6 +44,7 @@ test('completion emits shell helper with command suggestions', async () => {
   assert.match(zsh.stdout, /save-session\|ss/);
   assert.doesNotMatch(zsh.stdout, /save-session\|ss\|autosave/);
   assert.match(zsh.stdout, /--file\[read session summary file\]/);
+  assert.match(zsh.stdout, /--for-agents\[slim memory output for AI agents\]/);
   assert.match(zsh.stdout, /--query-level\[recent chat sessions to mine\]/);
   assert.match(zsh.stdout, /update-global-folder/);
   assert.match(zsh.stdout, /update-global-folder\|ugf/);

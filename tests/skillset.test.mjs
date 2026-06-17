@@ -162,7 +162,7 @@ test('global skillset installer writes managed rules, skills, and registry', asy
   const agents = await readFile(path.join(agentHome, '.codex', 'AGENTS.md'), 'utf8');
   assert.match(agents, /BEGIN ENGRAM GLOBAL SKILLSET/);
   assert.match(agents, /Global Startup/);
-  assert.match(agents, /engram load "<current task>"/);
+  assert.match(agents, /engram load --for-agents "<current task>"/);
   const skill = await readFile(path.join(agentHome, '.agents', 'skills', 'engram', 'SKILL.md'), 'utf8');
   assert.match(skill, /name: engram/);
   assert.match(skill, /Default agent mode: compact/);
@@ -245,7 +245,7 @@ test('global copilot install appends user instruction file', async () => {
   assert.match(copilot, /# Copilot human rules/);
   assert.match(copilot, /- Keep this rule\./);
   assert.match(copilot, /BEGIN ENGRAM GLOBAL SKILLSET/);
-  assert.match(copilot, /engram load "<current task>"/);
+  assert.match(copilot, /engram load --for-agents "<current task>"/);
 
   const registry = JSON.parse(await readFile(path.join(globalEnv.ENGRAM_CONFIG_DIR, 'global-skillsets.json'), 'utf8'));
   assert.equal(registry.installs.copilot.files.length, 1);

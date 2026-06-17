@@ -40,7 +40,7 @@ test('llm command prints packaged AI agent guide', async () => {
   assert.equal(result.code, 0, result.stderr);
   assert.equal(result.stdout.trimEnd(), expected.trimEnd());
   assert.match(result.stdout, /Engram LLM Guide/);
-  assert.match(result.stdout, /engram load "<current task>"/);
+  assert.match(result.stdout, /engram load --for-agents "<current task>"/);
   assert.match((await runEngram(cwd, env, ['help', 'llm'])).stdout, /AI agent usage guide/);
   await rm(cwd, { recursive: true, force: true });
 });

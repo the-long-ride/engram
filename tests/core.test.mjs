@@ -23,7 +23,7 @@ import { tagsFrom } from '../dist/core/system/text.js';
 import { convertDocumentToMarkdown, isConvertibleDocument } from '../dist/core/integrations/markdown-them.js';
 import { mergeIndexes } from '../dist/core/memory/index.js';
 import { parseMemoryCandidate } from '../dist/core/memory/memory-candidate.js';
-import { canonicalRuleText, ruleVariantsAreCustomized, stripRuleVariantSection } from '../dist/core/memory/rule-variants.js';
+import { canonicalRuleText, renderMemoryForAgent, ruleVariantsAreCustomized, stripRuleVariantSection } from '../dist/core/memory/rule-variants.js';
 import { route, routeDetailed } from '../dist/core/memory/routing.js';
 import { classifyTaskType, normalizeTaskType } from '../dist/core/memory/task-classifier.js';
 import { ensureVectorIndex } from '../dist/core/memory/vector-db.js';
@@ -150,6 +150,68 @@ pnpm install
   assert.doesNotMatch(stripRuleVariantSection(auto), /## Rule Variants/);
   assert.equal(ruleVariantsAreCustomized(auto), false);
   assert.equal(ruleVariantsAreCustomized(customized), true);
+});
+
+test('renderMemoryForAgent slims metadata and renders one selected rule variant', () => {
+  const auto = `---
+id: use-pnpm
+type: rule
+scope: workspace
+tags: [node, package]
+created: 2026-06-01
+updated: 2026-06-01
+author: dev@example.com
+source: manual
+confidence: high
+---
+# Use pnpm
+
+## Context
+
+Project package manager.
+
+## Content
+
+- Prefer pnpm.
+
+## Rule Variants
+
+### Light
+
+- Consider pnpm.
+
+### Balanced
+
+- Use pnpm.
+
+### Strict
+
+- Treat this rule as mandatory unless the human explicitly overrides it: Use pnpm.
+
+## Example
+
+pnpm install
+`;
+  const rendered = renderMemoryForAgent(auto, {
+    id: 'use-pnpm',
+    type: 'rule',
+    scope: 'workspace',
+    tags: ['node', 'package'],
+    summary: 'Prefer pnpm.',
+    routingTerms: ['prefer', 'pnpm'],
+    file: 'rules/use-pnpm.md',
+    author: 'dev@example.com',
+    confidence: 'high',
+    ignored: false,
+    updated: '2026-06-01'
+  }, defaultConfig());
+
+  assert.match(rendered, /^---\nid: use-pnpm\ntype: rule\ntags: \[node, package\]\nconfidence: high\n---/m);
+  assert.doesNotMatch(rendered, /scope: workspace|created:|updated:|author:|source:/);
+  assert.doesNotMatch(rendered, /## Rule Variants/);
+  assert.match(rendered, /## Rule variants \(1\/3 based on current: Balanced\)/);
+  assert.match(rendered, /- Use pnpm\./);
+  assert.doesNotMatch(rendered, /- Treat this rule as mandatory/);
 });
 
 test('rule memory summaries ignore stored variant duplication', () => {
@@ -681,6 +743,12 @@ test('argument parser preserves positional text after known boolean flags', () =
   const load = parseArgs(['load', '--all', 'deployment workflow']);
   assert.equal(load.flags.all, true);
   assert.deepEqual(load.rest, ['deployment workflow']);
+  const forAgents = parseArgs(['load', '--for-agents', 'deployment workflow']);
+  assert.equal(forAgents.flags['for-agents'], true);
+  assert.deepEqual(forAgents.rest, ['deployment workflow']);
+  const naturalForAgents = parseArgs(['load', 'for', 'agent', 'deployment workflow']);
+  assert.equal(naturalForAgents.flags['for-agents'], true);
+  assert.deepEqual(naturalForAgents.rest, ['deployment workflow']);
   const globalSkillset = parseArgs(['install-skillset', '--global', 'codex']);
   assert.equal(globalSkillset.flags.global, true);
   assert.deepEqual(globalSkillset.rest, ['codex']);

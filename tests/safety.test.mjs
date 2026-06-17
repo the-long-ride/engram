@@ -88,6 +88,59 @@ test('load verifies memory hash before returning content', async () => {
   await rm(cwd, { recursive: true, force: true });
 });
 
+test('loadEntries supports agent-facing compact rendering', async () => {
+  const cwd = await temp();
+  const raw = `---
+id: use-pnpm
+type: rule
+scope: workspace
+tags: [node, package]
+created: 2026-06-01
+updated: 2026-06-01
+author: test
+source: manual
+confidence: high
+---
+# Use pnpm
+
+## Context
+
+Project package manager.
+
+## Content
+
+- Prefer pnpm.
+
+## Rule Variants
+
+### Light
+
+- Consider pnpm.
+
+### Balanced
+
+- Use pnpm.
+
+### Strict
+
+- Treat this rule as mandatory unless the human explicitly overrides it: Use pnpm.
+
+## Example
+
+pnpm install
+`;
+  const file = path.join(workspaceMemoryRoot(cwd), 'rules', 'use-pnpm.md');
+  await writeFile(file, raw);
+  await updateHash(workspaceMemoryRoot(cwd), 'rules/use-pnpm.md', raw);
+  const [loaded] = await loadEntries(cwd, [{ id: 'use-pnpm', type: 'rule', scope: 'workspace', tags: ['node', 'package'], summary: 'Prefer pnpm.', file: 'rules/use-pnpm.md', author: 'test', confidence: 'high', ignored: false, updated: '2026-06-01' }], defaultConfig(), { forAgents: true });
+  assert.equal(loaded.flagged, undefined);
+  assert.match(loaded.content, /^---\nid: use-pnpm\ntype: rule\ntags: \[node, package\]\nconfidence: high\n---/m);
+  assert.doesNotMatch(loaded.content, /scope: workspace|created:|author:|source:/);
+  assert.match(loaded.content, /## Rule variants \(1\/3 based on current: Balanced\)/);
+  assert.match(loaded.content, /- Use pnpm\./);
+  await rm(cwd, { recursive: true, force: true });
+});
+
 test('routing filters ignored, low-confidence, and role-scoped entries safely', () => {
   const config = { ...defaultConfig(), roles: ['backend'] };
   const entries = [

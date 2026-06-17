@@ -157,6 +157,19 @@ Gemini / Antigravity 환경의 경우:
 engram link gemini
 ```
 
+세션 시작과 이후 프롬프트 턴 모두에서 컨텍스트를 주입할 수 있는 호스트를 위해 선택적 자동 로드 훅을 사용할 수 있습니다.
+```bash
+engram install-agent-hooks codex --plan
+engram install-agent-hooks codex
+engram install-agent-hooks claude
+engram install-agent-hooks gemini
+engram set-read auto
+engram set-proof compact
+```
+v1 훅 설치는 `codex`, `claude`, `gemini`로 제한됩니다. Antigravity 호환성은 현재 `gemini`를 통해 라우팅됩니다. Cursor, Copilot, Cline, Windsurf/Cascade는 훅 표면이 프롬프트 시점에 안정적인 컨텍스트 주입을 지원할 때까지 지침/스킬셋/수동 로드 방식으로 유지됩니다.
+`set-read` 주입 동작을 변경하지 않고 각 적격 턴마다 Engram 메모리가 로드, 재사용 또는 건너뛰었는지 여부를 보여주는 짧 'Engram proof:' 줄을 지원되는 훅이 추가하도록 하려면 `engram set-proof compact`를 사용하십시오.
+
+
 ### 3. 워크스페이스 초기화
 프로젝트 루트 폴더에서 실행합니다:
 ```bash
@@ -173,6 +186,11 @@ engram init
 - **작업 시작 시**：`/engram load "design pricing table component"`
 - **중요 결정사항 저장**：`/engram save knowledge "Webhook secret is process.env.STRIPE_WEBHOOK"`
 - **세션 요약 저장**：`/engram save-session` (또는 `--query-level 3`, 또는 자동 승인용 `ss -a last 50 sessions`)
+
+에이전트가 Engram 사용 방법을 물으면 `engram llm`을 실행하십시오. 패키지된 `llm.txt` AI 에이전트 가이드가 인쇄되며, `engram init` 전에 사용해도 안전합니다.
+
+AI 에이전트가 `TYPE: ... | TEXT: ...` 메모리 후보를 제안할 때, 해당 메모리가 존재하는 이유를 설명하는 데 도움이 되는 경우 선택적으로 `CONTEXT: ...`를 추가할 수 있습니다. 단순한 사실은 이를 생략하고 기본 승인 컨텍스트를 사용할 수 있습니다.
+
 
 ---
 
@@ -191,6 +209,7 @@ engram init
 | **메모리 폴더 재구성** | `engram metacognize --workspace` | `/engram restructure workspace memory accept all` |
 | **충돌 해결** | `engram resolve-conflicts --metacognize` | `/engram resolve conflicts and metacognize` |
 | **경로 구성 확인** | `engram entry` | `/engram entry` |
+| **에이전트 가이드 표시** | `engram llm` | 에이전트가 Engram 사용 안내를 필요로 할 때 한 번 실행 |
 | **프로파일 격리 관리** | `engram profile status` / `create` / `use` | `/engram profile status` |
 | **저장 대상 설정** | `engram set-save-target <workspace/global/both>` | `/engram set-save-target <target>` |
 | **로드 제한 설정** | `engram set-load-limit <1..32>` | `/engram set-load-limit <count>` |
@@ -204,6 +223,8 @@ engram init
 | **일관성 확인 및 복구** | `engram verify` / `engram repair` | `/engram verify` / `/engram repair` |
 | **모순 규칙 스캔** | `engram quality-check` | `/engram quality-check` |
 | **메모리 동기화** | `engram sync` | `/engram sync` |
+
+`engram set-role ...` 또는 `engram set-rule-variant ...`가 성공하면 Engram은 이제 `Agent action:` 줄을 반환합니다. Engram을 지원하는 어댑터와 MCP 호스트는 즉시 `engram load "<현재 작업/요청>"`을 다시 실행하고 동일한 대화에서 이전 Engram 파생 컨텍스트를 대체해야 합니다. 이는 명령이 완료된 후에 발생하며 응답 중간에 발생하지 않으며, 설치된 스킬셋 파일은 여전히 향후 또는 재로드된 대화를 제어합니다.
 
 ---
 

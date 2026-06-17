@@ -16,7 +16,15 @@
 /engram load "<현재 태스크>"
 ```
 
-에이전트는 연관된 파일 전체를 채팅창에 붙여넣는 대신, 관련 있는 메모리 ID 및 규칙 위주로 짧게 요약해 제공해야 합니다.
+에이전트는 각 파일의 내용을 전부 붙여넣는 것이 아니라 관련 메모리 식별자(ID)와 규칙만 요약해야 합니다.
+
+에이전트가 자체 포함된 Engram 사용 가이드를 필요로 할 때 다음을 실행하십시오.
+
+```bash
+engram llm
+```
+
+이 명령은 패키지된 `llm.txt` 가이드를 인쇄하며 `engram init`를 요구하지 않습니다.
 
 ## 추천 설정 대화 흐름
 
@@ -26,12 +34,18 @@
 이 워크스페이스를 위한 Engram을 초기화하고, 이 에이전트에 맞는 스킬셋(skillset)을 설치한 다음, 내가 다음에 써야 할 명령어를 알려줘.
 ```
 
-그러면 에이전트는 다음과 같이 명령어를 실행할 수 있습니다:
+그러면 에이전트는 다음을 실행할 수 있습니다.
 
 ```bash
 engram init
 engram help link
-engram link <에이전트-이름>
+engram link <에이전트명>
+```
+
+동일한 에이전트를 전역적으로 가르쳐서 새 워크스페이스가 `engram init`를 먼저 실행하지 않고도 Engram 전역 메모리를 로드할 수 있도록 하려면 다음을 실행하십시오.
+
+```bash
+engram link --global <에이전트명>
 ```
 
 채팅창에서 바로 사용하고 싶다면 이렇게 질문하십시오:
@@ -116,12 +130,15 @@ engram link <에이전트-이름>
 Use pnpm for package management.
 ```
 
-그러면 에이전트는 내부적으로 다음 명령어를 활용합니다:
+그러면 에이전트는 다음을 사용할 수 있습니다.
 
 ```bash
-engram init --global-only --global-path <path>
-engram save --scope global "Use pnpm for package management."
+engram init --global-only --global-path <경로>
+engram save --scope global "패키지 관리에 pnpm을 사용하십시오."
+engram link --global <에이전트명>
 ```
+
+init 명령어가 구성된 전역 메모리를 감지하면 해당 전역 루트에 대한 사용자 기본 프로필을 생성하거나 선택하므로 향후 워크스페이스에서 이를 재사용할 수 있습니다.
 
 ## 항상 건강하게 유지하기
 
@@ -131,14 +148,16 @@ engram save --scope global "Use pnpm for package management."
 Engram 상태를 진단하고 손상된 메모리가 있는지 점검한 뒤, 오늘 작업 중에서 보존할 만한 내용들을 추천해줘.
 ```
 
-기타 유용한 명령어 모음:
+기타 유용한 명령어:
 
 ```bash
+engram upgrade
+engram upgrade --plan
 engram verify
 engram repair
 engram graph "<주제>"
 engram quality-check
-engram archive --reason "<아카이브 사유>" <id-또는-파일명>
+engram archive --reason "<이유>" <id 또는 파일>
 ```
 
 다음 단계: [인간 소유 메모리 프로토콜](protocol.md).

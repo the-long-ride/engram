@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Engram &middot; Control Panel</title>
+<meta name="description" content="Engram memory configuration and management.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/panel.css">
+</head>
+<body>
+<div class="app">
+  <nav class="sidebar">
+    <div class="sb-logo">
+      <div class="sb-mark"><div class="sb-logo-icon"></div></div>
+      <span class="sb-name">Engram</span>
+      <span class="sb-badge" id="sb-version" title="Click to copy version" onclick="cpVersion()"></span>
+    </div>
+    <div class="sb-upgrade" id="sb-upgrade" style="display:none" onclick="cpUpgradeCmd()" title="Click to copy upgrade command">
+      <span class="sb-upgrade-title">New version available!</span>
+      <code class="sb-upgrade-cmd">npm i -g @the-long-ride/engram@latest</code>
+    </div>
+    <ul class="sb-nav" id="sb-nav">
+      <li class="nav-item active" data-tab="config"><svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="2.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.22 3.22l1.41 1.41M11.37 11.37l1.41 1.41M3.22 12.78l1.41-1.41M11.37 4.63l1.41-1.41"/></svg>Config</li>
+      <li class="nav-item" data-tab="profiles"><svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="5" r="3"/><path d="M1 14c0-3.314 3.134-6 7-6s7 2.686 7 6"/></svg>Profiles</li>
+      <li class="nav-item" data-tab="workspaces"><svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>Workspaces</li>
+      <li class="nav-item" data-tab="runtime"><svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="2,4 6,8 2,12"/><line x1="8" y1="12" x2="14" y2="12"/></svg>Runtime</li>
+    </ul>
+    <div class="sb-footer">
+      <div class="sb-theme">
+        <span>Dark Mode</span>
+        <div class="tgl on" id="theme-toggle" onclick="toggleTheme()"><div class="tgl-thumb"></div></div>
+      </div>
+      <button class="close-btn" onclick="doShutdown()">Close Server</button>
+      <div class="sb-cwd" id="sb-cwd" title="Current directory"></div>
+      <div class="sb-links">
+        <span>by <a href="https://github.com/the-long-ride" target="_blank" class="sb-link">the-long-ride</a></span>
+        <span class="sb-dot">&middot;</span>
+        <a href="https://github.com/the-long-ride/engram/issues" target="_blank" class="sb-link">Report Issue</a>
+      </div>
+    </div>
+  </nav>
+  <div class="sidebar-backdrop" onclick="toggleSidebar()"></div>
+  <div class="main" id="main">
+    <header class="mobile-hdr">
+      <button class="menu-btn" onclick="toggleSidebar()" aria-label="Toggle Menu">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="5" x2="17" y2="5"/><line x1="3" y1="10" x2="17" y2="10"/><line x1="3" y1="15" x2="17" y2="15"/></svg>
+      </button>
+      <span class="mobile-title">Engram</span>
+    </header>
+    <div id="init-banner-container" style="padding:28px 32px 0 32px;display:none">
+      <div class="init-banner">
+        <div class="init-banner-text">
+          <strong style="color:var(--amber-dk);font-size:14px">Workspace Not Initialized</strong>
+          <span style="font-size:12px;color:var(--g700);display:block;margin-top:2px">This directory is not yet configured for Engram memory routing.</span>
+        </div>
+        <button class="btn btn-primary" onclick="initWorkspace()" id="init-btn">Initialize Workspace</button>
+      </div>
+    </div>
+    <div class="tab-pane active" id="tab-config"><div class="loading">Loading&hellip;</div></div>
+    <div class="tab-pane" id="tab-profiles"><div class="loading">Loading&hellip;</div></div>
+    <div class="tab-pane" id="tab-workspaces"><div class="loading">Loading&hellip;</div></div>
+    <div class="tab-pane" id="tab-runtime"><div class="loading">Loading&hellip;</div></div>
+  </div>
+</div>
+<div id="toast"></div>
+<script src="/panel.js"></script>
+</body>
+</html>

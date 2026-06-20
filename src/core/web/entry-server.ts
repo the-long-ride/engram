@@ -84,8 +84,15 @@ async function handleRequest(req: any, res: any, cwd: string): Promise<void> {
   };
 
   if (url === '/shutdown') {
-    res.writeHead(204).end();
-    setTimeout(() => { if (activeServer) activeServer.close(); }, 200);
+    res.writeHead(204, { 'Connection': 'close' }).end();
+    setTimeout(() => {
+      if (activeServer) {
+        activeServer.close();
+        if (typeof activeServer.closeAllConnections === 'function') {
+          activeServer.closeAllConnections();
+        }
+      }
+    }, 200);
     return;
   }
 

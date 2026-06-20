@@ -12,6 +12,7 @@ test('npm publish metadata declares a package README', async () => {
   assert.ok(readme.length > 1000);
   assert.ok(manifest.files.includes('README.md'));
   assert.ok(manifest.files.includes('llm.txt'));
+  assert.ok(!manifest.files.includes('media'));
   assert.match(llm, /Engram LLM Guide/);
   assert.match(llm, /AI agents/);
   assert.equal(manifest.files.filter((file) => file === 'README.md').length, 1);

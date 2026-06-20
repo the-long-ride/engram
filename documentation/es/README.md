@@ -177,6 +177,13 @@ engram init
 ```
 *Aviso: crea la carpeta `.agents/.engram/` local, solicita la ruta de la memoria global y permite submódulos opcionales (`--submodule`) y sincronización remota.*
 
+### 4. Abrir la interfaz web del Panel de Control
+Para visualizar, buscar y configurar sus perfiles de memoria, ejecute:
+```bash
+engram entry
+```
+![Engram Control Panel](https://raw.githubusercontent.com/the-long-ride/engram/main/media/demo/demo-engram-entry.png)
+
 ---
 
 ## Guía Rápida para el Agente de IA
@@ -283,7 +290,7 @@ La documentación completa reside en `documentation/`:
 - [English](../../README.md) | [Tiếng Việt](../vi/README.md) | [Español](index.md) | [Français](../fr/README.md) | [中文](../zh/README.md) | [한국어](../ko/README.md) | [日本語](../ja/README.md) | [Русский](../ru/README.md)
 
 ## Roadmap y Proyecto Compañero
-Trabajamos en el **Sitio de documentación**, la **Integración de Web Chat AI** y la **Mejora del mapeo de comandos en lenguaje natural**. 
+Trabajamos en **Hacer que Engram sea más fácil de usar primero, luego la página de documentación**, el **Sitio de documentación**, la **Integración de Web Chat AI** y la **Mejora del mapeo de comandos en lenguaje natural**. 
 Para explorar tus carpetas Markdown visualmente, utiliza [Markdown Explorer](https://the-long-ride.github.io/markdown-explorer/).
 
 ## Licencia y Cambios

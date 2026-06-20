@@ -182,6 +182,13 @@ engram init
 ```
 *Notice: creates local `.agents/.engram/`, prompts for global memory folder path, and allows optional submodules (`--submodule`) and cloud/remote sync config.*
 
+### 4. Open Control Panel Web UI
+To visualize, search, and configure your memory profiles, run:
+```bash
+engram entry
+```
+![Engram Control Panel](https://raw.githubusercontent.com/the-long-ride/engram/main/media/demo/demo-engram-entry.png)
+
 ---
 
 ## AI-Agent Quickstart
@@ -300,7 +307,7 @@ Full documentation lives in `documentation/`:
 - [English](documentation/en/index.md) | [Tiếng Việt](documentation/vi/index.md) | [Español](documentation/es/index.md) | [Français](documentation/fr/index.md) | [中文](documentation/zh/index.md) | [한국어](documentation/ko/index.md) | [日本語](documentation/ja/index.md) | [Русский](documentation/ru/index.md)
 
 ## Roadmap & Companion Project
-We are working on **Documentation site**, **AI Web Chat Integration** and **Improving Natural Language Command Mapping**. 
+We are working on **Making Engram easier to use first, then documentation page**, **Documentation site**, **AI Web Chat Integration** and **Improving Natural Language Command Mapping**. 
 For visual Markdown vault navigation, use [Markdown Explorer](https://the-long-ride.github.io/markdown-explorer/).
 
 ## License & Changelog

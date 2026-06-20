@@ -176,6 +176,13 @@ engram init
 ```
 *Lưu ý: tạo thư mục `.agents/.engram/` cục bộ, cấu hình đường dẫn thư mục global và hỗ trợ tùy chọn submodule (`--submodule`) hoặc đồng bộ đám mây.*
 
+### 4. Mở Giao diện Web Điều khiển (Control Panel)
+Chạy lệnh sau để trực quan hóa, tìm kiếm và cấu hình các profile bộ nhớ của bạn:
+```bash
+engram entry
+```
+![Engram Control Panel](https://raw.githubusercontent.com/the-long-ride/engram/main/media/demo/demo-engram-entry.png)
+
 ---
 
 ## Bắt Đầu Nhanh Với Tác Nhân AI
@@ -290,7 +297,7 @@ Toàn bộ tài liệu nằm trong thư mục `documentation/`:
 - [English](README.md) | [Tiếng Việt](documentation/vi/index.md) | [Español](documentation/es/index.md) | [Français](documentation/fr/index.md) | [中文](documentation/zh/index.md) | [한국어](documentation/ko/index.md) | [日本語](documentation/ja/index.md) | [Русский](documentation/ru/index.md)
 
 ## Roadmap & Dự Án Đồng Hành
-Chúng tôi đang phát triển **Trang tài liệu**, **Tích hợp Web Chat AI** và **Cải thiện ánh xạ lệnh bằng ngôn ngữ tự nhiên**. 
+Chúng tôi đang phát triển **Ưu tiên làm cho Engram dễ sử dụng hơn trước, sau đó là trang tài liệu**, **Trang tài liệu**, **Tích hợp Web Chat AI** và **Cải thiện ánh xạ lệnh bằng ngôn ngữ tự nhiên**. 
 Để duyệt tệp Markdown trực quan hơn, hãy dùng [Markdown Explorer](https://the-long-ride.github.io/markdown-explorer/).
 
 ## Bản Quyền & Changelog

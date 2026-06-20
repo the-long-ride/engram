@@ -177,6 +177,13 @@ engram init
 ```
 *알림: 로컬 `.agents/.engram/` 디렉토리를 생성하고, 글로벌 메모리 경로를 설정하며, 옵션으로 서브모듈(`--submodule`) 및 원격 동기화를 활성화합니다.*
 
+### 4. 제어판 웹 UI 열기
+메모리 프로필을 시각화하고 검색하고 설정하려면 다음을 실행하십시오:
+```bash
+engram entry
+```
+![Engram Control Panel](https://raw.githubusercontent.com/the-long-ride/engram/main/media/demo/demo-engram-entry.png)
+
 ---
 
 ## AI 에이전트 퀵스타트
@@ -283,7 +290,7 @@ Hermes Agent는 하드 글자수 제한을 둔 자동화 메모리를 쓰지만,
 - [English](../../README.md) | [Tiếng Việt](../vi/README.md) | [Español](../es/README.md) | [Français](../fr/README.md) | [中文](../zh/README.md) | [한국어](index.md) | [日本語](../ja/README.md) | [Русский](../ru/README.md)
 
 ## 로드맵 및 동반 프로젝트
-우리는 현재 **문서 사이트**, **AI 웹챗 통합**, **자연어 명령 맵핑 개선** 기능을 개발하고 있습니다.
+우리는 현재 **Engram을 더 사용하기 쉽게 만드는 작업을 먼저 진행한 후 문서 페이지 개발**, **문서 사이트**, **AI 웹챗 통합**, **자연어 명령 맵핑 개선** 기능을 개발하고 있습니다.
 Markdown 보관소를 시각적으로 쉽게 탐색하고 싶다면 [Markdown Explorer](https://the-long-ride.github.io/markdown-explorer/)를 참고하십시오.
 
 ## 라이선스 및 로그

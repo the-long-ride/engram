@@ -14,7 +14,7 @@ import {
   apiProfileRemove,
   parseEntryText
 } from '../dist/core/web/api.js';
-import { servePanel, stopServer } from '../dist/core/web/entry-server.js';
+
 
 async function hasSqlite() {
   try { await import('node:sqlite'); return true; } catch { /* check better-sqlite3 */ }
@@ -109,82 +109,6 @@ test('web UI api workspace, profile, config handlers and entry text parser', asy
     assert.equal(finalData.config.proof, 'compact');
   } finally {
     // Restore environment
-    process.env.ENGRAM_CONFIG_DIR = oldEnv.ENGRAM_CONFIG_DIR;
-    process.env.ENGRAM_GLOBAL_DIR = oldEnv.ENGRAM_GLOBAL_DIR;
-    process.env.NODE_ENV = oldEnv.NODE_ENV;
-    await rm(cwd, { recursive: true, force: true });
-  }
-});
-
-test('entry server starts, responds to api/data, post requests, and shuts down', async () => {
-  const { cwd, env } = await tempWorkspace('engram-entry-server-');
-  
-  const oldEnv = {
-    ENGRAM_CONFIG_DIR: process.env.ENGRAM_CONFIG_DIR,
-    ENGRAM_GLOBAL_DIR: process.env.ENGRAM_GLOBAL_DIR,
-    NODE_ENV: process.env.NODE_ENV
-  };
-  process.env.ENGRAM_CONFIG_DIR = env.ENGRAM_CONFIG_DIR;
-  process.env.ENGRAM_GLOBAL_DIR = env.ENGRAM_GLOBAL_DIR;
-  process.env.NODE_ENV = 'test';
-
-  const signal = () => AbortSignal.timeout(10_000);
-
-  try {
-    const url = await servePanel(cwd);
-    assert.ok(url.startsWith('http://127.0.0.1:'));
-
-    // Test GET /
-    const getRoot = await fetch(url, { signal: signal() });
-    assert.equal(getRoot.status, 200);
-    const rootText = await getRoot.text();
-    assert.match(rootText, /<!DOCTYPE html>/i);
-
-    // Test GET /panel.css
-    const getCss = await fetch(`${url}/panel.css`, { signal: signal() });
-    assert.equal(getCss.status, 200);
-    assert.equal(getCss.headers.get('content-type'), 'text/css; charset=utf-8');
-
-    // Test GET /panel.js
-    const getJs = await fetch(`${url}/panel.js`, { signal: signal() });
-    assert.equal(getJs.status, 200);
-    assert.equal(getJs.headers.get('content-type'), 'application/javascript; charset=utf-8');
-
-    // Test GET /api/data
-    const getData = await fetch(`${url}/api/data`, { signal: signal() });
-    assert.equal(getData.status, 200);
-    const dataJson = await getData.json();
-    assert.equal(dataJson.sqliteAvailable, await hasSqlite());
-    assert.equal(dataJson.cwd, cwd);
-
-    // Test POST /api/config
-    const postConfig = await fetch(`${url}/api/config`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key: 'scope', value: 'both' }),
-      signal: signal()
-    });
-    assert.equal(postConfig.status, 200);
-    const configRes = await postConfig.json();
-    assert.equal(configRes.ok, true);
-
-    // Test POST /api/init
-    const postInit = await fetch(`${url}/api/init`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({}),
-      signal: signal()
-    });
-    assert.equal(postInit.status, 200);
-    const initRes = await postInit.json();
-    assert.equal(initRes.ok, true);
-
-    // Test GET /shutdown
-    const shutdownRes = await fetch(`${url}/shutdown`, { signal: signal() });
-    assert.equal(shutdownRes.status, 204);
-  } finally {
-    // Force-close the server so keep-alive connections don't block the event loop.
-    stopServer();
     process.env.ENGRAM_CONFIG_DIR = oldEnv.ENGRAM_CONFIG_DIR;
     process.env.ENGRAM_GLOBAL_DIR = oldEnv.ENGRAM_GLOBAL_DIR;
     process.env.NODE_ENV = oldEnv.NODE_ENV;

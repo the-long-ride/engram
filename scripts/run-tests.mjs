@@ -19,13 +19,13 @@ async function getTestFiles(dir) {
   return files;
 }
 
-function runTestFile(file) {
+function runAllTests(files) {
   return new Promise((resolve, reject) => {
-    console.log(`\n🏃 Running: ${path.relative(process.cwd(), file)}`);
-    const child = spawn(process.execPath, ['--test', file], { stdio: 'inherit' });
+    console.log(`🏃 Running ${files.length} test files in parallel...`);
+    const child = spawn(process.execPath, ['--test', ...files], { stdio: 'inherit' });
     child.on('close', (code) => {
       if (code === 0) resolve();
-      else reject(new Error(`Test file failed with code ${code}`));
+      else reject(new Error(`Test runner failed with exit code ${code}`));
     });
   });
 }
@@ -36,10 +36,8 @@ async function main() {
     const testFiles = await getTestFiles(rootTestDir);
     testFiles.sort();
     
-    console.log(`Found ${testFiles.length} test files to run sequentially (fail-fast enabled).`);
-    for (const file of testFiles) {
-      await runTestFile(file);
-    }
+    console.log(`Found ${testFiles.length} test files. Running in parallel...`);
+    await runAllTests(testFiles);
     console.log('\n✅ All tests passed successfully!');
   } catch (error) {
     console.error(`\n❌ ${error.message}`);

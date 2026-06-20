@@ -224,6 +224,9 @@ When an AI agent proposes `TYPE: ... | TEXT: ...` memory candidates, it may add 
 | **Install Agent Hooks** | `engram install-agent-hooks codex|claude|gemini` | Run once from terminal |
 | **Update Global Path** | `engram update-global-folder <new-path>` | `/engram set global memory path to <new-path>` |
 | **Clone Memory** | `engram clone-memory <src> <dest>` | `/engram clone workspace memory to global` |
+| **Manage Workspaces** | `engram workspace list|info|set|unregister|link|unlink` | `/engram workspace list` |
+| **View/Set Config** | `engram config view|set` | `/engram config set <key> <value>` |
+| **Launch Config Panel** | `engram panel` | `/engram panel` |
 | **Set Active Roles** | `engram set-role <roles>` | `/engram set-role <roles>` |
 | **Set Rule Strictness** | `engram set-rule-variant <variant>` | `/engram set-rule-variant <variant>` |
 | **Verify & Repair** | `engram verify` / `engram repair` | `/engram verify` / `/engram repair` |

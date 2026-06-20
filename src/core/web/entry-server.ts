@@ -173,8 +173,20 @@ export async function servePanel(cwd: string): Promise<string> {
   });
 }
 
+/** Force-close the active server and all open connections. Safe to call even when no server is running. */
+export function stopServer(): void {
+  if (activeServer) {
+    if (typeof activeServer.closeAllConnections === 'function') {
+      activeServer.closeAllConnections();
+    }
+    activeServer.close();
+    activeServer = null;
+  }
+}
+
 export async function launchEntryUi(cwd: string): Promise<string> {
   const url = await servePanel(cwd);
   openBrowser(url);
   return 'engram: Control panel at ' + url + '\n(Click "Close Server" in the browser or press Ctrl+C to stop)';
 }
+

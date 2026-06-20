@@ -4,6 +4,12 @@ import { rm, writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { tempWorkspace, runEngram } from '../helpers.mjs';
 
+async function hasSqlite() {
+  try { await import('node:sqlite'); return true; } catch { /* check better-sqlite3 */ }
+  try { await import('better-sqlite3'); return true; } catch { return false; }
+}
+
+
 test('migration dry-run reports counts from JSON configs', async () => {
   const { cwd, env } = await tempWorkspace('engram-migrate-');
   const configDir = path.join(env.ENGRAM_CONFIG_DIR);
@@ -64,7 +70,8 @@ test('migration force writes to DB', async () => {
   const force = await runEngram(cwd, { ...env }, ['upgrade', '--db-migrate', '--force']);
   assert.equal(force.code, 0, force.stderr);
   assert.match(force.stdout, /Migration applied/);
-  assert.match(force.stdout, /Profiles migrated: 1/);
+  const sqliteAvailable = await hasSqlite();
+  assert.match(force.stdout, new RegExp(`Profiles migrated: ${sqliteAvailable ? 1 : 0}`));
 
   // Running again idempotently.
   const force2 = await runEngram(cwd, { ...env }, ['upgrade', '--db-migrate', '--force']);

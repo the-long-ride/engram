@@ -16,6 +16,12 @@ import {
 } from '../dist/core/web/api.js';
 import { servePanel } from '../dist/core/web/entry-server.js';
 
+async function hasSqlite() {
+  try { await import('node:sqlite'); return true; } catch { /* check better-sqlite3 */ }
+  try { await import('better-sqlite3'); return true; } catch { return false; }
+}
+
+
 test('web UI api workspace, profile, config handlers and entry text parser', async () => {
   const { cwd, env } = await tempWorkspace('engram-web-api-');
   
@@ -46,7 +52,7 @@ test('web UI api workspace, profile, config handlers and entry text parser', asy
 
     // 2. loadPanelData on empty/uninitialized workspace
     const initialData = await loadPanelData(cwd, entryText);
-    assert.equal(initialData.sqliteAvailable, true);
+    assert.equal(initialData.sqliteAvailable, await hasSqlite());
     assert.equal(initialData.isInitialized, false);
     assert.equal(initialData.cwd, cwd);
 
@@ -121,7 +127,7 @@ test('entry server starts, responds to api/data, post requests, and shuts down',
 
   try {
     const url = await servePanel(cwd);
-    assert.ok(url.startsWith('http://localhost:'));
+    assert.ok(url.startsWith('http://127.0.0.1:'));
 
     // Test GET /
     const getRoot = await fetch(url);
@@ -143,7 +149,7 @@ test('entry server starts, responds to api/data, post requests, and shuts down',
     const getData = await fetch(`${url}/api/data`);
     assert.equal(getData.status, 200);
     const dataJson = await getData.json();
-    assert.equal(dataJson.sqliteAvailable, true);
+    assert.equal(dataJson.sqliteAvailable, await hasSqlite());
     assert.equal(dataJson.cwd, cwd);
 
     // Test POST /api/config

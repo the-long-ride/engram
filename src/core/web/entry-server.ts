@@ -35,7 +35,7 @@ function isPortFree(port: number): Promise<boolean> {
     const srv = net.createServer();
     srv.once('error', () => resolve(false));
     srv.once('listening', () => srv.close(() => resolve(true)));
-    srv.listen(port, 'localhost');
+    srv.listen(port, '127.0.0.1');
   });
 }
 
@@ -168,7 +168,7 @@ export async function servePanel(cwd: string): Promise<string> {
       }
     });
     activeServer = srv;
-    srv.listen(port, 'localhost', () => resolve('http://localhost:' + port));
+    srv.listen(port, '127.0.0.1', () => resolve('http://127.0.0.1:' + port));
     srv.on('error', reject);
   });
 }

@@ -1,3 +1,4 @@
+/** Sequential fail-fast test runner for the test suite. */
 import { spawn } from 'node:child_process';
 import { readdir } from 'node:fs/promises';
 import path from 'node:path';

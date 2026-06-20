@@ -58,22 +58,22 @@ export async function openConfigDb(): Promise<ConfigDb | undefined> {
   const file = dbPath();
   await ensureDir(path.dirname(file));
   // Try node:sqlite first (Node >=22.5 built-in), then better-sqlite3.
-  const nodeSqlite = await dynamicImport('node:sqlite');
+  const nodeSqlite = await dynamicImport('node:sqlite').catch(() => undefined);
   if (nodeSqlite?.DatabaseSync) {
     const db = new nodeSqlite.DatabaseSync(file, { allowExtension: true });
     // Load sqlite-vec if available (harmless if not needed for config DB).
     try {
-      const sqliteVec = await dynamicImport('sqlite-vec');
+      const sqliteVec = await dynamicImport('sqlite-vec').catch(() => undefined);
       if (sqliteVec?.load) sqliteVec.load(db);
     } catch { /* sqlite-vec optional for config */ }
     return { db, close: () => tryClose(db) };
   }
-  const betterSqlite = await dynamicImport('better-sqlite3');
+  const betterSqlite = await dynamicImport('better-sqlite3').catch(() => undefined);
   const Database = betterSqlite?.default ?? betterSqlite;
   if (Database) {
     const db = new Database(file);
     try {
-      const sqliteVec = await dynamicImport('sqlite-vec');
+      const sqliteVec = await dynamicImport('sqlite-vec').catch(() => undefined);
       if (sqliteVec?.load) sqliteVec.load(db);
     } catch { /* optional */ }
     return { db, close: () => tryClose(db) };

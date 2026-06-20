@@ -53,7 +53,7 @@
     "generate:version": "node scripts/generate-version.mjs",
     "build": "npm run generate:version && tsc && node scripts/copy-assets.mjs",
     "typecheck": "npm run generate:version && tsc --noEmit",
-    "test": "npm run build && node --test tests/*.test.mjs tests/cli/*.test.mjs",
+    "test": "npm run build && node scripts/run-tests.mjs",
     "test:core": "npm run build && node --test tests/core.test.mjs tests/safety.test.mjs",
     "test:cli": "npm run build && node --test tests/cli/*.test.mjs",
     "test:mcp": "npm run build && node --test tests/mcp.test.mjs",

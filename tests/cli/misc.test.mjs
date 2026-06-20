@@ -7,7 +7,8 @@ import { testMemory, duplicateFixtureMemory } from './fixtures.mjs';
 
 test('short command aliases dispatch to canonical commands', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
-  assert.equal((await runEngram(cwd, env, ['i'])).code, 0);
+  const initResult = await runEngram(cwd, env, ['i']);
+  assert.equal(initResult.code, 0, `Command 'i' failed. stdout: ${initResult.stdout}, stderr: ${initResult.stderr}`);
   const saved = await runEngram(cwd, env, ['s', 'rule', '--scope', 'workspace', 'Alias save rule'], 'A\n');
   assert.equal(saved.code, 0, saved.stderr);
   const shortcutSaved = await runEngram(cwd, env, ['ss', '-a', '--scope', 'workspace', 'TYPE: knowledge | TEXT: Alias ss accepts all save-session candidates.']);

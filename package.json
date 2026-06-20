@@ -58,7 +58,7 @@
     "test:cli": "npm run build && node --test tests/cli/*.test.mjs",
     "test:mcp": "npm run build && node --test tests/mcp.test.mjs",
     "test:package": "npm run build && node --test tests/publish/*.test.mjs",
-    "coverage": "npm run generate:version && tsc --sourceMap false && node --experimental-test-coverage --test tests/*.test.mjs tests/cli/*.test.mjs",
+    "coverage": "npm run generate:version && tsc --sourceMap false && node --experimental-test-coverage --test tests/core.test.mjs tests/safety.test.mjs tests/conflict.test.mjs tests/init-migration.test.mjs tests/mcp.test.mjs tests/skillset.test.mjs tests/tamper.test.mjs tests/web-api.test.mjs tests/publish/*.test.mjs tests/cli/*.test.mjs",
     "debug:cli": "npm run build && node --inspect-brk dist/bin/engram.js",
     "lint:lines": "node scripts/check-lines.mjs",
     "pack:dry-run": "npm pack --dry-run --ignore-scripts",

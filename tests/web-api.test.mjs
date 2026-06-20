@@ -74,30 +74,33 @@ test('web UI api workspace, profile, config handlers and entry text parser', asy
       /unknown config key/
     );
 
-    // 5. Workspace operations
-    const wsPath = path.join(cwd, 'another-workspace');
-    const wsAdd = await apiWorkspaceAdd(wsPath, 'another');
-    assert.match(wsAdd, /Registered/);
+    // 5. Workspace operations (require SQLite — skip when unavailable)
+    const sqliteOk = await hasSqlite();
+    if (sqliteOk) {
+      const wsPath = path.join(cwd, 'another-workspace');
+      const wsAdd = await apiWorkspaceAdd(wsPath, 'another');
+      assert.match(wsAdd, /Registered/);
 
-    const wsLink = await apiWorkspaceLink(wsPath, true);
-    assert.match(wsLink, /Linked/);
+      const wsLink = await apiWorkspaceLink(wsPath, true);
+      assert.match(wsLink, /Linked/);
 
-    const wsUnlink = await apiWorkspaceLink(wsPath, false);
-    assert.match(wsUnlink, /Unlinked/);
+      const wsUnlink = await apiWorkspaceLink(wsPath, false);
+      assert.match(wsUnlink, /Unlinked/);
 
-    const wsRemove = await apiWorkspaceRemove(wsPath);
-    assert.match(wsRemove, /Removed/);
+      const wsRemove = await apiWorkspaceRemove(wsPath);
+      assert.match(wsRemove, /Removed/);
 
-    // 6. Profile operations
-    const profilePath = path.join(cwd, 'another-profile');
-    const profileAdd = await apiProfileAdd('another', profilePath, 'global');
-    assert.match(profileAdd, /Profile saved/);
+      // 6. Profile operations (also require SQLite)
+      const profilePath = path.join(cwd, 'another-profile');
+      const profileAdd = await apiProfileAdd('another', profilePath, 'global');
+      assert.match(profileAdd, /Profile saved/);
 
-    const profileActivate = await apiProfileActivate('another');
-    assert.match(profileActivate, /Active profile/);
+      const profileActivate = await apiProfileActivate('another');
+      assert.match(profileActivate, /Active profile/);
 
-    const profileRemove = await apiProfileRemove('another');
-    assert.match(profileRemove, /Profile deleted/);
+      const profileRemove = await apiProfileRemove('another');
+      assert.match(profileRemove, /Profile deleted/);
+    }
 
     // 7. Verify config values after set
     const finalData = await loadPanelData(cwd, entryText);

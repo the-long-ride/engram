@@ -14,6 +14,8 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
   const loadLimits = ['status', 'reset', '8', '12', '16', '24', '32'].join(' ');
   const profileActions = ['status', 'list', 'create', 'use', 'remove', 'merge'].join(' ');
   const ignoreActions = ['status', 'check', 'add'].join(' ');
+  const workspaceActions = ['list', 'info', 'set', 'unregister', 'link', 'unlink'].join(' ');
+  const configActions = ['view', 'set'].join(' ');
   const saveSessionArgs = ['--file', '--scope', '--profile', '--role', '--roles', '--query-level', '--accept-all', '--show-rule-variants'].join(' ');
   const observeArgs = ['--file', '--scope', '--profile', '--role', '--roles', '--propose', '--accept-all'].join(' ');
   const takeControlArgs = ['--file', '--dir', '--include', '--exclude', '--max-sources', '--max-chars', '--scope', '--profile', '--role', '--roles', '--all', '--accept-all', '--metacognize', '--dry-run', '--plan'].join(' ');
@@ -108,6 +110,12 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
     '    clone-memory|cm)',
       '      _arguments "--force[overwrite existing destination files]" "--dry-run[preview clone or proposal plan]" "--metacognize[route clone candidates through save-session approval]" "--accept-all[accept every metacognize candidate when human requested]" "1:source:(workspace global)" "2:target:(workspace global)"',
       '      ;;',
+      '    workspace|ws)',
+      `      _arguments "1:action:(${workspaceActions})"`,
+      '      ;;',
+      '    config|cfg)',
+      `      _arguments "1:action:(${configActions})"`,
+      '      ;;',
       '    upgrade|up)',
       `      _arguments "--plan" "--latest" "--self" "--memory-only" "--global-skillsets-only" "--target=[agent]:agent:(${skillsetTargets})" "--force" "--no-version-check"`,
       '      ;;',
@@ -132,6 +140,8 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       `$engramGlobalFolderArgs = @(${globalFolderArgs.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
       `$engramCloneMemoryArgs = @(${cloneMemoryArgs.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
       `$engramProfileActions = @(${profileActions.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
+      `$engramWorkspaceActions = @(${workspaceActions.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
+      `$engramConfigActions = @(${configActions.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
       `$engramSkillsetTargets = @(${skillsetTargets.split(' ').map((target) => `'${target}'`).join(', ')})`,
       `$engramAgentHookTargets = @(${agentHookTargets.split(' ').map((target) => `'${target}'`).join(', ')})`,
       '$engramScopes = @(\'workspace\', \'global\', \'both\')',
@@ -182,6 +192,8 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '        { $_ -in @(\'install-agent-hooks\', \'iah\') } { $engramAgentHookTargets + \'--global\' + \'--plan\' + \'--force\'; break }',
       '        { $_ -in @(\'uninstall-agent-hooks\', \'uah\') } { $engramAgentHookTargets + \'--global\'; break }',
       '        { $_ -eq \'agent-hook\' } { @(\'--host\'); break }',
+      '        { $_ -in @(\'workspace\', \'ws\') } { $engramWorkspaceActions; break }',
+      '        { $_ -in @(\'config\', \'cfg\') } { $engramConfigActions; break }',
       '        { $_ -in @(\'verify\', \'vf\', \'rebuild-index\', \'ri\', \'repair\', \'rp\') } { $engramScopes; break }',
       '        default { $engramCommands }',
       '      }',
@@ -216,6 +228,8 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
     `  local load_limits="${loadLimits}"`,
     `  local profile_actions="${profileActions}"`,
     `  local ignore_actions="${ignoreActions}"`,
+    `  local workspace_actions="${workspaceActions}"`,
+    `  local config_actions="${configActions}"`,
     `  local upgrade_args="${upgradeArgs}"`,
     `  local metacognize_args="${metacognizeArgs}"`,
     `  local resolve_conflict_args="${resolveConflictArgs}"`,
@@ -391,6 +405,16 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
     '      ;;',
     '    upgrade|up)',
     '      COMPREPLY=( $(compgen -W "$upgrade_args" -- "$cur") )',
+    '      return',
+    '      ;;',
+    '    workspace|ws)',
+    `      if [[ $cword -eq 2 ]]; then COMPREPLY=( $(compgen -W "${workspaceActions}" -- "$cur") ); return; fi`,
+    '      COMPREPLY=()',
+    '      return',
+    '      ;;',
+    '    config|cfg)',
+    `      if [[ $cword -eq 2 ]]; then COMPREPLY=( $(compgen -W "${configActions}" -- "$cur") ); return; fi`,
+    '      COMPREPLY=()',
     '      return',
     '      ;;',
     '  esac',

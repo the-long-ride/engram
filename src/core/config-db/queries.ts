@@ -125,6 +125,7 @@ export function getActiveProfile(db: any): ProfileRow | undefined {
 const ALLOWED_KEYS = new Set([
   'scope', 'read', 'proof', 'enabled',
   'roles', 'version', 'default_profile',
+  'theme',
   'load.limit',
   'graph.enabled', 'graph.max_related', 'graph.min_related_score',
   'vector.enabled', 'vector.provider', 'vector.auto_threshold', 'vector.candidate_pool', 'vector.dimensions',
@@ -153,6 +154,7 @@ export function flattenConfig(config: EngramConfig): Record<string, string> {
   out['default_profile'] = config.default_profile ?? '';
   out['roles'] = JSON.stringify(config.roles);
   out['global_path'] = config.global_path;
+  out['theme'] = config.theme ?? 'dark';
   out['load.limit'] = String(config.load.limit);
   out['graph.enabled'] = String(config.graph.enabled);
   out['graph.max_related'] = String(config.graph.max_related);
@@ -196,6 +198,7 @@ export function unflattenConfig(kv: Record<string, string>): Partial<EngramConfi
       case 'default_profile': out.default_profile = value || undefined; break;
       case 'roles': try { out.roles = JSON.parse(value); } catch { out.roles = d.roles; } break;
       case 'global_path': out.global_path = value; break;
+      case 'theme': out.theme = ['light', 'dark'].includes(value) ? value as any : d.theme; break;
       case 'load.limit': out.load = { ...(out.load ?? {}), limit: intOr(value, d.load.limit) }; break;
       case 'graph.enabled': out.graph = { ...(out.graph ?? {}), enabled: value === 'true' }; break;
       case 'graph.max_related': out.graph = { ...(out.graph ?? {}), max_related: intOr(value, d.graph.max_related) }; break;

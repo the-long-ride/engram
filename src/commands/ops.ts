@@ -7,7 +7,7 @@ import { assertFormat, exportBundle, renderFormat, writeSyncTarget } from '../co
 import { readJson, readText } from '../core/system/fsx.js';
 import { resolveAuthor, syncGlobalMemoryGit, writeApprovedMemory } from '../core/memory/storage.js';
 import { applyApprovalEdit, requestApproval } from '../core/safety/approval.js';
-import { renderEntry } from '../core/runtime/entry.js';
+import { launchEntryUi } from '../core/web/entry-server.js';
 import { route, visibleEntries } from '../core/memory/routing.js';
 import { vectorRouteHits } from '../core/memory/vector-db.js';
 import { readGuardedMemory } from '../core/safety/safe-read.js';
@@ -235,9 +235,9 @@ export async function cmdStats(): Promise<string> {
   return stats(visibleEntries(ctx.index.entries, ctx.config, false, ctx.ignorePatterns));
 }
 
-/** Print resolved flags and global Git state. */
+/** Open the Engram control panel web UI in the default browser. */
 export async function cmdEntry(): Promise<string> {
-  return renderEntry(process.cwd());
+  return launchEntryUi(process.cwd());
 }
 
 /** Render live-sync targets once. */

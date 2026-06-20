@@ -35,6 +35,7 @@ export type AutoUpgradeState = {
 export type EngramConfig = {
   version: string;
   enabled: boolean;
+  theme?: 'light' | 'dark';
   global_path: string;
   default_profile?: string;
   scope: 'both' | Scope;

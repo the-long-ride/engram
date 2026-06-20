@@ -5,9 +5,142 @@ import { ENGRAM_DIR, LEGACY_ENGRAM_DIR, VERSION } from './constants.js';
 import type { EngramConfig, EngramProfile, ProfileResolution, ProfileStore, ProfileSource, Scope } from './types.js';
 import { DEFAULT_LOAD_LIMIT } from './load-limit.js';
 import { exists, readJson, writeJson } from '../system/fsx.js';
+import { openConfigDb, ensureSchema } from '../config-db/schema.js';
 
 const PROFILE_STORE_FILE = 'profiles.json';
 const PROFILE_RESOLUTION = '__engram_profile_resolution';
+
+async function importQueries(): Promise<any> {
+  const url = new URL('../config-db/queries.js', import.meta.url).href;
+  return import(url);
+}
+
+/** Load EngramConfig from SQLite DB (DB-first). Returns undefined when DB unavailable or empty → fall through to JSON. */
+export async function configFromDb(cwd: string, options: { profile?: string } = {}): Promise<EngramConfig | undefined> {
+  const dbh = await openConfigDb();
+  if (!dbh) return undefined;
+  try {
+    ensureSchema(dbh.db);
+    const q = await importQueries();
+
+    // Layer 1: user_config (lowest priority)
+    const userKv = q.getUserConfig(dbh.db);
+    const profileRows = q.listProfiles(dbh.db);
+    const ws = q.getWorkspaceByPath(dbh.db, cwd);
+    const wsKv = ws ? q.getWorkspaceConfig(dbh.db, ws.id) : {};
+
+    // Nothing in DB → return undefined so JSON fallback kicks in
+    if (Object.keys(userKv).length === 0 && profileRows.length === 0 && Object.keys(wsKv).length === 0) {
+      return undefined;
+    }
+
+    const loaded = defaultConfig();
+
+    if (Object.keys(userKv).length > 0) {
+      const partial = q.unflattenConfig(userKv);
+      mergeConfigInto(loaded, partial);
+    }
+
+    // Layer 2: active profile (middle priority)
+    const activeProfile = q.getActiveProfile(dbh.db);
+    const explicitProfile = options.profile?.trim() || process.env.ENGRAM_PROFILE?.trim();
+    if (explicitProfile) {
+      const profile = q.getProfile(dbh.db, explicitProfile);
+      if (profile) {
+        loaded.global_path = profile.global_path;
+        if (profile.scope && ['workspace', 'global', 'both'].includes(profile.scope)) {
+          loaded.scope = profile.scope as EngramConfig['scope'];
+        }
+      }
+    } else if (activeProfile) {
+      loaded.global_path = activeProfile.global_path;
+      if (activeProfile.scope && ['workspace', 'global', 'both'].includes(activeProfile.scope)) {
+        loaded.scope = activeProfile.scope as EngramConfig['scope'];
+      }
+    }
+
+    // Layer 3: workspace_config (highest priority)
+    if (Object.keys(wsKv).length > 0) {
+      const wsPartial = q.unflattenConfig(wsKv);
+      delete wsPartial.theme;
+      // Profile global_path still wins over workspace DB config.
+      const profileGlobalPath = (explicitProfile || activeProfile) ? loaded.global_path : undefined;
+      mergeConfigInto(loaded, wsPartial);
+      if (profileGlobalPath) loaded.global_path = profileGlobalPath;
+    }
+
+    // JSON overlay fills gaps only — DB keys already set win over JSON for the same key.
+    // Profile global_path still wins over workspace JSON.
+    const dbKeys = new Set([
+      ...Object.keys(userKv).map((k) => k.trim().toLowerCase()),
+      ...Object.keys(wsKv).map((k) => k.trim().toLowerCase())
+    ]);
+    const workspaceJson = await readJson<Partial<EngramConfig>>(path.join(workspaceRoot(cwd), 'engram.config.json'), {});
+    const legacyJson = await readJson<Partial<EngramConfig>>(path.join(cwd, LEGACY_ENGRAM_DIR, 'engram.config.json'), {});
+    const hasActiveProfile = Boolean(activeProfile || explicitProfile);
+    if (Object.keys(workspaceJson).length > 0) {
+      const gapFiller = jsonGapFiller(workspaceJson, dbKeys);
+      if (hasActiveProfile) delete gapFiller.global_path; // profile global_path wins
+      mergeConfigInto(loaded, gapFiller);
+    }
+    if (Object.keys(legacyJson).length > 0) {
+      const gapFiller = jsonGapFiller(legacyJson, dbKeys);
+      if (hasActiveProfile) delete gapFiller.global_path;
+      mergeConfigInto(loaded, gapFiller);
+    }
+
+    // Resolve global_path from env override if profile not active
+    const envGlobal = process.env.ENGRAM_GLOBAL_DIR?.trim();
+    if (envGlobal && !activeProfile && !explicitProfile) {
+      loaded.global_path = envGlobal;
+    }
+
+    return loaded;
+  } finally {
+    dbh.close();
+  }
+}
+
+/** Return only keys from a JSON partial that are NOT already set in the DB. Nested keys are checked as "parent.child" dotted form. */
+function jsonGapFiller(json: Partial<EngramConfig>, dbKeys: Set<string>): Partial<EngramConfig> {
+  const out: Record<string, any> = {};
+  for (const [key, value] of Object.entries(json)) {
+    if (value === undefined || value === null) continue;
+    if (typeof value === 'object' && !Array.isArray(value)) {
+      const filtered: Record<string, any> = {};
+      for (const [subKey, subValue] of Object.entries(value as Record<string, any>)) {
+        if (!dbKeys.has(`${key}.${subKey}`)) filtered[subKey] = subValue;
+      }
+      if (Object.keys(filtered).length > 0) out[key] = filtered;
+    } else {
+      if (!dbKeys.has(key)) out[key] = value;
+    }
+  }
+  return out as Partial<EngramConfig>;
+}
+
+/** Mutate base with partial using the same merge logic as mergeConfig. */
+function mergeConfigInto(base: EngramConfig, partial: Partial<EngramConfig>): void {
+  if (typeof partial.global_path === 'string' && partial.global_path) base.global_path = partial.global_path;
+  if (typeof partial.scope === 'string') base.scope = partial.scope;
+  if (typeof partial.read === 'string') base.read = partial.read;
+  if (typeof partial.proof === 'string') base.proof = partial.proof;
+  if (typeof partial.enabled === 'boolean') base.enabled = partial.enabled;
+  if (typeof partial.version === 'string') base.version = partial.version;
+  if (typeof partial.default_profile === 'string') base.default_profile = partial.default_profile;
+  if (typeof partial.theme === 'string') base.theme = partial.theme as any;
+  if (partial.roles) base.roles = partial.roles;
+  if (partial.ignore) Object.assign(base.ignore, partial.ignore);
+  if (partial.live_sync) Object.assign(base.live_sync, partial.live_sync);
+  if (partial.global_git) Object.assign(base.global_git, partial.global_git);
+  if (partial.rule_variants) Object.assign(base.rule_variants, partial.rule_variants);
+  if (partial.load) Object.assign(base.load, partial.load);
+  if (partial.graph) Object.assign(base.graph, partial.graph);
+  if (partial.vector) Object.assign(base.vector, partial.vector);
+  if (partial.pattern_mining) Object.assign(base.pattern_mining, partial.pattern_mining);
+  if (partial.pr_workflow) Object.assign(base.pr_workflow, partial.pr_workflow);
+  if (partial.encryption) Object.assign(base.encryption, partial.encryption);
+}
 
 /** Return the OS-specific default global memory path. */
 export function defaultGlobalPath(): string {
@@ -35,6 +168,7 @@ export function defaultConfig(): EngramConfig {
   return {
     version: VERSION,
     enabled: true,
+    theme: 'dark',
     global_path: '',
     scope: 'both',
     update: 'auto',
@@ -71,13 +205,24 @@ export function scopeRootsForConfig(cwd: string, config: EngramConfig): Record<S
   return { workspace: workspaceRoot(cwd), global: resolveGlobalRoot(config.global_path, { ignoreEnv: Boolean(profile.active) }) };
 }
 
-/** Load workspace config with default fallback. */
+/** Load workspace config (DB-first with JSON fallback). */
 export async function loadConfig(cwd = process.cwd(), options: { profile?: string } = {}): Promise<EngramConfig> {
+  // Try DB first
+  const dbConfig = await configFromDb(cwd, options);
+  if (dbConfig) {
+    const profile = await resolveProfile(cwd, options.profile);
+    attachProfileResolution(dbConfig, profile);
+    return dbConfig;
+  }
+
+  // JSON fallback — existing logic unchanged
   const roots = scopeRoots(cwd);
   const file = path.join(roots.workspace, 'engram.config.json');
   const legacyFile = path.join(cwd, LEGACY_ENGRAM_DIR, 'engram.config.json');
   const workspace = await readJson<Partial<EngramConfig>>(file, {});
+  delete workspace.theme;
   const legacy = await readJson<Partial<EngramConfig>>(legacyFile, {});
+  delete legacy.theme;
   const user = await readJson<Partial<EngramConfig>>(userConfigPath(), {});
   const profile = await resolveProfileForConfigs(cwd, workspace, legacy, user, options.profile);
   const globalPath = profile.active
@@ -113,30 +258,69 @@ export function mergeConfig(base: EngramConfig, found: Partial<EngramConfig>): E
   };
 }
 
-/** Persist global-only settings outside any workspace. */
+/** Persist global-only settings outside any workspace (DB-first, JSON snapshot). */
 export async function writeUserConfig(update: Partial<EngramConfig>): Promise<string> {
   const file = userConfigPath();
   const current = await readJson<Partial<EngramConfig>>(file, {});
   const merged = persistedConfig(mergeConfig(mergeConfig(defaultConfig(), current), update), current);
+
+  // Write to DB first
+  const dbh = await openConfigDb();
+  if (dbh) {
+    try {
+      ensureSchema(dbh.db);
+      const q = await importQueries();
+      q.setUserConfig(dbh.db, q.flattenConfig(merged));
+    } finally {
+      dbh.close();
+    }
+  }
+
+  // Always export JSON snapshot for backward compat
   await writeJson(file, merged);
   return file;
 }
 
-/** Persist runtime config to the active workspace, or to user config for global-only sessions. */
+/** Persist runtime config to the active workspace, or to user config for global-only sessions (DB-first, JSON snapshot). */
 export async function writeConfig(cwd: string, config: EngramConfig): Promise<string> {
   const file = path.join(workspaceRoot(cwd), 'engram.config.json');
   const root = workspaceRoot(cwd);
   const profile = profileResolutionForConfig(config);
-  if (await exists(file) || await exists(root) || config.scope !== 'global') {
+
+  // Determine if workspace write or user-config write
+  const isWorkspace = await exists(file) || await exists(root) || config.scope !== 'global';
+
+  // Write to DB first
+  const dbh = await openConfigDb();
+  if (dbh) {
+    try {
+      ensureSchema(dbh.db);
+      const q = await importQueries();
+      if (isWorkspace) {
+        // Auto-register workspace in DB
+        const ws = q.upsertWorkspace(dbh.db, cwd, path.basename(cwd));
+        q.setWorkspaceConfig(dbh.db, ws.id, q.flattenConfig(config));
+      } else {
+        q.setUserConfig(dbh.db, q.flattenConfig(config));
+      }
+    } finally {
+      dbh.close();
+    }
+  }
+
+  // Always export JSON snapshot for backward compat
+  if (isWorkspace) {
     const current = await readJson<Partial<EngramConfig>>(file, {});
-    await writeJson(file, persistedConfig(config, current, profile));
+    const persisted = persistedConfig(config, current, profile);
+    delete persisted.theme;
+    await writeJson(file, persisted);
     return file;
   }
   const current = await readJson<Partial<EngramConfig>>(userConfigPath(), {});
   return writeUserConfig(persistedConfig(config, current, profile));
 }
 
-/** Read the user-level profile registry. */
+/** Read the user-level profile registry (JSON only for source of truth). */
 export async function readProfileStore(): Promise<ProfileStore> {
   const found = await readJson<Partial<ProfileStore>>(userProfilesPath(), {});
   return {
@@ -145,8 +329,23 @@ export async function readProfileStore(): Promise<ProfileStore> {
   };
 }
 
-/** Persist the full user-level profile registry. */
+/** Persist the full user-level profile registry (DB-first, JSON snapshot). */
 export async function writeProfileStore(store: ProfileStore): Promise<string> {
+  // Write to DB first
+  const dbh = await openConfigDb();
+  if (dbh) {
+    try {
+      ensureSchema(dbh.db);
+      const q = await importQueries();
+      for (const [name, profile] of Object.entries(store.profiles)) {
+        q.upsertProfile(dbh.db, name, profile.global_path, profile.scope ?? 'global');
+      }
+      if (store.active_profile) q.setActiveProfile(dbh.db, store.active_profile);
+    } finally {
+      dbh.close();
+    }
+  }
+  // Always export JSON snapshot for backward compat
   await writeJson(userProfilesPath(), {
     active_profile: store.active_profile || undefined,
     profiles: store.profiles

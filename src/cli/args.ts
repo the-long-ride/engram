@@ -18,6 +18,12 @@ const repeatableFlags = new Set(['dir', 'exclude', 'file', 'include']);
 const recentSessionWords = new Set(['session', 'sessions', 'chat', 'chats', 'conversation', 'conversations']);
 const recentSessionPrefixes = new Set(['last', 'latest', 'past', 'previous', 'recent']);
 const cloneMemoryVerbs = new Set(['clone', 'copy']);
+const configVerbs = new Set(['config', 'configuration', 'setting', 'settings']);
+const configViewVerbs = new Set(['show', 'view', 'display', 'get', 'inspect']);
+const configSetVerbs = new Set(['set', 'change', 'update']);
+const workspaceVerbs = new Set(['workspace', 'workspaces', 'repo', 'repos', 'project', 'projects']);
+const workspaceViewVerbs = new Set(['list', 'show', 'view', 'display']);
+const workspaceActionFillers = new Set(['the', 'my', 'this', 'current']);
 const metacognizeVerbs = new Set(['metacognize', 'metacognition', 'restructure', 'reorganize', 'organize']);
 const metacognizeOptionCommands = new Set([...cloneMemoryCommands, ...takeControlCommands, ...resolveConflictCommands]);
 const metacognizeOptionWords = new Set(['metacognize', 'metacognition', 'restructure', 'reorganize', 'organize']);
@@ -111,7 +117,9 @@ function normalizeNaturalArgs(argv: string[]): string[] {
   const resolveConflictArgs = normalizeNaturalResolveConflicts(globalFolderArgs);
   const takeControlArgs = normalizeNaturalTakeControl(resolveConflictArgs);
   const optionArgs = normalizeNaturalCommandOptions(takeControlArgs);
-  return normalizeSaveSessionQueryLevel(normalizeAcceptAll(normalizeInstallSkillset(optionArgs)));
+  const configArgs = normalizeNaturalConfig(optionArgs);
+  const workspaceArgs = normalizeNaturalWorkspace(configArgs);
+  return normalizeSaveSessionQueryLevel(normalizeAcceptAll(normalizeInstallSkillset(workspaceArgs)));
 }
 
 function normalizeInstallSkillset(argv: string[]): string[] {
@@ -274,6 +282,34 @@ function normalizeNaturalGlobalFolderMove(tokens: string[]): string[] | undefine
   const source = trimPathWords(tokens.slice(fromIndex + 1, toIndex));
   const target = trimPathWords(tokens.slice(toIndex + 1));
   return source && target ? ['update-global-folder', target, '--move-from-path', source] : undefined;
+}
+
+function normalizeNaturalWorkspace(argv: string[]): string[] {
+  const [verb = '', ...tokens] = argv;
+  if (!workspaceVerbs.has(verb.toLowerCase())) return argv;
+  const actionTokens = tokens.filter((t) => !t.startsWith('-')).filter((t) => !workspaceActionFillers.has(t.toLowerCase()));
+  const flags = tokens.filter((t) => t.startsWith('-'));
+  if (actionTokens.length === 0) return ['workspace', 'list', ...flags];
+  const first = actionTokens[0]?.toLowerCase();
+  if (workspaceViewVerbs.has(first)) return ['workspace', 'list', ...flags];
+  if (first === 'info' || first === 'details') return ['workspace', 'info', ...actionTokens.slice(1), ...flags];
+  if (['set', 'change', 'update', 'configure'].includes(first) && actionTokens[1] && actionTokens[2]) return ['workspace', 'set', actionTokens[1], actionTokens[2], ...flags];
+  if (['unregister', 'remove', 'delete', 'forget'].includes(first)) return ['workspace', 'unregister', ...actionTokens.slice(1), ...flags];
+  if (first === 'link') return ['workspace', 'link', ...actionTokens.slice(1), ...flags];
+  if (first === 'unlink') return ['workspace', 'unlink', ...actionTokens.slice(1), ...flags];
+  return argv;
+}
+
+function normalizeNaturalConfig(argv: string[]): string[] {
+  const [verb = '', ...tokens] = argv;
+  if (!configVerbs.has(verb.toLowerCase())) return argv;
+  const actionTokens = tokens.filter((t) => !t.startsWith('-'));
+  const flags = tokens.filter((t) => t.startsWith('-'));
+  if (actionTokens.length === 0) return ['config', 'view', ...flags];
+  const first = actionTokens[0]?.toLowerCase();
+  if (configViewVerbs.has(first)) return ['config', 'view', ...flags];
+  if (configSetVerbs.has(first) && actionTokens[1] && actionTokens[2]) return ['config', 'set', actionTokens[1], actionTokens[2], ...flags];
+  return argv;
 }
 
 function globalFolderNounEnd(tokens: string[]): number {

@@ -8,8 +8,10 @@ import { cmdAudit, cmdLoad, cmdRebuildIndex, cmdRehash, cmdRepair, cmdRoute, cmd
 import { cmdSave, cmdSaveSession, cmdTakeControl } from './commands/write.js';
 import { cmdArchive, cmdBenchmark, cmdDeduplicate, cmdEntry, cmdExport, cmdGraph, cmdHealth, cmdImport, cmdQuality, cmdSearch, cmdStats, cmdSync } from './commands/ops.js';
 import { cmdCloneMemory } from './commands/clone.js';
+import { cmdConfig } from './commands/config-cmd.js';
 import { cmdMetacognize } from './commands/metacognize.js';
 import { cmdProfile } from './commands/profile.js';
+import { cmdWorkspace } from './commands/workspace.js';
 import { cmdAgentHook, cmdIgnore, cmdInstallAgentHooks, cmdInstallHooks, cmdResolveConflicts, cmdSetLoadLimit, cmdSetProof, cmdSetRead, cmdSetRole, cmdSetRuleVariant, cmdSetSaveTarget, cmdUninstallAgentHooks, cmdUpdateGlobalFolder, cmdUpgrade } from './commands/admin.js';
 import { cmdLink, cmdUnlink } from './commands/skillset-link.js';
 import { maybeAutoUpgrade } from './core/runtime/auto-upgrade.js';
@@ -76,6 +78,8 @@ export async function runCli(argv: string[]): Promise<string> {
       case 'clone-memory': return await cmdCloneMemory(rest, flags);
       case 'metacognize': return await cmdMetacognize(rest, flags);
       case 'sync': return await cmdSync();
+      case 'workspace': return await cmdWorkspace(rest, flags);
+      case 'config': return await cmdConfig(rest, flags);
       default: return await cmdHelp();
     }
   } finally {

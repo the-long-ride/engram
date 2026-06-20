@@ -10,7 +10,7 @@ export const HELP_DATA: HelpSection[] = [
       { command: 'engram init [--force] [--global-only] [--scope workspace|global|both] [--no-skillset] [--skillset target] [--submodule] [--submodule-remote <git-url>] [--no-global] [--global-path path] [--global-remote <git-url>] [--global-branch main]', alias: 'i', purpose: 'Initialize or reconcile memory and install compact agent skillset instructions by default' },
       { command: 'engram help [topic]', alias: 'h', purpose: 'Show this help menu or specific topic details & example use-cases' },
       { command: 'engram llm', purpose: 'Print the packaged AI agent usage guide from llm.txt' },
-      { command: 'engram entry', alias: 'e', purpose: 'Show runtime configurations and global Git repository status' },
+      { command: 'engram entry', alias: 'e', purpose: 'Open browser web UI showing runtime configurations and global Git repository status' },
       { command: 'engram profile status|list|create|use|merge', alias: 'pf', purpose: 'Manage isolated global memory profiles for company, personal, or team contexts' },
       { command: 'engram update-global-folder <new-path> [--move-from-path path]', alias: 'ugf', purpose: 'Update the configured global memory folder and optionally move an old global root' },
       { command: 'engram completion [bash|zsh|powershell]', alias: 'c', purpose: 'Generate shell completion support for Tab suggestions' },
@@ -67,6 +67,8 @@ export const HELP_DATA: HelpSection[] = [
       { command: 'engram unlink [all|target] [--global] [--force]', purpose: 'Remove Engram skillset, MCP config, and instruction content from an AI agent' },
       { command: 'engram clone-memory workspace global [--force] [--dry-run] [--metacognize] [--accept-all]', alias: 'cm', purpose: 'Clone active memory Markdown between workspace and global scopes; --metacognize uses save-session-style approval instead of raw file copy' },
       { command: 'engram sync', alias: 'sy', purpose: 'Sync global memory with Git remote and refresh enabled live-sync targets' },
+      { command: 'engram workspace list|info|set|unregister|link|unlink', alias: 'ws', purpose: 'Manage registered workspaces and their per-workspace configuration' },
+      { command: 'engram config view|set', alias: 'cfg', purpose: 'View resolved configuration or set user-level config keys' },
     ]
   }
 ];

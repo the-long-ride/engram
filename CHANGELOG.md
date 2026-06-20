@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.0.17
+
+- Added a zero-dependency responsive Web UI served via `engram entry`.
+- Added an in-app workspace initialization button and status banner in the Web UI.
+- Enabled configuration editing capability directly in the Web UI.
+- Added the `--for-agents` flag to `engram load` to provide slimmed memory output optimized for AI agents.
+
 ## 0.0.16
 
 - Added `engram set-proof off|compact|status` so supported agent hooks can append a compact `Engram proof:` line showing whether Engram memory was loaded, reused, or skipped on each eligible turn.

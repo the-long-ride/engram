@@ -1,3 +1,4 @@
+// Engram WebUI control panel logic.
 'use strict';
 var D = null;
 var _toastTimer = null;

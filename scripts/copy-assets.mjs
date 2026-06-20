@@ -1,3 +1,4 @@
+// Build script to copy control panel web assets to dist directory.
 import { copyFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';

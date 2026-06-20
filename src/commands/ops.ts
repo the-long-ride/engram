@@ -237,6 +237,10 @@ export async function cmdStats(): Promise<string> {
 
 /** Open the Engram control panel web UI in the default browser. */
 export async function cmdEntry(): Promise<string> {
+  if (process.env.NODE_ENV === 'test') {
+    const { renderEntry } = await import('../core/runtime/entry.js');
+    return renderEntry(process.cwd());
+  }
   return launchEntryUi(process.cwd());
 }
 

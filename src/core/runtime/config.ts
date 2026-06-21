@@ -270,7 +270,7 @@ export async function writeUserConfig(update: Partial<EngramConfig>): Promise<st
     try {
       if (isConfigDbUsable(dbh.db)) {
         const q = await importQueries();
-      q.setUserConfig(dbh.db, q.flattenConfig(merged));
+        q.setUserConfig(dbh.db, q.flattenConfig(merged));
       }
     } finally {
       dbh.close();
@@ -296,14 +296,14 @@ export async function writeConfig(cwd: string, config: EngramConfig): Promise<st
   if (dbh) {
     try {
       if (isConfigDbUsable(dbh.db)) {
-      const q = await importQueries();
-      if (isWorkspace) {
-        // Auto-register workspace in DB
-        const ws = q.upsertWorkspace(dbh.db, cwd, path.basename(cwd));
-        q.setWorkspaceConfig(dbh.db, ws.id, q.flattenConfig(config));
-      } else {
-        q.setUserConfig(dbh.db, q.flattenConfig(config));
-      }
+        const q = await importQueries();
+        if (isWorkspace) {
+          // Auto-register workspace in DB
+          const ws = q.upsertWorkspace(dbh.db, cwd, path.basename(cwd));
+          q.setWorkspaceConfig(dbh.db, ws.id, q.flattenConfig(config));
+        } else {
+          q.setUserConfig(dbh.db, q.flattenConfig(config));
+        }
       }
     } finally {
       dbh.close();
@@ -339,10 +339,10 @@ export async function writeProfileStore(store: ProfileStore): Promise<string> {
     try {
       if (isConfigDbUsable(dbh.db)) {
         const q = await importQueries();
-      for (const [name, profile] of Object.entries(store.profiles)) {
-        q.upsertProfile(dbh.db, name, profile.global_path, profile.scope ?? 'global');
-      }
-      if (store.active_profile) q.setActiveProfile(dbh.db, store.active_profile);
+        for (const [name, profile] of Object.entries(store.profiles)) {
+          q.upsertProfile(dbh.db, name, profile.global_path, profile.scope ?? 'global');
+        }
+        if (store.active_profile) q.setActiveProfile(dbh.db, store.active_profile);
       }
     } finally {
       dbh.close();

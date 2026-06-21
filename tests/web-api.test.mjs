@@ -107,6 +107,28 @@ test('web UI api workspace, profile, config handlers and entry text parser', asy
     assert.equal(finalData.config.scope, 'global');
     assert.equal(finalData.config.read, 'always');
     assert.equal(finalData.config.proof, 'compact');
+
+    // 8. Fallback: apiConfigSet persists JSON even when SQLite is unavailable
+    const schema = await import('../dist/core/config-db/schema.js');
+    schema.setConfigDbUnavailableForTests(true);
+    try {
+      const fallbackSet = await apiConfigSet('read', 'manual', cwd);
+      assert.match(fallbackSet, /Set read = manual/);
+      assert.match(fallbackSet, /SQLite unavailable; JSON only/);
+
+      const fallbackData = await loadPanelData(cwd, entryText);
+      assert.equal(fallbackData.sqliteAvailable, false);
+      assert.equal(fallbackData.config.read, 'manual');
+    } finally {
+      schema.setConfigDbUnavailableForTests(false);
+    }
+
+    // 9. Final config verification reflects last saved values
+    const finalData2 = await loadPanelData(cwd, entryText);
+    assert.equal(finalData2.config.scope, 'global');
+    // After SQLite is available again, DB value 'always' takes priority over JSON fallback 'manual'
+    assert.equal(finalData2.config.read, 'always');
+    assert.equal(finalData2.config.proof, 'compact');
   } finally {
     // Restore environment
     process.env.ENGRAM_CONFIG_DIR = oldEnv.ENGRAM_CONFIG_DIR;
@@ -115,4 +137,3 @@ test('web UI api workspace, profile, config handlers and entry text parser', asy
     await rm(cwd, { recursive: true, force: true });
   }
 });
-

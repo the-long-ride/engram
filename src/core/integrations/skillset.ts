@@ -60,6 +60,19 @@ function instructionProfileForTarget(target: SkillsetTarget, label: string): Ins
   return 'compact';
 }
 
+async function instructionProfileForWorkspaceRefresh(cwd: string, target: SkillsetTarget, relativeFile: string): Promise<InstructionProfile> {
+  if (target === 'agents-md' && relativeFile === 'AGENTS.md' && await hasGeneratedCodexSkill(cwd)) {
+    return 'bootstrap';
+  }
+  return instructionProfileForTarget(target, target);
+}
+
+async function hasGeneratedCodexSkill(cwd: string): Promise<boolean> {
+  const skillFile = path.join(cwd, '.agents', 'skills', 'engram', 'SKILL.md');
+  const existing = await readText(skillFile);
+  return Boolean(existing && isGenerated(existing, '.agents/skills/engram/SKILL.md'));
+}
+
 /** Return supported skillset adapter names. */
 export function skillsetTargets(): SkillsetTarget[] {
   return (Object.keys(targets) as SkillsetTarget[]).filter((target) => !hiddenTargets.has(target));
@@ -101,7 +114,8 @@ export async function refreshGeneratedWorkspaceSkillsets(cwd: string, options: {
       const file = path.join(cwd, relativeFile);
       const existing = await readText(file);
       if (!existing || !isGenerated(existing, relativeFile)) continue;
-      const next = renderSkillsetFile(name, relativeFile, config.read, instructionProfileForTarget(name, name));
+      const profile = await instructionProfileForWorkspaceRefresh(cwd, name, relativeFile);
+      const next = renderSkillsetFile(name, relativeFile, config.read, profile);
       const normalized = next.endsWith('\n') ? next : `${next}\n`;
       if (existing === normalized) continue;
       if (options.plan) {

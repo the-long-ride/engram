@@ -47,7 +47,10 @@ test('upgrade refreshes generated workspace skillsets', async () => {
   assert.match(upgraded.stdout, /UPDATED workspace skillsets/);
   assert.match(upgraded.stdout, /UPDATED agents-md: AGENTS\.md/);
   assert.match(upgraded.stdout, /UPDATED agent-skill: \.agents\/skills\/engram\/SKILL\.md/);
-  assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /Session start and task changes/);
+  const agentsMd = await readFile(path.join(cwd, 'AGENTS.md'), 'utf8');
+  assert.match(agentsMd, /Runtime Bootstrap/);
+  assert.match(agentsMd, /Prefer Engram MCP tools/);
+  assert.doesNotMatch(agentsMd, /Save flow:/);
   assert.match(await readFile(path.join(cwd, '.agents', 'skills', 'engram', 'SKILL.md'), 'utf8'), /Engram Memory Management Skill/);
   await rm(cwd, { recursive: true, force: true });
 });
@@ -96,7 +99,10 @@ test('auto-upgrade quietly reconciles initialized roots once after package updat
   assert.equal(loaded.code, 0, loaded.stderr);
   assert.doesNotMatch(loaded.stdout, /auto-upgrade|reconciled/i);
   assert.match(await readFile(path.join(root, 'HELP.md'), 'utf8'), /Engram Help/);
-  assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /Session start and task changes/);
+  const autoAgentsMd = await readFile(path.join(cwd, 'AGENTS.md'), 'utf8');
+  assert.match(autoAgentsMd, /Runtime Bootstrap/);
+  assert.match(autoAgentsMd, /Prefer Engram MCP tools/);
+  assert.doesNotMatch(autoAgentsMd, /Save flow:/);
   const upgradedConfig = JSON.parse(await readFile(configFile, 'utf8'));
   assert.equal(upgradedConfig.version, await packageVersion());
   assert.equal(upgradedConfig.auto_upgrade.version, await packageVersion());

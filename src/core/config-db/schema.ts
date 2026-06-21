@@ -63,37 +63,39 @@ create table if not exists profiles (
 /** Open (or create) the config DB at ~/.engram/engram.db. Returns undefined when no sqlite module is available. */
 export async function openConfigDb(): Promise<ConfigDb | undefined> {
   const file = dbPath();
-  await ensureDir(path.dirname(file));
+  try {
+    await ensureDir(path.dirname(file));
+  } catch {
+    return undefined;
+  }
   // Try node:sqlite first (Node >=22.5 built-in), then better-sqlite3.
   const nodeSqlite = await dynamicImport('node:sqlite').catch(() => undefined);
   if (nodeSqlite?.DatabaseSync) {
-    try {
-      const db = new nodeSqlite.DatabaseSync(file, { allowExtension: true });
-      // Load sqlite-vec if available (harmless if not needed for config DB).
-      try {
-     const sqliteVec = await dynamicImport('sqlite-vec').catch(() => undefined);
-     if (sqliteVec?.load) sqliteVec.load(db);
-   } catch { /* sqlite-vec optional for config */ }
-      return { db, close: () => tryClose(db) };
-    } catch {
-      return undefined;
-    }
+    return openDbHandle(() => new nodeSqlite.DatabaseSync(file, { allowExtension: true }));
   }
   const betterSqlite = await dynamicImport('better-sqlite3').catch(() => undefined);
   const Database = betterSqlite?.default ?? betterSqlite;
-  if (Database) {
+  if (Database) return openDbHandle(() => new Database(file));
+  return undefined;
+}
+
+async function openDbHandle(create: () => any): Promise<ConfigDb | undefined> {
+  let db: any;
+  try {
+    db = create();
     try {
-      const db = new Database(file);
-      try {
-     const sqliteVec = await dynamicImport('sqlite-vec').catch(() => undefined);
-     if (sqliteVec?.load) sqliteVec.load(db);
-   } catch { /* optional */ }
-      return { db, close: () => tryClose(db) };
-    } catch {
+      const sqliteVec = await dynamicImport('sqlite-vec').catch(() => undefined);
+      if (sqliteVec?.load) sqliteVec.load(db);
+    } catch { /* sqlite-vec optional for config */ }
+    if (!isConfigDbUsable(db)) {
+      tryClose(db);
       return undefined;
     }
+    return { db, close: () => tryClose(db) };
+  } catch {
+    tryClose(db);
+    return undefined;
   }
-  return undefined;
 }
 
 function tryClose(db: any): void {

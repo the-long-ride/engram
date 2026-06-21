@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { rm } from 'node:fs/promises';
 import path from 'node:path';
+import { writeFile } from 'node:fs/promises';
 import { tempWorkspace } from '../helpers.mjs';
 
 // The source modules are TypeScript; tests import from compiled dist/.
@@ -63,6 +64,21 @@ test('ensureSchema creates tables idempotently', async () => {
   db.close();
 });
 
+test('openConfigDb returns undefined when config dir cannot be created', async () => {
+  const { cwd } = await tempWorkspace('engram-db-open-fail-');
+  const fileAsDir = path.join(cwd, 'not-a-directory');
+  await writeFile(fileAsDir, 'occupied');
+  process.env.ENGRAM_CONFIG_DIR = fileAsDir;
+
+  const { schema } = await loadModules();
+  const db = await schema.openConfigDb();
+  assert.equal(db, undefined);
+
+  const { loadConfig } = await import('../../dist/core/runtime/config.js');
+  const loaded = await loadConfig(cwd);
+  assert.equal(loaded.scope, 'both');
+  assert.equal(loaded.read, 'auto');
+});
 test('upsertWorkspace inserts and updates', async () => {
   const { env } = await tempWorkspace('engram-db-');
   process.env.ENGRAM_CONFIG_DIR = path.join(env.ENGRAM_CONFIG_DIR);
@@ -275,4 +291,19 @@ test('setWorkspaceConfig batch writes all keys', async () => {
   assert.equal(cfg['load.limit'], '16');
 
   db.close();
+});
+test('openConfigDb returns undefined when config dir cannot be created', async () => {
+  const { cwd } = await tempWorkspace('engram-db-open-fail-');
+  const fileAsDir = path.join(cwd, 'not-a-directory');
+  await writeFile(fileAsDir, 'occupied');
+  process.env.ENGRAM_CONFIG_DIR = fileAsDir;
+
+  const { schema } = await loadModules();
+  const db = await schema.openConfigDb();
+  assert.equal(db, undefined);
+
+  const { loadConfig } = await import('../../dist/core/runtime/config.js');
+  const loaded = await loadConfig(cwd);
+  assert.equal(loaded.scope, 'both');
+  assert.equal(loaded.read, 'auto');
 });

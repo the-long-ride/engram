@@ -71,20 +71,26 @@ const ALLOWED = new Set([
 
 export async function apiConfigSet(key: string, value: string, cwd: string): Promise<string> {
   if (!ALLOWED.has(key)) throw new Error('unknown config key: ' + key);
+  let sqliteUnavailable = false;
   const dbh = await openConfigDb();
   if (dbh) {
     try {
-    if (!isConfigDbUsable(dbh.db)) return 'Set ' + key + ' = ' + value + ' (SQLite unavailable; JSON only)';
-    const q = await importQueries();
-    q.setUserConfigKey(dbh.db, key, value);
+      if (isConfigDbUsable(dbh.db)) {
+        const q = await importQueries();
+        q.setUserConfigKey(dbh.db, key, value);
+      } else {
+        sqliteUnavailable = true;
+      }
     } finally {
       dbh.close();
     }
+  } else {
+    sqliteUnavailable = true;
   }
   const config = await loadConfig(cwd);
   applyDotted(config as any, key, value);
   await writeUserConfig(config);
-  return 'Set ' + key + ' = ' + value;
+  return 'Set ' + key + ' = ' + value + (sqliteUnavailable ? ' (SQLite unavailable; JSON only)' : '');
 }
 
 export async function apiWorkspaceAdd(wsPath: string, name: string): Promise<string> {

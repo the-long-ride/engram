@@ -2,7 +2,10 @@
 
 ## Unreleased
 
+## 0.0.19
+
 - Hardened `engram entry` config editing with shared schema validation, staged browser edits, review-before-save, risky-change confirmation, and batch API updates.
+- Fixed `BeforeAgent` hook installation for Gemini/Antigravity to include `matcher: "*"`.
 
 ## 0.0.18
 

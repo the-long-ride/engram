@@ -906,3 +906,123 @@ button {
     width: 100%;
   }
 }
+
+.cfg-row.dirty {
+  background: var(--blue-bg);
+}
+.cfg-desc {
+  font-size: 11px;
+  color: var(--g600);
+  display: block;
+  margin-top: 1px;
+}
+.cfg-error {
+  font-size: 11px;
+  color: var(--red-dk);
+  display: block;
+  margin-top: 3px;
+}
+.cfg-reset {
+  color: var(--g700);
+  font-size: 11px;
+  padding: 0 0 0 6px;
+}
+.cfg-reset:hover {
+  color: var(--g1000);
+}
+.config-actions {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--bg);
+  border: 1px solid var(--g300);
+  border-radius: var(--r8);
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.16);
+}
+.config-actions-btns {
+  display: flex;
+  gap: 8px;
+}
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(0, 0, 0, 0.58);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modal-panel {
+  width: min(720px, 100%);
+  max-height: min(720px, calc(100vh - 40px));
+  background: var(--bg);
+  color: var(--g1000);
+  border: 1px solid var(--g300);
+  border-radius: var(--r8);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.modal-hdr,
+.modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--g200);
+}
+.modal-actions {
+  border-top: 1px solid var(--g200);
+  border-bottom: none;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.modal-hdr h2 {
+  font-size: 16px;
+  font-weight: 600;
+}
+.modal-hdr button {
+  color: var(--g700);
+  font-size: 22px;
+  line-height: 1;
+}
+.modal-body {
+  overflow: auto;
+  padding: 16px;
+}
+.review-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.review-table th,
+.review-table td {
+  text-align: left;
+  padding: 8px;
+  border-bottom: 1px solid var(--g200);
+  vertical-align: top;
+}
+.review-table th {
+  color: var(--g600);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.confirm-line {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin-top: 14px;
+  padding: 10px;
+  border-radius: var(--r6);
+  background: var(--amber-bg);
+  color: var(--amber-dk);
+  font-size: 12px;
+}

@@ -1,5 +1,5 @@
 /** Control panel data API and write handlers. */
-import { openConfigDb, ensureSchema } from '../config-db/schema.js';
+import { openConfigDb, isConfigDbUsable } from '../config-db/schema.js';
 import { loadConfig, writeUserConfig, readProfileStore, writeProfileStore, workspaceRoot, legacyWorkspaceRoot } from '../runtime/config.js';
 import { exists } from '../system/fsx.js';
 
@@ -34,7 +34,9 @@ export async function loadPanelData(cwd: string, entryText: string): Promise<Pan
     return { config, workspaces: [], profiles: [], entry, sqliteAvailable: false, cwd, version, isInitialized };
   }
   try {
-    ensureSchema(dbh.db);
+    if (!isConfigDbUsable(dbh.db)) {
+      return { config, workspaces: [], profiles: [], entry, sqliteAvailable: false, cwd, version, isInitialized };
+    }
     const q = await importQueries();
     return {
       config,
@@ -72,9 +74,9 @@ export async function apiConfigSet(key: string, value: string, cwd: string): Pro
   const dbh = await openConfigDb();
   if (dbh) {
     try {
-      ensureSchema(dbh.db);
-      const q = await importQueries();
-      q.setUserConfigKey(dbh.db, key, value);
+    if (!isConfigDbUsable(dbh.db)) return 'Set ' + key + ' = ' + value + ' (SQLite unavailable; JSON only)';
+    const q = await importQueries();
+    q.setUserConfigKey(dbh.db, key, value);
     } finally {
       dbh.close();
     }
@@ -89,7 +91,7 @@ export async function apiWorkspaceAdd(wsPath: string, name: string): Promise<str
   const dbh = await openConfigDb();
   if (!dbh) throw new Error('SQLite unavailable');
   try {
-    ensureSchema(dbh.db);
+    if (!isConfigDbUsable(dbh.db)) throw new Error('SQLite unavailable');
     const q = await importQueries();
     q.upsertWorkspace(dbh.db, wsPath, name || '');
     return 'Registered: ' + wsPath;
@@ -100,7 +102,7 @@ export async function apiWorkspaceRemove(wsPath: string): Promise<string> {
   const dbh = await openConfigDb();
   if (!dbh) throw new Error('SQLite unavailable');
   try {
-    ensureSchema(dbh.db);
+    if (!isConfigDbUsable(dbh.db)) throw new Error('SQLite unavailable');
     const q = await importQueries();
     q.deleteWorkspace(dbh.db, wsPath);
     return 'Removed: ' + wsPath;
@@ -111,7 +113,7 @@ export async function apiWorkspaceLink(wsPath: string, linked: boolean): Promise
   const dbh = await openConfigDb();
   if (!dbh) throw new Error('SQLite unavailable');
   try {
-    ensureSchema(dbh.db);
+    if (!isConfigDbUsable(dbh.db)) throw new Error('SQLite unavailable');
     const q = await importQueries();
     q.setWorkspaceLinked(dbh.db, wsPath, linked);
     return (linked ? 'Linked' : 'Unlinked') + ': ' + wsPath;
@@ -124,7 +126,7 @@ export async function apiProfileAdd(name: string, globalPath: string, scope: str
   const dbh = await openConfigDb();
   if (!dbh) throw new Error('SQLite unavailable');
   try {
-    ensureSchema(dbh.db);
+    if (!isConfigDbUsable(dbh.db)) throw new Error('SQLite unavailable');
     const q = await importQueries();
     q.upsertProfile(dbh.db, name, globalPath, scope || 'global');
     const store = await readProfileStore();
@@ -138,7 +140,7 @@ export async function apiProfileRemove(name: string): Promise<string> {
   const dbh = await openConfigDb();
   if (!dbh) throw new Error('SQLite unavailable');
   try {
-    ensureSchema(dbh.db);
+    if (!isConfigDbUsable(dbh.db)) throw new Error('SQLite unavailable');
     const q = await importQueries();
     q.deleteProfile(dbh.db, name);
     const store = await readProfileStore();
@@ -153,7 +155,7 @@ export async function apiProfileActivate(name: string): Promise<string> {
   const dbh = await openConfigDb();
   if (!dbh) throw new Error('SQLite unavailable');
   try {
-    ensureSchema(dbh.db);
+    if (!isConfigDbUsable(dbh.db)) throw new Error('SQLite unavailable');
     const q = await importQueries();
     q.setActiveProfile(dbh.db, name);
     const store = await readProfileStore();

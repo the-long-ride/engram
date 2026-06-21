@@ -3,6 +3,13 @@ import path from 'node:path';
 import { userConfigDir } from '../runtime/config.js';
 import { ensureDir } from '../system/fsx.js';
 
+let forceSchemaUnavailableForTests = false;
+
+/** Test-only hook: simulate schema failure without changing production behavior. */
+export function setConfigDbUnavailableForTests(value: boolean): void {
+  forceSchemaUnavailableForTests = value;
+}
+
 export type ConfigDb = {
   db: any;
   close(): void;
@@ -60,29 +67,43 @@ export async function openConfigDb(): Promise<ConfigDb | undefined> {
   // Try node:sqlite first (Node >=22.5 built-in), then better-sqlite3.
   const nodeSqlite = await dynamicImport('node:sqlite').catch(() => undefined);
   if (nodeSqlite?.DatabaseSync) {
-    const db = new nodeSqlite.DatabaseSync(file, { allowExtension: true });
-    // Load sqlite-vec if available (harmless if not needed for config DB).
     try {
-      const sqliteVec = await dynamicImport('sqlite-vec').catch(() => undefined);
-      if (sqliteVec?.load) sqliteVec.load(db);
-    } catch { /* sqlite-vec optional for config */ }
-    return { db, close: () => tryClose(db) };
+      const db = new nodeSqlite.DatabaseSync(file, { allowExtension: true });
+      // Load sqlite-vec if available (harmless if not needed for config DB).
+      try {
+     const sqliteVec = await dynamicImport('sqlite-vec').catch(() => undefined);
+     if (sqliteVec?.load) sqliteVec.load(db);
+   } catch { /* sqlite-vec optional for config */ }
+      return { db, close: () => tryClose(db) };
+    } catch {
+      return undefined;
+    }
   }
   const betterSqlite = await dynamicImport('better-sqlite3').catch(() => undefined);
   const Database = betterSqlite?.default ?? betterSqlite;
   if (Database) {
-    const db = new Database(file);
     try {
-      const sqliteVec = await dynamicImport('sqlite-vec').catch(() => undefined);
-      if (sqliteVec?.load) sqliteVec.load(db);
-    } catch { /* optional */ }
-    return { db, close: () => tryClose(db) };
+      const db = new Database(file);
+      try {
+     const sqliteVec = await dynamicImport('sqlite-vec').catch(() => undefined);
+     if (sqliteVec?.load) sqliteVec.load(db);
+   } catch { /* optional */ }
+      return { db, close: () => tryClose(db) };
+    } catch {
+      return undefined;
+    }
   }
   return undefined;
 }
 
 function tryClose(db: any): void {
   try { db.close?.(); } catch { /* best-effort */ }
+}
+
+/** Idempotent schema creation. Returns true when the DB is usable. */
+export function isConfigDbUsable(db: any): boolean {
+  if (forceSchemaUnavailableForTests) return false;
+  return ensureSchema(db);
 }
 
 /** Idempotent schema creation. Returns true when the DB is usable. */

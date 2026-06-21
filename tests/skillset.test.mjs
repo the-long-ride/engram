@@ -14,6 +14,7 @@ test('skillset installer writes all supported agent adapter files', async () => 
   assert.ok(!skillsetTargets().includes('antigravity'));
   assert.ok(!skillsetTargets().includes('antigravity-cli'));
   assert.ok(results.every((result) => result.action === 'written'));
+  // agents-md target uses compact profile (legacy fallback)
   assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /Default agent mode: compact/);
   assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /knowledge memory center/);
   assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /Keep token usage low/);
@@ -84,7 +85,8 @@ test('cli installs a single skillset target', async () => {
   assert.match(result.stdout, /WRITTEN gemini: GEMINI.md/);
   assert.match(result.stdout, /WRITTEN gemini: \.mcp\.json/);
   assert.match(result.stdout, /gemini also covers current Antigravity 2\.0, Antigravity CLI, and Antigravity IDE/);
-  assert.match(await readFile(path.join(cwd, 'GEMINI.md'), 'utf8'), /Engram Agent Skillset/);
+  assert.match(await readFile(path.join(cwd, 'GEMINI.md'), 'utf8'), /Runtime Bootstrap/);
+  assert.match(await readFile(path.join(cwd, 'GEMINI.md'), 'utf8'), /Prefer Engram MCP tools/);
   assert.equal(JSON.parse(await readFile(path.join(cwd, '.mcp.json'), 'utf8')).mcpServers.engram.command, 'npx');
   await rm(cwd, { recursive: true, force: true });
 });
@@ -131,7 +133,8 @@ test('cli installs codex alias as AGENTS.md skillset file', async () => {
   assert.equal(result.code, 0, result.stderr);
   assert.match(result.stdout, /WRITTEN codex: AGENTS\.md/);
   assert.match(result.stdout, /WRITTEN codex: \.agents\/skills\/engram\/SKILL\.md/);
-  assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /Speak only for confirmation/);
+  assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /Runtime Bootstrap/);
+  assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /Prefer Engram MCP tools/);
   assert.match(await readFile(path.join(cwd, '.agents/skills/engram/SKILL.md'), 'utf8'), /Default agent mode: compact/);
   await rm(cwd, { recursive: true, force: true });
 });
@@ -431,5 +434,36 @@ test('global link installs MCP config for supported targets', async () => {
   const claudeMcp = await readFile(path.join(agentHome, '.claude', 'mcp.json'), 'utf8');
   assert.match(claudeMcp, /engram-mcp/);
   assert.equal(JSON.parse(claudeMcp).mcpServers.engram.command, 'npx');
+  await rm(cwd, { recursive: true, force: true });
+});
+const BOOTSTRAP_MAX_CHARS = 1800;
+const LEGACY_MIN_CHARS = 2500;
+
+test('codex alias writes bootstrap AGENTS.md and full SKILL.md', async () => {
+  const { cwd, env } = await tempWorkspace('engram-skillset-bootstrap-');
+  const result = await runEngram(cwd, env, ['link', 'codex']);
+  assert.equal(result.code, 0, result.stderr);
+  const agentsMd = await readFile(path.join(cwd, 'AGENTS.md'), 'utf8');
+  assert.match(agentsMd, /Runtime Bootstrap/);
+  assert.match(agentsMd, /Prefer Engram MCP tools/);
+  assert.ok(agentsMd.length <= BOOTSTRAP_MAX_CHARS, `AGENTS.md too large: ${agentsMd.length}`);
+  assert.doesNotMatch(agentsMd, /Save flow:/);
+  assert.doesNotMatch(agentsMd, /clone-memory/);
+  assert.doesNotMatch(agentsMd, /take-control/);
+  assert.doesNotMatch(agentsMd, /Rule memories:/);
+  const skill = await readFile(path.join(cwd, '.agents/skills/engram/SKILL.md'), 'utf8');
+  assert.match(skill, /Save flow:/);
+  assert.match(skill, /never add `--accept-all`/i);
+  assert.match(skill, /Default agent mode: compact/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('agents-md fallback keeps compact manual instructions', async () => {
+  const { cwd } = await tempWorkspace('engram-skillset-fallback-');
+  await installSkillset(cwd, 'agents-md');
+  const agentsMd = await readFile(path.join(cwd, 'AGENTS.md'), 'utf8');
+  assert.ok(agentsMd.length >= LEGACY_MIN_CHARS, `AGENTS.md unexpectedly short: ${agentsMd.length}`);
+  assert.match(agentsMd, /Save flow:/);
+  assert.match(agentsMd, /Rule memories:/);
   await rm(cwd, { recursive: true, force: true });
 });

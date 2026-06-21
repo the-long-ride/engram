@@ -83,6 +83,21 @@ vector sidecars, generated workspace skillsets, global memory scaffolding, and
 registered global agent skillsets while preserving human-authored files. Normal
 commands also run the same root reconciliation quietly once per package version unless
 `--no-auto-upgrade` or `ENGRAM_NO_AUTO_UPGRADE=1` is set.
+
+### Skillset Render Profiles
+
+For runtime-capable hosts, Engram now installs small bootstrap instructions
+instead of the full protocol. Hooks provide routed task context, MCP tools
+provide load/search/proposal behavior, and slash adapters or Agent Skills carry
+detailed command workflows. Fallback targets without reliable runtime context
+injection still receive compact manual instructions.
+
+### SQLite Config DB Fallback
+
+Engram's SQLite config DB is an optimization for workspace/profile management.
+If the DB cannot be opened or initialized, normal read/write commands fall back
+to JSON config snapshots. DB-specific commands report SQLite as unavailable
+instead of blocking normal memory use.
 When `engram save` finds related active memories, the approval preview reports
 them with a suggested `depends_on` or possible-duplicate warning. Accepting saves
 the preview as-is; reject first if you want to restructure dependencies or

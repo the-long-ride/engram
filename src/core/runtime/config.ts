@@ -5,7 +5,7 @@ import { ENGRAM_DIR, LEGACY_ENGRAM_DIR, VERSION } from './constants.js';
 import type { EngramConfig, EngramProfile, ProfileResolution, ProfileStore, ProfileSource, Scope } from './types.js';
 import { DEFAULT_LOAD_LIMIT } from './load-limit.js';
 import { exists, readJson, writeJson } from '../system/fsx.js';
-import { openConfigDb, ensureSchema } from '../config-db/schema.js';
+import { openConfigDb, isConfigDbUsable } from '../config-db/schema.js';
 
 const PROFILE_STORE_FILE = 'profiles.json';
 const PROFILE_RESOLUTION = '__engram_profile_resolution';
@@ -20,7 +20,7 @@ export async function configFromDb(cwd: string, options: { profile?: string } = 
   const dbh = await openConfigDb();
   if (!dbh) return undefined;
   try {
-    ensureSchema(dbh.db);
+    if (!isConfigDbUsable(dbh.db)) return undefined;
     const q = await importQueries();
 
     // Layer 1: user_config (lowest priority)
@@ -268,9 +268,10 @@ export async function writeUserConfig(update: Partial<EngramConfig>): Promise<st
   const dbh = await openConfigDb();
   if (dbh) {
     try {
-      ensureSchema(dbh.db);
-      const q = await importQueries();
+      if (isConfigDbUsable(dbh.db)) {
+        const q = await importQueries();
       q.setUserConfig(dbh.db, q.flattenConfig(merged));
+      }
     } finally {
       dbh.close();
     }
@@ -294,7 +295,7 @@ export async function writeConfig(cwd: string, config: EngramConfig): Promise<st
   const dbh = await openConfigDb();
   if (dbh) {
     try {
-      ensureSchema(dbh.db);
+      if (isConfigDbUsable(dbh.db)) {
       const q = await importQueries();
       if (isWorkspace) {
         // Auto-register workspace in DB
@@ -302,6 +303,7 @@ export async function writeConfig(cwd: string, config: EngramConfig): Promise<st
         q.setWorkspaceConfig(dbh.db, ws.id, q.flattenConfig(config));
       } else {
         q.setUserConfig(dbh.db, q.flattenConfig(config));
+      }
       }
     } finally {
       dbh.close();
@@ -335,12 +337,13 @@ export async function writeProfileStore(store: ProfileStore): Promise<string> {
   const dbh = await openConfigDb();
   if (dbh) {
     try {
-      ensureSchema(dbh.db);
-      const q = await importQueries();
+      if (isConfigDbUsable(dbh.db)) {
+        const q = await importQueries();
       for (const [name, profile] of Object.entries(store.profiles)) {
         q.upsertProfile(dbh.db, name, profile.global_path, profile.scope ?? 'global');
       }
       if (store.active_profile) q.setActiveProfile(dbh.db, store.active_profile);
+      }
     } finally {
       dbh.close();
     }

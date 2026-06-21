@@ -18,6 +18,11 @@ Core operating model
   requested an accept-all path for that command.
 - Markdown memory files are the source of truth. Indexes, graphs, and optional
   vector sidecars are acceleration layers.
+- For runtime-capable hosts, Engram installs small bootstrap instructions
+  instead of the full protocol; MCP tools and Agent Skills carry the detail.
+  Fallback targets get compact manual instructions.
+- The SQLite config DB is optional. If it cannot be opened or initialized,
+  commands fall back to JSON config snapshots.
 
 What AI agents should do first
 

@@ -7,6 +7,7 @@ import { loadConfig, userConfigDir } from '../runtime/config.js';
 import { sha256 } from '../safety/hash.js';
 import { ensureDir, readJson, readText, writeJson, writeText } from '../system/fsx.js';
 import { globalSkillsetMarkdown, isGenerated, renderSkillsetFile } from './skillset-render.js';
+import type { InstructionProfile } from './skillset-render.js';
 
 export type SkillsetTarget =
   | 'agents-md' | 'copilot' | 'claude' | 'cursor' | 'gemini'
@@ -29,7 +30,8 @@ const aliases: Record<string, SkillsetTarget[]> = {
   'open-code': ['opencode']
 };
 const aliasLabels: Record<string, string> = {
-  'antigravity-cli': 'antigravity'
+  'antigravity-cli': 'antigravity',
+  codex: 'codex'
 };
 
 const targets: Record<SkillsetTarget, string[]> = {
@@ -51,6 +53,12 @@ const targets: Record<SkillsetTarget, string[]> = {
   mcp: ['.mcp.json'],
   slash: ['.claude/commands/engram.md', '.claude/skills/engram/SKILL.md', '.cursor/commands/engram.md', '.gemini/commands/engram.toml']
 };
+
+function instructionProfileForTarget(target: SkillsetTarget, label: string): InstructionProfile {
+  if (label === 'codex') return 'bootstrap';
+  if (target === 'claude' || target === 'cursor' || target === 'gemini') return 'bootstrap';
+  return 'compact';
+}
 
 /** Return supported skillset adapter names. */
 export function skillsetTargets(): SkillsetTarget[] {
@@ -75,7 +83,9 @@ export async function installSkillset(cwd: string, target = 'all', force = false
         continue;
       }
       await ensureDir(path.dirname(file));
-      await writeText(file, renderSkillsetFile(renderTargetForFile(name, relativeFile), relativeFile, config.read));
+      const renderTarget = renderTargetForFile(name, relativeFile);
+      const profile = instructionProfileForTarget(renderTarget, label);
+      await writeText(file, renderSkillsetFile(renderTarget, relativeFile, config.read, profile));
       results.push({ target: label, file: relativeFile, action: 'written' });
     }
   }
@@ -91,7 +101,7 @@ export async function refreshGeneratedWorkspaceSkillsets(cwd: string, options: {
       const file = path.join(cwd, relativeFile);
       const existing = await readText(file);
       if (!existing || !isGenerated(existing, relativeFile)) continue;
-      const next = renderSkillsetFile(name, relativeFile, config.read);
+      const next = renderSkillsetFile(name, relativeFile, config.read, instructionProfileForTarget(name, name));
       const normalized = next.endsWith('\n') ? next : `${next}\n`;
       if (existing === normalized) continue;
       if (options.plan) {
@@ -125,7 +135,8 @@ export async function installGlobalSkillset(target = 'all', options: { force?: b
       results.push({ target: plan.label, file: plan.file, action: 'skipped', reason: plan.reason ?? 'global install is not supported for this target yet' });
       continue;
     }
-    const content = renderGlobalInstallContent(plan, config.read);
+    const profile = instructionProfileForTarget(plan.renderTarget ?? plan.name, plan.label);
+    const content = renderGlobalInstallContent(plan, config.read, profile);
     if (options.plan) {
       results.push({ target: plan.label, file: plan.file, action: 'planned', mode: plan.mode, hash: sha256(content) });
       continue;
@@ -282,11 +293,11 @@ function globalAgentConfigHome(home: string): string {
   return path.join(home, '.config');
 }
 
-function renderGlobalInstallContent(plan: GlobalInstallPlan, readMode = 'auto'): string {
+function renderGlobalInstallContent(plan: GlobalInstallPlan, readMode = 'auto', profile: InstructionProfile = 'compact'): string {
   if (plan.name === 'slash' || plan.renderTarget === 'slash') return renderSkillsetFile('slash', plan.file, readMode);
   if (plan.renderTarget === 'mcp') return renderSkillsetFile('mcp', plan.file, readMode);
   if (plan.file.endsWith('SKILL.md')) return renderSkillsetFile(plan.renderTarget ?? 'agent-skill', plan.file, readMode);
-  return globalSkillsetMarkdown(readMode);
+  return globalSkillsetMarkdown(readMode, profile);
 }
 
 function upsertManagedBlock(existing: string, content: string): { text: string; action: InstallAction } {

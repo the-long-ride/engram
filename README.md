@@ -107,7 +107,9 @@ graph TD
 - **Profiles isolate memory contexts** (personal, client, and corporate).
 - **Git provides portability and audit history** — share rules across the team.
 - **Agent adapters are convenience, not authority**.
+- **Runtime-capable hosts get bootstrap instructions** — short `AGENTS.md`/`CLAUDE.md`/`GEMINI.md` text plus MCP tools and Agent Skills for the full workflow. Fallback targets get complete compact protocol.
 - **Strict rules govern agent output** to prevent context drift and hallucinations.
+- **SQLite config DB is optional** — if the DB cannot be opened or initialized, commands fall back to JSON config snapshots.
 
 ---
 
@@ -170,6 +172,7 @@ engram set-proof compact
 v1 hook installs are limited to `codex`, `claude`, and `gemini`. Antigravity
 compatibility currently routes through `gemini`; Cursor, Copilot, Cline, and
 Windsurf/Cascade remain instruction/skillset/manual-load driven until their
+Runtime-first targets (`codex`, `claude`, `cursor`, `gemini`) install bootstrap instructions; fallback targets (`agents-md`, `copilot`, `cline`, `windsurf`, `opencode`) install compact manual instructions.
 hook surfaces support reliable prompt-time context injection.
 Use `engram set-proof compact` when you want supported hooks to append a short
 `Engram proof:` line on each eligible turn showing whether Engram memory was

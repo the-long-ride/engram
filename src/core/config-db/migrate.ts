@@ -1,7 +1,7 @@
 /** JSON-to-SQLite migration for engram upgrade --db-migrate. */
 import path from 'node:path';
 import fs from 'node:fs/promises';
-import { dbPath, ensureSchema, openConfigDb, type ConfigDb } from './schema.js';
+import { dbPath, isConfigDbUsable, openConfigDb, type ConfigDb } from './schema.js';
 import {
   setUserConfig, getUserConfig,
   upsertProfile, setActiveProfile, listProfiles,
@@ -89,7 +89,10 @@ export async function runMigration(opts: MigrationOptions = {}): Promise<Migrati
     return result;
   }
   try {
-    ensureSchema(db.db);
+    if (!isConfigDbUsable(db.db)) {
+      result.issues.push('SQLite unavailable; schema could not be initialized');
+      return result;
+    }
 
     // 3a. User config → user_config table
     const flat: Record<string, string> = {};

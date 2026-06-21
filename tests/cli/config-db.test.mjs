@@ -27,6 +27,22 @@ test('openConfigDb returns undefined or opens without throwing', async () => {
   }
 });
 
+test('loadConfig falls back to JSON when config DB schema is unavailable', async () => {
+  const { cwd, env } = await tempWorkspace('engram-db-fallback-');
+  process.env.ENGRAM_CONFIG_DIR = path.join(env.ENGRAM_CONFIG_DIR);
+  const { schema } = await loadModules();
+  const { loadConfig } = await import('../../dist/core/runtime/config.js');
+
+  schema.setConfigDbUnavailableForTests(true);
+  try {
+    const loaded = await loadConfig(cwd);
+    assert.equal(loaded.scope, 'both');
+    assert.equal(loaded.read, 'auto');
+  } finally {
+    schema.setConfigDbUnavailableForTests(false);
+  }
+});
+
 test('ensureSchema creates tables idempotently', async () => {
   const { env } = await tempWorkspace('engram-db-');
   process.env.ENGRAM_CONFIG_DIR = path.join(env.ENGRAM_CONFIG_DIR);

@@ -1,7 +1,7 @@
 /** Config inspection commands: view, set (user-level). */
 import path from 'node:path';
 import { formatRecords } from '../core/cli/format.js';
-import { openConfigDb, ensureSchema } from '../core/config-db/schema.js';
+import { openConfigDb, isConfigDbUsable } from '../core/config-db/schema.js';
 import { writeUserConfig, loadConfig, defaultConfig } from '../core/runtime/config.js';
 import type { EngramConfig } from '../core/runtime/types.js';
 
@@ -27,7 +27,7 @@ async function configView(): Promise<string> {
     return renderConfig('Config (JSON only — SQLite unavailable)', config);
   }
   try {
-    ensureSchema(dbh.db);
+    if (!isConfigDbUsable(dbh.db)) return 'SQLite unavailable; using JSON config snapshots';
     const q = await importQueries();
     const userCfg = q.getUserConfig(dbh.db);
     const profiles = q.listProfiles(dbh.db);
@@ -86,7 +86,7 @@ async function configSet(args: string[], flags: Record<string, any>): Promise<st
   const dbh = await openConfigDb();
   if (!dbh) return 'SQLite unavailable; install better-sqlite3 or use Node >=22.5';
   try {
-    ensureSchema(dbh.db);
+    if (!isConfigDbUsable(dbh.db)) return 'SQLite unavailable; using JSON config snapshots';
     const q = await importQueries();
     const column = q.configKeyToColumn(key);
     if (!column) throw new Error(`unknown config key: ${key}`);

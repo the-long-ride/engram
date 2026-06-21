@@ -4,8 +4,12 @@ Engram is a portable memory skillset for AI agents. Hosts can integrate it by
 calling the CLI, registering the MCP-style JSON-lines wrapper, or loading generated instruction
 files such as Codex-compatible `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, Copilot
 instructions, Gemini-compatible Antigravity context files, and OpenCode custom
-instruction files. Hosts that support custom slash commands can also load
-generated `/engram` adapters.
+instruction files. For runtime-capable hosts, Engram now installs small
+bootstrap instructions instead of the full protocol. Hooks provide routed task
+context, MCP tools provide load/search/proposal behavior, and slash adapters or
+Agent Skills carry detailed command workflows. Fallback targets without
+reliable runtime context injection still receive compact manual instructions.
+Hosts that support custom slash commands can also load generated `/engram` adapters.
 
 ## Required Behaviors
 
@@ -151,8 +155,17 @@ generated `/engram` adapters.
 - For `cursor`, `copilot`, `cline`, and `windsurf`/`cascade`, hook installers
   must return deterministic `SKIPPED` records with host-specific reasons and
   keep those hosts instruction/skillset/manual-load driven in v1.
+- For runtime-first targets (`codex`, `claude`, `cursor`, `gemini`),
+  shared instruction files use the `bootstrap` profile — short instructions
+  that rely on MCP tools and hooks. For fallback targets (`agents-md`,
+  `copilot`, `cline`, `windsurf`, `opencode`), shared instructions use the
+  `compact` profile — the full manual protocol.
 - Hook runtimes must fail open. On malformed input, load failure, or unsupported
   host/event, emit an empty JSON object and do not block the agent session.
+- Engram's SQLite config DB is an optimization for workspace/profile management.
+  If the DB cannot be opened or initialized, normal read/write commands fall back
+  to JSON config snapshots. DB-specific commands report SQLite as unavailable
+  instead of blocking normal memory use.
 - Hook caches must not store raw prompt text. Store only prompt hashes, session
   ids, host, cwd, and routed memory signatures.
 - Install Claude slash support in both `.claude/commands/engram.md` and

@@ -23,12 +23,24 @@ not require an initialized workspace.
 
 This creates `.agents/.engram/` and installs the compact Codex target by default:
 `AGENTS.md` plus `.agents/skills/engram/SKILL.md`. The generated instructions
+For runtime-capable hosts (Codex, Claude, Cursor, Gemini), `AGENTS.md` now contains
+short bootstrap instructions that rely on MCP tools and hooks for detailed protocol;
+the Agent Skill file carries the full write/approval workflow. Fallback targets
+without reliable runtime context injection still receive compact manual instructions.
+
 tell agents to load memory, keep Engram replies short, ask only for required
 confirmation, and report what changed.
 
 Use `engram init --no-skillset` to skip agent files, or
 `engram init --skillset all` to install every supported adapter during init.
 Existing human-authored files are skipped.
+
+**Runtime-first targets:** `codex`, `claude`, `cursor`, `gemini`
+— install short bootstrap instructions plus full Agent Skills and MCP config.
+
+**Compact/manual fallback targets:** `agents-md`, `copilot`, `cline`, `windsurf`, `opencode`
+— install the full compact protocol since these hosts do not have reliable
+runtime context injection in v1.
 
 Use `engram init --global-only --global-path <path>` when the human wants only
 portable global memory and no `.agents/.engram` or local skillset files in the
@@ -39,6 +51,13 @@ global memory is configured. Humans can change the default with
 with `--scope workspace|global|both`.
 
 Profiles isolate global memory roots for company, team, and personal contexts.
+
+## SQLite Config DB
+
+Engram's SQLite config DB is an optimization for workspace/profile management.
+If the DB cannot be opened or initialized, normal read/write commands fall back
+to JSON config snapshots. DB-specific commands report SQLite as unavailable
+instead of blocking normal memory use.
 Use `engram profile create <name> --global-path <path>` to register a profile,
 `engram profile use <name>` for the user default in uninitialized folders, and
 `engram profile use <name> --workspace` to pin the current workspace. Agents may

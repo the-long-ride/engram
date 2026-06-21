@@ -1,7 +1,7 @@
 /** Workspace registry commands: list, info, set, unregister, link, unlink. */
 import path from 'node:path';
 import { formatRecords } from '../core/cli/format.js';
-import { openConfigDb, ensureSchema } from '../core/config-db/schema.js';
+import { openConfigDb, isConfigDbUsable } from '../core/config-db/schema.js';
 import { writeConfig } from '../core/runtime/config.js';
 import { loadConfig } from '../core/runtime/config.js';
 import { exists } from '../core/system/fsx.js';
@@ -28,7 +28,7 @@ async function workspaceList(): Promise<string> {
   const dbh = await openConfigDb();
   if (!dbh) return 'SQLite unavailable; install better-sqlite3 or use Node >=22.5';
   try {
-    ensureSchema(dbh.db);
+    if (!isConfigDbUsable(dbh.db)) return 'SQLite unavailable; using JSON config snapshots';
     const q = await importQueries();
     const rows = q.listWorkspaces(dbh.db);
     if (!rows.length) return 'No workspaces registered. Workspaces are auto-registered when running engram commands.';
@@ -50,7 +50,7 @@ async function workspaceInfo(targetPath: string): Promise<string> {
   const dbh = await openConfigDb();
   if (!dbh) return 'SQLite unavailable; install better-sqlite3 or use Node >=22.5';
   try {
-    ensureSchema(dbh.db);
+    if (!isConfigDbUsable(dbh.db)) return 'SQLite unavailable; using JSON config snapshots';
     const q = await importQueries();
     const ws = q.getWorkspaceByPath(dbh.db, resolved);
     if (!ws) return `Workspace not registered: ${resolved}\nWorkspaces are auto-registered when running engram commands.`;
@@ -80,7 +80,7 @@ async function workspaceSet(args: string[], flags: Record<string, any>): Promise
   const dbh = await openConfigDb();
   if (!dbh) return 'SQLite unavailable; install better-sqlite3 or use Node >=22.5';
   try {
-    ensureSchema(dbh.db);
+    if (!isConfigDbUsable(dbh.db)) return 'SQLite unavailable; using JSON config snapshots';
     const q = await importQueries();
     if (!q.configKeyToColumn(key)) throw new Error(`unknown config key: ${key}`);
     const ws = q.getWorkspaceByPath(dbh.db, resolved) || q.upsertWorkspace(dbh.db, resolved, path.basename(resolved));
@@ -100,7 +100,7 @@ async function workspaceUnregister(targetPath?: string): Promise<string> {
   const dbh = await openConfigDb();
   if (!dbh) return 'SQLite unavailable; install better-sqlite3 or use Node >=22.5';
   try {
-    ensureSchema(dbh.db);
+    if (!isConfigDbUsable(dbh.db)) return 'SQLite unavailable; using JSON config snapshots';
     const q = await importQueries();
     const ws = q.getWorkspaceByPath(dbh.db, resolved);
     if (!ws) return `Workspace not registered: ${resolved}`;
@@ -116,7 +116,7 @@ async function workspaceLink(targetPath?: string): Promise<string> {
   const dbh = await openConfigDb();
   if (!dbh) return 'SQLite unavailable; install better-sqlite3 or use Node >=22.5';
   try {
-    ensureSchema(dbh.db);
+    if (!isConfigDbUsable(dbh.db)) return 'SQLite unavailable; using JSON config snapshots';
     const q = await importQueries();
     const ws = q.getWorkspaceByPath(dbh.db, resolved) || q.upsertWorkspace(dbh.db, resolved, path.basename(resolved));
     q.setWorkspaceLinked(dbh.db, resolved, true);
@@ -131,7 +131,7 @@ async function workspaceUnlink(targetPath?: string): Promise<string> {
   const dbh = await openConfigDb();
   if (!dbh) return 'SQLite unavailable; install better-sqlite3 or use Node >=22.5';
   try {
-    ensureSchema(dbh.db);
+    if (!isConfigDbUsable(dbh.db)) return 'SQLite unavailable; using JSON config snapshots';
     const q = await importQueries();
     const ws = q.getWorkspaceByPath(dbh.db, resolved) || q.upsertWorkspace(dbh.db, resolved, path.basename(resolved));
     q.setWorkspaceLinked(dbh.db, resolved, false);

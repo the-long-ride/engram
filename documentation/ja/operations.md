@@ -31,7 +31,7 @@
 | 読み込み上限設定 | `engram set-load-limit 1..32\|status\|reset` |
 | 自動フック読み込み設定 | `engram set-read startup\|auto\|always\|manual\|off\|status` |
 | フック証明表示設定 | `engram set-proof off\|compact\|status` |
-| エージェントフックのインストール | `engram install-agent-hooks codex\|claude\|gemini` |
+| エージェントフックのインストール | `engram link codex\|claude\|gemini` |
 | グローバルプロファイルの管理 | `engram profile status\|create\|use\|merge` |
 | メモリの複製 (ワークスペース/グローバル) | `engram clone-memory workspace global [--metacognize]` |
 

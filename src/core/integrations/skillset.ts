@@ -8,6 +8,7 @@ import { sha256 } from '../safety/hash.js';
 import { ensureDir, readJson, readText, writeJson, writeText } from '../system/fsx.js';
 import { globalSkillsetMarkdown, isGenerated, renderSkillsetFile } from './skillset-render.js';
 import type { InstructionProfile } from './skillset-render.js';
+import { resolveAllTargets, allSupportedTargets } from './agent-detect.js';
 
 export type SkillsetTarget =
   | 'agents-md' | 'copilot' | 'claude' | 'cursor' | 'gemini'
@@ -60,11 +61,15 @@ function instructionProfileForTarget(target: SkillsetTarget, label: string): Ins
   return 'compact';
 }
 
-async function instructionProfileForWorkspaceRefresh(cwd: string, target: SkillsetTarget, relativeFile: string): Promise<InstructionProfile> {
-  if (target === 'agents-md' && relativeFile === 'AGENTS.md' && await hasGeneratedCodexSkill(cwd)) {
+async function instructionProfileForWorkspaceRefresh(cwd: string, target: SkillsetTarget, relativeFile: string, content: string): Promise<InstructionProfile> {
+  if (target === 'agents-md' && relativeFile === 'AGENTS.md' && await hasGeneratedCodexSkill(cwd) && wasBootstrap(content)) {
     return 'bootstrap';
   }
   return instructionProfileForTarget(target, target);
+}
+
+function wasBootstrap(content: string): boolean {
+  return content.includes('Runtime Bootstrap');
 }
 
 async function hasGeneratedCodexSkill(cwd: string): Promise<boolean> {
@@ -81,7 +86,7 @@ export function skillsetTargets(): SkillsetTarget[] {
 /** Install one or all agent adapter files into a workspace. */
 export async function installSkillset(cwd: string, target = 'all', force = false): Promise<InstallResult[]> {
   const config = await loadConfig(cwd);
-  const names = target === 'all' ? skillsetTargets().map((name) => ({ name, label: name })) : resolveTargets(target);
+  const names = resolveLinkTargets(target);
   const results: InstallResult[] = [];
   const plannedFiles = new Set<string>();
   for (const { name, label } of names) {
@@ -114,7 +119,7 @@ export async function refreshGeneratedWorkspaceSkillsets(cwd: string, options: {
       const file = path.join(cwd, relativeFile);
       const existing = await readText(file);
       if (!existing || !isGenerated(existing, relativeFile)) continue;
-      const profile = await instructionProfileForWorkspaceRefresh(cwd, name, relativeFile);
+      const profile = await instructionProfileForWorkspaceRefresh(cwd, name, relativeFile, existing);
       const next = renderSkillsetFile(name, relativeFile, config.read, profile);
       const normalized = next.endsWith('\n') ? next : `${next}\n`;
       if (existing === normalized) continue;
@@ -188,6 +193,18 @@ function resolveTarget(name: string, label: string): ResolvedTarget {
   return { name: name as SkillsetTarget, label };
 }
 
+/** Resolve target names for link installs. When target is 'all', auto-detect installed agents. */
+export function resolveLinkTargets(target: string): ResolvedTarget[] {
+  if (target === 'all') {
+    const detected = resolveAllTargets();
+    return detected.map((name) => ({ name, label: name }));
+  }
+  if (target === 'all-supported') {
+    return allSupportedTargets().filter((name) => !hiddenTargets.has(name)).map((name) => ({ name, label: name }));
+  }
+  return resolveTargets(target);
+}
+
 function emptyGlobalRegistry(): GlobalSkillsetRegistry {
   return { version: 1, updated: new Date(0).toISOString(), engram_version: VERSION, installs: {} };
 }
@@ -217,10 +234,10 @@ function groupedResults(results: InstallResult[]): Map<string, InstallResult[]> 
 }
 
 function globalInstallPlans(target: string, home = globalAgentHome()): GlobalInstallPlan[] {
-  const names = target === 'all' ? skillsetTargets().map((name) => ({ name, label: name })) : resolveTargets(target);
-  return names.flatMap((item) => [
+  const resolvedTargets = resolveLinkTargets(target);
+  return resolvedTargets.flatMap((item) => [
     ...globalFilesForTarget(item, home),
-    ...(target === 'all' ? [] : globalMcpFilesForTarget(item, home))
+    ...(target === 'all' || target === 'all-supported' ? [] : globalMcpFilesForTarget(item, home))
   ]);
 }
 

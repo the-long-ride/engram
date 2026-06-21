@@ -31,7 +31,7 @@
 | 압축 로드 제한 설정 | `engram set-load-limit 1..32\|status\|reset` |
 | 자동 훅 읽기 설정 | `engram set-read startup\|auto\|always\|manual\|off\|status` |
 | 훅 증명 표시 여부 설정 | `engram set-proof off\|compact\|status` |
-| 에이전트 훅 설치 | `engram install-agent-hooks codex\|claude\|gemini` |
+| 에이전트 훅 설치 | `engram link codex\|claude\|gemini` |
 | 글로벌 프로파일 관리 | `engram profile status\|create\|use\|merge` |
 | 메모리 복제 (워크스페이스/글로벌) | `engram clone-memory workspace global [--metacognize]` |
 

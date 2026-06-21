@@ -328,7 +328,7 @@ async function globalSkillsetUpgradeRecords(args: string[], flags: Record<string
       title: 'SKIPPED global skillsets',
       fields: [
         ['Reason', 'no registered global skillsets yet'],
-        ['Start with', 'engram install-skillset --global codex']
+        ['Start with', 'engram link --global codex']
       ]
     }];
   }

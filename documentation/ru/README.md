@@ -159,10 +159,10 @@ engram link gemini
 
 Необязательные хуки автозагрузки доступны для хостов, которые могут внедрять контекст как при запуске сессии, так и при последующих ходах промпта:
 ```bash
-engram install-agent-hooks codex --plan
-engram install-agent-hooks codex
-engram install-agent-hooks claude
-engram install-agent-hooks gemini
+engram link codex --plan
+engram link codex
+engram link claude
+engram link gemini
 engram set-read auto
 engram set-proof compact
 ```
@@ -222,7 +222,7 @@ engram entry
 | **Лимит загрузки** | `engram set-load-limit <1..32>` | `/engram set-load-limit <count>` |
 | **Настроить Авточтение** | `engram set-read startup|auto|always|manual|off` | `/engram set-read auto` |
 | **Показ Доказательства** | `engram set-proof off|compact` | `/engram set-proof compact` |
-| **Установить Хуки Агента** | `engram install-agent-hooks codex|claude|gemini` | Один раз запустить в терминале |
+| **Установить Хуки Агента** | `engram link codex|claude|gemini` | Один раз запустить в терминале |
 | **Путь к глобальной памяти** | `engram update-global-folder <новый-путь>` | `/engram set global memory path to <new-path>` |
 | **Клонирование памяти** | `engram clone-memory <источник> <цель>` | `/engram clone workspace memory to global` |
 | **Назначение роли** | `engram set-role <роли>` | `/engram set-role <roles>` |

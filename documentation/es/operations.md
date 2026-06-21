@@ -31,7 +31,7 @@ Esta página contiene el uso detallado para que el README pueda mantenerse corto
 | Configurar límite de carga | `engram set-load-limit 1..32\|status\|reset` |
 | Configurar lecturas automáticas | `engram set-read startup\|auto\|always\|manual\|off\|status` |
 | Configurar prueba de hooks | `engram set-proof off\|compact\|status` |
-| Instalar hooks del agente | `engram install-agent-hooks codex\|claude\|gemini` |
+| Instalar hooks del agente | `engram link codex\|claude\|gemini` |
 | Administrar perfiles globales | `engram profile status\|create\|use\|merge` |
 | Clonar memoria workspace/global | `engram clone-memory workspace global [--metacognize]` |
 

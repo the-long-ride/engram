@@ -159,10 +159,10 @@ engram link gemini
 
 Des hooks de chargement automatique optionnels sont disponibles pour les hôtes capables d'injecter du contexte au début de la session et lors des invites suivantes :
 ```bash
-engram install-agent-hooks codex --plan
-engram install-agent-hooks codex
-engram install-agent-hooks claude
-engram install-agent-hooks gemini
+engram link codex --plan
+engram link codex
+engram link claude
+engram link gemini
 engram set-read auto
 engram set-proof compact
 ```
@@ -222,7 +222,7 @@ Lorsqu'un agent IA propose des candidats de mémoire `TYPE: ... | TEXT: ...`, il
 | **Limite de Charge** | `engram set-load-limit <1..32>` | `/engram set-load-limit <count>` |
 | **Configurer Lecture Auto** | `engram set-read startup|auto|always|manual|off` | `/engram set-read auto` |
 | **Visibilité de Preuve** | `engram set-proof off|compact` | `/engram set-proof compact` |
-| **Installer les Hooks Agent** | `engram install-agent-hooks codex|claude|gemini` | À lancer une fois depuis le terminal |
+| **Installer les Hooks Agent** | `engram link codex|claude|gemini` | À lancer une fois depuis le terminal |
 | **Mettre à Jour Chemin Global** | `engram update-global-folder <nouveau-chemin>` | `/engram set global memory path to <new-path>` |
 | **Cloner la Mémoire** | `engram clone-memory <source> <destination>` | `/engram clone workspace memory to global` |
 | **Définir les Roles** | `engram set-role <roles>` | `/engram set-role <roles>` |

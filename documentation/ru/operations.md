@@ -31,7 +31,7 @@
 | Настройка лимита загрузки | `engram set-load-limit 1..32\|status\|reset` |
 | Настройка авточтения хуков | `engram set-read startup\|auto\|always\|manual\|off\|status` |
 | Настройка доказательства хуков | `engram set-proof off\|compact\|status` |
-| Установка хуков агента | `engram install-agent-hooks codex\|claude\|gemini` |
+| Установка хуков агента | `engram link codex\|claude\|gemini` |
 | Управление глобальными профилями | `engram profile status\|create\|use\|merge` |
 | Клонирование памяти workspace/global | `engram clone-memory workspace global [--metacognize]` |
 

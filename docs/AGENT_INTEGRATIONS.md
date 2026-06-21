@@ -80,7 +80,7 @@ To add or refresh adapters later:
 
 ```bash
 engram upgrade
-engram install-skillset all
+engram link all
 ```
 
 `engram upgrade` refreshes generated workspace help, memory indexes, graph
@@ -99,14 +99,14 @@ as `~/.claude/skills/engram/SKILL.md` for Claude Code.
 To install automatic context injection hooks where v1 supports them:
 
 ```bash
-engram install-agent-hooks codex --plan
-engram install-agent-hooks codex
-engram install-agent-hooks claude
-engram install-agent-hooks gemini
+engram link codex --plan
+engram link codex
+engram link claude
+engram link gemini
 engram set-proof compact
 ```
 
-Use `--global` for user-level hook config and `uninstall-agent-hooks` to remove
+Use --global for user-level config and ngram unlink to remove
 only Engram-managed hook entries. `engram set-read startup|auto|always|manual|off`
 controls runtime behavior. `auto` loads on session start and later injects again
 only when routed Engram context changes; the hook cache stores hashes,
@@ -154,10 +154,10 @@ Gemini MCP config file.
 | `cline` | Skipped | None written | N/A | Hook support is plugin-based, not aligned with Engram's file-first adapter installer in v1 |
 | `windsurf` / `cascade` | Skipped | None written | N/A | Cascade hooks are blocking/audit hooks, not reliable context injection hooks |
 
-`engram install-agent-hooks all --plan` reports supported writes and deterministic
-`SKIPPED` reasons for partial hosts. This is separate from `engram link`, which
-continues to install instruction, slash, and MCP adapters for broader host
-coverage.
+`engram link all --plan` reports supported writes and deterministic
+`SKIPPED` reasons for partial hosts across skillset instruction files, MCP config,
+slash adapters, and agent hooks in a single unified install. `engram unlink`
+removes all of these together as well.
 
 ## Recommended Flow
 
@@ -412,7 +412,7 @@ For global Copilot installs, Engram appends its managed block to
 `~/.copilot/copilot-instructions.md`.
 
 OpenAI Codex and other AGENTS.md-compatible agents can use `AGENTS.md` as a
-project instruction file. Use `engram install-skillset codex` when you want the
+project instruction file. Use `engram link codex` when you want the
 command to name Codex directly. The Codex alias also writes
 `.agents/skills/engram/SKILL.md`, so agents that discover Agent Skills can route
 Engram as an invokable skill.

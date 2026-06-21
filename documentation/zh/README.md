@@ -159,10 +159,10 @@ engram link gemini
 
 可选的自动加载钩子适用于能够在会话开始和后续提示轮次中注入上下文的主机：
 ```bash
-engram install-agent-hooks codex --plan
-engram install-agent-hooks codex
-engram install-agent-hooks claude
-engram install-agent-hooks gemini
+engram link codex --plan
+engram link codex
+engram link claude
+engram link gemini
 engram set-read auto
 engram set-proof compact
 ```
@@ -222,7 +222,7 @@ engram entry
 | **配置加载上限** | `engram set-load-limit <1..32>` | `/engram set-load-limit <count>` |
 | **配置自动读取** | `engram set-read startup|auto|always|manual|off` | `/engram set-read auto` |
 | **配置证明显示** | `engram set-proof off|compact` | `/engram set-proof compact` |
-| **安装智能体 Hooks** | `engram install-agent-hooks codex|claude|gemini` | 在终端执行一次 |
+| **安装智能体 Hooks** | `engram link codex|claude|gemini` | 在终端执行一次 |
 | **更新全局路径** | `engram update-global-folder <新路径>` | `/engram set global memory path to <new-path>` |
 | **复制内存文件** | `engram clone-memory <源> <目的>` | `/engram clone workspace memory to global` |
 | **设定开发角色** | `engram set-role <角色列表>` | `/engram set-role <roles>` |

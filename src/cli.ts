@@ -12,7 +12,7 @@ import { cmdConfig } from './commands/config-cmd.js';
 import { cmdMetacognize } from './commands/metacognize.js';
 import { cmdProfile } from './commands/profile.js';
 import { cmdWorkspace } from './commands/workspace.js';
-import { cmdAgentHook, cmdIgnore, cmdInstallAgentHooks, cmdInstallHooks, cmdResolveConflicts, cmdSetLoadLimit, cmdSetProof, cmdSetRead, cmdSetRole, cmdSetRuleVariant, cmdSetSaveTarget, cmdUninstallAgentHooks, cmdUpdateGlobalFolder, cmdUpgrade } from './commands/admin.js';
+import { cmdAgentHook, cmdIgnore, cmdInstallHooks, cmdResolveConflicts, cmdSetLoadLimit, cmdSetProof, cmdSetRead, cmdSetRole, cmdSetRuleVariant, cmdSetSaveTarget, cmdUpdateGlobalFolder, cmdUpgrade } from './commands/admin.js';
 import { cmdLink, cmdUnlink } from './commands/skillset-link.js';
 import { maybeAutoUpgrade } from './core/runtime/auto-upgrade.js';
 
@@ -68,8 +68,8 @@ export async function runCli(argv: string[]): Promise<string> {
       case 'update-global-folder': return await cmdUpdateGlobalFolder(rest, flags);
       case 'resolve-conflicts': return await cmdResolveConflicts(rest, flags);
       case 'install-hooks': return await cmdInstallHooks();
-      case 'install-agent-hooks': return await cmdInstallAgentHooks(rest, flags);
-      case 'uninstall-agent-hooks': return await cmdUninstallAgentHooks(rest, flags);
+      case 'install-agent-hooks': return await cmdLink(rest, flags);
+      case 'uninstall-agent-hooks': return await cmdUnlink(rest, flags);
       case 'agent-hook': return await cmdAgentHook(flags, await readStdin());
       case 'install-skillset': return await cmdLink(rest, flags);
       case 'link': return await cmdLink(rest, flags);

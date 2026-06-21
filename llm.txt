@@ -265,7 +265,7 @@ To initialize only global memory:
 
 engram init --global-only --global-path <path>
 
-To link Engram to a host:
+To link Engram to a host (skillset + MCP + slash + agent hooks):
 
 - `engram link codex`
 - `engram link claude`
@@ -274,24 +274,7 @@ To link Engram to a host:
 - `engram link mcp`
 - `engram link --global <target>`
 
-`engram link <target>` also installs known MCP registration for that target when
-supported.
-
-Hook installation
-
-Opt-in hook installation is currently intended for:
-
-- `codex`
-- `claude`
-- `gemini`
-
-Useful commands:
-
-- `engram install-agent-hooks codex --plan`
-- `engram install-agent-hooks codex`
-- `engram install-agent-hooks claude`
-- `engram install-agent-hooks gemini`
-- `engram uninstall-agent-hooks <target>`
+`engram link <target>` installs skillset files, MCP config, slash adapters, and agent hooks together. Use `--plan` to preview, `--force` to overwrite. `engram unlink <target>` removes all of these together.
 
 The current public Antigravity fallback is `gemini`. Hidden compatibility aliases
 may still exist, but they should not be the default public recommendation.

@@ -74,7 +74,7 @@ function initSuccessSuggestions(globalOnly: boolean): string[] {
     `  ${style.label('Best example:')} start each session with ${style.command('/engram load "<current task>"')} and save durable lessons before you leave.`,
     `- ${style.title('Install agent skillset')}`,
     `  ${style.label('Use for what:')} teach your agent how to load, search, save, and maintain Engram memory.`,
-    `  ${style.label('How to use:')} ${style.command('engram help install-skillset')}, then ${style.command('engram install-skillset <your-agent>')}.`,
+    `  ${style.label('How to use:')} ${style.command('engram help link')}, then ${style.command('engram link <your-agent>')}.`,
     `  ${style.label('Best example:')} run this after init so future sessions know the Engram protocol.`,
     `- ${style.title('Rule strict level')}`,
     `  ${style.label('Use for what:')} tune how strongly loaded rules steer agents.`,

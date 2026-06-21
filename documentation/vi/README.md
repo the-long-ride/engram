@@ -159,10 +159,10 @@ engram link gemini
 
 Các hook tự động tải tùy chọn khả dụng cho các host có thể bơm ngữ cảnh ở cả thời điểm bắt đầu phiên và các lượt prompt sau đó:
 ```bash
-engram install-agent-hooks codex --plan
-engram install-agent-hooks codex
-engram install-agent-hooks claude
-engram install-agent-hooks gemini
+engram link codex --plan
+engram link codex
+engram link claude
+engram link gemini
 engram set-read auto
 engram set-proof compact
 ```
@@ -221,7 +221,7 @@ Khi một tác nhân AI đề xuất các ứng viên bộ nhớ dạng `TYPE: .
 | **Cấu Hình Giới Hạn Tải** | `engram set-load-limit <1..32>` | `/engram set-load-limit <count>` |
 | **Cấu Hình Tự Động Đọc** | `engram set-read startup|auto|always|manual|off` | `/engram set-read auto` |
 | **Cấu Hình Hiển Thị Bằng Chứng** | `engram set-proof off|compact` | `/engram set-proof compact` |
-| **Cài Hook Tác Nhân** | `engram install-agent-hooks codex|claude|gemini` | Chạy một lần trong terminal |
+| **Cài Hook Tác Nhân** | `engram link codex|claude|gemini` | Chạy một lần trong terminal |
 | **Cập Nhật Đường Dẫn Global** | `engram update-global-folder <đường-dẫn-mới>` | `/engram set global memory path to <new-path>` |
 | **Sao Chép Bộ Nhớ** | `engram clone-memory <nguồn> <đích>` | `/engram clone workspace memory to global` |
 | **Cấu Hình Vai Trò (Role)** | `engram set-role <các-vai-trò>` | `/engram set-role <roles>` |

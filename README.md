@@ -162,10 +162,10 @@ engram link gemini
 Optional auto-load hooks are available for hosts that can inject context at both
 session start and later prompt turns:
 ```bash
-engram install-agent-hooks codex --plan
-engram install-agent-hooks codex
-engram install-agent-hooks claude
-engram install-agent-hooks gemini
+engram link codex --plan
+engram link codex
+engram link claude
+engram link gemini
 engram set-read auto
 engram set-proof compact
 ```
@@ -231,7 +231,7 @@ When an AI agent proposes `TYPE: ... | TEXT: ...` memory candidates, it may add 
 | **Configure Load Limit** | `engram set-load-limit <1..32>` | `/engram set-load-limit <count>` |
 | **Configure Auto Read** | `engram set-read startup|auto|always|manual|off` | `/engram set-read auto` |
 | **Configure Proof Visibility** | `engram set-proof off|compact` | `/engram set-proof compact` |
-| **Install Agent Hooks** | `engram install-agent-hooks codex|claude|gemini` | Run once from terminal |
+| **Install Agent Hooks** | `engram link codex|claude|gemini` | Run once from terminal |
 | **Update Global Path** | `engram update-global-folder <new-path>` | `/engram set global memory path to <new-path>` |
 | **Clone Memory** | `engram clone-memory <src> <dest>` | `/engram clone workspace memory to global` |
 | **Manage Workspaces** | `engram workspace list|info|set|unregister|link|unlink` | `/engram workspace list` |

@@ -33,21 +33,25 @@ test('set-read supports startup auto always manual and off policies', async () =
 
 test('install-agent-hooks plan reports supported writes, aliases, and skipped targets', async () => {
   const { cwd, env } = await tempWorkspace('engram-agent-hooks-plan-');
+  // install-agent-hooks is now an alias for engram link, which installs skillset files AND agent hooks
   const codex = await runEngram(cwd, env, ['install-agent-hooks', 'codex', '--plan']);
   assert.equal(codex.code, 0, codex.stderr);
+  assert.match(codex.stdout, /WRITTEN codex/);
   assert.match(codex.stdout, /PLAN codex/);
   assert.match(codex.stdout, /\.codex[\\/]hooks\.json/);
   assert.match(codex.stdout, /SessionStart, UserPromptSubmit/);
 
   const alias = await runEngram(cwd, env, ['install-agent-hooks', 'antigravity', '--plan']);
   assert.equal(alias.code, 0, alias.stderr);
+  assert.match(alias.stdout, /WRITTEN antigravity/);
   assert.match(alias.stdout, /PLAN gemini/);
   assert.match(alias.stdout, /\.gemini[\\/]settings\.json/);
 
-  const skipped = await runEngram(cwd, env, ['install-agent-hooks', 'cursor', '--plan']);
-  assert.equal(skipped.code, 0, skipped.stderr);
-  assert.match(skipped.stdout, /SKIPPED cursor/);
-  assert.match(skipped.stdout, /startup-only|partial/i);
+  // cursor still gets skillset files but no hooks (cursor hooks are unsupported)
+  const cursor = await runEngram(cwd, env, ['install-agent-hooks', 'cursor', '--plan']);
+  assert.equal(cursor.code, 0, cursor.stderr);
+  assert.match(cursor.stdout, /WRITTEN cursor/);
+  assert.match(cursor.stdout, /\.cursor[\\/]rules[\\/]engram\.mdc/);
   await rm(cwd, { recursive: true, force: true });
 });
 

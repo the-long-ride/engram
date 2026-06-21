@@ -2,6 +2,11 @@
 import { openConfigDb, isConfigDbUsable } from '../config-db/schema.js';
 import { loadConfig, writeUserConfig, readProfileStore, writeProfileStore, workspaceRoot, legacyWorkspaceRoot } from '../runtime/config.js';
 import { exists } from '../system/fsx.js';
+import {
+  configFieldsForPanel,
+  validateConfigPatch,
+  type ConfigPatchValidation
+} from './config-schema.js';
 
 async function importQueries(): Promise<any> {
   const url = new URL('../config-db/queries.js', import.meta.url).href;
@@ -22,6 +27,7 @@ export interface PanelData {
   cwd: string;
   version: string;
   isInitialized: boolean;
+  configFields: ReturnType<typeof configFieldsForPanel>;
 }
 
 export async function loadPanelData(cwd: string, entryText: string): Promise<PanelData> {
@@ -31,11 +37,11 @@ export async function loadPanelData(cwd: string, entryText: string): Promise<Pan
   const isInitialized = await exists(workspaceRoot(cwd)) || await exists(legacyWorkspaceRoot(cwd));
   const dbh = await openConfigDb();
   if (!dbh) {
-    return { config, workspaces: [], profiles: [], entry, sqliteAvailable: false, cwd, version, isInitialized };
+    return { config, workspaces: [], profiles: [], entry, sqliteAvailable: false, cwd, version, isInitialized, configFields: configFieldsForPanel() };
   }
   try {
     if (!isConfigDbUsable(dbh.db)) {
-      return { config, workspaces: [], profiles: [], entry, sqliteAvailable: false, cwd, version, isInitialized };
+      return { config, workspaces: [], profiles: [], entry, sqliteAvailable: false, cwd, version, isInitialized, configFields: configFieldsForPanel() };
     }
     const q = await importQueries();
     return {
@@ -46,38 +52,49 @@ export async function loadPanelData(cwd: string, entryText: string): Promise<Pan
       sqliteAvailable: true,
       cwd,
       version,
-      isInitialized
+      isInitialized,
+      configFields: configFieldsForPanel()
     };
   } finally {
     dbh.close();
   }
 }
 
-const ALLOWED = new Set([
-  'scope', 'read', 'proof', 'enabled', 'roles', 'default_profile',
-  'theme',
-  'load.limit',
-  'graph.enabled', 'graph.max_related', 'graph.min_related_score',
-  'vector.enabled', 'vector.auto_threshold', 'vector.candidate_pool', 'vector.dimensions',
-  'rule_variants.enabled', 'rule_variants.active',
-  'live_sync.enabled',
-  'pattern_mining.enabled', 'pattern_mining.threshold', 'pattern_mining.lookback_sessions',
-  'pr_workflow.enabled', 'pr_workflow.target_branch',
-  'encryption.enabled', 'encryption.scope', 'encryption.key_source',
-  'global_path',
-  'global_git.enabled', 'global_git.remote', 'global_git.branch',
-  'global_git.auto_sync', 'global_git.auto_resolve',
-]);
+export function apiConfigValidate(patch: unknown): ConfigPatchValidation {
+  return validateConfigPatch(patch);
+}
 
 export async function apiConfigSet(key: string, value: string, cwd: string): Promise<string> {
-  if (!ALLOWED.has(key)) throw new Error('unknown config key: ' + key);
+  const validation = validateConfigPatch({ [key]: value });
+  if (!validation.ok) {
+    throw new Error(validation.issues.map((issue) => issue.message).join('; '));
+  }
+  const suffix = await writeConfigPatch(validation.patch, cwd);
+  const [savedKey, savedValue] = Object.entries(validation.patch)[0];
+  return 'Set ' + savedKey + ' = ' + savedValue + suffix;
+}
+
+export async function apiConfigUpdate(rawPatch: unknown, cwd: string): Promise<string> {
+  const validation = validateConfigPatch(rawPatch);
+  if (!validation.ok) {
+    throw new Error(validation.issues.map((issue) => issue.message).join('; '));
+  }
+
+  const suffix = await writeConfigPatch(validation.patch, cwd);
+  const count = Object.keys(validation.patch).length;
+  return 'Saved ' + count + ' config ' + (count === 1 ? 'setting' : 'settings') + suffix;
+}
+
+async function writeConfigPatch(patch: Record<string, string>, cwd: string): Promise<string> {
   let sqliteUnavailable = false;
   const dbh = await openConfigDb();
   if (dbh) {
     try {
       if (isConfigDbUsable(dbh.db)) {
         const q = await importQueries();
-        q.setUserConfigKey(dbh.db, key, value);
+        for (const [key, value] of Object.entries(patch)) {
+          q.setUserConfigKey(dbh.db, key, value);
+        }
       } else {
         sqliteUnavailable = true;
       }
@@ -87,10 +104,13 @@ export async function apiConfigSet(key: string, value: string, cwd: string): Pro
   } else {
     sqliteUnavailable = true;
   }
+
   const config = await loadConfig(cwd);
-  applyDotted(config as any, key, value);
+  for (const [key, value] of Object.entries(patch)) {
+    applyDotted(config as any, key, value);
+  }
   await writeUserConfig(config);
-  return 'Set ' + key + ' = ' + value + (sqliteUnavailable ? ' (SQLite unavailable; JSON only)' : '');
+  return sqliteUnavailable ? ' (SQLite unavailable; JSON only)' : '';
 }
 
 export async function apiWorkspaceAdd(wsPath: string, name: string): Promise<string> {
@@ -178,11 +198,22 @@ function applyDotted(obj: Record<string, any>, key: string, value: string): void
     if (!cur[parts[i]]) cur[parts[i]] = {};
     cur = cur[parts[i]];
   }
-  const last = parts[parts.length - 1];
-  if (value === 'true') cur[last] = true;
-  else if (value === 'false') cur[last] = false;
-  else if (value !== '' && !isNaN(Number(value))) cur[last] = Number(value);
-  else cur[last] = value;
+  cur[parts[parts.length - 1]] = parsePersistedValue(key, value);
+}
+
+function parsePersistedValue(key: string, value: string): any {
+  if (key === 'roles') {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed.map((item) => String(item)) : [];
+    } catch {
+      return [];
+    }
+  }
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  if (value !== '' && !isNaN(Number(value))) return Number(value);
+  return value;
 }
 
 export function parseEntryText(text: string): EntrySection[] {

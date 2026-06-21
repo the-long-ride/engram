@@ -6,6 +6,8 @@ import { tempWorkspace } from './helpers.mjs';
 import {
   loadPanelData,
   apiConfigSet,
+  apiConfigUpdate,
+  apiConfigValidate,
   apiWorkspaceAdd,
   apiWorkspaceLink,
   apiWorkspaceRemove,
@@ -66,12 +68,34 @@ test('web UI api workspace, profile, config handlers and entry text parser', asy
     const setProof = await apiConfigSet('proof', 'compact', cwd);
     assert.match(setProof, /Set proof = compact/);
 
+    const validation = apiConfigValidate({
+      'load.limit': '12',
+      'graph.min_related_score': '0.4',
+      roles: 'agent, reviewer'
+    });
+    assert.equal(validation.ok, true);
+    assert.deepEqual(validation.riskyKeys, []);
+
+    const batchSet = await apiConfigUpdate({
+      'load.limit': '12',
+      'graph.min_related_score': '0.4',
+      roles: 'agent, reviewer'
+    }, cwd);
+    assert.match(batchSet, /Saved 3 config settings/);
+
+    await assert.rejects(
+      async () => {
+        await apiConfigUpdate({ read: 'always', 'load.limit': '99' }, cwd);
+      },
+      /load\.limit must be at most 32/
+    );
+
     // 4. apiConfigSet (invalid key)
     await assert.rejects(
       async () => {
         await apiConfigSet('invalid_key', 'value', cwd);
       },
-      /unknown config key/
+      /Unknown config key/
     );
 
     // 5. Workspace operations (require SQLite — skip when unavailable)
@@ -107,6 +131,9 @@ test('web UI api workspace, profile, config handlers and entry text parser', asy
     assert.equal(finalData.config.scope, 'global');
     assert.equal(finalData.config.read, 'always');
     assert.equal(finalData.config.proof, 'compact');
+    assert.equal(finalData.config.load.limit, 12);
+    assert.equal(finalData.config.graph.min_related_score, 0.4);
+    assert.deepEqual(finalData.config.roles, ['agent', 'reviewer']);
 
     // 8. Fallback: apiConfigSet persists JSON even when SQLite is unavailable
     const schema = await import('../dist/core/config-db/schema.js');

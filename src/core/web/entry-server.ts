@@ -9,6 +9,8 @@ import { renderEntry } from '../runtime/entry.js';
 import {
   loadPanelData,
   apiConfigSet,
+  apiConfigValidate,
+  apiConfigUpdate,
   apiWorkspaceAdd,
   apiWorkspaceRemove,
   apiWorkspaceLink,
@@ -128,8 +130,12 @@ async function handleRequest(req: any, res: any, cwd: string): Promise<void> {
     let body: any = {};
     try { body = JSON.parse(await readBody(req)); } catch { json(400, { error: 'Invalid JSON' }); return; }
     try {
+      if (url === '/api/config/validate') {
+        json(200, apiConfigValidate(body.patch ?? body));
+        return;
+      }
       let message = '';
-      if (url === '/api/config') message = await apiConfigSet(body.key, String(body.value ?? ''), cwd);
+      if (url === '/api/config') message = await apiConfigUpdate(body.patch ?? { [body.key]: body.value }, cwd);
       else if (url === '/api/init') {
         const { initWorkspace } = await import('../memory/storage.js');
         const lines = await initWorkspace(cwd, false, 'main', '', {});

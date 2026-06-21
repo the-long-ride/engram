@@ -632,6 +632,7 @@ button {
   border-radius: var(--r6);
   font-family: var(--font);
   font-size: 13px;
+  color: var(--g1000);
   padding: 0 8px;
   outline: none;
   background: var(--bg);
@@ -645,6 +646,7 @@ button {
   border-radius: var(--r6);
   font-family: var(--font);
   font-size: 13px;
+  color: var(--g1000);
   padding: 0 8px;
   background: var(--bg);
   outline: none;

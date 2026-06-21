@@ -17,3 +17,9 @@ test('panel shows review modal and risky confirmation copy', async () => {
   assert.match(panel, /I reviewed risky changes/);
   assert.match(panel, /\/api\/config\/validate/);
 });
+
+test('panel css defines correct colors for form inputs and selects', async () => {
+  const css = await readFile(new URL('../src/core/web/panel.css', import.meta.url), 'utf8');
+  assert.match(css, /\.form-input\s*\{[^}]*color:\s*var\(--g1000\)/);
+  assert.match(css, /\.form-select\s*\{[^}]*color:\s*var\(--g1000\)/);
+});

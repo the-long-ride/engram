@@ -204,3 +204,19 @@ test('agent-hook emits host-specific event names and fails open on bad input', a
   assert.equal(bad.stdout.trim(), '{}');
   await rm(cwd, { recursive: true, force: true });
 });
+
+test('install-agent-hooks for gemini/antigravity writes matcher as * for SessionStart and BeforeAgent', async () => {
+  const { cwd, env } = await tempWorkspace('engram-agent-hooks-gemini-');
+  const geminiDir = path.join(cwd, '.gemini');
+  await mkdir(geminiDir, { recursive: true });
+  const file = path.join(geminiDir, 'settings.json');
+
+  const install = await runEngram(cwd, env, ['install-agent-hooks', 'gemini']);
+  assert.equal(install.code, 0, install.stderr);
+  assert.match(install.stdout, /UPDATED gemini/);
+  
+  const installed = JSON.parse(await readFile(file, 'utf8'));
+  assert.equal(installed.hooks.SessionStart[0].matcher, '*');
+  assert.equal(installed.hooks.BeforeAgent[0].matcher, '*');
+  await rm(cwd, { recursive: true, force: true });
+});

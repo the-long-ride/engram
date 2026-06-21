@@ -117,7 +117,7 @@ function mergeManagedHooks(config: Record<string, any>, meta: HookTarget, force:
     const groups = Array.isArray(config.hooks[event]) ? config.hooks[event] : [];
     const cleaned = removeManagedFromGroups(groups, meta.host);
     const group = {
-      matcher: event === 'SessionStart' ? '*' : '',
+      matcher: (event === 'SessionStart' || event === 'BeforeAgent') ? '*' : '',
       hooks: [managedHook(meta.host)]
     };
     config.hooks[event] = [...cleaned, group];

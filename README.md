@@ -190,6 +190,8 @@ To visualize, search, and configure your memory profiles, run:
 ```bash
 engram entry
 ```
+The Config tab stages edits locally, highlights unsaved changes, and asks for review before saving. Risky settings such as save target, global memory path, global Git, and encryption require an extra confirmation in the browser.
+
 ![Engram Control Panel](https://raw.githubusercontent.com/the-long-ride/engram/main/media/demo/demo-engram-entry.png)
 
 ---

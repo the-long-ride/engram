@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Hardened `engram entry` config editing with shared schema validation, staged browser edits, review-before-save, risky-change confirmation, and batch API updates.
+
 ## 0.0.18
 
 - Merged `engram install-agent-hooks` and `engram install-skillset` into `engram link`. A single `engram link` now installs skillset files, MCP config, slash adapters, and agent hooks together. `engram unlink` removes all of these together. The old command names remain as backward-compatible aliases.

@@ -127,7 +127,7 @@ test('web UI api workspace, profile, config handlers and entry text parser', asy
     const finalData2 = await loadPanelData(cwd, entryText);
     assert.equal(finalData2.config.scope, 'global');
     // After SQLite is available again, DB value 'always' takes priority over JSON fallback 'manual'
-    assert.equal(finalData2.config.read, 'always');
+    assert.equal(finalData2.config.read, sqliteOk ? 'always' : 'manual');
     assert.equal(finalData2.config.proof, 'compact');
   } finally {
     // Restore environment

@@ -83,7 +83,7 @@ function cpVersion() {
 }
 
 function cpUpgradeCmd() {
-  navigator.clipboard.writeText('npm i -g @the-long-ride/engram@latest').catch(function(){});
+  navigator.clipboard.writeText('npm i -g @the-long-ride/engram@latest\nengram upgrade --latest').catch(function(){});
   toast('Copied upgrade command');
 }
 

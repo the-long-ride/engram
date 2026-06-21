@@ -23,3 +23,14 @@ test('panel css defines correct colors for form inputs and selects', async () =>
   assert.match(css, /\.form-input\s*\{[^}]*color:\s*var\(--g1000\)/);
   assert.match(css, /\.form-select\s*\{[^}]*color:\s*var\(--g1000\)/);
 });
+
+test('panel css defines full size of parent for sb-logo-icon', async () => {
+  const css = await readFile(new URL('../src/core/web/panel.css', import.meta.url), 'utf8');
+  assert.match(css, /\.sb-logo-icon\s*\{[^}]*width:\s*100%/);
+  assert.match(css, /\.sb-logo-icon\s*\{[^}]*height:\s*100%/);
+});
+
+test('panel js includes engram upgrade --latest in cpUpgradeCmd copy string', async () => {
+  const panel = await readFile(new URL('../src/core/web/panel.js', import.meta.url), 'utf8');
+  assert.match(panel, /engram upgrade --latest/);
+});

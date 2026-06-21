@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.0.18
+
+- Merged `engram install-agent-hooks` and `engram install-skillset` into `engram link`. A single `engram link` now installs skillset files, MCP config, slash adapters, and agent hooks together. `engram unlink` removes all of these together. The old command names remain as backward-compatible aliases.
+- Updated all documentation (README, AGENT_INTEGRATIONS.md, SKILLSET_CONTRACT.md, llm.txt, engram-blueprint-v8.md, engram.report.md/vi.md) and 8-language translations to reflect the unified `link`/`unlink` surface.
+- Removed `install-agent-hooks`/`uninstall-agent-hooks` from help topics, shell completions, and command registry while preserving CLI routing.
+
 ## 0.0.17
 
 - Added a zero-dependency responsive Web UI served via `engram entry`.

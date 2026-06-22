@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Renamed CLI command `engram init` to `engram inject` with a backward-compatible redirection and deprecation warning.
+- Added a **Connection** tab to the `engram entry` web UI to scan, link, and unlink local AI agents at both global and workspace levels.
+- Added a guard to prevent creating workspace-level files (skillsets, agent hooks) in the running folder (workspace) if the configuration scope is set to `global`.
+- Hardened config validation `/api/config/validate` to be side-effect-free, moving directory creation to the actual save action.
+- Fixed workspace-level agent hook installation by passing `cwd` correctly from the API.
+- Suppressed `ExperimentalWarning: SQLite` warnings at the CLI entry point for cleaner command execution.
+
 ## 0.0.19
 
 - Hardened `engram entry` config editing with shared schema validation, staged browser edits, review-before-save, risky-change confirmation, and batch API updates.

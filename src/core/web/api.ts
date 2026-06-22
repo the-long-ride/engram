@@ -411,10 +411,6 @@ export async function apiAgentUnlink(cwd: string, agentId: string, global: boole
     }
     return `Disconnected ${agentId} globally.`;
   } else {
-    const config = await loadConfig(cwd);
-    if (config.scope === 'global') {
-      return `Skipped ${agentId} (workspace): config scope is global.`;
-    }
     await unlinkSkillset(cwd, agentId);
     const hookTarget = skillsetHookTarget(agentId);
     if (hookTarget) {

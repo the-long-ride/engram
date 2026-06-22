@@ -54,13 +54,7 @@ export async function cmdUnlink(args: string[], flags: Record<string, any> = {})
   const target = args[0] ?? "all";
   const global = flags.global === true;
 
-  if (!global) {
-    const cwd = process.cwd();
-    const config = await loadConfig(cwd);
-    if (config.scope === 'global') {
-      return `Skipped workspace unlink (workspace): config scope is global.`;
-    }
-  }
+
 
   const results = global
     ? await unlinkGlobalSkillset(target, { force: Boolean(flags.force) })

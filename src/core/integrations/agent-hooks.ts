@@ -60,7 +60,7 @@ const UNSUPPORTED: Record<string, string> = {
 };
 
 /** Install or uninstall managed Engram agent hooks for one target or all known targets. */
-export async function applyAgentHookAction(action: AgentHookAction, targetArg = 'all', options: { global?: boolean; plan?: boolean; force?: boolean } = {}): Promise<string> {
+export async function applyAgentHookAction(action: AgentHookAction, targetArg = 'all', options: { global?: boolean; plan?: boolean; force?: boolean; cwd?: string } = {}): Promise<string> {
   const results: AgentHookResult[] = [];
   for (const target of expandTargets(targetArg)) {
     const normalized = normalizeTarget(target);
@@ -69,7 +69,7 @@ export async function applyAgentHookAction(action: AgentHookAction, targetArg = 
       continue;
     }
     const meta = TARGETS[normalized];
-    const file = options.global ? meta.globalFile : path.join(process.cwd(), meta.configFile);
+    const file = options.global ? meta.globalFile : path.join(options.cwd ?? process.cwd(), meta.configFile);
     if (options.plan) {
       results.push({ status: 'PLAN', host: meta.host, file, events: meta.events });
       continue;

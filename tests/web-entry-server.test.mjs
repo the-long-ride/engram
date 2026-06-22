@@ -64,6 +64,43 @@ test('entry server exposes safe config metadata and validated config updates', a
     const after = await requestJson(baseUrl + '/api/data');
     assert.equal(after.body.config.scope, 'workspace');
     assert.equal(after.body.config.read, 'manual');
+
+    // HTTP test for agent scanning and linking endpoints
+    const scanRes = await requestJson(baseUrl + '/api/agents/scan');
+    assert.equal(scanRes.response.status, 200);
+    assert.equal(scanRes.body.ok, true);
+    assert.ok(Array.isArray(scanRes.body.data));
+    const claudeData = scanRes.body.data.find(a => a.id === 'claude');
+    assert.ok(claudeData);
+    assert.equal(claudeData.workspaceLinked, false);
+
+    // Link workspace
+    const linkRes = await requestJson(baseUrl + '/api/agents/link', {
+      method: 'POST',
+      body: JSON.stringify({ agentId: 'claude', global: false })
+    });
+    assert.equal(linkRes.response.status, 200);
+    assert.equal(linkRes.body.ok, true);
+    assert.match(linkRes.body.message, /Connected claude in this workspace/);
+
+    // Verify linked status
+    const scanRes2 = await requestJson(baseUrl + '/api/agents/scan');
+    const claudeData2 = scanRes2.body.data.find(a => a.id === 'claude');
+    assert.equal(claudeData2.workspaceLinked, true);
+
+    // Unlink workspace
+    const unlinkRes = await requestJson(baseUrl + '/api/agents/unlink', {
+      method: 'POST',
+      body: JSON.stringify({ agentId: 'claude', global: false })
+    });
+    assert.equal(unlinkRes.response.status, 200);
+    assert.equal(unlinkRes.body.ok, true);
+    assert.match(unlinkRes.body.message, /Disconnected claude from this workspace/);
+
+    // Verify unlinked status
+    const scanRes3 = await requestJson(baseUrl + '/api/agents/scan');
+    const claudeData3 = scanRes3.body.data.find(a => a.id === 'claude');
+    assert.equal(claudeData3.workspaceLinked, false);
   } finally {
     stopServer();
     process.env.ENGRAM_CONFIG_DIR = oldEnv.ENGRAM_CONFIG_DIR;

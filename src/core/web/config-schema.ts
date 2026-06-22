@@ -1,3 +1,7 @@
+import { homedir } from 'node:os';
+import { existsSync } from 'node:fs';
+import path from 'node:path';
+
 export type ConfigInputType = 'toggle' | 'select' | 'number' | 'text' | 'roles';
 export type ConfigRisk = 'normal' | 'risky';
 
@@ -34,7 +38,7 @@ export const CONFIG_FIELDS: ConfigFieldDef[] = [
   { key: 'read', group: 'Core', label: 'Read Mode', input: 'select', options: ['auto', 'startup', 'always', 'manual', 'off'], description: 'When agent hooks inject memory context' },
   { key: 'proof', group: 'Core', label: 'Proof Mode', input: 'select', options: ['off', 'compact'], description: 'Whether hooks append an Engram proof line' },
   { key: 'global_path', group: 'Core', label: 'Global Memory Path', input: 'text', description: 'Filesystem path to the global memory folder', risk: 'risky' },
-  { key: 'default_profile', group: 'Core', label: 'Default Profile', input: 'text', description: 'Profile name used when none is explicitly set', risk: 'risky' },
+  { key: 'default_profile', group: 'Core', label: 'Default Profile', input: 'select', description: 'Profile name used when none is explicitly set', risk: 'risky' },
   { key: 'roles', group: 'Core', label: 'Active Roles', input: 'roles', description: 'Comma-separated role names for memory context routing' },
   { key: 'theme', group: 'Core', label: 'Theme', input: 'select', options: ['dark', 'light'], hidden: true },
 
@@ -127,6 +131,9 @@ function normalizeConfigValue(field: ConfigFieldDef, rawValue: unknown): { ok: t
 
   if (field.input === 'select') {
     const value = stringifyValue(rawValue).trim();
+    if (field.key === 'default_profile') {
+      return validateTextField(field.key, value);
+    }
     if (field.options?.includes(value)) return { ok: true, value };
     return { ok: false, message: `${field.key} must be one of: ${(field.options ?? []).join(', ')}` };
   }
@@ -150,16 +157,49 @@ function normalizeConfigValue(field: ConfigFieldDef, rawValue: unknown): { ok: t
 function normalizeRoles(rawValue: unknown): { ok: true; value: string } | { ok: false; message: string } {
   const rawRoles = Array.isArray(rawValue)
     ? rawValue.map((item) => stringifyValue(item))
-    : stringifyValue(rawValue).split(',');
-  const roles = [...new Set(rawRoles.map((role) => role.trim()).filter(Boolean))];
+    : stringifyValue(rawValue).trim() === ''
+      ? []
+      : stringifyValue(rawValue).split(',');
+  const roles = rawRoles.map((role) => role.trim());
+  if (roles.some((role) => !role)) {
+    return { ok: false, message: 'roles cannot contain empty role names' };
+  }
   const bad = roles.find((role) => !/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$/.test(role));
   if (bad) return { ok: false, message: `roles contains invalid role name: ${bad}` };
   return { ok: true, value: JSON.stringify(roles) };
 }
 
+
+
+function canCreateDir(pathStr: string): boolean {
+  try {
+    // Walk up to the nearest existing ancestor.
+    // If an ancestor exists we trust the OS will let mkdir proceed;
+    // actual write-permission failures surface cleanly during the save flow.
+    let current = path.resolve(pathStr);
+    while (true) {
+      if (existsSync(current)) return true;
+      const parent = path.dirname(current);
+      if (parent === current) return false; // reached filesystem root
+      current = parent;
+    }
+  } catch {
+    return false;
+  }
+}
+
 function validateTextField(key: string, value: string): { ok: true; value: string } | { ok: false; message: string } {
   if (key === 'default_profile' && value && !/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$/.test(value)) {
     return { ok: false, message: 'default_profile must use letters, numbers, dot, underscore, or hyphen' };
+  }
+  if (key === 'global_path' && value) {
+    let resolved = value;
+    if (value.startsWith('~')) {
+      resolved = value.replace(/^~/, homedir());
+    }
+    if (!canCreateDir(resolved)) {
+      return { ok: false, message: `Failed to validate Global Memory Path: '${value}' is uncreatable or has no write permissions` };
+    }
   }
   if ((key === 'global_git.remote' || key.endsWith('.branch')) && value && /\s/.test(value)) {
     return { ok: false, message: `${key} cannot contain whitespace` };

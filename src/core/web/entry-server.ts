@@ -17,6 +17,9 @@ import {
   apiProfileAdd,
   apiProfileRemove,
   apiProfileActivate,
+  apiAgentsScan,
+  apiAgentLink,
+  apiAgentUnlink,
 } from './api.js';
 
 // ── Infrastructure ──────────────────────────────────────────────────────────
@@ -126,6 +129,14 @@ async function handleRequest(req: any, res: any, cwd: string): Promise<void> {
     return;
   }
 
+  if (url === '/api/agents/scan' && method === 'GET') {
+    try {
+      const data = await apiAgentsScan(cwd);
+      json(200, { ok: true, data });
+    } catch (e: any) { json(500, { error: e.message }); }
+    return;
+  }
+
   if (method === 'POST' && url.startsWith('/api/')) {
     let body: any = {};
     try { body = JSON.parse(await readBody(req)); } catch { json(400, { error: 'Invalid JSON' }); return; }
@@ -147,6 +158,8 @@ async function handleRequest(req: any, res: any, cwd: string): Promise<void> {
       else if (url === '/api/profile/add') message = await apiProfileAdd(body.name, body.globalPath, body.scope || 'global');
       else if (url === '/api/profile/remove') message = await apiProfileRemove(body.name);
       else if (url === '/api/profile/activate') message = await apiProfileActivate(body.name);
+      else if (url === '/api/agents/link') message = await apiAgentLink(cwd, body.agentId, Boolean(body.global));
+      else if (url === '/api/agents/unlink') message = await apiAgentUnlink(cwd, body.agentId, Boolean(body.global));
       else { json(404, { error: 'Not found' }); return; }
       json(200, { ok: true, message });
     } catch (e: any) { json(400, { error: e.message }); }

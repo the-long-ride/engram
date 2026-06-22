@@ -2,7 +2,7 @@
 import { parseArgs } from './cli/args.js';
 import { VERSION } from './core/runtime/constants.js';
 import { canonicalCommand } from './core/cli/command-registry.js';
-import { cmdCompletion, cmdHelp, cmdInit, cmdLlm } from './commands/core.js';
+import { cmdCompletion, cmdHelp, cmdInject, cmdLlm } from './commands/core.js';
 import { cmdObserve } from './commands/observe.js';
 import { cmdAudit, cmdLoad, cmdRebuildIndex, cmdRehash, cmdRepair, cmdRoute, cmdVerify } from './commands/read.js';
 import { cmdSave, cmdSaveSession, cmdTakeControl } from './commands/write.js';
@@ -31,7 +31,11 @@ export async function runCli(argv: string[]): Promise<string> {
     if (flags.version || flags.v || command === '--version' || command === '-v' || command === 'version') return VERSION;
     await maybeAutoUpgrade(process.cwd(), command, flags);
     switch (command) {
-      case 'init': return await cmdInit(flags);
+      case 'init': {
+        const warning = `⚠️ engram init is deprecated and has been renamed to engram inject. Please run engram inject instead.\n\n`;
+        return warning + await cmdInject(flags);
+      }
+      case 'inject': return await cmdInject(flags);
       case 'help': return await cmdHelp(rest[0]);
       case 'llm': return await cmdLlm();
       case 'completion': return await cmdCompletion(rest[0]);

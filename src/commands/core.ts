@@ -14,8 +14,7 @@ import { applyGlobalRemote, applyWorkspaceSubmodule, planGlobalRemote, planWorks
 import { defaultProfileLines, ensureDefaultProfile } from '../core/runtime/profile-migration.js';
 
 /** Initialize workspace memory. */
-export async function cmdInit(flags: Record<string, any>): Promise<string> {
-  const prelude = initWordmarkPrelude();
+export async function cmdInject(flags: Record<string, any>): Promise<string> {
   const loaded = await loadConfig();
   const globalOnly = flags['global-only'] === true;
   if (globalOnly && flags['no-global'] === true) throw new Error('global-only init requires global memory; remove --no-global or pass --global-path <path>');
@@ -29,15 +28,23 @@ export async function cmdInit(flags: Record<string, any>): Promise<string> {
   const config = { ...loaded, global_path: globalPath, global_git: { ...loaded.global_git, branch } };
   const roots = scopeRootsForConfig(process.cwd(), config);
   const globalRemote = await planGlobalRemote(flags, roots.global, branch, config.global_git);
-  const lines = await initWorkspace(process.cwd(), Boolean(flags.force), branch, globalPath, { globalOnly, saveTarget });
+  await initWorkspace(process.cwd(), Boolean(flags.force), branch, globalPath, { globalOnly, saveTarget });
   if (roots.global && flags['no-global'] !== true) {
-    lines.push(...defaultProfileLines(await ensureDefaultProfile(process.cwd())));
+    await ensureDefaultProfile(process.cwd());
   }
-  if (submodule) lines.push(...await applyWorkspaceSubmodule(submodule));
-  lines.push(...await applyGlobalRemote(globalRemote, roots.global, config.global_git));
-  lines.push(...await maybeInstallDefaultSkillset(flags, globalOnly));
-  lines.push(...initSuccessSuggestions(globalOnly));
-  return `${prelude}${lines.join('\n')}`;
+  if (submodule) await applyWorkspaceSubmodule(submodule);
+  await applyGlobalRemote(globalRemote, roots.global, config.global_git);
+  await maybeInstallDefaultSkillset(flags, globalOnly);
+
+  const style = injectSuggestionStyle();
+  const outputLines = [
+    style.success('✔ engram is injected!'),
+    '',
+    'To configure settings and connect AI agents, run:',
+    `  ${style.command('engram entry')}`,
+    ''
+  ];
+  return outputLines.join('\n');
 }
 
 function initSaveTarget(flags: Record<string, any>, globalOnly: boolean) {
@@ -45,13 +52,6 @@ function initSaveTarget(flags: Record<string, any>, globalOnly: boolean) {
   const target = parseSaveTarget(flags.scope, 'init --scope');
   if (globalOnly && target !== 'global') throw new Error('global-only init supports only --scope global');
   return target;
-}
-function initWordmarkPrelude(): string {
-  if (process.stdout.isTTY) {
-    output.write(`${renderInitWordmark(true)}\n`);
-    return '';
-  }
-  return `${INIT_WORDMARK}\n`;
 }
 
 async function maybeInstallDefaultSkillset(flags: Record<string, any>, globalOnly = false): Promise<string[]> {
@@ -62,60 +62,11 @@ async function maybeInstallDefaultSkillset(flags: Record<string, any>, globalOnl
   return [`skillset: ${summarizeSkillsetInstall(results)}`];
 }
 
-function initSuccessSuggestions(globalOnly: boolean): string[] {
-  const style = initSuggestionStyle();
-  return [
-    '',
-    style.heading('Keep Engram useful:'),
-    `${style.label('Priority:')} workspace memory loads first; global memory is fallback for personal/team context across repos.`,
-    `- ${style.title('Use slash command in AI chat')}`,
-    `  ${style.label('Use for what:')} run Engram features directly through agents without leaving chat.`,
-    `  ${style.label('How to use:')} ${style.command('/engram load "<task>"')}, ${style.command('/engram save-session')}, or ${style.command('/engram take-control --all')}.`,
-    `  ${style.label('Best example:')} start each session with ${style.command('/engram load "<current task>"')} and save durable lessons before you leave.`,
-    `- ${style.title('Install agent skillset')}`,
-    `  ${style.label('Use for what:')} teach your agent how to load, search, save, and maintain Engram memory.`,
-    `  ${style.label('How to use:')} ${style.command('engram help link')}, then ${style.command('engram link <your-agent>')}.`,
-    `  ${style.label('Best example:')} run this after init so future sessions know the Engram protocol.`,
-    `- ${style.title('Rule strict level')}`,
-    `  ${style.label('Use for what:')} tune how strongly loaded rules steer agents.`,
-    `  ${style.label('How to use:')} ${style.command('engram set-rule-variant strict|balanced|light|off')}.`,
-    `  ${style.label('Best example:')} use strict for smaller automation models, balanced or light for stronger reasoning models.`,
-    `- ${style.title('Save session')}`,
-    `  ${style.label('Use for what:')} capture several durable memories from a long session.`,
-    `  ${style.label('How to use:')} ${style.command('engram save-session')}, ${style.command('engram ss')}, or ${style.command('engram ss -a')} when the human explicitly approves all.`,
-    `  ${style.label('Best example:')} end a feature session by saving its new rules, facts, and workflow.`,
-    `- ${style.title('Take control')}`,
-    `  ${style.label('Use for what:')} migrate existing AGENTS.md, CLAUDE.md, Cursor rules, docs, or notes into Engram memory.`,
-    `  ${style.label('How to use:')} ${style.command('engram take-control --all')}, or preview with ${style.command('engram take-control --plan')}.`,
-    `  ${style.label('Best example:')} adopt Engram in a repo that already has scattered agent guidance or docs.`,
-    `- ${style.title('Maintenance')}`,
-    `  ${style.label('Use for what:')} keep memory healthy as it grows.`,
-    `  ${style.label('How to use:')} ${style.command('engram verify')}, ${style.command('engram repair')}, ${style.command('engram graph')}, ${style.command('engram quality-check')}, then ${style.command('engram archive --reason <why> <id|file>')}.`,
-    `  ${style.label('Best example:')} run verify/repair before commits and use graph + quality-check before archiving stale or contradictory memory.`,
-    ...(globalOnly ? [
-      `- ${style.title('Global-only saves')}`,
-      `  ${style.label('Use for what:')} keep memory across projects without a workspace install.`,
-      `  ${style.label('How to use:')} ${style.command('engram save rule "Use pnpm for package management."')}`,
-      `  ${style.label('Best example:')} save personal agent preferences once and load them anywhere.`
-    ] : [
-      `- ${style.title('Global memory')}`,
-      `  ${style.label('Use for what:')} keep memory across projects.`,
-      `  ${style.label('How to use:')} ${style.command('engram init --global-only --global-path <path>')}, then ${style.command('engram save --scope global "Use pnpm for package management."')}`,
-      `  ${style.label('Best example:')} keep personal or team-wide preferences outside one repo.`
-    ]),
-    '',
-    `${style.label('Completion:')} run ${style.command(`engram completion ${detectCompletionTarget()}`)} and add it to your shell profile.`,
-    `${style.label('More help:')} run ${style.command('engram -h')} for all commands, or ${style.command('engram help <command>')} for deeper examples.`
-  ];
-}
-
-function initSuggestionStyle(): Record<'heading' | 'title' | 'label' | 'command', (text: string) => string> {
+function injectSuggestionStyle() {
   const color = process.stdout.isTTY ? (open: string, text: string) => `${open}${text}\x1b[0m` : (_open: string, text: string) => text;
   return {
-    heading: (text) => color('\x1b[1;36m', text),
-    title: (text) => color('\x1b[1;33m', text),
-    label: (text) => color('\x1b[90m', text),
-    command: (text) => color('\x1b[1;36m', text)
+    success: (text: string) => color('\x1b[1;32m', text),
+    command: (text: string) => color('\x1b[1;36m', text)
   };
 }
 

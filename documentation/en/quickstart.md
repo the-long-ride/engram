@@ -24,26 +24,29 @@ When an agent needs a self-contained Engram usage guide, run:
 engram llm
 ```
 
-This prints the packaged `llm.txt` guide and does not require `engram init`.
+This prints the packaged `llm.txt` guide and does not require `engram inject`.
 
 ## Recommended Setup Conversation
 
 Ask the agent:
 
 ```text
-Initialize Engram for this workspace, install the right skillset for this agent,
-and tell me what command I should use next.
+Inject Engram memory routing for this workspace, configure it, and connect this agent.
 ```
 
-The agent can run:
+The agent will suggest running:
 
 ```bash
-engram init
-engram help link
-engram link <agent-name>
+engram entry
 ```
 
-To teach the same agent globally, so new workspaces can load Engram global memory without running `engram init` first:
+To configure memory and link AI agents in a clean web UI. Under the hood, to initialize the workspace:
+
+```bash
+engram inject
+```
+
+To link the same agent globally, so new workspaces can load Engram global memory without running `engram inject` first:
 
 ```bash
 engram link --global <agent-name>
@@ -134,12 +137,12 @@ Use pnpm for package management.
 The agent may use:
 
 ```bash
-engram init --global-only --global-path <path>
+engram inject --global-only --global-path <path>
 engram save --scope global "Use pnpm for package management."
 engram link --global <agent-name>
 ```
 
-When init sees configured global memory, it creates or selects a user default
+When inject sees configured global memory, it creates or selects a user default
 profile for that global root so future workspaces can reuse it.
 
 ## Keep It Healthy

@@ -14,12 +14,12 @@ Engram supports two integration layers:
 Run:
 
 ```bash
-engram init
+engram inject
 ```
 
 If an agent needs a compact, package-local guide before setup, run
 `engram llm`. It prints the committed `llm.txt` AI-agent usage guide and does
-not require an initialized workspace.
+not require an injected workspace.
 
 This creates `.agents/.engram/` and installs the compact Codex target by default:
 `AGENTS.md` plus `.agents/skills/engram/SKILL.md`. The generated instructions
@@ -31,8 +31,8 @@ without reliable runtime context injection still receive compact manual instruct
 tell agents to load memory, keep Engram replies short, ask only for required
 confirmation, and report what changed.
 
-Use `engram init --no-skillset` to skip agent files, or
-`engram init --skillset all` to install every supported adapter during init.
+Use `engram inject --no-skillset` to skip agent files, or
+`engram inject --skillset all` to install every supported adapter during inject.
 Existing human-authored files are skipped.
 
 **Runtime-first targets:** `codex`, `claude`, `cursor`, `gemini`
@@ -42,7 +42,7 @@ Existing human-authored files are skipped.
 — install the full compact protocol since these hosts do not have reliable
 runtime context injection in v1.
 
-Use `engram init --global-only --global-path <path>` when the human wants only
+Use `engram inject --global-only --global-path <path>` when the human wants only
 portable global memory and no `.agents/.engram` or local skillset files in the
 current workspace. In that mode, default saves go to the global folder.
 Fresh workspace installs default normal saves to both workspace and global when
@@ -161,14 +161,14 @@ removes all of these together as well.
 
 ## Recommended Flow
 
-1. Initialize memory:
+1. Inject memory:
 
    ```bash
-   engram init
+   engram inject
    ```
 
    Normal commands run a quiet one-time safe reconcile after npm package
-   upgrades. You can still rerun `engram init` when you want an explicit manual
+   upgrades. You can still rerun `engram inject` when you want an explicit manual
    refresh. Existing workspaces are reconciled in place: missing standard
    files/folders are restored, generated help/readme/skillset files are
    refreshed, config defaults are merged, and safe legacy folder migrations are
@@ -176,10 +176,10 @@ removes all of these together as well.
    This includes refreshing `.agents/skills/engram/SKILL.md` when an older
    Engram-generated skill is present.
 
-   Interactive init asks in this order: whether to add `./.agents/.engram` as a
+   Interactive inject asks in this order: whether to add `./.agents/.engram` as a
    submodule, whether to use a global Engram path, and whether to add a shared
-   global Git origin. Use `engram init --global-path <path>` for scripted setup,
-   or `engram init --global-only --global-path <path>` for a global memory folder
+   global Git origin. Use `engram inject --global-path <path>` for scripted setup,
+   or `engram inject --global-only --global-path <path>` for a global memory folder
    without local workspace installation.
    Use `engram update-global-folder <new-path>` or `engram ugf <new-path>` when
    the human only wants to update the configured global path. Chat-style forms
@@ -192,7 +192,7 @@ removes all of these together as well.
    create a local submodule. When they approve, run:
 
    ```bash
-   engram init --submodule
+   engram inject --submodule
    ```
 
    Add `--submodule-remote <git-url>` only after the human provides a URL.
@@ -204,7 +204,7 @@ removes all of these together as well.
    run:
 
    ```bash
-   engram init --global-remote <git-url>
+   engram inject --global-remote <git-url>
    ```
 
 2. Ask the agent to use Engram memory:

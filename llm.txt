@@ -255,15 +255,15 @@ This guide is intentionally safe before initialization:
 
 engram llm
 
-does not require `engram init`.
+does not require `engram inject`.
 
-To initialize memory and install default workspace instructions:
+To inject workspace memory and install default workspace instructions:
 
-engram init
+engram inject
 
-To initialize only global memory:
+To inject/initialize only global memory:
 
-engram init --global-only --global-path <path>
+engram inject --global-only --global-path <path>
 
 To link Engram to a host (skillset + MCP + slash + agent hooks):
 

@@ -34,7 +34,7 @@ engram load deploy
 
 test('init can run repeatedly and refresh generated skillset files', async () => {
   const { cwd, env } = await tempWorkspace('engram-init-');
-  assert.equal((await runEngram(cwd, env, ['init'])).code, 0);
+  assert.equal((await runEngram(cwd, env, ['inject'])).code, 0);
   await writeFile(path.join(cwd, 'AGENTS.md'), `${GENERATED}\n\n# Old Engram Agent Skillset\n`);
   await writeFile(path.join(cwd, '.agents', 'skills', 'engram', 'SKILL.md'), `---
 name: engram
@@ -44,13 +44,13 @@ description: Old generated Engram skill
 
 Engram = workspace memory.
 `);
-  const second = await runEngram(cwd, env, ['init']);
+  const second = await runEngram(cwd, env, ['inject']);
   assert.equal(second.code, 0, second.stderr);
-  assert.match(second.stdout, /engram already initialized/);
+  assert.match(second.stdout, /✔ engram is injected!/);
   assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /Runtime Bootstrap/);
   assert.match(await readFile(path.join(cwd, '.agents', 'skills', 'engram', 'SKILL.md'), 'utf8'), /knowledge memory center/);
   assert.match(await readFile(path.join(cwd, '.agents', 'skills', 'engram', 'SKILL.md'), 'utf8'), /Session end/);
-  assert.equal((await runEngram(cwd, env, ['init'])).code, 0);
+  assert.equal((await runEngram(cwd, env, ['inject'])).code, 0);
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -59,9 +59,9 @@ test('init migrates legacy .engram root under .agents', async () => {
   await mkdir(path.join(cwd, '.engram', 'rules'), { recursive: true });
   await writeFile(path.join(cwd, '.engram', 'engram.config.json'), JSON.stringify({ version: '0.0.0', scope: 'workspace' }, null, 2));
   await writeFile(path.join(cwd, '.engram', 'rules', 'legacy-location.md'), legacySkill().replace('type: skill', 'type: rule'));
-  const migrated = await runEngram(cwd, env, ['init', '--no-skillset']);
+  const migrated = await runEngram(cwd, env, ['inject', '--no-skillset']);
   assert.equal(migrated.code, 0, migrated.stderr);
-  assert.match(migrated.stdout, /workspace migrated from/);
+  assert.match(migrated.stdout, /✔ engram is injected!/);
   await stat(path.join(workspaceMemoryRoot(cwd), 'rules', 'legacy-location.md'));
   await assert.rejects(stat(path.join(cwd, '.engram')));
   await rm(cwd, { recursive: true, force: true });
@@ -69,15 +69,15 @@ test('init migrates legacy .engram root under .agents', async () => {
 
 test('init restores missing workspace scaffold files and directories', async () => {
   const { cwd, env } = await tempWorkspace('engram-init-');
-  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, ['inject']);
   await rm(path.join(workspaceMemoryRoot(cwd), 'proposals'), { recursive: true, force: true });
   await rm(path.join(workspaceMemoryRoot(cwd), 'HELP.md'), { force: true });
   await rm(path.join(workspaceMemoryRoot(cwd), 'README.md'), { force: true });
   await rm(path.join(workspaceMemoryRoot(cwd), 'memory.index.json'), { force: true });
   await rm(path.join(workspaceMemoryRoot(cwd), 'memory.hashes.json'), { force: true });
-  const repaired = await runEngram(cwd, env, ['init']);
+  const repaired = await runEngram(cwd, env, ['inject']);
   assert.equal(repaired.code, 0, repaired.stderr);
-  assert.match(repaired.stdout, /engram workspace reconciled/);
+  assert.match(repaired.stdout, /✔ engram is injected!/);
   await stat(path.join(workspaceMemoryRoot(cwd), 'proposals'));
   assert.match(await readFile(path.join(workspaceMemoryRoot(cwd), 'HELP.md'), 'utf8'), /--no-skillset/);
   assert.match(await readFile(path.join(workspaceMemoryRoot(cwd), 'README.md'), 'utf8'), /portable AI-agent memory/);
@@ -87,14 +87,14 @@ test('init restores missing workspace scaffold files and directories', async () 
 
 test('init persists config migrations while preserving user settings', async () => {
   const { cwd, env } = await tempWorkspace('engram-init-');
-  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, ['inject']);
   await writeFile(path.join(workspaceMemoryRoot(cwd), 'engram.config.json'), JSON.stringify({
     version: '0.0.0',
     scope: 'workspace',
     roles: ['backend'],
     global_git: { branch: 'legacy' }
   }, null, 2));
-  const migrated = await runEngram(cwd, env, ['init', '--global-branch', 'team']);
+  const migrated = await runEngram(cwd, env, ['inject', '--global-branch', 'team']);
   assert.equal(migrated.code, 0, migrated.stderr);
   const config = JSON.parse(await readFile(path.join(workspaceMemoryRoot(cwd), 'engram.config.json'), 'utf8'));
   assert.equal(config.version, VERSION);
@@ -108,12 +108,12 @@ test('init persists config migrations while preserving user settings', async () 
 
 test('init migrates legacy workflow folders into skills and rebuilds index', async () => {
   const { cwd, env } = await tempWorkspace('engram-init-');
-  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, ['inject']);
   await mkdir(path.join(workspaceMemoryRoot(cwd), 'workflows'), { recursive: true });
   await writeFile(path.join(workspaceMemoryRoot(cwd), 'workflows', 'legacy-deploy.md'), legacySkill());
-  const migrated = await runEngram(cwd, env, ['init']);
+  const migrated = await runEngram(cwd, env, ['inject']);
   assert.equal(migrated.code, 0, migrated.stderr);
-  assert.match(migrated.stdout, /1 migrated/);
+  assert.match(migrated.stdout, /✔ engram is injected!/);
   await stat(path.join(workspaceMemoryRoot(cwd), 'skills', 'legacy-deploy.md'));
   await assert.rejects(stat(path.join(workspaceMemoryRoot(cwd), 'workflows')));
   const index = JSON.parse(await readFile(path.join(workspaceMemoryRoot(cwd), 'memory.index.json'), 'utf8'));
@@ -123,11 +123,11 @@ test('init migrates legacy workflow folders into skills and rebuilds index', asy
 
 test('init leaves colliding legacy files in place instead of overwriting', async () => {
   const { cwd, env } = await tempWorkspace('engram-init-');
-  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, ['inject']);
   await mkdir(path.join(workspaceMemoryRoot(cwd), 'workflows'), { recursive: true });
   await writeFile(path.join(workspaceMemoryRoot(cwd), 'workflows', 'same.md'), 'legacy copy\n');
   await writeFile(path.join(workspaceMemoryRoot(cwd), 'skills', 'same.md'), 'current copy\n');
-  assert.equal((await runEngram(cwd, env, ['init'])).code, 0);
+  assert.equal((await runEngram(cwd, env, ['inject'])).code, 0);
   assert.equal(await readFile(path.join(workspaceMemoryRoot(cwd), 'skills', 'same.md'), 'utf8'), 'current copy\n');
   assert.equal(await readFile(path.join(workspaceMemoryRoot(cwd), 'workflows', 'same.md'), 'utf8'), 'legacy copy\n');
   await rm(cwd, { recursive: true, force: true });
@@ -135,12 +135,12 @@ test('init leaves colliding legacy files in place instead of overwriting', async
 
 test('init repairs global scope scaffold without requiring a fresh workspace', async () => {
   const { cwd, env } = await tempWorkspace('engram-init-');
-  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, ['inject']);
   await rm(path.join(env.ENGRAM_GLOBAL_DIR, 'quarantine'), { recursive: true, force: true });
   await rm(path.join(env.ENGRAM_GLOBAL_DIR, 'HELP.md'), { force: true });
-  const repaired = await runEngram(cwd, env, ['init']);
+  const repaired = await runEngram(cwd, env, ['inject']);
   assert.equal(repaired.code, 0, repaired.stderr);
-  assert.match(repaired.stdout, /engram global reconciled/);
+  assert.match(repaired.stdout, /✔ engram is injected!/);
   await stat(path.join(env.ENGRAM_GLOBAL_DIR, 'quarantine'));
   assert.match(await readFile(path.join(env.ENGRAM_GLOBAL_DIR, 'HELP.md'), 'utf8'), /Engram Help/);
   await rm(cwd, { recursive: true, force: true });
@@ -148,11 +148,11 @@ test('init repairs global scope scaffold without requiring a fresh workspace', a
 
 test('init merges default ignore patterns and preserves audit files', async () => {
   const { cwd, env } = await tempWorkspace('engram-init-');
-  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, ['inject']);
   await writeFile(path.join(cwd, '.engramignore'), 'custom/**\nnode_modules/\n');
   await writeFile(path.join(workspaceMemoryRoot(cwd), 'changelog.md'), '# Engram Changelog\n\n- keep me\n');
   await writeFile(path.join(workspaceMemoryRoot(cwd), 'memory.hashes.json'), '{\n  "rules/a.md": "abc"\n}\n');
-  const repaired = await runEngram(cwd, env, ['init']);
+  const repaired = await runEngram(cwd, env, ['inject']);
   assert.equal(repaired.code, 0, repaired.stderr);
   const ignore = await readFile(path.join(cwd, '.engramignore'), 'utf8');
   assert.match(ignore, /custom\/\*\*/);

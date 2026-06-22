@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { rm, writeFile, mkdir, readFile, readdir } from 'node:fs/promises';
+import { rm, writeFile, mkdir, readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
@@ -11,11 +11,17 @@ test('init, help, save reject, save accept, load, verify, audit', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
   const init = await runEngram(cwd, env, ['init']);
   assert.equal(init.code, 0, init.stderr);
-  assert.match(init.stdout, /█████████╗███╗   ██╗/);
-  assert.match(init.stdout, /SYNTHETIC MEMORY \/\/ NEURAL ARCHIVE :: @the-long-ride with <3/);
-  assert.match(init.stdout, /skillset: written AGENTS\.md, \.mcp\.json, \.agents\/skills\/engram\/SKILL\.md/);
-  assert.match(init.stdout, /More help: run engram -h for all commands, or engram help <command> for deeper examples\./);
-  assert.match(init.stdout, /Completion: run engram completion (bash|zsh|powershell) and add it to your shell profile\./);
+  assert.match(init.stdout, /⚠️ engram init is deprecated and has been renamed to engram inject/);
+  assert.match(init.stdout, /✔ engram is injected!/);
+
+  const inject = await runEngram(cwd, env, ['inject']);
+  assert.equal(inject.code, 0, inject.stderr);
+  assert.match(inject.stdout, /✔ engram is injected!/);
+  assert.match(inject.stdout, /engram entry/);
+
+  await stat(path.join(cwd, 'AGENTS.md'));
+  await stat(path.join(cwd, '.mcp.json'));
+  await stat(path.join(cwd, '.agents', 'skills', 'engram', 'SKILL.md'));
   assert.match((await runEngram(cwd, env, ['help'])).stdout, /Memory Commands/);
   assert.match((await runEngram(cwd, env, ['-h'])).stdout, /Memory Commands/);
   assert.match((await runEngram(cwd, env, ['--help'])).stdout, /Memory Commands/);
@@ -63,17 +69,14 @@ test('init, help, save reject, save accept, load, verify, audit', async () => {
 
 test('init can skip or retarget default skillset install', async () => {
   const skipped = await tempWorkspace('engram-cli-');
-  const noSkillset = await runEngram(skipped.cwd, skipped.env, ['init', '--no-skillset']);
+  const noSkillset = await runEngram(skipped.cwd, skipped.env, ['inject', '--no-skillset']);
   assert.equal(noSkillset.code, 0, noSkillset.stderr);
-  assert.match(noSkillset.stdout, /skillset: skipped/);
   await assert.rejects(readFile(path.join(skipped.cwd, 'AGENTS.md'), 'utf8'));
   await rm(skipped.cwd, { recursive: true, force: true });
 
   const targeted = await tempWorkspace('engram-cli-');
-  const slash = await runEngram(targeted.cwd, targeted.env, ['init', '--skillset', 'slash']);
+  const slash = await runEngram(targeted.cwd, targeted.env, ['inject', '--skillset', 'slash']);
   assert.equal(slash.code, 0, slash.stderr);
-  assert.match(slash.stdout, /skillset: written .*\.claude\/commands\/engram\.md/);
-  assert.match(slash.stdout, /skillset: written .*\.claude\/skills\/engram\/SKILL\.md/);
   assert.match(await readFile(path.join(targeted.cwd, '.claude/commands/engram.md'), 'utf8'), /Engram Slash Command/);
   assert.match(await readFile(path.join(targeted.cwd, '.cursor/commands/engram.md'), 'utf8'), /Keep replies compact/);
   await assert.rejects(readFile(path.join(targeted.cwd, 'AGENTS.md'), 'utf8'));
@@ -83,18 +86,16 @@ test('init can skip or retarget default skillset install', async () => {
 test('init skips human-authored skillset files', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
   await writeFile(path.join(cwd, 'AGENTS.md'), '# Human agent instructions\n');
-  const result = await runEngram(cwd, env, ['init']);
+  const result = await runEngram(cwd, env, ['inject']);
   assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /skillset: written \.mcp\.json, \.agents\/skills\/engram\/SKILL\.md; skipped AGENTS\.md/);
   assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /Human agent instructions/);
   await rm(cwd, { recursive: true, force: true });
 });
 
 test('init prepares global git and entry reports detected branch', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
-  const init = await runEngram(cwd, env, ['init']);
+  const init = await runEngram(cwd, env, ['inject']);
   assert.equal(init.code, 0, init.stderr);
-  assert.match(init.stdout, /default profile created/);
   const expectedProfile = machineProfileName();
   const profiles = JSON.parse(await readFile(path.join(env.ENGRAM_CONFIG_DIR, 'profiles.json'), 'utf8'));
   assert.equal(profiles.active_profile, expectedProfile);
@@ -125,9 +126,8 @@ test('init can persist a custom global memory path', async () => {
   const customEnv = { ...env };
   delete customEnv.ENGRAM_GLOBAL_DIR;
   const globalPath = path.join(cwd, 'shared-engram');
-  const init = await runEngram(cwd, customEnv, ['init', '--global-path', globalPath, '--no-skillset']);
+  const init = await runEngram(cwd, customEnv, ['inject', '--global-path', globalPath, '--no-skillset']);
   assert.equal(init.code, 0, init.stderr);
-  assert.match(init.stdout, new RegExp(globalPath.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')));
   const config = JSON.parse(await readFile(path.join(workspaceMemoryRoot(cwd), 'engram.config.json'), 'utf8'));
   assert.equal(config.global_path, globalPath);
   const entry = await runEngram(cwd, customEnv, ['entry']);
@@ -140,14 +140,9 @@ test('global-only init skips workspace install and saves to global by default', 
   const customEnv = { ...env };
   delete customEnv.ENGRAM_GLOBAL_DIR;
   const globalPath = path.join(cwd, 'portable-engram');
-  const init = await runEngram(cwd, customEnv, ['init', '--global-only', '--global-path', globalPath]);
+  const init = await runEngram(cwd, customEnv, ['inject', '--global-only', '--global-path', globalPath]);
   assert.equal(init.code, 0, init.stderr);
-  assert.match(init.stdout, /engram global-only initialized/);
-  assert.match(init.stdout, /default profile created/);
-  assert.match(init.stdout, /Rule strict level/);
-  assert.match(init.stdout, /Save session/);
-  assert.match(init.stdout, /Take control/);
-  assert.match(init.stdout, /Global-only saves/);
+  assert.match(init.stdout, /✔ engram is injected!/);
   await assert.rejects(readFile(path.join(workspaceMemoryRoot(cwd), 'engram.config.json'), 'utf8'));
   await assert.rejects(readFile(path.join(cwd, 'AGENTS.md'), 'utf8'));
 
@@ -224,12 +219,11 @@ test('init does not require a global memory directory', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
   const localOnlyEnv = { ...env };
   delete localOnlyEnv.ENGRAM_GLOBAL_DIR;
-  const badGlobal = await runEngram(cwd, localOnlyEnv, ['init', '--scope', 'global', '--no-skillset']);
+  const badGlobal = await runEngram(cwd, localOnlyEnv, ['inject', '--scope', 'global', '--no-skillset']);
   assert.equal(badGlobal.code, 1);
   assert.match(badGlobal.stderr, /--scope global requires global memory/);
-  const init = await runEngram(cwd, localOnlyEnv, ['init', '--no-skillset']);
+  const init = await runEngram(cwd, localOnlyEnv, ['inject', '--no-skillset']);
   assert.equal(init.code, 0, init.stderr);
-  assert.match(init.stdout, /engram global skipped/);
   const config = JSON.parse(await readFile(path.join(workspaceMemoryRoot(cwd), 'engram.config.json'), 'utf8'));
   assert.equal(config.global_path, '');
   assert.equal(config.scope, 'both');
@@ -242,9 +236,9 @@ test('init does not require a global memory directory', async () => {
 test('init can create .agents/.engram as a local submodule', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
   assert.equal(initGit(cwd).status, 0);
-  const init = await runEngram(cwd, env, ['init', '--submodule']);
+  const init = await runEngram(cwd, env, ['inject', '--submodule']);
   assert.equal(init.code, 0, init.stderr);
-  assert.match(init.stdout, /workspace submodule: branch main/);
+  assert.match(init.stdout, /✔ engram is injected!/);
   assert.match(spawnSync('git', ['-C', workspaceMemoryRoot(cwd), 'log', '--format=%s', '-1'], { encoding: 'utf8' }).stdout, /Initialize engram/);
   assert.match(spawnSync('git', ['-C', cwd, 'ls-files', '-s', '--', '.agents/.engram'], { encoding: 'utf8' }).stdout, /^160000 /);
   await rm(cwd, { recursive: true, force: true });
@@ -252,7 +246,7 @@ test('init can create .agents/.engram as a local submodule', async () => {
 
 test('global remote flag validates URL and save pushes global memory', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
-  const bad = await runEngram(cwd, env, ['init', '--global-remote', 'not-a-url']);
+  const bad = await runEngram(cwd, env, ['inject', '--global-remote', 'not-a-url']);
   assert.equal(bad.code, 1);
   assert.match(bad.stderr, /invalid global remote URL/);
   await rm(cwd, { recursive: true, force: true });
@@ -260,9 +254,9 @@ test('global remote flag validates URL and save pushes global memory', async () 
   const fresh = await tempWorkspace('engram-cli-');
   const remote = path.join(fresh.cwd, 'remote.git');
   assert.equal(spawnSync('git', ['init', '--bare', remote], { encoding: 'utf8' }).status, 0);
-  const init = await runEngram(fresh.cwd, fresh.env, ['init', '--global-remote', pathToFileURL(remote).href]);
+  const init = await runEngram(fresh.cwd, fresh.env, ['inject', '--global-remote', pathToFileURL(remote).href]);
   assert.equal(init.code, 0, init.stderr);
-  assert.match(init.stdout, /global git: origin ->/);
+  assert.match(init.stdout, /✔ engram is injected!/);
   const saved = await runEngram(fresh.cwd, fresh.env, ['save', 'rule', '--scope', 'global', 'Share team memory defaults'], 'A\n');
   assert.equal(saved.code, 0, saved.stderr);
   const log = spawnSync('git', ['--git-dir', remote, 'log', '--oneline', '--all'], { encoding: 'utf8' }).stdout;

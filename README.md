@@ -143,16 +143,18 @@ Standard rule files get sent with every single message, bloating context, causin
 npm install -g @the-long-ride/engram
 ```
 
-### 2. Link Engram to Your Agent
-Instruct your AI assistant on how to interact with Engram (read, write, maintain):
+### 2. Configure & Link (Recommended First Step)
+To configure your settings, manage profiles, and connect AI agents in a premium web interface, run:
 ```bash
-# List supported agents
-engram is list
-
-# Link Engram globally to your agent (installs skillset + MCP)
-engram is --global <your-agent>
+engram entry
 ```
-*(Replace `<your-agent>` with your assistant name; use `agents-md` for unsupported agents that read `AGENTS.md`.)*
+Go to the **Connection** tab to automatically scan and link Engram to your local AI agents (installs skillsets and hooks).
+
+Alternatively, you can manually link Engram to your agent:
+```bash
+# Link Engram globally to your agent (installs skillset + hooks)
+engram link gemini
+```
 
 For Gemini / Antigravity surfaces:
 ```bash
@@ -172,27 +174,17 @@ engram set-proof compact
 v1 hook installs are limited to `codex`, `claude`, and `gemini`. Antigravity
 compatibility currently routes through `gemini`; Cursor, Copilot, Cline, and
 Windsurf/Cascade remain instruction/skillset/manual-load driven until their
-Runtime-first targets (`codex`, `claude`, `cursor`, `gemini`) install bootstrap instructions; fallback targets (`agents-md`, `copilot`, `cline`, `windsurf`, `opencode`) install compact manual instructions.
 hook surfaces support reliable prompt-time context injection.
 Use `engram set-proof compact` when you want supported hooks to append a short
 `Engram proof:` line on each eligible turn showing whether Engram memory was
 loaded, reused, or skipped without changing `set-read` injection behavior.
 
-### 3. Initialize Workspace
-Run this in the root of any project:
+### 3. Inject Workspace
+Run this in the root of any project workspace to enable local memory routing:
 ```bash
-engram init
+engram inject
 ```
 *Notice: creates local `.agents/.engram/`, prompts for global memory folder path, and allows optional submodules (`--submodule`) and cloud/remote sync config.*
-
-### 4. Open Control Panel Web UI
-To visualize, search, and configure your memory profiles, run:
-```bash
-engram entry
-```
-The Config tab stages edits locally, highlights unsaved changes, and asks for review before saving. Risky settings such as save target, global memory path, global Git, and encryption require an extra confirmation in the browser.
-
-![Engram Control Panel](https://raw.githubusercontent.com/the-long-ride/engram/main/media/demo/demo-engram-entry.png)
 
 ---
 
@@ -205,7 +197,7 @@ You can instruct your agent to use the following slash commands in chat:
 - **Summarize & save session**: `/engram save-session` (or `--query-level 3`, or `ss -a last 50 sessions` to auto-approve)
 
 When an agent asks how to use Engram, run `engram llm`. It prints the packaged
-`llm.txt` AI-agent guide, which is safe to use before `engram init`.
+`llm.txt` AI-agent guide, which is safe to use before `engram inject`.
 
 When an AI agent proposes `TYPE: ... | TEXT: ...` memory candidates, it may add optional `CONTEXT: ...` when that helps explain why the memory exists. Simple facts can omit it and use the default approval context.
 

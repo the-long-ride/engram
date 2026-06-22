@@ -71,7 +71,7 @@ npm run lint:lines
   prompt just to choose the target file.
 - When global memory is configured, workspace save flows must include a global
   copy in the same approval preview, even if the current workspace has not run
-  `engram init`. Upsert detection must run per scope so a matching global copy
+  `engram inject`. Upsert detection must run per scope so a matching global copy
   is updated instead of duplicated.
 - Archiving a workspace memory must also archive its matching global copy when
   one exists, so wrong or stale twin memories do not remain active through
@@ -96,9 +96,9 @@ npm run lint:lines
   CLI or MCP flow, never to a hidden write path. `/engram autosave --accept-all`
   must route to the CLI write path because MCP autosave remains proposal-only.
 - Global memory Git automation may touch only the configured global root.
-  Workspace submodule automation may touch only `.agents/.engram`, `.gitmodules`,
+- Workspace submodule automation may touch only `.agents/.engram`, `.gitmodules`,
   and the parent gitlink. Agents must ask before adding any origin remote; CLI
-  init may prompt for it, and non-TTY runs should print the explicit command
+  inject may prompt for it, and non-TTY runs should print the explicit command
   instead.
 - When adding, removing, or renaming a CLI command, update
   `src/core/cli/command-registry.ts`, `src/core/cli/help-topics.ts`,
@@ -133,7 +133,7 @@ node --test --test-name-pattern "path traversal" tests/safety.test.mjs
 Debug the CLI with Node inspector:
 
 ```bash
-npm run debug:cli -- init
+npm run debug:cli -- inject
 ```
 
 For manual CLI debugging, isolate global memory so you do not touch your real
@@ -142,7 +142,7 @@ folder:
 ```bash
 export ENGRAM_GLOBAL_DIR="$PWD/.tmp-engram-global"
 npm run build
-node ./dist/bin/engram.js init
+node ./dist/bin/engram.js inject
 node ./dist/bin/engram.js entry
 node ./dist/bin/engram.js save rule --scope workspace "Use pnpm for installs"
 node ./dist/bin/engram.js save rule --scope workspace --role frontend "Use design tokens"

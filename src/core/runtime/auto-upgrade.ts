@@ -15,7 +15,7 @@ import {
 } from './config.js';
 import type { EngramConfig, Scope } from './types.js';
 
-const skipCommands = new Set(['', 'help', 'llm', 'completion', 'init', 'upgrade', '--help', '-h', '--version', '-v', 'version']);
+const skipCommands = new Set(['', 'help', 'llm', 'completion', 'init', 'inject', 'upgrade', '--help', '-h', '--version', '-v', 'version']);
 
 /** Reconcile already-initialized roots once per installed Engram version. */
 export async function maybeAutoUpgrade(cwd = process.cwd(), command = '', flags: Record<string, any> = {}): Promise<void> {

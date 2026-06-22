@@ -1,7 +1,8 @@
 /** Control panel data API and write handlers. */
 import { openConfigDb, isConfigDbUsable } from '../config-db/schema.js';
 import { loadConfig, writeUserConfig, readProfileStore, writeProfileStore, workspaceRoot, legacyWorkspaceRoot } from '../runtime/config.js';
-import { exists } from '../system/fsx.js';
+import { exists, ensureDir } from '../system/fsx.js';
+import { homedir } from 'node:os';
 import {
   configFieldsForPanel,
   validateConfigPatch,
@@ -86,6 +87,15 @@ export async function apiConfigUpdate(rawPatch: unknown, cwd: string): Promise<s
 }
 
 async function writeConfigPatch(patch: Record<string, string>, cwd: string): Promise<string> {
+  if (patch.global_path) {
+    let gp = patch.global_path;
+    if (gp.startsWith('~')) {
+      gp = gp.replace(/^~/, homedir());
+    }
+    if (gp && !(await exists(gp))) {
+      await ensureDir(gp);
+    }
+  }
   let sqliteUnavailable = false;
   const dbh = await openConfigDb();
   if (dbh) {
@@ -238,3 +248,171 @@ export function parseEntryText(text: string): EntrySection[] {
   }
   return sections;
 }
+
+// ── Agent Connections API ──────────────────────────────────────────────────
+import path from 'node:path';
+import { readText } from '../system/fsx.js';
+import { detectInstalledAgents } from '../integrations/agent-detect.js';
+import { isGenerated } from '../integrations/skillset-render.js';
+import { readGlobalSkillsetRegistry, installSkillset, unlinkSkillset, installGlobalSkillset, unlinkGlobalSkillset, type SkillsetTarget } from '../integrations/skillset.js';
+import { applyAgentHookAction } from '../integrations/agent-hooks.js';
+
+export interface AgentUiInfo {
+  id: string;
+  name: string;
+  detected: boolean;
+  workspaceLinked: boolean;
+  globalLinked: boolean;
+  targets: string[];
+}
+
+const AGENT_TARGET_MAP: Record<string, string[]> = {
+  codex: ['agents-md', 'agent-skill'],
+  claude: ['claude'],
+  cursor: ['cursor'],
+  gemini: ['gemini'],
+  copilot: ['copilot'],
+  cline: ['cline'],
+  windsurf: ['windsurf'],
+  opencode: ['opencode'],
+  antigravity: ['antigravity'],
+};
+
+const TARGET_FILES: Record<string, string[]> = {
+  'agents-md': ['AGENTS.md'],
+  copilot: ['.github/copilot-instructions.md'],
+  claude: ['CLAUDE.md'],
+  cursor: ['.cursor/rules/engram.mdc'],
+  gemini: ['GEMINI.md'],
+  cline: ['.clinerules'],
+  windsurf: ['.windsurfrules'],
+  'agent-skill': ['.agents/skills/engram/SKILL.md'],
+  antigravity: [
+    '.antigravity/skills/engram/SKILL.md',
+    '.antigravity-cli/skills/engram/SKILL.md',
+    '.antigravity-ide/skills/engram/SKILL.md',
+    '.antigravityrules'
+  ],
+  opencode: ['opencode.json', '.opencode/engram.md'],
+  mcp: ['.mcp.json'],
+  slash: ['.claude/commands/engram.md', '.claude/skills/engram/SKILL.md', '.cursor/commands/engram.md', '.gemini/commands/engram.toml']
+};
+
+function skillsetHookTarget(target: string): string {
+  if (target === "all" || target === "all-supported") return "all";
+  if (["codex", "claude", "gemini"].includes(target)) return target;
+  if (target === "antigravity" || target === "antigravity-cli") return "gemini";
+  return "";
+}
+
+async function isTargetLinkedWorkspace(cwd: string, agentId: string): Promise<boolean> {
+  const targetKeys = AGENT_TARGET_MAP[agentId] ?? [agentId];
+  for (const key of targetKeys) {
+    const files = TARGET_FILES[key] ?? [];
+    for (const relFile of files) {
+      const file = path.join(cwd, relFile);
+      try {
+        const content = await readText(file);
+        if (content && isGenerated(content, relFile)) {
+          return true;
+        }
+      } catch {
+        // Ignored
+      }
+    }
+  }
+  return false;
+}
+
+async function isTargetLinkedGlobal(agentId: string): Promise<boolean> {
+  try {
+    const registry = await readGlobalSkillsetRegistry();
+    const install = registry.installs[agentId];
+    if (install && install.files && install.files.length > 0) {
+      return true;
+    }
+  } catch {
+    // Ignored
+  }
+  return false;
+}
+
+export async function apiAgentsScan(cwd: string): Promise<AgentUiInfo[]> {
+  const detected = detectInstalledAgents();
+  const agents = [
+    { id: 'claude', name: 'Anthropic Claude' },
+    { id: 'gemini', name: 'Google Gemini' },
+    { id: 'cursor', name: 'Cursor' },
+    { id: 'copilot', name: 'GitHub Copilot' },
+    { id: 'cline', name: 'Cline' },
+    { id: 'windsurf', name: 'Windsurf' },
+    { id: 'codex', name: 'OpenAI Codex' },
+    { id: 'opencode', name: 'OpenCode' },
+    { id: 'antigravity', name: 'Antigravity' },
+  ];
+
+  const result: AgentUiInfo[] = [];
+  for (const agent of agents) {
+    const isDet = detected.has(agent.id);
+    const wsLinked = await isTargetLinkedWorkspace(cwd, agent.id);
+    const glLinked = await isTargetLinkedGlobal(agent.id);
+    result.push({
+      id: agent.id,
+      name: agent.name,
+      detected: isDet,
+      workspaceLinked: wsLinked,
+      globalLinked: glLinked,
+      targets: AGENT_TARGET_MAP[agent.id] ?? [agent.id],
+    });
+  }
+  return result;
+}
+
+export async function apiAgentLink(cwd: string, agentId: string, global: boolean): Promise<string> {
+  if (global) {
+    const results = await installGlobalSkillset(agentId, { force: true });
+    const anyWritten = results.some((r) => r.action === 'written' || r.action === 'updated');
+    const allSkipped = results.length > 0 && results.every((r) => r.action === 'skipped');
+    if (allSkipped) {
+      const reasons = [...new Set(results.map((r) => r.reason).filter(Boolean))].join('; ');
+      return `Skipped ${agentId} (global): not supported${reasons ? ' — ' + reasons : ''}.`;
+    }
+    const hookTarget = skillsetHookTarget(agentId);
+    if (hookTarget) {
+      await applyAgentHookAction('install', hookTarget, { global: true, force: true, cwd });
+    }
+    return `Connected ${agentId} globally.${anyWritten ? '' : ' (already linked)'}`;
+  } else {
+    const results = await installSkillset(cwd, agentId, true);
+    const anyWritten = results.some((r) => r.action === 'written' || r.action === 'updated');
+    const allSkipped = results.length > 0 && results.every((r) => r.action === 'skipped');
+    if (allSkipped) {
+      const reasons = [...new Set(results.map((r) => r.reason).filter(Boolean))].join('; ');
+      return `Skipped ${agentId} (workspace): not supported${reasons ? ' — ' + reasons : ''}.`;
+    }
+    const hookTarget = skillsetHookTarget(agentId);
+    if (hookTarget) {
+      await applyAgentHookAction('install', hookTarget, { global: false, force: true, cwd });
+    }
+    return `Connected ${agentId} in this workspace.${anyWritten ? '' : ' (already linked)'}`;
+  }
+}
+
+export async function apiAgentUnlink(cwd: string, agentId: string, global: boolean): Promise<string> {
+  if (global) {
+    await unlinkGlobalSkillset(agentId, { force: true });
+    const hookTarget = skillsetHookTarget(agentId);
+    if (hookTarget) {
+      await applyAgentHookAction('uninstall', hookTarget, { global: true, force: true, cwd });
+    }
+    return `Disconnected ${agentId} globally.`;
+  } else {
+    await unlinkSkillset(cwd, agentId);
+    const hookTarget = skillsetHookTarget(agentId);
+    if (hookTarget) {
+      await applyAgentHookAction('uninstall', hookTarget, { global: false, force: true, cwd });
+    }
+    return `Disconnected ${agentId} from this workspace.`;
+  }
+}
+

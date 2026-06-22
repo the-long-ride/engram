@@ -7,7 +7,7 @@ export const HELP_DATA: HelpSection[] = [
     title: 'Meta Commands',
     commands: [
       { command: 'engram --version', alias: '-v', purpose: 'Show the installed Engram version' },
-      { command: 'engram init [--force] [--global-only] [--scope workspace|global|both] [--no-skillset] [--skillset target] [--submodule] [--submodule-remote <git-url>] [--no-global] [--global-path path] [--global-remote <git-url>] [--global-branch main]', alias: 'i', purpose: 'Initialize or reconcile memory and install compact agent skillset instructions by default' },
+      { command: 'engram inject [--force] [--global-only] [--scope workspace|global|both] [--no-skillset] [--skillset target] [--submodule] [--submodule-remote <git-url>] [--no-global] [--global-path path] [--global-remote <git-url>] [--global-branch main]', alias: 'i', purpose: 'Initialize or reconcile memory and install compact agent skillset instructions by default' },
       { command: 'engram help [topic]', alias: 'h', purpose: 'Show this help menu or specific topic details & example use-cases' },
       { command: 'engram llm', purpose: 'Print the packaged AI agent usage guide from llm.txt' },
       { command: 'engram entry', alias: 'e', purpose: 'Open browser web UI showing runtime configurations and global Git repository status' },

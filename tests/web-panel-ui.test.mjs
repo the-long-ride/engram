@@ -34,3 +34,43 @@ test('panel js includes engram upgrade --latest in cpUpgradeCmd copy string', as
   const panel = await readFile(new URL('../src/core/web/panel.js', import.meta.url), 'utf8');
   assert.match(panel, /engram upgrade --latest/);
 });
+
+test('panel js handles default_profile select dropdown options dynamically', async () => {
+  const panel = await readFile(new URL('../src/core/web/panel.js', import.meta.url), 'utf8');
+  assert.match(panel, /f\.key === 'default_profile'/);
+  assert.match(panel, /D\.profiles\.forEach/);
+  assert.match(panel, /<option/);
+});
+
+test('panel js validates text and number inputs on blur', async () => {
+  const panel = await readFile(new URL('../src/core/web/panel.js', import.meta.url), 'utf8');
+  assert.match(panel, /onblur="changeCfg\(this\.dataset\.key, this\.value\)"/);
+});
+
+test('panel js roles validator rejects empty role names', async () => {
+  const panel = await readFile(new URL('../src/core/web/panel.js', import.meta.url), 'utf8');
+  assert.match(panel, /roles cannot contain empty role names/);
+});
+
+test('panel js dynamically validates global_path on the server in changeCfg', async () => {
+  const panel = await readFile(new URL('../src/core/web/panel.js', import.meta.url), 'utf8');
+  assert.match(panel, /key === 'global_path'/);
+  assert.match(panel, /\/api\/config\/validate/);
+});
+
+test('panel UI contains connection tab navigation and functions', async () => {
+  const html = await readFile(new URL('../src/core/web/panel.html', import.meta.url), 'utf8');
+  assert.match(html, /data-tab="connection"/);
+  assert.match(html, /id="tab-connection"/);
+
+  const js = await readFile(new URL('../src/core/web/panel.js', import.meta.url), 'utf8');
+  assert.match(js, /function scanAgents\(/);
+  assert.match(js, /function renderConnection\(/);
+  assert.match(js, /async function linkAgent\(/);
+  assert.match(js, /async function unlinkAgent\(/);
+
+  const css = await readFile(new URL('../src/core/web/panel.css', import.meta.url), 'utf8');
+  assert.match(css, /\.conn-grid/);
+  assert.match(css, /\.conn-card/);
+});
+

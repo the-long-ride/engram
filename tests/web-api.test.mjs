@@ -14,7 +14,10 @@ import {
   apiProfileAdd,
   apiProfileActivate,
   apiProfileRemove,
-  parseEntryText
+  parseEntryText,
+  apiAgentsScan,
+  apiAgentLink,
+  apiAgentUnlink
 } from '../dist/core/web/api.js';
 
 
@@ -156,6 +159,51 @@ test('web UI api workspace, profile, config handlers and entry text parser', asy
     // After SQLite is available again, DB value 'always' takes priority over JSON fallback 'manual'
     assert.equal(finalData2.config.read, sqliteOk ? 'always' : 'manual');
     assert.equal(finalData2.config.proof, 'compact');
+
+    // 10. Agent Connection APIs
+    const agents = await apiAgentsScan(cwd);
+    assert.ok(Array.isArray(agents));
+    // Verify structure
+    const claudeAgent = agents.find((a) => a.id === 'claude');
+    assert.ok(claudeAgent);
+    assert.equal(claudeAgent.name, 'Anthropic Claude');
+    assert.equal(claudeAgent.workspaceLinked, false);
+
+    // Link workspace
+    const linkResult = await apiAgentLink(cwd, 'claude', false);
+    assert.match(linkResult, /Connected claude in this workspace/);
+
+    // Verify it is now linked in workspace
+    const agentsAfterLink = await apiAgentsScan(cwd);
+    const claudeAgentAfter = agentsAfterLink.find((a) => a.id === 'claude');
+    assert.equal(claudeAgentAfter.workspaceLinked, true);
+
+    // Unlink workspace
+    const unlinkResult = await apiAgentUnlink(cwd, 'claude', false);
+    assert.match(unlinkResult, /Disconnected claude from this workspace/);
+
+    // Verify it is unlinked
+    const agentsAfterUnlink = await apiAgentsScan(cwd);
+    const claudeAgentAfterUnlink = agentsAfterUnlink.find((a) => a.id === 'claude');
+    assert.equal(claudeAgentAfterUnlink.workspaceLinked, false);
+
+    // Link global
+    const linkGlobalResult = await apiAgentLink(cwd, 'claude', true);
+    assert.match(linkGlobalResult, /Connected claude globally/);
+
+    // Verify linked globally
+    const agentsAfterGlobalLink = await apiAgentsScan(cwd);
+    const claudeAgentAfterGlobal = agentsAfterGlobalLink.find((a) => a.id === 'claude');
+    assert.equal(claudeAgentAfterGlobal.globalLinked, true);
+
+    // Unlink global
+    const unlinkGlobalResult = await apiAgentUnlink(cwd, 'claude', true);
+    assert.match(unlinkGlobalResult, /Disconnected claude globally/);
+
+    // Verify unlinked globally
+    const agentsAfterGlobalUnlink = await apiAgentsScan(cwd);
+    const claudeAgentAfterGlobalUnlink = agentsAfterGlobalUnlink.find((a) => a.id === 'claude');
+    assert.equal(claudeAgentAfterGlobalUnlink.globalLinked, false);
   } finally {
     // Restore environment
     process.env.ENGRAM_CONFIG_DIR = oldEnv.ENGRAM_CONFIG_DIR;

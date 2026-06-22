@@ -47,6 +47,10 @@ function switchTab(name) {
   });
   var app = document.querySelector('.app');
   if (app) app.classList.remove('sb-open');
+
+  if (name === 'connection') {
+    scanAgents();
+  }
 }
 
 function toggleSidebar() {
@@ -180,6 +184,9 @@ function renderAll() {
   renderProfiles();
   renderWorkspaces();
   renderRuntime();
+  if (window._agentsData) {
+    renderConnection();
+  }
 }
 
 // ── API call ─────────────────────────────────────────────────────────────────
@@ -259,13 +266,30 @@ function renderCfgRow(f, val, editable) {
     var on = strV === 'true';
     ctl = '<div class="tgl' + (on ? ' on' : '') + '" data-key="' + esc(f.key) + '" onclick="tglCfg(this)" title="' + esc(f.key) + '"><div class="tgl-thumb"></div></div>';
   } else if (f.input === 'select') {
-    var opts = (f.options || []).map(function(o) { return '<option' + (o === strV ? ' selected' : '') + ' value="' + esc(o) + '">' + esc(o) + '</option>'; }).join('');
+    var optionsList = f.options || [];
+    if (f.key === 'default_profile') {
+      optionsList = [''];
+      if (D && D.profiles) {
+        D.profiles.forEach(function(p) {
+          if (p.name && optionsList.indexOf(p.name) === -1) {
+            optionsList.push(p.name);
+          }
+        });
+      }
+      if (strV && optionsList.indexOf(strV) === -1) {
+        optionsList.push(strV);
+      }
+    }
+    var opts = optionsList.map(function(o) {
+      var display = o === '' ? '<none>' : o;
+      return '<option' + (o === strV ? ' selected' : '') + ' value="' + esc(o) + '">' + esc(display) + '</option>';
+    }).join('');
     ctl = '<select class="cfg-select" data-key="' + esc(f.key) + '" onchange="changeCfg(this.dataset.key, this.value)">' + opts + '</select>';
   } else if (f.input === 'number') {
-    ctl = '<input class="cfg-input" type="number" value="' + esc(strV) + '"' + (f.min!=null?' min="'+f.min+'"':'') + (f.max!=null?' max="'+f.max+'"':'') + (f.step!=null?' step="'+f.step+'"':'') + ' data-key="' + esc(f.key) + '" onchange="changeCfg(this.dataset.key, this.value)">';
+    ctl = '<input class="cfg-input" type="number" value="' + esc(strV) + '"' + (f.min!=null?' min="'+f.min+'"':'') + (f.max!=null?' max="'+f.max+'"':'') + (f.step!=null?' step="'+f.step+'"':'') + ' data-key="' + esc(f.key) + '" onblur="changeCfg(this.dataset.key, this.value)">';
   } else {
     var placeholder = f.input === 'roles' ? 'agent, reviewer' : '';
-    ctl = '<input class="cfg-input wide" type="text" value="' + esc(strV) + '" placeholder="' + esc(placeholder) + '" data-key="' + esc(f.key) + '" onchange="changeCfg(this.dataset.key, this.value)">';
+    ctl = '<input class="cfg-input wide" type="text" value="' + esc(strV) + '" placeholder="' + esc(placeholder) + '" data-key="' + esc(f.key) + '" onblur="changeCfg(this.dataset.key, this.value)">';
   }
 
   var desc = f.description ? '<span class="cfg-desc">' + esc(f.description) + '</span>' : '';
@@ -281,12 +305,27 @@ function tglCfg(el) {
   changeCfg(el.dataset.key, String(el.classList.contains('on')));
 }
 
-function changeCfg(key, value) {
+async function changeCfg(key, value) {
   var field = fieldByKey(key);
   if (!field) return;
   Draft[key] = value;
   RowErrors[key] = clientValidationError(field, value);
   Dirty[key] = value !== uiValue(field, gv(D.config, key));
+
+  if (key === 'global_path' && !RowErrors[key] && value) {
+    var res = await postJson('/api/config/validate', { patch: { global_path: value } });
+    if (res) {
+      if (res.ok === false) {
+        var issue = (res.issues || []).find(function(i) { return i.key === 'global_path'; });
+        if (issue) {
+          RowErrors['global_path'] = issue.message;
+        }
+      } else {
+        RowErrors['global_path'] = '';
+      }
+    }
+  }
+
   renderConfig();
 }
 
@@ -313,7 +352,11 @@ function clientValidationError(field, value) {
     if (field.max != null && n > field.max) return field.label + ' must be at most ' + field.max;
   }
   if (field.input === 'roles') {
-    var roles = String(value || '').split(',').map(function(role) { return role.trim(); }).filter(Boolean);
+    var rawRoles = String(value || '').trim() === '' ? [] : String(value || '').split(',');
+    var roles = rawRoles.map(function(role) { return role.trim(); });
+    if (roles.some(function(role) { return !role; })) {
+      return 'roles cannot contain empty role names';
+    }
     var bad = roles.find(function(role) { return !/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$/.test(role); });
     if (bad) return 'Invalid role: ' + bad;
   }
@@ -631,6 +674,141 @@ async function initWorkspace() {
       btn.disabled = false;
       btn.textContent = 'Initialize Workspace';
     }
+  }
+}
+
+// ── Connection Tab ───────────────────────────────────────────────────────────
+window._agentsData = null;
+window._scanning = false;
+
+async function scanAgents() {
+  if (window._scanning) return;
+  window._scanning = true;
+
+  var pane = document.getElementById('tab-connection');
+  if (pane) {
+    pane.innerHTML = '<div class="loading"><div class="spinner"></div>&nbsp;&nbsp;Scanning local AI agents&hellip;</div>';
+  }
+
+  try {
+    var res = await fetch('/api/agents/scan');
+    var j = await res.json();
+    if (res.ok && j.ok) {
+      window._agentsData = j.data;
+      renderConnection();
+    } else {
+      if (pane) {
+        pane.innerHTML = '<div class="loading" style="color:var(--red);flex-direction:column;gap:12px">' +
+          '<span>⚠️ ' + esc(j.error || 'Failed to scan agents') + '</span>' +
+          '<button class="btn btn-outline" onclick="scanAgents()">Retry</button>' +
+          '</div>';
+      }
+    }
+  } catch (e) {
+    if (pane) {
+      pane.innerHTML = '<div class="loading" style="color:var(--red);flex-direction:column;gap:12px">' +
+        '<span>⚠️ ' + esc(e.message) + '</span>' +
+        '<button class="btn btn-outline" onclick="scanAgents()">Retry</button>' +
+        '</div>';
+    }
+  } finally {
+    window._scanning = false;
+  }
+}
+
+function renderConnection() {
+  if (!window._agentsData) return;
+
+  var html = '<div class="tab-hdr" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">' +
+    '<div>' +
+      '<h1>AI Agent Connections</h1>' +
+      '<p>Link Engram memory skillset instructions and hooks to your local AI agents.</p>' +
+    '</div>' +
+    '<button class="btn btn-outline" onclick="scanAgents()">' +
+      '<svg class="nav-icon" style="width:14px;height:14px;margin-right:4px;" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">' +
+        '<path d="M1.5 8a6.5 6.5 0 0 1 11-4.7l2 2.2M14.5 8a6.5 6.5 0 0 1-11 4.7l-2-2.2"/>' +
+        '<path d="M14.5 2v4.5H10M1.5 14v-4.5H6"/>' +
+      '</svg>Refresh' +
+    '</button>' +
+  '</div>';
+
+  html += '<div class="conn-grid">';
+
+  window._agentsData.forEach(function(agent) {
+    var detectedLabel = agent.detected
+      ? '<span class="conn-status detected">Detected</span>'
+      : '<span class="conn-status missing">Not Detected</span>';
+
+    var cardClass = 'conn-card' + (agent.detected ? '' : ' disabled');
+
+    var wsBtn = '';
+    if (agent.detected) {
+      if (agent.workspaceLinked) {
+        wsBtn = '<span style="display:flex;align-items:center;gap:6px;color:var(--green);font-weight:500;">' +
+          '<span>✓ Linked</span>' +
+          '<button class="btn btn-ghost btn-danger" style="padding:0;height:auto;font-size:11px;" onclick="unlinkAgent(\'' + escJs(agent.id) + '\', false)" title="Unlink from workspace">Unlink</button>' +
+          '</span>';
+      } else {
+        wsBtn = '<button class="btn btn-outline" style="height:24px;font-size:11px;padding:0 8px;" onclick="linkAgent(\'' + escJs(agent.id) + '\', false)">Link</button>';
+      }
+    } else {
+      wsBtn = '<span style="color:var(--g500);font-size:11px;">Not Available</span>';
+    }
+
+    var glBtn = '';
+    if (agent.detected) {
+      if (agent.globalLinked) {
+        glBtn = '<span style="display:flex;align-items:center;gap:6px;color:var(--green);font-weight:500;">' +
+          '<span>✓ Linked</span>' +
+          '<button class="btn btn-ghost btn-danger" style="padding:0;height:auto;font-size:11px;" onclick="unlinkAgent(\'' + escJs(agent.id) + '\', true)" title="Unlink from global">Unlink</button>' +
+          '</span>';
+      } else {
+        glBtn = '<button class="btn btn-outline" style="height:24px;font-size:11px;padding:0 8px;" onclick="linkAgent(\'' + escJs(agent.id) + '\', true)">Link</button>';
+      }
+    } else {
+      glBtn = '<span style="color:var(--g500);font-size:11px;">Not Available</span>';
+    }
+
+    var targetsDesc = agent.targets ? agent.targets.join(', ') : agent.id;
+    var details = 'Skillset targets: ' + esc(targetsDesc);
+
+    html += '<div class="' + cardClass + '">' +
+      '<div>' +
+        '<div class="conn-header">' +
+          '<span class="conn-name">' + esc(agent.name) + '</span>' +
+          detectedLabel +
+        '</div>' +
+        '<div class="conn-desc">' + details + '</div>' +
+      '</div>' +
+      '<div class="conn-actions">' +
+        '<div class="conn-row"><span>Workspace Link</span>' + wsBtn + '</div>' +
+        '<div class="conn-row"><span>Global Link</span>' + glBtn + '</div>' +
+      '</div>' +
+    '</div>';
+  });
+
+  html += '</div>';
+  var pane = document.getElementById('tab-connection');
+  if (pane) {
+    pane.innerHTML = html;
+  }
+}
+
+async function linkAgent(agentId, isGlobal) {
+  toast('Connecting ' + agentId + '...', true);
+  var ok = await api('/api/agents/link', { agentId: agentId, global: isGlobal });
+  if (ok) {
+    toast('Connected successfully!', true);
+    await scanAgents();
+  }
+}
+
+async function unlinkAgent(agentId, isGlobal) {
+  toast('Disconnecting ' + agentId + '...', true);
+  var ok = await api('/api/agents/unlink', { agentId: agentId, global: isGlobal });
+  if (ok) {
+    toast('Disconnected successfully!', true);
+    await scanAgents();
   }
 }
 

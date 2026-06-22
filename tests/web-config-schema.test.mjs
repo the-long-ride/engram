@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { existsSync, rmSync } from 'node:fs';
+import path from 'node:path';
 import {
   CONFIG_FIELDS,
   configFieldsForPanel,
@@ -65,3 +67,35 @@ test('risk classifier protects high-impact settings', () => {
   assert.equal(isRiskyConfigKey('encryption.enabled'), true);
   assert.equal(isRiskyConfigKey('read'), false);
 });
+
+test('validateConfigPatch rejects roles containing empty role names', () => {
+  const result = validateConfigPatch({
+    roles: 'agent, , reviewer'
+  });
+  assert.equal(result.ok, false);
+  assert.match(result.issues.map((i) => i.message).join('\n'), /roles cannot contain empty role names/);
+});
+
+test('validateConfigPatch validates nonexistent global_path without creating it', () => {
+  const tempPath = path.join(process.cwd(), 'temp-test-global-path-dir-12345');
+  try { rmSync(tempPath, { recursive: true, force: true }); } catch {}
+
+  const result = validateConfigPatch({
+    global_path: tempPath
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(existsSync(tempPath), false);
+
+  try { rmSync(tempPath, { recursive: true, force: true }); } catch {}
+});
+
+test('validateConfigPatch fails on uncreatable global_path', () => {
+  const badPath = process.platform === 'win32' ? 'Z:\\nonexistent\\path\\dir' : '/root/nonexistent/path/dir';
+  const result = validateConfigPatch({
+    global_path: badPath
+  });
+  assert.equal(result.ok, false);
+  assert.match(result.issues.map((i) => i.message).join('\n'), /Failed to validate/);
+});
+

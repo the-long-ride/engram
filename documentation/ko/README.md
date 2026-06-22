@@ -173,7 +173,7 @@ v1 훅 설치는 `codex`, `claude`, `gemini`로 제한됩니다. Antigravity 호
 ### 3. 워크스페이스 초기화
 프로젝트 루트 폴더에서 실행합니다:
 ```bash
-engram init
+engram inject
 ```
 *알림: 로컬 `.agents/.engram/` 디렉토리를 생성하고, 글로벌 메모리 경로를 설정하며, 옵션으로 서브모듈(`--submodule`) 및 원격 동기화를 활성화합니다.*
 
@@ -194,7 +194,7 @@ engram entry
 - **중요 결정사항 저장**：`/engram save knowledge "Webhook secret is process.env.STRIPE_WEBHOOK"`
 - **세션 요약 저장**：`/engram save-session` (또는 `--query-level 3`, 또는 자동 승인용 `ss -a last 50 sessions`)
 
-에이전트가 Engram 사용 방법을 물으면 `engram llm`을 실행하십시오. 패키지된 `llm.txt` AI 에이전트 가이드가 인쇄되며, `engram init` 전에 사용해도 안전합니다.
+에이전트가 Engram 사용 방법을 물으면 `engram llm`을 실행하십시오. 패키지된 `llm.txt` AI 에이전트 가이드가 인쇄되며, `engram inject` 전에 사용해도 안전합니다.
 
 AI 에이전트가 `TYPE: ... | TEXT: ...` 메모리 후보를 제안할 때, 해당 메모리가 존재하는 이유를 설명하는 데 도움이 되는 경우 선택적으로 `CONTEXT: ...`를 추가할 수 있습니다. 단순한 사실은 이를 생략하고 기본 승인 컨텍스트를 사용할 수 있습니다.
 

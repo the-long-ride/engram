@@ -38,7 +38,7 @@ Hãy nghĩ về Engram như một trung tâm lưu trữ kiến thức:
 Engram phân giải bộ nhớ theo thứ tự sau:
 
 1. Bộ nhớ không gian làm việc (workspace): `<project>/.agents/.engram/`
-2. Bộ nhớ toàn cục (global): `$ENGRAM_GLOBAL_DIR` hoặc `engram init --global-path <đường_dẫn>`
+2. Bộ nhớ toàn cục (global): `$ENGRAM_GLOBAL_DIR` hoặc `engram inject --global-path <đường_dẫn>`
 
 Bộ nhớ workspace luôn giành chiến thắng. Bộ nhớ global đóng vai trò là phương án dự phòng (fallback) cho các thiết lập có thể tái sử dụng và ngữ cảnh chung của nhóm trên nhiều dự án.
 

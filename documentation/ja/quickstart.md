@@ -24,7 +24,7 @@
 engram llm
 ```
 
-これにより、パッケージ化された `llm.txt` ガイドが印刷され、`engram init` は不要です。
+これにより、パッケージ化された `llm.txt` ガイドが印刷され、`engram inject` は不要です。
 
 ## 推奨されるセットアップ時の会話
 
@@ -37,12 +37,12 @@ engram llm
 エージェントは以下を実行できます。
 
 ```bash
-engram init
+engram inject
 engram help link
 engram link <エージェント名>
 ```
 
-同じエージェントにグローバルで教え込み、新しいワークスペースが最初に `engram init` を実行しなくても Engram グローバルメモリをロードできるようにするには、以下を実行します。
+同じエージェントにグローバルで教え込み、新しいワークスペースが最初に `engram inject` を実行しなくても Engram グローバルメモリをロードできるようにするには、以下を実行します。
 
 ```bash
 engram link --global <エージェント名>
@@ -133,12 +133,12 @@ Use pnpm for package management.
 エージェントは以下を使用できます。
 
 ```bash
-engram init --global-only --global-path <パス>
+engram inject --global-only --global-path <パス>
 engram save --scope global "パッケージ管理に pnpm を使用します。"
 engram link --global <エージェント名>
 ```
 
-init が設定済みのグローバルメモリを検出すると、将来のワークスペースが再利用できるように、そのグローバルルートのユーザーデフォルトプロファイルを作成または選択します。
+inject が設定済みのグローバルメモリを検出すると、将来のワークスペースが再利用できるように、そのグローバルルートのユーザーデフォルトプロファイルを作成または選択します。
 
 ## メモリの健康維持
 

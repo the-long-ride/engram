@@ -24,7 +24,7 @@ Lorsqu'un agent a besoin d'un guide d'utilisation d'Engram autonome, exécutez :
 engram llm
 ```
 
-Cela affiche le guide `llm.txt` empaqueté et ne nécessite pas `engram init`.
+Cela affiche le guide `llm.txt` empaqueté et ne nécessite pas `engram inject`.
 
 ## Conversation de Configuration Recommandée
 
@@ -37,12 +37,12 @@ Initialise Engram pour cet espace de travail, installe le bon ensemble de compé
 L'agent peut exécuter :
 
 ```bash
-engram init
+engram inject
 engram help link
 engram link <nom-de-l-agent>
 ```
 
-Pour enseigner au même agent de manière globale, afin que les nouveaux espaces de travail puissent charger la mémoire globale d'Engram sans exécuter `engram init` au préalable :
+Pour enseigner au même agent de manière globale, afin que les nouveaux espaces de travail puissent charger la mémoire globale d'Engram sans exécuter `engram inject` au préalable :
 
 ```bash
 engram link --global <nom-de-l-agent>
@@ -134,12 +134,12 @@ Use pnpm for package management.
 L'agent peut utiliser :
 
 ```bash
-engram init --global-only --global-path <chemin>
+engram inject --global-only --global-path <chemin>
 engram save --scope global "Utiliser pnpm pour la gestion des paquets."
 engram link --global <nom-de-l-agent>
 ```
 
-Lorsque init détecte une mémoire globale configurée, il crée ou sélectionne un profil utilisateur par défaut pour cette racine globale afin que les futurs espaces de travail puissent la réutiliser.
+Lorsque inject détecte une mémoire globale configurée, il crée ou sélectionne un profil utilisateur par défaut pour cette racine globale afin que les futurs espaces de travail puissent la réutiliser.
 
 
 ## Garder le Système Sain

@@ -38,7 +38,7 @@ Engram 为内存提供了一个稳定的契约：
 Engram 按照以下顺序解析内存：
 
 1. 工作区内存：`<project>/.agents/.engram/`
-2. 全局内存：`$ENGRAM_GLOBAL_DIR` 或 `engram init --global-path <path>`
+2. 全局内存：`$ENGRAM_GLOBAL_DIR` 或 `engram inject --global-path <path>`
 
 工作区内存优先。全局内存是跨项目的可重用偏好和团队上下文的后备（fallback）选项。
 

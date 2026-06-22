@@ -24,7 +24,7 @@
 engram llm
 ```
 
-这会打印打包的 `llm.txt` 指南，并且不需要 `engram init`。
+这会打印打包的 `llm.txt` 指南，并且不需要 `engram inject`。
 
 ## 推荐的设置对话
 
@@ -37,12 +37,12 @@ engram llm
 智能体可以运行：
 
 ```bash
-engram init
+engram inject
 engram help link
 engram link <智能体名称>
 ```
 
-要在全局范围内教授相同的智能体，以便新工作区可以在不先运行 `engram init` 的情况下加载 Engram 全局内存：
+要在全局范围内教授相同的智能体，以便新工作区可以在不先运行 `engram inject` 的情况下加载 Engram 全局内存：
 
 ```bash
 engram link --global <智能体名称>
@@ -134,7 +134,7 @@ Use pnpm for package management.
 智能体可以使用：
 
 ```bash
-engram init --global-only --global-path <路径>
+engram inject --global-only --global-path <路径>
 engram save --scope global "使用 pnpm 进行包管理。"
 engram link --global <智能体名称>
 ```

@@ -173,7 +173,7 @@ v1 钩子安装仅限于 `codex`、`claude` 和 `gemini`。Antigravity 的兼容
 ### 3. 初始化工作空间
 在项目根目录下运行：
 ```bash
-engram init
+engram inject
 ```
 *注意：创建工作空间本地 `.agents/.engram/` 文件夹，配置全局内存路径，支持 submodule (`--submodule`) 和云端同步配置。*
 
@@ -194,7 +194,7 @@ engram entry
 - **保存重要决策/事实**：`/engram save knowledge "Webhook secret is process.env.STRIPE_WEBHOOK"`
 - **总结并保存会话**：`/engram save-session`（or `--query-level 3`，或使用 `ss -a last 50 sessions` 自动批准）
 
-当代理询问如何使用 Engram 时，运行 `engram llm`。它会打印打包的 `llm.txt` AI 代理指南，在 `engram init` 之前运行也是安全的。
+当代理询问如何使用 Engram 时，运行 `engram llm`。它会打印打包的 `llm.txt` AI 代理指南，在 `engram inject` 之前运行也是安全的。
 
 当 AI 代理提出 `TYPE: ... | TEXT: ...` 内存候选时，如果有助于解释内存存在的原因，它可以添加可选的 `CONTEXT: ...`。简单的事实可以省略它并使用默认的批准上下文。
 

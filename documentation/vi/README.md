@@ -172,7 +172,7 @@ Sử dụng `engram set-proof compact` khi bạn muốn các hook được hỗ 
 ### 3. Khởi tạo Không gian làm việc
 Chạy lệnh này tại thư mục gốc của dự án:
 ```bash
-engram init
+engram inject
 ```
 *Lưu ý: tạo thư mục `.agents/.engram/` cục bộ, cấu hình đường dẫn thư mục global và hỗ trợ tùy chọn submodule (`--submodule`) hoặc đồng bộ đám mây.*
 
@@ -193,7 +193,7 @@ Bạn có thể yêu cầu tác nhân sử dụng các lệnh slesh sau trong ch
 - **Lưu quyết định/kiến thức quan trọng**: `/engram save knowledge "Webhook secret is process.env.STRIPE_WEBHOOK"`
 - **Tóm tắt & lưu phiên**: `/engram save-session` (hoặc `--query-level 3`, hoặc `ss -a last 50 sessions` để tự động phê duyệt)
 
-Khi tác nhân AI hỏi cách sử dụng Engram, hãy chạy `engram llm`. Lệnh này sẽ in ra hướng dẫn tác nhân AI `llm.txt` được đóng gói sẵn, an toàn để sử dụng trước khi chạy `engram init`.
+Khi tác nhân AI hỏi cách sử dụng Engram, hãy chạy `engram llm`. Lệnh này sẽ in ra hướng dẫn tác nhân AI `llm.txt` được đóng gói sẵn, an toàn để sử dụng trước khi chạy `engram inject`.
 
 Khi một tác nhân AI đề xuất các ứng viên bộ nhớ dạng `TYPE: ... | TEXT: ...`, nó có thể thêm tùy chọn `CONTEXT: ...` khi điều đó giúp giải thích lý do bộ nhớ tồn tại. Các sự kiện đơn giản có thể bỏ qua phần này và sử dụng ngữ cảnh phê duyệt mặc định.
 

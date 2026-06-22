@@ -24,7 +24,7 @@
 engram llm
 ```
 
-이 명령은 패키지된 `llm.txt` 가이드를 인쇄하며 `engram init`를 요구하지 않습니다.
+이 명령은 패키지된 `llm.txt` 가이드를 인쇄하며 `engram inject`를 요구하지 않습니다.
 
 ## 추천 설정 대화 흐름
 
@@ -37,12 +37,12 @@ engram llm
 그러면 에이전트는 다음을 실행할 수 있습니다.
 
 ```bash
-engram init
+engram inject
 engram help link
 engram link <에이전트명>
 ```
 
-동일한 에이전트를 전역적으로 가르쳐서 새 워크스페이스가 `engram init`를 먼저 실행하지 않고도 Engram 전역 메모리를 로드할 수 있도록 하려면 다음을 실행하십시오.
+동일한 에이전트를 전역적으로 가르쳐서 새 워크스페이스가 `engram inject`를 먼저 실행하지 않고도 Engram 전역 메모리를 로드할 수 있도록 하려면 다음을 실행하십시오.
 
 ```bash
 engram link --global <에이전트명>
@@ -133,12 +133,12 @@ Use pnpm for package management.
 그러면 에이전트는 다음을 사용할 수 있습니다.
 
 ```bash
-engram init --global-only --global-path <경로>
+engram inject --global-only --global-path <경로>
 engram save --scope global "패키지 관리에 pnpm을 사용하십시오."
 engram link --global <에이전트명>
 ```
 
-init 명령어가 구성된 전역 메모리를 감지하면 해당 전역 루트에 대한 사용자 기본 프로필을 생성하거나 선택하므로 향후 워크스페이스에서 이를 재사용할 수 있습니다.
+inject 명령어가 구성된 전역 메모리를 감지하면 해당 전역 루트에 대한 사용자 기본 프로필을 생성하거나 선택하므로 향후 워크스페이스에서 이를 재사용할 수 있습니다.
 
 ## 항상 건강하게 유지하기
 

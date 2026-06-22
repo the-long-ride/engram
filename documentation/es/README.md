@@ -173,7 +173,7 @@ Use `engram set-proof compact` cuando desee que los hooks compatibles agreguen u
 ### 3. Inicializar el Espacio de Trabajo
 Ejecuta esto en la raíz del proyecto:
 ```bash
-engram init
+engram inject
 ```
 *Aviso: crea la carpeta `.agents/.engram/` local, solicita la ruta de la memoria global y permite submódulos opcionales (`--submodule`) y sincronización remota.*
 
@@ -194,7 +194,7 @@ Puedes indicarle al agente en el chat que use los siguientes comandos:
 - **Guardar decisiones importantes**: `/engram save knowledge "Webhook secret is process.env.STRIPE_WEBHOOK"`
 - **Resumir y guardar sesión**: `/engram save-session` (o `--query-level 3`, o `ss -a last 50 sessions` para autoaprobar)
 
-Cuando un agente pregunte cómo usar Engram, ejecute `engram llm`. Imprime la guía empaquetada del agente de IA `llm.txt`, que es segura de usar antes de `engram init`.
+Cuando un agente pregunte cómo usar Engram, ejecute `engram llm`. Imprime la guía empaquetada del agente de IA `llm.txt`, que es segura de usar antes de `engram inject`.
 
 Cuando un agente de IA propone candidatos a memoria con formato `TYPE: ... | TEXT: ...`, puede agregar opcionalmente `CONTEXT: ...` cuando eso ayude a explicar por qué existe la memoria. Los hechos simples pueden omitirlo y usar el contexto de aprobación predeterminado.
 

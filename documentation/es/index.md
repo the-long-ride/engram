@@ -38,7 +38,7 @@ Piense en Engram como un centro de memoria de conocimiento:
 Engram resuelve la memoria en este orden:
 
 1. Memoria del espacio de trabajo (workspace): `<proyecto>/.agents/.engram/`
-2. Memoria global: `$ENGRAM_GLOBAL_DIR` o `engram init --global-path <ruta>`
+2. Memoria global: `$ENGRAM_GLOBAL_DIR` o `engram inject --global-path <ruta>`
 
 La memoria del espacio de trabajo gana. La memoria global es el respaldo para preferencias reutilizables y contexto del equipo en diferentes proyectos.
 

@@ -38,7 +38,7 @@ Think of Engram as a knowledge memory center:
 Engram resolves memory in this order:
 
 1. Workspace memory: `<project>/.agents/.engram/`
-2. Global memory: `$ENGRAM_GLOBAL_DIR` or `engram init --global-path <path>`
+2. Global memory: `$ENGRAM_GLOBAL_DIR` or `engram inject --global-path <path>`
 
 Workspace memory wins. Global memory is fallback for reusable preferences and team context across projects.
 

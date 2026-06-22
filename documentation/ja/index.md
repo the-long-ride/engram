@@ -38,7 +38,7 @@ Engram は知識メモリセンターのようなものです：
 Engram は以下の順序でメモリを解決します：
 
 1. ワークスペースメモリ：`<project>/.agents/.engram/`
-2. グローバルメモリ：`$ENGRAM_GLOBAL_DIR` または `engram init --global-path <path>`
+2. グローバルメモリ：`$ENGRAM_GLOBAL_DIR` または `engram inject --global-path <path>`
 
 ワークスペースメモリが優先されます。グローバルメモリは、複数のプロジェクトにわたる再利用可能な設定やチームのコンテキストのためのフォールバック（備え）です。
 

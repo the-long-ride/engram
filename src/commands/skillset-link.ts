@@ -12,6 +12,8 @@ import {
 } from "../core/integrations/skillset.js";
 import { applyAgentHookAction } from "../core/integrations/agent-hooks.js";
 import { formatRecords, type RecordBlock } from "../core/cli/format.js";
+import { loadConfig, workspaceRoot, legacyWorkspaceRoot } from "../core/runtime/config.js";
+import { exists } from "../core/system/fsx.js";
 
 /** Install agent-host instruction files, MCP config, and agent hooks for Engram integration. */
 export async function cmdLink(args: string[], flags: Record<string, any> = {}): Promise<string> {
@@ -20,6 +22,15 @@ export async function cmdLink(args: string[], flags: Record<string, any> = {}): 
   const global = flags.global === true;
   const allSupported = flags["all-supported"] === true;
   const effectiveTarget = allSupported ? "all-supported" : target;
+
+  if (!global) {
+    const cwd = process.cwd();
+    const config = await loadConfig(cwd);
+    if (config.scope === 'global') {
+      return `Skipped workspace link (workspace): config scope is global.`;
+    }
+  }
+
   const results = global
     ? await installGlobalSkillset(effectiveTarget, { force: Boolean(flags.force) })
     : await installSkillset(process.cwd(), effectiveTarget, Boolean(flags.force));
@@ -42,6 +53,15 @@ export async function cmdLink(args: string[], flags: Record<string, any> = {}): 
 export async function cmdUnlink(args: string[], flags: Record<string, any> = {}): Promise<string> {
   const target = args[0] ?? "all";
   const global = flags.global === true;
+
+  if (!global) {
+    const cwd = process.cwd();
+    const config = await loadConfig(cwd);
+    if (config.scope === 'global') {
+      return `Skipped workspace unlink (workspace): config scope is global.`;
+    }
+  }
+
   const results = global
     ? await unlinkGlobalSkillset(target, { force: Boolean(flags.force) })
     : await unlinkSkillset(process.cwd(), target);
@@ -63,6 +83,15 @@ export async function cmdInstallSkillset(args: string[], flags: Record<string, a
   if (args[0] === "list") return skillsetList("Currently, engram do support these agents and also mcp:");
   const target = args[0] ?? "all";
   const global = flags.global === true;
+
+  if (!global) {
+    const cwd = process.cwd();
+    const config = await loadConfig(cwd);
+    if (config.scope === 'global') {
+      return `Skipped workspace skillset install (workspace): config scope is global.`;
+    }
+  }
+
   const results = global
     ? await installGlobalSkillset(target, { force: Boolean(flags.force) })
     : await installSkillset(process.cwd(), target, Boolean(flags.force));

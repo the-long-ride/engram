@@ -169,6 +169,14 @@ test('web UI api workspace, profile, config handlers and entry text parser', asy
     assert.equal(claudeAgent.name, 'Anthropic Claude');
     assert.equal(claudeAgent.workspaceLinked, false);
 
+    // Since default scope in test is 'global' (from previous setScope test step),
+    // linking workspace should skip first.
+    const linkResultGlobal = await apiAgentLink(cwd, 'claude', false);
+    assert.match(linkResultGlobal, /Skipped claude \(workspace\): config scope is global/);
+
+    // Set scope back to 'both'
+    await apiConfigSet('scope', 'both', cwd);
+
     // Link workspace
     const linkResult = await apiAgentLink(cwd, 'claude', false);
     assert.match(linkResult, /Connected claude in this workspace/);
@@ -186,6 +194,11 @@ test('web UI api workspace, profile, config handlers and entry text parser', asy
     const agentsAfterUnlink = await apiAgentsScan(cwd);
     const claudeAgentAfterUnlink = agentsAfterUnlink.find((a) => a.id === 'claude');
     assert.equal(claudeAgentAfterUnlink.workspaceLinked, false);
+
+    // Test that when config scope is global, workspace linking is skipped even if initialized
+    await apiConfigSet('scope', 'global', cwd);
+    const linkGlobalScopeResult = await apiAgentLink(cwd, 'claude', false);
+    assert.match(linkGlobalScopeResult, /Skipped claude \(workspace\): config scope is global/);
 
     // Link global
     const linkGlobalResult = await apiAgentLink(cwd, 'claude', true);

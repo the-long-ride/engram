@@ -383,6 +383,10 @@ export async function apiAgentLink(cwd: string, agentId: string, global: boolean
     }
     return `Connected ${agentId} globally.${anyWritten ? '' : ' (already linked)'}`;
   } else {
+    const config = await loadConfig(cwd);
+    if (config.scope === 'global') {
+      return `Skipped ${agentId} (workspace): config scope is global.`;
+    }
     const results = await installSkillset(cwd, agentId, true);
     const anyWritten = results.some((r) => r.action === 'written' || r.action === 'updated');
     const allSkipped = results.length > 0 && results.every((r) => r.action === 'skipped');
@@ -407,6 +411,10 @@ export async function apiAgentUnlink(cwd: string, agentId: string, global: boole
     }
     return `Disconnected ${agentId} globally.`;
   } else {
+    const config = await loadConfig(cwd);
+    if (config.scope === 'global') {
+      return `Skipped ${agentId} (workspace): config scope is global.`;
+    }
     await unlinkSkillset(cwd, agentId);
     const hookTarget = skillsetHookTarget(agentId);
     if (hookTarget) {

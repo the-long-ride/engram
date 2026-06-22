@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
 import { renderEntry } from '../runtime/entry.js';
+import type { Scope } from '../runtime/types.js';
 import {
   loadPanelData,
   apiConfigSet,
@@ -21,6 +22,7 @@ import {
   apiAgentLink,
   apiAgentUnlink,
   apiCoreData,
+  apiGetMemoryContent,
 } from './api.js';
 
 // ── Infrastructure ──────────────────────────────────────────────────────────
@@ -134,6 +136,18 @@ async function handleRequest(req: any, res: any, cwd: string): Promise<void> {
     try {
       const data = await apiCoreData(cwd, {});
       json(200, { ok: true, data });
+    } catch (e: any) { json(500, { error: e.message }); }
+    return;
+  }
+
+  if (url === '/api/memory' && method === 'GET') {
+    try {
+      const parsed = new URL(req.url, 'http://localhost');
+      const profile = parsed.searchParams.get('profile') || '';
+      const scope = parsed.searchParams.get('scope') as Scope || 'global';
+      const file = parsed.searchParams.get('file') || '';
+      const content = await apiGetMemoryContent(cwd, profile, scope, file);
+      json(200, { ok: true, content });
     } catch (e: any) { json(500, { error: e.message }); }
     return;
   }

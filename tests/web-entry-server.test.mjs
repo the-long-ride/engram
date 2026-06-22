@@ -115,6 +115,11 @@ test('entry server exposes safe config metadata and validated config updates', a
     const scanRes3 = await requestJson(baseUrl + '/api/agents/scan');
     const claudeData3 = scanRes3.body.data.find(a => a.id === 'claude');
     assert.equal(claudeData3.workspaceLinked, false);
+
+    const errMem = await requestJson(baseUrl + '/api/memory?profile=default&scope=workspace&file=nonexistent.md');
+    assert.equal(errMem.response.status, 500);
+    assert.equal(errMem.body.ok, undefined);
+    assert.ok(errMem.body.error);
   } finally {
     stopServer();
     process.env.ENGRAM_CONFIG_DIR = oldEnv.ENGRAM_CONFIG_DIR;

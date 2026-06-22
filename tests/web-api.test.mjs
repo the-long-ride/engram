@@ -241,7 +241,7 @@ test('web UI api core data reports duplicate memory candidates and scope metadat
     const { runEngram, workspaceMemoryRoot } = await import('./helpers.mjs');
     const { mkdir, writeFile } = await import('node:fs/promises');
     const path = await import('node:path');
-    const { apiCoreData } = await import('../dist/core/web/api.js');
+    const { apiCoreData, apiGetMemoryContent } = await import('../dist/core/web/api.js');
 
     await runEngram(cwd, env, ['init', '--no-skillset']);
     const rules = path.join(workspaceMemoryRoot(cwd), 'rules');
@@ -291,6 +291,9 @@ pnpm test
     assert.ok(data.prompts.metacognize.includes('engram metacognize'));
     assert.ok(data.relationship.nodes.length >= 3);
     assert.ok(data.relationship.links.some((link) => link.kind === 'duplicate'));
+
+    const content = await apiGetMemoryContent(cwd, data.scope.activeProfile, 'workspace', 'rules/prefer-pnpm-package-scripts.md');
+    assert.ok(content.includes('Prefer pnpm package scripts'));
   } finally {
     process.env.ENGRAM_CONFIG_DIR = oldEnv.ENGRAM_CONFIG_DIR;
     process.env.ENGRAM_GLOBAL_DIR = oldEnv.ENGRAM_GLOBAL_DIR;

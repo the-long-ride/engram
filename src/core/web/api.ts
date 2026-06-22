@@ -724,4 +724,29 @@ function corePrompts(filter: CoreScopeFilter): CorePanelData['prompts'] {
   };
 }
 
+export async function apiGetMemoryContent(cwd: string, profileName: string, scope: Scope, file: string): Promise<string> {
+  const ctx = await getContext(cwd);
+  const activeProfile = ctx.profile.active || '<none>';
+  
+  let root = '';
+  if (profileName === activeProfile) {
+    root = scope === 'workspace' ? ctx.roots.workspace : ctx.roots.global;
+  } else {
+    const store = await readProfileStore();
+    const pConfig = store.profiles[profileName];
+    root = pConfig?.global_path || '';
+  }
+
+  if (!root) {
+    throw new Error(`Profile ${profileName} is not configured or has no global path`);
+  }
+
+  const absPath = path.join(root, file);
+  if (!(await exists(absPath))) {
+    throw new Error(`Memory file not found at ${absPath}`);
+  }
+
+  return readText(absPath);
+}
+
 

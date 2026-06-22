@@ -1007,7 +1007,11 @@ function renderCoreDuplicates(duplicates) {
 }
 
 function renderCoreMemoryRef(ref) {
-  return '<div class="core-memory-ref">' +
+  var profileJs = escJs(ref.profile);
+  var scopeJs = escJs(ref.scope);
+  var fileJs = escJs(ref.file);
+  var idJs = escJs(ref.id);
+  return '<div class="core-memory-ref" style="cursor:pointer;" onclick="viewMemory(\'' + profileJs + '\',\'' + scopeJs + '\',\'' + fileJs + '\',\'' + idJs + '\')">' +
     '<div>' +
       '<span class="badge badge-neutral">' + esc(ref.profile) + '</span> ' +
       '<span class="badge badge-neutral">' + esc(ref.scope) + '</span> ' +
@@ -1016,6 +1020,46 @@ function renderCoreMemoryRef(ref) {
     '<strong>' + esc(ref.id) + '</strong>' +
     '<p>' + esc(ref.summary || '') + '</p>' +
   '</div>';
+}
+
+async function viewMemory(profile, scope, file, id) {
+  showModal(
+    '<div class="modal-panel confirm-panel" role="dialog" aria-modal="true" aria-labelledby="confirm-title">' +
+      '<div class="modal-hdr"><h2 id="confirm-title">' + esc(id) + '</h2><button data-confirm-close aria-label="Close">&times;</button></div>' +
+      '<div class="modal-body"><div class="loading"><div class="spinner"></div>&nbsp;&nbsp;Loading memory content&hellip;</div></div>' +
+      '<div class="modal-actions confirm-actions">' +
+        '<button class="btn btn-primary" data-confirm-close>Close</button>' +
+      '</div>' +
+    '</div>',
+    function(event) {
+      if (event.key === 'Escape' || event.key === 'Enter') {
+        event.preventDefault();
+        closeModal();
+      }
+    }
+  );
+  
+  var closeBtns = document.querySelectorAll('[data-confirm-close]');
+  closeBtns.forEach(function(btn) {
+    btn.addEventListener('click', closeModal, { once: true });
+  });
+
+  try {
+    var qs = '?profile=' + encodeURIComponent(profile) + '&scope=' + encodeURIComponent(scope) + '&file=' + encodeURIComponent(file);
+    var res = await fetch('/api/memory' + qs);
+    var j = await res.json();
+    if (!res.ok || !j.ok) throw new Error(j.error || 'Failed to load memory content');
+    
+    var bodyDiv = document.querySelector('#modal-root .modal-body');
+    if (bodyDiv) {
+      bodyDiv.innerHTML = '<pre class="mono" style="white-space:pre-wrap;margin:0;font-size:12px;max-height:480px;overflow-y:auto;user-select:text;background:var(--g100);padding:12px;border-radius:var(--r6);border:1px solid var(--g200);color:var(--g1000);text-align:left;">' + esc(j.content) + '</pre>';
+    }
+  } catch (e) {
+    var bodyDiv = document.querySelector('#modal-root .modal-body');
+    if (bodyDiv) {
+      bodyDiv.innerHTML = '<div style="color:var(--red)">⚠️ ' + esc(e.message) + '</div>';
+    }
+  }
 }
 
 function renderCorePrompts(prompts) {

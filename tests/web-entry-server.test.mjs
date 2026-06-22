@@ -38,6 +38,20 @@ test('entry server exposes safe config metadata and validated config updates', a
     assert.ok(data.body.configFields.some((field) => field.key === 'scope'));
     assert.equal(data.body.configFields.some((field) => field.key === 'theme'), false);
 
+    const coreData = await requestJson(baseUrl + '/api/core');
+    assert.equal(coreData.response.status, 200);
+    assert.equal(coreData.body.ok, true);
+    assert.ok(Array.isArray(coreData.body.data.duplicates));
+    assert.ok(coreData.body.data.prompts.resolveDuplicates.includes('UPDATE:'));
+
+    const refreshedCore = await requestJson(baseUrl + '/api/core', {
+      method: 'POST',
+      body: JSON.stringify({ semantic: true, rebuild: true, scope: 'workspace' })
+    });
+    assert.equal(refreshedCore.response.status, 200);
+    assert.equal(refreshedCore.body.ok, true);
+    assert.equal(refreshedCore.body.data.scope.filter, 'workspace');
+
     const invalid = await requestJson(baseUrl + '/api/config/validate', {
       method: 'POST',
       body: JSON.stringify({ patch: { 'load.limit': '99' } })

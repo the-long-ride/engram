@@ -74,3 +74,52 @@ test('panel UI contains connection tab navigation and functions', async () => {
   assert.match(css, /\.conn-card/);
 });
 
+test('panel confirm modal uses Cancel left, Confirm right, Esc cancel, Enter confirm', async () => {
+  const panel = await readFile(new URL('../src/core/web/panel.js', import.meta.url), 'utf8');
+  assert.match(panel, /function confirmAction\(/);
+  assert.match(panel, /event\.key === 'Escape'/);
+  assert.match(panel, /event\.key === 'Enter'/);
+  assert.match(panel, /data-confirm-cancel/);
+  assert.match(panel, /data-confirm-confirm/);
+  assert.match(panel, /<button class="btn btn-outline" data-confirm-cancel/);
+  assert.match(panel, /<button class="btn btn-primary" data-confirm-confirm/);
+});
+
+test('panel routes destructive unlink actions through confirmAction', async () => {
+  const panel = await readFile(new URL('../src/core/web/panel.js', import.meta.url), 'utf8');
+  assert.match(panel, /async function toggleLink\(path, linked\)/);
+  assert.match(panel, /Unlink workspace/);
+  assert.match(panel, /await confirmAction\(\{/);
+  assert.match(panel, /async function unlinkAgent\(agentId, isGlobal\)/);
+  assert.match(panel, /Unlink AI agent/);
+  assert.doesNotMatch(panel, /confirm\('/);
+});
+
+test('panel UI contains Core tab navigation and refresh functions', async () => {
+  const html = await readFile(new URL('../src/core/web/panel.html', import.meta.url), 'utf8');
+  assert.match(html, /data-tab="core"/);
+  assert.match(html, /id="tab-core"/);
+
+  const js = await readFile(new URL('../src/core/web/panel.js', import.meta.url), 'utf8');
+  assert.match(js, /function loadCore\(/);
+  assert.match(js, /function renderCore\(/);
+  assert.match(js, /function refreshCore\(/);
+  assert.match(js, /\/api\/core/);
+
+  const css = await readFile(new URL('../src/core/web/panel.css', import.meta.url), 'utf8');
+  assert.match(css, /\.core-toolbar/);
+  assert.match(css, /\.core-relationship/);
+});
+
+test('panel Core tab renders duplicates, relationship line, and copy prompts', async () => {
+  const panel = await readFile(new URL('../src/core/web/panel.js', import.meta.url), 'utf8');
+  assert.match(panel, /function renderCoreDuplicates\(/);
+  assert.match(panel, /function renderCoreRelationship\(/);
+  assert.match(panel, /function copyCorePrompt\(/);
+  assert.match(panel, /Resolve duplicate memories/);
+  assert.match(panel, /Metacognize memory/);
+  assert.match(panel, /consume more tokens/);
+  assert.match(panel, /profile &lt;-&gt; global &lt;-&gt; workspace/);
+});
+
+

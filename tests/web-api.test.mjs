@@ -225,3 +225,77 @@ test('web UI api workspace, profile, config handlers and entry text parser', asy
     await rm(cwd, { recursive: true, force: true });
   }
 });
+
+test('web UI api core data reports duplicate memory candidates and scope metadata', async () => {
+  const { cwd, env } = await tempWorkspace('engram-web-core-');
+  const oldEnv = {
+    ENGRAM_CONFIG_DIR: process.env.ENGRAM_CONFIG_DIR,
+    ENGRAM_GLOBAL_DIR: process.env.ENGRAM_GLOBAL_DIR,
+    NODE_ENV: process.env.NODE_ENV
+  };
+  process.env.ENGRAM_CONFIG_DIR = env.ENGRAM_CONFIG_DIR;
+  process.env.ENGRAM_GLOBAL_DIR = env.ENGRAM_GLOBAL_DIR;
+  process.env.NODE_ENV = 'test';
+
+  try {
+    const { runEngram, workspaceMemoryRoot } = await import('./helpers.mjs');
+    const { mkdir, writeFile } = await import('node:fs/promises');
+    const path = await import('node:path');
+    const { apiCoreData } = await import('../dist/core/web/api.js');
+
+    await runEngram(cwd, env, ['init', '--no-skillset']);
+    const rules = path.join(workspaceMemoryRoot(cwd), 'rules');
+    await mkdir(rules, { recursive: true });
+    const memory = ({ id, title, content }) => `---
+id: ${id}
+type: rule
+scope: workspace
+tags: [pnpm, scripts]
+created: 2026-06-01
+updated: 2026-06-01
+author: dev@example.com
+source: manual
+confidence: high
+---
+# ${title}
+
+## Context
+
+Dashboard duplicate test.
+
+## Content
+
+- ${content}
+
+## Example
+
+pnpm test
+`;
+    await writeFile(path.join(rules, 'prefer-pnpm-package-scripts.md'), memory({
+      id: 'prefer-pnpm-package-scripts',
+      title: 'Prefer pnpm package scripts',
+      content: 'Prefer pnpm package scripts for workspace tasks.'
+    }));
+    await writeFile(path.join(rules, 'run-pnpm-for-npm-scripts.md'), memory({
+      id: 'run-pnpm-for-npm-scripts',
+      title: 'Run pnpm for npm scripts',
+      content: 'Use pnpm when running npm scripts in the workspace.'
+    }));
+    await runEngram(cwd, env, ['rebuild-index']);
+
+    const data = await apiCoreData(cwd, { semantic: true, rebuild: false, scope: 'all' });
+    assert.equal(data.scope.activeProfile === undefined || typeof data.scope.activeProfile === 'string', true);
+    assert.ok(Array.isArray(data.duplicates));
+    assert.ok(data.duplicates.some((pair) => pair.a.file.includes('prefer-pnpm-package-scripts.md') && pair.b.file.includes('run-pnpm-for-npm-scripts.md')));
+    assert.ok(data.prompts.resolveDuplicates.includes('UPDATE:'));
+    assert.ok(data.prompts.metacognize.includes('engram metacognize'));
+    assert.ok(data.relationship.nodes.length >= 3);
+    assert.ok(data.relationship.links.some((link) => link.kind === 'duplicate'));
+  } finally {
+    process.env.ENGRAM_CONFIG_DIR = oldEnv.ENGRAM_CONFIG_DIR;
+    process.env.ENGRAM_GLOBAL_DIR = oldEnv.ENGRAM_GLOBAL_DIR;
+    process.env.NODE_ENV = oldEnv.NODE_ENV;
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+

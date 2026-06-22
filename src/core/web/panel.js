@@ -2,6 +2,9 @@
 'use strict';
 var D = null;
 var _toastTimer = null;
+window._coreData = null;
+window._coreLoading = false;
+window._coreOptions = { scope: 'all', semantic: true };
 
 var Draft = {};
 var Dirty = {};
@@ -50,6 +53,9 @@ function switchTab(name) {
 
   if (name === 'connection') {
     scanAgents();
+  }
+  if (name === 'core') {
+    loadCore(false);
   }
 }
 
@@ -457,19 +463,75 @@ function markServerIssues(issues) {
   });
 }
 
-function showModal(html) {
+var _modalKeyHandler = null;
+
+function showModal(html, onKeyDown) {
   closeModal();
   var wrap = document.createElement('div');
   wrap.id = 'modal-root';
   wrap.className = 'modal-backdrop';
   wrap.innerHTML = html;
   document.body.appendChild(wrap);
+  if (onKeyDown) {
+    _modalKeyHandler = onKeyDown;
+    document.addEventListener('keydown', _modalKeyHandler);
+  }
 }
 
 function closeModal() {
+  if (_modalKeyHandler) {
+    document.removeEventListener('keydown', _modalKeyHandler);
+    _modalKeyHandler = null;
+  }
   var existing = document.getElementById('modal-root');
   if (existing) existing.remove();
 }
+
+function confirmAction(opts) {
+  return new Promise(function(resolve) {
+    var resolved = false;
+    var title = opts && opts.title ? opts.title : 'Confirm action';
+    var body = opts && opts.body ? opts.body : 'Continue?';
+    var confirmText = opts && opts.confirmText ? opts.confirmText : 'Confirm';
+    var danger = opts && opts.danger === true;
+    function finish(value) {
+      if (resolved) return;
+      resolved = true;
+      closeModal();
+      resolve(value);
+    }
+    function onKey(event) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        finish(false);
+      } else if (event.key === 'Enter') {
+        event.preventDefault();
+        finish(true);
+      }
+    }
+    // <button class="btn btn-outline" data-confirm-cancel
+    // <button class="btn btn-primary" data-confirm-confirm
+    showModal(
+      '<div class="modal-panel confirm-panel" role="dialog" aria-modal="true" aria-labelledby="confirm-title">' +
+        '<div class="modal-hdr"><h2 id="confirm-title">' + esc(title) + '</h2><button data-confirm-close aria-label="Close">&times;</button></div>' +
+        '<div class="modal-body"><p class="confirm-copy">' + esc(body) + '</p></div>' +
+        '<div class="modal-actions confirm-actions">' +
+          '<button class="btn btn-outline" data-confirm-cancel>Cancel</button>' +
+          '<button class="' + (danger ? 'btn btn-danger-solid' : 'btn btn-primary') + '" data-confirm-confirm>' + esc(confirmText) + '</button>' +
+        '</div>' +
+      '</div>',
+      onKey
+    );
+    var cancel = document.querySelector('[data-confirm-cancel]');
+    var confirm = document.querySelector('[data-confirm-confirm]');
+    var close = document.querySelector('[data-confirm-close]');
+    if (cancel) cancel.addEventListener('click', function() { finish(false); }, { once: true });
+    if (close) close.addEventListener('click', function() { finish(false); }, { once: true });
+    if (confirm) confirm.addEventListener('click', function() { finish(true); }, { once: true });
+    if (cancel) cancel.focus();
+  });
+}
+
 
 // ── Profiles tab ─────────────────────────────────────────────────────────────
 function renderProfiles() {
@@ -528,7 +590,13 @@ async function activateProfile(name) {
   await api('/api/profile/activate', {name: name});
 }
 async function removeProfile(name) {
-  if (!confirm('Remove profile "' + name + '"?')) return;
+  var ok = await confirmAction({
+    title: 'Remove profile',
+    body: 'Remove profile "' + name + '" from Engram configuration?',
+    confirmText: 'Confirm',
+    danger: true
+  });
+  if (!ok) return;
   await api('/api/profile/remove', {name: name});
 }
 function editProfile(name, path, scope) {
@@ -592,10 +660,25 @@ async function saveWs() {
   await api('/api/workspace/add', {path: path, name: name});
 }
 async function toggleLink(path, linked) {
+  if (!linked) {
+    var ok = await confirmAction({
+      title: 'Unlink workspace',
+      body: 'Unlink workspace "' + path + '" from Engram routing?',
+      confirmText: 'Confirm',
+      danger: true
+    });
+    if (!ok) return;
+  }
   await api('/api/workspace/link', {path: path, linked: linked});
 }
 async function removeWs(path) {
-  if (!confirm('Remove workspace "' + path + '"?')) return;
+  var ok = await confirmAction({
+    title: 'Remove workspace',
+    body: 'Remove workspace "' + path + '" from the registry?',
+    confirmText: 'Confirm',
+    danger: true
+  });
+  if (!ok) return;
   await api('/api/workspace/remove', {path: path});
 }
 
@@ -804,12 +887,170 @@ async function linkAgent(agentId, isGlobal) {
 }
 
 async function unlinkAgent(agentId, isGlobal) {
+  var mode = isGlobal ? 'global mode' : 'workspace mode';
+  var ok = await confirmAction({
+    title: 'Unlink AI agent',
+    body: 'Unlink ' + agentId + ' from Engram ' + mode + '?',
+    confirmText: 'Confirm',
+    danger: true
+  });
+  if (!ok) return;
   toast('Disconnecting ' + agentId + '...', true);
-  var ok = await api('/api/agents/unlink', { agentId: agentId, global: isGlobal });
-  if (ok) {
+  var done = await api('/api/agents/unlink', { agentId: agentId, global: isGlobal });
+  if (done) {
     toast('Disconnected successfully!', true);
+    window._agentsData = null;
     await scanAgents();
   }
+}
+
+async function loadCore(rebuild) {
+  if (window._coreLoading) return;
+  window._coreLoading = true;
+  var pane = document.getElementById('tab-core');
+  if (pane && !window._coreData) {
+    pane.innerHTML = '<div class="loading"><div class="spinner"></div>&nbsp;&nbsp;Calculating duplicate memories&hellip;</div>';
+  }
+  try {
+    var res = await fetch('/api/core', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        rebuild: rebuild === true,
+        semantic: window._coreOptions.semantic === true,
+        scope: window._coreOptions.scope || 'all'
+      })
+    });
+    var j = await res.json();
+    if (!res.ok || !j.ok) throw new Error(j.error || 'Failed to load Core data');
+    window._coreData = j.data;
+    renderCore();
+  } catch (e) {
+    if (pane) {
+      pane.innerHTML = '<div class="loading" style="color:var(--red);flex-direction:column;gap:12px">' +
+        '<span>⚠️ ' + esc(e.message) + '</span>' +
+        '<button class="btn btn-outline" onclick="refreshCore()">Retry</button>' +
+        '</div>';
+    }
+  } finally {
+    window._coreLoading = false;
+  }
+}
+
+function refreshCore() {
+  return loadCore(true);
+}
+
+function renderCore() {
+  var pane = document.getElementById('tab-core');
+  if (!pane || !window._coreData) return;
+  var data = window._coreData;
+  // Note: data.warning may contain: consume more tokens
+  pane.innerHTML =
+    '<div class="tab-hdr core-hdr">' +
+      '<div><h1>Core</h1><p>Duplicate memory candidates and memory relationships scoped by active profile, global memory, and workspace memory.</p></div>' +
+      '<button class="btn btn-outline" onclick="refreshCore()">Refresh</button>' +
+    '</div>' +
+    '<div class="banner banner-warn">' + esc(data.warning) + '</div>' +
+    renderCoreToolbar(data) +
+    renderCoreRelationship(data.relationship) +
+    '<div class="core-grid">' +
+      '<div>' + renderCoreDuplicates(data.duplicates) + '</div>' +
+      '<div>' + renderCorePrompts(data.prompts) + '</div>' +
+    '</div>';
+}
+
+function renderCoreToolbar(data) {
+  var scope = data.scope && data.scope.filter ? data.scope.filter : 'all';
+  var semantic = window._coreOptions.semantic === true;
+  var profilesCount = data.scope.profiles ? data.scope.profiles.length : 1;
+  return '<div class="core-toolbar">' +
+    '<div class="core-scope">' +
+      '<span class="form-label">Scope</span>' +
+      '<select class="form-select" onchange="setCoreScope(this.value)">' +
+        '<option value="all"' + (scope === 'all' ? ' selected' : '') + '>Profile + global + workspace</option>' +
+        '<option value="global"' + (scope === 'global' ? ' selected' : '') + '>Global</option>' +
+        '<option value="workspace"' + (scope === 'workspace' ? ' selected' : '') + '>Workspace</option>' +
+      '</select>' +
+    '</div>' +
+    '<label class="core-check"><input type="checkbox" ' + (semantic ? 'checked ' : '') + 'onchange="setCoreSemantic(this.checked)"> Include semantic candidates</label>' +
+    '<span class="badge badge-neutral">Active profile: ' + esc(data.scope.activeProfile || '<none>') + '</span>' +
+    '<span class="badge badge-neutral">Profiles scanned: ' + profilesCount + '</span>' +
+  '</div>';
+}
+
+function setCoreScope(value) {
+  window._coreOptions.scope = value === 'workspace' || value === 'global' ? value : 'all';
+  loadCore(false);
+}
+
+function setCoreSemantic(value) {
+  window._coreOptions.semantic = value === true;
+  loadCore(false);
+}
+
+function renderCoreDuplicates(duplicates) {
+  if (!duplicates || !duplicates.length) {
+    return '<div class="card"><div class="card-hdr"><span class="card-title">Duplicate candidates</span></div><div class="core-empty">No duplicate candidates found for this scope.</div></div>';
+  }
+  var rows = duplicates.map(function(pair) {
+    return '<div class="core-dup">' +
+      '<div class="core-dup-score">' + Math.round(pair.score * 100) + '%<span>' + esc(pair.method) + '</span></div>' +
+      '<div class="core-dup-body">' +
+        renderCoreMemoryRef(pair.a) +
+        '<div class="core-link-line">profile &lt;-&gt; global &lt;-&gt; workspace</div>' +
+        renderCoreMemoryRef(pair.b) +
+      '</div>' +
+    '</div>';
+  }).join('');
+  return '<div class="card"><div class="card-hdr"><span class="card-title">Duplicate candidates</span><span class="badge badge-amber">' + duplicates.length + '</span></div><div>' + rows + '</div></div>';
+}
+
+function renderCoreMemoryRef(ref) {
+  return '<div class="core-memory-ref">' +
+    '<div>' +
+      '<span class="badge badge-neutral">' + esc(ref.profile) + '</span> ' +
+      '<span class="badge badge-neutral">' + esc(ref.scope) + '</span> ' +
+      '<span class="mono">' + esc(ref.file) + '</span>' +
+    '</div>' +
+    '<strong>' + esc(ref.id) + '</strong>' +
+    '<p>' + esc(ref.summary || '') + '</p>' +
+  '</div>';
+}
+
+function renderCorePrompts(prompts) {
+  return '<div class="core-prompts">' +
+    '<div class="card"><div class="card-hdr"><span class="card-title">Resolve duplicate memories</span></div>' +
+      '<div class="core-prompt-body"><p>Copy prompt for an AI agent to resolve duplicate memories.</p><button class="btn btn-primary" onclick="copyCorePrompt(\'resolveDuplicates\')">Copy prompt</button></div>' +
+    '</div>' +
+    '<div class="card"><div class="card-hdr"><span class="card-title">Metacognize memory</span></div>' +
+      '<div class="core-prompt-body"><p>Copy prompt for a stronger model to restructure memory with metacognition.</p><button class="btn btn-primary" onclick="copyCorePrompt(\'metacognize\')">Copy prompt</button></div>' +
+    '</div>' +
+  '</div>';
+}
+
+function renderCoreRelationship(relationship) {
+  var links = relationship && relationship.links ? relationship.links : [];
+  var duplicateCount = links.filter(function(link) { return link.kind === 'duplicate'; }).length;
+  var relatedCount = links.filter(function(link) { return link.kind === 'related_to' || link.kind === 'depends_on' || link.kind === 'contradicts'; }).length;
+  return '<div class="core-relationship">' +
+    '<div class="core-lane"><span>Profile</span><i></i><span>Global</span><i></i><span>Workspace</span></div>' +
+    '<div class="core-rel-stats">' +
+      '<span class="badge badge-amber">' + duplicateCount + ' duplicate links</span>' +
+      '<span class="badge badge-blue">' + relatedCount + ' graph links</span>' +
+    '</div>' +
+  '</div>';
+}
+
+function copyCorePrompt(key) {
+  if (!window._coreData || !window._coreData.prompts) return;
+  var text = window._coreData.prompts[key] || '';
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(function() {
+    toast('Copied prompt');
+  }).catch(function() {
+    toast('Copy failed', false);
+  });
 }
 
 // ── Init ─────────────────────────────────────────────────────────────────────

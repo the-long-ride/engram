@@ -20,6 +20,7 @@ import {
   apiAgentsScan,
   apiAgentLink,
   apiAgentUnlink,
+  apiCoreData,
 } from './api.js';
 
 // ── Infrastructure ──────────────────────────────────────────────────────────
@@ -129,6 +130,14 @@ async function handleRequest(req: any, res: any, cwd: string): Promise<void> {
     return;
   }
 
+  if (url === '/api/core' && method === 'GET') {
+    try {
+      const data = await apiCoreData(cwd, {});
+      json(200, { ok: true, data });
+    } catch (e: any) { json(500, { error: e.message }); }
+    return;
+  }
+
   if (url === '/api/agents/scan' && method === 'GET') {
     try {
       const data = await apiAgentsScan(cwd);
@@ -141,6 +150,15 @@ async function handleRequest(req: any, res: any, cwd: string): Promise<void> {
     let body: any = {};
     try { body = JSON.parse(await readBody(req)); } catch { json(400, { error: 'Invalid JSON' }); return; }
     try {
+      if (url === '/api/core') {
+        const data = await apiCoreData(cwd, {
+          semantic: body.semantic === true,
+          rebuild: body.rebuild === true,
+          scope: body.scope
+        });
+        json(200, { ok: true, data });
+        return;
+      }
       if (url === '/api/config/validate') {
         json(200, apiConfigValidate(body.patch ?? body));
         return;

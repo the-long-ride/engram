@@ -45,6 +45,7 @@ runtime context injection in v1.
 Use `engram inject --global-only --global-path <path>` when the human wants only
 portable global memory and no `.agents/.engram` or local skillset files in the
 current workspace. In that mode, default saves go to the global folder.
+If the active configuration scope is set to `global` (`scope: "global"`), workspace-level skillset linking (e.g., `engram link` without `--global` or linking via the Connections tab) is disabled and skipped to prevent writing files to the running folder (workspace). To link agents in a global-scope setup, use `engram link --global` or link globally in the Connection tab.
 Fresh workspace installs default normal saves to both workspace and global when
 global memory is configured. Humans can change the default with
 `engram set-save-target workspace|global|both`, and agents can override one write

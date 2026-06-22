@@ -746,6 +746,8 @@ test('argument parser preserves positional text after known boolean flags', () =
   const forAgents = parseArgs(['load', '--for-agents', 'deployment workflow']);
   assert.equal(forAgents.flags['for-agents'], true);
   assert.deepEqual(forAgents.rest, ['deployment workflow']);
+  const loadId = parseArgs(['load', '--id', 'id1', '--id', 'id2']);
+  assert.deepEqual(loadId.flags.id, ['id1', 'id2']);
   const naturalForAgents = parseArgs(['load', 'for', 'agent', 'deployment workflow']);
   assert.equal(naturalForAgents.flags['for-agents'], true);
   assert.deepEqual(naturalForAgents.rest, ['deployment workflow']);

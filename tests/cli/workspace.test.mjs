@@ -5,8 +5,20 @@ import path from 'node:path';
 import { runEngram, tempWorkspace } from '../helpers.mjs';
 
 async function hasSqlite() {
-  try { await import('node:sqlite'); return true; } catch { /* check better-sqlite3 */ }
-  try { await import('better-sqlite3'); return true; } catch { return false; }
+  const originalEmitWarning = process.emitWarning;
+  process.emitWarning = function patchedEmitWarning(warning, ...args) {
+    const message = typeof warning === 'string' ? warning : warning?.message ?? '';
+    const option = args[0];
+    const type = typeof option === 'string' ? option : option?.type ?? warning?.name ?? '';
+    if (type === 'ExperimentalWarning' && message.includes('SQLite')) return false;
+    return originalEmitWarning.call(this, warning, ...args);
+  };
+  try {
+    try { await import('node:sqlite'); return true; } catch { /* check better-sqlite3 */ }
+    try { await import('better-sqlite3'); return true; } catch { return false; }
+  } finally {
+    process.emitWarning = originalEmitWarning;
+  }
 }
 
 test('workspace list shows header when no workspaces', async () => {

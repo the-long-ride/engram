@@ -17,13 +17,26 @@ import {
   parseEntryText,
   apiAgentsScan,
   apiAgentLink,
-  apiAgentUnlink
+  apiAgentUnlink,
+  apiBrowseDirectories
 } from '../dist/core/web/api.js';
 
 
 async function hasSqlite() {
-  try { await import('node:sqlite'); return true; } catch { /* check better-sqlite3 */ }
-  try { await import('better-sqlite3'); return true; } catch { return false; }
+  const originalEmitWarning = process.emitWarning;
+  process.emitWarning = function patchedEmitWarning(warning, ...args) {
+    const message = typeof warning === 'string' ? warning : warning?.message ?? '';
+    const option = args[0];
+    const type = typeof option === 'string' ? option : option?.type ?? warning?.name ?? '';
+    if (type === 'ExperimentalWarning' && message.includes('SQLite')) return false;
+    return originalEmitWarning.call(this, warning, ...args);
+  };
+  try {
+    try { await import('node:sqlite'); return true; } catch { /* check better-sqlite3 */ }
+    try { await import('better-sqlite3'); return true; } catch { return false; }
+  } finally {
+    process.emitWarning = originalEmitWarning;
+  }
 }
 
 
@@ -294,6 +307,17 @@ pnpm test
 
     const content = await apiGetMemoryContent(cwd, data.scope.activeProfile, 'workspace', 'rules/prefer-pnpm-package-scripts.md');
     assert.ok(content.includes('Prefer pnpm package scripts'));
+
+    const loadResult = await runEngram(cwd, env, ['load', '--id', 'prefer-pnpm-package-scripts']);
+    assert.equal(loadResult.code, 0, loadResult.stderr);
+    assert.match(loadResult.stdout, /prefer-pnpm-package-scripts/);
+
+    // 9. apiBrowseDirectories
+    const browseRes = await apiBrowseDirectories(cwd);
+    assert.equal(browseRes.ok, true);
+    assert.equal(typeof browseRes.currentPath, 'string');
+    assert.ok(Array.isArray(browseRes.directories));
+    assert.ok(Array.isArray(browseRes.drives));
   } finally {
     process.env.ENGRAM_CONFIG_DIR = oldEnv.ENGRAM_CONFIG_DIR;
     process.env.ENGRAM_GLOBAL_DIR = oldEnv.ENGRAM_GLOBAL_DIR;

@@ -11,7 +11,7 @@ const distDir = path.join(root, 'dist', 'core', 'web');
 
 await mkdir(distDir, { recursive: true });
 
-const assets = ['panel.html', 'panel.css', 'panel.js'];
+const assets = ['panel.html', 'panel.css', 'panel.js', 'favicon.svg'];
 for (const asset of assets) {
   await copyFile(path.join(srcDir, asset), path.join(distDir, asset));
 }

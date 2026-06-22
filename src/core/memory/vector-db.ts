@@ -4,9 +4,12 @@ import path from 'node:path';
 import { VECTOR_DB_FILE, VECTOR_DB_SCHEMA_VERSION, VERSION } from '../runtime/constants.js';
 import type { EngramConfig, MemoryEntry, MemoryIndex, Scope } from '../runtime/types.js';
 import { ensureDir, exists, inside } from '../system/fsx.js';
+import { suppressSqliteExperimentalWarning } from '../system/warnings.js';
 import { routingVector } from '../system/text.js';
 import { sha256 } from '../safety/hash.js';
 import { visibleEntries } from './routing.js';
+
+suppressSqliteExperimentalWarning();
 
 type VectorDb = {
   db: any;

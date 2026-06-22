@@ -2,6 +2,9 @@
 import path from 'node:path';
 import { userConfigDir } from '../runtime/config.js';
 import { ensureDir } from '../system/fsx.js';
+import { suppressSqliteExperimentalWarning } from '../system/warnings.js';
+
+suppressSqliteExperimentalWarning();
 
 let forceSchemaUnavailableForTests = false;
 

@@ -23,6 +23,7 @@ import {
   apiAgentUnlink,
   apiCoreData,
   apiGetMemoryContent,
+  apiBrowseDirectories,
 } from './api.js';
 
 // ── Infrastructure ──────────────────────────────────────────────────────────
@@ -122,6 +123,12 @@ async function handleRequest(req: any, res: any, cwd: string): Promise<void> {
     return;
   }
 
+  if ((url === '/favicon.svg' || url === '/favicon.ico') && method === 'GET') {
+    res.writeHead(200, { 'Content-Type': 'image/svg+xml' });
+    res.end(readAsset('favicon.svg'));
+    return;
+  }
+
   if (url === '/api/data' && method === 'GET') {
     try {
       let entryText = '';
@@ -175,6 +182,11 @@ async function handleRequest(req: any, res: any, cwd: string): Promise<void> {
       }
       if (url === '/api/config/validate') {
         json(200, apiConfigValidate(body.patch ?? body));
+        return;
+      }
+      if (url === '/api/browse') {
+        const result = await apiBrowseDirectories(body.path);
+        json(200, result);
         return;
       }
       let message = '';
@@ -238,6 +250,17 @@ export function stopServer(): void {
 export async function launchEntryUi(cwd: string): Promise<string> {
   const url = await servePanel(cwd);
   openBrowser(url);
-  return 'engram: Control panel at ' + url + '\n(Click "Close Server" in the browser or press Ctrl+C to stop)';
+  const isTTY = !!process.stdout.isTTY;
+  if (isTTY) {
+    const bold = (t: string) => `\x1b[1m${t}\x1b[0m`;
+    const green = (t: string) => `\x1b[32m${t}\x1b[0m`;
+    const gray = (t: string) => `\x1b[90m${t}\x1b[0m`;
+    return [
+      `${bold('engram')}: Control panel at ${green(url)}`,
+      `${gray('(Note: Only users on this device can access this server)')}`,
+      `${gray('(Click "Close Server" in the browser or press Ctrl+C to stop)')}`
+    ].join('\n');
+  }
+  return 'engram: Control panel at ' + url + '\n(Note: Only users on this device can access this server)\n(Click "Close Server" in the browser or press Ctrl+C to stop)';
 }
 

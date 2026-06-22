@@ -203,7 +203,7 @@ async function api(url, body) {
     if (!r.ok) { toast(j.error || 'Request failed', false); return false; }
     toast(j.message || 'Saved');
     await load();
-    return true;
+    return j;
   } catch(e) { toast(e.message, false); return false; }
 }
 
@@ -220,7 +220,7 @@ function toast(msg, ok) {
 // ── Config tab ───────────────────────────────────────────────────────────────
 function renderConfig() {
   if (!D) return;
-  var html = '<div class="tab-hdr"><h1>Configuration</h1><p>User-level settings applied across all workspaces.</p></div>';
+  var html = '<div class="tab-hdr"><h1>Construct</h1><p>User-level settings applied across all workspaces.</p></div>';
   if (!D.sqliteAvailable) {
     html += '<div class="banner banner-info">Running in JSON config mode. Settings are editable, but profiles and workspaces require SQLite.</div>';
   }
@@ -543,8 +543,8 @@ function renderProfiles() {
   if (D.sqliteAvailable) {
     html += '<div class="tab-actions"><button class="btn btn-primary" onclick="toggleAddProfile()">+ Add Profile</button></div>';
     html += '<div class="add-form-row" id="pf-form">' +
-      '<div class="form-group"><label class="form-label">Name</label><input class="form-input" id="pf-name" placeholder="e.g. personal"></div>' +
-      '<div class="form-group"><label class="form-label">Global Path</label><input class="form-input" id="pf-path" placeholder="~/Documents/engram" style="width:240px"></div>' +
+      '<div class="form-group"><label class="form-label">Name</label><input class="form-input" id="pf-name" placeholder="e.g. personal" style="width:160px"></div>' +
+      '<div class="form-group"><label class="form-label">Global Path</label><div class="input-with-btn"><input class="form-input" id="pf-path" placeholder="~/Documents/engram" style="width:320px"><button class="btn btn-outline" onclick="browseFolder(\'pf-path\')">Browse</button></div></div>' +
       '<div class="form-group"><label class="form-label">Scope</label><select class="form-select" id="pf-scope"><option>global</option><option>workspace</option><option>both</option></select></div>' +
       '<div class="form-group" style="justify-content:flex-end"><label class="form-label">&nbsp;</label><div style="display:flex;gap:6px"><button class="btn btn-primary" onclick="saveProfile()">Save</button><button class="btn btn-outline" onclick="toggleAddProfile()">Cancel</button></div></div>' +
       '</div>';
@@ -619,8 +619,8 @@ function renderWorkspaces() {
   if (D.sqliteAvailable) {
     html += '<div class="tab-actions"><button class="btn btn-primary" onclick="toggleAddWs()">+ Register Workspace</button></div>';
     html += '<div class="add-form-row" id="ws-form">' +
-      '<div class="form-group"><label class="form-label">Path</label><input class="form-input" id="ws-path" placeholder="/path/to/project" style="width:280px"></div>' +
-      '<div class="form-group"><label class="form-label">Name (optional)</label><input class="form-input" id="ws-name" placeholder="my-project"></div>' +
+      '<div class="form-group"><label class="form-label">Path</label><div class="input-with-btn"><input class="form-input" id="ws-path" placeholder="/path/to/project" style="width:360px"><button class="btn btn-outline" onclick="browseFolder(\'ws-path\')">Browse</button></div></div>' +
+      '<div class="form-group"><label class="form-label">Name (optional)</label><input class="form-input" id="ws-name" placeholder="my-project" style="width:200px"></div>' +
       '<div class="form-group" style="justify-content:flex-end"><label class="form-label">&nbsp;</label><div style="display:flex;gap:6px"><button class="btn btn-primary" onclick="saveWs()">Register</button><button class="btn btn-outline" onclick="toggleAddWs()">Cancel</button></div></div>' +
       '</div>';
   }
@@ -802,6 +802,10 @@ async function scanAgents() {
 function renderConnection() {
   if (!window._agentsData) return;
 
+  window._agentsData.sort(function(a, b) {
+    return (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' });
+  });
+
   var html = '<div class="tab-hdr" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">' +
     '<div>' +
       '<h1>AI Agent Connections</h1>' +
@@ -879,9 +883,13 @@ function renderConnection() {
 
 async function linkAgent(agentId, isGlobal) {
   toast('Connecting ' + agentId + '...', true);
-  var ok = await api('/api/agents/link', { agentId: agentId, global: isGlobal });
-  if (ok) {
-    toast('Connected successfully!', true);
+  var res = await api('/api/agents/link', { agentId: agentId, global: isGlobal });
+  if (res) {
+    if (res.message && res.message.indexOf('Skipped') !== -1) {
+      toast(res.message, false);
+    } else {
+      toast('Connected successfully!', true);
+    }
     await scanAgents();
   }
 }
@@ -896,9 +904,13 @@ async function unlinkAgent(agentId, isGlobal) {
   });
   if (!ok) return;
   toast('Disconnecting ' + agentId + '...', true);
-  var done = await api('/api/agents/unlink', { agentId: agentId, global: isGlobal });
-  if (done) {
-    toast('Disconnected successfully!', true);
+  var res = await api('/api/agents/unlink', { agentId: agentId, global: isGlobal });
+  if (res) {
+    if (res.message && res.message.indexOf('Skipped') !== -1) {
+      toast(res.message, false);
+    } else {
+      toast('Disconnected successfully!', true);
+    }
     window._agentsData = null;
     await scanAgents();
   }
@@ -973,7 +985,10 @@ function renderCoreToolbar(data) {
         '<option value="workspace"' + (scope === 'workspace' ? ' selected' : '') + '>Workspace</option>' +
       '</select>' +
     '</div>' +
-    '<label class="core-check"><input type="checkbox" ' + (semantic ? 'checked ' : '') + 'onchange="setCoreSemantic(this.checked)"> Include semantic candidates</label>' +
+    '<div class="core-check" onclick="toggleCoreSemantic()">' +
+      '<span>Include semantic candidates</span>' +
+      '<div class="tgl' + (semantic ? ' on' : '') + '"><div class="tgl-thumb"></div></div>' +
+    '</div>' +
     '<span class="badge badge-neutral">Active profile: ' + esc(data.scope.activeProfile || '<none>') + '</span>' +
     '<span class="badge badge-neutral">Profiles scanned: ' + profilesCount + '</span>' +
   '</div>';
@@ -984,8 +999,8 @@ function setCoreScope(value) {
   loadCore(false);
 }
 
-function setCoreSemantic(value) {
-  window._coreOptions.semantic = value === true;
+function toggleCoreSemantic() {
+  window._coreOptions.semantic = !window._coreOptions.semantic;
   loadCore(false);
 }
 
@@ -994,8 +1009,13 @@ function renderCoreDuplicates(duplicates) {
     return '<div class="card"><div class="card-hdr"><span class="card-title">Duplicate candidates</span></div><div class="core-empty">No duplicate candidates found for this scope.</div></div>';
   }
   var rows = duplicates.map(function(pair) {
+    var aId = escJs(pair.a.id);
+    var bId = escJs(pair.b.id);
     return '<div class="core-dup">' +
-      '<div class="core-dup-score">' + Math.round(pair.score * 100) + '%<span>' + esc(pair.method) + '</span></div>' +
+      '<div class="core-dup-score">' +
+        Math.round(pair.score * 100) + '%<span>' + esc(pair.method) + '</span>' +
+        '<button class="btn btn-outline" style="margin-top:12px;font-size:10px;padding:4px 6px;height:auto;line-height:1.2;width:100%;white-space:normal;" onclick="copyResolvePairPrompt(\'' + aId + '\',\'' + bId + '\')">Copy prompt</button>' +
+      '</div>' +
       '<div class="core-dup-body">' +
         renderCoreMemoryRef(pair.a) +
         '<div class="core-link-line">profile &lt;-&gt; global &lt;-&gt; workspace</div>' +
@@ -1023,9 +1043,16 @@ function renderCoreMemoryRef(ref) {
 }
 
 async function viewMemory(profile, scope, file, id) {
+  window._modalCopyContent = '';
   showModal(
     '<div class="modal-panel confirm-panel" role="dialog" aria-modal="true" aria-labelledby="confirm-title">' +
-      '<div class="modal-hdr"><h2 id="confirm-title">' + esc(id) + '</h2><button data-confirm-close aria-label="Close">&times;</button></div>' +
+      '<div class="modal-hdr">' +
+        '<h2 id="confirm-title">' + esc(id) + '</h2>' +
+        '<div style="display:flex;align-items:center;gap:8px;">' +
+          '<button class="btn btn-outline" style="height:24px;padding:0 6px;" title="Copy content" onclick="navigator.clipboard.writeText(window._modalCopyContent || \'\').then(function(){toast(\'Copied content\');}).catch(function(){toast(\'Copy failed\',false);})"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="width:12px;height:12px;"><rect x="5.5" y="5.5" width="8.5" height="8.5" rx="1.5"/><path d="M3.5 10.5h-1a1 1 0 0 1-1-1v-6.5a1 1 0 0 1 1-1h6.5a1 1 0 0 1 1 1v1"/></svg></button>' +
+          '<button data-confirm-close aria-label="Close">&times;</button>' +
+        '</div>' +
+      '</div>' +
       '<div class="modal-body"><div class="loading"><div class="spinner"></div>&nbsp;&nbsp;Loading memory content&hellip;</div></div>' +
       '<div class="modal-actions confirm-actions">' +
         '<button class="btn btn-primary" data-confirm-close>Close</button>' +
@@ -1052,7 +1079,8 @@ async function viewMemory(profile, scope, file, id) {
     
     var bodyDiv = document.querySelector('#modal-root .modal-body');
     if (bodyDiv) {
-      bodyDiv.innerHTML = '<pre class="mono" style="white-space:pre-wrap;margin:0;font-size:12px;max-height:480px;overflow-y:auto;user-select:text;background:var(--g100);padding:12px;border-radius:var(--r6);border:1px solid var(--g200);color:var(--g1000);text-align:left;">' + esc(j.content) + '</pre>';
+      window._modalCopyContent = j.content;
+      bodyDiv.innerHTML = '<pre class="mono" style="white-space:pre-wrap;margin:0;font-size:12px;user-select:text;background:var(--g100);padding:12px;border-radius:var(--r6);border:1px solid var(--g200);color:var(--g1000);text-align:left;">' + esc(j.content) + '</pre>';
     }
   } catch (e) {
     var bodyDiv = document.querySelector('#modal-root .modal-body');
@@ -1062,12 +1090,37 @@ async function viewMemory(profile, scope, file, id) {
   }
 }
 
+function copyResolvePairPrompt(idA, idB) {
+  var prompt = [
+    'Resolve these duplicate memories:',
+    'engram load --id ' + idA + ',' + idB,
+    '',
+    'Review these duplicate candidates. Decide whether to merge, archive, or keep both.',
+    'When proposing saved memories, use TYPE, TEXT, CONTEXT, and UPDATE: memory-id for duplicates.',
+    'Do not invent facts. Preserve stronger, newer, and more specific guidance.'
+  ].join('\n');
+  
+  navigator.clipboard.writeText(prompt).then(function() {
+    toast('Copied resolve prompt');
+  }).catch(function() {
+    toast('Copy failed', false);
+  });
+}
+
 function renderCorePrompts(prompts) {
   return '<div class="core-prompts">' +
-    '<div class="card"><div class="card-hdr"><span class="card-title">Resolve duplicate memories</span></div>' +
+    '<div class="card">' +
+      '<div class="card-hdr" style="display:flex;justify-content:space-between;align-items:center;width:100%;">' +
+        '<span class="card-title">Resolve duplicate memories</span>' +
+        '<button class="btn btn-outline" style="height:24px;font-size:11px;padding:0 8px;" onclick="viewCorePrompt(\'resolveDuplicates\', \'Resolve duplicate memories\')">Preview</button>' +
+      '</div>' +
       '<div class="core-prompt-body"><p>Copy prompt for an AI agent to resolve duplicate memories.</p><button class="btn btn-primary" onclick="copyCorePrompt(\'resolveDuplicates\')">Copy prompt</button></div>' +
     '</div>' +
-    '<div class="card"><div class="card-hdr"><span class="card-title">Metacognize memory</span></div>' +
+    '<div class="card">' +
+      '<div class="card-hdr" style="display:flex;justify-content:space-between;align-items:center;width:100%;">' +
+        '<span class="card-title">Metacognize memory</span>' +
+        '<button class="btn btn-outline" style="height:24px;font-size:11px;padding:0 8px;" onclick="viewCorePrompt(\'metacognize\', \'Metacognize memory\')">Preview</button>' +
+      '</div>' +
       '<div class="core-prompt-body"><p>Copy prompt for a stronger model to restructure memory with metacognition.</p><button class="btn btn-primary" onclick="copyCorePrompt(\'metacognize\')">Copy prompt</button></div>' +
     '</div>' +
   '</div>';
@@ -1095,6 +1148,166 @@ function copyCorePrompt(key) {
   }).catch(function() {
     toast('Copy failed', false);
   });
+}
+
+function viewCorePrompt(key, title) {
+  if (!window._coreData || !window._coreData.prompts) return;
+  var text = window._coreData.prompts[key] || '';
+  if (!text) return;
+  
+  window._modalCopyContent = text;
+  showModal(
+    '<div class="modal-panel confirm-panel" role="dialog" aria-modal="true" aria-labelledby="confirm-title" style="width:min(640px, 100%)">' +
+      '<div class="modal-hdr">' +
+        '<h2 id="confirm-title">' + esc(title) + '</h2>' +
+        '<div style="display:flex;align-items:center;gap:8px;">' +
+          '<button class="btn btn-outline" style="height:24px;padding:0 6px;" title="Copy content" onclick="navigator.clipboard.writeText(window._modalCopyContent || \'\').then(function(){toast(\'Copied content\');}).catch(function(){toast(\'Copy failed\',false);})"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="width:12px;height:12px;"><rect x="5.5" y="5.5" width="8.5" height="8.5" rx="1.5"/><path d="M3.5 10.5h-1a1 1 0 0 1-1-1v-6.5a1 1 0 0 1 1-1h6.5a1 1 0 0 1 1 1v1"/></svg></button>' +
+          '<button data-confirm-close aria-label="Close">&times;</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="modal-body"><pre class="core-prompt-preview" style="margin:0;user-select:all;">' + esc(text) + '</pre></div>' +
+      '<div class="modal-actions confirm-actions">' +
+        '<button class="btn btn-primary" data-confirm-close>Close</button>' +
+      '</div>' +
+    '</div>',
+    function(event) {
+      if (event.key === 'Escape' || event.key === 'Enter') {
+        event.preventDefault();
+        closeModal();
+      }
+    }
+  );
+  
+  var closeBtns = document.querySelectorAll('[data-confirm-close]');
+  closeBtns.forEach(function(btn) {
+    btn.addEventListener('click', closeModal, { once: true });
+  });
+}
+
+async function browseFolder(inputId) {
+  var inputEl = document.getElementById(inputId);
+  var currentVal = inputEl ? (inputEl.value || '').trim() : '';
+  
+  var res = await postJson('/api/browse', { path: currentVal });
+  if (!res || !res.ok) return;
+
+  var currentPath = res.currentPath;
+  
+  function renderBrowserContent(data) {
+    var html = '<div class="modal-panel dir-browser-modal" role="dialog" aria-modal="true" aria-labelledby="browser-title">' +
+      '<div class="modal-hdr">' +
+        '<h2 id="browser-title">Browse Directory</h2>' +
+        '<button data-confirm-close aria-label="Close" onclick="closeModal()">&times;</button>' +
+      '</div>' +
+      '<div class="modal-body dir-browser-body">';
+      
+    html += '<div class="dir-browser-nav-bar">' +
+      '<input class="form-input dir-browser-path" id="db-path-input" value="' + esc(data.currentPath) + '">' +
+      '<button class="btn btn-primary" onclick="window.dirBrowserGo(document.getElementById(\'db-path-input\').value)">Go</button>' +
+    '</div>';
+    
+    if (data.drives && data.drives.length > 0) {
+      html += '<div class="dir-browser-drives-title">Drives:</div>';
+      html += '<div class="dir-browser-drives">';
+      data.drives.forEach(function(d) {
+        var isCurrentDrive = data.currentPath.toLowerCase().startsWith(d.toLowerCase());
+        html += '<button class="btn btn-ghost drive-btn' + (isCurrentDrive ? ' active' : '') + '" onclick="window.dirBrowserGo(\'' + esc(escJs(d)) + '\')">' + esc(d) + '</button>';
+      });
+      html += '</div>';
+    }
+    
+    html += '<div class="dir-browser-list">';
+    
+    if (data.parentPath) {
+      html += '<div class="dir-item parent-dir" onclick="window.dirBrowserGo(\'' + esc(escJs(data.parentPath)) + '\')">' +
+        '<svg class="dir-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 4.5v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1H7L5.5 3h-3.5a1 1 0 0 0-1 1z"/></svg>' +
+        '<span class="dir-name">..</span>' +
+      '</div>';
+    }
+    
+    if (data.directories && data.directories.length > 0) {
+      data.directories.forEach(function(dName) {
+        var separator = data.currentPath.endsWith('\\') || data.currentPath.endsWith('/') ? '' : '/';
+        var nextPath = data.currentPath + separator + dName;
+        html += '<div class="dir-item" onclick="window.dirBrowserGo(\'' + esc(escJs(nextPath)) + '\')">' +
+          '<svg class="dir-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M1 3.5A1.5 1.5 0 0 1 2.5 2h2.764c.32 0 .625.13.843.361l1.196 1.277c.109.117.262.182.421.182h5.776A1.5 1.5 0 0 1 15 5.322v7.178a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 1 12.5v-9z"/></svg>' +
+          '<span class="dir-name">' + esc(dName) + '</span>' +
+        '</div>';
+      });
+    } else {
+      html += '<div class="dir-browser-empty">No subdirectories found or access denied</div>';
+    }
+    
+    html += '</div></div>';
+    
+    html += '<div class="modal-actions">' +
+      '<button class="btn btn-outline" onclick="closeModal()">Cancel</button>' +
+      '<button class="btn btn-primary" onclick="window.dirBrowserSelect(\'' + esc(escJs(data.currentPath)) + '\')">Select Folder</button>' +
+    '</div>';
+    
+    html += '</div>';
+    return html;
+  }
+
+  window.dirBrowserGo = async function(nextPath) {
+    var nextRes = await postJson('/api/browse', { path: nextPath });
+    if (nextRes && nextRes.ok) {
+      currentPath = nextRes.currentPath;
+      var el = document.getElementById('modal-root');
+      if (el) {
+        el.innerHTML = renderBrowserContent(nextRes);
+        var closeBtn = el.querySelector('[data-confirm-close]');
+        if (closeBtn) closeBtn.addEventListener('click', closeModal, { once: true });
+        
+        var pathInput = document.getElementById('db-path-input');
+        if (pathInput) {
+          pathInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              window.dirBrowserGo(pathInput.value);
+            }
+          });
+        }
+      }
+    }
+  };
+
+  window.dirBrowserSelect = function(selectedPath) {
+    if (inputEl) {
+      inputEl.value = selectedPath;
+      var event = new Event('input', { bubbles: true });
+      inputEl.dispatchEvent(event);
+      var event2 = new Event('change', { bubbles: true });
+      inputEl.dispatchEvent(event2);
+    }
+    closeModal();
+  };
+
+  showModal(
+    renderBrowserContent(res),
+    function(event) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeModal();
+      }
+    }
+  );
+
+  var mRoot = document.getElementById('modal-root');
+  if (mRoot) {
+    var closeBtn = mRoot.querySelector('[data-confirm-close]');
+    if (closeBtn) closeBtn.addEventListener('click', closeModal, { once: true });
+    
+    var pathInput = document.getElementById('db-path-input');
+    if (pathInput) {
+      pathInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          window.dirBrowserGo(pathInput.value);
+        }
+      });
+    }
+  }
 }
 
 // ── Init ─────────────────────────────────────────────────────────────────────

@@ -120,6 +120,16 @@ test('entry server exposes safe config metadata and validated config updates', a
     assert.equal(errMem.response.status, 500);
     assert.equal(errMem.body.ok, undefined);
     assert.ok(errMem.body.error);
+
+    const faviconRes = await fetch(baseUrl + '/favicon.svg');
+    assert.equal(faviconRes.status, 200);
+    assert.equal(faviconRes.headers.get('content-type'), 'image/svg+xml');
+    const faviconText = await faviconRes.text();
+    assert.match(faviconText, /<svg/);
+
+    const faviconIcoRes = await fetch(baseUrl + '/favicon.ico');
+    assert.equal(faviconIcoRes.status, 200);
+    assert.equal(faviconIcoRes.headers.get('content-type'), 'image/svg+xml');
   } finally {
     stopServer();
     process.env.ENGRAM_CONFIG_DIR = oldEnv.ENGRAM_CONFIG_DIR;

@@ -148,7 +148,7 @@ To configure your settings, manage profiles, and connect AI agents in a premium 
 ```bash
 engram entry
 ```
-Go to the **Connection** tab to automatically scan and link Engram to your local AI agents (installs skillsets and hooks).
+Go to the **Connections** tab to automatically scan and link Engram to your local AI agents (installs skillsets and hooks).
 
 Alternatively, you can manually link Engram to your agent:
 ```bash

@@ -559,7 +559,7 @@ export async function apiCoreData(cwd: string, options: { semantic?: boolean; re
     },
     duplicates,
     relationship: coreRelationshipData(activeProfile, ctx.graph.nodes, ctx.graph.edges, duplicates),
-    prompts: corePrompts(filter),
+    prompts: corePrompts(filter, duplicates),
     warning: 'Duplicate resolution and metacognition can consume more tokens than regular Engram operations. Use a strong AI model and review proposed UPDATE or archive actions before saving.'
   };
 }
@@ -707,13 +707,20 @@ function coreRelationshipData(
   return { nodes: [...nodes.values()], links };
 }
 
-function corePrompts(filter: CoreScopeFilter): CorePanelData['prompts'] {
+function corePrompts(filter: CoreScopeFilter, duplicates: CoreDuplicateCandidate[] = []): CorePanelData['prompts'] {
   const scopeFlag = filter === 'workspace' ? '--workspace' : filter === 'global' ? '--global' : '--all';
+  const duplicateIds = Array.from(new Set(duplicates.flatMap((d) => [d.a.id, d.b.id])));
+  const loadCommand = duplicateIds.length > 0
+    ? `engram load --id ${duplicateIds.join(',')}`
+    : 'engram load --id id1,id2';
   return {
     resolveDuplicates: [
-      'Review these Engram duplicate candidates.',
+      'Review these Engram duplicate or semantically overlapping candidates.',
+      loadCommand,
+      '',
       'For each pair, decide whether to merge, archive, or keep both.',
-      'When proposing saved memories, use TYPE, TEXT, CONTEXT, and UPDATE: memory-id for duplicates.',
+      'Note: Candidates with middle semantic similarity can also be merged if they share related context or rules.',
+      'When proposing saved memories, use TYPE, TEXT, CONTEXT, and UPDATE: memory-id for duplicates or merged targets.',
       'Do not invent facts. Preserve stronger, newer, and more specific guidance.'
     ].join('\n'),
     metacognize: [
@@ -747,6 +754,54 @@ export async function apiGetMemoryContent(cwd: string, profileName: string, scop
   }
 
   return readText(absPath);
+}
+
+export async function apiBrowseDirectories(currentPath: string): Promise<any> {
+  const fs = await import('node:fs/promises');
+  const path = await import('node:path');
+
+  let targetPath = currentPath ? path.resolve(currentPath) : process.cwd();
+  
+  try {
+    const stats = await fs.stat(targetPath);
+    if (!stats.isDirectory()) {
+      targetPath = path.dirname(targetPath);
+    }
+  } catch {
+    targetPath = process.cwd();
+  }
+
+  const parentPath = path.resolve(targetPath, '..');
+  
+  const entries = await fs.readdir(targetPath, { withFileTypes: true }).catch(() => []);
+  const directories: string[] = [];
+  for (const entry of entries) {
+    if (entry.isDirectory()) {
+      directories.push(entry.name);
+    }
+  }
+
+  // Sort directories alphabetically (case-insensitive)
+  directories.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+
+  const drives: string[] = [];
+  if (process.platform === 'win32') {
+    for (let i = 65; i <= 90; i++) {
+      const drive = String.fromCharCode(i) + ':\\';
+      try {
+        const stat = await fs.stat(drive);
+        if (stat) drives.push(drive);
+      } catch {}
+    }
+  }
+
+  return {
+    ok: true,
+    currentPath: targetPath,
+    parentPath: parentPath === targetPath ? '' : parentPath,
+    directories,
+    drives
+  };
 }
 
 

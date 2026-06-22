@@ -5,14 +5,27 @@ import path from 'node:path';
 import { runEngram, tempWorkspace } from '../helpers.mjs';
 
 async function hasSqlite() {
-  try { await import('node:sqlite'); return true; } catch { /* check better-sqlite3 */ }
-  try { await import('better-sqlite3'); return true; } catch { return false; }
+  const originalEmitWarning = process.emitWarning;
+  process.emitWarning = function patchedEmitWarning(warning, ...args) {
+    const message = typeof warning === 'string' ? warning : warning?.message ?? '';
+    const option = args[0];
+    const type = typeof option === 'string' ? option : option?.type ?? warning?.name ?? '';
+    if (type === 'ExperimentalWarning' && message.includes('SQLite')) return false;
+    return originalEmitWarning.call(this, warning, ...args);
+  };
+  try {
+    try { await import('node:sqlite'); return true; } catch { /* check better-sqlite3 */ }
+    try { await import('better-sqlite3'); return true; } catch { return false; }
+  } finally {
+    process.emitWarning = originalEmitWarning;
+  }
 }
 
 test('config view shows resolved config', async () => {
   const { cwd, env } = await tempWorkspace('engram-cfg-');
   const result = await runEngram(cwd, env, ['config', 'view']);
   assert.equal(result.code, 0, result.stderr);
+  assert.doesNotMatch(result.stderr, /ExperimentalWarning: SQLite/i, result.stderr);
   // Should show key config fields
   assert.ok(result.stdout.includes('Version') || result.stdout.includes('version') || result.stdout.includes('scope'), result.stdout);
   await rm(cwd, { recursive: true, force: true });

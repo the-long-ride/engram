@@ -7,7 +7,7 @@ import { invalidMemoryFiles, rebuildIndex } from '../core/memory/index.js';
 import { loadEntries, routeDetailed, visibleEntries, type RouteDetail } from '../core/memory/routing.js';
 import { ensureVectorIndex, vectorRouteHits } from '../core/memory/vector-db.js';
 import { formatRecords, type RecordBlock } from '../core/cli/format.js';
-import type { Scope } from '../core/runtime/types.js';
+import type { Scope, MemoryEntry } from '../core/runtime/types.js';
 import { loadHashes, updateHash, verifyRoot, sha256 } from '../core/safety/hash.js';
 import { inside, listFiles, readText, writeJson } from '../core/system/fsx.js';
 import { scopeRootsForConfig } from '../core/runtime/config.js';
@@ -17,16 +17,43 @@ import { HASH_FILE } from '../core/runtime/constants.js';
 export async function cmdLoad(args: string[], flags: Record<string, any> = {}): Promise<string> {
   const ctx = await getContext();
   if (!ctx.config.enabled || ctx.config.read === 'off') return '';
-  const query = args.join(' ') || 'current session';
-  const all = flags.all === true;
-  const vectorHits = all ? [] : await vectorRouteHits(ctx.roots, ctx.scopeIndexes, ctx.config, query, ctx.ignorePatterns, all);
-  const routed = routeDetailed(ctx.index, query, ctx.config, all, {
-    all,
-    ignorePatterns: ctx.ignorePatterns,
-    vectorHits,
-    candidatePool: ctx.config.vector.candidate_pool
-  }, ctx.graph);
-  const entries = routed.entries;
+
+  const idFlag = flags.id;
+  let targetIds: string[] = [];
+  if (Array.isArray(idFlag)) {
+    targetIds = idFlag.flatMap((i) => String(i).split(','));
+  } else if (typeof idFlag === 'string') {
+    targetIds = idFlag.split(',');
+  }
+  targetIds = targetIds.map((i) => i.trim()).filter(Boolean);
+
+  let entries: MemoryEntry[] = [];
+  let routed: RouteDetail;
+
+  if (targetIds.length > 0) {
+    entries = ctx.index.entries.filter((e) => targetIds.includes(e.id));
+    routed = {
+      entries,
+      candidates: entries.length,
+      selected: entries.length,
+      omitted: 0,
+      refined: false,
+      facets: [],
+      reasons: entries.map((e) => ({ key: `${e.scope}:${e.file}`, kind: 'id' as any, terms: [e.id] }))
+    };
+  } else {
+    const query = args.join(' ') || 'current session';
+    const all = flags.all === true;
+    const vectorHits = all ? [] : await vectorRouteHits(ctx.roots, ctx.scopeIndexes, ctx.config, query, ctx.ignorePatterns, all);
+    routed = routeDetailed(ctx.index, query, ctx.config, all, {
+      all,
+      ignorePatterns: ctx.ignorePatterns,
+      vectorHits,
+      candidatePool: ctx.config.vector.candidate_pool
+    }, ctx.graph);
+    entries = routed.entries;
+  }
+
   if (flags['dry-run'] === true) {
     if (!entries.length) return 'No routed memories';
     const rows: RecordBlock[] = [];

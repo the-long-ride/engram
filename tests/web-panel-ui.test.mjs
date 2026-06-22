@@ -99,6 +99,7 @@ test('panel UI contains Core tab navigation and refresh functions', async () => 
   const html = await readFile(new URL('../src/core/web/panel.html', import.meta.url), 'utf8');
   assert.match(html, /data-tab="core"/);
   assert.match(html, /id="tab-core"/);
+  assert.match(html, /href="\/favicon.svg"/);
 
   const js = await readFile(new URL('../src/core/web/panel.js', import.meta.url), 'utf8');
   assert.match(js, /function loadCore\(/);
@@ -116,6 +117,7 @@ test('panel Core tab renders duplicates, relationship line, and copy prompts', a
   assert.match(panel, /function renderCoreDuplicates\(/);
   assert.match(panel, /function renderCoreRelationship\(/);
   assert.match(panel, /function copyCorePrompt\(/);
+  assert.match(panel, /function copyResolvePairPrompt\(/);
   assert.match(panel, /Resolve duplicate memories/);
   assert.match(panel, /Metacognize memory/);
   assert.match(panel, /consume more tokens/);

@@ -124,4 +124,9 @@ test('panel Core tab renders duplicates, relationship line, and copy prompts', a
   assert.match(panel, /profile &lt;-&gt; global &lt;-&gt; workspace/);
 });
 
-
+test('panel JS prepends /engram prefix to copied prompts', async () => {
+  const panel = await readFile(new URL('../src/core/web/panel.js', import.meta.url), 'utf8');
+  assert.match(panel, /var val = '\/engram ' \+ prompt;/);
+  assert.match(panel, /var val = '\/engram ' \+ text;/);
+  assert.match(panel, /window\._modalCopyContent = '\/engram ' \+ text;/);
+});

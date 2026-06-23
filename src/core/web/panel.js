@@ -1100,7 +1100,8 @@ function copyResolvePairPrompt(idA, idB) {
     'Do not invent facts. Preserve stronger, newer, and more specific guidance.'
   ].join('\n');
   
-  navigator.clipboard.writeText(prompt).then(function() {
+  var val = '/engram ' + prompt;
+  navigator.clipboard.writeText(val).then(function() {
     toast('Copied resolve prompt');
   }).catch(function() {
     toast('Copy failed', false);
@@ -1143,7 +1144,8 @@ function copyCorePrompt(key) {
   if (!window._coreData || !window._coreData.prompts) return;
   var text = window._coreData.prompts[key] || '';
   if (!text) return;
-  navigator.clipboard.writeText(text).then(function() {
+  var val = '/engram ' + text;
+  navigator.clipboard.writeText(val).then(function() {
     toast('Copied prompt');
   }).catch(function() {
     toast('Copy failed', false);
@@ -1155,7 +1157,7 @@ function viewCorePrompt(key, title) {
   var text = window._coreData.prompts[key] || '';
   if (!text) return;
   
-  window._modalCopyContent = text;
+  window._modalCopyContent = '/engram ' + text;
   showModal(
     '<div class="modal-panel confirm-panel" role="dialog" aria-modal="true" aria-labelledby="confirm-title" style="width:min(640px, 100%)">' +
       '<div class="modal-hdr">' +

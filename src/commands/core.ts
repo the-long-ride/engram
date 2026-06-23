@@ -15,16 +15,19 @@ import { defaultProfileLines, ensureDefaultProfile } from '../core/runtime/profi
 
 /** Initialize workspace memory. */
 export async function cmdInject(flags: Record<string, any>): Promise<string> {
+  const wordmark = renderInitWordmark(process.stdout.isTTY);
+  output.write(wordmark + '\n');
+
   const loaded = await loadConfig();
   const globalOnly = flags['global-only'] === true;
-  if (globalOnly && flags['no-global'] === true) throw new Error('global-only init requires global memory; remove --no-global or pass --global-path <path>');
-  if (globalOnly && (flags.submodule === true || typeof flags['submodule-remote'] === 'string')) throw new Error('global-only init cannot configure a workspace submodule');
+  if (globalOnly && flags['no-global'] === true) throw new Error('global-only inject requires global memory; remove --no-global or pass --global-path <path>');
+  if (globalOnly && (flags.submodule === true || typeof flags['submodule-remote'] === 'string')) throw new Error('global-only inject cannot configure a workspace submodule');
   const saveTarget = initSaveTarget(flags, globalOnly);
   const requestedBranch = typeof flags['global-branch'] === 'string' ? flags['global-branch'] : loaded.global_git.branch;
   const branch = normalizeBranchName(requestedBranch);
   const submodule = globalOnly ? undefined : await planWorkspaceSubmodule(flags);
   const globalPath = await resolveGlobalPath(flags, loaded.global_path);
-  if (saveTarget === 'global' && !globalPath) throw new Error('init --scope global requires global memory; set ENGRAM_GLOBAL_DIR or pass --global-path <path>');
+  if (saveTarget === 'global' && !globalPath) throw new Error('inject --scope global requires global memory; set ENGRAM_GLOBAL_DIR or pass --global-path <path>');
   const config = { ...loaded, global_path: globalPath, global_git: { ...loaded.global_git, branch } };
   const roots = scopeRootsForConfig(process.cwd(), config);
   const globalRemote = await planGlobalRemote(flags, roots.global, branch, config.global_git);
@@ -49,13 +52,13 @@ export async function cmdInject(flags: Record<string, any>): Promise<string> {
 
 function initSaveTarget(flags: Record<string, any>, globalOnly: boolean) {
   if (typeof flags.scope !== 'string') return undefined;
-  const target = parseSaveTarget(flags.scope, 'init --scope');
-  if (globalOnly && target !== 'global') throw new Error('global-only init supports only --scope global');
+  const target = parseSaveTarget(flags.scope, 'inject --scope');
+  if (globalOnly && target !== 'global') throw new Error('global-only inject supports only --scope global');
   return target;
 }
 
 async function maybeInstallDefaultSkillset(flags: Record<string, any>, globalOnly = false): Promise<string[]> {
-  if (globalOnly) return ['skillset: skipped (global-only init)'];
+  if (globalOnly) return ['skillset: skipped (global-only inject)'];
   const requested = typeof flags.skillset === 'string' ? flags.skillset.trim() : 'codex';
   if (flags['no-skillset'] === true || isDisabledSkillsetTarget(requested)) return ['skillset: skipped'];
   const results = await installSkillset(process.cwd(), requested, false);

@@ -5,7 +5,7 @@
 ## 0.0.19
 
 - Release v0.0.19 covers the 24 commits since v0.0.18.
-- Added `engram inject` as the new init flow, with connection-tab setup, scope guards, and safer workspace/global linking.
+- Renamed `engram init` to `engram inject` as the primary initialization flow, with connection-tab setup, scope guards, and safer workspace/global linking.
 - Hardened `engram entry` config editing with shared schema validation, staged browser edits, review-before-save, risky-change confirmation, and batch API updates.
 - Expanded the control panel with a core dashboard tab, duplicate analysis, guarded unlink actions, copy-prefix behavior, folder-browser modal, memory-content modal, and connection sorting.
 - Polished the Web UI shell with visible icons, a processor icon for Core, a lightweight SVG favicon, and better clipboard prompt text.

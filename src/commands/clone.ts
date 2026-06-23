@@ -27,8 +27,8 @@ export async function cmdCloneMemory(args: string[], flags: Record<string, any> 
   const ctx = await getContext(process.cwd(), { rebuild: true });
   const sourceRoot = ctx.roots[source];
   const targetRoot = ctx.roots[target];
-  if (!sourceRoot || !(await exists(sourceRoot))) throw new Error(`${source} memory root not found; run engram init first`);
-  if (!targetRoot) throw new Error('global memory is not configured; set ENGRAM_GLOBAL_DIR or run engram init --global-path <path>');
+  if (!sourceRoot || !(await exists(sourceRoot))) throw new Error(`${source} memory root not found; run engram inject first`);
+  if (!targetRoot) throw new Error('global memory is not configured; set ENGRAM_GLOBAL_DIR or run engram inject --global-path <path>');
   if (usesMetacognize(flags)) {
     if (force) throw new Error('--force cannot be used with --metacognize');
     return cloneMemoryMetacognized(ctx, source, target, sourceRoot, targetRoot, flags);

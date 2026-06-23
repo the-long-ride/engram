@@ -7,7 +7,7 @@ import { testMemory, duplicateFixtureMemory } from './fixtures.mjs';
 
 test('save knowledge without text asks for generated agent knowledge', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
-  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, ['inject']);
   const input = 'Engram supports agent-generated knowledge capture when no text is provided.\nA\n';
   const saved = await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace'], input);
   assert.equal(saved.code, 0, saved.stderr);
@@ -22,7 +22,7 @@ test('save knowledge without text asks for generated agent knowledge', async () 
 
 test('save auto-detects rules and workflow candidates', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
-  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, ['inject']);
   const rule = await runEngram(cwd, env, ['save', '--scope', 'workspace', 'Always use pnpm for installs'], 'A\n');
   assert.equal(rule.code, 0, rule.stderr);
   assert.match(rule.stdout, /Type: rule/);
@@ -40,7 +40,7 @@ test('save auto-detects rules and workflow candidates', async () => {
 
 test('save stores task_type tags and prompts when task is unclear', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
-  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, ['inject']);
   const saved = await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Debug auth middleware refreshes tokens before expiry'], 'A\n');
   assert.equal(saved.code, 0, saved.stderr);
   const content = await readFile(path.join(workspaceMemoryRoot(cwd), 'knowledge', 'debug-auth-middleware-refreshes-tokens-before-expiry.md'), 'utf8');
@@ -56,7 +56,7 @@ test('save stores task_type tags and prompts when task is unclear', async () => 
 
 test('save can skip unclear task type prompt and still tag unknown', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
-  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, ['inject']);
   const saved = await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', '--skip-task-type-prompt', 'Remember this vague preference'], 'A\n');
   assert.equal(saved.code, 0, saved.stderr);
   assert.doesNotMatch(saved.stdout, /Task type unclear/);
@@ -67,7 +67,7 @@ test('save can skip unclear task type prompt and still tag unknown', async () =>
 
 test('save stores role metadata for routing', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
-  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, ['inject']);
   const saved = await runEngram(cwd, env, [
     'save', 'rule', '--scope', 'workspace', '--role', 'frontend',
     'Use design tokens for UI spacing'
@@ -87,7 +87,7 @@ test('save stores role metadata for routing', async () => {
 
 test('save can parse agent-brainstormed workflow candidates', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
-  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, ['inject']);
   const input = 'TYPE: workflow\nTEXT: When deploying, first run tests. Then verify health.\nA\n';
   const saved = await runEngram(cwd, env, ['save', '--scope', 'workspace'], input);
   assert.equal(saved.code, 0, saved.stderr);
@@ -99,7 +99,7 @@ test('save can parse agent-brainstormed workflow candidates', async () => {
 
 test('save-session proposes multiple agent-brainstormed memories', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
-  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, ['inject']);
   const input = [
     'TYPE: rule | TEXT: Always run tests before release.',
     'TYPE: workflow | TEXT: When releasing, first run tests. Then update changelog.',
@@ -117,7 +117,7 @@ test('save-session proposes multiple agent-brainstormed memories', async () => {
 
 test('save-session classifies each candidate text independently', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
-  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, ['inject']);
   const input = [
     'TYPE: workflow | TEXT: When releasing, first run tests. Then update changelog.',
     'TYPE: knowledge | TEXT: Auth rotation requires scoped secrets.',
@@ -134,7 +134,7 @@ test('save-session classifies each candidate text independently', async () => {
 
 test('save-session preserves optional AI-generated context and falls back when omitted', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
-  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, ['inject']);
   const input = [
     'TYPE: rule | TEXT: Always explain why durable memories exist. | CONTEXT: Created after the user clarified that Context should help humans and agents remember why a memory exists.',
     'TYPE: knowledge | TEXT: Simple factual memories may use default context.',
@@ -151,7 +151,7 @@ test('save-session preserves optional AI-generated context and falls back when o
 
 test('save-session query-level validates integer and expands agent guidance', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
-  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, ['inject']);
   const input = [
     'TYPE: knowledge | TEXT: Query-level mining can use recent accessible chat sessions.',
     'A',
@@ -182,7 +182,7 @@ test('save-session query-level validates integer and expands agent guidance', as
 
 test('save-session can read a transcript file and save selected candidates only', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
-  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, ['inject']);
   const transcript = path.join(cwd, 'session.md');
   await writeFile(transcript, [
     'TYPE: rule | TEXT: Always run release tests before tagging.',
@@ -203,7 +203,7 @@ test('save-session can read a transcript file and save selected candidates only'
 
 test('save-session accept-all writes every transcript candidate without approval prompt', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
-  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, ['inject']);
   const transcript = path.join(cwd, 'session.md');
   await writeFile(transcript, [
     'TYPE: rule | TEXT: Always run smoke tests before release.',
@@ -222,7 +222,7 @@ test('save-session accept-all writes every transcript candidate without approval
 
 test('save-session accept-all saves generated candidates without final approval line', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
-  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, ['inject']);
   const input = [
     'TYPE: rule | TEXT: Always update Engram skillsets after changing slash behavior.',
     'TYPE: knowledge | TEXT: Slash save-session accept-all is explicit human approval.',
@@ -241,7 +241,7 @@ test('save-session accept-all saves generated candidates without final approval 
 
 test('generated memories use standard markdown spacing and links', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
-  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, ['inject']);
   const saved = await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Docs live at www.google.com.'], 'A\n');
   assert.equal(saved.code, 0, saved.stderr);
   const content = await readFile(path.join(workspaceMemoryRoot(cwd), 'knowledge', 'docs-live-at-www-google-com.md'), 'utf8');
@@ -253,7 +253,7 @@ test('generated memories use standard markdown spacing and links', async () => {
 
 test('save automatically updates matching memory instead of duplicating it', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
-  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, ['inject']);
   await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Frontend uses React and pnpm'], 'A\n');
   const updated = await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'React frontend uses pnpm workspace scripts'], 'A\n');
   assert.equal(updated.code, 0, updated.stderr);
@@ -266,7 +266,7 @@ test('save automatically updates matching memory instead of duplicating it', asy
 
 test('save preview marks weak same-type overlap as possible duplicate', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
-  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, ['inject']);
   const existing = path.join(workspaceMemoryRoot(cwd), 'knowledge', 'invoice-webhook-retry-baseline.md');
   await mkdir(path.dirname(existing), { recursive: true });
   await writeFile(existing, duplicateFixtureMemory({
@@ -291,7 +291,7 @@ test('save preview marks weak same-type overlap as possible duplicate', async ()
 
 test('save preview reports related memories for dependency restructuring', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
-  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, ['inject']);
   await runEngram(cwd, env, [
     'save', 'knowledge', '--scope', 'workspace',
     'Release foundation checklist lives in docs/release.md'
@@ -314,7 +314,7 @@ test('save preview reports related memories for dependency restructuring', async
 
 test('save preview related-memory hints stay scoped to the save target', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
-  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, ['inject']);
   await runEngram(cwd, env, [
     'save', 'knowledge', '--scope', 'global',
     'Global launch checklist covers shared release approval'
@@ -334,7 +334,7 @@ test('save preview related-memory hints stay scoped to the save target', async (
 
 test('save-session preview includes related-memory hints per candidate', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
-  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, ['inject']);
   await runEngram(cwd, env, [
     'save', 'knowledge', '--scope', 'workspace',
     'Release foundation checklist lives in docs/release.md'
@@ -355,7 +355,7 @@ test('save-session preview includes related-memory hints per candidate', async (
 
 test('save-session accept-all pauses for dependency restructuring and saves rerun structure', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
-  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, ['inject']);
   await runEngram(cwd, env, [
     'save', 'knowledge', '--scope', 'workspace',
     'Release foundation checklist lives in docs/release.md'
@@ -393,7 +393,7 @@ test('save-session accept-all pauses for dependency restructuring and saves reru
 
 test('save-session accept-all pauses on possible duplicate and supports explicit update rerun', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
-  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, ['inject']);
   const existing = path.join(workspaceMemoryRoot(cwd), 'knowledge', 'invoice-webhook-retry-baseline.md');
   await mkdir(path.dirname(existing), { recursive: true });
   await writeFile(existing, duplicateFixtureMemory({
@@ -427,7 +427,7 @@ test('save-session accept-all pauses on possible duplicate and supports explicit
 
 test('rule variants render the active compact variant', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
-  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, ['inject']);
   await runEngram(cwd, env, ['save', 'rule', '--scope', 'workspace', 'Use pnpm for package management'], 'A\n');
   const raw = await readFile(path.join(workspaceMemoryRoot(cwd), 'rules', 'use-pnpm-for-package-management.md'), 'utf8');
   assert.match(raw, /## Rule Variants/);
@@ -449,7 +449,7 @@ test('rule variants render the active compact variant', async () => {
 
 test('save preview hides stored rule variants by default and can show them on demand', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
-  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, ['inject']);
 
   const hidden = await runEngram(cwd, env, [
     'save', 'rule', '--scope', 'workspace',
@@ -476,7 +476,7 @@ test('save preview hides stored rule variants by default and can show them on de
 
 test('save preserves customized rule variants on update', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
-  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, ['inject']);
   await runEngram(cwd, env, ['save', 'rule', '--scope', 'workspace', 'Use pnpm for package management'], 'A\n');
   const file = path.join(workspaceMemoryRoot(cwd), 'rules', 'use-pnpm-for-package-management.md');
   const raw = await readFile(file, 'utf8');
@@ -502,7 +502,7 @@ test('save preserves customized rule variants on update', async () => {
 
 test('weak rule overlap stays a possible duplicate instead of auto-updating from stored variants', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
-  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, ['inject']);
   const existing = path.join(workspaceMemoryRoot(cwd), 'rules', 'use-pnpm-for-installs.md');
   await mkdir(path.dirname(existing), { recursive: true });
   await writeFile(existing, `---

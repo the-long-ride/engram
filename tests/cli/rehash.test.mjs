@@ -7,7 +7,7 @@ import { testMemory, duplicateFixtureMemory } from './fixtures.mjs';
 
 test('rehash recomputes hashes for all memory files and fixes mismatches', async () => {
   const { cwd, env } = await tempWorkspace('engram-rehash-');
-  await runEngram(cwd, env, ['init', '--no-skillset']);
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
   const root = workspaceMemoryRoot(cwd);
   const memoryDir = path.join(root, 'knowledge');
   await mkdir(memoryDir, { recursive: true });
@@ -58,7 +58,7 @@ Use this memory when a future task touches: test.
 
 test('rehash scopes work individually', async () => {
   const { cwd, env } = await tempWorkspace('engram-rehash-scope-');
-  await runEngram(cwd, env, ['init', '--no-skillset']);
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
   const rehashWorkspace = await runEngram(cwd, env, ['rehash', 'workspace']);
   assert.equal(rehashWorkspace.code, 0, rehashWorkspace.stderr);
   assert.match(rehashWorkspace.stdout, /Hashed/);
@@ -70,7 +70,7 @@ test('rehash scopes work individually', async () => {
 
 test('natural language rehash normalizes to engram rehash', async () => {
   const { cwd, env } = await tempWorkspace('engram-nat-rehash-');
-  await runEngram(cwd, env, ['init', '--no-skillset']);
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
   const rehash = await runEngram(cwd, env, ['rehash', 'memory']);
   assert.equal(rehash.code, 0, rehash.stderr);
   assert.match(rehash.stdout, /Hashed/);

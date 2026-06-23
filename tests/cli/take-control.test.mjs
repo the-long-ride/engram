@@ -7,7 +7,7 @@ import { testMemory, duplicateFixtureMemory } from './fixtures.mjs';
 
 test('take-control converts existing workspace guidance through approval', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
-  await runEngram(cwd, env, ['init', '--no-skillset']);
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
   await writeFile(path.join(cwd, 'CLAUDE.md'), [
     '# Team Guidance',
     '',
@@ -52,7 +52,7 @@ test('take-control converts existing workspace guidance through approval', async
 
 test('take-control plan supports repeated includes, excludes, and scan limits', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
-  await runEngram(cwd, env, ['init', '--no-skillset']);
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
   await mkdir(path.join(cwd, 'docs', 'nested'), { recursive: true });
   await writeFile(path.join(cwd, 'docs', 'intro.txt'), 'Always use the public API examples in docs.');
   await writeFile(path.join(cwd, 'docs', 'nested', 'routing.txt'), 'The routing docs describe workspace-first lookup.');
@@ -81,7 +81,7 @@ test('take-control plan supports repeated includes, excludes, and scan limits', 
 
 test('take-control accept-all natural wording uses token-light defaults', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
-  await runEngram(cwd, env, ['init', '--no-skillset']);
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
   await mkdir(path.join(cwd, 'notes'), { recursive: true });
   for (let index = 1; index <= 6; index += 1) {
     await writeFile(path.join(cwd, 'notes', `note-${index}.txt`), `Always keep durable note ${index} concise.`);
@@ -100,7 +100,7 @@ test('take-control accept-all natural wording uses token-light defaults', async 
 
 test('take-control metacognize accept-all pauses when related memories need agent restructuring', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
-  await runEngram(cwd, env, ['init', '--no-skillset']);
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
   await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Release foundation checklist guides OAuth rotation'], 'A\n');
 
   const paused = await runEngram(cwd, env, [

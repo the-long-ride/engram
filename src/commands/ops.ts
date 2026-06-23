@@ -163,7 +163,7 @@ async function importAgentMemoryBundle(bundle: any, flags: Record<string, any>):
     ? writeScopes(parseSaveTarget(requestedScope, 'import --scope'), ctx.config)
     : writeScopes(ctx.config.scope, ctx.config)).filter((scope) => Boolean(ctx.roots[scope]));
   if (requestedScope && !scopes.length) throw new Error(`import --scope ${requestedScope} is not available for active profile ${ctx.profile.active || '<none>'}`);
-  if (!scopes.length) throw new Error('import --scope requires global memory; set ENGRAM_GLOBAL_DIR or run engram init --global-path <path>');
+  if (!scopes.length) throw new Error('import --scope requires global memory; set ENGRAM_GLOBAL_DIR or run engram inject --global-path <path>');
   const author = await resolveAuthor();
   const max = flags.all === true ? Number.POSITIVE_INFINITY : Number(flags.max ?? 50);
   const candidates = agentMemoryCandidates(bundle).slice(0, Number.isFinite(max) ? Math.max(0, max) : undefined);

@@ -7,7 +7,7 @@ import { testMemory, duplicateFixtureMemory } from './fixtures.mjs';
 
 test('metacognize dry-run emits compact source pack for target memory', async () => {
   const { cwd, env } = await tempWorkspace('engram-metacognize-');
-  await runEngram(cwd, env, ['init', '--no-skillset']);
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
   const saved = await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Metacognize source memory keeps retries concise'], 'A\n');
   assert.equal(saved.code, 0, saved.stderr);
 
@@ -23,7 +23,7 @@ test('metacognize dry-run emits compact source pack for target memory', async ()
 
 test('metacognize accept-all writes inline restructure candidate and supports natural wording', async () => {
   const { cwd, env } = await tempWorkspace('engram-metacognize-');
-  await runEngram(cwd, env, ['init', '--no-skillset']);
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
   await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Metacognize duplicate memory baseline'], 'A\n');
 
   const updated = await runEngram(cwd, env, [
@@ -39,7 +39,7 @@ test('metacognize accept-all writes inline restructure candidate and supports na
 
 test('metacognize accept-all pauses when related memories need restructuring', async () => {
   const { cwd, env } = await tempWorkspace('engram-metacognize-');
-  await runEngram(cwd, env, ['init', '--no-skillset']);
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
   await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Release foundation checklist guides OAuth rotation'], 'A\n');
   await runEngram(cwd, env, ['save', 'rule', '--scope', 'workspace', 'OAuth rotation must follow the release foundation checklist'], 'A\n');
 

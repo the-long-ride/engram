@@ -7,7 +7,7 @@ import { sha256, testMemory, duplicateFixtureMemory } from './fixtures.mjs';
 
 test('clone-memory copies active memories between workspace and global', async () => {
   const { cwd, env } = await tempWorkspace('engram-clone-');
-  await runEngram(cwd, env, ['init', '--no-skillset']);
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
   const saved = await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Workspace clone source memory'], 'A\n');
   assert.equal(saved.code, 0, saved.stderr);
 
@@ -52,7 +52,7 @@ test('clone-memory copies active memories between workspace and global', async (
 
 test('clone-memory metacognize dry-run previews target save plans without writing', async () => {
   const { cwd, env } = await tempWorkspace('engram-clone-metacognize-');
-  await runEngram(cwd, env, ['init', '--no-skillset']);
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
   const saved = await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Workspace metacognize source memory'], 'A\n');
   assert.equal(saved.code, 0, saved.stderr);
 
@@ -70,7 +70,7 @@ test('clone-memory metacognize dry-run previews target save plans without writin
 
 test('clone-memory metacognize uses numbered approval and writes selected candidates', async () => {
   const { cwd, env } = await tempWorkspace('engram-clone-metacognize-');
-  await runEngram(cwd, env, ['init', '--no-skillset']);
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
   await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Workspace selected clone memory'], 'A\n');
   await runEngram(cwd, env, ['save', 'rule', '--scope', 'workspace', 'Workspace skipped clone memory'], 'A\n');
 
@@ -84,7 +84,7 @@ test('clone-memory metacognize uses numbered approval and writes selected candid
 
 test('clone-memory metacognize accept-all pauses when related memories need agent restructuring', async () => {
   const { cwd, env } = await tempWorkspace('engram-clone-metacognize-');
-  await runEngram(cwd, env, ['init', '--no-skillset']);
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
   await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'global', 'Release foundation checklist lives in docs release md'], 'A\n');
   await runEngram(cwd, env, ['save', 'rule', '--scope', 'workspace', 'OAuth rotation must follow the release foundation checklist'], 'A\n');
 
@@ -100,7 +100,7 @@ test('clone-memory metacognize accept-all pauses when related memories need agen
 
 test('clone-memory rejects force with metacognize', async () => {
   const { cwd, env } = await tempWorkspace('engram-clone-metacognize-');
-  await runEngram(cwd, env, ['init', '--no-skillset']);
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
   const result = await runEngram(cwd, env, ['clone-memory', 'workspace', 'global', '--metacognize', '--force']);
   assert.equal(result.code, 1);
   assert.match(result.stderr, /--force cannot be used with --metacognize/);

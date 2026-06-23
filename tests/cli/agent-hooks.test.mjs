@@ -20,7 +20,7 @@ function proofLine(output) {
 
 test('set-read supports startup auto always manual and off policies', async () => {
   const { cwd, env } = await tempWorkspace('engram-agent-hooks-read-');
-  await runEngram(cwd, env, ['init', '--no-skillset']);
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
   for (const mode of ['startup', 'auto', 'always', 'manual', 'off']) {
     const result = await runEngram(cwd, env, ['set-read', mode]);
     assert.equal(result.code, 0, result.stderr);
@@ -92,7 +92,7 @@ test('install-agent-hooks preserves human config and uninstall removes only Engr
 
 test('agent-hook runtime injects startup, skips repeated auto signatures, and respects manual/off', async () => {
   const { cwd, env } = await tempWorkspace('engram-agent-hooks-runtime-');
-  await runEngram(cwd, env, ['init', '--no-skillset']);
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
   await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Session startup auth tokens refresh before expiry'], 'A\n');
 
   await runEngram(cwd, env, ['set-read', 'startup']);
@@ -149,7 +149,7 @@ test('agent-hook runtime injects startup, skips repeated auto signatures, and re
 
 test('agent-hook emits compact proof for loaded reused and skipped turns', async () => {
   const { cwd, env } = await tempWorkspace('engram-agent-hooks-proof-');
-  await runEngram(cwd, env, ['init', '--no-skillset']);
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
   await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Proof line uses routed Engram memory'], 'A\n');
   await runEngram(cwd, env, ['set-proof', 'compact']);
   await runEngram(cwd, env, ['set-read', 'auto']);
@@ -187,7 +187,7 @@ test('agent-hook emits compact proof for loaded reused and skipped turns', async
 
 test('agent-hook emits host-specific event names and fails open on bad input', async () => {
   const { cwd, env } = await tempWorkspace('engram-agent-hooks-shapes-');
-  await runEngram(cwd, env, ['init', '--no-skillset']);
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
   await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Gemini planning context'], 'A\n');
 
   const gemini = await hookJson(cwd, env, ['agent-hook', '--host', 'gemini'], {

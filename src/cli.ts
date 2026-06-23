@@ -31,10 +31,6 @@ export async function runCli(argv: string[]): Promise<string> {
     if (flags.version || flags.v || command === '--version' || command === '-v' || command === 'version') return VERSION;
     await maybeAutoUpgrade(process.cwd(), command, flags);
     switch (command) {
-      case 'init': {
-        const warning = `⚠️ engram init is deprecated and has been renamed to engram inject. Please run engram inject instead.\n\n`;
-        return warning + await cmdInject(flags);
-      }
       case 'inject': return await cmdInject(flags);
       case 'help': return await cmdHelp(rest[0]);
       case 'llm': return await cmdLlm();

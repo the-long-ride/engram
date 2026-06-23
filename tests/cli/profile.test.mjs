@@ -24,7 +24,7 @@ test('profiles isolate global memory and support workspace defaults, cross-profi
   assert.equal(uninitializedLoad.code, 0, uninitializedLoad.stderr);
   assert.match(uninitializedLoad.stdout, /Personal default profile memory/);
 
-  await runEngram(cwd, env, ['init', '--no-skillset']);
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
   const workspaceDefault = await runEngram(cwd, env, ['profile', 'use', 'company', '--workspace']);
   assert.equal(workspaceDefault.code, 0, workspaceDefault.stderr);
   assert.match(workspaceDefault.stdout, /Workspace default profile: company/);

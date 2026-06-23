@@ -6,7 +6,7 @@ import { runEngram, tempWorkspace, workspaceMemoryRoot } from './helpers.mjs';
 
 test('verify reports hash mismatch after external tampering', async () => {
   const { cwd, env } = await tempWorkspace('engram-tamper-');
-  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, ['inject']);
   const save = await runEngram(cwd, env, ['save', 'rule', '--scope', 'workspace', '--skip-task-type-prompt', 'Use npm scripts for verification'], 'A\n');
   assert.equal(save.code, 0, `Save command failed. stdout: ${save.stdout}, stderr: ${save.stderr}`);
   const file = path.join(workspaceMemoryRoot(cwd), 'rules', 'use-npm-scripts-for-verification.md');

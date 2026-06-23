@@ -123,7 +123,7 @@ export async function writeApprovedMemory(input: {
   const config = await loadConfig(input.cwd);
   const roots = scopeRootsForConfig(input.cwd, config);
   const root = roots[input.scope];
-  if (!root) throw new Error('global memory is not configured; set ENGRAM_GLOBAL_DIR or run engram init --global-path <path>');
+  if (!root) throw new Error('global memory is not configured; set ENGRAM_GLOBAL_DIR or run engram inject --global-path <path>');
   const sensitive = scanSensitive(input.content);
   if (sensitive.length) throw new Error(`Sensitive data blocked on line ${sensitive[0].line}: ${sensitive[0].reason}`);
   const injection = scanInjection(input.content);

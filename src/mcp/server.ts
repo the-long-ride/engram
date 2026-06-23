@@ -98,10 +98,10 @@ async function saveSessionProposal(args: any): Promise<string> {
 function proposalScopes(ctx: Awaited<ReturnType<typeof getContext>>, rawScope: unknown, label: string): Scope[] {
   const target = rawScope === undefined ? ctx.config.scope : parseSaveTarget(String(rawScope), label);
   if (rawScope !== undefined && target !== 'workspace' && !ctx.roots.global) {
-    throw new Error(`${label} requires global memory; set ENGRAM_GLOBAL_DIR or run engram init --global-path <path>`);
+    throw new Error(`${label} requires global memory; set ENGRAM_GLOBAL_DIR or run engram inject --global-path <path>`);
   }
   const scopes = writeScopes(target, ctx.config);
-  if (!scopes.length) throw new Error('save target requires global memory; set ENGRAM_GLOBAL_DIR or run engram init --global-path <path>');
+  if (!scopes.length) throw new Error('save target requires global memory; set ENGRAM_GLOBAL_DIR or run engram inject --global-path <path>');
   return scopes;
 }
 

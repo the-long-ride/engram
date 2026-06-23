@@ -44,7 +44,7 @@ test('migration dry-run reports counts from JSON configs', async () => {
   );
 
   // Init a workspace so there's something to discover.
-  await runEngram(cwd, { ...env }, ['init', '--no-skillset']);
+  await runEngram(cwd, { ...env }, ['inject', '--no-skillset']);
 
   // Dry-run migration.
   const dryRun = await runEngram(cwd, { ...env }, ['upgrade', '--db-migrate', '--dry-run']);
@@ -77,7 +77,7 @@ test('migration force writes to DB', async () => {
     }, null, 2)
   );
 
-  await runEngram(cwd, { ...env }, ['init', '--no-skillset']);
+  await runEngram(cwd, { ...env }, ['inject', '--no-skillset']);
 
   const force = await runEngram(cwd, { ...env }, ['upgrade', '--db-migrate', '--force']);
   assert.equal(force.code, 0, force.stderr);

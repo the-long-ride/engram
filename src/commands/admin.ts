@@ -57,7 +57,7 @@ export async function cmdSetSaveTarget(args: string[]): Promise<string> {
   if (value === 'status') return saveTargetStatus(ctx.config.scope, Boolean(ctx.roots.global));
   const target = parseSaveTarget(value, 'set-save-target');
   if (target === 'global' && !ctx.roots.global) {
-    throw new Error('set-save-target global requires global memory; set ENGRAM_GLOBAL_DIR or run engram init --global-path <path>');
+    throw new Error('set-save-target global requires global memory; set ENGRAM_GLOBAL_DIR or run engram inject --global-path <path>');
   }
   ctx.config.scope = target;
   await writeConfig(process.cwd(), ctx.config);
@@ -260,7 +260,7 @@ export async function cmdUpgrade(args: string[] = [], flags: Record<string, any>
 async function workspaceMemoryUpgradeRecord(plan: boolean, force: boolean): Promise<RecordBlock> {
   const root = workspaceRoot(process.cwd());
   if (!(await exists(root))) {
-    return { title: 'SKIPPED workspace memory', fields: [['Reason', 'workspace memory is not initialized; run engram init']] };
+    return { title: 'SKIPPED workspace memory', fields: [['Reason', 'workspace memory is not initialized; run engram inject']] };
   }
   if (plan) {
     return {
@@ -313,7 +313,7 @@ async function upgradePackageRecord(flags: Record<string, any>, plan: boolean): 
 async function globalMemoryUpgradeRecords(plan: boolean, force: boolean): Promise<RecordBlock[]> {
   const config = await loadConfig(process.cwd());
   const roots = scopeRootsForConfig(process.cwd(), config);
-  if (!roots.global) return [{ title: 'SKIPPED global memory', fields: [['Reason', 'global memory is not configured; run engram init --global-only --global-path <path>']] }];
+  if (!roots.global) return [{ title: 'SKIPPED global memory', fields: [['Reason', 'global memory is not configured; run engram inject --global-only --global-path <path>']] }];
   if (plan) return [{ title: 'PLAN global memory', fields: [['Path', roots.global], ['Action', 'reconcile global-only scaffold']] }];
   const lines = await initWorkspace(process.cwd(), force, config.global_git.branch, roots.global, { globalOnly: true });
   lines.push(...defaultProfileLines(await ensureDefaultProfile(process.cwd())));

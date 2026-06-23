@@ -43,7 +43,7 @@ export async function planGlobalRemote(flags: Record<string, any>, root: string,
   if (!process.stdin.isTTY || !process.stdout.isTTY) {
     return { branch, remoteUrl: '', lines: [
       'global git: no origin remote configured',
-      `To share global memory, run: engram init --global-remote <git-url> --global-branch ${branch}`
+      `To share global memory, run: engram inject --global-remote <git-url> --global-branch ${branch}`
     ] };
   }
   const rl = createInterface({ input, output });
@@ -71,7 +71,7 @@ export async function planWorkspaceSubmodule(flags: Record<string, any>): Promis
   if (flags['no-submodule']) return { branch, remoteUrl: '', enabled: false, lines: ['workspace submodule: skipped'] };
   if (flags.submodule || remoteUrl) return { branch, remoteUrl, enabled: true };
   if (!process.stdin.isTTY || !process.stdout.isTTY) {
-    return { branch, remoteUrl: '', enabled: false, lines: ['workspace submodule: skipped (run engram init --submodule to enable)'] };
+    return { branch, remoteUrl: '', enabled: false, lines: ['workspace submodule: skipped (run engram inject --submodule to enable)'] };
   }
   const rl = createInterface({ input, output });
   try {

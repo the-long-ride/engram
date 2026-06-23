@@ -28,7 +28,7 @@ test('short command aliases dispatch to canonical commands', async () => {
 
 test('unsupported public flags fail instead of silently degrading', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
-  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, ['inject']);
   assert.equal((await runEngram(cwd, env, ['export', '--format', 'bogus'])).code, 1);
   assert.equal((await runEngram(cwd, env, ['resolve-conflicts', '--auto'])).code, 1);
   await rm(cwd, { recursive: true, force: true });

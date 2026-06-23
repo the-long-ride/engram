@@ -8,7 +8,7 @@ import { initGit, runEngram, tempWorkspace, workspaceMemoryRoot } from './helper
 test('resolve-conflicts writes and stages only workspace memory files', async () => {
   const { cwd, env } = await tempWorkspace('engram-conflict-');
   initGit(cwd);
-  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, ['inject']);
   const memoryFile = path.join(workspaceMemoryRoot(cwd), 'rules', 'merge-rule.md');
   await writeFile(memoryFile, conflictMemory());
   await writeFile(path.join(cwd, 'workspace.txt'), '<<<<<<< ours\ncode\n=======\ncode2\n>>>>>>> theirs\n');
@@ -26,7 +26,7 @@ test('resolve-conflicts writes and stages only workspace memory files', async ()
 test('resolve-conflicts can append a metacognize source pack for agent restructuring', async () => {
   const { cwd, env } = await tempWorkspace('engram-conflict-metacognize-');
   initGit(cwd);
-  await runEngram(cwd, env, ['init', '--no-skillset']);
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
   const memoryFile = path.join(workspaceMemoryRoot(cwd), 'rules', 'merge-rule.md');
   await writeFile(memoryFile, conflictMemory());
 

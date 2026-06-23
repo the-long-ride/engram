@@ -26,7 +26,7 @@ test('update-global-folder can retarget config without moving memory', async () 
   delete customEnv.ENGRAM_GLOBAL_DIR;
   const oldGlobal = path.join(cwd, 'old-global');
   const newGlobal = path.join(cwd, 'new-global');
-  assert.equal((await runEngram(cwd, customEnv, ['init', '--global-path', oldGlobal, '--no-skillset'])).code, 0);
+  assert.equal((await runEngram(cwd, customEnv, ['inject', '--global-path', oldGlobal, '--no-skillset'])).code, 0);
 
   const updated = await runEngram(cwd, customEnv, ['set', 'global', 'memory', 'path', 'to', newGlobal]);
   assert.equal(updated.code, 0, updated.stderr);
@@ -48,7 +48,7 @@ test('update-global-folder moves an old global root into a renamed path', async 
   delete customEnv.ENGRAM_GLOBAL_DIR;
   const oldGlobal = path.join(cwd, 'old-global');
   const newGlobal = path.join(cwd, 'renamed-global');
-  assert.equal((await runEngram(cwd, customEnv, ['init', '--global-path', oldGlobal, '--no-skillset'])).code, 0);
+  assert.equal((await runEngram(cwd, customEnv, ['inject', '--global-path', oldGlobal, '--no-skillset'])).code, 0);
   const saved = await runEngram(cwd, customEnv, ['save', 'knowledge', '--scope', 'global', 'Moved global memory survives'], 'A\n');
   assert.equal(saved.code, 0, saved.stderr);
   await writeFile(path.join(oldGlobal, 'custom-notes.txt'), 'custom root file\n');
@@ -73,7 +73,7 @@ test('update-global-folder refuses to move into a destination with memory files'
   delete customEnv.ENGRAM_GLOBAL_DIR;
   const oldGlobal = path.join(cwd, 'old-global');
   const newGlobal = path.join(cwd, 'existing-global');
-  assert.equal((await runEngram(cwd, customEnv, ['init', '--global-path', oldGlobal, '--no-skillset'])).code, 0);
+  assert.equal((await runEngram(cwd, customEnv, ['inject', '--global-path', oldGlobal, '--no-skillset'])).code, 0);
   await mkdir(path.join(newGlobal, 'knowledge'), { recursive: true });
   await writeFile(path.join(newGlobal, 'knowledge', 'existing.md'), 'keep this\n');
 
@@ -92,7 +92,7 @@ test('update-global-folder refuses to move into a destination with memory files'
 
 test('ignore add and check manage visibility', async () => {
   const { cwd, env } = await tempWorkspace('engram-ignore-');
-  await runEngram(cwd, env, ['init', '--no-skillset']);
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
   // Check a path that is not ignored.
   const check1 = await runEngram(cwd, env, ['ignore', 'check', 'knowledge/public.md']);
   assert.equal(check1.stdout.trim(), 'visible');
@@ -109,7 +109,7 @@ test('ignore add and check manage visibility', async () => {
 
 test('set-role configures developer roles', async () => {
   const { cwd, env } = await tempWorkspace('engram-role-');
-  await runEngram(cwd, env, ['init', '--no-skillset']);
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
   // Default status shows no roles.
   const status1 = await runEngram(cwd, env, ['set-role']);
   assert.match(status1.stdout, /Roles:\s*\(?none\)?/i);
@@ -129,7 +129,7 @@ test('set-role configures developer roles', async () => {
 
 test('set-read configures read behavior', async () => {
   const { cwd, env } = await tempWorkspace('engram-read-');
-  await runEngram(cwd, env, ['init', '--no-skillset']);
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
   // Default.
   const s1 = await runEngram(cwd, env, ['set-read', 'status']);
   assert.match(s1.stdout, /Read behavior: auto/);
@@ -143,7 +143,7 @@ test('set-read configures read behavior', async () => {
 
 test('set-proof configures per-response proof behavior', async () => {
   const { cwd, env } = await tempWorkspace('engram-proof-');
-  await runEngram(cwd, env, ['init', '--no-skillset']);
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
   const status = await runEngram(cwd, env, ['set-proof', 'status']);
   assert.match(status.stdout, /Proof behavior: off/);
   const set = await runEngram(cwd, env, ['set-proof', 'compact']);
@@ -154,7 +154,7 @@ test('set-proof configures per-response proof behavior', async () => {
 
 test('set-rule-variant configures rule strictness', async () => {
   const { cwd, env } = await tempWorkspace('engram-rv-');
-  await runEngram(cwd, env, ['init', '--no-skillset']);
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
   // Default.
   const s1 = await runEngram(cwd, env, ['set-rule-variant', 'status']);
   assert.match(s1.stdout, /Rule variants:/);
@@ -172,7 +172,7 @@ test('set-rule-variant configures rule strictness', async () => {
 
 test('set-save-target configures default save scope', async () => {
   const { cwd, env } = await tempWorkspace('engram-st-');
-  await runEngram(cwd, env, ['init', '--no-skillset']);
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
   // Status default.
   const s1 = await runEngram(cwd, env, ['set-save-target', 'status']);
   assert.match(s1.stdout, /Save target:/);
@@ -186,7 +186,7 @@ test('set-save-target configures default save scope', async () => {
 
 test('set-load-limit configures the compact load cap', async () => {
   const { cwd, env } = await tempWorkspace('engram-ll-');
-  await runEngram(cwd, env, ['init', '--no-skillset']);
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
   // Default.
   const s1 = await runEngram(cwd, env, ['set-load-limit', 'status']);
   assert.match(s1.stdout, /Load limit: 8/);
@@ -203,7 +203,7 @@ test('set-load-limit configures the compact load cap', async () => {
 
 test('unlink reports skipped when no files exist', async () => {
   const { cwd, env } = await tempWorkspace('engram-unlink-');
-  await runEngram(cwd, env, ['init', '--no-skillset']);
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
   // Unlink should report skipped files (nothing to unlink).
   const unlink = await runEngram(cwd, env, ['unlink', 'codex']);
   assert.equal(unlink.code, 0, unlink.stderr);

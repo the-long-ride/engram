@@ -321,14 +321,14 @@ function saveScopes(ctx: Awaited<ReturnType<typeof getContext>>, flags: Record<s
       ? 'global'
     : ctx.config.scope;
   if (requested && target !== 'workspace' && !ctx.roots.global) {
-    throw new Error('save --scope requires global memory; set ENGRAM_GLOBAL_DIR or run engram init --global-path <path>');
+    throw new Error('save --scope requires global memory; set ENGRAM_GLOBAL_DIR or run engram inject --global-path <path>');
   }
   const configured = writeScopes(target, ctx.config);
   const available = configured.filter((scope) => Boolean(ctx.roots[scope]));
   if (requested && available.length !== configured.length) {
     throw new Error(`save --scope ${requested} is not available for active profile ${ctx.profile.active || '<none>'}`);
   }
-  if (!available.length) throw new Error('save target requires global memory; set ENGRAM_GLOBAL_DIR, create a profile, or run engram init --global-path <path>');
+  if (!available.length) throw new Error('save target requires global memory; set ENGRAM_GLOBAL_DIR, create a profile, or run engram inject --global-path <path>');
   return available;
 }
 

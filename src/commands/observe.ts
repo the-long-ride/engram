@@ -11,7 +11,7 @@ export async function cmdObserve(args: string[], flags: Record<string, any> = {}
   const ctx = await getContext();
   const scopes = flags.scope ? writeScopes(parseSaveTarget(flags.scope, 'observe --scope'), ctx.config) : writeScopes(ctx.config.scope, ctx.config);
   const scope = scopes[0];
-  if (!scope) throw new Error('observe --scope requires global memory; set ENGRAM_GLOBAL_DIR or run engram init --global-path <path>');
+  if (!scope) throw new Error('observe --scope requires global memory; set ENGRAM_GLOBAL_DIR or run engram inject --global-path <path>');
   const root = ctx.roots[scope];
   if (!root) throw new Error(`${scope} memory is not configured`);
   const sourceFile = observeFile(flags);

@@ -15,7 +15,7 @@ test('mcp status and save proposal do not write silently', async () => {
   process.env.ENGRAM_CONFIG_DIR = env.ENGRAM_CONFIG_DIR;
   process.env.ENGRAM_GLOBAL_DIR = env.ENGRAM_GLOBAL_DIR;
   try {
-    await runCli(['init']);
+    await runCli(['inject']);
     const status = await handleMcp({ id: 1, method: 'engram_status', params: {} });
     assert.match(status.result, /Memory health/);
 

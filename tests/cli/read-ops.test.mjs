@@ -7,7 +7,7 @@ import { testMemory, duplicateFixtureMemory } from './fixtures.mjs';
 
 test('export, health, search, stats, load dry-run, and conflict dry-run work', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
-  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, ['inject']);
   await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Frontend uses React and pnpm'], 'A\n');
   assert.match((await runEngram(cwd, env, ['health'])).stdout, /Memory health/);
   assert.match((await runEngram(cwd, env, ['search', 'React'])).stdout, /frontend-uses-react/);
@@ -27,7 +27,7 @@ test('export, health, search, stats, load dry-run, and conflict dry-run work', a
 
 test('deduplicate semantic reports normalized local duplicate candidates', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
-  await runEngram(cwd, env, ['init', '--no-skillset']);
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
   const rules = path.join(workspaceMemoryRoot(cwd), 'rules');
   await mkdir(rules, { recursive: true });
   const memory = ({ id, title, tags, context, content, example }) => `---
@@ -85,7 +85,7 @@ ${example}
 
 test('load dry-run reports broad-match refinement and --all loads every visible match', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
-  await runEngram(cwd, env, ['init', '--no-skillset']);
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
   const dir = path.join(workspaceMemoryRoot(cwd), 'knowledge');
   await mkdir(dir, { recursive: true });
   for (let index = 1; index <= 10; index += 1) {
@@ -139,7 +139,7 @@ test('load dry-run reports broad-match refinement and --all loads every visible 
 
 test('repair reports invalid memory files skipped by index rebuild', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
-  await runEngram(cwd, env, ['init', '--no-skillset']);
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
   const invalid = path.join(workspaceMemoryRoot(cwd), 'rules', 'broken.md');
   await mkdir(path.dirname(invalid), { recursive: true });
   await writeFile(invalid, [
@@ -168,7 +168,7 @@ test('repair reports invalid memory files skipped by index rebuild', async () =>
 
 test('ignored memory stays hidden from search, export, and stats', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
-  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, ['inject']);
   await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Visible React memory'], 'A\n');
   await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Hidden leakcheck memory'], 'A\n');
   await writeFile(path.join(cwd, '.engramignore'), 'knowledge/hidden-leakcheck-memory.md\n');
@@ -180,7 +180,7 @@ test('ignored memory stays hidden from search, export, and stats', async () => {
 
 test('live sync respects enabled flag and writes configured target when enabled', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
-  await runEngram(cwd, env, ['init']);
+  await runEngram(cwd, env, ['inject']);
   await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Cursor sync memory'], 'A\n');
   const disabled = await runEngram(cwd, env, ['sync']);
   assert.equal(disabled.code, 0, disabled.stderr);
@@ -200,7 +200,7 @@ test('live sync respects enabled flag and writes configured target when enabled'
 
 test('graph routing, observe inbox, archive, and benchmark work', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
-  await runEngram(cwd, env, ['init', '--no-skillset']);
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
   await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Auth tokens refresh before expiry'], 'A\n');
   await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Session middleware validates auth tokens'], 'A\n');
   const graph = await runEngram(cwd, env, ['graph', 'auth tokens']);

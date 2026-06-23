@@ -7,15 +7,12 @@ import { spawnSync } from 'node:child_process';
 import { initGit, runEngram, tempWorkspace, workspaceMemoryRoot } from '../helpers.mjs';
 import { machineProfileName } from './fixtures.mjs';
 
-test('init, help, save reject, save accept, load, verify, audit', async () => {
+test('inject, help, save reject, save accept, load, verify, audit', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
-  const init = await runEngram(cwd, env, ['init']);
-  assert.equal(init.code, 0, init.stderr);
-  assert.match(init.stdout, /⚠️ engram init is deprecated and has been renamed to engram inject/);
-  assert.match(init.stdout, /✔ engram is injected!/);
 
   const inject = await runEngram(cwd, env, ['inject']);
   assert.equal(inject.code, 0, inject.stderr);
+  assert.match(inject.stdout, /SYNTHETIC MEMORY/);
   assert.match(inject.stdout, /✔ engram is injected!/);
   assert.match(inject.stdout, /engram entry/);
 

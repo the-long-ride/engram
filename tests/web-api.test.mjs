@@ -256,7 +256,7 @@ test('web UI api core data reports duplicate memory candidates and scope metadat
     const path = await import('node:path');
     const { apiCoreData, apiGetMemoryContent } = await import('../dist/core/web/api.js');
 
-    await runEngram(cwd, env, ['init', '--no-skillset']);
+    await runEngram(cwd, env, ['inject', '--no-skillset']);
     const rules = path.join(workspaceMemoryRoot(cwd), 'rules');
     await mkdir(rules, { recursive: true });
     const memory = ({ id, title, content }) => `---

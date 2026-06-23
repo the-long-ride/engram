@@ -255,8 +255,8 @@ proposal and collect explicit human approval before invoking a CLI write flow.
 | `engram rebuild-index [workspace|global]` | Explicitly rebuild memory indexes, graph files, and eligible vector sidecars |
 | `engram resolve-conflicts [--dry-run] [--metacognize] [--accept-all]` | Resolve and stage only `.agents/.engram/` conflicts, optionally appending a workspace metacognize source pack |
 | `engram stats` | Show visible memory counts, scope mix, and author ownership |
-| `engram link [target|all] [--global] [--plan] [--force]` | Link skillset, MCP, slash adapters, and agent hooks to an AI agent; reports skipped reasons for partial hosts |
-| `engram unlink [target|all] [--global]` | Remove skillset, MCP, managed blocks, and agent hooks |
+| `engram link [all|list|target] [--global] [--force] [--all-supported]` | Link skillset, MCP, slash adapters, and agent hooks to an AI agent; reports skipped reasons for partial hosts |
+| `engram unlink [all|target] [--global] [--force]` | Remove skillset, MCP, managed blocks, and agent hooks |
 | `engram agent-hook --host codex|claude|gemini` | Internal JSON hook runtime; reads hook payload from stdin and emits host-compatible JSON to stdout |
 | `engram clone-memory workspace global [--force] [--dry-run] [--metacognize] [--accept-all]` / `engram clone-memory global workspace [--force] [--dry-run] [--metacognize] [--accept-all]` | Clone active `rules/`, `skills/`, and `knowledge/` Markdown memories between workspace and global scopes while rewriting destination scope frontmatter and hashes; `--metacognize` routes verified source memories through save-session-style approval and cannot be combined with `--force` |
 | `engram sync` | Sync global memory Git and refresh live-sync targets |

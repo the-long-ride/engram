@@ -14,6 +14,7 @@ import {
   validateConfigPatch,
   type ConfigPatchValidation
 } from './config-schema.js';
+import { resolveUnderRoot } from './path-utils.js';
 
 async function importQueries(): Promise<any> {
   const url = new URL('../config-db/queries.js', import.meta.url).href;
@@ -469,6 +470,13 @@ export interface CoreRelationshipLink {
   score?: number;
 }
 
+type BrowseDirectoryEntry = {
+  name: string;
+  path: string;
+};
+
+let driveCache: { at: number; drives: string[] } | null = null;
+
 export interface CorePanelData {
   generatedAt: string;
   scope: {
@@ -491,7 +499,7 @@ export interface CorePanelData {
   warning: string;
 }
 
-export async function apiCoreData(cwd: string, options: { semantic?: boolean; rebuild?: boolean; scope?: CoreScopeFilter } = {}): Promise<CorePanelData> {
+export async function apiCoreData(cwd: string, options: { semantic?: boolean; rebuild?: boolean; scope?: CoreScopeFilter; limit?: number } = {}): Promise<CorePanelData> {
   const filter: CoreScopeFilter = options.scope === 'workspace' || options.scope === 'global' ? options.scope : 'all';
   const ctx = await getContext(cwd, { rebuild: options.rebuild === true });
   const activeProfile = ctx.profile.active || '<none>';
@@ -539,7 +547,9 @@ export async function apiCoreData(cwd: string, options: { semantic?: boolean; re
 
   // 4. Calculate duplicate pairs
   const pairs = coreDuplicatePairs(filteredEntries, options.semantic === true);
-  const duplicates = pairs.map(([a, b, score], index) => ({
+  const maxPairs = Math.max(1, Math.min(100, Number(options.limit || 50)));
+  const visiblePairs = pairs.slice(0, maxPairs);
+  const duplicates = visiblePairs.map(([a, b, score], index) => ({
     id: `dup-${index + 1}`,
     method: options.semantic === true ? 'semantic' as const : 'strict' as const,
     score: Number(score.toFixed(3)),
@@ -707,16 +717,25 @@ function coreRelationshipData(
   return { nodes: [...nodes.values()], links };
 }
 
+function corePromptRef(ref: CoreDuplicateRef): string {
+  return `- id=${ref.id} profile=${ref.profile} scope=${ref.scope} file=${ref.file}`;
+}
+
 function corePrompts(filter: CoreScopeFilter, duplicates: CoreDuplicateCandidate[] = []): CorePanelData['prompts'] {
   const scopeFlag = filter === 'workspace' ? '--workspace' : filter === 'global' ? '--global' : '--all';
   const duplicateIds = Array.from(new Set(duplicates.flatMap((d) => [d.a.id, d.b.id])));
   const loadCommand = duplicateIds.length > 0
     ? `engram load --id ${duplicateIds.join(',')}`
     : 'engram load --id id1,id2';
+  const refs = Array.from(new Map(duplicates.flatMap((d) => [d.a, d.b]).map((ref) => [ref.key, ref])).values());
+  const refList = refs.length ? refs.map(corePromptRef).join('\n') : '- id=id1 profile=profile scope=scope file=path';
   return {
     resolveDuplicates: [
       'Review these Engram duplicate or semantically overlapping candidates.',
-      loadCommand,
+      `Convenience command for ids visible in the active profile: ${loadCommand}`,
+      '',
+      'Candidate refs:',
+      refList,
       '',
       'For each pair, decide whether to merge, archive, or keep both.',
       'Note: Candidates with middle semantic similarity can also be merged if they share related context or rules.',
@@ -748,7 +767,7 @@ export async function apiGetMemoryContent(cwd: string, profileName: string, scop
     throw new Error(`Profile ${profileName} is not configured or has no global path`);
   }
 
-  const absPath = path.join(root, file);
+  const absPath = resolveUnderRoot(root, file);
   if (!(await exists(absPath))) {
     throw new Error(`Memory file not found at ${absPath}`);
   }
@@ -756,45 +775,72 @@ export async function apiGetMemoryContent(cwd: string, profileName: string, scop
   return readText(absPath);
 }
 
-export async function apiBrowseDirectories(currentPath: string): Promise<any> {
-  const fs = await import('node:fs/promises');
-  const path = await import('node:path');
+async function listWindowsDrives(): Promise<string[]> {
+  if (process.platform !== 'win32') return [];
+  const now = Date.now();
+  if (driveCache && now - driveCache.at < 5000) return driveCache.drives;
 
-  let targetPath = currentPath ? path.resolve(currentPath) : process.cwd();
-  
+  const fs = await import('node:fs/promises');
+  const drives: string[] = [];
+  for (let i = 65; i <= 90; i += 1) {
+    const drive = String.fromCharCode(i) + ':\\';
+    try {
+      const stat = await fs.stat(drive);
+      if (stat.isDirectory()) drives.push(drive);
+    } catch {
+      // Drive not available.
+    }
+  }
+  driveCache = { at: now, drives };
+  return drives;
+}
+
+export async function apiBrowseDirectories(currentPath: string, cwd = process.cwd()): Promise<any> {
+  const fs = await import('node:fs/promises');
+  const pathMod = await import('node:path');
+  const drives = await listWindowsDrives();
+  const requested = currentPath && String(currentPath).trim()
+    ? String(currentPath)
+    : cwd;
+  let targetPath = pathMod.resolve(requested);
+
   try {
     const stats = await fs.stat(targetPath);
-    if (!stats.isDirectory()) {
-      targetPath = path.dirname(targetPath);
-    }
+    if (!stats.isDirectory()) targetPath = pathMod.dirname(targetPath);
   } catch {
-    targetPath = process.cwd();
+    return {
+      ok: false,
+      currentPath: targetPath,
+      parentPath: '',
+      directories: [],
+      drives,
+      error: `Cannot access directory: ${requested}`
+    };
   }
 
-  const parentPath = path.resolve(targetPath, '..');
-  
-  const entries = await fs.readdir(targetPath, { withFileTypes: true }).catch(() => []);
-  const directories: string[] = [];
-  for (const entry of entries) {
-    if (entry.isDirectory()) {
-      directories.push(entry.name);
-    }
+  let entries: Awaited<ReturnType<typeof fs.readdir>>;
+  try {
+    entries = await fs.readdir(targetPath, { withFileTypes: true });
+  } catch {
+    return {
+      ok: false,
+      currentPath: targetPath,
+      parentPath: pathMod.resolve(targetPath, '..'),
+      directories: [],
+      drives,
+      error: `Cannot read directory: ${targetPath}`
+    };
   }
 
-  // Sort directories alphabetically (case-insensitive)
-  directories.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+  const directories: BrowseDirectoryEntry[] = entries
+    .filter((entry: { isDirectory: () => boolean }) => entry.isDirectory())
+    .map((entry: { name: string }) => ({
+      name: entry.name,
+      path: pathMod.join(targetPath, entry.name)
+    }))
+    .sort((a: BrowseDirectoryEntry, b: BrowseDirectoryEntry) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
 
-  const drives: string[] = [];
-  if (process.platform === 'win32') {
-    for (let i = 65; i <= 90; i++) {
-      const drive = String.fromCharCode(i) + ':\\';
-      try {
-        const stat = await fs.stat(drive);
-        if (stat) drives.push(drive);
-      } catch {}
-    }
-  }
-
+  const parentPath = pathMod.resolve(targetPath, '..');
   return {
     ok: true,
     currentPath: targetPath,

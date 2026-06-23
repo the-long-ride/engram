@@ -145,10 +145,10 @@ npm install -g @the-long-ride/engram
 教授 AI 助手如何与 Engram 交互（加载、保存、维护）：
 ```bash
 # 列出支持的智能体
-engram is list
+engram link list
 
 # 全局安装 Skillset 到您的智能体
-engram is --global <您的智能体名称>
+engram link --global <您的智能体名称>
 ```
 *(替换 `<您的智能体名称>` 为您的助手名字；使用 `agents-md` 用于未列出但能读取 `AGENTS.md` 的智能体。)*
 
@@ -159,7 +159,6 @@ engram link gemini
 
 可选的自动加载钩子适用于能够在会话开始和后续提示轮次中注入上下文的主机：
 ```bash
-engram link codex --plan
 engram link codex
 engram link claude
 engram link gemini
@@ -183,6 +182,7 @@ engram inject
 engram entry
 ```
 ![Engram Control Panel](https://raw.githubusercontent.com/the-long-ride/engram/main/media/demo/demo-engram-entry.png)
+![Engram Connections](../../media/demo/demo-engram-entry-connections.png)
 
 ---
 

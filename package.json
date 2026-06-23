@@ -1,6 +1,6 @@
 {
   "name": "@the-long-ride/engram",
-  "version": "0.0.18",
+  "version": "0.0.19",
   "description": "Portable, human-approved memory for AI agents. Grow with you & your teams.",
   "keywords": [
     "cli",
@@ -60,7 +60,7 @@
     "test:package": "npm run build && node --test tests/publish/*.test.mjs",
     "coverage": "npm run generate:version && tsc --sourceMap false && node --experimental-test-coverage --test tests/core.test.mjs tests/safety.test.mjs tests/conflict.test.mjs tests/init-migration.test.mjs tests/mcp.test.mjs tests/skillset.test.mjs tests/tamper.test.mjs tests/web-api.test.mjs tests/publish/*.test.mjs tests/cli/*.test.mjs",
     "debug:cli": "npm run build && node --inspect-brk dist/bin/engram.js",
-    "lint:lines": "node scripts/check-lines.mjs",
+    "lint:lines": "node scripts/check-lines.mjs && node scripts/check-web-assets.mjs",
     "pack:dry-run": "npm pack --dry-run --ignore-scripts",
     "publish": "npm publish --access public --ignore-scripts",
     "prepublishOnly": "npm run test:package",

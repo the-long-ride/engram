@@ -145,10 +145,10 @@ npm install -g @the-long-ride/engram
 Dạy tác nhân AI cách tương tác với Engram:
 ```bash
 # Kiểm tra danh sách tác nhân hỗ trợ
-engram is list
+engram link list
 
 # Cài đặt bộ kỹ năng toàn cục cho tác nhân của bạn
-engram is --global <tên-tác-nhân-ai>
+engram link --global <tên-tác-nhân-ai>
 ```
 *(Thay `<tên-tác-nhân-ai>` bằng tên tác nhân phù hợp; dùng `agents-md` nếu tác nhân chưa được hỗ trợ nhưng đọc `AGENTS.md`.)*
 
@@ -159,7 +159,6 @@ engram link gemini
 
 Các hook tự động tải tùy chọn khả dụng cho các host có thể bơm ngữ cảnh ở cả thời điểm bắt đầu phiên và các lượt prompt sau đó:
 ```bash
-engram link codex --plan
 engram link codex
 engram link claude
 engram link gemini
@@ -182,6 +181,7 @@ Chạy lệnh sau để trực quan hóa, tìm kiếm và cấu hình các profi
 engram entry
 ```
 ![Engram Control Panel](https://raw.githubusercontent.com/the-long-ride/engram/main/media/demo/demo-engram-entry.png)
+![Engram Connections](../../media/demo/demo-engram-entry-connections.png)
 
 ---
 

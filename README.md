@@ -148,12 +148,13 @@ To configure your settings, manage profiles, and connect AI agents in a premium 
 ```bash
 engram entry
 ```
+![Engram Connections](media/demo/demo-engram-entry-connections.png)
 Go to the **Connections** tab to automatically scan and link Engram to your local AI agents (installs skillsets and hooks).
 
 Alternatively, you can manually link Engram to your agent:
 ```bash
-# Link Engram globally to your agent (installs skillset + hooks)
-engram link gemini
+# Link Engram in this workspace (installs skillset + MCP config + hooks where supported)
+engram link codex
 ```
 
 For Gemini / Antigravity surfaces:
@@ -164,7 +165,6 @@ engram link gemini
 Optional auto-load hooks are available for hosts that can inject context at both
 session start and later prompt turns:
 ```bash
-engram link codex --plan
 engram link codex
 engram link claude
 engram link gemini
@@ -230,7 +230,7 @@ When an AI agent proposes `TYPE: ... | TEXT: ...` memory candidates, it may add 
 | **Clone Memory** | `engram clone-memory <src> <dest>` | `/engram clone workspace memory to global` |
 | **Manage Workspaces** | `engram workspace list|info|set|unregister|link|unlink` | `/engram workspace list` |
 | **View/Set Config** | `engram config view|set` | `/engram config set <key> <value>` |
-| **Launch Config Panel** | `engram panel` | `/engram panel` |
+| **Launch Web UI** | `engram entry` | `/engram entry` |
 | **Set Active Roles** | `engram set-role <roles>` | `/engram set-role <roles>` |
 | **Set Rule Strictness** | `engram set-rule-variant <variant>` | `/engram set-rule-variant <variant>` |
 | **Verify & Repair** | `engram verify` / `engram repair` | `/engram verify` / `/engram repair` |

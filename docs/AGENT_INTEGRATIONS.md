@@ -100,14 +100,13 @@ as `~/.claude/skills/engram/SKILL.md` for Claude Code.
 To install automatic context injection hooks where v1 supports them:
 
 ```bash
-engram link codex --plan
 engram link codex
 engram link claude
 engram link gemini
 engram set-proof compact
 ```
 
-Use --global for user-level config and ngram unlink to remove
+Use `--global` for user-level config and `engram unlink` to remove
 only Engram-managed hook entries. `engram set-read startup|auto|always|manual|off`
 controls runtime behavior. `auto` loads on session start and later injects again
 only when routed Engram context changes; the hook cache stores hashes,
@@ -155,9 +154,7 @@ Gemini MCP config file.
 | `cline` | Skipped | None written | N/A | Hook support is plugin-based, not aligned with Engram's file-first adapter installer in v1 |
 | `windsurf` / `cascade` | Skipped | None written | N/A | Cascade hooks are blocking/audit hooks, not reliable context injection hooks |
 
-`engram link all --plan` reports supported writes and deterministic
-`SKIPPED` reasons for partial hosts across skillset instruction files, MCP config,
-slash adapters, and agent hooks in a single unified install. `engram unlink`
+`engram link all` installs the public target set and reports deterministic `SKIPPED` reasons for partial hosts across skillset instruction files, MCP config, slash adapters, and agent hooks in one unified install. `engram unlink`
 removes all of these together as well.
 
 ## Recommended Flow
@@ -459,7 +456,7 @@ command in Gemini CLI. For now, Engram also treats `gemini` as the advertised
 target for Antigravity 2.0, Antigravity CLI, and Antigravity IDE because current
 Google docs still tie Antigravity context and skills to Gemini-compatible
 locations. The hidden `antigravity` and `antigravity-cli` target names remain
-explicit compatibility paths, but they are not shown in `engram is list`, help,
+explicit compatibility paths, but they are not shown in `engram link list`, help,
 completion, or `all`.
 
 For hooks, `gemini` is also the public Antigravity fallback. The hidden

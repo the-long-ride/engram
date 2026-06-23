@@ -30,6 +30,12 @@ import {
 
 const PREFERRED_PORT = 14620;
 const RESERVED_PORTS = new Set([80, 443, 3000, 5001, 8080]);
+const MAX_POST_BODY_BYTES = 1024 * 1024;
+const SECURITY_HEADERS = {
+  'Content-Security-Policy': "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'",
+  'Referrer-Policy': 'no-referrer',
+  'X-Content-Type-Options': 'nosniff'
+};
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -70,11 +76,21 @@ function openBrowser(url: string): void {
 }
 
 function readBody(req: any): Promise<string> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     let data = '';
-    req.on('data', (chunk: any) => { data += String(chunk); });
+    let bytes = 0;
+    req.on('data', (chunk: any) => {
+      const text = String(chunk);
+      bytes += Buffer.byteLength(text);
+      if (bytes > MAX_POST_BODY_BYTES) {
+        reject(new Error('Request body too large'));
+        req.destroy();
+        return;
+      }
+      data += text;
+    });
     req.on('end', () => resolve(data));
-    req.on('error', () => resolve(''));
+    req.on('error', (error: Error) => reject(error));
   });
 }
 
@@ -88,7 +104,7 @@ async function handleRequest(req: any, res: any, cwd: string): Promise<void> {
 
   const json = (status: number, body: any) => {
     const s = JSON.stringify(body);
-    res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.writeHead(status, { ...SECURITY_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
     res.end(s);
   };
 
@@ -106,25 +122,25 @@ async function handleRequest(req: any, res: any, cwd: string): Promise<void> {
   }
 
   if (url === '/' && method === 'GET') {
-    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.writeHead(200, { ...SECURITY_HEADERS, 'Content-Type': 'text/html; charset=utf-8' });
     res.end(readAsset('panel.html'));
     return;
   }
 
   if (url === '/panel.css' && method === 'GET') {
-    res.writeHead(200, { 'Content-Type': 'text/css; charset=utf-8' });
+    res.writeHead(200, { ...SECURITY_HEADERS, 'Content-Type': 'text/css; charset=utf-8' });
     res.end(readAsset('panel.css'));
     return;
   }
 
   if (url === '/panel.js' && method === 'GET') {
-    res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8' });
+    res.writeHead(200, { ...SECURITY_HEADERS, 'Content-Type': 'application/javascript; charset=utf-8' });
     res.end(readAsset('panel.js'));
     return;
   }
 
   if ((url === '/favicon.svg' || url === '/favicon.ico') && method === 'GET') {
-    res.writeHead(200, { 'Content-Type': 'image/svg+xml' });
+    res.writeHead(200, { ...SECURITY_HEADERS, 'Content-Type': 'image/svg+xml' });
     res.end(readAsset('favicon.svg'));
     return;
   }
@@ -169,13 +185,23 @@ async function handleRequest(req: any, res: any, cwd: string): Promise<void> {
 
   if (method === 'POST' && url.startsWith('/api/')) {
     let body: any = {};
-    try { body = JSON.parse(await readBody(req)); } catch { json(400, { error: 'Invalid JSON' }); return; }
+    try {
+      body = JSON.parse(await readBody(req));
+    } catch (error: any) {
+      if (error.message === 'Request body too large') {
+        json(413, { error: error.message });
+        return;
+      }
+      json(400, { error: 'Invalid JSON' });
+      return;
+    }
     try {
       if (url === '/api/core') {
         const data = await apiCoreData(cwd, {
           semantic: body.semantic === true,
           rebuild: body.rebuild === true,
-          scope: body.scope
+          scope: body.scope,
+          limit: Number(body.limit || 50)
         });
         json(200, { ok: true, data });
         return;
@@ -185,7 +211,7 @@ async function handleRequest(req: any, res: any, cwd: string): Promise<void> {
         return;
       }
       if (url === '/api/browse') {
-        const result = await apiBrowseDirectories(body.path);
+        const result = await apiBrowseDirectories(body.path, cwd);
         json(200, result);
         return;
       }

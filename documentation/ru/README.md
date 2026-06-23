@@ -145,10 +145,10 @@ npm install -g @the-long-ride/engram
 Обучите вашего ИИ-ассистента работе с памятью (чтение, сохранение, обслуживание):
 ```bash
 # Список поддерживаемых агентов
-engram is list
+engram link list
 
 # Установка набора навыков (skillset) для агента
-engram is --global <имя_агента>
+engram link --global <имя_агента>
 ```
 *(Замените `<имя_агента>` на имя вашего ассистента; используйте `agents-md` для неподдерживаемых агентов, умеющих читать `AGENTS.md`.)*
 
@@ -159,7 +159,6 @@ engram link gemini
 
 Необязательные хуки автозагрузки доступны для хостов, которые могут внедрять контекст как при запуске сессии, так и при последующих ходах промпта:
 ```bash
-engram link codex --plan
 engram link codex
 engram link claude
 engram link gemini
@@ -183,6 +182,7 @@ engram inject
 engram entry
 ```
 ![Engram Control Panel](https://raw.githubusercontent.com/the-long-ride/engram/main/media/demo/demo-engram-entry.png)
+![Engram Connections](../../media/demo/demo-engram-entry-connections.png)
 
 ---
 

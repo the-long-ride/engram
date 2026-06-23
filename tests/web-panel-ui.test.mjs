@@ -130,3 +130,47 @@ test('panel JS prepends /engram prefix to copied prompts', async () => {
   assert.match(panel, /var val = '\/engram ' \+ text;/);
   assert.match(panel, /window\._modalCopyContent = '\/engram ' \+ text;/);
 });
+
+
+test('folder browser avoids window globals and client path concatenation', async () => {
+  const panel = await readFile(new URL('../src/core/web/panel.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(panel, /window\.dirBrowserGo/);
+  assert.doesNotMatch(panel, /window\.dirBrowserSelect/);
+  assert.doesNotMatch(panel, /currentPath + separator + dName/);
+  assert.match(panel, /data-dir-path/);
+  assert.match(panel, /wireDirBrowser/);
+});
+
+test('folder browser renders explicit API errors', async () => {
+  const panel = await readFile(new URL('../src/core/web/panel.js', import.meta.url), 'utf8');
+  assert.match(panel, /dir-browser-error/);
+  assert.match(panel, /Cannot access directory/);
+});
+
+test('global_path validation ignores stale async responses', async () => {
+  const panel = await readFile(new URL('../src/core/web/panel.js', import.meta.url), 'utf8');
+  assert.match(panel, /var _cfgValidationSeq = 0/);
+  assert.match(panel, /validationSeq !== _cfgValidationSeq/);
+});
+
+test('Core memory refs use data attributes instead of inline onclick args', async () => {
+  const panel = await readFile(new URL('../src/core/web/panel.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(panel, /onclick="viewMemory\('/);
+  assert.doesNotMatch(panel, /onclick="copyResolvePairPrompt\('/);
+  assert.match(panel, /data-action="view-memory"/);
+  assert.match(panel, /data-action="copy-resolve-pair"/);
+});
+
+test('Core tab makes semantic duplicate detection opt-in', async () => {
+  const panel = await readFile(new URL('../src/core/web/panel.js', import.meta.url), 'utf8');
+  assert.match(panel, /window._coreOptions = { scope: 'all', semantic: false, limit: 50 }/);
+  assert.match(panel, /limit: window._coreOptions.limit/);
+});
+
+test('panel does not load third-party fonts or logo assets', async () => {
+  const html = await readFile(new URL('../src/core/web/panel.html', import.meta.url), 'utf8');
+  const css = await readFile(new URL('../src/core/web/panel.css', import.meta.url), 'utf8');
+  assert.doesNotMatch(html, /fonts.googleapis.com|fonts.gstatic.com/);
+  assert.doesNotMatch(css, /raw.githubusercontent.com/);
+  assert.match(css, /--logo-url: url\("\/favicon\.svg"\)/);
+});

@@ -145,10 +145,10 @@ npm install -g @the-long-ride/engram
 Enseña a tu asistente de IA cómo interactuar con Engram (leer, escribir, mantener):
 ```bash
 # Listar agentes soportados
-engram is list
+engram link list
 
 # Instalar el skillset para tu agente
-engram is --global <tu-agente>
+engram link --global <tu-agente>
 ```
 *(Reemplaza `<tu-agente>` con el nombre de tu asistente; usa `agents-md` para agentes no listados que leen `AGENTS.md`.)*
 
@@ -159,7 +159,6 @@ engram link gemini
 
 Los hooks de carga automática opcionales están disponibles para hosts que pueden inyectar contexto tanto al inicio de la sesión como en los turnos de prompt posteriores:
 ```bash
-engram link codex --plan
 engram link codex
 engram link claude
 engram link gemini
@@ -183,6 +182,7 @@ Para visualizar, buscar y configurar sus perfiles de memoria, ejecute:
 engram entry
 ```
 ![Engram Control Panel](https://raw.githubusercontent.com/the-long-ride/engram/main/media/demo/demo-engram-entry.png)
+![Engram Connections](../../media/demo/demo-engram-entry-connections.png)
 
 ---
 

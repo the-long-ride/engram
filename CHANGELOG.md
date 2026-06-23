@@ -2,17 +2,16 @@
 
 ## Unreleased
 
-- Renamed CLI command `engram init` to `engram inject` with a backward-compatible redirection and deprecation warning.
-- Added a **Connection** tab to the `engram entry` web UI to scan, link, and unlink local AI agents at both global and workspace levels.
-- Added a guard to prevent creating workspace-level files (skillsets, agent hooks) in the running folder (workspace) if the configuration scope is set to `global`.
-- Hardened config validation `/api/config/validate` to be side-effect-free, moving directory creation to the actual save action.
-- Fixed workspace-level agent hook installation by passing `cwd` correctly from the API.
-- Suppressed `ExperimentalWarning: SQLite` warnings at the CLI entry point for cleaner command execution.
-
 ## 0.0.19
 
+- Release v0.0.19 covers the 24 commits since v0.0.18.
+- Added `engram inject` as the new init flow, with connection-tab setup, scope guards, and safer workspace/global linking.
 - Hardened `engram entry` config editing with shared schema validation, staged browser edits, review-before-save, risky-change confirmation, and batch API updates.
-- Fixed `BeforeAgent` hook installation for Gemini/Antigravity to include `matcher: "*"`.
+- Expanded the control panel with a core dashboard tab, duplicate analysis, guarded unlink actions, copy-prefix behavior, folder-browser modal, memory-content modal, and connection sorting.
+- Polished the Web UI shell with visible icons, a processor icon for Core, a lightweight SVG favicon, and better clipboard prompt text.
+- Fixed Gemini/Antigravity `BeforeAgent` hook installation to include `matcher: "*"`, and blocked workspace unlink commands when the scope is `global`.
+- Updated README files, `AGENT_INTEGRATIONS.md`, `SKILLSET_CONTRACT.md`, and localized docs to match the new `inject` and `entry` flows.
+- Suppressed `ExperimentalWarning: SQLite` at CLI startup for cleaner command execution.
 
 ## 0.0.18
 

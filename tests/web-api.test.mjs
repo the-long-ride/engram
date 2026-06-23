@@ -307,17 +307,31 @@ pnpm test
 
     const content = await apiGetMemoryContent(cwd, data.scope.activeProfile, 'workspace', 'rules/prefer-pnpm-package-scripts.md');
     assert.ok(content.includes('Prefer pnpm package scripts'));
+    await assert.rejects(
+      () => apiGetMemoryContent(cwd, data.scope.activeProfile, 'workspace', path.join('..', 'package.json')),
+      /Path escapes allowed root/
+    );
 
     const loadResult = await runEngram(cwd, env, ['load', '--id', 'prefer-pnpm-package-scripts']);
     assert.equal(loadResult.code, 0, loadResult.stderr);
     assert.match(loadResult.stdout, /prefer-pnpm-package-scripts/);
 
     // 9. apiBrowseDirectories
-    const browseRes = await apiBrowseDirectories(cwd);
+    const browseRes = await apiBrowseDirectories(cwd, cwd);
     assert.equal(browseRes.ok, true);
     assert.equal(typeof browseRes.currentPath, 'string');
     assert.ok(Array.isArray(browseRes.directories));
     assert.ok(Array.isArray(browseRes.drives));
+    for (const entry of browseRes.directories) {
+      assert.equal(typeof entry.name, 'string');
+      assert.equal(typeof entry.path, 'string');
+      assert.ok(path.isAbsolute(entry.path));
+    }
+
+    const missingBrowse = await apiBrowseDirectories(path.join(cwd, 'missing-folder'), cwd);
+    assert.equal(missingBrowse.ok, false);
+    assert.match(missingBrowse.error, /Cannot access directory/);
+    assert.deepEqual(missingBrowse.directories, []);
   } finally {
     process.env.ENGRAM_CONFIG_DIR = oldEnv.ENGRAM_CONFIG_DIR;
     process.env.ENGRAM_GLOBAL_DIR = oldEnv.ENGRAM_GLOBAL_DIR;

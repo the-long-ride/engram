@@ -1,3 +1,4 @@
+/** Shared schema for control-panel config fields and risk classification. */
 import { homedir } from 'node:os';
 import { existsSync } from 'node:fs';
 import path from 'node:path';

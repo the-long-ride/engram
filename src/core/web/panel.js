@@ -4,12 +4,13 @@ var D = null;
 var _toastTimer = null;
 window._coreData = null;
 window._coreLoading = false;
-window._coreOptions = { scope: 'all', semantic: true };
+window._coreOptions = { scope: 'all', semantic: false, limit: 50 };
 
 var Draft = {};
 var Dirty = {};
 var RowErrors = {};
 var _pendingPatch = null;
+var _cfgValidationSeq = 0;
 
 // ── Utilities ────────────────────────────────────────────────────────────────
 function gv(obj, key) {
@@ -40,6 +41,26 @@ function relTime(s) {
 // ── Nav ──────────────────────────────────────────────────────────────────────
 document.querySelectorAll('[data-tab]').forEach(function(el) {
   el.addEventListener('click', function() { switchTab(el.getAttribute('data-tab')); });
+});
+document.addEventListener('click', function(event) {
+  var actionEl = event.target.closest('[data-action]');
+  if (!actionEl) return;
+  var action = actionEl.getAttribute('data-action');
+  if (action === 'view-memory') {
+    viewMemory(
+      actionEl.getAttribute('data-profile') || '',
+      actionEl.getAttribute('data-scope') || '',
+      actionEl.getAttribute('data-file') || '',
+      actionEl.getAttribute('data-id') || ''
+    );
+    return;
+  }
+  if (action === 'copy-resolve-pair') {
+    copyResolvePairPrompt(
+      actionEl.getAttribute('data-id-a') || '',
+      actionEl.getAttribute('data-id-b') || ''
+    );
+  }
 });
 function switchTab(name) {
   document.querySelectorAll('[data-tab]').forEach(function(el) {
@@ -318,16 +339,22 @@ async function changeCfg(key, value) {
   RowErrors[key] = clientValidationError(field, value);
   Dirty[key] = value !== uiValue(field, gv(D.config, key));
 
-  if (key === 'global_path' && !RowErrors[key] && value) {
+  if (key !== 'global_path') {
+    renderConfig();
+    return;
+  }
+
+  _cfgValidationSeq += 1;
+  var validationSeq = _cfgValidationSeq;
+  if (!RowErrors[key] && value) {
     var res = await postJson('/api/config/validate', { patch: { global_path: value } });
+    if (validationSeq !== _cfgValidationSeq || Draft[key] !== value) return;
     if (res) {
       if (res.ok === false) {
         var issue = (res.issues || []).find(function(i) { return i.key === 'global_path'; });
-        if (issue) {
-          RowErrors['global_path'] = issue.message;
-        }
+        RowErrors.global_path = issue ? issue.message : 'Global path validation failed';
       } else {
-        RowErrors['global_path'] = '';
+        RowErrors.global_path = '';
       }
     }
   }
@@ -338,6 +365,7 @@ async function changeCfg(key, value) {
 function resetCfgField(key) {
   var field = fieldByKey(key);
   if (!field) return;
+  _cfgValidationSeq += 1;
   Draft[key] = uiValue(field, gv(D.config, key));
   Dirty[key] = false;
   delete RowErrors[key];
@@ -345,6 +373,7 @@ function resetCfgField(key) {
 }
 
 function discardCfgDraft() {
+  _cfgValidationSeq += 1;
   resetDraft();
   renderConfig();
 }
@@ -930,7 +959,8 @@ async function loadCore(rebuild) {
       body: JSON.stringify({
         rebuild: rebuild === true,
         semantic: window._coreOptions.semantic === true,
-        scope: window._coreOptions.scope || 'all'
+        scope: window._coreOptions.scope || 'all',
+        limit: window._coreOptions.limit
       })
     });
     var j = await res.json();
@@ -1009,12 +1039,10 @@ function renderCoreDuplicates(duplicates) {
     return '<div class="card"><div class="card-hdr"><span class="card-title">Duplicate candidates</span></div><div class="core-empty">No duplicate candidates found for this scope.</div></div>';
   }
   var rows = duplicates.map(function(pair) {
-    var aId = escJs(pair.a.id);
-    var bId = escJs(pair.b.id);
     return '<div class="core-dup">' +
       '<div class="core-dup-score">' +
         Math.round(pair.score * 100) + '%<span>' + esc(pair.method) + '</span>' +
-        '<button class="btn btn-outline" style="margin-top:12px;font-size:10px;padding:4px 6px;height:auto;line-height:1.2;width:100%;white-space:normal;" onclick="copyResolvePairPrompt(\'' + aId + '\',\'' + bId + '\')">Copy prompt</button>' +
+        '<button class="btn btn-outline" data-action="copy-resolve-pair" data-id-a="' + esc(pair.a.id) + '" data-id-b="' + esc(pair.b.id) + '" style="margin-top:12px;font-size:10px;padding:4px 6px;height:auto;line-height:1.2;width:100%;white-space:normal;">Copy prompt</button>' +
       '</div>' +
       '<div class="core-dup-body">' +
         renderCoreMemoryRef(pair.a) +
@@ -1027,11 +1055,7 @@ function renderCoreDuplicates(duplicates) {
 }
 
 function renderCoreMemoryRef(ref) {
-  var profileJs = escJs(ref.profile);
-  var scopeJs = escJs(ref.scope);
-  var fileJs = escJs(ref.file);
-  var idJs = escJs(ref.id);
-  return '<div class="core-memory-ref" style="cursor:pointer;" onclick="viewMemory(\'' + profileJs + '\',\'' + scopeJs + '\',\'' + fileJs + '\',\'' + idJs + '\')">' +
+  return '<button type="button" class="core-memory-ref" data-action="view-memory" data-profile="' + esc(ref.profile) + '" data-scope="' + esc(ref.scope) + '" data-file="' + esc(ref.file) + '" data-id="' + esc(ref.id) + '">' +
     '<div>' +
       '<span class="badge badge-neutral">' + esc(ref.profile) + '</span> ' +
       '<span class="badge badge-neutral">' + esc(ref.scope) + '</span> ' +
@@ -1039,7 +1063,7 @@ function renderCoreMemoryRef(ref) {
     '</div>' +
     '<strong>' + esc(ref.id) + '</strong>' +
     '<p>' + esc(ref.summary || '') + '</p>' +
-  '</div>';
+  '</button>';
 }
 
 async function viewMemory(profile, scope, file, id) {
@@ -1091,15 +1115,26 @@ async function viewMemory(profile, scope, file, id) {
 }
 
 function copyResolvePairPrompt(idA, idB) {
+  var refs = [];
+  if (window._coreData && window._coreData.duplicates) {
+    window._coreData.duplicates.forEach(function(pair) {
+      if (pair.a.id === idA && pair.b.id === idB) {
+        refs = [pair.a, pair.b];
+      }
+    });
+  }
+  var refLines = refs.map(function(ref) {
+    return '- id=' + ref.id + ' profile=' + ref.profile + ' scope=' + ref.scope + ' file=' + ref.file;
+  }).join('\n');
   var prompt = [
     'Resolve these duplicate memories:',
-    'engram load --id ' + idA + ',' + idB,
+    refLines || '- id=' + idA,
     '',
     'Review these duplicate candidates. Decide whether to merge, archive, or keep both.',
     'When proposing saved memories, use TYPE, TEXT, CONTEXT, and UPDATE: memory-id for duplicates.',
     'Do not invent facts. Preserve stronger, newer, and more specific guidance.'
   ].join('\n');
-  
+
   var val = '/engram ' + prompt;
   navigator.clipboard.writeText(val).then(function() {
     toast('Copied resolve prompt');
@@ -1189,101 +1224,102 @@ function viewCorePrompt(key, title) {
 async function browseFolder(inputId) {
   var inputEl = document.getElementById(inputId);
   var currentVal = inputEl ? (inputEl.value || '').trim() : '';
-  
   var res = await postJson('/api/browse', { path: currentVal });
-  if (!res || !res.ok) return;
+  if (!res) return;
 
-  var currentPath = res.currentPath;
-  
   function renderBrowserContent(data) {
-    var html = '<div class="modal-panel dir-browser-modal" role="dialog" aria-modal="true" aria-labelledby="browser-title">' +
+    var currentPath = data.currentPath || currentVal || '';
+    var errorHtml = data.ok === false
+      ? '<div class="dir-browser-error">' + esc(data.error || 'Cannot access directory') + '</div>'
+      : '';
+    var parent = data.parentPath
+      ? '<button type="button" class="dir-item parent-dir" data-dir-path="' + esc(data.parentPath) + '">' +
+          '<svg class="dir-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 4.5v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1H7L5.5 3h-3.5a1 1 0 0 0-1 1z"/></svg>' +
+          '<span class="dir-name">..</span>' +
+        '</button>'
+      : '';
+    var dirs = (data.directories || []).map(function(entry) {
+      return '<button type="button" class="dir-item" data-dir-path="' + esc(entry.path) + '">' +
+        '<svg class="dir-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M1 3.5A1.5 1.5 0 0 1 2.5 2h2.764c.32 0 .625.13.843.361l1.196 1.277c.109.117.262.182.421.182h5.776A1.5 1.5 0 0 1 15 5.322v7.178a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 1 12.5v-9z"/></svg>' +
+        '<span class="dir-name">' + esc(entry.name) + '</span>' +
+      '</button>';
+    }).join('');
+    var drives = (data.drives || []).map(function(drive) {
+      var isCurrentDrive = currentPath.toLowerCase().startsWith(String(drive).toLowerCase());
+      return '<button type="button" class="btn btn-ghost drive-btn' + (isCurrentDrive ? ' active' : '') + '" data-dir-path="' + esc(drive) + '">' + esc(drive) + '</button>';
+    }).join('');
+
+    return '<div class="modal-panel dir-browser-modal" role="dialog" aria-modal="true" aria-labelledby="browser-title">' +
       '<div class="modal-hdr">' +
         '<h2 id="browser-title">Browse Directory</h2>' +
-        '<button data-confirm-close aria-label="Close" onclick="closeModal()">&times;</button>' +
+        '<button data-confirm-close aria-label="Close">&times;</button>' +
       '</div>' +
-      '<div class="modal-body dir-browser-body">';
-      
-    html += '<div class="dir-browser-nav-bar">' +
-      '<input class="form-input dir-browser-path" id="db-path-input" value="' + esc(data.currentPath) + '">' +
-      '<button class="btn btn-primary" onclick="window.dirBrowserGo(document.getElementById(\'db-path-input\').value)">Go</button>' +
+      '<div class="modal-body dir-browser-body">' +
+        '<div class="dir-browser-nav-bar">' +
+          '<input class="form-input dir-browser-path" id="db-path-input" value="' + esc(currentPath) + '">' +
+          '<button type="button" class="btn btn-primary" data-dir-go>Go</button>' +
+        '</div>' +
+        errorHtml +
+        (drives ? '<div class="dir-browser-drives-title">Drives:</div><div class="dir-browser-drives">' + drives + '</div>' : '') +
+        '<div class="dir-browser-list">' + parent + (dirs || '<div class="dir-browser-empty">No subdirectories found</div>') + '</div>' +
+      '</div>' +
+      '<div class="modal-actions">' +
+        '<button type="button" class="btn btn-outline" data-confirm-close>Cancel</button>' +
+        '<button type="button" class="btn btn-primary" data-dir-select>Select Folder</button>' +
+      '</div>' +
     '</div>';
-    
-    if (data.drives && data.drives.length > 0) {
-      html += '<div class="dir-browser-drives-title">Drives:</div>';
-      html += '<div class="dir-browser-drives">';
-      data.drives.forEach(function(d) {
-        var isCurrentDrive = data.currentPath.toLowerCase().startsWith(d.toLowerCase());
-        html += '<button class="btn btn-ghost drive-btn' + (isCurrentDrive ? ' active' : '') + '" onclick="window.dirBrowserGo(\'' + esc(escJs(d)) + '\')">' + esc(d) + '</button>';
-      });
-      html += '</div>';
-    }
-    
-    html += '<div class="dir-browser-list">';
-    
-    if (data.parentPath) {
-      html += '<div class="dir-item parent-dir" onclick="window.dirBrowserGo(\'' + esc(escJs(data.parentPath)) + '\')">' +
-        '<svg class="dir-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 4.5v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1H7L5.5 3h-3.5a1 1 0 0 0-1 1z"/></svg>' +
-        '<span class="dir-name">..</span>' +
-      '</div>';
-    }
-    
-    if (data.directories && data.directories.length > 0) {
-      data.directories.forEach(function(dName) {
-        var separator = data.currentPath.endsWith('\\') || data.currentPath.endsWith('/') ? '' : '/';
-        var nextPath = data.currentPath + separator + dName;
-        html += '<div class="dir-item" onclick="window.dirBrowserGo(\'' + esc(escJs(nextPath)) + '\')">' +
-          '<svg class="dir-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M1 3.5A1.5 1.5 0 0 1 2.5 2h2.764c.32 0 .625.13.843.361l1.196 1.277c.109.117.262.182.421.182h5.776A1.5 1.5 0 0 1 15 5.322v7.178a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 1 12.5v-9z"/></svg>' +
-          '<span class="dir-name">' + esc(dName) + '</span>' +
-        '</div>';
-      });
-    } else {
-      html += '<div class="dir-browser-empty">No subdirectories found or access denied</div>';
-    }
-    
-    html += '</div></div>';
-    
-    html += '<div class="modal-actions">' +
-      '<button class="btn btn-outline" onclick="closeModal()">Cancel</button>' +
-      '<button class="btn btn-primary" onclick="window.dirBrowserSelect(\'' + esc(escJs(data.currentPath)) + '\')">Select Folder</button>' +
-    '</div>';
-    
-    html += '</div>';
-    return html;
   }
 
-  window.dirBrowserGo = async function(nextPath) {
+  async function go(nextPath) {
     var nextRes = await postJson('/api/browse', { path: nextPath });
-    if (nextRes && nextRes.ok) {
-      currentPath = nextRes.currentPath;
-      var el = document.getElementById('modal-root');
-      if (el) {
-        el.innerHTML = renderBrowserContent(nextRes);
-        var closeBtn = el.querySelector('[data-confirm-close]');
-        if (closeBtn) closeBtn.addEventListener('click', closeModal, { once: true });
-        
-        var pathInput = document.getElementById('db-path-input');
-        if (pathInput) {
-          pathInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              window.dirBrowserGo(pathInput.value);
-            }
-          });
-        }
-      }
-    }
-  };
+    if (!nextRes) return;
+    var root = document.getElementById('modal-root');
+    if (!root) return;
+    root.innerHTML = renderBrowserContent(nextRes);
+    wireDirBrowser(root, nextRes);
+  }
 
-  window.dirBrowserSelect = function(selectedPath) {
+  function selectPath(value) {
     if (inputEl) {
-      inputEl.value = selectedPath;
-      var event = new Event('input', { bubbles: true });
-      inputEl.dispatchEvent(event);
-      var event2 = new Event('change', { bubbles: true });
-      inputEl.dispatchEvent(event2);
+      inputEl.value = value || '';
+      inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+      inputEl.dispatchEvent(new Event('change', { bubbles: true }));
     }
     closeModal();
-  };
+  }
+
+  function wireDirBrowser(root, data) {
+    root.onclick = function(event) {
+      var close = event.target.closest('[data-confirm-close]');
+      if (close) {
+        closeModal();
+        return;
+      }
+      var item = event.target.closest('[data-dir-path]');
+      if (item) {
+        go(item.getAttribute('data-dir-path') || '');
+        return;
+      }
+      if (event.target.closest('[data-dir-go]')) {
+        var pathInput = document.getElementById('db-path-input');
+        go(pathInput ? pathInput.value : '');
+        return;
+      }
+      if (event.target.closest('[data-dir-select]')) {
+        selectPath(data.currentPath || '');
+      }
+    };
+
+    var pathInput = document.getElementById('db-path-input');
+    if (pathInput) {
+      pathInput.onkeydown = function(event) {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          go(pathInput.value);
+        }
+      };
+    }
+  }
 
   showModal(
     renderBrowserContent(res),
@@ -1295,21 +1331,8 @@ async function browseFolder(inputId) {
     }
   );
 
-  var mRoot = document.getElementById('modal-root');
-  if (mRoot) {
-    var closeBtn = mRoot.querySelector('[data-confirm-close]');
-    if (closeBtn) closeBtn.addEventListener('click', closeModal, { once: true });
-    
-    var pathInput = document.getElementById('db-path-input');
-    if (pathInput) {
-      pathInput.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          window.dirBrowserGo(pathInput.value);
-        }
-      });
-    }
-  }
+  var root = document.getElementById('modal-root');
+  if (root) wireDirBrowser(root, res);
 }
 
 // ── Init ─────────────────────────────────────────────────────────────────────

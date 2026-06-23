@@ -46,7 +46,7 @@ test('entry server exposes safe config metadata and validated config updates', a
 
     const refreshedCore = await requestJson(baseUrl + '/api/core', {
       method: 'POST',
-      body: JSON.stringify({ semantic: true, rebuild: true, scope: 'workspace' })
+      body: JSON.stringify({ semantic: true, rebuild: true, scope: 'workspace', limit: 50 })
     });
     assert.equal(refreshedCore.response.status, 200);
     assert.equal(refreshedCore.body.ok, true);
@@ -115,6 +115,15 @@ test('entry server exposes safe config metadata and validated config updates', a
     const scanRes3 = await requestJson(baseUrl + '/api/agents/scan');
     const claudeData3 = scanRes3.body.data.find(a => a.id === 'claude');
     assert.equal(claudeData3.workspaceLinked, false);
+
+    const browseRes = await requestJson(baseUrl + '/api/browse', {
+      method: 'POST',
+      body: JSON.stringify({ path: cwd })
+    });
+    assert.equal(browseRes.response.status, 200);
+    assert.equal(browseRes.body.ok, true);
+    assert.ok(Array.isArray(browseRes.body.directories));
+    assert.equal(browseRes.body.directories.every((entry) => typeof entry.path === 'string'), true);
 
     const errMem = await requestJson(baseUrl + '/api/memory?profile=default&scope=workspace&file=nonexistent.md');
     assert.equal(errMem.response.status, 500);

@@ -145,10 +145,10 @@ npm install -g @the-long-ride/engram
 AI 어시스턴트에게 Engram 연동 지침(읽기, 쓰기, 유지보수)을 가르칩니다:
 ```bash
 # 지원 에이전트 목록 조회
-engram is list
+engram link list
 
 # 특정 에이전트에 스킬셋 설치
-engram is --global <에이전트명>
+engram link --global <에이전트명>
 ```
 *(`<에이전트명>`을 해당 어시스턴트 이름으로 교체하십시오. 목록에 없다면 `agents-md`를 입력하여 `AGENTS.md`를 통해 설정합니다.)*
 
@@ -159,7 +159,6 @@ engram link gemini
 
 세션 시작과 이후 프롬프트 턴 모두에서 컨텍스트를 주입할 수 있는 호스트를 위해 선택적 자동 로드 훅을 사용할 수 있습니다.
 ```bash
-engram link codex --plan
 engram link codex
 engram link claude
 engram link gemini
@@ -183,6 +182,7 @@ engram inject
 engram entry
 ```
 ![Engram Control Panel](https://raw.githubusercontent.com/the-long-ride/engram/main/media/demo/demo-engram-entry.png)
+![Engram Connections](../../media/demo/demo-engram-entry-connections.png)
 
 ---
 

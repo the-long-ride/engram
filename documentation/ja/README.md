@@ -145,10 +145,10 @@ npm install -g @the-long-ride/engram
 AIアシスタントにEngramとの連携方法（読み込み、保存、メンテナンス）を指示します：
 ```bash
 # サポートされているエージェントのリスト
-engram is list
+engram link list
 
 # 対象エージェントにスキルセットをインストール
-engram is --global <エージェント名>
+engram link --global <エージェント名>
 ```
 *( `<エージェント名>` を該当するエージェントの名前に置き換えてください。リストにない場合は `agents-md` を指定して `AGENTS.md` 経由で設定します。)*
 
@@ -159,7 +159,6 @@ engram link gemini
 
 セッション開始時とそれ以降의プロンプトターンの両方でコンテキストを注入できるホスト向けに、オプションの自動ロードフックが利用可能です。
 ```bash
-engram link codex --plan
 engram link codex
 engram link claude
 engram link gemini
@@ -183,6 +182,7 @@ engram inject
 engram entry
 ```
 ![Engram Control Panel](https://raw.githubusercontent.com/the-long-ride/engram/main/media/demo/demo-engram-entry.png)
+![Engram Connections](../../media/demo/demo-engram-entry-connections.png)
 
 ---
 

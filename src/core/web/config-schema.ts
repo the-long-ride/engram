@@ -1,6 +1,6 @@
 /** Shared schema for control-panel config fields and risk classification. */
 import { homedir } from 'node:os';
-import { existsSync } from 'node:fs';
+import { existsSync, accessSync, constants as fsConstants } from 'node:fs';
 import path from 'node:path';
 
 export type ConfigInputType = 'toggle' | 'select' | 'number' | 'text' | 'roles';
@@ -174,14 +174,19 @@ function normalizeRoles(rawValue: unknown): { ok: true; value: string } | { ok: 
 
 function canCreateDir(pathStr: string): boolean {
   try {
-    // Walk up to the nearest existing ancestor.
-    // If an ancestor exists we trust the OS will let mkdir proceed;
-    // actual write-permission failures surface cleanly during the save flow.
+    // Walk up to the nearest existing ancestor and verify write permission.
     let current = path.resolve(pathStr);
     while (true) {
-      if (existsSync(current)) return true;
+      if (existsSync(current)) {
+        try {
+          accessSync(current, fsConstants.W_OK);
+          return true;
+        } catch {
+          return false; // ancestor exists but is not writable
+        }
+      }
       const parent = path.dirname(current);
-      if (parent === current) return false; // reached filesystem root
+      if (parent === current) return false; // reached filesystem root without a writable ancestor
       current = parent;
     }
   } catch {

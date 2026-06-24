@@ -163,7 +163,7 @@ test('Core memory refs use data attributes instead of inline onclick args', asyn
 
 test('Core tab makes semantic duplicate detection opt-in', async () => {
   const panel = await readFile(new URL('../src/core/web/panel.js', import.meta.url), 'utf8');
-  assert.match(panel, /window._coreOptions = { scope: 'all', semantic: false, limit: 50 }/);
+  assert.match(panel, /window._coreOptions = { scopes: \['profile', 'global', 'workspace'\], types: \['rule', 'skill', 'workflow', 'knowledge'\], semantic: false, limit: 50 }/);
   assert.match(panel, /limit: window._coreOptions.limit/);
 });
 
@@ -174,3 +174,38 @@ test('panel does not load third-party fonts or logo assets', async () => {
   assert.doesNotMatch(css, /raw.githubusercontent.com/);
   assert.match(css, /--logo-url: url\("\/favicon\.svg"\)/);
 });
+
+test('panel UI contains Memories tab navigation and graph functions', async () => {
+  const html = await readFile(new URL('../src/core/web/panel.html', import.meta.url), 'utf8');
+  assert.match(html, /data-tab="memories"/);
+  assert.match(html, /id="tab-memories"/);
+  assert.match(html, />Memories</);
+
+  const js = await readFile(new URL('../src/core/web/panel.js', import.meta.url), 'utf8');
+  assert.match(js, /window\._memoriesOptions = \{ scopes: \['profile', 'global', 'workspace'\], types: \['rule', 'skill', 'workflow', 'knowledge'\], semantic: true, limit: 100 \}/);
+  assert.match(js, /function loadMemories\(/);
+  assert.match(js, /function renderMemories\(/);
+  assert.match(js, /function renderMemoriesGraph\(/);
+  assert.match(js, /\/api\/memories/);
+
+  const css = await readFile(new URL('../src/core/web/panel.css', import.meta.url), 'utf8');
+  assert.match(css, /\.memories-shell/);
+  assert.match(css, /\.memories-graph/);
+  assert.match(css, /\.memory-edge-dependency/);
+  assert.match(css, /\.memory-edge-thin/);
+  assert.match(css, /\.memory-node-profile/);
+  assert.match(css, /\.memory-node-global/);
+  assert.match(css, /\.memory-node-workspace/);
+  assert.match(css, /\.memory-detail/);
+});
+
+test('Memories graph uses data attributes for note actions', async () => {
+  const panel = await readFile(new URL('../src/core/web/panel.js', import.meta.url), 'utf8');
+  assert.match(panel, /data-action="view-memory"/);
+  assert.match(panel, /data-action="edit-memory"/);
+  assert.match(panel, /data-action="delete-memory"/);
+  assert.match(panel, /function editMemoryFromGraph\(/);
+  assert.match(panel, /function archiveMemoryFromGraph\(/);
+  assert.doesNotMatch(panel, /onclick="viewMemory\('/);
+});
+

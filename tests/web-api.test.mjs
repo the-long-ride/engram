@@ -18,7 +18,10 @@ import {
   apiAgentsScan,
   apiAgentLink,
   apiAgentUnlink,
-  apiBrowseDirectories
+  apiBrowseDirectories,
+  apiMemoriesGraphData,
+  apiResolveMemoryFile,
+  apiArchiveMemory
 } from '../dist/core/web/api.js';
 
 
@@ -339,4 +342,177 @@ pnpm test
     await rm(cwd, { recursive: true, force: true });
   }
 });
+
+test('web UI api memories graph reports scopes, dependency links, and thin duplicate links', async () => {
+  const { cwd, env } = await tempWorkspace('engram-web-memories-');
+  const oldEnv = {
+    ENGRAM_CONFIG_DIR: process.env.ENGRAM_CONFIG_DIR,
+    ENGRAM_GLOBAL_DIR: process.env.ENGRAM_GLOBAL_DIR,
+    NODE_ENV: process.env.NODE_ENV
+  };
+  process.env.ENGRAM_CONFIG_DIR = env.ENGRAM_CONFIG_DIR;
+  process.env.ENGRAM_GLOBAL_DIR = env.ENGRAM_GLOBAL_DIR;
+  process.env.NODE_ENV = 'test';
+
+  try {
+    const { runEngram, workspaceMemoryRoot } = await import('./helpers.mjs');
+    const { mkdir, writeFile } = await import('node:fs/promises');
+    const path = await import('node:path');
+
+    await runEngram(cwd, env, ['inject', '--no-skillset']);
+    const rules = path.join(workspaceMemoryRoot(cwd), 'rules');
+    await mkdir(rules, { recursive: true });
+
+    const memory = ({ id, title, content, dependsOn = [] }) => `---
+id: ${id}
+type: rule
+scope: workspace
+tags: [graph, ui]
+depends_on: [${dependsOn.join(', ')}]
+created: 2026-06-01
+updated: 2026-06-01
+author: dev@example.com
+source: manual
+confidence: high
+---
+# ${title}
+
+## Context
+
+Memories graph test.
+
+## Content
+
+- ${content}
+
+## Example
+
+engram load --for-agents graph
+`;
+
+    await writeFile(path.join(rules, 'base-memory.md'), memory({
+      id: 'base-memory',
+      title: 'Base memory',
+      content: 'Use the base memory before dependent graph memories.'
+    }));
+    await writeFile(path.join(rules, 'dependent-memory.md'), memory({
+      id: 'dependent-memory',
+      title: 'Dependent memory',
+      content: 'Use the dependent graph memory after the base memory.',
+      dependsOn: ['base-memory']
+    }));
+    await writeFile(path.join(rules, 'similar-dependent-memory.md'), memory({
+      id: 'similar-dependent-memory',
+      title: 'Similar dependent memory',
+      content: 'Use dependent graph memories after base graph memories.'
+    }));
+
+    await runEngram(cwd, env, ['rebuild-index']);
+
+    const data = await apiMemoriesGraphData(cwd, {
+      scopes: ['workspace'],
+      semantic: true,
+      rebuild: false,
+      limit: 50
+    });
+
+    assert.deepEqual(data.filters.enabledScopes, ['workspace']);
+    assert.ok(data.nodes.some((node) => node.memoryId === 'base-memory'));
+    assert.ok(data.nodes.some((node) => node.memoryId === 'dependent-memory'));
+    assert.ok(data.links.some((link) => link.kind === 'dependency' && link.thin === false));
+    assert.ok(data.links.some((link) => (link.kind === 'duplicate' || link.kind === 'semantic') && link.thin === true));
+    assert.ok(data.stats.workspace >= 3);
+    assert.equal(data.stats.total, data.nodes.length);
+
+    const workspaceOnly = await apiMemoriesGraphData(cwd, {
+      scopes: ['workspace'],
+      semantic: false,
+      rebuild: false,
+      limit: 50
+    });
+    assert.equal(workspaceOnly.nodes.every((node) => node.sourceScope === 'workspace'), true);
+  } finally {
+    process.env.ENGRAM_CONFIG_DIR = oldEnv.ENGRAM_CONFIG_DIR;
+    process.env.ENGRAM_GLOBAL_DIR = oldEnv.ENGRAM_GLOBAL_DIR;
+    process.env.NODE_ENV = oldEnv.NODE_ENV;
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('web UI memories api resolves edit target and archives memory on delete action', async () => {
+  const { cwd, env } = await tempWorkspace('engram-web-memory-actions-');
+  const oldEnv = {
+    ENGRAM_CONFIG_DIR: process.env.ENGRAM_CONFIG_DIR,
+    ENGRAM_GLOBAL_DIR: process.env.ENGRAM_GLOBAL_DIR,
+    NODE_ENV: process.env.NODE_ENV
+  };
+  process.env.ENGRAM_CONFIG_DIR = env.ENGRAM_CONFIG_DIR;
+  process.env.ENGRAM_GLOBAL_DIR = env.ENGRAM_GLOBAL_DIR;
+  process.env.NODE_ENV = 'test';
+
+  try {
+    const { runEngram, workspaceMemoryRoot } = await import('./helpers.mjs');
+    const { mkdir, readFile, stat, writeFile } = await import('node:fs/promises');
+    const path = await import('node:path');
+
+    await runEngram(cwd, env, ['inject', '--no-skillset']);
+    const rules = path.join(workspaceMemoryRoot(cwd), 'rules');
+    await mkdir(rules, { recursive: true });
+    await writeFile(path.join(rules, 'archive-me.md'), `---
+id: archive-me
+type: rule
+scope: workspace
+tags: [graph]
+created: 2026-06-01
+updated: 2026-06-01
+author: dev@example.com
+source: manual
+confidence: high
+---
+# Archive me
+
+## Context
+
+Action test.
+
+## Content
+
+- Archive through Memories graph.
+
+## Example
+
+engram archive archive-me
+`);
+    await runEngram(cwd, env, ['rebuild-index']);
+
+    const resolved = await apiResolveMemoryFile(cwd, 'default', 'workspace', 'rules/archive-me.md');
+    assert.equal(resolved.file, 'rules/archive-me.md');
+    assert.match(resolved.path, /archive-me\.md$/);
+    assert.match(resolved.editorUrl, /^vscode:\/\/file\//);
+
+    const archived = await apiArchiveMemory(cwd, {
+      profile: 'default',
+      scope: 'workspace',
+      file: 'rules/archive-me.md',
+      id: 'archive-me',
+      reason: 'Deleted from Memories graph view'
+    });
+    assert.match(archived.message, /Archived ->/);
+    assert.equal(archived.archived, true);
+
+    await assert.rejects(
+      () => stat(path.join(rules, 'archive-me.md')),
+      /ENOENT/
+    );
+    const archivedText = await readFile(archived.path, 'utf8');
+    assert.match(archivedText, /Deleted from Memories graph view/);
+  } finally {
+    process.env.ENGRAM_CONFIG_DIR = oldEnv.ENGRAM_CONFIG_DIR;
+    process.env.ENGRAM_GLOBAL_DIR = oldEnv.ENGRAM_GLOBAL_DIR;
+    process.env.NODE_ENV = oldEnv.NODE_ENV;
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+
 

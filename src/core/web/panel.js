@@ -4,15 +4,22 @@ var D = null;
 var _toastTimer = null;
 window._coreData = null;
 window._coreLoading = false;
-window._coreOptions = { scope: 'all', semantic: false, limit: 50 };
+window._coreOptions = { scopes: ['profile', 'global', 'workspace'], types: ['rule', 'skill', 'workflow', 'knowledge'], semantic: false, limit: 50 };
+window._memoriesOptions = { scopes: ['profile', 'global', 'workspace'], types: ['rule', 'skill', 'workflow', 'knowledge'], semantic: true, limit: 100 };
+window._memoriesData = null;
+window._memoriesSelectedId = '';
+window._memoriesLoading = false;
+window._memoriesViewport = { panX: 0, panY: 0, zoom: 1.0, isFullscreen: false };
 
 var Draft = {};
 var Dirty = {};
 var RowErrors = {};
 var _pendingPatch = null;
 var _cfgValidationSeq = 0;
+var ec = encodeURIComponent;
+function cpM(){navigator.clipboard.writeText(window._modalCopyContent||'').then(function(){toast('Copied content');}).catch(function(){toast('Copy failed',false);});}
 
-// ── Utilities ────────────────────────────────────────────────────────────────
+// Utilities
 function gv(obj, key) {
   return key.split('.').reduce(function(o, p) { return o == null ? o : o[p]; }, obj);
 }
@@ -27,25 +34,43 @@ function fmtDate(s) {
   if (!s) return '—';
   try { var d = new Date(s); return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); } catch(e) { return s; }
 }
-function relTime(s) {
-  if (!s) return '—';
-  try {
-    var diff = Date.now() - new Date(s).getTime();
-    if (diff < 60000) return 'just now';
-    if (diff < 3600000) return Math.floor(diff/60000) + 'm ago';
-    if (diff < 86400000) return Math.floor(diff/3600000) + 'h ago';
-    return Math.floor(diff/86400000) + 'd ago';
-  } catch(e) { return s; }
-}
+function relTime(s){if(!s)return'—';try{var d=Date.now()-new Date(s);if(d<6e4)return'just now';if(d<36e5)return Math.floor(d/6e4)+'m ago';if(d<864e5)return Math.floor(d/36e5)+'h ago';return Math.floor(d/864e5)+'d ago';}catch(e){return s;}}
 
-// ── Nav ──────────────────────────────────────────────────────────────────────
+// Nav
 document.querySelectorAll('[data-tab]').forEach(function(el) {
   el.addEventListener('click', function() { switchTab(el.getAttribute('data-tab')); });
 });
 document.addEventListener('click', function(event) {
+  var close = event.target.closest('[data-confirm-close]');
+  if (close) { closeModal(); return; }
   var actionEl = event.target.closest('[data-action]');
-  if (!actionEl) return;
+  if (!actionEl) {
+    var path = event.target.closest('.memories-svg path');
+    if (path) {
+      hi('path', path);
+      return;
+    }
+    if (event.target.closest('.memories-canvas')) {
+      hi('clear');
+    }
+    return;
+  }
   var action = actionEl.getAttribute('data-action');
+  if (action === 'select-memory-node') {
+    if (_dragged) { _dragged = false; return; }
+    var nodeId = actionEl.getAttribute('data-node-id') || '';
+    selNode(nodeId);
+    hi('node', nodeId);
+    return;
+  }
+  if (action === 'delete-memory') {
+    archiveMemoryFromGraph(actionEl);
+    return;
+  }
+  if (action === 'edit-memory') {
+    editMemoryFromGraph(actionEl);
+    return;
+  }
   if (action === 'view-memory') {
     viewMemory(
       actionEl.getAttribute('data-profile') || '',
@@ -62,6 +87,147 @@ document.addEventListener('click', function(event) {
     );
   }
 });
+var _dragged = false;
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    var vp = window._memoriesViewport;
+    if (vp && vp.isFullscreen) {
+      toggleMemoriesFullscreen();
+    }
+  }
+});
+document.addEventListener('mousedown', function(e) {
+  var el = e.target.closest('.memory-node');
+  if (!el) return;
+  _dragged = false;
+  var sx = e.clientX, sy = e.clientY, ix = el.offsetLeft, iy = el.offsetTop;
+  var zoom = window._memoriesViewport.zoom || 1.0;
+  function move(ev) {
+    var dx = (ev.clientX - sx) / zoom, dy = (ev.clientY - sy) / zoom;
+    if (Math.abs(dx * zoom) > 3 || Math.abs(dy * zoom) > 3) _dragged = true;
+    el.style.left = (ix + dx) + 'px';
+    el.style.top = (iy + dy) + 'px';
+    updateEdges();
+  }
+  function up() {
+    document.removeEventListener('mousemove', move);
+    document.removeEventListener('mouseup', up);
+  }
+  document.addEventListener('mousemove', move);
+  document.addEventListener('mouseup', up);
+});
+function updateEdges() {
+  document.querySelectorAll('.memories-svg path').forEach(function(path) {
+    var a = document.getElementById(path.getAttribute('data-from'));
+    var b = document.getElementById(path.getAttribute('data-to'));
+    if (!a || !b) return;
+    if (path.getAttribute('data-kind') === 'dependency') {
+      var tmp = a; a = b; b = tmp;
+    }
+    var x1 = a.offsetLeft + a.offsetWidth, y1 = a.offsetTop + 38;
+    var x2 = b.offsetLeft, y2 = b.offsetTop + 38;
+    if (a.offsetLeft > b.offsetLeft) {
+      x1 = a.offsetLeft;
+      x2 = b.offsetLeft + b.offsetWidth;
+    }
+    if (x1 < x2) {
+      x1 += 4; x2 -= 10;
+    } else {
+      x1 -= 4; x2 += 10;
+    }
+    path.setAttribute('d', 'M ' + x1 + ' ' + y1 + ' C ' + (x1 + x2) / 2 + ' ' + y1 + ', ' + (x1 + x2) / 2 + ' ' + y2 + ', ' + x2 + ' ' + y2);
+  });
+}
+function updateMemoriesViewport() {
+  var canvas = document.querySelector('.memories-canvas');
+  if (canvas) {
+    var vp = window._memoriesViewport;
+    canvas.style.transform = 'translate(' + vp.panX + 'px, ' + vp.panY + 'px) scale(' + vp.zoom + ')';
+  }
+  var fsBtn = document.getElementById('memories-fullscreen-btn');
+  if (fsBtn) {
+    fsBtn.textContent = window._memoriesViewport.isFullscreen ? '✕' : '⛶';
+  }
+}
+function zoomMemories(direction, clientX, clientY) {
+  var vp = window._memoriesViewport;
+  var graph = document.querySelector('.memories-graph');
+  if (!graph) return;
+  var rect = graph.getBoundingClientRect();
+  
+  var mouseX, mouseY;
+  if (clientX !== undefined && clientY !== undefined) {
+    mouseX = clientX - rect.left;
+    mouseY = clientY - rect.top;
+  } else {
+    mouseX = rect.width / 2;
+    mouseY = rect.height / 2;
+  }
+  
+  var oldZoom = vp.zoom;
+  var factor = direction > 0 ? 1.2 : 1 / 1.2;
+  var newZoom = oldZoom * factor;
+  if (newZoom < 0.2) newZoom = 0.2;
+  if (newZoom > 3.0) newZoom = 3.0;
+  
+  if (newZoom !== oldZoom) {
+    vp.panX = mouseX - (mouseX - vp.panX) * (newZoom / oldZoom);
+    vp.panY = mouseY - (mouseY - vp.panY) * (newZoom / oldZoom);
+    vp.zoom = newZoom;
+    updateMemoriesViewport();
+  }
+}
+function resetMemories() {
+  var vp = window._memoriesViewport;
+  vp.panX = 0;
+  vp.panY = 0;
+  vp.zoom = 1.0;
+  updateMemoriesViewport();
+}
+function toggleMemoriesFullscreen() {
+  var vp = window._memoriesViewport;
+  var graph = document.querySelector('.memories-graph');
+  if (!graph) return;
+  vp.isFullscreen = !vp.isFullscreen;
+  if (vp.isFullscreen) {
+    graph.classList.add('fullscreen');
+  } else {
+    graph.classList.remove('fullscreen');
+  }
+  updateMemoriesViewport();
+}
+function hi(mode, target) {
+  var c = document.querySelector('.memories-canvas');
+  if (!c) return;
+  var btn = document.getElementById('memories-clear-hi-btn');
+  if (mode === 'clear') {
+    c.classList.remove('highlight-active');
+    c.querySelectorAll('.highlighted').forEach(function(el) { el.classList.remove('highlighted'); });
+    if (btn) btn.style.display = 'none';
+    return;
+  }
+  c.classList.add('highlight-active');
+  c.querySelectorAll('.highlighted').forEach(function(el) { el.classList.remove('highlighted'); });
+  if (btn) btn.style.display = 'inline-flex';
+  if (mode === 'node') {
+    var n = document.getElementById(target);
+    if (n) n.classList.add('highlighted');
+    c.querySelectorAll('.memories-svg path').forEach(function(p) {
+      var f = p.getAttribute('data-from'), t = p.getAttribute('data-to');
+      if (f === target || t === target) {
+        p.classList.add('highlighted');
+        var o = document.getElementById(f === target ? t : f);
+        if (o) o.classList.add('highlighted');
+      }
+    });
+  } else if (mode === 'path') {
+    target.classList.add('highlighted');
+    var f = document.getElementById(target.getAttribute('data-from'));
+    var t = document.getElementById(target.getAttribute('data-to'));
+    if (f) f.classList.add('highlighted');
+    if (t) t.classList.add('highlighted');
+  }
+}
 function switchTab(name) {
   document.querySelectorAll('[data-tab]').forEach(function(el) {
     el.classList.toggle('active', el.getAttribute('data-tab') === name);
@@ -78,6 +244,9 @@ function switchTab(name) {
   if (name === 'core') {
     loadCore(false);
   }
+  if (name === 'memories') {
+    loadMemories(false);
+  }
 }
 
 function toggleSidebar() {
@@ -85,7 +254,7 @@ function toggleSidebar() {
   if (app) app.classList.toggle('sb-open');
 }
 
-// ── Theme ────────────────────────────────────────────────────────────────────
+// Theme
 function applyTheme() {
   if (!D || !D.config) return;
   var isDark = D.config.theme !== 'light';
@@ -105,7 +274,7 @@ async function toggleTheme() {
   await api('/api/config', {patch: {theme: nextTheme}});
 }
 
-// ── Version & Upgrade ────────────────────────────────────────────────────────
+// Version & Upgrade
 function cpVersion() {
   var el = document.getElementById('sb-version');
   if (!el || !el.textContent) return;
@@ -130,21 +299,7 @@ function isNewer(latest, current) {
   return false;
 }
 
-async function checkLatestVersion() {
-  if (window._checkedLatest) return;
-  try {
-    var res = await fetch('https://registry.npmjs.org/@the-long-ride/engram/latest');
-    if (!res.ok) return;
-    var data = await res.json();
-    var latest = data.version;
-    var current = D.version;
-    if (latest && current && isNewer(latest, current)) {
-      var alertEl = document.getElementById('sb-upgrade');
-      if (alertEl) alertEl.style.display = 'flex';
-    }
-    window._checkedLatest = true;
-  } catch(e) {}
-}
+async function checkLatestVersion(){if(window._checkedLatest)return;try{var res=await fetch('https://registry.npmjs.org/@the-long-ride/engram/latest');if(!res.ok)return;var j=await res.json();if(j.version&&D.version&&isNewer(j.version,D.version)){var el=document.getElementById('sb-upgrade');if(el)el.style.display='flex';}window._checkedLatest=true;}catch(e){}}
 
 function resetDraft() {
   Draft = {};
@@ -177,7 +332,7 @@ function dirtyCount() {
   return Object.keys(Dirty).filter(function(key) { return Dirty[key]; }).length;
 }
 
-// ── Data ─────────────────────────────────────────────────────────────────────
+// Data
 async function load() {
   try {
     var r = await fetch('/api/data');
@@ -216,34 +371,30 @@ function renderAll() {
   }
 }
 
-// ── API call ─────────────────────────────────────────────────────────────────
+// API call
 async function api(url, body) {
-  try {
-    var r = await fetch(url, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-    var j = await r.json();
-    if (!r.ok) { toast(j.error || 'Request failed', false); return false; }
-    toast(j.message || 'Saved');
-    await load();
-    return j;
-  } catch(e) { toast(e.message, false); return false; }
+  var j = await postJson(url, body);
+  if (!j) return false;
+  toast(j.message || 'Saved');
+  await load();
+  return j;
 }
 
-// ── Toast ────────────────────────────────────────────────────────────────────
+// Toast
 function toast(msg, ok) {
-  if (ok === undefined) ok = true;
   var el = document.getElementById('toast');
   el.textContent = msg;
-  el.className = 'show ' + (ok ? 'ok' : 'err');
+  el.className = 'show ' + (ok !== false ? 'ok' : 'err');
   clearTimeout(_toastTimer);
   _toastTimer = setTimeout(function() { el.className = ''; }, 3200);
 }
 
-// ── Config tab ───────────────────────────────────────────────────────────────
+// Config tab
 function renderConfig() {
   if (!D) return;
-  var html = '<div class="tab-hdr"><h1>Construct</h1><p>User-level settings applied across all workspaces.</p></div>';
+  var html = '<div class="tab-hdr"><h1>Construct</h1><p>Settings applied across all workspaces.</p></div>';
   if (!D.sqliteAvailable) {
-    html += '<div class="banner banner-info">Running in JSON config mode. Settings are editable, but profiles and workspaces require SQLite.</div>';
+    html += '<div class="banner banner-info">Running in JSON mode. Profiles/workspaces require SQLite.</div>';
   }
 
   html += renderConfigActions();
@@ -387,13 +538,13 @@ function clientValidationError(field, value) {
     if (field.max != null && n > field.max) return field.label + ' must be at most ' + field.max;
   }
   if (field.input === 'roles') {
-    var rawRoles = String(value || '').trim() === '' ? [] : String(value || '').split(',');
-    var roles = rawRoles.map(function(role) { return role.trim(); });
-    if (roles.some(function(role) { return !role; })) {
-      return 'roles cannot contain empty role names';
+    var raw = String(value || '').trim();
+    if (raw) {
+      var roles = raw.split(',').map(function(r) { return r.trim(); });
+      if (roles.some(function(r) { return !r; })) return 'roles cannot contain empty role names';
+      var bad = roles.find(function(r) { return !/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$/.test(r); });
+      if (bad) return 'Invalid role: ' + bad;
     }
-    var bad = roles.find(function(role) { return !/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$/.test(role); });
-    if (bad) return 'Invalid role: ' + bad;
   }
   if ((field.key === 'global_git.remote' || field.key.indexOf('.branch') > -1) && /\s/.test(String(value || ''))) {
     return field.label + ' cannot contain whitespace';
@@ -415,21 +566,17 @@ function hasClientErrors() {
 
 function openCfgReview() {
   if (hasClientErrors()) {
-    toast('Fix highlighted config values before saving', false);
+    toast('Fix config values before saving', false);
     return;
   }
-  var patch = buildPatch();
-  var keys = Object.keys(patch);
+  var patch = buildPatch(), keys = Object.keys(patch);
   if (!keys.length) return;
   _pendingPatch = patch;
 
-  var risky = keys.filter(function(key) {
-    var field = fieldByKey(key);
-    return field && field.risk === 'risky';
-  });
-  var rows = keys.map(function(key) {
-    var field = fieldByKey(key);
-    return '<tr><td class="mono">' + esc(key) + '</td><td>' + esc(uiValue(field, gv(D.config, key)) || '-') + '</td><td>' + esc(String(patch[key]) || '-') + '</td></tr>';
+  var risky = keys.filter(function(k) { return (fieldByKey(k)||{}).risk === 'risky'; });
+  var rows = keys.map(function(k) {
+    var f = fieldByKey(k);
+    return '<tr><td class="mono">' + esc(k) + '</td><td>' + esc(uiValue(f, gv(D.config, k)) || '-') + '</td><td>' + esc(patch[k] || '-') + '</td></tr>';
   }).join('');
 
   var riskHtml = risky.length ? '<label class="confirm-line"><input type="checkbox" id="cfg-risk-ok"> I reviewed risky changes: ' + esc(risky.join(', ')) + '</label>' : '';
@@ -444,13 +591,10 @@ function openCfgReview() {
 
 async function confirmCfgSave() {
   if (!_pendingPatch) return;
-  var risky = Object.keys(_pendingPatch).some(function(key) {
-    var field = fieldByKey(key);
-    return field && field.risk === 'risky';
-  });
+  var risky = Object.keys(_pendingPatch).some(function(k) { return (fieldByKey(k)||{}).risk === 'risky'; });
   var riskOk = document.getElementById('cfg-risk-ok');
   if (risky && (!riskOk || !riskOk.checked)) {
-    toast('Confirm risky config changes first', false);
+    toast('Confirm risky changes first', false);
     return;
   }
 
@@ -474,15 +618,12 @@ async function postJson(url, body) {
   try {
     var r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
     var j = await r.json();
-    if (!r.ok) {
-      toast(j.error || 'Request failed', false);
-      return null;
-    }
-    return j;
+    if (r.ok) return j;
+    toast(j.error || 'Request failed', false);
   } catch(e) {
     toast(e.message, false);
-    return null;
   }
+  return null;
 }
 
 function markServerIssues(issues) {
@@ -519,9 +660,9 @@ function closeModal() {
 function confirmAction(opts) {
   return new Promise(function(resolve) {
     var resolved = false;
-    var title = opts && opts.title ? opts.title : 'Confirm action';
-    var body = opts && opts.body ? opts.body : 'Continue?';
-    var confirmText = opts && opts.confirmText ? opts.confirmText : 'Confirm';
+    var title = (opts && opts.title) || 'Confirm action';
+    var body = (opts && (opts.message || opts.body)) || 'Continue?';
+    var confirmText = (opts && opts.confirmText) || 'Confirm';
     var danger = opts && opts.danger === true;
     function finish(value) {
       if (resolved) return;
@@ -551,31 +692,33 @@ function confirmAction(opts) {
       '</div>',
       onKey
     );
-    var cancel = document.querySelector('[data-confirm-cancel]');
-    var confirm = document.querySelector('[data-confirm-confirm]');
-    var close = document.querySelector('[data-confirm-close]');
-    if (cancel) cancel.addEventListener('click', function() { finish(false); }, { once: true });
-    if (close) close.addEventListener('click', function() { finish(false); }, { once: true });
-    if (confirm) confirm.addEventListener('click', function() { finish(true); }, { once: true });
-    if (cancel) cancel.focus();
+    var root = document.getElementById('modal-root');
+    if (root) {
+      root.onclick = function(e) {
+        if (e.target.closest('[data-confirm-confirm]')) finish(true);
+        else if (e.target.closest('[data-confirm-cancel],[data-confirm-close]')) finish(false);
+      };
+      var cancel = root.querySelector('[data-confirm-cancel]');
+      if (cancel) cancel.focus();
+    }
   });
 }
 
 
-// ── Profiles tab ─────────────────────────────────────────────────────────────
+// Profiles tab
 function renderProfiles() {
   if (!D) return;
-  var html = '<div class="tab-hdr"><h1>Profiles</h1><p>Isolated global memory roots for different contexts (personal, company, team).</p></div>';
+  var html = '<div class="tab-hdr"><h1>Profiles</h1><p>Isolated global memory roots for different contexts.</p></div>';
   if (!D.sqliteAvailable) {
-    html += '<div class="banner banner-warn">⚠️ SQLite unavailable — profile management requires SQLite.</div>';
+    html += '<div class="banner banner-warn">⚠️ SQLite unavailable — profile management requires it.</div>';
   }
   if (D.sqliteAvailable) {
     html += '<div class="tab-actions"><button class="btn btn-primary" onclick="toggleAddProfile()">+ Add Profile</button></div>';
     html += '<div class="add-form-row" id="pf-form">' +
-      '<div class="form-group"><label class="form-label">Name</label><input class="form-input" id="pf-name" placeholder="e.g. personal" style="width:160px"></div>' +
-      '<div class="form-group"><label class="form-label">Global Path</label><div class="input-with-btn"><input class="form-input" id="pf-path" placeholder="~/Documents/engram" style="width:320px"><button class="btn btn-outline" onclick="browseFolder(\'pf-path\')">Browse</button></div></div>' +
+      '<div class="form-group"><label class="form-label">Name</label><input class="form-input" id="pf-name" style="width:160px"></div>' +
+      '<div class="form-group"><label class="form-label">Global Path</label><div class="input-with-btn"><input class="form-input" id="pf-path" style="width:320px"><button class="btn btn-outline" onclick="browseFolder(\'pf-path\')">Browse</button></div></div>' +
       '<div class="form-group"><label class="form-label">Scope</label><select class="form-select" id="pf-scope"><option>global</option><option>workspace</option><option>both</option></select></div>' +
-      '<div class="form-group" style="justify-content:flex-end"><label class="form-label">&nbsp;</label><div style="display:flex;gap:6px"><button class="btn btn-primary" onclick="saveProfile()">Save</button><button class="btn btn-outline" onclick="toggleAddProfile()">Cancel</button></div></div>' +
+      '<div class="form-group" style="align-items:flex-end"><div style="display:flex;gap:6px"><button class="btn btn-primary" onclick="saveProfile()">Save</button><button class="btn btn-outline" onclick="toggleAddProfile()">Cancel</button></div></div>' +
       '</div>';
   }
   html += '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Name</th><th>Global Path</th><th>Scope</th><th>Status</th>' + (D.sqliteAvailable ? '<th></th>' : '') + '</tr></thead><tbody>';
@@ -590,10 +733,10 @@ function renderProfiles() {
         '<td><span class="badge badge-neutral">' + esc(p.scope || 'global') + '</span></td>' +
         '<td>' + (isActive ? '<span class="badge badge-pos">✓ Active</span>' : '<span style="color:var(--g600)">—</span>') + '</td>';
       if (D.sqliteAvailable) {
-        html += '<td class="actions">' +
-          (!isActive ? '<button class="btn btn-ghost" onclick="activateProfile(\'' + esc(escJs(p.name)) + '\')">Activate</button>' : '') +
-          '<button class="btn btn-ghost" onclick="editProfile(\'' + esc(escJs(p.name)) + '\',\'' + esc(escJs(p.global_path)) + '\',\'' + esc(escJs(p.scope)) + '\')">Edit</button>' +
-          '<button class="btn btn-danger" onclick="removeProfile(\'' + esc(escJs(p.name)) + '\')">Remove</button>' +
+        html += '<td class="actions" style="display:flex;justify-content:flex-end;align-items:center;gap:6px">' +
+          (!isActive ? '<button class="btn btn-outline" style="height:24px;font-size:11px;padding:0 8px;" onclick="activateProfile(\'' + esc(escJs(p.name)) + '\')">Activate</button>' : '') +
+          '<button class="btn btn-outline" style="height:24px;font-size:11px;padding:0 8px;" onclick="editProfile(\'' + esc(escJs(p.name)) + '\',\'' + esc(escJs(p.global_path)) + '\',\'' + esc(escJs(p.scope)) + '\')">Edit</button>' +
+          '<button class="btn btn-outline-danger" style="height:24px;font-size:11px;padding:0 8px;" onclick="removeProfile(\'' + esc(escJs(p.name)) + '\')">Remove</button>' +
           '</td>';
       }
       html += '</tr>';
@@ -638,19 +781,19 @@ function editProfile(name, path, scope) {
   f.scrollIntoView({behavior:'smooth'});
 }
 
-// ── Workspaces tab ───────────────────────────────────────────────────────────
+// Workspaces tab
 function renderWorkspaces() {
   if (!D) return;
-  var html = '<div class="tab-hdr"><h1>Workspaces</h1><p>Registered projects that Engram tracks for memory routing.</p></div>';
+  var html = '<div class="tab-hdr"><h1>Workspaces</h1><p>Projects tracked for memory routing.</p></div>';
   if (!D.sqliteAvailable) {
-    html += '<div class="banner banner-warn">⚠️ SQLite unavailable — workspace management requires SQLite.</div>';
+    html += '<div class="banner banner-warn">⚠️ SQLite unavailable — workspace management requires it.</div>';
   }
   if (D.sqliteAvailable) {
     html += '<div class="tab-actions"><button class="btn btn-primary" onclick="toggleAddWs()">+ Register Workspace</button></div>';
     html += '<div class="add-form-row" id="ws-form">' +
-      '<div class="form-group"><label class="form-label">Path</label><div class="input-with-btn"><input class="form-input" id="ws-path" placeholder="/path/to/project" style="width:360px"><button class="btn btn-outline" onclick="browseFolder(\'ws-path\')">Browse</button></div></div>' +
-      '<div class="form-group"><label class="form-label">Name (optional)</label><input class="form-input" id="ws-name" placeholder="my-project" style="width:200px"></div>' +
-      '<div class="form-group" style="justify-content:flex-end"><label class="form-label">&nbsp;</label><div style="display:flex;gap:6px"><button class="btn btn-primary" onclick="saveWs()">Register</button><button class="btn btn-outline" onclick="toggleAddWs()">Cancel</button></div></div>' +
+      '<div class="form-group"><label class="form-label">Path</label><div class="input-with-btn"><input class="form-input" id="ws-path" style="width:360px"><button class="btn btn-outline" onclick="browseFolder(\'ws-path\')">Browse</button></div></div>' +
+      '<div class="form-group"><label class="form-label">Name (optional)</label><input class="form-input" id="ws-name" style="width:200px"></div>' +
+      '<div class="form-group" style="align-items:flex-end"><div style="display:flex;gap:6px"><button class="btn btn-primary" onclick="saveWs()">Register</button><button class="btn btn-outline" onclick="toggleAddWs()">Cancel</button></div></div>' +
       '</div>';
   }
   html += '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Name</th><th>Path</th><th>Linked</th><th>Last Seen</th>' + (D.sqliteAvailable ? '<th></th>' : '') + '</tr></thead><tbody>';
@@ -666,9 +809,9 @@ function renderWorkspaces() {
         '<td>' + (linked ? '<span class="badge badge-pos">✓ Linked</span>' : '<span class="badge badge-neg">× Unlinked</span>') + '</td>' +
         '<td style="color:var(--g600);font-size:12px">' + relTime(ws.last_seen) + '</td>';
       if (D.sqliteAvailable) {
-        html += '<td class="actions">' +
-          '<button class="btn btn-ghost" onclick="toggleLink(\'' + esc(escJs(ws.path)) + '\',' + (!linked) + ')">' + (linked ? 'Unlink' : 'Link') + '</button>' +
-          '<button class="btn btn-danger" onclick="removeWs(\'' + esc(escJs(ws.path)) + '\')">Remove</button>' +
+        html += '<td class="actions" style="display:flex;justify-content:flex-end;align-items:center;gap:6px">' +
+          '<button class="btn ' + (linked ? 'btn-outline-danger' : 'btn-outline') + '" style="height:24px;font-size:11px;padding:0 8px;" onclick="toggleLink(\'' + esc(escJs(ws.path)) + '\',' + (!linked) + ')">' + (linked ? 'Unlink' : 'Link') + '</button>' +
+          '<button class="btn btn-outline-danger" style="height:24px;font-size:11px;padding:0 8px;" onclick="removeWs(\'' + esc(escJs(ws.path)) + '\')">Remove</button>' +
           '</td>';
       }
       html += '</tr>';
@@ -711,10 +854,10 @@ async function removeWs(path) {
   await api('/api/workspace/remove', {path: path});
 }
 
-// ── Runtime tab ──────────────────────────────────────────────────────────────
+// Runtime tab
 function renderRuntime() {
   if (!D) return;
-  var html = '<div class="tab-hdr"><h1>Runtime</h1><p>Resolved configuration snapshot. Click any row to copy its value.</p></div><div class="rt-grid">';
+  var html = '<div class="tab-hdr"><h1>Runtime</h1><p>Configuration snapshot. Click any row to copy.</p></div><div class="rt-grid">';
   (D.entry || []).forEach(function(sec) {
     html += '<div class="card"><div class="card-hdr"><span class="card-title">' + esc(sec.group) + '</span></div><div>';
     (sec.rows || []).forEach(function(row) {
@@ -750,14 +893,14 @@ function cpRow(el, val) {
   setTimeout(function() { el.classList.remove('cp'); }, 1400);
 }
 
-// ── Shutdown ─────────────────────────────────────────────────────────────────
+// Shutdown
 function doShutdown() {
   fetch('/shutdown').catch(function(){});
   setTimeout(function() { window.close(); }, 400);
 }
 
 
-// ── Workspace Init ───────────────────────────────────────────────────────────
+// Workspace Init
 function renderInitBanner() {
   var container = document.getElementById('init-banner-container');
   if (!container) return;
@@ -777,7 +920,7 @@ async function initWorkspace() {
   try {
     var ok = await api('/api/init', {});
     if (ok) {
-      toast('Workspace initialized successfully!');
+      toast('Workspace initialized!');
     }
   } catch(e) {
     toast(e.message, false);
@@ -789,7 +932,7 @@ async function initWorkspace() {
   }
 }
 
-// ── Connection Tab ───────────────────────────────────────────────────────────
+// Connection Tab
 window._agentsData = null;
 window._scanning = false;
 
@@ -831,20 +974,25 @@ async function scanAgents() {
 function renderConnection() {
   if (!window._agentsData) return;
 
+  function agBtn(id, linked, isGlobal, detected) {
+    if (!detected) return '<span style="color:var(--g500);font-size:11px;">Not Available</span>';
+    if (linked) {
+      return '<span style="display:flex;align-items:center;gap:6px;color:var(--green);font-weight:500;">✓ Linked<button class="btn btn-outline-danger" style="height:24px;font-size:11px;padding:0 8px;" onclick="unlinkAgent(\'' + escJs(id) + '\',' + isGlobal + ')">Unlink</button></span>';
+    }
+    return '<button class="btn btn-outline" style="height:24px;font-size:11px;padding:0 8px;" onclick="linkAgent(\'' + escJs(id) + '\',' + isGlobal + ')">Link</button>';
+  }
+
   window._agentsData.sort(function(a, b) {
     return (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' });
   });
 
-  var html = '<div class="tab-hdr" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">' +
+  var html = '<div class="tab-hdr" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px">' +
     '<div>' +
       '<h1>AI Agent Connections</h1>' +
-      '<p>Link Engram memory skillset instructions and hooks to your local AI agents.</p>' +
+      '<p>Link Engram memory skillsets and hooks to local AI agents.</p>' +
     '</div>' +
     '<button class="btn btn-outline" onclick="scanAgents()">' +
-      '<svg class="nav-icon" style="width:14px;height:14px;margin-right:4px;" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">' +
-        '<path d="M1.5 8a6.5 6.5 0 0 1 11-4.7l2 2.2M14.5 8a6.5 6.5 0 0 1-11 4.7l-2-2.2"/>' +
-        '<path d="M14.5 2v4.5H10M1.5 14v-4.5H6"/>' +
-      '</svg>Refresh' +
+      'Refresh' +
     '</button>' +
   '</div>';
 
@@ -856,35 +1004,8 @@ function renderConnection() {
       : '<span class="conn-status missing">Not Detected</span>';
 
     var cardClass = 'conn-card' + (agent.detected ? '' : ' disabled');
-
-    var wsBtn = '';
-    if (agent.detected) {
-      if (agent.workspaceLinked) {
-        wsBtn = '<span style="display:flex;align-items:center;gap:6px;color:var(--green);font-weight:500;">' +
-          '<span>✓ Linked</span>' +
-          '<button class="btn btn-ghost btn-danger" style="padding:0;height:auto;font-size:11px;" onclick="unlinkAgent(\'' + escJs(agent.id) + '\', false)" title="Unlink from workspace">Unlink</button>' +
-          '</span>';
-      } else {
-        wsBtn = '<button class="btn btn-outline" style="height:24px;font-size:11px;padding:0 8px;" onclick="linkAgent(\'' + escJs(agent.id) + '\', false)">Link</button>';
-      }
-    } else {
-      wsBtn = '<span style="color:var(--g500);font-size:11px;">Not Available</span>';
-    }
-
-    var glBtn = '';
-    if (agent.detected) {
-      if (agent.globalLinked) {
-        glBtn = '<span style="display:flex;align-items:center;gap:6px;color:var(--green);font-weight:500;">' +
-          '<span>✓ Linked</span>' +
-          '<button class="btn btn-ghost btn-danger" style="padding:0;height:auto;font-size:11px;" onclick="unlinkAgent(\'' + escJs(agent.id) + '\', true)" title="Unlink from global">Unlink</button>' +
-          '</span>';
-      } else {
-        glBtn = '<button class="btn btn-outline" style="height:24px;font-size:11px;padding:0 8px;" onclick="linkAgent(\'' + escJs(agent.id) + '\', true)">Link</button>';
-      }
-    } else {
-      glBtn = '<span style="color:var(--g500);font-size:11px;">Not Available</span>';
-    }
-
+    var wsBtn = agBtn(agent.id, agent.workspaceLinked, false, agent.detected);
+    var glBtn = agBtn(agent.id, agent.globalLinked, true, agent.detected);
     var targetsDesc = agent.targets ? agent.targets.join(', ') : agent.id;
     var details = 'Skillset targets: ' + esc(targetsDesc);
 
@@ -917,17 +1038,16 @@ async function linkAgent(agentId, isGlobal) {
     if (res.message && res.message.indexOf('Skipped') !== -1) {
       toast(res.message, false);
     } else {
-      toast('Connected successfully!', true);
+      toast('Connected!', true);
     }
     await scanAgents();
   }
 }
 
 async function unlinkAgent(agentId, isGlobal) {
-  var mode = isGlobal ? 'global mode' : 'workspace mode';
   var ok = await confirmAction({
     title: 'Unlink AI agent',
-    body: 'Unlink ' + agentId + ' from Engram ' + mode + '?',
+    body: 'Unlink ' + agentId + ' from Engram (' + (isGlobal ? 'global' : 'workspace') + ')?',
     confirmText: 'Confirm',
     danger: true
   });
@@ -938,7 +1058,7 @@ async function unlinkAgent(agentId, isGlobal) {
     if (res.message && res.message.indexOf('Skipped') !== -1) {
       toast(res.message, false);
     } else {
-      toast('Disconnected successfully!', true);
+      toast('Disconnected!', true);
     }
     window._agentsData = null;
     await scanAgents();
@@ -959,7 +1079,8 @@ async function loadCore(rebuild) {
       body: JSON.stringify({
         rebuild: rebuild === true,
         semantic: window._coreOptions.semantic === true,
-        scope: window._coreOptions.scope || 'all',
+        scopes: window._coreOptions.scopes || ['profile', 'global', 'workspace'],
+        types: window._coreOptions.types || ['rule', 'skill', 'workflow', 'knowledge'],
         limit: window._coreOptions.limit
       })
     });
@@ -983,6 +1104,140 @@ function refreshCore() {
   return loadCore(true);
 }
 
+function ga(el,n){return el.getAttribute(n)||"";}
+async function loadMemories(reb){if(window._memoriesLoading)return;window._memoriesLoading=true;var p=document.getElementById('tab-memories'),o=window._memoriesOptions;if(p&&!window._memoriesData)p.innerHTML='<div class="loading"><div class="spinner"></div>&nbsp;&nbsp;Loading memories graph&hellip;</div>';try{var res=await fetch('/api/memories',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rebuild:reb===true,semantic:o.semantic===true,scopes:o.scopes,limit:o.limit})}),j=await res.json();if(!res.ok||!j.ok)throw new Error(j.error||'Failed to load Memories data');window._memoriesData=j.data;if(!window._memoriesSelectedId&&j.data.nodes.length)window._memoriesSelectedId=j.data.nodes[0].id;renderMemories();}catch(e){if(p)p.innerHTML='<div class="loading" style="color:var(--red);flex-direction:column;gap:12px"><span>'+esc(e.message)+'</span><button class="btn btn-outline" onclick="refreshMemories()">Retry</button></div>';}finally{window._memoriesLoading=false;}}
+function refreshMemories(){return loadMemories(true);}
+function tglScope(s){var o=window._memoriesOptions,a=o.scopes.slice(),i=a.indexOf(s);if(i>=0&&a.length>1)a.splice(i,1);else if(i<0)a.push(s);o.scopes=a;return loadMemories(false);}
+function tglSem(){window._memoriesOptions.semantic=!window._memoriesOptions.semantic;return loadMemories(false);}
+function getMemoryType(n){
+  var type = n.type || '';
+  if (type === 'skill') {
+    var isWorkflow = (n.file || '').toLowerCase().indexOf('workflow') >= 0 ||
+                     (n.id || '').toLowerCase().indexOf('workflow') >= 0 ||
+                     (n.memoryId || '').toLowerCase().indexOf('workflow') >= 0 ||
+                     (n.summary || '').toLowerCase().indexOf('workflow') >= 0 ||
+                     (n.tags && n.tags.some(function(t){ return t.toLowerCase().indexOf('workflow') >= 0; }));
+    return isWorkflow ? 'workflow' : 'skill';
+  }
+  return type;
+}
+
+function selNode(id){window._memoriesSelectedId=id;renderMemories();}
+function renderMemories(){
+  var p=document.getElementById('tab-memories');
+  if(!p||!window._memoriesData)return;
+  var d=window._memoriesData;
+  var enabledTypes = window._memoriesOptions.types || ['rule', 'skill', 'workflow', 'knowledge'];
+  var filteredNodes = d.nodes.filter(function(n){
+    return enabledTypes.indexOf(getMemoryType(n)) >= 0;
+  });
+  var nodeIds = new Set(filteredNodes.map(function(n){ return n.id; }));
+  var filteredLinks = d.links.filter(function(l){
+    return nodeIds.has(l.from) && nodeIds.has(l.to);
+  });
+  var filteredData = {
+    nodes: filteredNodes,
+    links: filteredLinks,
+    stats: d.stats
+  };
+  var s=filteredNodes.find(function(n){return n.id===window._memoriesSelectedId;})||filteredNodes[0];
+  p.innerHTML='<div class="tab-hdr memories-hdr"><div><h1>Memories</h1><p>Dependency map across profile, global, and workspace memory.</p></div><button class="btn btn-outline" onclick="refreshMemories()">Refresh</button></div>'+rToolbar(d)+'<div class="memories-shell">'+renderMemoriesGraph(filteredData,s?s.id:'')+rDetail(s)+'</div>';
+  
+  updateMemoriesViewport();
+  
+  var graph = p.querySelector('.memories-graph');
+  if (graph) {
+    if (window._memoriesViewport.isFullscreen) {
+      graph.classList.add('fullscreen');
+      updateMemoriesViewport();
+    }
+    graph.addEventListener('wheel', function(e) {
+      e.preventDefault();
+      var direction = e.deltaY < 0 ? 1 : -1;
+      zoomMemories(direction, e.clientX, e.clientY);
+    }, { passive: false });
+
+    graph.addEventListener('mousedown', function(e) {
+      if (e.target.closest('.memory-node') || e.target.closest('.memories-controls')) return;
+      e.preventDefault();
+      
+      var vp = window._memoriesViewport;
+      var startX = e.clientX;
+      var startY = e.clientY;
+      var startPanX = vp.panX;
+      var startPanY = vp.panY;
+      
+      function onMouseMove(ev) {
+        var dx = ev.clientX - startX;
+        var dy = ev.clientY - startY;
+        vp.panX = startPanX + dx;
+        vp.panY = startPanY + dy;
+        updateMemoriesViewport();
+      }
+      
+      function onMouseUp() {
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+      }
+      
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    });
+  }
+}
+
+function rToolbar(d){
+  var o=window._memoriesOptions;
+  var sem=o.semantic===true;
+  var scopesBtn=function(s,l){return '<button class="scope-chip'+(o.scopes.indexOf(s)>=0?' active':'')+'" onclick="tglScope(\''+s+'\')">'+l+'</button>';};
+  var types = o.types || ['rule', 'skill', 'workflow', 'knowledge'];
+  var typesBtn=function(t,l){return '<button class="scope-chip'+(types.indexOf(t)>=0?' active':'')+'" onclick="tglMemoriesType(\''+t+'\')">'+l+'</button>';};
+  
+  var enabledTypes = o.types || ['rule', 'skill', 'workflow', 'knowledge'];
+  var filteredNodes = d.nodes.filter(function(n){
+    return enabledTypes.indexOf(getMemoryType(n)) >= 0;
+  });
+
+  return '<div class="memories-toolbar">'+
+    '<div class="memories-scope-controls">'+scopesBtn('profile','Profile')+scopesBtn('global','Global')+scopesBtn('workspace','Workspace')+'</div>'+
+    '<div class="memories-scope-controls">'+typesBtn('rule','Rule')+typesBtn('skill','Skills')+typesBtn('workflow','Workflow')+typesBtn('knowledge','Knowledge')+'</div>'+
+    '<div class="core-check" onclick="tglSem()"><span>Thin semantic lines</span><div class="tgl'+(sem?' on':'')+'"><div class="tgl-thumb"></div></div></div>'+
+    '<span class="badge badge-neutral">'+filteredNodes.length+' / '+d.stats.total+' memories</span>'+
+    '<span class="badge badge-blue">'+d.stats.dependencies+' dependencies</span>'+
+    '<span class="badge badge-amber">'+d.stats.thinLinks+' thin links</span>'+
+  '</div>';
+}
+
+function tglMemoriesType(t){
+  var o=window._memoriesOptions;
+  if(!o.types){
+    o.types = ['rule', 'skill', 'workflow', 'knowledge'];
+  }
+  var a = o.types.slice();
+  var i = a.indexOf(t);
+  if(i>=0&&a.length>1){
+    a.splice(i,1);
+  }else if(i<0){
+    a.push(t);
+  }
+  o.types = a;
+  renderMemories();
+}
+function memLayout(d){var nodes=d.nodes.slice();nodes.sort(function(a,b){var hA=0,hB=0;for(var i=0;i<a.id.length;i++)hA=(hA*31+a.id.charCodeAt(i))&0xfffffff;for(var i=0;i<b.id.length;i++)hB=(hB*31+b.id.charCodeAt(i))&0xfffffff;return hA-hB;});var cols=4,cellW=320,cellH=140,w=cols*cellW+40,rows=Math.max(3,Math.ceil(nodes.length/cols)),h=rows*cellH+60,pos={};nodes.forEach(function(n,idx){var row=Math.floor(idx/cols),col=idx%cols,hash=0;for(var i=0;i<n.id.length;i++)hash=(hash*31+n.id.charCodeAt(i))&0xfffffff;var offsetX=hash%50,offsetY=(hash>>5)%30,x=col*cellW+20+offsetX,y=row*cellH+40+offsetY;pos[n.id]={x:x,y:y,w:252,h:86};});return{positions:pos,width:w,height:h};}
+function renderMemoriesGraph(d,selId){if(!d.nodes.length)return '<div class="memories-graph empty">No memories found for selected scopes.</div>';var lay=memLayout(d),pos=lay.positions,svg=d.links.map(function(l){var a=pos[l.from],b=pos[l.to];if(!a||!b)return '';if(l.kind==='dependency'){a=pos[l.to];b=pos[l.from];}var x1=a.x+a.w,y1=a.y+38,x2=b.x,y2=b.y+38;if(a.x>b.x){x1=a.x;x2=b.x+b.w;}if(x1<x2){x1+=4;x2-=10;}else{x1-=4;x2+=10;}var cls=l.thin?'memory-edge memory-edge-thin':'memory-edge memory-edge-dependency',m=l.kind==='dependency'?' marker-end="url(#mem-arrow)"':'';return '<path class="'+cls+'" data-from="'+esc(l.from)+'" data-to="'+esc(l.to)+'" data-kind="'+esc(l.kind)+'" d="M '+x1+' '+y1+' C '+(x1+x2)/2+' '+y1+', '+(x1+x2)/2+' '+y2+', '+x2+' '+y2+'"'+m+'><title>'+esc(l.label)+'</title></path>';}).join(''),nodes=d.nodes.map(function(n){var p=pos[n.id];var kicker=n.sourceScope==='workspace'?esc(n.profile)+'/'+esc(n.workspaceName||'workspace'):esc(n.profile)+' / '+esc(n.sourceScope);return '<button type="button" id="'+esc(n.id)+'" class="memory-node memory-node-'+esc(n.sourceScope)+(n.id===selId?' active':'')+'" style="left:'+p.x+'px;top:'+p.y+'px;width:'+p.w+'px;height:'+p.h+'px" data-action="select-memory-node" data-node-id="'+esc(n.id)+'">'+'<span class="memory-node-kicker">'+kicker+'</span>'+'<strong>'+esc(n.memoryId)+'</strong>'+'<span>'+esc(n.summary||n.file)+'</span>'+'</button>';}).join('');return '<div class="memories-graph"><div class="memories-controls"><button type="button" id="memories-clear-hi-btn" onclick="hi(\'clear\')" title="Clear Highlight" style="display: none;">Clear</button><button type="button" onclick="zoomMemories(1)" title="Zoom In">+</button><button type="button" onclick="zoomMemories(-1)" title="Zoom Out">-</button><button type="button" onclick="resetMemories()" title="Reset View">⟲</button><button type="button" id="memories-fullscreen-btn" onclick="toggleMemoriesFullscreen()" title="Toggle Fullscreen">⛶</button></div><div class="memories-canvas" style="width:'+lay.width+'px;height:'+lay.height+'px"><svg class="memories-svg" style="width:'+lay.width+'px;height:'+lay.height+'px" viewBox="0 0 '+lay.width+' '+lay.height+'" aria-hidden="true"><defs><marker id="mem-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M1,1 L7,4 L1,7" /></marker></defs>'+svg+'</svg>'+nodes+'</div></div>';}
+function actAttrs(n){return ' data-profile="'+esc(n.profile)+'" data-scope="'+esc(n.scope)+'" data-file="'+esc(n.file)+'" data-id="'+esc(n.memoryId)+'"';}
+function rDetail(n){
+  if(!n)return '<aside class="memory-detail"><div class="core-empty">Select a memory.</div></aside>';
+  var badges = '<span class="badge badge-neutral">'+esc(n.profile)+'</span><span class="badge badge-neutral">'+esc(n.scope)+'</span>';
+  if(n.workspaceName){
+    badges += '<span class="badge badge-blue">'+esc(n.workspaceName)+'</span>';
+  }
+  return '<aside class="memory-detail"><div class="memory-detail-hdr">'+badges+'</div><h2>'+esc(n.memoryId)+'</h2><p>'+esc(n.summary||'')+'</p><div class="mono memory-file">'+esc(n.file)+'</div><div class="memory-detail-actions"><button class="btn btn-outline" data-action="view-memory"'+actAttrs(n)+'>View</button><button class="btn btn-outline" data-action="edit-memory"'+actAttrs(n)+(n.canEdit?'':' disabled')+'>Edit</button><button class="btn btn-danger" data-action="delete-memory"'+actAttrs(n)+(n.canDelete?'':' disabled')+'>Delete</button></div></aside>';
+}
+async function editMemoryFromGraph(el){var p=ga(el,'data-profile'),s=ga(el,'data-scope')||'global',f=ga(el,'data-file');try{var res=await fetch('/api/memory/file?profile='+ec(p)+'&scope='+ec(s)+'&file='+ec(f)),j=await res.json();if(!res.ok||!j.ok)throw new Error(j.error||'Failed to resolve memory file');window._modalCopyContent=j.data.path;window.open(j.data.editorUrl,'_blank','noopener,noreferrer');toast('Opening editor. Path copied.');navigator.clipboard.writeText(j.data.path).catch(function(){});}catch(e){toast(e.message,false);}}
+async function archiveMemoryFromGraph(el){var p=ga(el,'data-profile'),s=ga(el,'data-scope')||'global',f=ga(el,'data-file'),id=ga(el,'data-id')||f;if(!await confirmAction({title:'Delete memory',message:'Remove '+id+' from active routing? Preserved under archive.',confirmText:'Delete',danger:true}))return;try{var res=await postJson('/api/memory/archive',{profile:p,scope:s,file:f,id:id,reason:'Deleted from Memories graph view'});if(!res)return;toast(res.data&&res.data.message?res.data.message:'Memory archived');window._memoriesData=null;window._memoriesSelectedId='';await loadMemories(true);}catch(e){toast(e.message,false);}}
+
+
 function renderCore() {
   var pane = document.getElementById('tab-core');
   if (!pane || !window._coreData) return;
@@ -990,7 +1245,7 @@ function renderCore() {
   // Note: data.warning may contain: consume more tokens
   pane.innerHTML =
     '<div class="tab-hdr core-hdr">' +
-      '<div><h1>Core</h1><p>Duplicate memory candidates and memory relationships scoped by active profile, global memory, and workspace memory.</p></div>' +
+      '<div><h1>Core</h1><p>Duplicate memory candidates and relationships across profile, global, and workspace scopes.</p></div>' +
       '<button class="btn btn-outline" onclick="refreshCore()">Refresh</button>' +
     '</div>' +
     '<div class="banner banner-warn">' + esc(data.warning) + '</div>' +
@@ -1003,17 +1258,29 @@ function renderCore() {
 }
 
 function renderCoreToolbar(data) {
-  var scope = data.scope && data.scope.filter ? data.scope.filter : 'all';
+  var scopes = window._coreOptions.scopes || ['profile', 'global', 'workspace'];
+  var types = window._coreOptions.types || ['rule', 'skill', 'workflow', 'knowledge'];
   var semantic = window._coreOptions.semantic === true;
   var profilesCount = data.scope.profiles ? data.scope.profiles.length : 1;
+  
+  var scopeBtn = function(s, l) {
+    return '<button class="scope-chip' + (scopes.indexOf(s) >= 0 ? ' active' : '') + '" onclick="tglCoreScope(\'' + s + '\')">' + l + '</button>';
+  };
+  var typeBtn = function(t, l) {
+    return '<button class="scope-chip' + (types.indexOf(t) >= 0 ? ' active' : '') + '" onclick="tglCoreType(\'' + t + '\')">' + l + '</button>';
+  };
+
   return '<div class="core-toolbar">' +
-    '<div class="core-scope">' +
-      '<span class="form-label">Scope</span>' +
-      '<select class="form-select" onchange="setCoreScope(this.value)">' +
-        '<option value="all"' + (scope === 'all' ? ' selected' : '') + '>Profile + global + workspace</option>' +
-        '<option value="global"' + (scope === 'global' ? ' selected' : '') + '>Global</option>' +
-        '<option value="workspace"' + (scope === 'workspace' ? ' selected' : '') + '>Workspace</option>' +
-      '</select>' +
+    '<div class="core-scope-controls">' +
+      scopeBtn('profile', 'Profile') +
+      scopeBtn('global', 'Global') +
+      scopeBtn('workspace', 'Workspace') +
+    '</div>' +
+    '<div class="core-scope-controls">' +
+      typeBtn('rule', 'Rule') +
+      typeBtn('skill', 'Skills') +
+      typeBtn('workflow', 'Workflow') +
+      typeBtn('knowledge', 'Knowledge') +
     '</div>' +
     '<div class="core-check" onclick="toggleCoreSemantic()">' +
       '<span>Include semantic candidates</span>' +
@@ -1024,8 +1291,35 @@ function renderCoreToolbar(data) {
   '</div>';
 }
 
-function setCoreScope(value) {
-  window._coreOptions.scope = value === 'workspace' || value === 'global' ? value : 'all';
+function tglCoreScope(s) {
+  var o = window._coreOptions;
+  if (!o.scopes) {
+    o.scopes = ['profile', 'global', 'workspace'];
+  }
+  var a = o.scopes.slice();
+  var i = a.indexOf(s);
+  if (i >= 0 && a.length > 1) {
+    a.splice(i, 1);
+  } else if (i < 0) {
+    a.push(s);
+  }
+  o.scopes = a;
+  loadCore(false);
+}
+
+function tglCoreType(t) {
+  var o = window._coreOptions;
+  if (!o.types) {
+    o.types = ['rule', 'skill', 'workflow', 'knowledge'];
+  }
+  var a = o.types.slice();
+  var i = a.indexOf(t);
+  if (i >= 0 && a.length > 1) {
+    a.splice(i, 1);
+  } else if (i < 0) {
+    a.push(t);
+  }
+  o.types = a;
   loadCore(false);
 }
 
@@ -1072,67 +1366,44 @@ async function viewMemory(profile, scope, file, id) {
     '<div class="modal-panel confirm-panel" role="dialog" aria-modal="true" aria-labelledby="confirm-title">' +
       '<div class="modal-hdr">' +
         '<h2 id="confirm-title">' + esc(id) + '</h2>' +
-        '<div style="display:flex;align-items:center;gap:8px;">' +
-          '<button class="btn btn-outline" style="height:24px;padding:0 6px;" title="Copy content" onclick="navigator.clipboard.writeText(window._modalCopyContent || \'\').then(function(){toast(\'Copied content\');}).catch(function(){toast(\'Copy failed\',false);})"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="width:12px;height:12px;"><rect x="5.5" y="5.5" width="8.5" height="8.5" rx="1.5"/><path d="M3.5 10.5h-1a1 1 0 0 1-1-1v-6.5a1 1 0 0 1 1-1h6.5a1 1 0 0 1 1 1v1"/></svg></button>' +
-          '<button data-confirm-close aria-label="Close">&times;</button>' +
+        '<div style="display:flex;align-items:center;gap:8px">' +
+          '<button class="btn btn-outline" style="height:24px;padding:0 6px" onclick="cpM()"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" style="width:12px;height:12px"><rect x="4" y="4" width="8" height="8"/><path d="M2 10V2h8"/></svg></button>' +
+          '<button data-confirm-close>&times;</button>' +
         '</div>' +
       '</div>' +
-      '<div class="modal-body"><div class="loading"><div class="spinner"></div>&nbsp;&nbsp;Loading memory content&hellip;</div></div>' +
+      '<div class="modal-body"><div class="loading"><div class="spinner"></div>&nbsp;Loading memory&hellip;</div></div>' +
       '<div class="modal-actions confirm-actions">' +
         '<button class="btn btn-primary" data-confirm-close>Close</button>' +
       '</div>' +
     '</div>',
-    function(event) {
-      if (event.key === 'Escape' || event.key === 'Enter') {
-        event.preventDefault();
-        closeModal();
-      }
-    }
+    function(ev) { if (ev.key === 'Escape' || ev.key === 'Enter') { ev.preventDefault(); closeModal(); } }
   );
-  
-  var closeBtns = document.querySelectorAll('[data-confirm-close]');
-  closeBtns.forEach(function(btn) {
-    btn.addEventListener('click', closeModal, { once: true });
-  });
 
   try {
-    var qs = '?profile=' + encodeURIComponent(profile) + '&scope=' + encodeURIComponent(scope) + '&file=' + encodeURIComponent(file);
-    var res = await fetch('/api/memory' + qs);
+    var res = await fetch('/api/memory?profile=' + ec(profile) + '&scope=' + ec(scope) + '&file=' + ec(file));
     var j = await res.json();
     if (!res.ok || !j.ok) throw new Error(j.error || 'Failed to load memory content');
-    
     var bodyDiv = document.querySelector('#modal-root .modal-body');
     if (bodyDiv) {
       window._modalCopyContent = j.content;
-      bodyDiv.innerHTML = '<pre class="mono" style="white-space:pre-wrap;margin:0;font-size:12px;user-select:text;background:var(--g100);padding:12px;border-radius:var(--r6);border:1px solid var(--g200);color:var(--g1000);text-align:left;">' + esc(j.content) + '</pre>';
+      bodyDiv.innerHTML = '<pre class="mono" style="white-space:pre-wrap;margin:0;font-size:12px;user-select:text;background:var(--g100);padding:12px;border-radius:var(--r6);border:1px solid var(--g200);color:var(--g1000);text-align:left">' + esc(j.content) + '</pre>';
     }
   } catch (e) {
     var bodyDiv = document.querySelector('#modal-root .modal-body');
-    if (bodyDiv) {
-      bodyDiv.innerHTML = '<div style="color:var(--red)">⚠️ ' + esc(e.message) + '</div>';
-    }
+    if (bodyDiv) bodyDiv.innerHTML = '<div style="color:var(--red)">⚠️ ' + esc(e.message) + '</div>';
   }
 }
 
 function copyResolvePairPrompt(idA, idB) {
-  var refs = [];
-  if (window._coreData && window._coreData.duplicates) {
-    window._coreData.duplicates.forEach(function(pair) {
-      if (pair.a.id === idA && pair.b.id === idB) {
-        refs = [pair.a, pair.b];
-      }
-    });
-  }
+  var pair = window._coreData && window._coreData.duplicates && window._coreData.duplicates.find(function(p){return p.a.id===idA&&p.b.id===idB;});
+  var refs = pair ? [pair.a, pair.b] : [];
   var refLines = refs.map(function(ref) {
     return '- id=' + ref.id + ' profile=' + ref.profile + ' scope=' + ref.scope + ' file=' + ref.file;
   }).join('\n');
   var prompt = [
     'Resolve these duplicate memories:',
     refLines || '- id=' + idA,
-    '',
-    'Review these duplicate candidates. Decide whether to merge, archive, or keep both.',
-    'When proposing saved memories, use TYPE, TEXT, CONTEXT, and UPDATE: memory-id for duplicates.',
-    'Do not invent facts. Preserve stronger, newer, and more specific guidance.'
+    'Decide whether to merge, archive, or keep both. Use TYPE, TEXT, CONTEXT, and UPDATE: memory-id. Preserve stronger, newer, and more specific guidance.'
   ].join('\n');
 
   var val = '/engram ' + prompt;
@@ -1176,96 +1447,71 @@ function renderCoreRelationship(relationship) {
 }
 
 function copyCorePrompt(key) {
-  if (!window._coreData || !window._coreData.prompts) return;
-  var text = window._coreData.prompts[key] || '';
+  var text = gv(window, '_coreData.prompts.' + key);
   if (!text) return;
   var val = '/engram ' + text;
-  navigator.clipboard.writeText(val).then(function() {
-    toast('Copied prompt');
-  }).catch(function() {
-    toast('Copy failed', false);
-  });
+  navigator.clipboard.writeText(val).then(function() { toast('Copied prompt'); }).catch(function() { toast('Copy failed', false); });
 }
 
 function viewCorePrompt(key, title) {
-  if (!window._coreData || !window._coreData.prompts) return;
-  var text = window._coreData.prompts[key] || '';
+  var text = gv(window, '_coreData.prompts.' + key);
   if (!text) return;
-  
   window._modalCopyContent = '/engram ' + text;
   showModal(
-    '<div class="modal-panel confirm-panel" role="dialog" aria-modal="true" aria-labelledby="confirm-title" style="width:min(640px, 100%)">' +
-      '<div class="modal-hdr">' +
-        '<h2 id="confirm-title">' + esc(title) + '</h2>' +
-        '<div style="display:flex;align-items:center;gap:8px;">' +
-          '<button class="btn btn-outline" style="height:24px;padding:0 6px;" title="Copy content" onclick="navigator.clipboard.writeText(window._modalCopyContent || \'\').then(function(){toast(\'Copied content\');}).catch(function(){toast(\'Copy failed\',false);})"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="width:12px;height:12px;"><rect x="5.5" y="5.5" width="8.5" height="8.5" rx="1.5"/><path d="M3.5 10.5h-1a1 1 0 0 1-1-1v-6.5a1 1 0 0 1 1-1h6.5a1 1 0 0 1 1 1v1"/></svg></button>' +
-          '<button data-confirm-close aria-label="Close">&times;</button>' +
-        '</div>' +
-      '</div>' +
-      '<div class="modal-body"><pre class="core-prompt-preview" style="margin:0;user-select:all;">' + esc(text) + '</pre></div>' +
-      '<div class="modal-actions confirm-actions">' +
-        '<button class="btn btn-primary" data-confirm-close>Close</button>' +
-      '</div>' +
+    '<div class="modal-panel confirm-panel" role="dialog" aria-modal="true" aria-labelledby="confirm-title" style="width:min(640px,100%)">' +
+      '<div class="modal-hdr"><h2 id="confirm-title">' + esc(title) + '</h2><div style="display:flex;align-items:center;gap:8px"><button class="btn btn-outline" style="height:24px;padding:0 6px" onclick="cpM()"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" style="width:12px;height:12px"><rect x="4" y="4" width="8" height="8"/><path d="M2 10V2h8"/></svg></button><button data-confirm-close>&times;</button></div></div>' +
+      '<div class="modal-body"><pre class="core-prompt-preview" style="margin:0;user-select:all">' + esc(text) + '</pre></div>' +
+      '<div class="modal-actions confirm-actions"><button class="btn btn-primary" data-confirm-close>Close</button></div>' +
     '</div>',
-    function(event) {
-      if (event.key === 'Escape' || event.key === 'Enter') {
-        event.preventDefault();
-        closeModal();
-      }
-    }
+    function(ev) { if (ev.key === 'Escape' || ev.key === 'Enter') { ev.preventDefault(); closeModal(); } }
   );
-  
-  var closeBtns = document.querySelectorAll('[data-confirm-close]');
-  closeBtns.forEach(function(btn) {
-    btn.addEventListener('click', closeModal, { once: true });
-  });
 }
 
 async function browseFolder(inputId) {
-  var inputEl = document.getElementById(inputId);
-  var currentVal = inputEl ? (inputEl.value || '').trim() : '';
-  var res = await postJson('/api/browse', { path: currentVal });
+  var el = document.getElementById(inputId);
+  var cv = el ? (el.value || '').trim() : '';
+  var res = await postJson('/api/browse', { path: cv });
   if (!res) return;
 
   function renderBrowserContent(data) {
-    var currentPath = data.currentPath || currentVal || '';
+    var currentPath = data.currentPath || cv || '';
     var errorHtml = data.ok === false
       ? '<div class="dir-browser-error">' + esc(data.error || 'Cannot access directory') + '</div>'
       : '';
     var parent = data.parentPath
-      ? '<button type="button" class="dir-item parent-dir" data-dir-path="' + esc(data.parentPath) + '">' +
-          '<svg class="dir-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 4.5v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1H7L5.5 3h-3.5a1 1 0 0 0-1 1z"/></svg>' +
+      ? '<button class="dir-item parent-dir" data-dir-path="' + esc(data.parentPath) + '">' +
+          '<span class="dir-icon">📁</span>' +
           '<span class="dir-name">..</span>' +
         '</button>'
       : '';
     var dirs = (data.directories || []).map(function(entry) {
-      return '<button type="button" class="dir-item" data-dir-path="' + esc(entry.path) + '">' +
-        '<svg class="dir-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M1 3.5A1.5 1.5 0 0 1 2.5 2h2.764c.32 0 .625.13.843.361l1.196 1.277c.109.117.262.182.421.182h5.776A1.5 1.5 0 0 1 15 5.322v7.178a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 1 12.5v-9z"/></svg>' +
+      return '<button class="dir-item" data-dir-path="' + esc(entry.path) + '">' +
+        '<span class="dir-icon">📁</span>' +
         '<span class="dir-name">' + esc(entry.name) + '</span>' +
       '</button>';
     }).join('');
     var drives = (data.drives || []).map(function(drive) {
       var isCurrentDrive = currentPath.toLowerCase().startsWith(String(drive).toLowerCase());
-      return '<button type="button" class="btn btn-ghost drive-btn' + (isCurrentDrive ? ' active' : '') + '" data-dir-path="' + esc(drive) + '">' + esc(drive) + '</button>';
+      return '<button class="btn btn-ghost drive-btn' + (isCurrentDrive ? ' active' : '') + '" data-dir-path="' + esc(drive) + '">' + esc(drive) + '</button>';
     }).join('');
 
-    return '<div class="modal-panel dir-browser-modal" role="dialog" aria-modal="true" aria-labelledby="browser-title">' +
+    return '<div class="modal-panel dir-browser-modal">' +
       '<div class="modal-hdr">' +
         '<h2 id="browser-title">Browse Directory</h2>' +
-        '<button data-confirm-close aria-label="Close">&times;</button>' +
+        '<button data-confirm-close>&times;</button>' +
       '</div>' +
       '<div class="modal-body dir-browser-body">' +
         '<div class="dir-browser-nav-bar">' +
           '<input class="form-input dir-browser-path" id="db-path-input" value="' + esc(currentPath) + '">' +
-          '<button type="button" class="btn btn-primary" data-dir-go>Go</button>' +
+          '<button class="btn btn-primary" data-dir-go>Go</button>' +
         '</div>' +
         errorHtml +
         (drives ? '<div class="dir-browser-drives-title">Drives:</div><div class="dir-browser-drives">' + drives + '</div>' : '') +
-        '<div class="dir-browser-list">' + parent + (dirs || '<div class="dir-browser-empty">No subdirectories found</div>') + '</div>' +
+        '<div class="dir-browser-list">' + parent + (dirs || '<div class="dir-browser-empty">Empty</div>') + '</div>' +
       '</div>' +
       '<div class="modal-actions">' +
-        '<button type="button" class="btn btn-outline" data-confirm-close>Cancel</button>' +
-        '<button type="button" class="btn btn-primary" data-dir-select>Select Folder</button>' +
+        '<button class="btn btn-outline" data-confirm-close>Cancel</button>' +
+        '<button class="btn btn-primary" data-dir-select>Select Folder</button>' +
       '</div>' +
     '</div>';
   }
@@ -1280,21 +1526,16 @@ async function browseFolder(inputId) {
   }
 
   function selectPath(value) {
-    if (inputEl) {
-      inputEl.value = value || '';
-      inputEl.dispatchEvent(new Event('input', { bubbles: true }));
-      inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+    if (el) {
+      el.value = value || '';
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
     }
     closeModal();
   }
 
   function wireDirBrowser(root, data) {
     root.onclick = function(event) {
-      var close = event.target.closest('[data-confirm-close]');
-      if (close) {
-        closeModal();
-        return;
-      }
       var item = event.target.closest('[data-dir-path]');
       if (item) {
         go(item.getAttribute('data-dir-path') || '');
@@ -1335,5 +1576,5 @@ async function browseFolder(inputId) {
   if (root) wireDirBrowser(root, res);
 }
 
-// ── Init ─────────────────────────────────────────────────────────────────────
+// Init
 load();

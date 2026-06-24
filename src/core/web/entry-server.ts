@@ -24,6 +24,9 @@ import {
   apiCoreData,
   apiGetMemoryContent,
   apiBrowseDirectories,
+  apiMemoriesGraphData,
+  apiResolveMemoryFile,
+  apiArchiveMemory,
 } from './api.js';
 
 // ── Infrastructure ──────────────────────────────────────────────────────────
@@ -163,6 +166,14 @@ async function handleRequest(req: any, res: any, cwd: string): Promise<void> {
     return;
   }
 
+  if (url === '/api/memories' && method === 'GET') {
+    try {
+      const data = await apiMemoriesGraphData(cwd, {});
+      json(200, { ok: true, data });
+    } catch (e: any) { json(500, { error: e.message }); }
+    return;
+  }
+
   if (url === '/api/memory' && method === 'GET') {
     try {
       const parsed = new URL(req.url, 'http://localhost');
@@ -171,6 +182,18 @@ async function handleRequest(req: any, res: any, cwd: string): Promise<void> {
       const file = parsed.searchParams.get('file') || '';
       const content = await apiGetMemoryContent(cwd, profile, scope, file);
       json(200, { ok: true, content });
+    } catch (e: any) { json(500, { error: e.message }); }
+    return;
+  }
+
+  if (url === '/api/memory/file' && method === 'GET') {
+    try {
+      const parsed = new URL(req.url, 'http://localhost');
+      const profile = parsed.searchParams.get('profile') || '';
+      const scope = parsed.searchParams.get('scope') as Scope || 'global';
+      const file = parsed.searchParams.get('file') || '';
+      const data = await apiResolveMemoryFile(cwd, profile, scope, file);
+      json(200, { ok: true, data });
     } catch (e: any) { json(500, { error: e.message }); }
     return;
   }
@@ -196,11 +219,28 @@ async function handleRequest(req: any, res: any, cwd: string): Promise<void> {
       return;
     }
     try {
+      if (url === '/api/memories') {
+        const data = await apiMemoriesGraphData(cwd, {
+          scopes: body.scopes,
+          semantic: body.semantic === true,
+          rebuild: body.rebuild === true,
+          limit: Number(body.limit || 100)
+        });
+        json(200, { ok: true, data });
+        return;
+      }
+      if (url === '/api/memory/archive') {
+        const result = await apiArchiveMemory(cwd, body);
+        json(200, { ok: true, data: result });
+        return;
+      }
       if (url === '/api/core') {
         const data = await apiCoreData(cwd, {
           semantic: body.semantic === true,
           rebuild: body.rebuild === true,
           scope: body.scope,
+          scopes: Array.isArray(body.scopes) ? body.scopes : undefined,
+          types: Array.isArray(body.types) ? body.types : undefined,
           limit: Number(body.limit || 50)
         });
         json(200, { ok: true, data });

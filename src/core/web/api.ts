@@ -1,13 +1,14 @@
 /** Control panel data API and write handlers. */
 import { openConfigDb, isConfigDbUsable } from '../config-db/schema.js';
 import { loadConfig, writeUserConfig, readProfileStore, writeProfileStore, workspaceRoot, legacyWorkspaceRoot } from '../runtime/config.js';
-import { exists, ensureDir } from '../system/fsx.js';
+import { exists, ensureDir, inside } from '../system/fsx.js';
 import { homedir } from 'node:os';
 import { getContext } from '../memory/context.js';
 import { visibleEntries } from '../memory/routing.js';
 import { duplicatePairs, semanticDuplicatePairs, type DuplicatePair } from '../analysis/search.js';
 import type { MemoryEntry, MemoryGraphEdge, MemoryGraphNode, Scope } from '../runtime/types.js';
 import { loadIndex, rebuildIndex } from '../memory/index.js';
+import { archiveMemory, planArchiveSet } from '../memory/archive.js';
 
 import {
   configFieldsForPanel,
@@ -470,6 +471,58 @@ export interface CoreRelationshipLink {
   score?: number;
 }
 
+export type MemoriesScopeFilter = 'profile' | 'global' | 'workspace';
+
+export interface MemoriesGraphNode {
+  id: string;
+  memoryId: string;
+  label: string;
+  profile: string;
+  scope: Scope;
+  sourceScope: MemoriesScopeFilter;
+  file: string;
+  type?: string;
+  tags?: string[];
+  summary?: string;
+  updated?: string;
+  dependencyDepth?: number;
+  canView: boolean;
+  canDelete: boolean;
+  canEdit: boolean;
+  workspaceName?: string;
+}
+
+export interface MemoriesGraphLink {
+  id: string;
+  from: string;
+  to: string;
+  kind: 'dependency' | 'duplicate' | 'semantic';
+  label: string;
+  score?: number;
+  thin: boolean;
+  crossScope: boolean;
+}
+
+export interface MemoriesGraphData {
+  generatedAt: string;
+  filters: {
+    enabledScopes: MemoriesScopeFilter[];
+    availableScopes: MemoriesScopeFilter[];
+    semantic: boolean;
+    activeProfile: string;
+  };
+  stats: {
+    total: number;
+    profile: number;
+    global: number;
+    workspace: number;
+    dependencies: number;
+    thinLinks: number;
+  };
+  nodes: MemoriesGraphNode[];
+  links: MemoriesGraphLink[];
+}
+
 type BrowseDirectoryEntry = {
   name: string;
   path: string;
@@ -486,6 +539,8 @@ export interface CorePanelData {
     workspaceRoot: string;
     globalRoot: string;
     profilesPath: string;
+    scopes?: ('profile' | 'global' | 'workspace')[];
+    types?: ('rule' | 'skill' | 'workflow' | 'knowledge')[];
   };
   duplicates: CoreDuplicateCandidate[];
   relationship: {
@@ -499,7 +554,22 @@ export interface CorePanelData {
   warning: string;
 }
 
-export async function apiCoreData(cwd: string, options: { semantic?: boolean; rebuild?: boolean; scope?: CoreScopeFilter; limit?: number } = {}): Promise<CorePanelData> {
+type PanelMemoryEntry = MemoryEntry & {
+  profile: string;
+  originalFile: string;
+};
+
+interface PanelMemoryEntryPack {
+  ctx: Awaited<ReturnType<typeof getContext>>;
+  activeProfile: string;
+  profiles: string[];
+  entries: PanelMemoryEntry[];
+}
+
+async function collectPanelMemoryEntries(
+  cwd: string,
+  options: { rebuild?: boolean; scope?: CoreScopeFilter } = {}
+): Promise<PanelMemoryEntryPack> {
   const filter: CoreScopeFilter = options.scope === 'workspace' || options.scope === 'global' ? options.scope : 'all';
   const ctx = await getContext(cwd, { rebuild: options.rebuild === true });
   const activeProfile = ctx.profile.active || '<none>';
@@ -509,43 +579,90 @@ export async function apiCoreData(cwd: string, options: { semantic?: boolean; re
     profiles.push(activeProfile);
   }
 
-  // 1. Gather active profile entries
   const activeEntries = visibleEntries(ctx.index.entries, ctx.config, false, ctx.ignorePatterns);
-  const allSyntheticEntries: any[] = activeEntries.map((e) => ({
-    ...e,
-    file: `${activeProfile}/${e.scope}/${e.file}`,
-    originalFile: e.file,
+  const entries: PanelMemoryEntry[] = activeEntries.map((entry) => ({
+    ...entry,
+    file: `${activeProfile}/${entry.scope}/${entry.file}`,
+    originalFile: entry.file,
     profile: activeProfile
   }));
 
-  // 2. Gather other profiles' global entries
-  for (const pName of profiles) {
-    if (pName === activeProfile) continue;
-    const pConfig = store.profiles[pName];
+  for (const profileName of profiles) {
+    if (profileName === activeProfile) continue;
+    const pConfig = store.profiles[profileName];
     const root = pConfig?.global_path;
     if (root && await exists(root)) {
-      let pIndex;
-      if (options.rebuild === true) {
-        pIndex = await rebuildIndex(root, 'global', ctx.ignorePatterns);
-      } else {
-        pIndex = await loadIndex(root);
-      }
+      const pIndex = options.rebuild === true
+        ? await rebuildIndex(root, 'global', ctx.ignorePatterns)
+        : await loadIndex(root);
       const pEntries = visibleEntries(pIndex.entries, ctx.config, false, ctx.ignorePatterns);
-      for (const e of pEntries) {
-        allSyntheticEntries.push({
-          ...e,
-          file: `${pName}/${e.scope}/${e.file}`,
-          originalFile: e.file,
-          profile: pName
+      for (const entry of pEntries) {
+        entries.push({
+          ...entry,
+          file: `${profileName}/${entry.scope}/${entry.file}`,
+          originalFile: entry.file,
+          profile: profileName
         });
       }
     }
   }
 
-  // 3. Filter entries based on scope
-  const filteredEntries = allSyntheticEntries.filter((entry) => filter === 'all' || entry.scope === filter);
+  return {
+    ctx,
+    activeProfile,
+    profiles,
+    entries: entries.filter((entry) => filter === 'all' || entry.scope === filter)
+  };
+}
 
-  // 4. Calculate duplicate pairs
+export async function apiCoreData(
+  cwd: string,
+  options: {
+    semantic?: boolean;
+    rebuild?: boolean;
+    scope?: CoreScopeFilter;
+    scopes?: ('profile' | 'global' | 'workspace')[];
+    types?: ('rule' | 'skill' | 'workflow' | 'knowledge')[];
+    limit?: number;
+  } = {}
+): Promise<CorePanelData> {
+  const pack = await collectPanelMemoryEntries(cwd, { rebuild: options.rebuild, scope: 'all' });
+  const { ctx, activeProfile, profiles } = pack;
+
+  let enabledScopes: ('profile' | 'global' | 'workspace')[];
+  if (options.scopes) {
+    enabledScopes = options.scopes;
+  } else {
+    const filter = options.scope === 'workspace' || options.scope === 'global' ? options.scope : 'all';
+    if (filter === 'workspace') {
+      enabledScopes = ['workspace'];
+    } else if (filter === 'global') {
+      enabledScopes = ['global', 'profile'];
+    } else {
+      enabledScopes = ['profile', 'global', 'workspace'];
+    }
+  }
+
+  let enabledTypes: ('rule' | 'skill' | 'workflow' | 'knowledge')[];
+  if (options.types) {
+    enabledTypes = options.types;
+  } else {
+    enabledTypes = ['rule', 'skill', 'workflow', 'knowledge'];
+  }
+
+  const filteredEntries = pack.entries.filter((entry) => {
+    const srcScope = memoriesSourceScope(entry, activeProfile);
+    if (!enabledScopes.includes(srcScope)) return false;
+    const type = getMemoryType(entry);
+    return enabledTypes.includes(type);
+  });
+
+  const filter: CoreScopeFilter = enabledScopes.length === 1 && enabledScopes[0] === 'workspace'
+    ? 'workspace'
+    : enabledScopes.length === 1 && enabledScopes[0] === 'global'
+      ? 'global'
+      : 'all';
+
   const pairs = coreDuplicatePairs(filteredEntries, options.semantic === true);
   const maxPairs = Math.max(1, Math.min(100, Number(options.limit || 50)));
   const visiblePairs = pairs.slice(0, maxPairs);
@@ -565,7 +682,9 @@ export async function apiCoreData(cwd: string, options: { semantic?: boolean; re
       filter,
       workspaceRoot: ctx.roots.workspace || '',
       globalRoot: ctx.roots.global || '',
-      profilesPath: ctx.profile.profiles_path || ''
+      profilesPath: ctx.profile.profiles_path || '',
+      scopes: enabledScopes,
+      types: enabledTypes
     },
     duplicates,
     relationship: coreRelationshipData(activeProfile, ctx.graph.nodes, ctx.graph.edges, duplicates),
@@ -611,6 +730,174 @@ function coreRef(entry: any, defaultProfile: string): CoreDuplicateRef {
     tags: entry.tags,
     summary: entry.summary,
     updated: entry.updated
+  };
+}
+
+function memoriesSourceScope(entry: PanelMemoryEntry, activeProfile: string): MemoriesScopeFilter {
+  if (entry.profile !== activeProfile) return 'profile';
+  return entry.scope === 'workspace' ? 'workspace' : 'global';
+}
+
+function getMemoryType(entry: any): 'rule' | 'skill' | 'workflow' | 'knowledge' {
+  if (entry.type === 'skill') {
+    const fileLower = (entry.originalFile || entry.file || '').toLowerCase();
+    const idLower = (entry.id || '').toLowerCase();
+    const summaryLower = (entry.summary || '').toLowerCase();
+    const tags = entry.tags || [];
+    const isWorkflow =
+      fileLower.includes('workflow') ||
+      idLower.includes('workflow') ||
+      summaryLower.includes('workflow') ||
+      tags.some((t: string) => t.toLowerCase().includes('workflow'));
+    return isWorkflow ? 'workflow' : 'skill';
+  }
+  return entry.type;
+}
+
+function memoriesNodeId(entry: PanelMemoryEntry): string {
+  return `memory:${entry.profile}:${entry.scope}:${entry.originalFile}`;
+}
+
+function memoryGraphNode(entry: PanelMemoryEntry, activeProfile: string, workspaceName?: string): MemoriesGraphNode {
+  const sourceScope = memoriesSourceScope(entry, activeProfile);
+  return {
+    id: memoriesNodeId(entry),
+    memoryId: entry.id,
+    label: entry.id,
+    profile: entry.profile,
+    scope: entry.scope,
+    sourceScope,
+    file: entry.originalFile,
+    type: entry.type,
+    tags: entry.tags,
+    summary: entry.summary,
+    updated: entry.updated,
+    dependencyDepth: entry.dependencyDepth,
+    canView: true,
+    canDelete: sourceScope !== 'profile' || entry.scope === 'global',
+    canEdit: sourceScope !== 'profile' || entry.scope === 'global',
+    workspaceName: sourceScope === 'workspace' ? workspaceName : undefined
+  };
+}
+
+function normalizeMemoriesScopes(scopes: unknown): MemoriesScopeFilter[] {
+  const raw = Array.isArray(scopes) ? scopes : typeof scopes === 'string' ? scopes.split(',') : [];
+  const valid = raw.filter((scope): scope is MemoriesScopeFilter => scope === 'profile' || scope === 'global' || scope === 'workspace');
+  return valid.length ? Array.from(new Set(valid)) : ['profile', 'global', 'workspace'];
+}
+
+function memoryRefKeys(entry: PanelMemoryEntry): string[] {
+  const fileNoExt = entry.originalFile.replace(/\.md$/i, '');
+  return Array.from(new Set([
+    entry.id,
+    entry.originalFile,
+    fileNoExt,
+    fileNoExt.split(/[\\/]/).pop() || fileNoExt
+  ]));
+}
+
+export async function apiMemoriesGraphData(
+  cwd: string,
+  options: { scopes?: MemoriesScopeFilter[] | string; semantic?: boolean; rebuild?: boolean; limit?: number } = {}
+): Promise<MemoriesGraphData> {
+  const enabledScopes = normalizeMemoriesScopes(options.scopes);
+  const pack = await collectPanelMemoryEntries(cwd, { rebuild: options.rebuild, scope: 'all' });
+  const maxThinLinks = Math.max(1, Math.min(200, Number(options.limit || 100)));
+
+  let workspaceName = '';
+  const dbh = await openConfigDb();
+  if (dbh) {
+    try {
+      if (isConfigDbUsable(dbh.db)) {
+        const q = await importQueries();
+        const ws = q.getWorkspaceByPath(dbh.db, cwd);
+        if (ws && ws.name) {
+          workspaceName = ws.name;
+        }
+      }
+    } finally {
+      dbh.close();
+    }
+  }
+  if (!workspaceName) {
+    workspaceName = cwd.split(/[\\/]/).pop() || 'workspace';
+  }
+
+  const allNodes = pack.entries.map((entry) => memoryGraphNode(entry, pack.activeProfile, workspaceName));
+  const visibleNodes = allNodes.filter((node) => enabledScopes.includes(node.sourceScope));
+  const visibleIds = new Set(visibleNodes.map((node) => node.id));
+  const entriesByKey = new Map<string, PanelMemoryEntry>();
+  for (const entry of pack.entries) {
+    for (const key of memoryRefKeys(entry)) {
+      if (!entriesByKey.has(key)) entriesByKey.set(key, entry);
+    }
+  }
+
+  const links: MemoriesGraphLink[] = [];
+  const seenLinks = new Set<string>();
+  const pushLink = (link: MemoriesGraphLink) => {
+    if (!visibleIds.has(link.from) || !visibleIds.has(link.to)) return;
+    const key = `${link.kind}:${link.from}:${link.to}`;
+    if (seenLinks.has(key)) return;
+    seenLinks.add(key);
+    links.push(link);
+  };
+
+  for (const entry of pack.entries) {
+    for (const ref of entry.dependsOn ?? []) {
+      const target = entriesByKey.get(ref) || entriesByKey.get(ref.replace(/\.md$/i, ''));
+      if (!target || target.id === entry.id) continue;
+      const from = memoriesNodeId(entry);
+      const to = memoriesNodeId(target);
+      pushLink({
+        id: `dependency:${from}:${to}`,
+        from,
+        to,
+        kind: 'dependency',
+        label: 'depends_on',
+        thin: false,
+        crossScope: memoriesSourceScope(entry, pack.activeProfile) !== memoriesSourceScope(target, pack.activeProfile)
+      });
+    }
+  }
+
+  const duplicatePairs = coreDuplicatePairs(pack.entries, options.semantic === true).slice(0, maxThinLinks);
+  for (const [a, b, score] of duplicatePairs) {
+    const from = memoriesNodeId(a as PanelMemoryEntry);
+    const to = memoriesNodeId(b as PanelMemoryEntry);
+    const kind = score >= 0.999 ? 'duplicate' : 'semantic';
+    pushLink({
+      id: `${kind}:${from}:${to}`,
+      from,
+      to,
+      kind,
+      label: kind === 'duplicate' ? 'duplicate' : 'high semantic match',
+      score: Number(score.toFixed(3)),
+      thin: true,
+      crossScope: memoriesSourceScope(a as PanelMemoryEntry, pack.activeProfile) !== memoriesSourceScope(b as PanelMemoryEntry, pack.activeProfile)
+    });
+  }
+
+  const stats = {
+    total: visibleNodes.length,
+    profile: visibleNodes.filter((node) => node.sourceScope === 'profile').length,
+    global: visibleNodes.filter((node) => node.sourceScope === 'global').length,
+    workspace: visibleNodes.filter((node) => node.sourceScope === 'workspace').length,
+    dependencies: links.filter((link) => link.kind === 'dependency').length,
+    thinLinks: links.filter((link) => link.thin).length
+  };
+
+  return {
+    generatedAt: new Date().toISOString(),
+    filters: {
+      enabledScopes,
+      availableScopes: ['profile', 'global', 'workspace'],
+      semantic: options.semantic === true,
+      activeProfile: pack.activeProfile
+    },
+    stats,
+    nodes: visibleNodes,
+    links
   };
 }
 
@@ -849,5 +1136,81 @@ export async function apiBrowseDirectories(currentPath: string, cwd = process.cw
     drives
   };
 }
+
+export interface ResolvedMemoryFile {
+  profile: string;
+  scope: Scope;
+  file: string;
+  path: string;
+  editorUrl: string;
+}
+
+async function memoryRootForProfile(cwd: string, profileName: string, scope: Scope): Promise<string> {
+  const ctx = await getContext(cwd);
+  const activeProfile = ctx.profile.active || '<none>';
+  if (profileName === activeProfile || profileName === 'default') {
+    return scope === 'workspace' ? ctx.roots.workspace : ctx.roots.global;
+  }
+  if (scope !== 'global') {
+    throw new Error('Only active profile workspace memories can be managed');
+  }
+  const store = await readProfileStore();
+  const pConfig = store.profiles[profileName];
+  return pConfig?.global_path || '';
+}
+
+export async function apiResolveMemoryFile(cwd: string, profileName: string, scope: Scope, file: string): Promise<ResolvedMemoryFile> {
+  const root = await memoryRootForProfile(cwd, profileName, scope);
+  if (!root) {
+    throw new Error(`Profile ${profileName} is not configured for ${scope} memories`);
+  }
+  const absPath = resolveUnderRoot(root, file);
+  if (!(await exists(absPath))) {
+    throw new Error(`Memory file not found at ${absPath}`);
+  }
+  const normalized = absPath.replace(/\\/g, '/');
+  return {
+    profile: profileName,
+    scope,
+    file,
+    path: absPath,
+    editorUrl: `vscode://file/${encodeURI(normalized)}`
+  };
+}
+
+export interface ArchiveMemoryRequest {
+  profile: string;
+  scope: Scope;
+  file: string;
+  id?: string;
+  reason?: string;
+}
+
+export interface ArchiveMemoryResult {
+  archived: true;
+  message: string;
+  path: string;
+}
+
+export async function apiArchiveMemory(cwd: string, body: ArchiveMemoryRequest): Promise<ArchiveMemoryResult> {
+  const ctx = await getContext(cwd);
+  const activeProfile = ctx.profile.active || '<none>';
+  if (body.profile !== activeProfile && body.profile !== 'default') {
+    throw new Error('Activate this profile before deleting its memories');
+  }
+  const target = body.file || body.id || '';
+  if (!target) throw new Error('memory file or id is required');
+  const reason = (body.reason || 'Deleted from Memories graph view').trim();
+  const plans = planArchiveSet(ctx, target, reason).filter((plan) => plan.entry.scope === body.scope);
+  const plan = plans[0];
+  if (!plan) throw new Error(`Memory not found in ${body.scope}: ${target}`);
+  const archivedPath = await archiveMemory(ctx, plan, reason);
+  return {
+    archived: true,
+    message: `Archived -> ${archivedPath}`,
+    path: archivedPath
+  };
+}
+
 
 

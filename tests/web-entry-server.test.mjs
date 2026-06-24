@@ -51,6 +51,40 @@ test('entry server exposes safe config metadata and validated config updates', a
     assert.equal(refreshedCore.response.status, 200);
     assert.equal(refreshedCore.body.ok, true);
     assert.equal(refreshedCore.body.data.scope.filter, 'workspace');
+    assert.deepEqual(refreshedCore.body.data.scope.scopes, ['workspace']);
+
+    const scopesCore = await requestJson(baseUrl + '/api/core', {
+      method: 'POST',
+      body: JSON.stringify({ semantic: true, rebuild: true, scopes: ['global', 'profile'], limit: 50 })
+    });
+    assert.equal(scopesCore.response.status, 200);
+    assert.equal(scopesCore.body.ok, true);
+    assert.deepEqual(scopesCore.body.data.scope.scopes, ['global', 'profile']);
+    assert.deepEqual(scopesCore.body.data.scope.types, ['rule', 'skill', 'workflow', 'knowledge']);
+
+    const typesCore = await requestJson(baseUrl + '/api/core', {
+      method: 'POST',
+      body: JSON.stringify({ semantic: true, rebuild: true, types: ['rule', 'knowledge'], limit: 50 })
+    });
+    assert.equal(typesCore.response.status, 200);
+    assert.equal(typesCore.body.ok, true);
+    assert.deepEqual(typesCore.body.data.scope.types, ['rule', 'knowledge']);
+
+    const memoriesData = await requestJson(baseUrl + '/api/memories');
+    assert.equal(memoriesData.response.status, 200);
+    assert.equal(memoriesData.body.ok, true);
+    assert.ok(Array.isArray(memoriesData.body.data.nodes));
+    assert.ok(Array.isArray(memoriesData.body.data.links));
+    assert.deepEqual(memoriesData.body.data.filters.availableScopes, ['profile', 'global', 'workspace']);
+
+    const refreshedMemories = await requestJson(baseUrl + '/api/memories', {
+      method: 'POST',
+      body: JSON.stringify({ scopes: ['workspace'], semantic: true, rebuild: true, limit: 25 })
+    });
+    assert.equal(refreshedMemories.response.status, 200);
+    assert.equal(refreshedMemories.body.ok, true);
+    assert.deepEqual(refreshedMemories.body.data.filters.enabledScopes, ['workspace']);
+    assert.equal(refreshedMemories.body.data.filters.semantic, true);
 
     const invalid = await requestJson(baseUrl + '/api/config/validate', {
       method: 'POST',
@@ -129,6 +163,10 @@ test('entry server exposes safe config metadata and validated config updates', a
     assert.equal(errMem.response.status, 500);
     assert.equal(errMem.body.ok, undefined);
     assert.ok(errMem.body.error);
+
+    const errFile = await requestJson(baseUrl + '/api/memory/file?profile=default&scope=workspace&file=nonexistent.md');
+    assert.equal(errFile.response.status, 500);
+    assert.ok(errFile.body.error);
 
     const faviconRes = await fetch(baseUrl + '/favicon.svg');
     assert.equal(faviconRes.status, 200);

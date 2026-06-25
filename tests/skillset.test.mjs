@@ -14,15 +14,19 @@ test('skillset installer writes all supported agent adapter files (--all-support
   assert.deepEqual(writtenTargets, skillsetTargets().sort());
   assert.ok(!skillsetTargets().includes('antigravity'));
   assert.ok(!skillsetTargets().includes('antigravity-cli'));
-  assert.ok(results.every((result) => result.action === 'written'));
-  // agents-md target uses compact profile (legacy fallback)
-  assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /Default agent mode: compact/);
-  assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /knowledge memory center/);
-  assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /Keep token usage low/);
-  assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /Engram loaded: X memories \/ Y total related memories\./);
-  assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /Agent action:/);
-  assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /replace earlier Engram-derived context in the current conversation/i);
-  assert.doesNotMatch(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /summarize only the relevant memory IDs\/rules/);
+  // agents-md now writes minimal block into AGENTS.md + full guide to .agents/engram.md
+  const agentsMd = await readFile(path.join(cwd, 'AGENTS.md'), 'utf8');
+  assert.match(agentsMd, /<!-- engram:start -->/);
+  assert.match(agentsMd, /Full guide:/);
+  assert.doesNotMatch(agentsMd, /Default agent mode: compact/);
+  assert.doesNotMatch(agentsMd, /Save flow:/);
+  assert.doesNotMatch(agentsMd, /Rule memories:/);
+  assert.doesNotMatch(agentsMd, /clone-memory/);
+  // Full guide should exist with full protocol
+  const guide = await readFile(path.join(cwd, '.agents/engram.md'), 'utf8');
+  assert.match(guide, /Save flow:/);
+  assert.match(guide, /Rule memories:/);
+  assert.match(guide, /Default agent mode: compact/);
   const mcpConfig = await readFile(path.join(cwd, '.mcp.json'), 'utf8');
   assert.match(mcpConfig, /engram-mcp/);
   assert.equal(JSON.parse(mcpConfig).mcpServers.engram.command, 'npx');
@@ -66,16 +70,21 @@ test('skillset installer writes all supported agent adapter files (--all-support
   await rm(cwd, { recursive: true, force: true });
 });
 
-test('skillset installer skips human-authored files unless forced', async () => {
+test('skillset installer upserts minimal block when human AGENTS.md exists', async () => {
   const { cwd } = await tempWorkspace('engram-skillset-');
   const file = path.join(cwd, 'AGENTS.md');
   await writeFile(file, '# Human agent instructions\n');
-  const skipped = await installSkillset(cwd, 'agents-md');
-  assert.equal(skipped[0].action, 'skipped');
-  assert.match(await readFile(file, 'utf8'), /Human agent instructions/);
-  const forced = await installSkillset(cwd, 'agents-md', true);
-  assert.equal(forced[0].action, 'written');
-  assert.match(await readFile(file, 'utf8'), /Engram Agent Skillset/);
+  await installSkillset(cwd, 'agents-md');
+  // Now: human file gets block appended (not skipped)
+  const content = await readFile(file, 'utf8');
+  assert.match(content, /Human agent instructions/);
+  assert.match(content, /<!-- engram:start -->/);
+  assert.match(content, /Full guide:/);
+  // Exact one block marker
+  assert.equal((content.match(/<!-- engram:start -->/g) ?? []).length, 1);
+  // Guide file should be written
+  const guide = await readFile(path.join(cwd, '.agents/engram.md'), 'utf8');
+  assert.match(guide, /Save flow:/);
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -86,8 +95,13 @@ test('cli installs a single skillset target', async () => {
   assert.match(result.stdout, /WRITTEN gemini: GEMINI.md/);
   assert.match(result.stdout, /WRITTEN gemini: \.mcp\.json/);
   assert.match(result.stdout, /gemini also covers current Antigravity 2\.0, Antigravity CLI, and Antigravity IDE/);
-  assert.match(await readFile(path.join(cwd, 'GEMINI.md'), 'utf8'), /Runtime Bootstrap/);
-  assert.match(await readFile(path.join(cwd, 'GEMINI.md'), 'utf8'), /Prefer Engram MCP tools/);
+  // GEMINI.md gets minimal block
+  const geminiMd = await readFile(path.join(cwd, 'GEMINI.md'), 'utf8');
+  assert.match(geminiMd, /<!-- engram:start -->/);
+  assert.match(geminiMd, /Full guide:/);
+  assert.doesNotMatch(geminiMd, /Default agent mode: compact/);
+  // Guide file written
+  assert.match(await readFile(path.join(cwd, '.gemini/engram.md'), 'utf8'), /Save flow:/);
   assert.equal(JSON.parse(await readFile(path.join(cwd, '.mcp.json'), 'utf8')).mcpServers.engram.command, 'npx');
   await rm(cwd, { recursive: true, force: true });
 });
@@ -134,9 +148,18 @@ test('cli installs codex alias as AGENTS.md skillset file', async () => {
   assert.equal(result.code, 0, result.stderr);
   assert.match(result.stdout, /WRITTEN codex: AGENTS\.md/);
   assert.match(result.stdout, /WRITTEN codex: \.agents\/skills\/engram\/SKILL\.md/);
-  assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /Runtime Bootstrap/);
-  assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /Prefer Engram MCP tools/);
+  assert.match(result.stdout, /WRITTEN codex: \.agents\/engram\.md/);
+  // AGENTS.md: minimal block only
+  const agentsMd = await readFile(path.join(cwd, 'AGENTS.md'), 'utf8');
+  assert.match(agentsMd, /<!-- engram:start -->/);
+  assert.match(agentsMd, /Full guide:/);
+  assert.doesNotMatch(agentsMd, /Runtime Bootstrap/);
+  assert.doesNotMatch(agentsMd, /Save flow:/);
+  assert.doesNotMatch(agentsMd, /clone-memory/);
+  // .agents/engram.md: full guide
   assert.match(await readFile(path.join(cwd, '.agents/skills/engram/SKILL.md'), 'utf8'), /Default agent mode: compact/);
+  assert.match(await readFile(path.join(cwd, '.agents/engram.md'), 'utf8'), /Save flow:/);
+  assert.match(await readFile(path.join(cwd, '.agents/engram.md'), 'utf8'), /Rule memories:/);
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -164,15 +187,18 @@ test('global skillset installer writes managed rules, skills, and registry', asy
   assert.match(result.stdout, /Registry:/);
 
   const agents = await readFile(path.join(agentHome, '.codex', 'AGENTS.md'), 'utf8');
-  assert.match(agents, /BEGIN ENGRAM GLOBAL SKILLSET/);
-  assert.match(agents, /Global Startup/);
-  assert.match(agents, /engram load --for-agents "<current task>"/);
+  assert.match(agents, /<!-- engram:start -->/);
+  assert.match(agents, /Full guide: `~\/\.agents\/engram\.md`/);
+  assert.doesNotMatch(agents, /Global Startup/);
+  const guide = await readFile(path.join(agentHome, '.agents', 'engram.md'), 'utf8');
+  assert.match(guide, /Global Startup/);
+  assert.match(guide, /engram load --for-agents "<current task>"/);
   const skill = await readFile(path.join(agentHome, '.agents', 'skills', 'engram', 'SKILL.md'), 'utf8');
   assert.match(skill, /name: engram/);
   assert.match(skill, /Default agent mode: compact/);
 
   const registry = JSON.parse(await readFile(path.join(globalEnv.ENGRAM_CONFIG_DIR, 'global-skillsets.json'), 'utf8'));
-  assert.equal(registry.installs.codex.files.length, 2);
+  assert.equal(registry.installs.codex.files.length, 3);
   assert.equal(registry.installs.codex.engram_version, VERSION);
 
   const updated = await runEngram(cwd, globalEnv, ['link', '--global', 'codex']);
@@ -189,10 +215,10 @@ test('global antigravity install writes 2.0, CLI, and IDE skill folders', async 
   const globalEnv = { ...env, ENGRAM_AGENT_HOME: agentHome, ENGRAM_AGENT_CONFIG_HOME: configHome };
   const result = await runEngram(cwd, globalEnv, ['link', '--global', 'antigravity']);
   assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /WRITTEN antigravity: .*\.antigravity[\\/]skills[\\/]engram[\\/]SKILL\.md/);
-  assert.match(result.stdout, /WRITTEN antigravity: .*\.antigravity-cli[\\/]skills[\\/]engram[\\/]SKILL\.md/);
-  assert.match(result.stdout, /WRITTEN antigravity: .*\.antigravity-ide[\\/]skills[\\/]engram[\\/]SKILL\.md/);
-  assert.match(result.stdout, /WRITTEN antigravity: .*gemini[\\/]mcp\.json/);
+  assert.match(result.stdout, /WRITTEN antigravity: .*\.antigravity[\\\/]skills[\\\/]engram[\\\/]SKILL\.md/);
+  assert.match(result.stdout, /WRITTEN antigravity: .*\.antigravity-cli[\\\/]skills[\\\/]engram[\\\/]SKILL\.md/);
+  assert.match(result.stdout, /WRITTEN antigravity: .*\.antigravity-ide[\\\/]skills[\\\/]engram[\\\/]SKILL\.md/);
+  assert.match(result.stdout, /WRITTEN antigravity: .*gemini[\\\/]mcp\.json/);
   assert.match(await readFile(path.join(agentHome, '.antigravity', 'skills', 'engram', 'SKILL.md'), 'utf8'), /name: engram/);
   assert.match(await readFile(path.join(agentHome, '.antigravity-cli', 'skills', 'engram', 'SKILL.md'), 'utf8'), /Default agent mode: compact/);
   assert.match(await readFile(path.join(agentHome, '.antigravity-ide', 'skills', 'engram', 'SKILL.md'), 'utf8'), /save-session --accept-all/);
@@ -210,24 +236,24 @@ test('global skill-capable targets write host skill folders', async () => {
 
   const gemini = await runEngram(cwd, globalEnv, ['link', '--global', 'gemini']);
   assert.equal(gemini.code, 0, gemini.stderr);
-  assert.match(gemini.stdout, /WRITTEN gemini: .*\.gemini[\\/]GEMINI\.md/);
-  assert.match(gemini.stdout, /WRITTEN gemini: .*\.gemini[\\/]skills[\\/]engram[\\/]SKILL\.md/);
-  assert.match(gemini.stdout, /WRITTEN gemini: .*gemini[\\/]mcp\.json/);
+  assert.match(gemini.stdout, /WRITTEN gemini: .*\.gemini[\\\/]GEMINI\.md/);
+  assert.match(gemini.stdout, /WRITTEN gemini: .*\.gemini[\\\/]skills[\\\/]engram[\\\/]SKILL\.md/);
+  assert.match(gemini.stdout, /WRITTEN gemini: .*gemini[\\\/]mcp\.json/);
   assert.match(gemini.stdout, /gemini also covers current Antigravity 2\.0, Antigravity CLI, and Antigravity IDE/);
   assert.match(await readFile(path.join(agentHome, '.gemini', 'skills', 'engram', 'SKILL.md'), 'utf8'), /Engram Memory Management Skill/);
   assert.equal(JSON.parse(await readFile(path.join(configHome, 'gemini', 'mcp.json'), 'utf8')).mcpServers.engram.command, 'npx');
 
   const opencode = await runEngram(cwd, globalEnv, ['link', '--global', 'open-code']);
   assert.equal(opencode.code, 0, opencode.stderr);
-  assert.match(opencode.stdout, /WRITTEN open-code: .*opencode[\\/]AGENTS\.md/);
-  assert.match(opencode.stdout, /WRITTEN open-code: .*opencode[\\/]skills[\\/]engram[\\/]SKILL\.md/);
+  assert.match(opencode.stdout, /WRITTEN open-code: .*opencode[\\\/]AGENTS\.md/);
+  assert.match(opencode.stdout, /WRITTEN open-code: .*opencode[\\\/]skills[\\\/]engram[\\\/]SKILL\.md/);
   assert.match(await readFile(path.join(configHome, 'opencode', 'skills', 'engram', 'SKILL.md'), 'utf8'), /Default agent mode: compact/);
 
   const slash = await runEngram(cwd, globalEnv, ['link', '--global', 'slash']);
   assert.equal(slash.code, 0, slash.stderr);
-  assert.match(slash.stdout, /WRITTEN slash: .*\.claude[\\/]commands[\\/]engram\.md/);
-  assert.match(slash.stdout, /WRITTEN slash: .*\.claude[\\/]skills[\\/]engram[\\/]SKILL\.md/);
-  assert.match(slash.stdout, /WRITTEN slash: .*\.gemini[\\/]commands[\\/]engram\.toml/);
+  assert.match(slash.stdout, /WRITTEN slash: .*\.claude[\\\/]commands[\\\/]engram\.md/);
+  assert.match(slash.stdout, /WRITTEN slash: .*\.claude[\\\/]skills[\\\/]engram[\\\/]SKILL\.md/);
+  assert.match(slash.stdout, /WRITTEN slash: .*\.gemini[\\\/]commands[\\\/]engram\.toml/);
   assert.match(await readFile(path.join(agentHome, '.claude', 'skills', 'engram', 'SKILL.md'), 'utf8'), /Engram Slash Skill/);
 
   await rm(cwd, { recursive: true, force: true });
@@ -243,17 +269,19 @@ test('global copilot install appends user instruction file', async () => {
 
   const result = await runEngram(cwd, globalEnv, ['link', '--global', 'copilot']);
   assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /UPDATED copilot: .*\.copilot[\\/]copilot-instructions\.md/);
+  assert.match(result.stdout, /UPDATED copilot: .*\.copilot[\\\/]copilot-instructions\.md/);
 
   const copilot = await readFile(copilotFile, 'utf8');
   assert.match(copilot, /# Copilot human rules/);
   assert.match(copilot, /- Keep this rule\./);
-  assert.match(copilot, /BEGIN ENGRAM GLOBAL SKILLSET/);
-  assert.match(copilot, /engram load --for-agents "<current task>"/);
+  assert.match(copilot, /<!-- engram:start -->/);
+  assert.match(copilot, /Full guide:/);
+  assert.match(copilot, /engram load --for-agents "<task>"/);
 
   const registry = JSON.parse(await readFile(path.join(globalEnv.ENGRAM_CONFIG_DIR, 'global-skillsets.json'), 'utf8'));
-  assert.equal(registry.installs.copilot.files.length, 1);
-  assert.equal(registry.installs.copilot.files[0].path, path.join(agentHome, '.copilot', 'copilot-instructions.md').replace(/\\/g, '/'));
+  assert.equal(registry.installs.copilot.files.length, 2);
+  assert.ok(registry.installs.copilot.files.some((f) => f.path.endsWith('/copilot-instructions.md')));
+  assert.ok(registry.installs.copilot.files.some((f) => f.path.endsWith('/engram.md')));
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -280,11 +308,11 @@ test('global skillset installer preserves human-authored shared files with a man
   const agents = await readFile(path.join(codexDir, 'AGENTS.md'), 'utf8');
   assert.match(agents, /# Human global rules/);
   assert.match(agents, /# Tail human rules/);
-  assert.match(agents, /BEGIN ENGRAM GLOBAL SKILLSET/);
+  assert.match(agents, /<!-- engram:start -->/);
   assert.doesNotMatch(agents, /# Old Engram block/);
-  assert.equal((agents.match(/BEGIN ENGRAM GLOBAL SKILLSET/g) ?? []).length, 1);
-  assert.ok(agents.indexOf('# Tail human rules') < agents.lastIndexOf('BEGIN ENGRAM GLOBAL SKILLSET'), agents);
-  assert.ok(agents.trimEnd().endsWith('<!-- END ENGRAM GLOBAL SKILLSET -->'), agents);
+  assert.equal((agents.match(/<!-- engram:start -->/g) ?? []).length, 1);
+  assert.ok(agents.indexOf('# Tail human rules') < agents.lastIndexOf('<!-- engram:start -->'), agents);
+  assert.ok(agents.trimEnd().endsWith('<!-- engram:end -->'), agents);
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -299,13 +327,13 @@ test('global claude install appends CLAUDE.md and writes Claude skill path', asy
   const result = await runEngram(cwd, globalEnv, ['install-skill', 'set', '--global', 'claude']);
   assert.equal(result.code, 0, result.stderr);
   assert.match(result.stdout, /UPDATED claude: .*CLAUDE\.md/);
-  assert.match(result.stdout, /WRITTEN claude: .*\.claude[\\/]skills[\\/]engram[\\/]SKILL\.md/);
+  assert.match(result.stdout, /WRITTEN claude: .*\.claude[\\\/]skills[\\\/]engram[\\\/]SKILL\.md/);
 
   const claude = await readFile(claudeFile, 'utf8');
   assert.match(claude, /# Claude human rules/);
   assert.match(claude, /- Keep this at the top\./);
-  assert.equal((claude.match(/BEGIN ENGRAM GLOBAL SKILLSET/g) ?? []).length, 1);
-  assert.ok(claude.trimEnd().endsWith('<!-- END ENGRAM GLOBAL SKILLSET -->'), claude);
+  assert.equal((claude.match(/<!-- engram:start -->/g) ?? []).length, 1);
+  assert.ok(claude.trimEnd().endsWith('<!-- engram:end -->'), claude);
 
   const skill = await readFile(path.join(agentHome, '.claude', 'skills', 'engram', 'SKILL.md'), 'utf8');
   assert.match(skill, /name: engram/);
@@ -315,7 +343,7 @@ test('global claude install appends CLAUDE.md and writes Claude skill path', asy
   assert.equal(mcp.mcpServers.engram.command, 'npx');
 
   const registry = JSON.parse(await readFile(path.join(globalEnv.ENGRAM_CONFIG_DIR, 'global-skillsets.json'), 'utf8'));
-  assert.equal(registry.installs.claude.files.length, 3);
+  assert.equal(registry.installs.claude.files.length, 4);
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -338,14 +366,14 @@ test('global codex install appends rules and skips human-authored skill files', 
   const codex = await readFile(codexFile, 'utf8');
   assert.match(codex, /# My Codex Rules/);
   assert.match(codex, /- Keep this rule\./);
-  assert.match(codex, /BEGIN ENGRAM GLOBAL SKILLSET/);
-  assert.match(codex, /END ENGRAM GLOBAL SKILLSET/);
+  assert.match(codex, /<!-- engram:start -->/);
+  assert.match(codex, /<!-- engram:end -->/);
   assert.equal((codex.match(/# My Codex Rules/g) ?? []).length, 1);
   assert.match(await readFile(skillFile, 'utf8'), /Do not replace me\./);
   await rm(cwd, { recursive: true, force: true });
 });
 
-test('unlink removes generated files and skips human-authored ones', async () => {
+test('unlink removes managed block and guide, skips human files', async () => {
   const { cwd } = await tempWorkspace('engram-unlink-');
   await installSkillset(cwd, 'agents-md');
   const skillDir = path.join(cwd, '.agents', 'skills', 'engram');
@@ -357,7 +385,10 @@ test('unlink removes generated files and skips human-authored ones', async () =>
   const skipped = results.filter((r) => r.action === 'skipped');
   assert.ok(removed.length > 0, 'should remove generated files');
   assert.ok(skipped.length > 0, 'should skip human-authored files');
+  // AGENTS.md removed (was only block content)
   await assert.rejects(readFile(path.join(cwd, 'AGENTS.md'), 'utf8'));
+  // guide removed
+  await assert.rejects(readFile(path.join(cwd, '.agents/engram.md'), 'utf8'));
   assert.match(await readFile(path.join(skillDir, 'SKILL.md'), 'utf8'), /Human skill file/);
   await rm(cwd, { recursive: true, force: true });
 });
@@ -367,7 +398,8 @@ test('unlink --force removes human-authored files too', async () => {
   const file = path.join(cwd, 'AGENTS.md');
   await writeFile(file, '# Human agent instructions\n');
   const results = await unlinkSkillset(cwd, 'agents-md', true);
-  assert.ok(results.every((r) => r.action === 'removed'), 'all removed with --force');
+  // The instruction file should be removed (guide file may also have a result)
+  assert.ok(results.some((r) => r.file === 'AGENTS.md' && r.action === 'removed'), 'AGENTS.md should be removed with --force');
   await assert.rejects(readFile(file, 'utf8'));
   await rm(cwd, { recursive: true, force: true });
 });
@@ -395,13 +427,13 @@ test('unlink global cleans managed block from shared file without deleting it', 
   await mkdir(path.dirname(codexFile), { recursive: true });
   await writeFile(codexFile, '# Human rules\n\n- Keep this.\n');
   await runEngram(cwd, globalEnv, ['link', '--global', 'codex']);
-  assert.match(await readFile(codexFile, 'utf8'), /BEGIN ENGRAM GLOBAL SKILLSET/);
+  assert.match(await readFile(codexFile, 'utf8'), /<!-- engram:start -->/);
 
   const unlinkResult = await runEngram(cwd, globalEnv, ['unlink', '--global', 'codex']);
   assert.equal(unlinkResult.code, 0, unlinkResult.stderr);
 
   const agentsMd = await readFile(codexFile, 'utf8');
-  assert.doesNotMatch(agentsMd, /BEGIN ENGRAM GLOBAL SKILLSET/);
+  assert.doesNotMatch(agentsMd, /<!-- engram:start -->/);
   assert.match(agentsMd, /Human rules/);
   await rm(cwd, { recursive: true, force: true });
 });
@@ -437,50 +469,66 @@ test('global link installs MCP config for supported targets', async () => {
   assert.equal(JSON.parse(claudeMcp).mcpServers.engram.command, 'npx');
   await rm(cwd, { recursive: true, force: true });
 });
+
 const BOOTSTRAP_MAX_CHARS = 1800;
 const LEGACY_MIN_CHARS = 2500;
 
-test('codex alias writes bootstrap AGENTS.md and full SKILL.md', async () => {
+test('codex alias writes minimal AGENTS.md block and full SKILL.md', async () => {
   const { cwd, env } = await tempWorkspace('engram-skillset-bootstrap-');
   const result = await runEngram(cwd, env, ['link', 'codex']);
   assert.equal(result.code, 0, result.stderr);
   const agentsMd = await readFile(path.join(cwd, 'AGENTS.md'), 'utf8');
-  assert.match(agentsMd, /Runtime Bootstrap/);
-  assert.match(agentsMd, /Prefer Engram MCP tools/);
+  // Minimal block, not full bootstrap or compact
+  assert.match(agentsMd, /<!-- engram:start -->/);
+  assert.match(agentsMd, /Full guide:/);
   assert.ok(agentsMd.length <= BOOTSTRAP_MAX_CHARS, `AGENTS.md too large: ${agentsMd.length}`);
   assert.doesNotMatch(agentsMd, /Save flow:/);
   assert.doesNotMatch(agentsMd, /clone-memory/);
   assert.doesNotMatch(agentsMd, /take-control/);
   assert.doesNotMatch(agentsMd, /Rule memories:/);
+  assert.doesNotMatch(agentsMd, /Runtime Bootstrap/);
+  // SKILL.md still has full compact instructions
   const skill = await readFile(path.join(cwd, '.agents/skills/engram/SKILL.md'), 'utf8');
   assert.match(skill, /Save flow:/);
   assert.match(skill, /never add `--accept-all`/i);
   assert.match(skill, /Default agent mode: compact/);
+  // Full guide at .agents/engram.md
+  const guide = await readFile(path.join(cwd, '.agents/engram.md'), 'utf8');
+  assert.match(guide, /Save flow:/);
+  assert.match(guide, /Rule memories:/);
   await rm(cwd, { recursive: true, force: true });
 });
 
-test('agents-md fallback keeps compact manual instructions', async () => {
+test('agents-md fallback writes minimal block and guide file', async () => {
   const { cwd } = await tempWorkspace('engram-skillset-fallback-');
   await installSkillset(cwd, 'agents-md');
   const agentsMd = await readFile(path.join(cwd, 'AGENTS.md'), 'utf8');
-  assert.ok(agentsMd.length >= LEGACY_MIN_CHARS, `AGENTS.md unexpectedly short: ${agentsMd.length}`);
-  assert.match(agentsMd, /Save flow:/);
-  assert.match(agentsMd, /Rule memories:/);
+  // Minimal block
+  assert.match(agentsMd, /<!-- engram:start -->/);
+  assert.match(agentsMd, /Full guide:/);
+  assert.doesNotMatch(agentsMd, /Save flow:/);
+  assert.doesNotMatch(agentsMd, /Rule memories:/);
+  // Full guide in companion file
+  const guide = await readFile(path.join(cwd, '.agents/engram.md'), 'utf8');
+  assert.ok(guide.length >= LEGACY_MIN_CHARS, `guide unexpectedly short: ${guide.length}`);
+  assert.match(guide, /Save flow:/);
+  assert.match(guide, /Rule memories:/);
   await rm(cwd, { recursive: true, force: true });
 });
-test('workspace refresh keeps codex-linked AGENTS.md as bootstrap', async () => {
+
+test('workspace refresh keeps codex-linked AGENTS.md as minimal block', async () => {
   const { cwd } = await tempWorkspace('engram-skillset-refresh-codex-');
   await installSkillset(cwd, 'codex');
-  // Simulate stale bootstrap content
-  await writeFile(path.join(cwd, 'AGENTS.md'), '<!-- Generated by Engram skillset installer. Edit with care. -->\n\n# Engram Agent Skillset\n\n## Runtime Bootstrap\n\n- Old bootstrap line.\n');
+  // Simulate stale minimal block content
+  await writeFile(path.join(cwd, 'AGENTS.md'), '<!-- engram:start -->\n# Engram\n\nOld stale block line.\n<!-- engram:end -->\n');
 
   const { refreshGeneratedWorkspaceSkillsets } = await import('../dist/core/integrations/skillset.js');
   const refreshed = await refreshGeneratedWorkspaceSkillsets(cwd);
   assert.ok(refreshed.some((item) => item.file === 'AGENTS.md'));
 
   const agentsMd = await readFile(path.join(cwd, 'AGENTS.md'), 'utf8');
-  assert.match(agentsMd, /Runtime Bootstrap/);
-  assert.match(agentsMd, /Prefer Engram MCP tools/);
+  assert.match(agentsMd, /<!-- engram:start -->/);
+  assert.match(agentsMd, /Full guide:/);
   assert.doesNotMatch(agentsMd, /Save flow:/);
   await rm(cwd, { recursive: true, force: true });
 });
@@ -517,17 +565,157 @@ test('resolveLinkTargets all auto-detects while all-supported returns everything
   assert.ok(detected.some((t) => t.name === 'slash'));
 });
 
-test('workspace refresh keeps standalone agents-md compact', async () => {
+test('workspace refresh migrates generated full AGENTS.md to minimal block + guide', async () => {
   const { cwd } = await tempWorkspace('engram-skillset-refresh-fallback-');
-  await installSkillset(cwd, 'agents-md');
-  await writeFile(path.join(cwd, 'AGENTS.md'), '<!-- Generated by Engram skillset installer. Edit with care. -->\n# Old Engram instructions\n');
+  // Write a legacy full generated AGENTS.md (old format)
+  const legacyContent = '<!-- Generated by Engram skillset installer. Edit with care. -->\n\n# Engram Agent Skillset\n\nEngram = knowledge memory center for project, workspace, team, and personal context. Default agent mode: compact.\n\n## Protocol\n\n- Save flow: use `engram save`.\n- Rule memories: target 50 counted content lines.\n';
+  await writeFile(path.join(cwd, 'AGENTS.md'), legacyContent);
 
   const { refreshGeneratedWorkspaceSkillsets } = await import('../dist/core/integrations/skillset.js');
   const refreshed = await refreshGeneratedWorkspaceSkillsets(cwd);
-  assert.match(refreshed.map((item) => item.file).join('\n'), /AGENTS\.md/);
+  assert.ok(refreshed.some((item) => item.file === 'AGENTS.md'), 'AGENTS.md should be reported');
+  assert.ok(refreshed.some((item) => item.file === '.agents/engram.md'), '.agents/engram.md should be reported');
 
   const agentsMd = await readFile(path.join(cwd, 'AGENTS.md'), 'utf8');
-  assert.match(agentsMd, /Save flow:/);
-  assert.match(agentsMd, /Rule memories:/);
+  // Minimal block only
+  assert.match(agentsMd, /<!-- engram:start -->/);
+  assert.match(agentsMd, /Full guide:/);
+  assert.doesNotMatch(agentsMd, /Save flow:/);
+  assert.doesNotMatch(agentsMd, /Rule memories:/);
+  // Full guide written
+  const guide = await readFile(path.join(cwd, '.agents/engram.md'), 'utf8');
+  assert.match(guide, /Save flow:/);
+  assert.match(guide, /Rule memories:/);
+  assert.match(guide, /Generated by Engram skillset installer/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('engram link agents-md writes minimal AGENTS.md and full guide', async () => {
+  const { cwd } = await tempWorkspace('engram-skillset-minimal-');
+  await installSkillset(cwd, 'agents-md');
+  const agentsMd = await readFile(path.join(cwd, 'AGENTS.md'), 'utf8');
+  assert.match(agentsMd, /<!-- engram:start -->/);
+  assert.match(agentsMd, /Full guide: `\.agents\/engram\.md`/);
+  assert.doesNotMatch(agentsMd, /Save flow:/);
+  assert.doesNotMatch(agentsMd, /Rule memories:/);
+  assert.doesNotMatch(agentsMd, /clone-memory/);
+  const guide = await readFile(path.join(cwd, '.agents/engram.md'), 'utf8');
+  assert.match(guide, /Save flow:/);
+  assert.match(guide, /Rule memories:/);
+  assert.match(guide, /clone-memory/);
+  assert.match(guide, /Generated by Engram skillset installer/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('engram link preserves human AGENTS.md and upserts managed block', async () => {
+  const { cwd } = await tempWorkspace('engram-skillset-human-');
+  const file = path.join(cwd, 'AGENTS.md');
+  await writeFile(file, '# My project rules\n\n- Always use TypeScript.\n');
+  await installSkillset(cwd, 'agents-md');
+  const content = await readFile(file, 'utf8');
+  assert.match(content, /# My project rules/);
+  assert.match(content, /Always use TypeScript/);
+  assert.match(content, /<!-- engram:start -->/);
+  assert.equal((content.match(/<!-- engram:start -->/g) ?? []).length, 1);
+  assert.ok(await readFile(path.join(cwd, '.agents/engram.md'), 'utf8'));
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('engram link refreshes existing managed block', async () => {
+  const { cwd } = await tempWorkspace('engram-skillset-refresh-block-');
+  const file = path.join(cwd, 'AGENTS.md');
+  // Write stale block
+  await writeFile(file, '# My rules\n\n<!-- engram:start -->\n# Engram\n\nOld stale block line.\n<!-- engram:end -->\n');
+  await installSkillset(cwd, 'agents-md');
+  const content = await readFile(file, 'utf8');
+  assert.match(content, /# My rules/);
+  assert.doesNotMatch(content, /Old stale block line/);
+  assert.match(content, /Full guide:/);
+  assert.equal((content.match(/<!-- engram:start -->/g) ?? []).length, 1);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('engram unlink removes managed block and generated guide', async () => {
+  const { cwd } = await tempWorkspace('engram-unlink-block-');
+  await installSkillset(cwd, 'agents-md');
+  // Verify link worked
+  assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /<!-- engram:start -->/);
+  assert.match(await readFile(path.join(cwd, '.agents/engram.md'), 'utf8'), /Save flow:/);
+
+  await unlinkSkillset(cwd, 'agents-md');
+  // AGENTS.md removed (only block content)
+  await assert.rejects(readFile(path.join(cwd, 'AGENTS.md'), 'utf8'));
+  // Guide removed
+  await assert.rejects(readFile(path.join(cwd, '.agents/engram.md'), 'utf8'));
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('engram unlink preserves human instruction content after block removal', async () => {
+  const { cwd } = await tempWorkspace('engram-unlink-human-');
+  const file = path.join(cwd, 'AGENTS.md');
+  await writeFile(file, '# My rules\n\n- Keep this rule.\n');
+  await installSkillset(cwd, 'agents-md');
+  assert.match(await readFile(file, 'utf8'), /<!-- engram:start -->/);
+
+  await unlinkSkillset(cwd, 'agents-md');
+  const remaining = await readFile(file, 'utf8');
+  assert.match(remaining, /# My rules/);
+  assert.match(remaining, /Keep this rule/);
+  assert.doesNotMatch(remaining, /<!-- engram:start -->/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('engram unlink skips human-authored guide file', async () => {
+  const { cwd } = await tempWorkspace('engram-unlink-human-guide-');
+  await installSkillset(cwd, 'agents-md');
+  // Replace generated guide with human content
+  const guideFile = path.join(cwd, '.agents/engram.md');
+  await writeFile(guideFile, '# My custom Engram guide\n\n- Human authored.\n');
+
+  await unlinkSkillset(cwd, 'agents-md');
+  // Guide should remain (human-authored)
+  assert.match(await readFile(guideFile, 'utf8'), /My custom Engram guide/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('workspace refresh --plan reports both files without writing', async () => {
+  const { cwd } = await tempWorkspace('engram-refresh-plan-');
+  const legacyContent = '<!-- Generated by Engram skillset installer. Edit with care. -->\n\n# Engram Agent Skillset\n\nEngram = knowledge memory center for project, workspace, team, and personal context. Default agent mode: compact.\n\n## Protocol\n\n- Save flow: use `engram save`.\n- Rule memories: target 50 counted content lines.\n';
+  await writeFile(path.join(cwd, 'AGENTS.md'), legacyContent);
+
+  const { refreshGeneratedWorkspaceSkillsets } = await import('../dist/core/integrations/skillset.js');
+  const refreshed = await refreshGeneratedWorkspaceSkillsets(cwd, { plan: true });
+
+  // Results include both AGENTS.md and .agents/engram.md as planned
+  assert.ok(refreshed.some((item) => item.file === 'AGENTS.md' && item.action === 'planned'));
+  assert.ok(refreshed.some((item) => item.file === '.agents/engram.md' && item.action === 'planned'));
+  // Files unchanged (plan mode)
+  const agentsMd = await readFile(path.join(cwd, 'AGENTS.md'), 'utf8');
+  assert.match(agentsMd, /Default agent mode: compact/);
+  await assert.rejects(readFile(path.join(cwd, '.agents/engram.md'), 'utf8'));
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('codex alias keeps SKILL.md plus minimal AGENTS.md and guide', async () => {
+  const { cwd, env } = await tempWorkspace('engram-codex-full-');
+  await runEngram(cwd, env, ['link', 'codex']);
+
+  const agentsMd = await readFile(path.join(cwd, 'AGENTS.md'), 'utf8');
+  assert.match(agentsMd, /<!-- engram:start -->/);
+  assert.match(agentsMd, /Full guide:/);
+  assert.doesNotMatch(agentsMd, /Save flow:/);
+  assert.doesNotMatch(agentsMd, /Rule memories:/);
+
+  const guide = await readFile(path.join(cwd, '.agents/engram.md'), 'utf8');
+  assert.match(guide, /Save flow:/);
+  assert.match(guide, /Rule memories:/);
+  assert.match(guide, /Generated by Engram skillset installer/);
+
+  const skill = await readFile(path.join(cwd, '.agents/skills/engram/SKILL.md'), 'utf8');
+  // SKILL.md is a proper agent skill with frontmatter
+  assert.match(skill, /name: engram/);
+  assert.match(skill, /Default agent mode: compact/);
+
+  assert.match(await readFile(path.join(cwd, '.mcp.json'), 'utf8'), /engram-mcp/);
   await rm(cwd, { recursive: true, force: true });
 });

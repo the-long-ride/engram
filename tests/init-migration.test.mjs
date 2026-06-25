@@ -47,7 +47,7 @@ Engram = workspace memory.
   const second = await runEngram(cwd, env, ['inject']);
   assert.equal(second.code, 0, second.stderr);
   assert.match(second.stdout, /✔ engram is injected!/);
-  assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /Runtime Bootstrap/);
+  assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /<!-- engram:start -->/);
   assert.match(await readFile(path.join(cwd, '.agents', 'skills', 'engram', 'SKILL.md'), 'utf8'), /knowledge memory center/);
   assert.match(await readFile(path.join(cwd, '.agents', 'skills', 'engram', 'SKILL.md'), 'utf8'), /Session end/);
   assert.equal((await runEngram(cwd, env, ['inject'])).code, 0);

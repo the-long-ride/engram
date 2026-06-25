@@ -6,7 +6,16 @@ import { VERSION } from '../runtime/constants.js';
 import { loadConfig, userConfigDir } from '../runtime/config.js';
 import { sha256 } from '../safety/hash.js';
 import { ensureDir, readJson, readText, writeJson, writeText } from '../system/fsx.js';
-import { globalSkillsetMarkdown, isGenerated, renderSkillsetFile } from './skillset-render.js';
+import {
+  globalSkillsetMarkdown,
+  hasWorkspaceManagedBlock,
+  isGenerated,
+  removeWorkspaceManagedBlock,
+  renderAgentGuide,
+  renderMinimalInstructionBlock,
+  renderSkillsetFile,
+  upsertWorkspaceManagedBlock
+} from './skillset-render.js';
 import type { InstructionProfile } from './skillset-render.js';
 import { resolveAllTargets, allSupportedTargets } from './agent-detect.js';
 
@@ -55,6 +64,39 @@ const targets: Record<SkillsetTarget, string[]> = {
   slash: ['.claude/commands/engram.md', '.claude/skills/engram/SKILL.md', '.cursor/commands/engram.md', '.gemini/commands/engram.toml']
 };
 
+/** Map from workspace target to its companion full Engram guide file path. */
+const workspaceGuideFiles: Partial<Record<SkillsetTarget, string>> = {
+  'agents-md': '.agents/engram.md',
+  claude: '.claude/engram.md',
+  cursor: '.cursor/engram.md',
+  gemini: '.gemini/engram.md',
+  cline: '.agents/engram.md',
+  windsurf: '.agents/engram.md',
+  copilot: '.agents/engram.md'
+};
+
+/** Return the guide file path for a given workspace target, or undefined if none. */
+function workspaceGuideFileForTarget(target: SkillsetTarget): string | undefined {
+  return workspaceGuideFiles[target];
+}
+
+/** Instruction files: files that should receive the minimal block instead of full content. */
+const instructionFileNames = new Set([
+  'AGENTS.md',
+  'CLAUDE.md',
+  'GEMINI.md',
+  '.cursor/rules/engram.mdc',
+  '.clinerules',
+  '.windsurfrules',
+  '.github/copilot-instructions.md'
+]);
+
+/** Return true if the given relative file path is a human instruction file (gets minimal block). */
+function isInstructionFile(relativeFile: string): boolean {
+  const normalized = relativeFile.replace(/\\/g, '/');
+  return instructionFileNames.has(normalized);
+}
+
 function instructionProfileForTarget(target: SkillsetTarget, label: string): InstructionProfile {
   if (label === 'codex') return 'bootstrap';
   if (target === 'claude' || target === 'cursor' || target === 'gemini') return 'bootstrap';
@@ -89,22 +131,61 @@ export async function installSkillset(cwd: string, target = 'all', force = false
   const names = resolveLinkTargets(target);
   const results: InstallResult[] = [];
   const plannedFiles = new Set<string>();
+  const plannedGuideFiles = new Set<string>();
   for (const { name, label } of names) {
     const files = target === 'all' ? targets[name] : [...targets[name], ...workspaceMcpFilesForTarget(name)];
     for (const relativeFile of files) {
       if (plannedFiles.has(relativeFile)) continue;
       plannedFiles.add(relativeFile);
       const file = path.join(cwd, relativeFile);
-      const existing = await readText(file);
-      if (existing && !force && !isGenerated(existing, relativeFile)) {
-        results.push({ target: label, file: relativeFile, action: 'skipped' });
-        continue;
+      if (isInstructionFile(relativeFile)) {
+        // Minimal block path: upsert managed block, write companion guide
+        const guidePath = workspaceGuideFileForTarget(name);
+        const block = renderMinimalInstructionBlock(guidePath ?? '.agents/engram.md');
+        const existing = await readText(file);
+        if (existing && !force && !isGenerated(existing, relativeFile)) {
+          // Human-authored without Engram block: append block
+          const { text, action } = upsertWorkspaceManagedBlock(existing, block);
+          await ensureDir(path.dirname(file));
+          await writeText(file, text);
+          results.push({ target: label, file: relativeFile, action });
+        } else if (!existing) {
+          await ensureDir(path.dirname(file));
+          await writeText(file, `${block}\n`);
+          results.push({ target: label, file: relativeFile, action: 'written' });
+        } else {
+          // Existing generated or forced: upsert block (replaces legacy full content)
+          const { text, action } = upsertWorkspaceManagedBlock(existing, block);
+          await ensureDir(path.dirname(file));
+          await writeText(file, text);
+          results.push({ target: label, file: relativeFile, action });
+        }
+        // Write companion guide file
+        if (guidePath && !plannedGuideFiles.has(guidePath)) {
+          plannedGuideFiles.add(guidePath);
+          const guideFile = path.join(cwd, guidePath);
+          const existingGuide = await readText(guideFile);
+          if (!existingGuide || isGenerated(existingGuide, guidePath) || force) {
+            await ensureDir(path.dirname(guideFile));
+            await writeText(guideFile, renderAgentGuide(config.read));
+            results.push({ target: label, file: guidePath, action: existingGuide ? 'updated' : 'written' });
+          } else {
+            results.push({ target: label, file: guidePath, action: 'skipped', reason: 'human-authored file; use --force to replace' });
+          }
+        }
+      } else {
+        // Non-instruction file: original behavior
+        const existing = await readText(file);
+        if (existing && !force && !isGenerated(existing, relativeFile)) {
+          results.push({ target: label, file: relativeFile, action: 'skipped' });
+          continue;
+        }
+        await ensureDir(path.dirname(file));
+        const renderTarget = renderTargetForFile(name, relativeFile);
+        const profile = instructionProfileForTarget(renderTarget, label);
+        await writeText(file, renderSkillsetFile(renderTarget, relativeFile, config.read, profile));
+        results.push({ target: label, file: relativeFile, action: 'written' });
       }
-      await ensureDir(path.dirname(file));
-      const renderTarget = renderTargetForFile(name, relativeFile);
-      const profile = instructionProfileForTarget(renderTarget, label);
-      await writeText(file, renderSkillsetFile(renderTarget, relativeFile, config.read, profile));
-      results.push({ target: label, file: relativeFile, action: 'written' });
     }
   }
   return results;
@@ -114,21 +195,63 @@ export async function installSkillset(cwd: string, target = 'all', force = false
 export async function refreshGeneratedWorkspaceSkillsets(cwd: string, options: { plan?: boolean } = {}): Promise<InstallResult[]> {
   const config = await loadConfig(cwd);
   const results: InstallResult[] = [];
+  const handledGuideFiles = new Set<string>();
   for (const name of Object.keys(targets) as SkillsetTarget[]) {
     for (const relativeFile of targets[name]) {
       const file = path.join(cwd, relativeFile);
       const existing = await readText(file);
       if (!existing || !isGenerated(existing, relativeFile)) continue;
-      const profile = await instructionProfileForWorkspaceRefresh(cwd, name, relativeFile, existing);
-      const next = renderSkillsetFile(name, relativeFile, config.read, profile);
-      const normalized = next.endsWith('\n') ? next : `${next}\n`;
-      if (existing === normalized) continue;
-      if (options.plan) {
-        results.push({ target: name, file: relativeFile, action: 'planned' });
-        continue;
+
+      if (isInstructionFile(relativeFile)) {
+        // Handle instruction file: migrate to minimal block or refresh block
+        const guidePath = workspaceGuideFileForTarget(name);
+        const effectiveGuidePath = guidePath ?? '.agents/engram.md';
+        const block = renderMinimalInstructionBlock(effectiveGuidePath);
+        const { text: nextText, action: blockAction } = upsertWorkspaceManagedBlock(existing, block);
+        const normalizedNext = nextText.endsWith('\n') ? nextText : `${nextText}\n`;
+
+        if (existing !== normalizedNext) {
+          if (options.plan) {
+            results.push({ target: name, file: relativeFile, action: 'planned' });
+          } else {
+            await writeText(file, normalizedNext);
+            results.push({ target: name, file: relativeFile, action: blockAction === 'written' ? 'updated' : 'updated' });
+          }
+        }
+
+        // Handle companion guide file
+        if (guidePath && !handledGuideFiles.has(guidePath)) {
+          handledGuideFiles.add(guidePath);
+          const guideFile = path.join(cwd, guidePath);
+          const existingGuide = await readText(guideFile);
+          const nextGuide = renderAgentGuide(config.read);
+          const normalizedGuide = nextGuide.endsWith('\n') ? nextGuide : `${nextGuide}\n`;
+          if (!existingGuide || isGenerated(existingGuide, guidePath)) {
+            if (existingGuide !== normalizedGuide) {
+              if (options.plan) {
+                results.push({ target: name, file: guidePath, action: 'planned' });
+              } else {
+                await ensureDir(path.dirname(guideFile));
+                await writeText(guideFile, normalizedGuide);
+                results.push({ target: name, file: guidePath, action: existingGuide ? 'updated' : 'written' });
+              }
+            }
+          }
+          // else: human-authored guide, skip
+        }
+      } else {
+        // Non-instruction generated file: original refresh behavior
+        const profile = await instructionProfileForWorkspaceRefresh(cwd, name, relativeFile, existing);
+        const next = renderSkillsetFile(name, relativeFile, config.read, profile);
+        const normalized = next.endsWith('\n') ? next : `${next}\n`;
+        if (existing === normalized) continue;
+        if (options.plan) {
+          results.push({ target: name, file: relativeFile, action: 'planned' });
+          continue;
+        }
+        await writeText(file, normalized);
+        results.push({ target: name, file: relativeFile, action: 'updated' });
       }
-      await writeText(file, normalized);
-      results.push({ target: name, file: relativeFile, action: 'updated' });
     }
   }
   return results;
@@ -155,7 +278,10 @@ export async function installGlobalSkillset(target = 'all', options: { force?: b
       continue;
     }
     const profile = instructionProfileForTarget(plan.renderTarget ?? plan.name, plan.label);
-    const content = renderGlobalInstallContent(plan, config.read, profile);
+    let content = renderGlobalInstallContent(plan, config.read, profile);
+    if (plan.mode === 'block') {
+      content = renderMinimalInstructionBlock('~/.agents/engram.md');
+    }
     if (options.plan) {
       results.push({ target: plan.label, file: plan.file, action: 'planned', mode: plan.mode, hash: sha256(content) });
       continue;
@@ -165,7 +291,9 @@ export async function installGlobalSkillset(target = 'all', options: { force?: b
       results.push({ target: plan.label, file: plan.file, action: 'skipped', mode: plan.mode, reason: 'human-authored file exists; re-run with --force to replace' });
       continue;
     }
-    const next = plan.mode === 'block' ? upsertManagedBlock(existing, content) : { text: content, action: existing ? 'updated' as InstallAction : 'written' as InstallAction };
+    const next = plan.mode === 'block'
+      ? upsertWorkspaceManagedBlock(existing.includes(GLOBAL_BEGIN) ? removeManagedBlock(existing) : existing, content)
+      : { text: content, action: existing ? 'updated' as InstallAction : 'written' as InstallAction };
     await writeText(plan.file, next.text);
     results.push({ target: plan.label, file: plan.file, action: next.action, mode: plan.mode, hash: sha256(next.text) });
   }
@@ -247,20 +375,28 @@ function globalFilesForTarget(target: ResolvedTarget, home: string): GlobalInsta
   const skip = (reason: string): GlobalInstallPlan => ({ ...target, file: '<manual>', reason });
   switch (target.name) {
     case 'agents-md':
-      return [plan(path.join(home, '.codex', 'AGENTS.md'), 'block')];
+      return [
+        plan(path.join(home, '.codex', 'AGENTS.md'), 'block'),
+        plan(path.join(home, '.agents', 'engram.md'), 'file')
+      ];
     case 'copilot':
-      return [plan(path.join(home, '.copilot', 'copilot-instructions.md'), 'block')];
+      return [
+        plan(path.join(home, '.copilot', 'copilot-instructions.md'), 'block'),
+        plan(path.join(home, '.agents', 'engram.md'), 'file')
+      ];
     case 'claude':
       return [
         plan(path.join(home, '.claude', 'CLAUDE.md'), 'block'),
-        plan(path.join(home, '.claude', 'skills', 'engram', 'SKILL.md'), 'file', 'slash')
+        plan(path.join(home, '.claude', 'skills', 'engram', 'SKILL.md'), 'file', 'slash'),
+        plan(path.join(home, '.agents', 'engram.md'), 'file')
       ];
     case 'cursor':
       return [skip('Cursor user rules are configured in app settings; no stable local global file path is published')];
     case 'gemini':
       return [
         plan(path.join(home, '.gemini', 'GEMINI.md'), 'block'),
-        plan(path.join(home, '.gemini', 'skills', 'engram', 'SKILL.md'), 'file', 'agent-skill')
+        plan(path.join(home, '.gemini', 'skills', 'engram', 'SKILL.md'), 'file', 'agent-skill'),
+        plan(path.join(home, '.agents', 'engram.md'), 'file')
       ];
     case 'cline':
       return [plan(path.join(home, 'Documents', 'Cline', 'Rules', 'engram.md'), 'file')];
@@ -277,7 +413,8 @@ function globalFilesForTarget(target: ResolvedTarget, home: string): GlobalInsta
     case 'opencode':
       return [
         plan(path.join(configHome, 'opencode', 'AGENTS.md'), 'block', 'agents-md'),
-        plan(path.join(configHome, 'opencode', 'skills', 'engram', 'SKILL.md'), 'file', 'agent-skill')
+        plan(path.join(configHome, 'opencode', 'skills', 'engram', 'SKILL.md'), 'file', 'agent-skill'),
+        plan(path.join(home, '.agents', 'engram.md'), 'file')
       ];
     case 'mcp':
       return [plan(path.join(home, '.claude', 'mcp.json'), 'file', 'mcp'), plan(path.join(configHome, 'gemini', 'mcp.json'), 'file', 'mcp')];
@@ -343,6 +480,7 @@ function upsertManagedBlock(existing: string, content: string): { text: string; 
 export async function unlinkSkillset(cwd: string, target = 'all', force = false): Promise<UnlinkResult[]> {
   const names = target === 'all' ? skillsetTargets().map((name) => ({ name, label: name })) : resolveTargets(target);
   const results: UnlinkResult[] = [];
+  const handledGuideFiles = new Set<string>();
   for (const { name, label } of names) {
     for (const relativeFile of targets[name]) {
       const file = path.join(cwd, relativeFile);
@@ -351,12 +489,48 @@ export async function unlinkSkillset(cwd: string, target = 'all', force = false)
         results.push({ target: label, file: relativeFile, action: 'skipped', reason: 'file not found' });
         continue;
       }
-      if (!force && !isGenerated(existing, relativeFile)) {
-        results.push({ target: label, file: relativeFile, action: 'skipped', reason: 'human-authored file; use --force to remove' });
-        continue;
+      if (isInstructionFile(relativeFile)) {
+        // Minimal block path: remove the block, handle remaining content
+        if (hasWorkspaceManagedBlock(existing)) {
+          const cleaned = removeWorkspaceManagedBlock(existing).trimEnd();
+          if (!cleaned) {
+            await fs.rm(file, { force: true });
+            results.push({ target: label, file: relativeFile, action: 'removed' });
+          } else {
+            await writeText(file, `${cleaned}\n`);
+            results.push({ target: label, file: relativeFile, action: 'cleaned' });
+          }
+        } else if (isGenerated(existing, relativeFile) || force) {
+          // Legacy generated full content without block, or forced
+          await fs.rm(file, { force: true });
+          results.push({ target: label, file: relativeFile, action: 'removed' });
+        } else {
+          results.push({ target: label, file: relativeFile, action: 'skipped', reason: 'human-authored file; use --force to remove' });
+        }
+        // Handle guide file cleanup
+        const guidePath = workspaceGuideFileForTarget(name);
+        if (guidePath && !handledGuideFiles.has(guidePath)) {
+          handledGuideFiles.add(guidePath);
+          const guideFile = path.join(cwd, guidePath);
+          const existingGuide = await readText(guideFile);
+          if (!existingGuide) {
+            results.push({ target: label, file: guidePath, action: 'skipped', reason: 'file not found' });
+          } else if (isGenerated(existingGuide, guidePath) || force) {
+            await fs.rm(guideFile, { force: true });
+            results.push({ target: label, file: guidePath, action: 'removed' });
+          } else {
+            results.push({ target: label, file: guidePath, action: 'skipped', reason: 'human-authored file; use --force to remove' });
+          }
+        }
+      } else {
+        // Non-instruction file: original behavior
+        if (!force && !isGenerated(existing, relativeFile)) {
+          results.push({ target: label, file: relativeFile, action: 'skipped', reason: 'human-authored file; use --force to remove' });
+          continue;
+        }
+        await fs.rm(file, { force: true });
+        results.push({ target: label, file: relativeFile, action: 'removed' });
       }
-      await fs.rm(file, { force: true });
-      results.push({ target: label, file: relativeFile, action: 'removed' });
     }
   }
   return results;
@@ -381,7 +555,9 @@ export async function unlinkGlobalSkillset(target = 'all', options: { force?: bo
         continue;
       }
       if (entry.mode === 'block') {
-        const cleaned = removeManagedBlock(existing);
+        const cleaned = hasWorkspaceManagedBlock(existing)
+          ? removeWorkspaceManagedBlock(existing)
+          : removeManagedBlock(existing);
         if (cleaned === existing) {
           results.push({ target: current, file, action: 'skipped', reason: 'no Engram managed block found' });
           continue;

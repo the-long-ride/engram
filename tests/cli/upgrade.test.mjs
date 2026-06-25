@@ -48,8 +48,8 @@ test('upgrade refreshes generated workspace skillsets', async () => {
   assert.match(upgraded.stdout, /UPDATED agents-md: AGENTS\.md/);
   assert.match(upgraded.stdout, /UPDATED agent-skill: \.agents\/skills\/engram\/SKILL\.md/);
   const agentsMd = await readFile(path.join(cwd, 'AGENTS.md'), 'utf8');
-  assert.match(agentsMd, /Default agent mode: compact/);
-  assert.doesNotMatch(agentsMd, /Runtime Bootstrap/);
+  assert.match(agentsMd, /<!-- engram:start -->/);
+  assert.match(agentsMd, /Full guide:/);
   assert.match(await readFile(path.join(cwd, '.agents', 'skills', 'engram', 'SKILL.md'), 'utf8'), /Engram Memory Management Skill/);
   await rm(cwd, { recursive: true, force: true });
 });
@@ -99,8 +99,8 @@ test('auto-upgrade quietly reconciles initialized roots once after package updat
   assert.doesNotMatch(loaded.stdout, /auto-upgrade|reconciled/i);
   assert.match(await readFile(path.join(root, 'HELP.md'), 'utf8'), /Engram Help/);
   const autoAgentsMd = await readFile(path.join(cwd, 'AGENTS.md'), 'utf8');
-  assert.match(autoAgentsMd, /Default agent mode: compact/);
-  assert.doesNotMatch(autoAgentsMd, /Runtime Bootstrap/);
+  assert.match(autoAgentsMd, /<!-- engram:start -->/);
+  assert.match(autoAgentsMd, /Full guide:/);
   const upgradedConfig = JSON.parse(await readFile(configFile, 'utf8'));
   assert.equal(upgradedConfig.version, await packageVersion());
   assert.equal(upgradedConfig.auto_upgrade.version, await packageVersion());
@@ -202,8 +202,8 @@ test('upgrade refresh keeps codex-linked AGENTS.md as bootstrap', async () => {
   const upgraded = await runEngram(cwd, env, ['upgrade', '--no-version-check']);
   assert.equal(upgraded.code, 0, upgraded.stderr);
   const agentsMd = await readFile(path.join(cwd, 'AGENTS.md'), 'utf8');
-  assert.match(agentsMd, /Runtime Bootstrap/);
-  assert.match(agentsMd, /Prefer Engram MCP tools/);
+  assert.match(agentsMd, /<!-- engram:start -->/);
+  assert.match(agentsMd, /Full guide:/);
   assert.doesNotMatch(agentsMd, /Save flow:/);
   await rm(cwd, { recursive: true, force: true });
 });

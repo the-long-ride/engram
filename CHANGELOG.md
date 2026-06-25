@@ -1,6 +1,12 @@
 # Changelog
 
-## Unreleased
+## 0.0.20
+
+- Added a remote origin URL input field to the Global Git settings block in the Construct tab.
+- Validated remote origin URL input and updated Git config on saving changes.
+- Added `--host-only` flag support for `engram entry` command to start the Web UI server without opening a browser tab.
+- Added an Escape key event listener to the Memory Graph to exit fullscreen mode.
+- Optimized/merged duplicate CSS rules in the Memory Graph Web UI to keep file size within static asset budgets.
 
 ## 0.0.19
 

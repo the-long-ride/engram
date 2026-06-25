@@ -142,6 +142,12 @@ async function handleRequest(req: any, res: any, cwd: string): Promise<void> {
     return;
   }
 
+  if (url === '/engram-logo-black-transparent.svg' && method === 'GET') {
+    res.writeHead(200, { ...SECURITY_HEADERS, 'Content-Type': 'image/svg+xml' });
+    res.end(readAsset('engram-logo-black-transparent.svg'));
+    return;
+  }
+
   if ((url === '/favicon.svg' || url === '/favicon.ico') && method === 'GET') {
     res.writeHead(200, { ...SECURITY_HEADERS, 'Content-Type': 'image/svg+xml' });
     res.end(readAsset('favicon.svg'));
@@ -222,6 +228,7 @@ async function handleRequest(req: any, res: any, cwd: string): Promise<void> {
       if (url === '/api/memories') {
         const data = await apiMemoriesGraphData(cwd, {
           scopes: body.scopes,
+          types: Array.isArray(body.types) ? body.types : undefined,
           semantic: body.semantic === true,
           rebuild: body.rebuild === true,
           limit: Number(body.limit || 100)

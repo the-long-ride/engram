@@ -77,6 +77,13 @@ test('web UI api workspace, profile, config handlers and entry text parser', asy
     assert.equal(initialData.isInitialized, false);
     assert.equal(initialData.cwd, cwd);
 
+    const oldLatest = process.env.ENGRAM_LATEST_VERSION;
+    process.env.ENGRAM_LATEST_VERSION = '999.0.0';
+    const updateData = await loadPanelData(cwd, entryText);
+    if (oldLatest === undefined) delete process.env.ENGRAM_LATEST_VERSION;
+    else process.env.ENGRAM_LATEST_VERSION = oldLatest;
+    assert.equal(updateData.latestVersion, '999.0.0');
+
     // 3. apiConfigSet (valid keys)
     const setScope = await apiConfigSet('scope', 'global', cwd);
     assert.match(setScope, /Set scope = global/);

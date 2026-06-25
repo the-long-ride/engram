@@ -35,6 +35,7 @@ export interface PanelData {
   sqliteAvailable: boolean;
   cwd: string;
   version: string;
+  latestVersion?: string;
   isInitialized: boolean;
   configFields: ReturnType<typeof configFieldsForPanel>;
 }
@@ -44,13 +45,14 @@ export async function loadPanelData(cwd: string, entryText: string): Promise<Pan
   const entry = parseEntryText(entryText);
   const version = (config as any).version ?? '';
   const isInitialized = await exists(workspaceRoot(cwd)) || await exists(legacyWorkspaceRoot(cwd));
+  const latestVersion = await latestPackageVersion(version);
   const dbh = await openConfigDb();
   if (!dbh) {
-    return { config, workspaces: [], profiles: [], entry, sqliteAvailable: false, cwd, version, isInitialized, configFields: configFieldsForPanel() };
+    return { config, workspaces: [], profiles: [], entry, sqliteAvailable: false, cwd, version, isInitialized, latestVersion, configFields: configFieldsForPanel() };
   }
   try {
     if (!isConfigDbUsable(dbh.db)) {
-      return { config, workspaces: [], profiles: [], entry, sqliteAvailable: false, cwd, version, isInitialized, configFields: configFieldsForPanel() };
+      return { config, workspaces: [], profiles: [], entry, sqliteAvailable: false, cwd, version, isInitialized, latestVersion, configFields: configFieldsForPanel() };
     }
     const q = await importQueries();
     return {
@@ -62,6 +64,7 @@ export async function loadPanelData(cwd: string, entryText: string): Promise<Pan
       cwd,
       version,
       isInitialized,
+      latestVersion,
       configFields: configFieldsForPanel()
     };
   } finally {
@@ -71,6 +74,47 @@ export async function loadPanelData(cwd: string, entryText: string): Promise<Pan
 
 export function apiConfigValidate(patch: unknown): ConfigPatchValidation {
   return validateConfigPatch(patch);
+}
+
+let latestVersionCache: { at: number; value: string } | null = null;
+
+async function latestPackageVersion(currentVersion: string): Promise<string> {
+  const envVersion = process.env.ENGRAM_LATEST_VERSION?.trim();
+  if (envVersion) return isNewerVersion(envVersion, currentVersion) ? envVersion : '';
+  if (process.env.NODE_ENV === 'test') return '';
+  const now = Date.now();
+  if (latestVersionCache && now - latestVersionCache.at < 10 * 60 * 1000) {
+    return isNewerVersion(latestVersionCache.value, currentVersion) ? latestVersionCache.value : '';
+  }
+  try {
+    const value = await fetchNpmLatestVersion(1200);
+    latestVersionCache = { at: now, value };
+    return isNewerVersion(value, currentVersion) ? value : '';
+  } catch {
+    latestVersionCache = { at: now, value: '' };
+    return '';
+  }
+}
+
+async function fetchNpmLatestVersion(timeoutMs: number): Promise<string> {
+  const res = await fetch('https://registry.npmjs.org/@the-long-ride/engram/latest', {
+    headers: { Accept: 'application/json' },
+    signal: AbortSignal.timeout(timeoutMs)
+  });
+  if (!res.ok) throw new Error('npm status ' + res.status);
+  const body = await res.json() as { version?: string };
+  return String(body.version || '');
+}
+function isNewerVersion(latest: string, current: string): boolean {
+  const l = latest.split('.').map(Number);
+  const c = current.split('.').map(Number);
+  for (let i = 0; i < Math.max(l.length, c.length); i += 1) {
+    const lv = l[i] || 0;
+    const cv = c[i] || 0;
+    if (lv > cv) return true;
+    if (lv < cv) return false;
+  }
+  return false;
 }
 
 export async function apiConfigSet(key: string, value: string, cwd: string): Promise<string> {
@@ -268,6 +312,7 @@ import { applyAgentHookAction } from '../integrations/agent-hooks.js';
 export interface AgentUiInfo {
   id: string;
   name: string;
+  path?: string;
   detected: boolean;
   workspaceLinked: boolean;
   globalLinked: boolean;
@@ -367,6 +412,7 @@ export async function apiAgentsScan(cwd: string): Promise<AgentUiInfo[]> {
     result.push({
       id: agent.id,
       name: agent.name,
+      path: agentPath(agent.id),
       detected: isDet,
       workspaceLinked: wsLinked,
       globalLinked: glLinked,
@@ -374,6 +420,25 @@ export async function apiAgentsScan(cwd: string): Promise<AgentUiInfo[]> {
     });
   }
   return result;
+}
+
+function agentPath(agentId: string): string {
+  const home = homedir();
+  const xdgConfig = process.env.XDG_CONFIG_HOME ?? path.join(home, '.config');
+  const appData = process.env.APPDATA ?? path.join(home, 'AppData', 'Roaming');
+  const localAppData = process.env.LOCALAPPDATA ?? path.join(home, 'AppData', 'Local');
+  const paths: Record<string, string> = {
+    codex: path.join(home, '.codex'),
+    claude: path.join(home, '.claude'),
+    cursor: path.join(home, '.cursor'),
+    gemini: path.join(home, '.gemini'),
+    copilot: path.join(home, '.copilot'),
+    cline: path.join(home, '.cline'),
+    windsurf: path.join(localAppData, 'Programs', 'Windsurf'),
+    opencode: path.join(xdgConfig, 'opencode'),
+    antigravity: path.join(home, '.antigravity')
+  };
+  return paths[agentId] || appData;
 }
 
 export async function apiAgentLink(cwd: string, agentId: string, global: boolean): Promise<string> {
@@ -507,7 +572,9 @@ export interface MemoriesGraphData {
   generatedAt: string;
   filters: {
     enabledScopes: MemoriesScopeFilter[];
+    enabledTypes: ('rule' | 'skill' | 'workflow' | 'knowledge')[];
     availableScopes: MemoriesScopeFilter[];
+    availableTypes: ('rule' | 'skill' | 'workflow' | 'knowledge')[];
     semantic: boolean;
     activeProfile: string;
   };
@@ -786,6 +853,12 @@ function normalizeMemoriesScopes(scopes: unknown): MemoriesScopeFilter[] {
   return valid.length ? Array.from(new Set(valid)) : ['profile', 'global', 'workspace'];
 }
 
+function normalizeMemoryTypes(types: unknown): ('rule' | 'skill' | 'workflow' | 'knowledge')[] {
+  const raw = Array.isArray(types) ? types : typeof types === 'string' ? types.split(',') : [];
+  const valid = raw.filter((type): type is 'rule' | 'skill' | 'workflow' | 'knowledge' => type === 'rule' || type === 'skill' || type === 'workflow' || type === 'knowledge');
+  return valid.length ? Array.from(new Set(valid)) : ['rule', 'skill', 'workflow', 'knowledge'];
+}
+
 function memoryRefKeys(entry: PanelMemoryEntry): string[] {
   const fileNoExt = entry.originalFile.replace(/\.md$/i, '');
   return Array.from(new Set([
@@ -798,9 +871,10 @@ function memoryRefKeys(entry: PanelMemoryEntry): string[] {
 
 export async function apiMemoriesGraphData(
   cwd: string,
-  options: { scopes?: MemoriesScopeFilter[] | string; semantic?: boolean; rebuild?: boolean; limit?: number } = {}
+  options: { scopes?: MemoriesScopeFilter[] | string; types?: ('rule' | 'skill' | 'workflow' | 'knowledge')[] | string; semantic?: boolean; rebuild?: boolean; limit?: number } = {}
 ): Promise<MemoriesGraphData> {
   const enabledScopes = normalizeMemoriesScopes(options.scopes);
+  const enabledTypes = normalizeMemoryTypes(options.types);
   const pack = await collectPanelMemoryEntries(cwd, { rebuild: options.rebuild, scope: 'all' });
   const maxThinLinks = Math.max(1, Math.min(200, Number(options.limit || 100)));
 
@@ -824,7 +898,7 @@ export async function apiMemoriesGraphData(
   }
 
   const allNodes = pack.entries.map((entry) => memoryGraphNode(entry, pack.activeProfile, workspaceName));
-  const visibleNodes = allNodes.filter((node) => enabledScopes.includes(node.sourceScope));
+  const visibleNodes = allNodes.filter((node) => enabledScopes.includes(node.sourceScope) && enabledTypes.includes(getMemoryType(node)));
   const visibleIds = new Set(visibleNodes.map((node) => node.id));
   const entriesByKey = new Map<string, PanelMemoryEntry>();
   for (const entry of pack.entries) {
@@ -891,7 +965,9 @@ export async function apiMemoriesGraphData(
     generatedAt: new Date().toISOString(),
     filters: {
       enabledScopes,
+      enabledTypes,
       availableScopes: ['profile', 'global', 'workspace'],
+      availableTypes: ['rule', 'skill', 'workflow', 'knowledge'],
       semantic: options.semantic === true,
       activeProfile: pack.activeProfile
     },

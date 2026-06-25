@@ -1,4 +1,4 @@
-// Build script to copy control panel web assets to dist directory.
+// Build script to copy static control panel web assets to dist directory.
 import { copyFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -11,8 +11,9 @@ const distDir = path.join(root, 'dist', 'core', 'web');
 
 await mkdir(distDir, { recursive: true });
 
-const assets = ['panel.html', 'panel.css', 'panel.js', 'favicon.svg'];
+const assets = ['panel.html', 'panel.css', 'favicon.svg'];
 for (const asset of assets) {
   await copyFile(path.join(srcDir, asset), path.join(distDir, asset));
 }
-console.log('Control panel assets copied successfully.');
+await copyFile(path.join(root, 'media', 'logo', 'engram-logo-black-transparent.svg'), path.join(distDir, 'engram-logo-black-transparent.svg'));
+console.log('Control panel static assets copied successfully.');

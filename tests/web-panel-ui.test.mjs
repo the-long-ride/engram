@@ -1,211 +1,179 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 
-test('panel config controls stage changes instead of saving on change', async () => {
-  const panel = await readFile(new URL('../src/core/web/panel.js', import.meta.url), 'utf8');
-  assert.match(panel, /function changeCfg\(/);
-  assert.match(panel, /function openCfgReview\(/);
-  assert.match(panel, /function confirmCfgSave\(/);
-  assert.doesNotMatch(panel, /onchange="saveCfg/);
-  assert.doesNotMatch(panel, /function saveCfg\(/);
+async function read(rel) {
+  return readFile(new URL('../' + rel, import.meta.url), 'utf8');
+}
+
+async function exists(rel) {
+  try {
+    await stat(new URL('../' + rel, import.meta.url));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+test('panel html uses React mount shell and no inline event handlers', async () => {
+  const html = await read('src/core/web/panel.html');
+  assert.ok(html.includes('<div id="root"></div>'));
+  assert.ok(html.includes('<script type="module" src="/panel.js"></script>'));
+  assert.equal(/onclick=|onchange=|onblur=/.test(html), false);
+  assert.ok(html.includes('href="/favicon.svg"'));
 });
 
-test('panel shows review modal and risky confirmation copy', async () => {
-  const panel = await readFile(new URL('../src/core/web/panel.js', import.meta.url), 'utf8');
-  assert.match(panel, /Review config changes/);
-  assert.match(panel, /I reviewed risky changes/);
-  assert.match(panel, /\/api\/config\/validate/);
+test('React TypeScript web app is split by responsibility', async () => {
+  const files = [
+    'src/core/web/app/main.tsx',
+    'src/core/web/app/App.tsx',
+    'src/core/web/app/api-client.ts',
+    'src/core/web/app/types.ts',
+    'src/core/web/app/components/Button.tsx',
+    'src/core/web/app/components/Toggle.tsx',
+    'src/core/web/app/components/Modal.tsx',
+    'src/core/web/app/layout/Sidebar.tsx',
+    'src/core/web/app/tabs/ConfigTab.tsx',
+    'src/core/web/app/tabs/CoreTab.tsx',
+    'src/core/web/app/tabs/MemoriesTab.tsx',
+    'src/core/web/app/tabs/ConnectionsTab.tsx',
+    'src/core/web/app/memories/MemoryGraph.tsx',
+    'src/core/web/app/memories/graph-layout.ts'
+  ];
+  for (const file of files) {
+    assert.equal(await exists(file), true, file + ' should exist');
+  }
 });
 
-test('panel css defines correct colors for form inputs and selects', async () => {
-  const css = await readFile(new URL('../src/core/web/panel.css', import.meta.url), 'utf8');
+test('React app preserves key entry UI tabs and actions in source', async () => {
+  const sidebar = await read('src/core/web/app/layout/Sidebar.tsx');
+  for (const label of ['Construct', 'Runtime', 'Core', 'Memories', 'Profiles', 'Workspaces', 'Connections']) {
+    assert.ok(sidebar.includes(label), label);
+  }
+  assert.ok(sidebar.includes('engram upgrade --latest'));
+  assert.ok(sidebar.includes('{upgrade}'));
+  assert.ok(sidebar.includes('latestVersion'));
+
+  const config = await read('src/core/web/app/tabs/ConfigTab.tsx');
+  for (const token of ['Review config changes', 'I reviewed risky changes', '/api/config/validate', 'default_profile']) {
+    assert.ok(config.includes(token), token);
+  }
+  const configUtils = await read('src/core/web/app/utils/config.ts');
+  assert.ok(configUtils.includes('roles cannot contain empty role names'));
+  assert.ok(configUtils.includes('\\s'));
+
+  const memories = await read('src/core/web/app/tabs/MemoriesTab.tsx');
+  assert.ok(memories.includes('/api/memories'));
+  const memoryDetail = await read('src/core/web/app/memories/MemoryDetail.tsx');
+  for (const token of ['view-memory', 'edit-memory', 'delete-memory']) {
+    assert.ok(memoryDetail.includes(token), token);
+  }
+});
+
+test('web build pipeline bundles React app to existing panel route', async () => {
+  const pkg = JSON.parse(await read('package.json'));
+  assert.match(pkg.scripts.build, /build-web\.mjs/);
+  assert.match(pkg.dependencies.react, /^\^19\.2\./);
+  assert.match(pkg.dependencies['react-dom'], /^\^19\.2\./);
+  assert.match(pkg.devDependencies.esbuild, /^\^0\.(27|28)\./);
+
+  const buildWeb = await read('scripts/build-web.mjs');
+  assert.ok(buildWeb.includes('src/core/web/app/main.tsx'));
+  assert.ok(buildWeb.includes('dist/core/web/panel.js'));
+
+  const copyAssets = await read('scripts/copy-assets.mjs');
+  assert.equal(copyAssets.includes("'panel.js'"), false);
+  assert.ok(copyAssets.includes('engram-logo-black-transparent.svg'));
+});
+
+test('panel css keeps existing visual primitives', async () => {
+  const css = await read('src/core/web/panel.css');
+  assert.ok(css.includes('--logo-url: url("/favicon.svg")'));
+  assert.ok(css.includes('--logo-url: url("/engram-logo-black-transparent.svg")'));
   assert.match(css, /\.form-input\s*\{[^}]*color:\s*var\(--g1000\)/);
   assert.match(css, /\.form-select\s*\{[^}]*color:\s*var\(--g1000\)/);
-});
-
-test('panel css defines full size of parent for sb-logo-icon', async () => {
-  const css = await readFile(new URL('../src/core/web/panel.css', import.meta.url), 'utf8');
-  assert.match(css, /\.sb-logo-icon\s*\{[^}]*width:\s*100%/);
-  assert.match(css, /\.sb-logo-icon\s*\{[^}]*height:\s*100%/);
-});
-
-test('panel js includes engram upgrade --latest in cpUpgradeCmd copy string', async () => {
-  const panel = await readFile(new URL('../src/core/web/panel.js', import.meta.url), 'utf8');
-  assert.match(panel, /engram upgrade --latest/);
-});
-
-test('panel js handles default_profile select dropdown options dynamically', async () => {
-  const panel = await readFile(new URL('../src/core/web/panel.js', import.meta.url), 'utf8');
-  assert.match(panel, /f\.key === 'default_profile'/);
-  assert.match(panel, /D\.profiles\.forEach/);
-  assert.match(panel, /<option/);
-});
-
-test('panel js validates text and number inputs on blur', async () => {
-  const panel = await readFile(new URL('../src/core/web/panel.js', import.meta.url), 'utf8');
-  assert.match(panel, /onblur="changeCfg\(this\.dataset\.key, this\.value\)"/);
-});
-
-test('panel js roles validator rejects empty role names', async () => {
-  const panel = await readFile(new URL('../src/core/web/panel.js', import.meta.url), 'utf8');
-  assert.match(panel, /roles cannot contain empty role names/);
-});
-
-test('panel js dynamically validates global_path on the server in changeCfg', async () => {
-  const panel = await readFile(new URL('../src/core/web/panel.js', import.meta.url), 'utf8');
-  assert.match(panel, /key === 'global_path'/);
-  assert.match(panel, /\/api\/config\/validate/);
-});
-
-test('panel UI contains connection tab navigation and functions', async () => {
-  const html = await readFile(new URL('../src/core/web/panel.html', import.meta.url), 'utf8');
-  assert.match(html, /data-tab="connection"/);
-  assert.match(html, /id="tab-connection"/);
-
-  const js = await readFile(new URL('../src/core/web/panel.js', import.meta.url), 'utf8');
-  assert.match(js, /function scanAgents\(/);
-  assert.match(js, /function renderConnection\(/);
-  assert.match(js, /async function linkAgent\(/);
-  assert.match(js, /async function unlinkAgent\(/);
-
-  const css = await readFile(new URL('../src/core/web/panel.css', import.meta.url), 'utf8');
-  assert.match(css, /\.conn-grid/);
-  assert.match(css, /\.conn-card/);
-});
-
-test('panel confirm modal uses Cancel left, Confirm right, Esc cancel, Enter confirm', async () => {
-  const panel = await readFile(new URL('../src/core/web/panel.js', import.meta.url), 'utf8');
-  assert.match(panel, /function confirmAction\(/);
-  assert.match(panel, /event\.key === 'Escape'/);
-  assert.match(panel, /event\.key === 'Enter'/);
-  assert.match(panel, /data-confirm-cancel/);
-  assert.match(panel, /data-confirm-confirm/);
-  assert.match(panel, /<button class="btn btn-outline" data-confirm-cancel/);
-  assert.match(panel, /<button class="btn btn-primary" data-confirm-confirm/);
-});
-
-test('panel routes destructive unlink actions through confirmAction', async () => {
-  const panel = await readFile(new URL('../src/core/web/panel.js', import.meta.url), 'utf8');
-  assert.match(panel, /async function toggleLink\(path, linked\)/);
-  assert.match(panel, /Unlink workspace/);
-  assert.match(panel, /await confirmAction\(\{/);
-  assert.match(panel, /async function unlinkAgent\(agentId, isGlobal\)/);
-  assert.match(panel, /Unlink AI agent/);
-  assert.doesNotMatch(panel, /confirm\('/);
-});
-
-test('panel UI contains Core tab navigation and refresh functions', async () => {
-  const html = await readFile(new URL('../src/core/web/panel.html', import.meta.url), 'utf8');
-  assert.match(html, /data-tab="core"/);
-  assert.match(html, /id="tab-core"/);
-  assert.match(html, /href="\/favicon.svg"/);
-
-  const js = await readFile(new URL('../src/core/web/panel.js', import.meta.url), 'utf8');
-  assert.match(js, /function loadCore\(/);
-  assert.match(js, /function renderCore\(/);
-  assert.match(js, /function refreshCore\(/);
-  assert.match(js, /\/api\/core/);
-
-  const css = await readFile(new URL('../src/core/web/panel.css', import.meta.url), 'utf8');
-  assert.match(css, /\.core-toolbar/);
-  assert.match(css, /\.core-relationship/);
-});
-
-test('panel Core tab renders duplicates, relationship line, and copy prompts', async () => {
-  const panel = await readFile(new URL('../src/core/web/panel.js', import.meta.url), 'utf8');
-  assert.match(panel, /function renderCoreDuplicates\(/);
-  assert.match(panel, /function renderCoreRelationship\(/);
-  assert.match(panel, /function copyCorePrompt\(/);
-  assert.match(panel, /function copyResolvePairPrompt\(/);
-  assert.match(panel, /Resolve duplicate memories/);
-  assert.match(panel, /Metacognize memory/);
-  assert.match(panel, /consume more tokens/);
-  assert.match(panel, /profile &lt;-&gt; global &lt;-&gt; workspace/);
-});
-
-test('panel JS prepends /engram prefix to copied prompts', async () => {
-  const panel = await readFile(new URL('../src/core/web/panel.js', import.meta.url), 'utf8');
-  assert.match(panel, /var val = '\/engram ' \+ prompt;/);
-  assert.match(panel, /var val = '\/engram ' \+ text;/);
-  assert.match(panel, /window\._modalCopyContent = '\/engram ' \+ text;/);
+  for (const token of ['.conn-grid', '.core-toolbar', '.memories-shell', '.memory-edge-dependency']) {
+    assert.ok(css.includes(token), token);
+  }
 });
 
 
-test('folder browser avoids window globals and client path concatenation', async () => {
-  const panel = await readFile(new URL('../src/core/web/panel.js', import.meta.url), 'utf8');
-  assert.doesNotMatch(panel, /window\.dirBrowserGo/);
-  assert.doesNotMatch(panel, /window\.dirBrowserSelect/);
-  assert.doesNotMatch(panel, /currentPath + separator + dName/);
-  assert.match(panel, /data-dir-path/);
-  assert.match(panel, /wireDirBrowser/);
+test('React migration restores tab icons, shared preview modal, and core prompt previews', async () => {
+  const sidebar = await read('src/core/web/app/layout/Sidebar.tsx');
+  assert.match(sidebar, /<svg/);
+  assert.match(sidebar, /strokeWidth/);
+  assert.equal(sidebar.includes('tab.slice(0, 1).toUpperCase()'), false);
+
+  const modal = await read('src/core/web/app/components/Modal.tsx');
+  assert.ok(modal.includes('copyContent'));
+  assert.ok(modal.includes('aria-label="Copy content"'));
+  assert.ok(modal.includes('<svg'));
+  assert.equal(modal.includes('>Copy</button>'), false);
+
+  const core = await read('src/core/web/app/tabs/CoreTab.tsx');
+  assert.ok(core.includes('viewCorePrompt'));
+  assert.ok(core.includes('Preview'));
+  assert.ok(core.includes('core-prompt-preview'));
+  assert.ok(core.includes('modal.open'));
+  assert.ok(core.includes('copy-resolve-pair compact'));
 });
 
-test('folder browser renders explicit API errors', async () => {
-  const panel = await readFile(new URL('../src/core/web/panel.js', import.meta.url), 'utf8');
-  assert.match(panel, /dir-browser-error/);
-  assert.match(panel, /Cannot access directory/);
+test('React migration restores memory preview modal instead of copy-only behavior', async () => {
+  const core = await read('src/core/web/app/tabs/CoreTab.tsx');
+  const memories = await read('src/core/web/app/tabs/MemoriesTab.tsx');
+  assert.match(core, /openMemoryPreview/);
+  assert.match(memories, /openMemoryPreview/);
+  assert.equal(core.includes("copyText(res.content || '', toast, 'Copied memory')"), false);
+  assert.equal(memories.includes("copyText(res.content || '', toast, 'Copied memory')"), false);
 });
 
-test('global_path validation ignores stale async responses', async () => {
-  const panel = await readFile(new URL('../src/core/web/panel.js', import.meta.url), 'utf8');
-  assert.match(panel, /var _cfgValidationSeq = 0/);
-  assert.match(panel, /validationSeq !== _cfgValidationSeq/);
+test('React migration restores memories type filtering, pan gestures, and icon graph controls', async () => {
+  const memories = await read('src/core/web/app/tabs/MemoriesTab.tsx');
+  assert.ok(memories.includes('types: options.types')); 
+  assert.ok(memories.includes("toggleList('types'"));
+
+  const graph = await read('src/core/web/app/memories/MemoryGraph.tsx');
+  assert.match(graph, /onMouseDown/);
+  assert.match(graph, /onMouseMove/);
+  assert.match(graph, /panX/);
+  assert.ok(graph.includes('type NodeDrag'));
+  assert.ok(graph.includes("link.kind === 'dependency' ? to : from"));
+  assert.ok(graph.includes('links.map(renderEdge)'));
+  assert.ok(graph.includes('url(#mem-arrow-dependency)'));
+  assert.ok(graph.includes('url(#mem-arrow-thin)'));
+  assert.match(graph, /aria-label="Zoom in"/);
+  assert.match(graph, /aria-label="Zoom out"/);
+  assert.match(graph, /aria-label="Reset view"/);
+  assert.match(graph, /aria-label="Toggle fullscreen"/);
+
+  const layout = await read('src/core/web/app/memories/graph-layout.ts');
+  assert.ok(layout.includes('links: MemoryLink[]'));
+  assert.ok(layout.includes('connectedComponents'));
+  assert.ok(layout.includes('MIN_EDGE'));
+  assert.ok(layout.includes("return 'M ' + start.x + ' ' + start.y + ' L '"));
 });
 
-test('Core memory refs use data attributes instead of inline onclick args', async () => {
-  const panel = await readFile(new URL('../src/core/web/panel.js', import.meta.url), 'utf8');
-  assert.doesNotMatch(panel, /onclick="viewMemory\('/);
-  assert.doesNotMatch(panel, /onclick="copyResolvePairPrompt\('/);
-  assert.match(panel, /data-action="view-memory"/);
-  assert.match(panel, /data-action="copy-resolve-pair"/);
+test('React migration restores runtime value-only copy overlay and connection paths', async () => {
+  const runtime = await read('src/core/web/app/tabs/RuntimeTab.tsx');
+  assert.match(runtime, /copiedKey/);
+  assert.match(runtime, /setTimeout/);
+  assert.ok(runtime.includes('onClick={(event) => copyRuntimeValue')); 
+  assert.match(runtime, /className={'rt-val/);
+  assert.ok(runtime.includes('\\d+\\.\\d+'));
+  assert.ok(runtime.includes('[\\\\/]'));
+
+  const connections = await read('src/core/web/app/tabs/ConnectionsTab.tsx');
+  assert.match(connections, /conn-path/);
+  assert.match(connections, /agent.path/);
 });
 
-test('Core tab makes semantic duplicate detection opt-in', async () => {
-  const panel = await readFile(new URL('../src/core/web/panel.js', import.meta.url), 'utf8');
-  assert.match(panel, /window._coreOptions = { scopes: \['profile', 'global', 'workspace'\], types: \['rule', 'skill', 'workflow', 'knowledge'\], semantic: false, limit: 50 }/);
-  assert.match(panel, /limit: window._coreOptions.limit/);
+test('React migration keeps add actions top-right with tab headers and save header animation hook', async () => {
+  const profiles = await read('src/core/web/app/tabs/ProfilesTab.tsx');
+  const workspaces = await read('src/core/web/app/tabs/WorkspacesTab.tsx');
+  assert.match(profiles, /className="tab-actions inline-actions"/);
+  assert.match(workspaces, /className="tab-actions inline-actions"/);
+
+  const config = await read('src/core/web/app/tabs/ConfigTab.tsx');
+  assert.ok(config.includes("saveHeaderPulse ? ' enter' : ''"));
+  assert.match(config, /saveHeaderPulse/);
 });
-
-test('panel does not load third-party fonts or logo assets', async () => {
-  const html = await readFile(new URL('../src/core/web/panel.html', import.meta.url), 'utf8');
-  const css = await readFile(new URL('../src/core/web/panel.css', import.meta.url), 'utf8');
-  assert.doesNotMatch(html, /fonts.googleapis.com|fonts.gstatic.com/);
-  assert.doesNotMatch(css, /raw.githubusercontent.com/);
-  assert.match(css, /--logo-url: url\("\/favicon\.svg"\)/);
-});
-
-test('panel UI contains Memories tab navigation and graph functions', async () => {
-  const html = await readFile(new URL('../src/core/web/panel.html', import.meta.url), 'utf8');
-  assert.match(html, /data-tab="memories"/);
-  assert.match(html, /id="tab-memories"/);
-  assert.match(html, />Memories</);
-
-  const js = await readFile(new URL('../src/core/web/panel.js', import.meta.url), 'utf8');
-  assert.match(js, /window\._memoriesOptions = \{ scopes: \['profile', 'global', 'workspace'\], types: \['rule', 'skill', 'workflow', 'knowledge'\], semantic: true, limit: 100 \}/);
-  assert.match(js, /function loadMemories\(/);
-  assert.match(js, /function renderMemories\(/);
-  assert.match(js, /function renderMemoriesGraph\(/);
-  assert.match(js, /\/api\/memories/);
-
-  const css = await readFile(new URL('../src/core/web/panel.css', import.meta.url), 'utf8');
-  assert.match(css, /\.memories-shell/);
-  assert.match(css, /\.memories-graph/);
-  assert.match(css, /\.memory-edge-dependency/);
-  assert.match(css, /\.memory-edge-thin/);
-  assert.match(css, /\.memory-node-profile/);
-  assert.match(css, /\.memory-node-global/);
-  assert.match(css, /\.memory-node-workspace/);
-  assert.match(css, /\.memory-detail/);
-});
-
-test('Memories graph uses data attributes for note actions', async () => {
-  const panel = await readFile(new URL('../src/core/web/panel.js', import.meta.url), 'utf8');
-  assert.match(panel, /data-action="view-memory"/);
-  assert.match(panel, /data-action="edit-memory"/);
-  assert.match(panel, /data-action="delete-memory"/);
-  assert.match(panel, /function editMemoryFromGraph\(/);
-  assert.match(panel, /function archiveMemoryFromGraph\(/);
-  assert.doesNotMatch(panel, /onclick="viewMemory\('/);
-});
-

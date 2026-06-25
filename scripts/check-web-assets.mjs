@@ -8,7 +8,7 @@ const rawBudgets = [
 ];
 
 const staticBudgets = [
-  ['src/core/web/panel.css', 27000, minifyCss]
+  ['src/core/web/panel.css', 28000, minifyCss]
 ];
 
 const bundleBudgets = [

@@ -1801,18 +1801,6 @@ button.core-memory-ref {
   border-radius: var(--r6);
 }
 
-.memory-preview-content {
-  margin: 0;
-  padding: 8px;
-  background: var(--g100);
-  border-radius: var(--r6);
-  font-size: 13px;
-  line-height: 1.45;
-  white-space: pre-wrap;
-  word-break: break-all;
-  color: var(--g900);
-}
-
 .memory-detail-footer {
   flex-shrink: 0;
   border-top: 1px solid var(--g200);
@@ -1873,6 +1861,8 @@ button.core-memory-ref {
   border: 1px solid var(--g200);
   color: var(--g1000);
   text-align: left;
+  line-height: 1.45;
+  word-break: break-all;
 }
 .modal-copy-btn {
   width: 26px;

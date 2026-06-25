@@ -62,6 +62,24 @@ export function MemoryGraph({ nodes, links, selectedId, select }: { nodes: Memor
     };
   }, [viewport.isFullscreen]);
 
+  // Listen for Escape key to exit fullscreen mode
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setViewport((prev) => {
+          if (prev.isFullscreen) {
+            return { ...prev, isFullscreen: false };
+          }
+          return prev;
+        });
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
   // Mouse wheel zoom centered on cursor
   useEffect(() => {
     const el = containerRef.current;

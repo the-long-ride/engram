@@ -1622,8 +1622,12 @@ button.core-memory-ref {
   opacity: 1 !important;
 }
 
-.memories-svg marker path {
+#mem-arrow-dependency path {
   fill: var(--blue);
+}
+
+#mem-arrow-thin path {
+  fill: var(--amber);
 }
 
 .memory-edge {
@@ -1702,10 +1706,14 @@ button.core-memory-ref {
 .memory-detail {
   position: sticky;
   top: 16px;
+  height: 600px;
+  max-height: calc(100vh - 120px);
   border: 1px solid var(--g200);
   border-radius: var(--r8);
   background: var(--g0);
   padding: 16px;
+  display: flex;
+  flex-direction: column;
 }
 
 .memory-detail-hdr {
@@ -1774,14 +1782,41 @@ button.core-memory-ref {
   bottom: 0;
   width: 320px;
   height: 100vh;
+  max-height: none;
   z-index: 2001;
   background: var(--bg);
   border: 0;
   border-left: 1px solid var(--g200);
   border-radius: 0;
   padding: 24px;
-  overflow-y: auto;
   margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.memory-detail-body {
+  flex: 1;
+  overflow-y: auto;
+  margin-bottom: 12px;
+  border-radius: var(--r6);
+}
+
+.memory-preview-content {
+  margin: 0;
+  padding: 8px;
+  background: var(--g100);
+  border-radius: var(--r6);
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: var(--g900);
+}
+
+.memory-detail-footer {
+  flex-shrink: 0;
+  border-top: 1px solid var(--g200);
+  padding-top: 12px;
 }
 
 .memories-graph.fullscreen .memories-controls {

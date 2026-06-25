@@ -1,6 +1,7 @@
 /** Control panel data API and write handlers. */
 import { openConfigDb, isConfigDbUsable } from '../config-db/schema.js';
 import { loadConfig, writeUserConfig, readProfileStore, writeProfileStore, workspaceRoot, legacyWorkspaceRoot } from '../runtime/config.js';
+import { VERSION } from '../runtime/constants.js';
 import { exists, ensureDir, inside } from '../system/fsx.js';
 import { homedir } from 'node:os';
 import { getContext } from '../memory/context.js';
@@ -43,7 +44,7 @@ export interface PanelData {
 export async function loadPanelData(cwd: string, entryText: string): Promise<PanelData> {
   const config = await loadConfig(cwd);
   const entry = parseEntryText(entryText);
-  const version = (config as any).version ?? '';
+  const version = VERSION;
   const isInitialized = await exists(workspaceRoot(cwd)) || await exists(legacyWorkspaceRoot(cwd));
   const latestVersion = await latestPackageVersion(version);
   const dbh = await openConfigDb();

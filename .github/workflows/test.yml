@@ -1,4 +1,4 @@
-name: Test
+name: Test & Coverage
 
 on:
   push:
@@ -6,8 +6,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  test:
-    name: Test
+  verify:
+    name: Test & Coverage
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -28,5 +28,11 @@ jobs:
       - name: Line check
         run: npm run lint:lines
 
-      - name: Test
+      - name: Test Core
         run: npm test
+
+      - name: Test App
+        run: npm run test:app
+
+      - name: Run coverage
+        run: npm run coverage

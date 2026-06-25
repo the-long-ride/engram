@@ -6,7 +6,7 @@ const booleanFlags = new Set([
   'accept-all', 'all', 'auto', 'dry-run', 'for-agents', 'force', 'h', 'help',
   'global', 'global-only', 'global-skillsets-only', 'latest', 'low-confidence', 'memory-only', 'no-auto-upgrade', 'no-global', 'no-skillset',
   'no-submodule', 'no-version-check', 'plan', 'propose', 'rebuild', 'metacognize', 'restructure', 'self', 'semantic', 'show-rule-variants', 'skip-task-type-prompt', 'stale',
-  'submodule', 'use', 'user', 'v', 'version', 'workspace'
+  'submodule', 'use', 'user', 'v', 'version', 'workspace', 'host-only'
 ]);
 const saveSessionCommands = new Set(['save-session', 'ss']);
 const takeControlCommands = new Set(['take-control', 'tc']);

@@ -320,9 +320,11 @@ export function stopServer(): void {
   }
 }
 
-export async function launchEntryUi(cwd: string): Promise<string> {
+export async function launchEntryUi(cwd: string, options: { hostOnly?: boolean } = {}): Promise<string> {
   const url = await servePanel(cwd);
-  openBrowser(url);
+  if (!options.hostOnly) {
+    openBrowser(url);
+  }
   const isTTY = !!process.stdout.isTTY;
   if (isTTY) {
     const bold = (t: string) => `\x1b[1m${t}\x1b[0m`;

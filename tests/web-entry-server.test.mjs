@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { rm } from 'node:fs/promises';
 import { tempWorkspace } from './helpers.mjs';
-import { servePanel, stopServer } from '../dist/core/web/entry-server.js';
+import { servePanel, stopServer, launchEntryUi } from '../dist/core/web/entry-server.js';
 
 async function requestJson(url, options = {}) {
   const response = await fetch(url, {
@@ -177,6 +177,29 @@ test('entry server exposes safe config metadata and validated config updates', a
     const faviconIcoRes = await fetch(baseUrl + '/favicon.ico');
     assert.equal(faviconIcoRes.status, 200);
     assert.equal(faviconIcoRes.headers.get('content-type'), 'image/svg+xml');
+  } finally {
+    stopServer();
+    process.env.ENGRAM_CONFIG_DIR = oldEnv.ENGRAM_CONFIG_DIR;
+    process.env.ENGRAM_GLOBAL_DIR = oldEnv.ENGRAM_GLOBAL_DIR;
+    process.env.NODE_ENV = oldEnv.NODE_ENV;
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('launchEntryUi respects hostOnly option', async () => {
+  const { cwd, env } = await tempWorkspace('engram-launch-entry-');
+  const oldEnv = {
+    ENGRAM_CONFIG_DIR: process.env.ENGRAM_CONFIG_DIR,
+    ENGRAM_GLOBAL_DIR: process.env.ENGRAM_GLOBAL_DIR,
+    NODE_ENV: process.env.NODE_ENV
+  };
+
+  process.env.ENGRAM_CONFIG_DIR = env.ENGRAM_CONFIG_DIR;
+  process.env.ENGRAM_GLOBAL_DIR = env.ENGRAM_GLOBAL_DIR;
+
+  try {
+    const output = await launchEntryUi(cwd, { hostOnly: true });
+    assert.match(output, /Control panel at/);
   } finally {
     stopServer();
     process.env.ENGRAM_CONFIG_DIR = oldEnv.ENGRAM_CONFIG_DIR;

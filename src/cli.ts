@@ -51,7 +51,7 @@ export async function runCli(argv: string[]): Promise<string> {
       case 'benchmark': return await cmdBenchmark(rest);
       case 'health': return await cmdHealth();
       case 'graph': return await cmdGraph(rest, flags);
-      case 'entry': return await cmdEntry();
+      case 'entry': return await cmdEntry(flags);
       case 'quality-check': return await cmdQuality();
       case 'deduplicate': return await cmdDeduplicate(flags);
       case 'export': return await cmdExport(flags);

@@ -46,7 +46,7 @@ export type EngramConfig = {
   ignore: IgnoreConfig;
   roles: string[];
   live_sync: { enabled: boolean; targets: string[] };
-  global_git: { enabled: boolean; remote: string; branch: string; auto_sync: boolean; auto_resolve: boolean };
+  global_git: { enabled: boolean; remote: string; remote_url?: string; branch: string; auto_sync: boolean; auto_resolve: boolean };
   rule_variants: { enabled: boolean; active: RuleVariant };
   load: { limit: number };
   graph: { enabled: boolean; max_related: number; min_related_score: number };

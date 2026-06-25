@@ -135,7 +135,7 @@ const ALLOWED_KEYS = new Set([
   'pr_workflow.enabled', 'pr_workflow.target_branch',
   'encryption.enabled', 'encryption.scope', 'encryption.key_source',
   'global_path',
-  'global_git.enabled', 'global_git.remote', 'global_git.branch', 'global_git.auto_sync', 'global_git.auto_resolve',
+  'global_git.enabled', 'global_git.remote', 'global_git.remote_url', 'global_git.branch', 'global_git.auto_sync', 'global_git.auto_resolve',
 ]);
 
 export function configKeyToColumn(key: string): string | undefined {
@@ -177,6 +177,7 @@ export function flattenConfig(config: EngramConfig): Record<string, string> {
   out['encryption.key_source'] = config.encryption.key_source;
   out['global_git.enabled'] = String(config.global_git.enabled);
   out['global_git.remote'] = config.global_git.remote;
+  out['global_git.remote_url'] = (config.global_git as any).remote_url ?? '';
   out['global_git.branch'] = config.global_git.branch;
   out['global_git.auto_sync'] = String(config.global_git.auto_sync);
   out['global_git.auto_resolve'] = String(config.global_git.auto_resolve);
@@ -221,6 +222,7 @@ export function unflattenConfig(kv: Record<string, string>): Partial<EngramConfi
       case 'encryption.key_source': out.encryption = { ...(out.encryption ?? {}), key_source: value }; break;
       case 'global_git.enabled': out.global_git = { ...(out.global_git ?? {}), enabled: value === 'true' }; break;
       case 'global_git.remote': out.global_git = { ...(out.global_git ?? {}), remote: value }; break;
+      case 'global_git.remote_url': out.global_git = { ...(out.global_git ?? {}), remote_url: value }; break;
       case 'global_git.branch': out.global_git = { ...(out.global_git ?? {}), branch: value }; break;
       case 'global_git.auto_sync': out.global_git = { ...(out.global_git ?? {}), auto_sync: value === 'true' }; break;
       case 'global_git.auto_resolve': out.global_git = { ...(out.global_git ?? {}), auto_resolve: value === 'true' }; break;

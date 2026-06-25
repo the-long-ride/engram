@@ -2,6 +2,7 @@
 import { homedir } from 'node:os';
 import { existsSync, accessSync, constants as fsConstants } from 'node:fs';
 import path from 'node:path';
+import { isValidGitRemoteUrl } from '../vcs/git.js';
 
 export type ConfigInputType = 'toggle' | 'select' | 'number' | 'text' | 'roles';
 export type ConfigRisk = 'normal' | 'risky';
@@ -61,6 +62,7 @@ export const CONFIG_FIELDS: ConfigFieldDef[] = [
 
   { key: 'global_git.enabled', group: 'Global Git', label: 'Enabled', input: 'toggle', risk: 'risky' },
   { key: 'global_git.remote', group: 'Global Git', label: 'Remote', input: 'text', risk: 'risky' },
+  { key: 'global_git.remote_url', group: 'Global Git', label: 'Remote URL', input: 'text', risk: 'risky', description: 'Git remote URL for shared global memory' },
   { key: 'global_git.branch', group: 'Global Git', label: 'Branch', input: 'text', risk: 'risky' },
   { key: 'global_git.auto_sync', group: 'Global Git', label: 'Auto Sync', input: 'toggle', risk: 'risky' },
   { key: 'global_git.auto_resolve', group: 'Global Git', label: 'Auto Resolve', input: 'toggle', risk: 'risky' },
@@ -209,6 +211,11 @@ function validateTextField(key: string, value: string): { ok: true; value: strin
   }
   if ((key === 'global_git.remote' || key.endsWith('.branch')) && value && /\s/.test(value)) {
     return { ok: false, message: `${key} cannot contain whitespace` };
+  }
+  if (key === 'global_git.remote_url' && value) {
+    if (!isValidGitRemoteUrl(value)) {
+      return { ok: false, message: 'global_git.remote_url must be a valid Git remote URL' };
+    }
   }
   return { ok: true, value };
 }

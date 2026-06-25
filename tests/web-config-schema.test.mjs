@@ -99,3 +99,17 @@ test('validateConfigPatch fails on uncreatable global_path', () => {
   assert.match(result.issues.map((i) => i.message).join('\n'), /Failed to validate/);
 });
 
+test('validateConfigPatch validates global_git.remote_url', () => {
+  const valid = validateConfigPatch({
+    'global_git.remote_url': 'https://github.com/the-long-ride/engram.git'
+  });
+  assert.equal(valid.ok, true);
+
+  const invalid = validateConfigPatch({
+    'global_git.remote_url': 'not a valid url'
+  });
+  assert.equal(invalid.ok, false);
+  assert.match(invalid.issues.map((i) => i.message).join('\n'), /must be a valid Git remote URL/);
+});
+
+

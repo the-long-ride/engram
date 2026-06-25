@@ -183,7 +183,7 @@ export function defaultConfig(): EngramConfig {
     },
     roles: [],
     live_sync: { enabled: false, targets: ['agents-md', 'claude-md', 'cursorrules'] },
-    global_git: { enabled: true, remote: 'origin', branch: 'main', auto_sync: true, auto_resolve: true },
+    global_git: { enabled: true, remote: 'origin', remote_url: '', branch: 'main', auto_sync: true, auto_resolve: true },
     rule_variants: { enabled: false, active: 'balanced' },
     load: { limit: DEFAULT_LOAD_LIMIT },
     graph: { enabled: true, max_related: 4, min_related_score: 0.22 },

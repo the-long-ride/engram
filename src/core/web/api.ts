@@ -1,8 +1,9 @@
 /** Control panel data API and write handlers. */
 import { openConfigDb, isConfigDbUsable } from '../config-db/schema.js';
-import { loadConfig, writeUserConfig, readProfileStore, writeProfileStore, workspaceRoot, legacyWorkspaceRoot } from '../runtime/config.js';
+import { loadConfig, writeUserConfig, readProfileStore, writeProfileStore, workspaceRoot, legacyWorkspaceRoot, scopeRootsForConfig } from '../runtime/config.js';
 import { VERSION } from '../runtime/constants.js';
 import { exists, ensureDir, inside } from '../system/fsx.js';
+import { globalGitInfo, configureGlobalRemote } from '../vcs/git.js';
 import { homedir } from 'node:os';
 import { getContext } from '../memory/context.js';
 import { visibleEntries } from '../memory/routing.js';
@@ -43,6 +44,16 @@ export interface PanelData {
 
 export async function loadPanelData(cwd: string, entryText: string): Promise<PanelData> {
   const config = await loadConfig(cwd);
+  const roots = scopeRootsForConfig(cwd, config);
+  let remoteUrl = '';
+  if (roots.global) {
+    try {
+      const gitInfo = await globalGitInfo(roots.global, config.global_git);
+      remoteUrl = gitInfo.remoteUrl || '';
+    } catch {}
+  }
+  (config.global_git as any).remote_url = remoteUrl;
+
   const entry = parseEntryText(entryText);
   const version = VERSION;
   const isInitialized = await exists(workspaceRoot(cwd)) || await exists(legacyWorkspaceRoot(cwd));
@@ -172,6 +183,19 @@ async function writeConfigPatch(patch: Record<string, string>, cwd: string): Pro
   for (const [key, value] of Object.entries(patch)) {
     applyDotted(config as any, key, value);
   }
+
+  if (patch['global_git.remote_url'] !== undefined) {
+    const remoteUrlVal = patch['global_git.remote_url'];
+    const roots = scopeRootsForConfig(cwd, config);
+    if (roots.global && remoteUrlVal) {
+      try {
+        await configureGlobalRemote(roots.global, remoteUrlVal, config.global_git.branch, config.global_git.remote);
+      } catch (e: any) {
+        throw new Error(`Failed to configure global git remote: ${e.message}`);
+      }
+    }
+  }
+
   await writeUserConfig(config);
   return sqliteUnavailable ? ' (SQLite unavailable; JSON only)' : '';
 }

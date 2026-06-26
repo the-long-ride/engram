@@ -79,7 +79,7 @@ npm run lint:lines
 - Memory Markdown must keep a blank line after every heading, use the standard
   `Context`, `Content`, `Example` section order, and format links as
   `[label](url)`.
-- Rule memories target 50 counted content lines and hard-fail above 75 counted
+- Rule memories target 70 counted content lines and hard-fail above 100 counted
   lines; empty lines and frontmatter property lines do not count.
 - MCP tools are proposal-only. Keep `engram_save` behavior aligned with CLI
   auto-detection, workflow-as-skill handling, and role metadata; add MCP methods

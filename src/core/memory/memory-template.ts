@@ -20,6 +20,7 @@ export function draftMemory(input: {
   level?: string;
   source?: MemorySourceMeta;
   taskType?: TaskType;
+  triggers?: string[];
 }, options: MemoryDraftOptions = {}): { file: string; id: string; content: string; tags: string[] } {
   const title = titleFor(input.text, input.type);
   const id = slugify(title);
@@ -40,6 +41,7 @@ export function updateMemory(raw: string, input: {
   level?: string;
   source?: MemorySourceMeta;
   taskType?: TaskType;
+  triggers?: string[];
 }, options: MemoryDraftOptions = {}): string {
   const doc = parseMemory(raw);
   const tags = unique([...(doc.frontmatter.tags ?? []), ...taskTypeTags(input.taskType), ...tagsFrom(input.text)]);
@@ -73,6 +75,7 @@ function titleFor(text: string, type: MemoryType): string {
 function renderMemory(input: {
   text: string; type: MemoryType; scope: Scope; author: string; id: string; title: string;
   tags: string[]; created: string; role?: string[]; context?: string; dependsOn?: string[]; level?: string; source?: MemorySourceMeta; bodyText?: string; variantText?: string; variants?: Partial<Record<'light' | 'balanced' | 'strict', string>>;
+  triggers?: string[];
 }, options: MemoryDraftOptions): string {
   const now = today();
   const metadata: Record<string, any> = {
@@ -85,22 +88,18 @@ function renderMemory(input: {
   if (input.level?.trim()) metadata.level = input.level.trim();
   if (input.source?.sourceFiles?.length) metadata.source_files = unique(input.source.sourceFiles);
   if (input.source?.sourceHashes?.length) metadata.source_hashes = unique(input.source.sourceHashes);
+  if (input.triggers?.length) metadata.triggers = unique(input.triggers);
   const meta = frontmatter(metadata);
+  const originSection = input.context?.trim()
+    ? `\n## Origin\n\n${formatInlineMarkdown(input.context.slice(0, 600))}\n`
+    : '';
   return `${meta}
 # ${formatInlineMarkdown(input.title)}
-
-## Context
-
-${memoryContext(input.context, now)}
 
 ## Content
 
 ${input.bodyText ?? bulletize(input.text)}
-${variantSection(input, options)}
-## Example
-
-Use this memory when a future task touches: ${input.tags.slice(0, 3).join(', ') || 'this topic'}.
-`;
+${variantSection(input, options)}${originSection}`;
 }
 
 function bulletize(text: string): string {
@@ -123,12 +122,6 @@ function contentBullets(body: string): string[] {
 
 function contextSection(body: string): string {
   return body.match(/\n## Context\r?\n([\s\S]*?)(?=\n## |\s*$)/)?.[1]?.trim() ?? '';
-}
-
-function memoryContext(context: string | undefined, fallbackDate: string): string {
-  const clean = context?.replace(/\s+/g, ' ').trim();
-  if (!clean) return `Approved from a human/agent conversation on ${fallbackDate}; content is written as objective durable memory.`;
-  return formatInlineMarkdown(clean.slice(0, 600));
 }
 
 function variantSection(input: {

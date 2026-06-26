@@ -2,6 +2,7 @@
 import path from 'node:path';
 import { getContext, loadSummary } from '../core/memory/context.js';
 import { classifyTaskType } from '../core/memory/task-classifier.js';
+import { inferTaskIntent, taskIntentQuery, intentIsActionable } from '../core/memory/task-intent.js';
 import { rebuildGraph } from '../core/memory/graph.js';
 import { invalidMemoryFiles, rebuildIndex } from '../core/memory/index.js';
 import { loadEntries, routeDetailed, visibleEntries, type RouteDetail } from '../core/memory/routing.js';
@@ -29,6 +30,8 @@ export async function cmdLoad(args: string[], flags: Record<string, any> = {}): 
 
   let entries: MemoryEntry[] = [];
   let routed: RouteDetail;
+  const forAgents = flags['for-agents'] === true;
+  let intent: ReturnType<typeof inferTaskIntent> | undefined;
 
   if (targetIds.length > 0) {
     entries = ctx.index.entries.filter((e) => targetIds.includes(e.id));
@@ -39,17 +42,21 @@ export async function cmdLoad(args: string[], flags: Record<string, any> = {}): 
       omitted: 0,
       refined: false,
       facets: [],
-      reasons: entries.map((e) => ({ key: `${e.scope}:${e.file}`, kind: 'id' as any, terms: [e.id] }))
+      reasons: entries.map((e) => ({ key: `${e.scope}:${e.file}`, kind: 'direct' as const, matchedBy: ['literal' as const], terms: [e.id] }))
     };
   } else {
     const query = args.join(' ') || 'current session';
     const all = flags.all === true;
-    const vectorHits = all ? [] : await vectorRouteHits(ctx.roots, ctx.scopeIndexes, ctx.config, query, ctx.ignorePatterns, all);
-    routed = routeDetailed(ctx.index, query, ctx.config, all, {
+    intent = forAgents ? inferTaskIntent(query) : undefined;
+    const routingQuery = intent && intentIsActionable(intent) ? taskIntentQuery(intent) : query;
+    const vectorHits = all ? [] : await vectorRouteHits(ctx.roots, ctx.scopeIndexes, ctx.config, routingQuery, ctx.ignorePatterns, all);
+    routed = routeDetailed(ctx.index, routingQuery, ctx.config, all, {
       all,
       ignorePatterns: ctx.ignorePatterns,
       vectorHits,
-      candidatePool: ctx.config.vector.candidate_pool
+      candidatePool: ctx.config.vector.candidate_pool,
+      intent,
+      semanticRelaxed: forAgents
     }, ctx.graph);
     entries = routed.entries;
   }
@@ -57,6 +64,16 @@ export async function cmdLoad(args: string[], flags: Record<string, any> = {}): 
   if (flags['dry-run'] === true) {
     if (!entries.length) return 'No routed memories';
     const rows: RecordBlock[] = [];
+    if (forAgents && intent && intentIsActionable(intent)) {
+      rows.push({ title: 'Task intent', fields: [
+        ['Domains', intent.domains.join(', ') || '-'],
+        ['Work kinds', intent.workKinds.join(', ') || '-'],
+        ['Artifacts', intent.artifacts.join(', ') || '-'],
+        ['Styles', intent.styles.join(', ') || '-'],
+        ['Technologies', intent.technologies.join(', ') || '-'],
+        ['Confidence', intent.confidence]
+      ]});
+    }
     if (routed.omitted) rows.push(refinementRecord(routed));
     rows.push(...entries.map((entry): RecordBlock => ({
       title: `${entry.scope}:${entry.file}`,
@@ -68,7 +85,7 @@ export async function cmdLoad(args: string[], flags: Record<string, any> = {}): 
     })));
     return formatRecords(`Routed memories (${entries.length} of ${routed.candidates})`, rows);
   }
-  const loaded = await loadEntries(process.cwd(), entries, ctx.config, { forAgents: flags['for-agents'] === true });
+  const loaded = await loadEntries(process.cwd(), entries, ctx.config, { forAgents });
   const summary = loadSummary(entries, ctx.hiddenCount, routed.candidates);
   return `${summary}${routeHint(routed)}\n\n${loaded.map((row) => {
     if (!row.content) return `SKIPPED ${row.entry.file}: ${row.flagged ?? 'empty'}`;

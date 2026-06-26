@@ -9,6 +9,7 @@ import { sha256 } from '../safety/hash.js';
 import { routeDetailed } from './routing.js';
 import { DEFAULT_LOAD_LIMIT, normalizeLoadLimit } from '../runtime/load-limit.js';
 import type { TaskType } from './task-classifier.js';
+import { inferTaskIntent, taskIntentQuery, intentIsActionable } from './task-intent.js';
 import { canonicalRuleMemory } from './rule-variants.js';
 
 const RELATED_HINT_LIMIT = 3;
@@ -41,7 +42,7 @@ export type SavePreviewOptions = {
 
 /** Choose whether each scope should add a new memory or update an existing one. */
 export async function planMemorySave(input: {
-  ctx: EngramContext; text: string; type: MemoryType; scopes: Scope[]; author: string; role?: string[]; context?: string; dependsOn?: string[]; level?: string; updateId?: string; source?: MemorySourceMeta; taskType?: TaskType;
+  ctx: EngramContext; text: string; type: MemoryType; scopes: Scope[]; author: string; role?: string[]; context?: string; triggers?: string[]; dependsOn?: string[]; level?: string; updateId?: string; source?: MemorySourceMeta; taskType?: TaskType;
 }): Promise<SavePlan[]> {
   const plans: SavePlan[] = [];
   const options = { ruleVariants: true };
@@ -49,10 +50,10 @@ export async function planMemorySave(input: {
     const match = await explicitMatch(input.ctx, input.updateId, input.type, scope) ?? await bestMatch(input.ctx, input.text, input.type, scope);
     const related = relatedMemoryHints(input.ctx, input.text, input.type, scope, match?.entry);
     if (match) {
-      const content = updateMemory(match.raw, { text: input.text, type: input.type, scope, author: input.author, role: input.role, context: input.context, dependsOn: input.dependsOn, level: input.level, source: input.source, taskType: input.taskType }, options);
+      const content = updateMemory(match.raw, { text: input.text, type: input.type, scope, author: input.author, role: input.role, context: input.context, triggers: input.triggers, dependsOn: input.dependsOn, level: input.level, source: input.source, taskType: input.taskType }, options);
       plans.push({ action: 'update', scope, file: match.entry.file, id: match.entry.id, content, matchScore: match.score, related, message: `update ${input.type}: ${match.entry.id}` });
     } else {
-      const draft = draftMemory({ text: input.text, type: input.type, scope, author: input.author, role: input.role, context: input.context, dependsOn: input.dependsOn, level: input.level, source: input.source, taskType: input.taskType }, options);
+      const draft = draftMemory({ text: input.text, type: input.type, scope, author: input.author, role: input.role, context: input.context, triggers: input.triggers, dependsOn: input.dependsOn, level: input.level, source: input.source, taskType: input.taskType }, options);
       const unique = await avoidCollision(input.ctx, scope, draft, input.text);
       plans.push({ action: 'add', scope, file: unique.file, id: unique.id, content: unique.content, related, message: `add ${input.type}: ${unique.id}` });
     }
@@ -103,10 +104,14 @@ async function bestMatch(ctx: EngramContext, text: string, type: MemoryType, sco
 function relatedMemoryHints(ctx: EngramContext, text: string, type: MemoryType, scope: Scope, exclude?: MemoryEntry): SaveRelatedHint[] {
   const index = ctx.scopeIndexes[scope];
   if (!index.entries.length) return [];
-  const routed = routeDetailed(index, text, ctx.config, false, {
+  const intent = inferTaskIntent(text);
+  const routingQuery = intentIsActionable(intent) ? taskIntentQuery(intent) : text;
+  const routed = routeDetailed(index, routingQuery, ctx.config, false, {
     ignorePatterns: ctx.ignorePatterns,
     limit: Math.max(DEFAULT_LOAD_LIMIT, normalizeLoadLimit(ctx.config.load?.limit)),
-    candidatePool: Math.max(DEFAULT_LOAD_LIMIT, ctx.config.vector?.candidate_pool ?? DEFAULT_LOAD_LIMIT)
+    candidatePool: Math.max(DEFAULT_LOAD_LIMIT, ctx.config.vector?.candidate_pool ?? DEFAULT_LOAD_LIMIT),
+    intent,
+    semanticRelaxed: true
   }, ctx.graph).entries;
   const queryWords = words(text);
   return routed

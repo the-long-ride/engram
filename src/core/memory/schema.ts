@@ -6,8 +6,8 @@ import { canonicalRuleMemory } from './rule-variants.js';
 const memoryTypes = new Set(['rule', 'skill', 'knowledge']);
 const scopes = new Set(['workspace', 'global']);
 const confidences = new Set(['high', 'medium', 'low']);
-export const RULE_EFFECTIVE_LINE_TARGET = 50;
-export const RULE_EFFECTIVE_LINE_HARD_LIMIT = 75;
+export const RULE_EFFECTIVE_LINE_TARGET = 70;
+export const RULE_EFFECTIVE_LINE_HARD_LIMIT = 100;
 
 /** Parse a Markdown memory file with simple YAML-like frontmatter. */
 export function parseMemory(raw: string): MemoryDoc {
@@ -39,7 +39,11 @@ export function entryFromMemory(raw: string, file: string, fallbackScope: Scope)
     scope: doc.frontmatter.scope ?? fallbackScope,
     tags: doc.frontmatter.tags ?? tagsFrom(doc.title),
     summary: summarize(summaryBody),
-    routingTerms: meaningfulWordList(summaryBody).slice(0, 256),
+    routingTerms: [
+      ...meaningfulWordList(summaryBody),
+      ...(Array.isArray(doc.frontmatter.triggers) ? doc.frontmatter.triggers : []),
+      ...(Array.isArray(doc.frontmatter.task_types) ? doc.frontmatter.task_types : [])
+    ].slice(0, 256),
     file,
     author: String(doc.frontmatter.author ?? 'unknown'),
     confidence: doc.frontmatter.confidence ?? 'medium',
@@ -59,8 +63,16 @@ export function validateMemory(doc: MemoryDoc): void {
   if (fm.scope && !scopes.has(fm.scope)) throw new Error('Invalid memory scope');
   if (fm.confidence && !confidences.has(fm.confidence)) throw new Error('Invalid confidence');
   if (!fm.author) throw new Error('Missing author');
-  if (!doc.body.includes('## Context') || !doc.body.includes('## Content') || !doc.body.includes('## Example')) {
-    throw new Error('Memory must include Context, Content, and Example sections');
+  const hasLegacyContext = doc.body.includes('## Context');
+  const hasContent = doc.body.includes('## Content');
+  const hasLegacyExample = doc.body.includes('## Example');
+    // v1: Context + Content + Example required; v2: Content required, Origin optional
+  if (!hasContent) {
+    throw new Error('Memory must include a Content section');
+  }
+  // Legacy memories still need Context and Example
+  if (hasLegacyContext && !hasLegacyExample) {
+    throw new Error('Legacy memory with Context section must also include Example section; or migrate to v2 template (Content + optional Origin)');
   }
   validateMarkdownStyle(doc.body);
   if (fm.type === 'rule' && effectiveMemoryLines(doc.raw) > RULE_EFFECTIVE_LINE_HARD_LIMIT) {
@@ -133,10 +145,16 @@ function validateHeadingSpacing(lines: string[]): void {
 }
 
 function validateSectionOrder(body: string): void {
-  const context = body.indexOf('## Context');
-  const content = body.indexOf('## Content');
-  const example = body.indexOf('## Example');
-  if (!(context < content && content < example)) throw new Error('Memory sections must be ordered: Context, Content, Example');
+  // Only enforce strict order for legacy v1 templates (Context + Content + Example)
+  const hasLegacyContext = body.includes('## Context');
+  const hasLegacyExample = body.includes('## Example');
+  if (hasLegacyContext && hasLegacyExample) {
+    const contextIdx = body.indexOf('## Context');
+    const contentIdx = body.indexOf('## Content');
+    const exampleIdx = body.indexOf('## Example');
+    if (!(contextIdx < contentIdx && contentIdx < exampleIdx)) throw new Error('Memory sections must be ordered: Context, Content, Example');
+  }
+  // v2 templates: Content section must exist, Origin is optional, no strict order beyond that
 }
 
 function validateMarkdownLinks(lines: string[]): void {

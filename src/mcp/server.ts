@@ -85,6 +85,8 @@ async function saveSessionProposal(args: any): Promise<string> {
       scopes,
       author,
       role,
+      context: candidate.context,
+      triggers: candidate.triggers,
       dependsOn: candidate.dependsOn,
       level: candidate.level,
       updateId: candidate.updateId

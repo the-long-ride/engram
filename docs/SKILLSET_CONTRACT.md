@@ -118,7 +118,7 @@ Hosts that support custom slash commands can also load generated `/engram` adapt
 - Validate memory Markdown before writing: headings need a following blank line,
   required sections stay in Context/Content/Example order, and URLs use
   `[label](url)` syntax.
-- Rule memories have a 50 counted-line quality target and a 75 counted-line hard
+- Rule memories have a 70 counted-line quality target and a 100 counted-line hard
   limit; empty lines and frontmatter property lines do not count.
 - Run sensitive-data and prompt-injection guards before writing or loading.
 - Verify hashes before trusting memory files.

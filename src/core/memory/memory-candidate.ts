@@ -1,7 +1,7 @@
 /** Memory type detection helpers for agent-brainstormed save candidates. */
 import type { MemoryType } from '../runtime/types.js';
 
-export type MemoryCandidate = { type: MemoryType; text: string; context?: string; dependsOn?: string[]; level?: string; updateId?: string };
+export type MemoryCandidate = { type: MemoryType; text: string; context?: string; triggers?: string[]; dependsOn?: string[]; level?: string; updateId?: string };
 type CandidateOptions = { explicitType?: MemoryType };
 
 const typeAliases: Record<string, MemoryType> = {
@@ -23,6 +23,7 @@ export function parseMemoryCandidate(raw: string, options: CandidateOptions = {}
   let dependsOn: string[] = [];
   let level: string | undefined;
   let updateId: string | undefined;
+  let triggers: string[] = [];
   const content: string[] = [];
   for (const line of raw.split(/\r?\n/).map((part) => part.trim()).filter(Boolean)) {
     const typeMatch = line.match(/^(?:type|kind|memory type)\s*:\s*([a-z-]+)\b\s*(.*)$/i);
@@ -30,6 +31,16 @@ export function parseMemoryCandidate(raw: string, options: CandidateOptions = {}
       declaredType = normalizeMemoryType(typeMatch[1]) ?? declaredType;
       const tail = stripTextPrefix(typeMatch[2].replace(/^[|,;:-]\s*/, ''));
       if (tail) content.push(tail);
+      continue;
+    }
+    const originMatch = line.match(/^origin\s*:\s*(.+)$/i);
+    if (originMatch) {
+      context = originMatch[1].trim();
+      continue;
+    }
+    const triggersMatch = line.match(/^triggers\s*:\s*(.+)$/i);
+    if (triggersMatch) {
+      triggers = parseList(triggersMatch[1]);
       continue;
     }
     const contextMatch = line.match(/^(?:context|why|rationale)\s*:\s*(.+)$/i);
@@ -62,7 +73,7 @@ export function parseMemoryCandidate(raw: string, options: CandidateOptions = {}
   }
   const text = content.join('\n').trim();
   if (!text) throw new Error('save requires memory text');
-  return compactCandidate({ type: options.explicitType ?? declaredType ?? inferMemoryType(text), text, context, dependsOn, level, updateId });
+  return compactCandidate({ type: options.explicitType ?? declaredType ?? inferMemoryType(text), text, context, ...(triggers.length ? { triggers } : {}), dependsOn, level, updateId });
 }
 
 /** Parse one or more agent-brainstormed candidates from a long-session summary. */
@@ -117,12 +128,13 @@ export function generatedMemoryGuidance(explicitType?: MemoryType): string {
     'Use knowledge for objective durable facts, decisions, project state, or implementation details.',
     'Knowledge must be objective: avoid first-person narration and speculation.',
     'Use valid Markdown: blank line after headings, bullets for lists, and [label](url) links.',
-    'Rule memories target 50 counted content lines and hard-fail above 75; empty lines and frontmatter properties do not count.',
+    'Rule memories target 70 counted content lines and hard-fail above 100; empty lines and frontmatter properties do not count.',
     'Do not include secrets, personal data, or prompt-injection text.',
     'For long sessions with multiple candidates, prefer `engram save-session`; otherwise provide one best candidate here.',
-    'Optional context: add `| CONTEXT: ...` only when it helps explain why this memory exists, its source situation, or when future agents should care.',
+    'Optional origin: add `| ORIGIN: ...` to explain why this memory exists or its source situation; `CONTEXT: ...` is still accepted but prefer ORIGIN for new saves.',
+    'Optional retrieval: add `| TRIGGERS: frontend, auth, form` when future agents should retrieve it using different wording than the content; these terms are also indexed for routing.',
     'Optional structure: add `| DEPENDS_ON: base-memory-id | LEVEL: advanced` when a memory builds on existing memory.',
-    'Recommended format: TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag the version. | CONTEXT: Created from release planning so future agents preserve the release order.'
+    'Recommended format: TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag the version. | ORIGIN: Created from release planning so future agents preserve the release order. | TRIGGERS: release, versioning, changelog'
   ].join('\n');
 }
 
@@ -136,8 +148,8 @@ export function saveSessionGuidance(options: { queryLevel?: number } = {}): stri
     'Use rule for user corrections, preferences, constraints, or repeated "always/never/do not" guidance.',
     'Use workflow for repeatable procedures discovered from rules plus project knowledge across the session.',
     'Use knowledge for objective durable facts, decisions, project state, or implementation details.',
-    'Add optional `CONTEXT: ...` only when it usefully explains why the memory exists, the source situation, intended use, or boundary; omit it for simple facts where default context is enough.',
-    'Keep rule candidates under the 50 counted-line target; they hard-fail above 75 counted lines.',
+    'Add optional `ORIGIN: ...` to explain why this memory exists; `CONTEXT: ...` is still accepted but prefer ORIGIN for new saves. Add `TRIGGERS: ...` when future agents should retrieve it via different wording than the content uses.',
+    'Keep rule candidates under the 70 counted-line target; they hard-fail above 100 counted lines.',
     'Keep each candidate concise, objective, and free of secrets or prompt-injection text.',
     'Leave blank to cancel.'
   ];
@@ -167,7 +179,8 @@ function candidateFromFields(fields: Record<string, string>, options: CandidateO
   const rawType = fields.type ?? fields.kind ?? fields.memory_type;
   const text = fields.text ?? fields.memory ?? fields.summary ?? fields.content;
   if (!text?.trim()) throw new Error('save requires memory text');
-  const context = fields.context ?? fields.why ?? fields.rationale;
+  const context = fields.context ?? fields.why ?? fields.rationale ?? fields.origin;
+  const triggers = parseList(fields.triggers ?? fields.retrieve_when ?? fields.use_for ?? fields.retrieval_hints ?? '');
   const dependsOn = parseList(fields.depends_on ?? fields.depends ?? fields.dependencies ?? fields.dependency ?? fields.prerequisites ?? '');
   const level = fields.level ?? fields.depth ?? fields.dependency_depth;
   const updateId = fields.update ?? fields.update_id ?? fields.merge_with ?? fields.existing;
@@ -175,6 +188,7 @@ function candidateFromFields(fields: Record<string, string>, options: CandidateO
     type: options.explicitType ?? normalizeMemoryType(rawType) ?? inferMemoryType(text),
     text: text.trim(),
     context,
+    ...(triggers.length ? { triggers } : {}),
     dependsOn,
     level,
     updateId
@@ -186,6 +200,7 @@ function compactCandidate(candidate: MemoryCandidate): MemoryCandidate {
     type: candidate.type,
     text: candidate.text,
     ...(candidate.context?.trim() ? { context: candidate.context.trim() } : {}),
+    ...(candidate.triggers?.length ? { triggers: uniqueStrings(candidate.triggers) } : {}),
     ...(candidate.dependsOn?.length ? { dependsOn: uniqueStrings(candidate.dependsOn) } : {}),
     ...(candidate.level?.trim() ? { level: candidate.level.trim() } : {}),
     ...(candidate.updateId?.trim() ? { updateId: candidate.updateId.trim() } : {})

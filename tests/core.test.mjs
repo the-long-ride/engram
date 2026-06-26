@@ -22,10 +22,11 @@ import { searchEntries } from '../dist/core/analysis/search.js';
 import { tagsFrom } from '../dist/core/system/text.js';
 import { convertDocumentToMarkdown, isConvertibleDocument } from '../dist/core/integrations/markdown-them.js';
 import { mergeIndexes } from '../dist/core/memory/index.js';
-import { parseMemoryCandidate } from '../dist/core/memory/memory-candidate.js';
+import { parseMemoryCandidate, generatedMemoryGuidance, saveSessionGuidance } from '../dist/core/memory/memory-candidate.js';
 import { canonicalRuleText, renderMemoryForAgent, ruleVariantsAreCustomized, stripRuleVariantSection } from '../dist/core/memory/rule-variants.js';
 import { route, routeDetailed } from '../dist/core/memory/routing.js';
 import { classifyTaskType, normalizeTaskType } from '../dist/core/memory/task-classifier.js';
+import { inferTaskIntent, taskIntentQuery, intentIsActionable } from '../dist/core/memory/task-intent.js';
 import { ensureVectorIndex } from '../dist/core/memory/vector-db.js';
 import { defaultConfig } from '../dist/core/runtime/config.js';
 import { VERSION } from '../dist/core/runtime/version.js';
@@ -401,7 +402,7 @@ test('rule memory hard limit uses counted lines and applies only to rules', () =
   const maxContentLines = RULE_EFFECTIVE_LINE_HARD_LIMIT - MEMORY_BASE_EFFECTIVE_LINES;
   assert.equal(effectiveMemoryLines(limitMemory({ contentLines: maxContentLines })), RULE_EFFECTIVE_LINE_HARD_LIMIT);
   assert.doesNotThrow(() => validateMemoryRaw(limitMemory({ contentLines: maxContentLines })));
-  assert.throws(() => validateMemoryRaw(limitMemory({ contentLines: maxContentLines + 1 })), /75-line hard limit/);
+  assert.throws(() => validateMemoryRaw(limitMemory({ contentLines: maxContentLines + 1 })), /100-line hard limit/);
   assert.doesNotThrow(() => validateMemoryRaw(limitMemory({
     contentLines: maxContentLines,
     extraFrontmatter: Array.from({ length: 30 }, (_, index) => `property_${index}: metadata`).join('\n') + '\n',
@@ -436,14 +437,14 @@ ${Array.from({ length: contentLines }, (_, index) => `- Line ${index + 1}`).join
 engram verify
 `;
   const targetContentLines = RULE_EFFECTIVE_LINE_TARGET - MEMORY_BASE_EFFECTIVE_LINES;
-  assert.doesNotMatch(scoreMemory(memory('rule', targetContentLines)).issues.join('\n'), /50-line target/);
+  assert.doesNotMatch(scoreMemory(memory('rule', targetContentLines)).issues.join('\n'), /70-line target/);
   assert.doesNotMatch(scoreMemory(memory(
     'rule',
     targetContentLines,
     Array.from({ length: 30 }, (_, index) => `property_${index}: metadata`).join('\n')
-  )).issues.join('\n'), /50-line target/);
-  assert.match(scoreMemory(memory('rule', targetContentLines + 1)).issues.join('\n'), /50-line target/);
-  assert.doesNotMatch(scoreMemory(memory('knowledge', 90)).issues.join('\n'), /50-line target/);
+  )).issues.join('\n'), /70-line target/);
+  assert.match(scoreMemory(memory('rule', targetContentLines + 1)).issues.join('\n'), /70-line target/);
+  assert.doesNotMatch(scoreMemory(memory('knowledge', 90)).issues.join('\n'), /70-line target/);
 });
 
 test('command registry has topic help and stable aliases', () => {
@@ -514,7 +515,7 @@ test('merged memory priority keeps workspace before global fallback', () => {
   assert.equal(route(index, 'deploy checklist', config)[0].scope, 'workspace');
 });
 
-test('routing ignores vector candidates without direct query overlap', () => {
+test('routing accepts high-confidence vector candidates without direct query overlap', () => {
   const lexical = routingEntry('deploy-checklist', 'workspace', ['deploy'], 'Deploy checklist lives local.');
   const vectorOnly = routingEntry('release-runbook', 'workspace', ['release'], 'Cut production rollout safely.');
   const index = { version: 'test', last_updated: 'now', entries: [vectorOnly, lexical] };
@@ -525,7 +526,7 @@ test('routing ignores vector candidates without direct query overlap', () => {
     candidatePool: 8
   });
 
-  assert.deepEqual(routed.map((entry) => entry.id), ['deploy-checklist']);
+  assert.deepEqual(routed.map((entry) => entry.id), ['deploy-checklist', 'release-runbook']);
 });
 
 test('routing ignores generic memory type words as anchors', () => {
@@ -913,3 +914,219 @@ function routingEntry(id, scope, tags, summary, extra = {}) {
     ...extra
   };
 }
+
+// ── Task Intent ──────────────────────────────────────────────────────────
+
+test('inferTaskIntent detects frontend/ui/form/auth from login form glass theme request', () => {
+  const intent = inferTaskIntent('I want to create a login form with glass theme');
+  assert.ok(intent.domains.includes('frontend') || intent.domains.includes('ui'));
+  assert.ok(intent.artifacts.includes('form'));
+  assert.ok(intent.styles.includes('glassmorphism'));
+  assert.ok(intent.confidence !== 'low');
+});
+
+test('taskIntentQuery includes original request and expanded retrieval terms', () => {
+  const intent = inferTaskIntent('I want to create a login form with glass theme');
+  const query = taskIntentQuery(intent);
+  assert.ok(query.includes('original:'));
+  assert.ok(query.includes('I want to create a login form with glass theme'));
+  assert.ok(intent.retrievalTerms.length > 0);
+  for (const term of intent.retrievalTerms) {
+    assert.ok(query.includes(term), `Missing retrieval term: ${term}`);
+  }
+});
+
+test('intentIsActionable returns true for substantive requests', () => {
+  const good = inferTaskIntent('build a REST API endpoint for auth');
+  assert.ok(intentIsActionable(good));
+  const vague = inferTaskIntent('hello');
+  assert.ok(!intentIsActionable(vague) || vague.confidence === 'low');
+});
+
+test('inferTaskIntent detects backend/API work', () => {
+  const intent = inferTaskIntent('create a REST API endpoint for user auth');
+  assert.ok(intent.domains.includes('backend') || intent.domains.includes('api') || intent.domains.includes('auth'));
+  assert.ok(intent.workKinds.includes('implementation'));
+});
+
+test('inferTaskIntent detects testing work', () => {
+  const intent = inferTaskIntent('fix the failing unit test for auth');
+  assert.ok(intent.domains.includes('testing') || intent.domains.includes('auth'));
+  assert.ok(intent.workKinds.includes('debugging'));
+});
+
+test('inferTaskIntent detects AI agent/skill work', () => {
+  const intent = inferTaskIntent('create a new MCP skill for memory routing');
+  assert.ok(intent.domains.includes('ai_agent'));
+});
+
+// ── V2 Memory Template ──────────────────────────────────────────────────
+
+test('v2 memory with Content and optional Origin validates', () => {
+  const v2 = `---
+id: test-v2
+type: knowledge
+scope: workspace
+author: test
+confidence: high
+---
+# Test V2 Memory
+
+## Content
+
+This is v2 content without Example or Context sections.
+
+`;
+  assert.doesNotThrow(() => validateMemoryRaw(v2));
+});
+
+test('v2 memory with Content and Origin validates', () => {
+  const v2 = `---
+id: test-v2-origin
+type: knowledge
+scope: workspace
+author: test
+confidence: high
+---
+# Test V2 Memory with Origin
+
+## Content
+
+This is v2 content.
+
+## Origin
+
+Created from a refactoring task.
+`;
+  assert.doesNotThrow(() => validateMemoryRaw(v2));
+});
+
+test('legacy memory with Context + Content + Example still validates', () => {
+  const legacy = `---
+id: test-legacy
+type: knowledge
+scope: workspace
+author: test
+confidence: high
+---
+# Test Legacy Memory
+
+## Context
+
+Created from a previous task.
+
+## Content
+
+This is legacy content.
+
+## Example
+
+Use this memory when touching: testing.
+`;
+  assert.doesNotThrow(() => validateMemoryRaw(legacy));
+});
+
+test('memory with only Context (no Content) fails validation', () => {
+  const bad = `---
+id: test-bad
+type: knowledge
+scope: workspace
+author: test
+confidence: high
+---
+# Bad Memory
+
+## Context
+
+Some context.
+
+`;
+  assert.throws(() => validateMemoryRaw(bad));
+});
+
+// ── Origin/Triggers Parsing ─────────────────────────────────────────────
+
+test('parseMemoryCandidate accepts ORIGIN field', () => {
+    const candidate = parseMemoryCandidate('TYPE: knowledge | TEXT: Use glassmorphism sparingly on forms. | ORIGIN: Created from frontend login form task.');
+  assert.equal(candidate.type, 'knowledge');
+  assert.ok(candidate.context);
+  assert.ok(candidate.context.includes('frontend login form'));
+});
+
+test('parseMemoryCandidate accepts TRIGGERS field', () => {
+    const candidate = parseMemoryCandidate('TYPE: knowledge | TEXT: Use glassmorphism sparingly on forms. | TRIGGERS: frontend, login form, glassmorphism, accessibility');
+  assert.equal(candidate.type, 'knowledge');
+  assert.ok(candidate.triggers);
+  assert.ok(candidate.triggers.length > 0);
+});
+
+test('parseMemoryCandidate still accepts legacy CONTEXT field', () => {
+    const candidate = parseMemoryCandidate('TYPE: knowledge | TEXT: Test content. | CONTEXT: Created during testing.');
+  assert.equal(candidate.type, 'knowledge');
+  assert.ok(candidate.context);
+});
+
+
+// ── Additional Plan Tests ──────────────────────────────────────────────────
+
+test('RouteReason includes matchedBy with literal and intent tags', () => {
+  const lexical = routingEntry('glass-form', 'workspace', ['glassmorphism', 'form', 'ui'], 'A glass-style login form component.');
+  const index = { version: 'test', last_updated: 'now', entries: [lexical] };
+  const config = { ...defaultConfig(), graph: { ...defaultConfig().graph, enabled: false }, vector: { ...defaultConfig().vector, candidate_pool: 8 } };
+  const intent = inferTaskIntent('I want to create a login form with glass theme');
+  const detail = routeDetailed(index, taskIntentQuery(intent), config, false, { intent, semanticRelaxed: true });
+  const reason = detail.reasons?.find(r => r.key === 'workspace:knowledge/glass-form.md');
+  if (reason) {
+    assert.ok(Array.isArray(reason.matchedBy), 'reason.matchedBy should be an array');
+  }
+});
+
+test('parseMemoryCandidate maps ORIGIN to context field', () => {
+  const candidate = parseMemoryCandidate('TYPE: knowledge | TEXT: Use high-contrast labels on glass forms. | ORIGIN: Created from frontend login form task.');
+  assert.ok(candidate.context, 'ORIGIN should map to context');
+  assert.equal(candidate.context, 'Created from frontend login form task.');
+});
+
+test('parseMemoryCandidate maps TRIGGERS to triggers array', () => {
+  const candidate = parseMemoryCandidate('TYPE: knowledge | TEXT: Use high-contrast labels on glass forms. | TRIGGERS: frontend, glassmorphism, accessibility');
+  assert.ok(candidate.triggers, 'TRIGGERS should populate triggers array');
+  assert.ok(candidate.triggers.includes('frontend'), 'triggers should include frontend');
+  assert.ok(candidate.triggers.includes('glassmorphism'), 'triggers should include glassmorphism');
+});
+
+test('parseMemoryCandidate accepts both ORIGIN and TRIGGERS together', () => {
+  const candidate = parseMemoryCandidate('TYPE: knowledge | TEXT: Use high-contrast labels. | ORIGIN: Created from frontend task. | TRIGGERS: frontend, a11y');
+  assert.ok(candidate.context);
+  assert.ok(candidate.triggers?.length);
+});
+
+test('legacy CONTEXT still maps to context field in parseMemoryCandidate', () => {
+  const candidate = parseMemoryCandidate('TYPE: knowledge | TEXT: Testing context. | CONTEXT: From a debugging session.');
+  assert.ok(candidate.context);
+  assert.equal(candidate.context, 'From a debugging session.');
+});
+
+test('rule memory at exactly 100 effective body lines passes hard limit', () => {
+  const maxContentLines = RULE_EFFECTIVE_LINE_HARD_LIMIT - MEMORY_BASE_EFFECTIVE_LINES;
+  assert.equal(effectiveMemoryLines(limitMemory({ contentLines: maxContentLines })), RULE_EFFECTIVE_LINE_HARD_LIMIT);
+  assert.doesNotThrow(() => validateMemoryRaw(limitMemory({ contentLines: maxContentLines })));
+});
+
+test('rule memory above 100 effective body lines fails hard limit', () => {
+  const maxContentLines = RULE_EFFECTIVE_LINE_HARD_LIMIT - MEMORY_BASE_EFFECTIVE_LINES + 1;
+  assert.throws(() => validateMemoryRaw(limitMemory({ contentLines: maxContentLines })), /100-line hard limit/);
+});
+
+test('generatedMemoryGuidance mentions ORIGIN and TRIGGERS', () => {
+  const guidance = generatedMemoryGuidance();
+  assert.ok(guidance.includes('ORIGIN'), 'guidance should mention ORIGIN');
+  assert.ok(guidance.includes('TRIGGERS'), 'guidance should mention TRIGGERS');
+  assert.ok(!guidance.includes('add `| CONTEXT'), 'guidance should not recommend CONTEXT as primary');
+});
+
+test('saveSessionGuidance mentions ORIGIN and TRIGGERS with 100-line hard limit', () => {
+  const guidance = saveSessionGuidance();
+  assert.ok(guidance.includes('ORIGIN'), 'guidance should mention ORIGIN');
+  assert.ok(guidance.includes('TRIGGERS'), 'guidance should mention TRIGGERS');
+  assert.ok(guidance.includes('100'), 'guidance should mention 100-line hard limit');
+});

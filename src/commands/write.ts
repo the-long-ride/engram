@@ -48,7 +48,7 @@ export async function cmdSave(args: string[], flags: Record<string, any>): Promi
       const resolvedTaskType = await saveTaskType(text, flags, explicitTaskType);
       plans = await planMemorySave({ ctx, text, type, scopes, author, role, context: candidate.context, triggers: candidate.triggers, dependsOn: candidate.dependsOn, level: candidate.level, updateId: candidate.updateId, taskType: resolvedTaskType });
       return previewSavePlans(plans, previewOptions);
-    }, { explicitType, guidance: generatedMemoryGuidance(explicitType) });
+    }, { explicitType, guidance: generatedMemoryGuidance(explicitType, { ruleLineTarget: ctx.config.memory.rule_line_target, ruleLineHardLimit: ctx.config.memory.rule_line_hard_limit }) });
     if (!captured) return 'Discarded. No file written.';
     approval = captured.approval;
   } else {
@@ -72,7 +72,7 @@ export async function cmdSaveSession(args: string[], flags: Record<string, any> 
   const explicitTaskType = explicitTaskTypeFromFlags(flags);
   const acceptAll = flags['accept-all'] === true;
   const queryLevel = queryLevelFromFlags(flags);
-  const guidance = saveSessionGuidance({ queryLevel });
+  const guidance = saveSessionGuidance({ queryLevel, limits: { ruleLineTarget: ctx.config.memory.rule_line_target, ruleLineHardLimit: ctx.config.memory.rule_line_hard_limit } });
   const previewOptions = previewOptionsFromFlags(flags);
   let text = await saveSessionInput(args, flags);
   let plans: SavePlan[] = [];

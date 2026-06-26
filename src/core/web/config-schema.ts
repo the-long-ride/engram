@@ -46,6 +46,9 @@ export const CONFIG_FIELDS: ConfigFieldDef[] = [
 
   { key: 'load.limit', group: 'Load Routing', label: 'Load Limit', input: 'number', min: 1, max: 32, description: 'Max memories returned by normal load' },
 
+  { key: 'memory.rule_line_target', group: 'Memory Limits', label: 'Rule Line Target', input: 'number', min: 50, max: 200, step: 10, description: 'Recommended line count target for rule memories (min 50, max 200)' },
+  { key: 'memory.rule_line_hard_limit', group: 'Memory Limits', label: 'Rule Line Hard Limit', input: 'number', min: 50, max: 200, step: 10, description: 'Maximum allowed line count for rule memories (min 50, max 200)', risk: 'risky' },
+
   { key: 'graph.enabled', group: 'Graph', label: 'Enabled', input: 'toggle' },
   { key: 'graph.max_related', group: 'Graph', label: 'Max Related', input: 'number', min: 1, max: 20 },
   { key: 'graph.min_related_score', group: 'Graph', label: 'Min Score', input: 'number', min: 0, max: 1, step: 0.01, description: 'Minimum similarity score for graph edges' },

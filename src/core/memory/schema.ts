@@ -8,6 +8,19 @@ const scopes = new Set(['workspace', 'global']);
 const confidences = new Set(['high', 'medium', 'low']);
 export const RULE_EFFECTIVE_LINE_TARGET = 70;
 export const RULE_EFFECTIVE_LINE_HARD_LIMIT = 100;
+export const RULE_LINE_MIN = 50;
+export const RULE_LINE_MAX = 200;
+
+export type MemoryLimits = { ruleLineTarget?: number; ruleLineHardLimit?: number };
+
+export function resolveMemoryLimits(limits?: MemoryLimits): { ruleLineTarget: number; ruleLineHardLimit: number } {
+  const target = limits?.ruleLineTarget ?? RULE_EFFECTIVE_LINE_TARGET;
+  const hardLimit = limits?.ruleLineHardLimit ?? RULE_EFFECTIVE_LINE_HARD_LIMIT;
+  return {
+    ruleLineTarget: Math.max(RULE_LINE_MIN, Math.min(RULE_LINE_MAX, target)),
+    ruleLineHardLimit: Math.max(RULE_LINE_MIN, Math.min(RULE_LINE_MAX, hardLimit))
+  };
+}
 
 /** Parse a Markdown memory file with simple YAML-like frontmatter. */
 export function parseMemory(raw: string): MemoryDoc {
@@ -56,7 +69,7 @@ export function entryFromMemory(raw: string, file: string, fallbackScope: Scope)
 }
 
 /** Validate required schema fields and memory size. */
-export function validateMemory(doc: MemoryDoc): void {
+export function validateMemory(doc: MemoryDoc, limits?: MemoryLimits): void {
   const fm = doc.frontmatter;
   requireText(fm.id, 'id');
   if (!memoryTypes.has(fm.type)) throw new Error('Invalid memory type');
@@ -75,14 +88,15 @@ export function validateMemory(doc: MemoryDoc): void {
     throw new Error('Legacy memory with Context section must also include Example section; or migrate to v2 template (Content + optional Origin)');
   }
   validateMarkdownStyle(doc.body);
-  if (fm.type === 'rule' && effectiveMemoryLines(doc.raw) > RULE_EFFECTIVE_LINE_HARD_LIMIT) {
-    throw new Error(`Rule memory exceeds ${RULE_EFFECTIVE_LINE_HARD_LIMIT}-line hard limit`);
+  const { ruleLineHardLimit } = resolveMemoryLimits(limits);
+  if (fm.type === 'rule' && effectiveMemoryLines(doc.raw) > ruleLineHardLimit) {
+    throw new Error(`Rule memory exceeds ${ruleLineHardLimit}-line hard limit`);
   }
 }
 
 /** Parse and validate a raw memory document. */
-export function validateMemoryRaw(raw: string): void {
-  validateMemory(parseMemory(raw));
+export function validateMemoryRaw(raw: string, limits?: MemoryLimits): void {
+  validateMemory(parseMemory(raw), limits);
 }
 
 /** Render frontmatter in the package-supported subset. */

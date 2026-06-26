@@ -80,7 +80,7 @@ npm run lint:lines
   `Context`, `Content`, `Example` section order, and format links as
   `[label](url)`.
 - Rule memories target 70 counted content lines and hard-fail above 100 counted
-  lines; empty lines and frontmatter property lines do not count.
+  lines by default; empty lines and frontmatter property lines do not count. These limits are configurable via `memory.rule_line_target` and `memory.rule_line_hard_limit` (configurable between 50 and 200).
 - MCP tools are proposal-only. Keep `engram_save` behavior aligned with CLI
   auto-detection, workflow-as-skill handling, and role metadata; add MCP methods
   for new read/proposal surfaces before documenting them.

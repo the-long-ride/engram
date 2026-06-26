@@ -119,7 +119,7 @@ Hosts that support custom slash commands can also load generated `/engram` adapt
   required sections stay in Context/Content/Example order, and URLs use
   `[label](url)` syntax.
 - Rule memories have a 70 counted-line quality target and a 100 counted-line hard
-  limit; empty lines and frontmatter property lines do not count.
+  limit by default; empty lines and frontmatter property lines do not count. These limits can be configured via `memory.rule_line_target` and `memory.rule_line_hard_limit` (min 50, max 200).
 - Run sensitive-data and prompt-injection guards before writing or loading.
 - Verify hashes before trusting memory files.
 - Stage only `.agents/.engram/` files during `engram resolve-conflicts`.

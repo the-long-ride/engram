@@ -143,9 +143,9 @@ test('save-session preserves optional AI-generated context and falls back when o
   const saved = await runEngram(cwd, env, ['save-session', '--scope', 'workspace', '--accept-all'], input);
   assert.equal(saved.code, 0, saved.stderr);
   const contextual = await readFile(path.join(workspaceMemoryRoot(cwd), 'rules', 'always-explain-why-durable-memories-exist.md'), 'utf8');
-  assert.match(contextual, /## Context\r?\n\r?\nCreated after the user clarified that Context should help humans and agents remember why a memory exists\./);
+   assert.match(contextual, /## Origin\r?\n\r?\nCreated after the user clarified that Context should help humans and agents remember why a memory exists\./);
   const fallback = await readFile(path.join(workspaceMemoryRoot(cwd), 'knowledge', 'simple-factual-memories-may-use-default-context.md'), 'utf8');
-  assert.match(fallback, /## Context\r?\n\r?\nApproved from a human\/agent conversation on \d{4}-\d{2}-\d{2}; content is written as objective durable memory\./);
+  assert.doesNotMatch(fallback, /## (?:Origin|Context)/, 'v2 knowledge without origin has no context section');
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -245,9 +245,7 @@ test('generated memories use standard markdown spacing and links', async () => {
   const saved = await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Docs live at www.google.com.'], 'A\n');
   assert.equal(saved.code, 0, saved.stderr);
   const content = await readFile(path.join(workspaceMemoryRoot(cwd), 'knowledge', 'docs-live-at-www-google-com.md'), 'utf8');
-  assert.match(content, /## Context\r?\n\r?\nApproved/);
   assert.match(content, /## Content\r?\n\r?\n- Docs live at \[www\.google\.com\]\(https:\/\/www\.google\.com\)\./);
-  assert.match(content, /## Example\r?\n\r?\nUse this memory/);
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -483,7 +481,7 @@ test('save preserves customized rule variants on update', async () => {
   const customized = raw
     .replace(/### Light\r?\n\r?\n[\s\S]*?(?=\r?\n### Balanced)/, '### Light\n\n- Mention pnpm only when dependency tooling is part of the task.\n')
     .replace(/### Balanced\r?\n\r?\n[\s\S]*?(?=\r?\n### Strict)/, '### Balanced\n\n- Prefer pnpm unless the repo already enforces another package manager.\n')
-    .replace(/### Strict\r?\n\r?\n[\s\S]*?(?=\r?\n## Example)/, '### Strict\n\n- Block npm and yarn suggestions unless the human asks for them.\n');
+    .replace(/### Strict\r?\n\r?\n[\s\S]*?(?=\r?\n## Origin|\s*$)/, '### Strict\n\n- Block npm and yarn suggestions unless the human asks for them.\n');
   await writeFile(file, customized);
 
   const updated = await runEngram(cwd, env, [

@@ -128,7 +128,8 @@ export async function writeApprovedMemory(input: {
   if (sensitive.length) throw new Error(`Sensitive data blocked on line ${sensitive[0].line}: ${sensitive[0].reason}`);
   const injection = scanInjection(input.content);
   if (injection.length) throw new Error(`Injection pattern blocked on line ${injection[0].line}`);
-  validateMemoryRaw(input.content);
+  const { memory } = config;
+  validateMemoryRaw(input.content, { ruleLineTarget: memory?.rule_line_target, ruleLineHardLimit: memory?.rule_line_hard_limit });
   const full = inside(root, input.file);
   const globalGit = input.scope === 'global' ? config.global_git : undefined;
   if (globalGit) await pullGlobalGit(root, globalGit, () => resolveGlobalConflicts(root));

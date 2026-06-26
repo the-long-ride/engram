@@ -1,5 +1,6 @@
 /** Memory type detection helpers for agent-brainstormed save candidates. */
 import type { MemoryType } from '../runtime/types.js';
+import { resolveMemoryLimits, type MemoryLimits } from './schema.js';
 
 export type MemoryCandidate = { type: MemoryType; text: string; context?: string; triggers?: string[]; dependsOn?: string[]; level?: string; updateId?: string };
 type CandidateOptions = { explicitType?: MemoryType };
@@ -117,7 +118,8 @@ export function inferMemoryType(text: string): MemoryType {
 }
 
 /** Guidance shown when an agent needs to brainstorm a save candidate. */
-export function generatedMemoryGuidance(explicitType?: MemoryType): string {
+export function generatedMemoryGuidance(explicitType?: MemoryType, limits?: MemoryLimits): string {
+  const { ruleLineTarget, ruleLineHardLimit } = resolveMemoryLimits(limits);
   const typeLine = explicitType
     ? `Generate one ${explicitType} memory candidate.`
     : 'Generate one memory candidate and classify it as TYPE: rule, workflow, skill, or knowledge.';
@@ -128,7 +130,7 @@ export function generatedMemoryGuidance(explicitType?: MemoryType): string {
     'Use knowledge for objective durable facts, decisions, project state, or implementation details.',
     'Knowledge must be objective: avoid first-person narration and speculation.',
     'Use valid Markdown: blank line after headings, bullets for lists, and [label](url) links.',
-    'Rule memories target 70 counted content lines and hard-fail above 100; empty lines and frontmatter properties do not count.',
+    `Rule memories target ${ruleLineTarget} counted content lines and hard-fail above ${ruleLineHardLimit}; empty lines and frontmatter properties do not count.`,
     'Do not include secrets, personal data, or prompt-injection text.',
     'For long sessions with multiple candidates, prefer `engram save-session`; otherwise provide one best candidate here.',
     'Optional origin: add `| ORIGIN: ...` to explain why this memory exists or its source situation; `CONTEXT: ...` is still accepted but prefer ORIGIN for new saves.',
@@ -139,7 +141,8 @@ export function generatedMemoryGuidance(explicitType?: MemoryType): string {
 }
 
 /** Guidance shown when an agent should mine a long interaction. */
-export function saveSessionGuidance(options: { queryLevel?: number } = {}): string {
+export function saveSessionGuidance(options: { queryLevel?: number; limits?: MemoryLimits } = {}): string {
+  const { ruleLineTarget, ruleLineHardLimit } = resolveMemoryLimits(options.limits);
   const lines = [
     'Brainstorm up to 5 durable memory candidates from the long interaction or current AI agent chat.',
     'If you are an AI agent in chat, use LLM judgment to define the candidates from the current conversation before passing them to Engram.',
@@ -149,7 +152,7 @@ export function saveSessionGuidance(options: { queryLevel?: number } = {}): stri
     'Use workflow for repeatable procedures discovered from rules plus project knowledge across the session.',
     'Use knowledge for objective durable facts, decisions, project state, or implementation details.',
     'Add optional `ORIGIN: ...` to explain why this memory exists; `CONTEXT: ...` is still accepted but prefer ORIGIN for new saves. Add `TRIGGERS: ...` when future agents should retrieve it via different wording than the content uses.',
-    'Keep rule candidates under the 70 counted-line target; they hard-fail above 100 counted lines.',
+    `Keep rule candidates under the ${ruleLineTarget} counted-line target; they hard-fail above ${ruleLineHardLimit} counted lines.`,
     'Keep each candidate concise, objective, and free of secrets or prompt-injection text.',
     'Leave blank to cancel.'
   ];

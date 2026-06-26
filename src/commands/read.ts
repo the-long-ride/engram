@@ -91,7 +91,7 @@ export async function cmdLoad(args: string[], flags: Record<string, any> = {}): 
     if (!row.content) return `SKIPPED ${row.entry.file}: ${row.flagged ?? 'empty'}`;
     if (row.flagged) return `⚠ ${row.entry.file}: ${row.flagged} (run \`engram rehash ${row.entry.scope}\` to re-hash)\n\n${row.content}`;
     return row.content;
-  }).join('\n\n')}`.trim();
+  }).join('\n---\n')}`.trim();
 }
 
 /** Classify a user task for `engram load` and save tags. */

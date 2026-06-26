@@ -183,6 +183,9 @@ engram entry
 ```
 ![Engram Control Panel](https://raw.githubusercontent.com/the-long-ride/engram/main/media/demo/demo-engram-entry.png)
 ![Engram Connections](../../media/demo/demo-engram-entry-connections.png)
+![Engram Construct Tab](../../media/demo/engram-entry-Constuct-tab.png)
+![Engram Core Settings](../../media/demo/engram-entry-Core-tab.png)
+![Engram Memories Graph View](../../media/demo/Memories-graph-view.png)
 
 ---
 

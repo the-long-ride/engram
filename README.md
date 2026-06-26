@@ -148,8 +148,14 @@ To configure your settings, manage profiles, and connect AI agents in a premium 
 ```bash
 engram entry
 ```
-![Engram Connections](media/demo/demo-engram-entry-connections.png)
-Go to the **Connections** tab to automatically scan and link Engram to your local AI agents (installs skillsets and hooks).
+- **Connections Tab**: Scan and link Engram to your local AI agents (installs skillsets and hooks automatically).
+  ![Engram Connections](media/demo/demo-engram-entry-connections.png)
+- **Construct Tab**: Configure core settings, load limits, rule variant preferences, global Git settings, and rule memory line limits.
+  ![Engram Construct Tab](media/demo/engram-entry-Constuct-tab.png)
+- **Core Tab**: Review and resolve duplicate memory candidates across workspace, global, and profile scopes, or run metacognitive analysis.
+  ![Engram Core Settings](media/demo/engram-entry-Core-tab.png)
+- **Memories Tab**: Visualize active memories, their tags, and dependency edges using the interactive memory graph.
+  ![Engram Memories Graph View](media/demo/Memories-graph-view.png)
 
 Alternatively, you can manually link Engram to your agent:
 ```bash

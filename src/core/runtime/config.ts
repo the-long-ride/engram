@@ -140,6 +140,7 @@ function mergeConfigInto(base: EngramConfig, partial: Partial<EngramConfig>): vo
   if (partial.pattern_mining) Object.assign(base.pattern_mining, partial.pattern_mining);
   if (partial.pr_workflow) Object.assign(base.pr_workflow, partial.pr_workflow);
   if (partial.encryption) Object.assign(base.encryption, partial.encryption);
+  if (partial.memory) Object.assign(base.memory, partial.memory);
 }
 
 /** Return the OS-specific default global memory path. */
@@ -190,7 +191,8 @@ export function defaultConfig(): EngramConfig {
     vector: { enabled: true, provider: 'sqlite-vec', auto_threshold: 100, candidate_pool: 24, dimensions: 64 },
     pattern_mining: { enabled: false, threshold: 3, lookback_sessions: 20 },
     pr_workflow: { enabled: false, target_branch: 'main' },
-    encryption: { enabled: false, scope: 'global', key_source: 'portable-file' }
+    encryption: { enabled: false, scope: 'global', key_source: 'portable-file' },
+    memory: { rule_line_target: 70, rule_line_hard_limit: 100 }
   };
 }
 
@@ -254,7 +256,8 @@ export function mergeConfig(base: EngramConfig, found: Partial<EngramConfig>): E
     vector: { ...base.vector, ...(found.vector ?? {}) },
     pattern_mining: { ...base.pattern_mining, ...(found.pattern_mining ?? {}) },
     pr_workflow: { ...base.pr_workflow, ...(found.pr_workflow ?? {}) },
-    encryption: { ...base.encryption, ...(found.encryption ?? {}) }
+    encryption: { ...base.encryption, ...(found.encryption ?? {}) },
+    memory: { ...base.memory, ...(found.memory ?? {}) }
   };
 }
 

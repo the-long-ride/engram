@@ -136,6 +136,7 @@ const ALLOWED_KEYS = new Set([
   'encryption.enabled', 'encryption.scope', 'encryption.key_source',
   'global_path',
   'global_git.enabled', 'global_git.remote', 'global_git.remote_url', 'global_git.branch', 'global_git.auto_sync', 'global_git.auto_resolve',
+  'memory.rule_line_target', 'memory.rule_line_hard_limit',
 ]);
 
 export function configKeyToColumn(key: string): string | undefined {
@@ -181,6 +182,8 @@ export function flattenConfig(config: EngramConfig): Record<string, string> {
   out['global_git.branch'] = config.global_git.branch;
   out['global_git.auto_sync'] = String(config.global_git.auto_sync);
   out['global_git.auto_resolve'] = String(config.global_git.auto_resolve);
+  out['memory.rule_line_target'] = String(config.memory?.rule_line_target ?? 70);
+  out['memory.rule_line_hard_limit'] = String(config.memory?.rule_line_hard_limit ?? 100);
   return out;
 }
 
@@ -226,6 +229,8 @@ export function unflattenConfig(kv: Record<string, string>): Partial<EngramConfi
       case 'global_git.branch': out.global_git = { ...(out.global_git ?? {}), branch: value }; break;
       case 'global_git.auto_sync': out.global_git = { ...(out.global_git ?? {}), auto_sync: value === 'true' }; break;
       case 'global_git.auto_resolve': out.global_git = { ...(out.global_git ?? {}), auto_resolve: value === 'true' }; break;
+      case 'memory.rule_line_target': out.memory = { ...(out.memory ?? {}), rule_line_target: intOr(value, d.memory.rule_line_target) }; break;
+      case 'memory.rule_line_hard_limit': out.memory = { ...(out.memory ?? {}), rule_line_hard_limit: intOr(value, d.memory.rule_line_hard_limit) }; break;
     }
   }
   return out;

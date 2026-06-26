@@ -54,6 +54,7 @@ export type EngramConfig = {
   pattern_mining: { enabled: boolean; threshold: number; lookback_sessions: number };
   pr_workflow: { enabled: boolean; provider?: string; repo?: string; target_branch: string };
   encryption: { enabled: boolean; scope: Scope; key_source: string };
+  memory: { rule_line_target: number; rule_line_hard_limit: number };
 };
 
 export type IgnoreConfig = {

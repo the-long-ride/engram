@@ -33,11 +33,11 @@ test('profiles isolate global memory and support workspace defaults, cross-profi
 
   const companyWorkspace = await runEngram(cwd, env, ['save', '--scope', 'workspace', 'knowledge', 'Company workspace deployment policy'], 'A\n');
   assert.equal(companyWorkspace.code, 0, companyWorkspace.stderr);
-  const crossProfile = await runEngram(cwd, env, ['save', '--profile', 'personal', 'knowledge', 'Personal cross profile memory'], 'A\n');
+  const crossProfile = await runEngram(cwd, env, ['save', '--profile', 'personal', 'knowledge', 'Remote database pooling configuration'], 'A\n');
   assert.equal(crossProfile.code, 0, crossProfile.stderr);
-  await readFile(path.join(personalRoot, 'knowledge', 'personal-cross-profile-memory.md'), 'utf8');
-  await assert.rejects(readFile(path.join(companyRoot, 'knowledge', 'personal-cross-profile-memory.md'), 'utf8'));
-  await assert.rejects(readFile(path.join(workspaceMemoryRoot(cwd), 'knowledge', 'personal-cross-profile-memory.md'), 'utf8'));
+  await readFile(path.join(personalRoot, 'knowledge', 'remote-database-pooling-configuration.md'), 'utf8');
+  await assert.rejects(readFile(path.join(companyRoot, 'knowledge', 'remote-database-pooling-configuration.md'), 'utf8'));
+  await assert.rejects(readFile(path.join(workspaceMemoryRoot(cwd), 'knowledge', 'remote-database-pooling-configuration.md'), 'utf8'));
 
   const isolatedLoad = await runEngram(cwd, env, ['--profile', 'personal', 'load', '--dry-run', 'Company workspace deployment policy']);
   assert.equal(isolatedLoad.code, 0, isolatedLoad.stderr);
@@ -48,7 +48,7 @@ test('profiles isolate global memory and support workspace defaults, cross-profi
   assert.match(duplicateMerge.stdout, /Profile merge dry-run personal -> company/);
   assert.match(duplicateMerge.stdout, /Planned: 2/);
 
-  const duplicateTarget = await runEngram(cwd, env, ['save', '--profile', 'company', '--scope', 'global', 'knowledge', 'Personal cross profile memory'], 'A\n');
+  const duplicateTarget = await runEngram(cwd, env, ['save', '--profile', 'company', '--scope', 'global', 'knowledge', 'Remote database pooling configuration'], 'A\n');
   assert.equal(duplicateTarget.code, 0, duplicateTarget.stderr);
   const duplicatePreview = await runEngram(cwd, env, ['profile', 'merge', '--from-profile', 'personal', '--to-profile', 'company', '--dry-run']);
   assert.equal(duplicatePreview.code, 0, duplicatePreview.stderr);

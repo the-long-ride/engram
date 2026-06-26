@@ -229,6 +229,39 @@ engram save-session --file .agents/.engram/inbox/<note>.md
 
 Use this when you want to preserve rough notes before deciding what should become durable memory.
 
+## Configuration
+
+To view and manage runtime settings, use the `config` commands:
+
+- **View active configuration**:
+  ```bash
+  engram config view
+  ```
+- **Set a configuration value**:
+  ```bash
+  engram config set <key> <value>
+  ```
+
+### Key Settings Reference
+
+| Key | Description | Default | Range / Options |
+| --- | --- | --- | --- |
+| `memory.rule_line_target` | Recommended line count target for rule memories | `70` | `50` to `200` |
+| `memory.rule_line_hard_limit` | Maximum allowed line count for rule memories | `100` | `50` to `200` |
+| `load.limit` | Max memories returned by normal load | `8` | `1` to `32` |
+| `rule_variants.enabled` | Enable or disable rule variants generation | `true` | `true`, `false` |
+| `rule_variants.active` | Active rule variant mode | `balanced` | `light`, `balanced`, `strict` |
+| `graph.enabled` | Enable or disable graph-aware routing | `true` | `true`, `false` |
+| `graph.max_related` | Max related memories to fetch from graph edges | `8` | `1` to `20` |
+| `graph.min_related_score` | Min similarity score to add graph edges | `0.3` | `0.0` to `1.0` |
+| `vector.enabled` | Enable or disable vector search fallback | `true` | `true`, `false` |
+| `live_sync.enabled` | Sync generated agent context files on save | `true` | `true`, `false` |
+| `global_git.enabled` | Enable global Git repo sync automation | `false` | `true`, `false` |
+| `global_git.remote` | Git remote name for global sync | `origin` | String |
+| `global_git.branch` | Git branch name for global sync | `main` | String |
+
+These settings are also manageable visually under the **Construct** tab in `engram entry`.
+
 ## Repair And Review
 
 Use `repair` after manual edits or imports:

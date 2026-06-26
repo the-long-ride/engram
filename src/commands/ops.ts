@@ -2,6 +2,7 @@
 import path from 'node:path';
 import { getContext } from '../core/memory/context.js';
 import { health, scoreMemory } from '../core/analysis/quality.js';
+import type { MemoryLimits } from '../core/memory/schema.js';
 import { duplicatePairs, searchEntries, semanticDuplicatePairs, semanticSearchEntries, stats } from '../core/analysis/search.js';
 import { assertFormat, exportBundle, renderFormat, writeSyncTarget } from '../core/integrations/exporter.js';
 import { readJson, readText } from '../core/system/fsx.js';
@@ -51,7 +52,8 @@ export async function cmdQuality(): Promise<string> {
       rows.push({ title: entry.file, fields: [['Status', `skipped: ${row.flagged}`]] });
       continue;
     }
-    const result = scoreMemory(row.content);
+    const { memory } = ctx.config;
+    const result = scoreMemory(row.content, { ruleLineTarget: memory.rule_line_target, ruleLineHardLimit: memory.rule_line_hard_limit });
     rows.push({ title: entry.file, fields: [['Score', `${result.score}/100`], ['Issues', result.issues.join(', ') || '-']] });
   }
   for (const edge of contradictionEdges(ctx.graph)) rows.push({ title: 'contradiction candidate', fields: [['From', edge.from], ['To', edge.to], ['Reason', edge.reason]] });

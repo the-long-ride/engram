@@ -35,6 +35,20 @@ export async function readText(file: string): Promise<string> {
   try { return await fs.readFile(file, 'utf8'); } catch { return ''; }
 }
 
+/** Read text from standard input until EOF. */
+export async function readTextFromStdin(): Promise<string> {
+  try {
+    const chunks: Buffer[] = [];
+    for await (const chunk of process.stdin) {
+      chunks.push(Buffer.from(chunk));
+    }
+    return Buffer.concat(chunks).toString('utf8');
+  } catch {
+    return '';
+  }
+}
+
+
 /** Recursively list files under a directory, ignoring missing roots. */
 export async function listFiles(dir: string): Promise<string[]> {
   if (!existsSync(dir)) return [];

@@ -3,7 +3,7 @@ import path from 'node:path';
 import { getContext } from '../core/memory/context.js';
 import { writeObservation } from '../core/memory/observe.js';
 import { parseSaveTarget, writeScopes } from '../core/runtime/config.js';
-import { readText } from '../core/system/fsx.js';
+import { readText, readTextFromStdin } from '../core/system/fsx.js';
 import { cmdSaveSession } from './write.js';
 
 /** Capture a raw session note in inbox, optionally mining it through save-session. */
@@ -15,7 +15,7 @@ export async function cmdObserve(args: string[], flags: Record<string, any> = {}
   const root = ctx.roots[scope];
   if (!root) throw new Error(`${scope} memory is not configured`);
   const sourceFile = observeFile(flags);
-  const text = sourceFile ? await readText(path.resolve(sourceFile)) : args.join(' ').trim();
+  const text = sourceFile ? (sourceFile === '-' ? await readTextFromStdin() : await readText(path.resolve(sourceFile))) : args.join(' ').trim();
   if (!text) throw new Error('observe requires text or --file <path>');
   const observed = await writeObservation(root, text, sourceFile ? path.relative(process.cwd(), path.resolve(sourceFile)) : '');
   if (flags.propose === true) {

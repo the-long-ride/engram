@@ -115,6 +115,22 @@ test('save-session proposes multiple agent-brainstormed memories', async () => {
   await rm(cwd, { recursive: true, force: true });
 });
 
+test('save-session --file - reads transcript from stdin', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['inject']);
+  const input = [
+    'TYPE: rule | TEXT: Stdin test rule.',
+    'TYPE: workflow | TEXT: When stdin releases, first run tests. Then update changelog.',
+    ''
+  ].join('\n');
+  const saved = await runEngram(cwd, env, ['save-session', '--scope', 'workspace', '--file', '-', '--accept-all'], input);
+  assert.equal(saved.code, 0, saved.stderr);
+  assert.match(saved.stdout, /Accepted all save-session candidates/);
+  assert.match((await runEngram(cwd, env, ['stats'])).stdout, /Total: 2/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+
 test('save-session classifies each candidate text independently', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
   await runEngram(cwd, env, ['inject']);

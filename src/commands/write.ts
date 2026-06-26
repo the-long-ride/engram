@@ -13,7 +13,7 @@ import { discoverTakeControlSources, planTakeControlSources, renderTakeControlPl
 import { parseSaveTarget, writeScopes } from '../core/runtime/config.js';
 import type { MemoryType, Scope } from '../core/runtime/types.js';
 import { applyApprovalEdit, queuePromptAnswer, readPipedPromptAnswer, requestApproval, requestGeneratedMemoryApproval, requestGeneratedSelectionApproval, requestGeneratedSelectionText, requestSelectionApproval, type SelectionApproval } from '../core/safety/approval.js';
-import { readText } from '../core/system/fsx.js';
+import { readText, readTextFromStdin } from '../core/system/fsx.js';
 
 export type SaveSessionCandidateRunOptions = {
   ctx: Awaited<ReturnType<typeof getContext>>;
@@ -279,6 +279,7 @@ async function saveSessionInput(args: string[], flags: Record<string, any>): Pro
   const inline = args.join(' ').trim();
   if (!file) return inline;
   if (inline) throw new Error('save-session accepts either --file or inline text, not both');
+  if (file === '-') return readTextFromStdin();
   return readText(path.resolve(file));
 }
 

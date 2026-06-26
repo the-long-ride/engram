@@ -56,7 +56,8 @@ const UNSUPPORTED: Record<string, string> = {
   copilot: 'partial hook support: sessionStart can inject context, but userPromptSubmitted does not provide prompt-time context injection; use Engram skillset/manual load in v1',
   cline: 'plugin-based hook support is real, but install UX is not file-first; use Engram skillset/manual load in v1',
   windsurf: 'Cascade hooks are blocking/audit oriented and do not expose reliable prompt context injection; use Engram skillset/manual load in v1',
-  cascade: 'Cascade hooks are blocking/audit oriented and do not expose reliable prompt context injection; use Engram skillset/manual load in v1'
+  cascade: 'Cascade hooks are blocking/audit oriented and do not expose reliable prompt context injection; use Engram skillset/manual load in v1',
+  opencode: 'no hook/event system for session-start or prompt-time context injection; use MCP tools or Engram skillset/manual load in v1'
 };
 
 /** Install or uninstall managed Engram agent hooks for one target or all known targets. */
@@ -98,6 +99,7 @@ export async function applyAgentHookAction(action: AgentHookAction, targetArg = 
 export function normalizeTarget(target: string): AgentHookHost | UnsupportedTarget {
   const lower = target.toLowerCase();
   if (lower === 'antigravity' || lower === 'antigravity-cli') return 'gemini';
+  if (lower === 'open-code') return { target: 'opencode', reason: UNSUPPORTED['opencode'] };
   if (lower === 'codex' || lower === 'claude' || lower === 'gemini') return lower;
   if (UNSUPPORTED[lower]) return { target: lower, reason: UNSUPPORTED[lower] };
   return { target: lower || 'all', reason: 'unknown agent hook target' };
@@ -106,7 +108,7 @@ export function normalizeTarget(target: string): AgentHookHost | UnsupportedTarg
 function expandTargets(target: string): string[] {
   const lower = (target || 'all').toLowerCase();
   return lower === 'all'
-    ? ['codex', 'claude', 'gemini', 'cursor', 'copilot', 'cline', 'windsurf']
+    ? ['codex', 'claude', 'gemini', 'cursor', 'copilot', 'cline', 'windsurf', 'opencode']
     : [lower];
 }
 

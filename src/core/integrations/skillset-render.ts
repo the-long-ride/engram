@@ -33,7 +33,7 @@ export function isGenerated(content: string, file = ''): boolean {
     || hasWorkspaceManagedBlock(content)
     || isLegacyFullInstructionFile(content, file)
     || (content.includes('@the-long-ride/engram') && content.includes('engram-mcp'))
-    || (content.includes('https://opencode.ai/config.json') && content.includes('.opencode/engram.md'));
+    || (content.includes('https://opencode.ai/config.json') && content.includes('.opencode/engram.md') && content.includes('"engram-mcp"'));
 }
 
 /** Detect legacy full generated instruction files (AGENTS.md, CLAUDE.md etc with full compact body). */
@@ -55,7 +55,7 @@ function isLegacyEngramSkill(content: string, file: string): boolean {
 
 export function renderSkillsetFile(target: SkillsetTarget, file: string, readMode = 'auto', profile: InstructionProfile = 'compact'): string {
   if (target === 'mcp') return mcpConfig();
-  if (target === 'opencode' && file === 'opencode.json') return opencodeConfig();
+  if (target === 'opencode' && file.endsWith('opencode.json')) return opencodeConfig();
   if (target === 'slash' && file.endsWith('.toml')) return geminiSlashCommand();
   if (target === 'slash') return slashMarkdown(file.endsWith('SKILL.md') ? 'Engram Slash Skill' : 'Engram Slash Command', file.endsWith('SKILL.md'));
   if ((target === 'agent-skill' || target === 'antigravity') && file.endsWith('SKILL.md')) return agentSkillFile(readMode);
@@ -264,7 +264,17 @@ function mcpConfig(): string {
 }
 
 function opencodeConfig(): string {
-  return `${JSON.stringify({ $schema: 'https://opencode.ai/config.json', instructions: ['.opencode/engram.md'] }, null, 2)}\n`;
+  return `${JSON.stringify({
+    $schema: 'https://opencode.ai/config.json',
+    instructions: ['.opencode/engram.md'],
+    mcp: {
+      engram: {
+        type: 'local',
+        command: ['npx', '-y', '--package', '@the-long-ride/engram', 'engram-mcp'],
+        enabled: true
+      }
+    }
+  }, null, 2)}\n`;
 }
 
 function geminiSlashCommand(): string {

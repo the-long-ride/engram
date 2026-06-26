@@ -52,6 +52,11 @@ test('install-agent-hooks plan reports supported writes, aliases, and skipped ta
   assert.equal(cursor.code, 0, cursor.stderr);
   assert.match(cursor.stdout, /WRITTEN cursor/);
   assert.match(cursor.stdout, /\.cursor[\\/]rules[\\/]engram\.mdc/);
+
+  // opencode gets skillset files but no hooks (opencode has no hook system)
+  const opencode = await runEngram(cwd, env, ['install-agent-hooks', 'opencode', '--plan']);
+  assert.equal(opencode.code, 0, opencode.stderr);
+  assert.match(opencode.stdout, /SKIPPED opencode/);
   await rm(cwd, { recursive: true, force: true });
 });
 

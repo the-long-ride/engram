@@ -128,9 +128,9 @@ without changing when full Engram memory is injected.
 | `gemini` | `GEMINI.md`; global: `~/.gemini/GEMINI.md`, `~/.gemini/skills/engram/SKILL.md`, Gemini MCP config | Gemini CLI context, including current Antigravity Gemini-compatible surfaces |
 | `cline` | `.clinerules` | Cline-style workspace rules |
 | `windsurf` | `.windsurfrules` | Windsurf workspace rules |
-| `opencode` | `opencode.json`, `.opencode/engram.md` | OpenCode custom instructions |
+| `opencode` | `opencode.json`, `.opencode/engram.md`; global: `~/.config/opencode/AGENTS.md`, `~/.config/opencode/skills/engram/SKILL.md`, OpenCode MCP config | OpenCode custom instructions, MCP tools, and custom commands |
 | `mcp` | `.mcp.json`; global: Claude and Gemini MCP config files | MCP-style JSON-lines wrapper registration |
-| `slash` | `.claude/commands/engram.md`, `.claude/skills/engram/SKILL.md`, `.cursor/commands/engram.md`, `.gemini/commands/engram.toml` | Native `/engram` slash adapters |
+| `slash` | `.claude/commands/engram.md`, `.claude/skills/engram/SKILL.md`, `.cursor/commands/engram.md`, `.gemini/commands/engram.toml`, `.opencode/commands/engram.md` | Native `/engram` slash adapters |
 
 Aliases: `codex` installs the `agents-md` adapter plus the generic Agent Skill
 file, and `open-code` maps to `opencode`. The old `antigravity` and
@@ -139,7 +139,8 @@ file, and `open-code` maps to `opencode`. The old `antigravity` and
 `engram link <target>` also installs the known MCP registration for that target
 by default. Workspace target links write `.mcp.json`; global Claude links write
 `~/.claude/mcp.json`; global Gemini and Antigravity-compatible links write the
-Gemini MCP config file.
+Gemini MCP config file; global OpenCode links write the `mcp` field into
+`~/.config/opencode/opencode.json`.
 
 ## Agent Hook Capability Matrix
 
@@ -153,6 +154,7 @@ Gemini MCP config file.
 | `copilot` | Skipped | None written | N/A | Current hooks expose session-start context but no reliable prompt-time context injection |
 | `cline` | Skipped | None written | N/A | Hook support is plugin-based, not aligned with Engram's file-first adapter installer in v1 |
 | `windsurf` / `cascade` | Skipped | None written | N/A | Cascade hooks are blocking/audit hooks, not reliable context injection hooks |
+| `opencode` | Skipped | None written | N/A | No hook/event system for session-start or prompt-time context injection; use MCP tools or Engram skillset/manual load |
 
 `engram link all` installs the public target set and reports deterministic `SKIPPED` reasons for partial hosts across skillset instruction files, MCP config, slash adapters, and agent hooks in one unified install. `engram unlink`
 removes all of these together as well.
@@ -467,7 +469,16 @@ documentation.
 OpenCode reads `AGENTS.md` rules, and it can also load reusable instruction
 files through the `instructions` field in `opencode.json`. Engram uses
 `opencode.json` so it can add its guidance without replacing a human-authored
-`AGENTS.md`.
+`AGENTS.md`. Engram also registers the Engram MCP server in `opencode.json`
+so OpenCode can use `engram_load`, `engram_search`, and other MCP tools
+directly. The `slash` target writes `.opencode/commands/engram.md` so
+`/engram <args>` becomes a native custom command in OpenCode.
+For global OpenCode installs, Engram writes the AGENTS.md managed block,
+the agent skill file, and the `mcp` field into `~/.config/opencode/opencode.json`.
+When an existing human-authored `opencode.json` already has MCP entries,
+Engram merges the `mcp.engram` entry alongside them without replacing other
+config. `engram unlink` removes only the Engram MCP entry and instruction
+reference, preserving all other `opencode.json` content.
 
 ## References
 
@@ -489,3 +500,4 @@ files through the `instructions` field in `opencode.json`. Engram uses
 - [Antigravity Agent Skills](https://antigravity.google/docs/skills)
 - [Antigravity CLI features](https://antigravity.google/docs/cli-features)
 - [OpenCode rules and custom instructions](https://opencode.ai/docs/rules/)
+- [OpenCode MCP servers](https://opencode.ai/docs/mcp-servers/)

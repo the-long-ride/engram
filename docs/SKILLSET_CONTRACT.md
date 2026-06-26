@@ -143,7 +143,8 @@ Hosts that support custom slash commands can also load generated `/engram` adapt
 - Bundle MCP registration with target-specific `link` installs whenever Engram
   knows a stable MCP config path for that target. Workspace target links write
   `.mcp.json`; global Claude links write `~/.claude/mcp.json`; global Gemini
-  and Antigravity-compatible links write the Gemini MCP config file.
+  and Antigravity-compatible links write the Gemini MCP config file; global
+  OpenCode links write the `mcp` field into `~/.config/opencode/opencode.json`.
 - Treat AI agent hooks as opt-in and narrower than skillset links. v1 may
   install hooks only for `codex`, `claude`, and `gemini` because those hosts
   expose both session-start and later prompt-turn context injection. Hook
@@ -152,9 +153,11 @@ Hosts that support custom slash commands can also load generated `/engram` adapt
 - Treat `antigravity` and `antigravity-cli` hook targets as hidden compatibility
   aliases that normalize to Gemini hook behavior and paths until stable primary
   Antigravity hook/config docs are verified.
-- For `cursor`, `copilot`, `cline`, and `windsurf`/`cascade`, hook installers
-  must return deterministic `SKIPPED` records with host-specific reasons and
-  keep those hosts instruction/skillset/manual-load driven in v1.
+- For `cursor`, `copilot`, `cline`, `windsurf`/`cascade`, and `opencode`, hook
+  installers must return deterministic `SKIPPED` records with host-specific
+  reasons and keep those hosts instruction/skillset/manual-load driven in v1.
+  OpenCode has no hook/event system; agents should use MCP tools or
+  `engram load --for-agents` for context injection.
 - For runtime-first targets (`codex`, `claude`, `cursor`, `gemini`),
   shared instruction files use the `bootstrap` profile — short instructions
   that rely on MCP tools and hooks. For fallback targets (`agents-md`,

@@ -61,7 +61,7 @@ const targets: Record<SkillsetTarget, string[]> = {
   ],
   opencode: ['opencode.json', '.opencode/engram.md'],
   mcp: ['.mcp.json'],
-  slash: ['.claude/commands/engram.md', '.claude/skills/engram/SKILL.md', '.cursor/commands/engram.md', '.gemini/commands/engram.toml']
+  slash: ['.claude/commands/engram.md', '.claude/skills/engram/SKILL.md', '.cursor/commands/engram.md', '.gemini/commands/engram.toml', '.opencode/commands/engram.md']
 };
 
 /** Map from workspace target to its companion full Engram guide file path. */
@@ -200,7 +200,27 @@ export async function refreshGeneratedWorkspaceSkillsets(cwd: string, options: {
     for (const relativeFile of targets[name]) {
       const file = path.join(cwd, relativeFile);
       const existing = await readText(file);
-      if (!existing || !isGenerated(existing, relativeFile)) continue;
+      if (!existing) continue;
+      // Migration: merge MCP into opencode.json that predates MCP support
+      if (name === 'opencode' && relativeFile === 'opencode.json' && !isGenerated(existing, relativeFile)) {
+        try {
+          const parsed = JSON.parse(existing);
+          if (parsed.$schema === 'https://opencode.ai/config.json' && parsed.instructions?.includes('.opencode/engram.md') && !parsed.mcp?.engram) {
+            const next = renderSkillsetFile(name, relativeFile, config.read, 'compact');
+            const merged = mergeOpencodeMcp(existing, next);
+            if (merged) {
+              if (options.plan) {
+                results.push({ target: name, file: relativeFile, action: 'planned' });
+              } else {
+                await writeText(file, merged);
+                results.push({ target: name, file: relativeFile, action: 'updated' });
+              }
+            }
+          }
+        } catch { /* not valid JSON, skip */ }
+        continue;
+      }
+      if (!isGenerated(existing, relativeFile)) continue;
 
       if (isInstructionFile(relativeFile)) {
         // Handle instruction file: migrate to minimal block or refresh block
@@ -288,6 +308,14 @@ export async function installGlobalSkillset(target = 'all', options: { force?: b
     }
     const existing = await readText(plan.file);
     if (plan.mode === 'file' && existing && !options.force && !isGenerated(existing, plan.file)) {
+      if (plan.renderTarget === 'opencode' && plan.file.endsWith('opencode.json')) {
+        const merged = mergeOpencodeMcp(existing, content);
+        if (merged) {
+          await writeText(plan.file, merged);
+          results.push({ target: plan.label, file: plan.file, action: 'updated', mode: plan.mode, hash: sha256(merged) });
+          continue;
+        }
+      }
       results.push({ target: plan.label, file: plan.file, action: 'skipped', mode: plan.mode, reason: 'human-authored file exists; re-run with --force to replace' });
       continue;
     }
@@ -422,7 +450,8 @@ function globalFilesForTarget(target: ResolvedTarget, home: string): GlobalInsta
       return [
         plan(path.join(home, '.claude', 'commands', 'engram.md'), 'file'),
         plan(path.join(home, '.claude', 'skills', 'engram', 'SKILL.md'), 'file'),
-        plan(path.join(home, '.gemini', 'commands', 'engram.toml'), 'file')
+        plan(path.join(home, '.gemini', 'commands', 'engram.toml'), 'file'),
+        plan(path.join(configHome, 'opencode', 'commands', 'engram.md'), 'file')
       ];
   }
 }
@@ -444,6 +473,8 @@ function globalMcpFilesForTarget(target: ResolvedTarget, home: string): GlobalIn
     case 'gemini':
     case 'antigravity':
       return [plan(path.join(configHome, 'gemini', 'mcp.json'))];
+    case 'opencode':
+      return [{ ...target, file: path.join(configHome, 'opencode', 'opencode.json'), mode: 'file', renderTarget: 'opencode' }];
     default:
       return [];
   }
@@ -464,6 +495,7 @@ function globalAgentConfigHome(home: string): string {
 function renderGlobalInstallContent(plan: GlobalInstallPlan, readMode = 'auto', profile: InstructionProfile = 'compact'): string {
   if (plan.name === 'slash' || plan.renderTarget === 'slash') return renderSkillsetFile('slash', plan.file, readMode);
   if (plan.renderTarget === 'mcp') return renderSkillsetFile('mcp', plan.file, readMode);
+  if (plan.renderTarget === 'opencode' && plan.file.endsWith('opencode.json')) return renderSkillsetFile('opencode', plan.file, readMode);
   if (plan.file.endsWith('SKILL.md')) return renderSkillsetFile(plan.renderTarget ?? 'agent-skill', plan.file, readMode);
   return globalSkillsetMarkdown(readMode, profile);
 }
@@ -523,7 +555,20 @@ export async function unlinkSkillset(cwd: string, target = 'all', force = false)
           }
         }
       } else {
-        // Non-instruction file: original behavior
+        // Non-instruction file: original behavior, with opencode.json merge-aware unlink
+        if (relativeFile === 'opencode.json') {
+          const unmerged = unmergeOpencodeMcp(existing);
+          if (unmerged !== null) {
+            if (unmerged === '') {
+              await fs.rm(file, { force: true });
+              results.push({ target: label, file: relativeFile, action: 'removed' });
+            } else {
+              await writeText(file, unmerged);
+              results.push({ target: label, file: relativeFile, action: 'cleaned' });
+            }
+            continue;
+          }
+        }
         if (!force && !isGenerated(existing, relativeFile)) {
           results.push({ target: label, file: relativeFile, action: 'skipped', reason: 'human-authored file; use --force to remove' });
           continue;
@@ -571,6 +616,19 @@ export async function unlinkGlobalSkillset(target = 'all', options: { force?: bo
           results.push({ target: current, file, action: 'cleaned' });
         }
       } else {
+        if (file.endsWith('opencode.json')) {
+          const unmerged = unmergeOpencodeMcp(existing);
+          if (unmerged !== null) {
+            if (unmerged === '') {
+              await fs.rm(file, { force: true });
+              results.push({ target: current, file, action: 'removed' });
+            } else {
+              await writeText(file, unmerged);
+              results.push({ target: current, file, action: 'cleaned' });
+            }
+            continue;
+          }
+        }
         if (!options.force && !isGenerated(existing, file)) {
           results.push({ target: current, file, action: 'skipped', reason: 'human-authored file; use --force to remove' });
           continue;
@@ -598,4 +656,36 @@ function normalizePath(file: string): string {
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function mergeOpencodeMcp(existingJson: string, newJson: string): string | null {
+  try {
+    const existing = JSON.parse(existingJson);
+    const incoming = JSON.parse(newJson);
+    if (!existing.mcp || typeof existing.mcp !== 'object') {
+      existing.mcp = {};
+    }
+    if (existing.mcp.engram) return null;
+    existing.mcp.engram = incoming.mcp.engram;
+    return `${JSON.stringify(existing, null, 2)}\n`;
+  } catch {
+    return null;
+  }
+}
+
+function unmergeOpencodeMcp(existingJson: string): string | null {
+  try {
+    const existing = JSON.parse(existingJson);
+    if (!existing.mcp || !existing.mcp.engram) return null;
+    delete existing.mcp.engram;
+    if (!Object.keys(existing.mcp).length) delete existing.mcp;
+    const instructions = Array.isArray(existing.instructions) ? existing.instructions.filter((i: string) => i !== '.opencode/engram.md') : existing.instructions;
+    if (instructions && !instructions.length) delete existing.instructions;
+    else if (instructions) existing.instructions = instructions;
+    const remaining = Object.keys(existing).filter((k) => k !== '$schema');
+    if (!remaining.length) return '';
+    return `${JSON.stringify(existing, null, 2)}\n`;
+  } catch {
+    return null;
+  }
 }

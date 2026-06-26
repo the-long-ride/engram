@@ -161,6 +161,7 @@ function skillsetHookTarget(target: string): string {
   if (target === "all" || target === "all-supported") return "all";
   if (["codex", "claude", "gemini"].includes(target)) return target;
   if (target === "antigravity" || target === "antigravity-cli") return "gemini";
+  if (["cursor", "copilot", "cline", "windsurf", "cascade", "opencode", "open-code"].includes(target)) return target;
   return "";
 }
 

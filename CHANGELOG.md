@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.0.21
+
+- Restructured memory file content for `engram load` and `engram save`.
+- Added sticky load/save for human requests so re-routed context stays active.
+- Upgraded global link targets to minimal instruction blocks for skillsets.
+- Fixed `engram link` with OpenCode and synced agent documentation.
+- Enhanced save and save-session flows for Antigravity agents.
+- Updated demo image.
+
 ## 0.0.20
 
 - Added a remote origin URL input field to the Global Git settings block in the Construct tab.

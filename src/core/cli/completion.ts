@@ -25,7 +25,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
   const globalFolderArgs = ['--move-from-path'].join(' ');
   const cloneMemoryArgs = ['workspace', 'global', '--force', '--dry-run', '--metacognize', '--accept-all'].join(' ');
   const skillsetTargets = ['all', 'list', 'agents-md', 'codex', 'copilot', 'claude', 'cursor', 'gemini', 'cline', 'windsurf', 'opencode', 'open-code', 'mcp', 'slash'].join(' ');
-  const agentHookTargets = ['all', 'codex', 'claude', 'gemini', 'cursor', 'copilot', 'cline', 'windsurf'].join(' ');
+  const agentHookTargets = ['all', 'codex', 'claude', 'gemini', 'opencode', 'cursor', 'copilot', 'cline', 'windsurf'].join(' ');
   if (shell === 'zsh') {
     return [
       '#compdef engram',
@@ -97,7 +97,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       `      _arguments "--global" "1:target:(${agentHookTargets})"`,
       '      ;;',
       '    agent-hook)',
-      '      _arguments "--host[hook host]:host:(codex claude gemini)"',
+      '      _arguments "--host[hook host]:host:(codex claude gemini opencode)"',
       '      ;;',
       '    link|is)',
       `      _arguments "--global" "--force" "1:target:(${skillsetTargets})"`,
@@ -160,7 +160,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '    "--to-profile" { break }',
       '    "--skillset" { $engramSkillsetTargets; break }',
       '    "--target" { $engramSkillsetTargets; break }',
-      '    "--host" { @(\'codex\', \'claude\', \'gemini\'); break }',
+      '    "--host" { @(\'codex\', \'claude\', \'gemini\', \'opencode\'); break }',
       '    "--format" { @(\'agents-md\', \'claude-md\', \'cursorrules\'); break }',
       '    "--file" { break }',
       '    "--role" { break }',
@@ -259,7 +259,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '      return',
       '      ;;',
     '    --host)',
-      '      COMPREPLY=( $(compgen -W "codex claude gemini" -- "$cur") )',
+      '      COMPREPLY=( $(compgen -W "codex claude gemini opencode" -- "$cur") )',
       '      return',
       '      ;;',
     '    --file|--dir)',

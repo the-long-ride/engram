@@ -333,6 +333,7 @@ import { detectInstalledAgents } from '../integrations/agent-detect.js';
 import { isGenerated } from '../integrations/skillset-render.js';
 import { readGlobalSkillsetRegistry, installSkillset, unlinkSkillset, installGlobalSkillset, unlinkGlobalSkillset, type SkillsetTarget } from '../integrations/skillset.js';
 import { applyAgentHookAction } from '../integrations/agent-hooks.js';
+import { globalAgentConfigHome } from '../integrations/agent-paths.js';
 
 export interface AgentUiInfo {
   id: string;
@@ -378,8 +379,9 @@ const TARGET_FILES: Record<string, string[]> = {
 
 function skillsetHookTarget(target: string): string {
   if (target === "all" || target === "all-supported") return "all";
-  if (["codex", "claude", "gemini"].includes(target)) return target;
+  if (["codex", "claude", "gemini", "opencode"].includes(target)) return target;
   if (target === "antigravity" || target === "antigravity-cli") return "gemini";
+  if (target === "open-code") return "opencode";
   return "";
 }
 
@@ -449,8 +451,7 @@ export async function apiAgentsScan(cwd: string): Promise<AgentUiInfo[]> {
 
 function agentPath(agentId: string): string {
   const home = homedir();
-  const xdgConfig = process.env.XDG_CONFIG_HOME ?? path.join(home, '.config');
-  const appData = process.env.APPDATA ?? path.join(home, 'AppData', 'Roaming');
+  const configHome = globalAgentConfigHome(home);
   const localAppData = process.env.LOCALAPPDATA ?? path.join(home, 'AppData', 'Local');
   const paths: Record<string, string> = {
     codex: path.join(home, '.codex'),
@@ -460,10 +461,10 @@ function agentPath(agentId: string): string {
     copilot: path.join(home, '.copilot'),
     cline: path.join(home, '.cline'),
     windsurf: path.join(localAppData, 'Programs', 'Windsurf'),
-    opencode: path.join(xdgConfig, 'opencode'),
+    opencode: path.join(configHome, 'opencode'),
     antigravity: path.join(home, '.antigravity')
   };
-  return paths[agentId] || appData;
+  return paths[agentId] || configHome;
 }
 
 export async function apiAgentLink(cwd: string, agentId: string, global: boolean): Promise<string> {

@@ -113,8 +113,9 @@ Proof visibility is separate:
 - `engram set-proof off`
 - `engram set-proof compact`
 
-With `compact`, supported hooks may append a short `Engram proof:` line showing
-whether memory was loaded, reused, or skipped.
+With `compact`, supported hooks (codex, claude, gemini, opencode) may append
+a short `Engram proof:` line showing whether memory was loaded, reused, or
+skipped.
 
 Write path and approval
 
@@ -270,11 +271,24 @@ To link Engram to a host (skillset + MCP + slash + agent hooks):
 - `engram link codex`
 - `engram link claude`
 - `engram link gemini`
+- `engram link --global opencode`
 - `engram link slash`
 - `engram link mcp`
 - `engram link --global <target>`
 
 `engram link <target>` installs skillset files, MCP config, slash adapters, and agent hooks together. Use `--plan` to preview, `--force` to overwrite. `engram unlink <target>` removes all of these together.
+
+For OpenCode, `engram link --global opencode` also installs a managed local
+JavaScript plugin at `~/.config/opencode/plugins/engram.js` (or the
+platform/config override equivalent). The plugin uses `chat.message` to route
+the current user prompt and `experimental.chat.system.transform` (an OpenCode
+experimental API) to inject routed memory before each LLM request. OpenCode
+must be restarted or reloaded after `link`/`unlink` because local plugin files
+are loaded at startup. The plugin fails open and keeps raw routed memory only
+in the running OpenCode process; Engram's disk hook cache remains hashes,
+session IDs, host, cwd, and routed signatures only. `engram unlink --global
+opencode` removes only the Engram-generated plugin; a human-authored
+`engram.js` is preserved unless `--force` is explicit.
 
 The current public Antigravity fallback is `gemini`. Hidden compatibility aliases
 may still exist, but they should not be the default public recommendation.

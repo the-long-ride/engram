@@ -30,6 +30,28 @@ import { inferTaskIntent, taskIntentQuery, intentIsActionable } from '../dist/co
 import { ensureVectorIndex } from '../dist/core/memory/vector-db.js';
 import { defaultConfig } from '../dist/core/runtime/config.js';
 import { VERSION } from '../dist/core/runtime/version.js';
+import path from 'node:path';
+import {
+  globalAgentHome,
+  globalAgentConfigHome
+} from '../dist/core/integrations/agent-paths.js';
+
+test('agent paths honor Engram home and config-home overrides', () => {
+  const previousHome = process.env.ENGRAM_AGENT_HOME;
+  const previousConfig = process.env.ENGRAM_AGENT_CONFIG_HOME;
+  try {
+    process.env.ENGRAM_AGENT_HOME = path.join(process.cwd(), 'agent-home');
+    process.env.ENGRAM_AGENT_CONFIG_HOME = path.join(process.cwd(), 'agent-config');
+    assert.equal(globalAgentHome(), path.resolve(process.env.ENGRAM_AGENT_HOME));
+    assert.equal(globalAgentConfigHome(), path.resolve(process.env.ENGRAM_AGENT_CONFIG_HOME));
+  } finally {
+    if (previousHome === undefined) delete process.env.ENGRAM_AGENT_HOME;
+    else process.env.ENGRAM_AGENT_HOME = previousHome;
+    if (previousConfig === undefined) delete process.env.ENGRAM_AGENT_CONFIG_HOME;
+    else process.env.ENGRAM_AGENT_CONFIG_HOME = previousConfig;
+  }
+});
+
 import { tempWorkspace } from './helpers.mjs';
 
 test('init wordmark can render colored or plain', () => {

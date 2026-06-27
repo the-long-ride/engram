@@ -42,7 +42,38 @@ async function hasSqlite() {
   }
 }
 
+function restoreEnv(name, value) {
+  if (value === undefined) delete process.env[name];
+  else process.env[name] = value;
+}
 
+test('web api connects and disconnects OpenCode hooks', async () => {
+  const { cwd, env } = await tempWorkspace('engram-web-opencode-');
+  const previous = {
+    agentHome: process.env.ENGRAM_AGENT_HOME,
+    configHome: process.env.ENGRAM_AGENT_CONFIG_HOME,
+    configDir: process.env.ENGRAM_CONFIG_DIR,
+    globalDir: process.env.ENGRAM_GLOBAL_DIR
+  };
+  const configHome = path.join(cwd, 'agent-config');
+  try {
+    process.env.ENGRAM_AGENT_HOME = path.join(cwd, 'agent-home');
+    process.env.ENGRAM_AGENT_CONFIG_HOME = configHome;
+    process.env.ENGRAM_CONFIG_DIR = env.ENGRAM_CONFIG_DIR;
+    process.env.ENGRAM_GLOBAL_DIR = env.ENGRAM_GLOBAL_DIR;
+    assert.match(await apiAgentLink(cwd, 'opencode', true), /Connected opencode globally/);
+    const pluginFile = path.join(configHome, 'opencode', 'plugins', 'engram.js');
+    assert.match(await readFile(pluginFile, 'utf8'), /EngramOpenCodePlugin/);
+    assert.match(await apiAgentUnlink(cwd, 'opencode', true), /Disconnected opencode globally/);
+    await assert.rejects(readFile(pluginFile, 'utf8'));
+  } finally {
+    restoreEnv('ENGRAM_AGENT_HOME', previous.agentHome);
+    restoreEnv('ENGRAM_AGENT_CONFIG_HOME', previous.configHome);
+    restoreEnv('ENGRAM_CONFIG_DIR', previous.configDir);
+    restoreEnv('ENGRAM_GLOBAL_DIR', previous.globalDir);
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
 test('web UI api workspace, profile, config handlers and entry text parser', async () => {
   const { cwd, env } = await tempWorkspace('engram-web-api-');
   
@@ -520,6 +551,5 @@ engram archive archive-me
     await rm(cwd, { recursive: true, force: true });
   }
 });
-
 
 

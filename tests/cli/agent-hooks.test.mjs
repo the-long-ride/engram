@@ -53,10 +53,13 @@ test('install-agent-hooks plan reports supported writes, aliases, and skipped ta
   assert.match(cursor.stdout, /WRITTEN cursor/);
   assert.match(cursor.stdout, /\.cursor[\\/]rules[\\/]engram\.mdc/);
 
-  // opencode gets skillset files but no hooks (opencode has no hook system)
+  // opencode gets skillset files AND a hook plugin (opencode has a plugin-based hook system)
   const opencode = await runEngram(cwd, env, ['install-agent-hooks', 'opencode', '--plan']);
   assert.equal(opencode.code, 0, opencode.stderr);
-  assert.match(opencode.stdout, /SKIPPED opencode/);
+  assert.match(opencode.stdout, /PLAN opencode/);
+  assert.match(opencode.stdout, /opencode[\\/]plugins[\\/]engram\.js/);
+  assert.match(opencode.stdout, /chat\.message, experimental\.chat\.system\.transform/);
+  assert.doesNotMatch(opencode.stdout, /SKIPPED opencode/);
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -210,6 +213,45 @@ test('agent-hook emits host-specific event names and fails open on bad input', a
   await rm(cwd, { recursive: true, force: true });
 });
 
+test('opencode runtime emits replace retain and clear directives', async () => {
+  const { cwd, env } = await tempWorkspace('engram-opencode-runtime-');
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
+  await runEngram(
+    cwd,
+    env,
+    ['save', 'knowledge', '--scope', 'workspace', 'OpenCode auth context uses routed Engram memory'],
+    'A\n'
+  );
+  await runEngram(cwd, env, ['set-read', 'auto']);
+
+  const first = await hookJson(cwd, env, ['agent-hook', '--host', 'opencode'], {
+    hook_event_name: 'UserPromptSubmit',
+    session_id: 'oc-1',
+    cwd,
+    prompt: 'OpenCode auth context'
+  });
+  assert.equal(first.engramHook.action, 'replace');
+  assert.match(additionalContext(first), /OpenCode auth context uses routed Engram memory/);
+
+  const repeated = await hookJson(cwd, env, ['agent-hook', '--host', 'opencode'], {
+    hook_event_name: 'UserPromptSubmit',
+    session_id: 'oc-1',
+    cwd,
+    prompt: 'OpenCode auth context'
+  });
+  assert.equal(repeated.engramHook.action, 'retain');
+
+  await runEngram(cwd, env, ['set-read', 'manual']);
+  const manual = await hookJson(cwd, env, ['agent-hook', '--host', 'opencode'], {
+    hook_event_name: 'UserPromptSubmit',
+    session_id: 'oc-1',
+    cwd,
+    prompt: 'OpenCode auth context'
+  });
+  assert.equal(manual.engramHook.action, 'clear');
+  await rm(cwd, { recursive: true, force: true });
+});
+
 test('install-agent-hooks for gemini/antigravity writes matcher as * for SessionStart and BeforeAgent', async () => {
   const { cwd, env } = await tempWorkspace('engram-agent-hooks-gemini-');
   const geminiDir = path.join(cwd, '.gemini');
@@ -223,5 +265,154 @@ test('install-agent-hooks for gemini/antigravity writes matcher as * for Session
   const installed = JSON.parse(await readFile(file, 'utf8'));
   assert.equal(installed.hooks.SessionStart[0].matcher, '*');
   assert.equal(installed.hooks.BeforeAgent[0].matcher, '*');
+  await rm(cwd, { recursive: true, force: true });
+});
+
+import {
+  OPENCODE_HOOK_PLUGIN_MARKER,
+  renderOpenCodeHookPlugin
+} from '../../dist/core/integrations/opencode-hook-plugin.js';
+
+test('generated opencode plugin routes prompts and injects retained context', async () => {
+  const source = renderOpenCodeHookPlugin();
+  assert.match(source, new RegExp(OPENCODE_HOOK_PLUGIN_MARKER.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  const moduleUrl = `data:text/javascript;base64,${Buffer.from(source).toString('base64')}`;
+  const pluginModule = await import(moduleUrl);
+
+  const payloads = [];
+  const responses = [
+    { engramHook: { action: 'replace' }, hookSpecificOutput: { additionalContext: 'startup-context' } },
+    { engramHook: { action: 'retain' } },
+    { engramHook: { action: 'replace' }, hookSpecificOutput: { additionalContext: 'next-context' } },
+    { engramHook: { action: 'clear' } }
+  ];
+  const fakeShell = (strings, ...values) => ({
+    nothrow() { return this; },
+    async quiet() {
+      assert.match(strings.join(''), /engram agent-hook --host opencode/);
+      payloads.push(JSON.parse(await values[0].text()));
+      return {
+        exitCode: 0,
+        stdout: Buffer.from(JSON.stringify(responses.shift())),
+        stderr: Buffer.alloc(0)
+      };
+    }
+  });
+
+  const hooks = await pluginModule.EngramOpenCodePlugin({
+    directory: '/workspace/demo',
+    $: fakeShell
+  });
+  await hooks['chat.message'](
+    { sessionID: 'session-1' },
+    { parts: [{ type: 'text', text: 'first prompt' }] }
+  );
+  assert.deepEqual(payloads.map((item) => item.hook_event_name), ['SessionStart', 'UserPromptSubmit']);
+
+  const firstSystem = { system: [] };
+  await hooks['experimental.chat.system.transform']({ sessionID: 'session-1' }, firstSystem);
+  assert.deepEqual(firstSystem.system, ['startup-context']);
+
+  await hooks['chat.message'](
+    { sessionID: 'session-1' },
+    { parts: [{ type: 'text', text: 'next prompt' }] }
+  );
+  const nextSystem = { system: [] };
+  await hooks['experimental.chat.system.transform']({ sessionID: 'session-1' }, nextSystem);
+  assert.deepEqual(nextSystem.system, ['next-context']);
+
+  await hooks['chat.message'](
+    { sessionID: 'session-1' },
+    { parts: [{ type: 'text', text: 'manual mode' }] }
+  );
+  const clearedSystem = { system: [] };
+  await hooks['experimental.chat.system.transform']({ sessionID: 'session-1' }, clearedSystem);
+  assert.deepEqual(clearedSystem.system, []);
+
+  await hooks.event({
+    event: { type: 'session.deleted', properties: { info: { id: 'session-1' } } }
+  });
+});
+
+test('generated opencode plugin fails open on command and JSON errors', async () => {
+  const source = renderOpenCodeHookPlugin();
+  const moduleUrl = `data:text/javascript;base64,${Buffer.from(source).toString('base64')}`;
+  const pluginModule = await import(moduleUrl);
+  const replies = [
+    { exitCode: 0, stdout: JSON.stringify({
+      engramHook: { action: 'replace' },
+      hookSpecificOutput: { additionalContext: 'stable-context' }
+    }) },
+    { exitCode: 0, stdout: JSON.stringify({ engramHook: { action: 'retain' } }) },
+    { exitCode: 1, stdout: '' },
+    { exitCode: 0, stdout: '{invalid json' }
+  ];
+  const fakeShell = () => ({
+    nothrow() { return this; },
+    async quiet() {
+      const reply = replies.shift();
+      return {
+        exitCode: reply.exitCode,
+        stdout: Buffer.from(reply.stdout),
+        stderr: Buffer.alloc(0)
+      };
+    }
+  });
+  const hooks = await pluginModule.EngramOpenCodePlugin({ directory: '/workspace/demo', $: fakeShell });
+  await hooks['chat.message']({ sessionID: 'session-2' }, { parts: [{ type: 'text', text: 'seed' }] });
+  await assert.doesNotReject(
+    hooks['chat.message']({ sessionID: 'session-2' }, { parts: [{ type: 'text', text: 'command fails' }] })
+  );
+  await assert.doesNotReject(
+    hooks['chat.message']({ sessionID: 'session-2' }, { parts: [{ type: 'text', text: 'JSON fails' }] })
+  );
+  const output = { system: [] };
+  await hooks['experimental.chat.system.transform']({ sessionID: 'session-2' }, output);
+  assert.deepEqual(output.system, ['stable-context']);
+});
+
+test('global opencode link installs and unlinks the managed plugin', async () => {
+  const { cwd, env } = await tempWorkspace('engram-opencode-global-');
+  const agentHome = path.join(cwd, 'agent-home');
+  const configHome = path.join(cwd, 'agent-config');
+  const globalEnv = {
+    ...env,
+    ENGRAM_AGENT_HOME: agentHome,
+    ENGRAM_AGENT_CONFIG_HOME: configHome
+  };
+  const pluginFile = path.join(configHome, 'opencode', 'plugins', 'engram.js');
+
+  const linked = await runEngram(cwd, globalEnv, ['link', '--global', 'opencode']);
+  assert.equal(linked.code, 0, linked.stderr);
+  assert.match(linked.stdout, /UPDATED opencode/);
+  assert.match(await readFile(pluginFile, 'utf8'), /EngramOpenCodePlugin/);
+
+  const unlinked = await runEngram(cwd, globalEnv, ['unlink', '--global', 'opencode']);
+  assert.equal(unlinked.code, 0, unlinked.stderr);
+  assert.match(unlinked.stdout, /REMOVED opencode/);
+  await assert.rejects(readFile(pluginFile, 'utf8'));
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('opencode link preserves a human plugin unless force is explicit', async () => {
+  const { cwd, env } = await tempWorkspace('engram-opencode-human-');
+  const configHome = path.join(cwd, 'agent-config');
+  const globalEnv = {
+    ...env,
+    ENGRAM_AGENT_HOME: path.join(cwd, 'agent-home'),
+    ENGRAM_AGENT_CONFIG_HOME: configHome
+  };
+  const pluginFile = path.join(configHome, 'opencode', 'plugins', 'engram.js');
+  await mkdir(path.dirname(pluginFile), { recursive: true });
+  await writeFile(pluginFile, 'export const HumanPlugin = async () => ({})\n');
+
+  const skipped = await runEngram(cwd, globalEnv, ['link', '--global', 'opencode']);
+  assert.equal(skipped.code, 0, skipped.stderr);
+  assert.match(skipped.stdout, /SKIPPED opencode/);
+  assert.match(await readFile(pluginFile, 'utf8'), /HumanPlugin/);
+
+  const forced = await runEngram(cwd, globalEnv, ['link', '--global', 'opencode', '--force']);
+  assert.equal(forced.code, 0, forced.stderr);
+  assert.match(await readFile(pluginFile, 'utf8'), /EngramOpenCodePlugin/);
   await rm(cwd, { recursive: true, force: true });
 });

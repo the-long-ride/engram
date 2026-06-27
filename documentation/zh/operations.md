@@ -31,7 +31,7 @@
 | 配置加载上限 | `engram set-load-limit 1..32\|status\|reset` |
 | 配置自动 Hook 读取 | `engram set-read startup\|auto\|always\|manual\|off\|status` |
 | 配置证明行显示 | `engram set-proof off\|compact\|status` |
-| 安装智能体 Hooks | `engram link codex\|claude\|gemini` |
+| 安装智能体 Hooks | `engram link codex\|claude\|gemini\|opencode` |
 | 管理全局隔离配置文件 | `engram profile status\|create\|use\|merge` |
 | 克隆工作区/全局内存 | `engram clone-memory workspace global [--metacognize]` |
 

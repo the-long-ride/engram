@@ -30,7 +30,7 @@ Trang này chứa thông tin chi tiết về cách sử dụng để tệp READM
 | Đặt giới hạn tải gọn | `engram set-load-limit 1..32\|status\|reset` |
 | Cấu hình tự động đọc qua hook | `engram set-read startup\|auto\|always\|manual\|off\|status` |
 | Cấu hình hiển thị bằng chứng | `engram set-proof off\|compact\|status` |
-| Cài hook tác nhân | `engram link codex\|claude\|gemini` |
+| Cài hook tác nhân | `engram link codex\|claude\|gemini\|opencode` |
 | Quản lý profile global | `engram profile status\|create\|use\|merge` |
 | Sao chép bộ nhớ workspace/global | `engram clone-memory workspace global [--metacognize]` |
 

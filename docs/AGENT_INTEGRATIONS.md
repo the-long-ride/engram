@@ -154,7 +154,7 @@ Gemini MCP config file; global OpenCode links write the `mcp` field into
 | `copilot` | Skipped | None written | N/A | Current hooks expose session-start context but no reliable prompt-time context injection |
 | `cline` | Skipped | None written | N/A | Hook support is plugin-based, not aligned with Engram's file-first adapter installer in v1 |
 | `windsurf` / `cascade` | Skipped | None written | N/A | Cascade hooks are blocking/audit hooks, not reliable context injection hooks |
-| `opencode` | Skipped | None written | N/A | No hook/event system for session-start or prompt-time context injection; use MCP tools or Engram skillset/manual load |
+| `opencode` | Supported via local plugin | `~/.config/opencode/plugins/engram.js` | `chat.message`, `experimental.chat.system.transform` | Plugin-based hook system; uses `chat.message` to route prompt and `experimental.chat.system.transform` (OpenCode experimental API) to inject routed memory before each LLM request |
 
 `engram link all` installs the public target set and reports deterministic `SKIPPED` reasons for partial hosts across skillset instruction files, MCP config, slash adapters, and agent hooks in one unified install. `engram unlink`
 removes all of these together as well.
@@ -477,8 +477,17 @@ For global OpenCode installs, Engram writes the AGENTS.md managed block,
 the agent skill file, and the `mcp` field into `~/.config/opencode/opencode.json`.
 When an existing human-authored `opencode.json` already has MCP entries,
 Engram merges the `mcp.engram` entry alongside them without replacing other
-config. `engram unlink` removes only the Engram MCP entry and instruction
-reference, preserving all other `opencode.json` content.
+config.
+`engram link --global opencode` also installs a managed local JavaScript
+plugin at `~/.config/opencode/plugins/engram.js` (or the platform/config
+override equivalent). The plugin uses `chat.message` to route the current user
+prompt and `experimental.chat.system.transform` to inject routed memory before
+each LLM request. OpenCode must be restarted or reloaded after `link`/`unlink`
+because local plugin files are loaded at startup. The plugin fails open and
+keeps raw routed memory only in the running OpenCode process; Engram's disk
+hook cache remains hashes, session IDs, host, cwd, and routed signatures only.
+`engram unlink --global opencode` removes only the Engram-generated plugin; a
+human-authored `engram.js` is preserved unless `--force` is explicit.
 
 ## References
 

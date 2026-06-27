@@ -31,6 +31,18 @@ type HookProof = {
   reason?: HookSkipReason;
 };
 
+type OpenCodeHookAction = 'replace' | 'retain' | 'clear';
+
+function hostOutput(
+  host: AgentHookHost,
+  output: Record<string, any>,
+  action: OpenCodeHookAction
+): Record<string, any> {
+  return host === 'opencode'
+    ? { ...output, engramHook: { action } }
+    : output;
+}
+
 const CACHE_FILE = 'agent-hook-cache.json';
 
 /** Run the hook and return stdout JSON. Errors fail open with an empty object. */
@@ -51,15 +63,21 @@ async function computeHookOutput(host: AgentHookHost, payload: HookPayload, cwd:
   const config = await loadConfig(cwd);
   const configMode = config.read;
   const proofMode = config.proof;
-  if (configMode === 'manual') return proofOnlyOutput(event, proofMode, skippedProof(configMode, 'manual'));
-  if (configMode === 'off') return proofOnlyOutput(event, proofMode, skippedProof(configMode, 'off'));
+  if (configMode === 'manual') {
+    return hostOutput(host, proofOnlyOutput(event, proofMode, skippedProof(configMode, 'manual')), 'clear');
+  }
+  if (configMode === 'off') {
+    return hostOutput(host, proofOnlyOutput(event, proofMode, skippedProof(configMode, 'off')), 'clear');
+  }
   if (configMode === 'startup' && event !== 'SessionStart') {
-    return proofOnlyOutput(event, proofMode, skippedProof(configMode, 'startup-only'));
+    return hostOutput(host, proofOnlyOutput(event, proofMode, skippedProof(configMode, 'startup-only')), 'retain');
   }
 
   const query = queryText(payload, event);
   const context = await cmdLoad([query], { 'for-agents': true });
-  if (!context.trim()) return proofOnlyOutput(event, proofMode, skippedProof(configMode, 'no-context'));
+  if (!context.trim()) {
+    return hostOutput(host, proofOnlyOutput(event, proofMode, skippedProof(configMode, 'no-context')), 'retain');
+  }
 
   const signature = sha256(context);
   const counts = loadCounts(context);
@@ -81,9 +99,10 @@ async function computeHookOutput(host: AgentHookHost, payload: HookPayload, cwd:
   const proof: HookProof = shouldInject
     ? { mode: proofMode, decision: 'loaded', readMode: configMode, selectedCount: counts.selected, relatedCount: counts.related, signature: shortSignature(signature) }
     : { mode: proofMode, decision: 'reused', readMode: configMode, selectedCount: counts.selected, relatedCount: counts.related, signature: shortSignature(signature) };
-  return shouldInject
+  const output = shouldInject
     ? contextOutput(event, context, proof)
     : proofOnlyOutput(event, proofMode, proof);
+  return hostOutput(host, output, shouldInject ? 'replace' : 'retain');
 }
 
 function contextOutput(event: string, context: string, proof: HookProof): Record<string, any> {

@@ -162,10 +162,11 @@ engram link gemini
 engram link codex
 engram link claude
 engram link gemini
+engram link --global opencode
 engram set-read auto
 engram set-proof compact
 ```
-v1 钩子安装仅限于 `codex`、`claude` 和 `gemini`。Antigravity 的兼容性目前通过 `gemini` 进行路由；Cursor、Copilot、Cline 和 Windsurf/Cascade 仍由指令/技能集/手动加载驱动，直到它们的钩子表面支持在提示时进行可靠的上下文注入。
+v1 钩子安装可用于 `codex`、`claude`、`gemini` 和 `opencode`。Antigravity 的兼容性目前通过 `gemini` 进行路由；Cursor、Copilot、Cline 和 Windsurf/Cascade 仍由指令/技能集/手动加载驱动，直到它们的钩子表面支持在提示时进行可靠的上下文注入。
 当您希望支持的钩子在每个符合条件的轮次中追加一行简短的 `Engram proof:`，以显示 Engram 内存是被加载、重用还是跳过，而不改变 `set-read` 的注入行为时，请使用 `engram set-proof compact`。
 
 
@@ -225,7 +226,7 @@ engram entry
 | **配置加载上限** | `engram set-load-limit <1..32>` | `/engram set-load-limit <count>` |
 | **配置自动读取** | `engram set-read startup|auto|always|manual|off` | `/engram set-read auto` |
 | **配置证明显示** | `engram set-proof off|compact` | `/engram set-proof compact` |
-| **安装智能体 Hooks** | `engram link codex|claude|gemini` | 在终端执行一次 |
+| **安装智能体 Hooks** | `engram link codex|claude|gemini|opencode` | 在终端执行一次 |
 | **更新全局路径** | `engram update-global-folder <新路径>` | `/engram set global memory path to <new-path>` |
 | **复制内存文件** | `engram clone-memory <源> <目的>` | `/engram clone workspace memory to global` |
 | **设定开发角色** | `engram set-role <角色列表>` | `/engram set-role <roles>` |

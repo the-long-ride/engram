@@ -174,13 +174,27 @@ session start and later prompt turns:
 engram link codex
 engram link claude
 engram link gemini
+engram link --global opencode
 engram set-read auto
 engram set-proof compact
 ```
-v1 hook installs are limited to `codex`, `claude`, and `gemini`. Antigravity
-compatibility currently routes through `gemini`; Cursor, Copilot, Cline, and
-Windsurf/Cascade remain instruction/skillset/manual-load driven until their
-hook surfaces support reliable prompt-time context injection.
+
+**OpenCode hook support:** `engram link --global opencode` installs a managed local
+JavaScript plugin at `~/.config/opencode/plugins/engram.js` (or the
+platform/config override equivalent) alongside rules, the Engram skill, and MCP
+configuration. The plugin uses `chat.message` to route the current user prompt
+and `experimental.chat.system.transform` to inject routed memory before each
+LLM request. OpenCode must be restarted or reloaded after `link`/`unlink`
+because local plugin files are loaded at startup. The plugin fails open and
+keeps raw routed memory only in the running OpenCode process; Engram's disk hook
+cache remains hashes, session IDs, host, cwd, and routed signatures only.
+`engram unlink --global opencode` removes only the Engram-generated plugin; a
+human-authored `engram.js` is preserved unless `--force` is explicit.
+
+v1 hook installs are available for `codex`, `claude`, `gemini`, and `opencode`.
+Antigravity compatibility currently routes through `gemini`; Cursor, Copilot,
+Cline, and Windsurf/Cascade remain instruction/skillset/manual-load driven until
+their hook surfaces support reliable prompt-time context injection.
 Use `engram set-proof compact` when you want supported hooks to append a short
 `Engram proof:` line on each eligible turn showing whether Engram memory was
 loaded, reused, or skipped without changing `set-read` injection behavior.
@@ -231,7 +245,7 @@ When an AI agent proposes `TYPE: ... | TEXT: ...` memory candidates, it may add 
 | **Configure Load Limit** | `engram set-load-limit <1..32>` | `/engram set-load-limit <count>` |
 | **Configure Auto Read** | `engram set-read startup|auto|always|manual|off` | `/engram set-read auto` |
 | **Configure Proof Visibility** | `engram set-proof off|compact` | `/engram set-proof compact` |
-| **Install Agent Hooks** | `engram link codex|claude|gemini` | Run once from terminal |
+| **Install Agent Hooks** | `engram link codex|claude|gemini|opencode` | Run once from terminal |
 | **Update Global Path** | `engram update-global-folder <new-path>` | `/engram set global memory path to <new-path>` |
 | **Clone Memory** | `engram clone-memory <src> <dest>` | `/engram clone workspace memory to global` |
 | **Manage Workspaces** | `engram workspace list|info|set|unregister|link|unlink` | `/engram workspace list` |

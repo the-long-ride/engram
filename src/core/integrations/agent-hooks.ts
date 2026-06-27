@@ -1,18 +1,34 @@
 /** Agent hook adapter metadata and managed JSON merge helpers. */
 import path from 'node:path';
-import { homedir } from 'node:os';
+import fs from 'node:fs/promises';
 import { formatRecords, type RecordBlock } from '../cli/format.js';
-import { exists, readJson, writeJson } from '../system/fsx.js';
+import { globalAgentHome, globalAgentConfigHome } from './agent-paths.js';
+import {
+  isGeneratedOpenCodeHookPlugin,
+  renderOpenCodeHookPlugin
+} from './opencode-hook-plugin.js';
+import { exists, readJson, readText, writeJson, writeText } from '../system/fsx.js';
 
-export type AgentHookHost = 'codex' | 'claude' | 'gemini';
+export type AgentHookHost = 'codex' | 'claude' | 'gemini' | 'opencode';
 export type AgentHookAction = 'install' | 'uninstall';
 
-type HookTarget = {
-  host: AgentHookHost;
+type JsonHookTarget = {
+  kind: 'json';
+  host: Exclude<AgentHookHost, 'opencode'>;
   configFile: string;
-  globalFile: string;
+  globalFile: () => string;
   events: string[];
 };
+
+type PluginHookTarget = {
+  kind: 'plugin';
+  host: 'opencode';
+  configFile: string;
+  globalFile: () => string;
+  events: string[];
+};
+
+type HookTarget = JsonHookTarget | PluginHookTarget;
 
 type UnsupportedTarget = {
   target: string;
@@ -32,22 +48,32 @@ const TIMEOUT_MS = 10000;
 
 const TARGETS: Record<AgentHookHost, HookTarget> = {
   codex: {
+    kind: 'json',
     host: 'codex',
     configFile: path.join('.codex', 'hooks.json'),
-    globalFile: path.join(homedir(), '.codex', 'hooks.json'),
+    globalFile: () => path.join(globalAgentHome(), '.codex', 'hooks.json'),
     events: ['SessionStart', 'UserPromptSubmit']
   },
   claude: {
+    kind: 'json',
     host: 'claude',
     configFile: path.join('.claude', 'settings.json'),
-    globalFile: path.join(homedir(), '.claude', 'settings.json'),
+    globalFile: () => path.join(globalAgentHome(), '.claude', 'settings.json'),
     events: ['SessionStart', 'UserPromptSubmit']
   },
   gemini: {
+    kind: 'json',
     host: 'gemini',
     configFile: path.join('.gemini', 'settings.json'),
-    globalFile: path.join(homedir(), '.gemini', 'settings.json'),
+    globalFile: () => path.join(globalAgentHome(), '.gemini', 'settings.json'),
     events: ['SessionStart', 'BeforeAgent']
+  },
+  opencode: {
+    kind: 'plugin',
+    host: 'opencode',
+    configFile: path.join('.opencode', 'plugins', 'engram.js'),
+    globalFile: () => path.join(globalAgentConfigHome(), 'opencode', 'plugins', 'engram.js'),
+    events: ['chat.message', 'experimental.chat.system.transform']
   }
 };
 
@@ -56,8 +82,7 @@ const UNSUPPORTED: Record<string, string> = {
   copilot: 'partial hook support: sessionStart can inject context, but userPromptSubmitted does not provide prompt-time context injection; use Engram skillset/manual load in v1',
   cline: 'plugin-based hook support is real, but install UX is not file-first; use Engram skillset/manual load in v1',
   windsurf: 'Cascade hooks are blocking/audit oriented and do not expose reliable prompt context injection; use Engram skillset/manual load in v1',
-  cascade: 'Cascade hooks are blocking/audit oriented and do not expose reliable prompt context injection; use Engram skillset/manual load in v1',
-  opencode: 'no hook/event system for session-start or prompt-time context injection; use MCP tools or Engram skillset/manual load in v1'
+  cascade: 'Cascade hooks are blocking/audit oriented and do not expose reliable prompt context injection; use Engram skillset/manual load in v1'
 };
 
 /** Install or uninstall managed Engram agent hooks for one target or all known targets. */
@@ -70,9 +95,15 @@ export async function applyAgentHookAction(action: AgentHookAction, targetArg = 
       continue;
     }
     const meta = TARGETS[normalized];
-    const file = options.global ? meta.globalFile : path.join(options.cwd ?? process.cwd(), meta.configFile);
+    const file = options.global
+      ? meta.globalFile()
+      : path.join(options.cwd ?? process.cwd(), meta.configFile);
     if (options.plan) {
       results.push({ status: 'PLAN', host: meta.host, file, events: meta.events });
+      continue;
+    }
+    if (meta.kind === 'plugin') {
+      results.push(await applyOpenCodePlugin(action, meta, file, Boolean(options.force)));
       continue;
     }
     if (action === 'uninstall' && !(await exists(file))) {
@@ -99,8 +130,8 @@ export async function applyAgentHookAction(action: AgentHookAction, targetArg = 
 export function normalizeTarget(target: string): AgentHookHost | UnsupportedTarget {
   const lower = target.toLowerCase();
   if (lower === 'antigravity' || lower === 'antigravity-cli') return 'gemini';
-  if (lower === 'open-code') return { target: 'opencode', reason: UNSUPPORTED['opencode'] };
-  if (lower === 'codex' || lower === 'claude' || lower === 'gemini') return lower;
+  if (lower === 'open-code') return 'opencode';
+  if (lower === 'codex' || lower === 'claude' || lower === 'gemini' || lower === 'opencode') return lower;
   if (UNSUPPORTED[lower]) return { target: lower, reason: UNSUPPORTED[lower] };
   return { target: lower || 'all', reason: 'unknown agent hook target' };
 }
@@ -112,7 +143,7 @@ function expandTargets(target: string): string[] {
     : [lower];
 }
 
-function mergeManagedHooks(config: Record<string, any>, meta: HookTarget, force: boolean): boolean {
+function mergeManagedHooks(config: Record<string, any>, meta: JsonHookTarget, force: boolean): boolean {
   config.hooks = isObject(config.hooks) ? config.hooks : {};
   let changed = false;
   for (const event of meta.events) {
@@ -128,7 +159,7 @@ function mergeManagedHooks(config: Record<string, any>, meta: HookTarget, force:
   return changed;
 }
 
-function unmergeManagedHooks(config: Record<string, any>, meta: HookTarget): boolean {
+function unmergeManagedHooks(config: Record<string, any>, meta: JsonHookTarget): boolean {
   if (!isObject(config.hooks)) return false;
   let changed = false;
   for (const event of meta.events) {
@@ -175,6 +206,48 @@ function managedHook(host: AgentHookHost): Record<string, any> {
 
 function managedCommand(host: AgentHookHost): string {
   return `engram agent-hook --host ${host}`;
+}
+
+async function applyOpenCodePlugin(
+  action: AgentHookAction,
+  meta: PluginHookTarget,
+  file: string,
+  force: boolean
+): Promise<AgentHookResult> {
+  const existing = await readText(file);
+  if (action === 'install') {
+    if (existing && !force && !isGeneratedOpenCodeHookPlugin(existing)) {
+      return {
+        status: 'SKIPPED',
+        host: meta.host,
+        file,
+        events: meta.events,
+        reason: 'human-authored plugin exists; use --force to replace'
+      };
+    }
+    await writeText(file, renderOpenCodeHookPlugin());
+    return { status: 'UPDATED', host: meta.host, file, events: meta.events };
+  }
+  if (!existing) {
+    return {
+      status: 'SKIPPED',
+      host: meta.host,
+      file,
+      events: meta.events,
+      reason: 'plugin file not found'
+    };
+  }
+  if (!force && !isGeneratedOpenCodeHookPlugin(existing)) {
+    return {
+      status: 'SKIPPED',
+      host: meta.host,
+      file,
+      events: meta.events,
+      reason: 'human-authored plugin; use --force to remove'
+    };
+  }
+  await fs.rm(file, { force: true });
+  return { status: 'REMOVED', host: meta.host, file, events: meta.events };
 }
 
 function resultRecord(result: AgentHookResult): RecordBlock {

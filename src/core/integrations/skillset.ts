@@ -1,7 +1,6 @@
 /** Agent-host adapter files that let Engram behave as a portable skillset. */
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { homedir, platform } from 'node:os';
 import { VERSION } from '../runtime/constants.js';
 import { loadConfig, userConfigDir } from '../runtime/config.js';
 import { sha256 } from '../safety/hash.js';
@@ -17,6 +16,7 @@ import {
   upsertWorkspaceManagedBlock
 } from './skillset-render.js';
 import type { InstructionProfile } from './skillset-render.js';
+import { globalAgentHome, globalAgentConfigHome } from './agent-paths.js';
 import { resolveAllTargets, allSupportedTargets } from './agent-detect.js';
 
 export type SkillsetTarget =
@@ -478,18 +478,6 @@ function globalMcpFilesForTarget(target: ResolvedTarget, home: string): GlobalIn
     default:
       return [];
   }
-}
-
-function globalAgentHome(): string {
-  const configured = process.env.ENGRAM_AGENT_HOME?.trim();
-  return configured ? path.resolve(configured) : homedir();
-}
-
-function globalAgentConfigHome(home: string): string {
-  const configured = process.env.ENGRAM_AGENT_CONFIG_HOME?.trim() || process.env.XDG_CONFIG_HOME?.trim();
-  if (configured) return path.resolve(configured);
-  if (!process.env.ENGRAM_AGENT_HOME?.trim() && platform() === 'win32' && process.env.APPDATA?.trim()) return path.resolve(process.env.APPDATA);
-  return path.join(home, '.config');
 }
 
 function renderGlobalInstallContent(plan: GlobalInstallPlan, readMode = 'auto', profile: InstructionProfile = 'compact'): string {

@@ -162,10 +162,11 @@ engram link gemini
 engram link codex
 engram link claude
 engram link gemini
+engram link --global opencode
 engram set-read auto
 engram set-proof compact
 ```
-Установка хуков v1 ограничена `codex`, `claude` и `gemini`. Совместимость с Antigravity в настоящее время маршрутизируется через `gemini`; Cursor, Copilot, Cline и Windsurf/Cascade остаются управляемыми через инструкции/набор навыков/ручную загрузку до тех пор, пока поверхности их хуков не станут поддерживать надежное внедрение контекста во время промпта.
+Установка хуков v1 доступна для `codex`, `claude`, `gemini` и `opencode`. Совместимость с Antigravity в настоящее время маршрутизируется через `gemini`; Cursor, Copilot, Cline и Windsurf/Cascade остаются управляемыми через инструкции/набор навыков/ручную загрузку до тех пор, пока поверхности их хуков не станут поддерживать надежное внедрение контекста во время промпта.
 Используйте `engram set-proof compact`, если вы хотите, чтобы поддерживаемые хуки добавляли короткую строку `Engram proof:` при каждом подходящем ходе, показывая, была ли память Engram загружена, повторно использована или пропущена, без изменения поведения внедрения `set-read`.
 
 
@@ -225,7 +226,7 @@ engram entry
 | **Лимит загрузки** | `engram set-load-limit <1..32>` | `/engram set-load-limit <count>` |
 | **Настроить Авточтение** | `engram set-read startup|auto|always|manual|off` | `/engram set-read auto` |
 | **Показ Доказательства** | `engram set-proof off|compact` | `/engram set-proof compact` |
-| **Установить Хуки Агента** | `engram link codex|claude|gemini` | Один раз запустить в терминале |
+| **Установить Хуки Агента** | `engram link codex|claude|gemini|opencode` | Один раз запустить в терминале |
 | **Путь к глобальной памяти** | `engram update-global-folder <новый-путь>` | `/engram set global memory path to <new-path>` |
 | **Клонирование памяти** | `engram clone-memory <источник> <цель>` | `/engram clone workspace memory to global` |
 | **Назначение роли** | `engram set-role <роли>` | `/engram set-role <roles>` |

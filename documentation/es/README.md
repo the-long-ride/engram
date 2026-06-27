@@ -162,10 +162,11 @@ Los hooks de carga automática opcionales están disponibles para hosts que pued
 engram link codex
 engram link claude
 engram link gemini
+engram link --global opencode
 engram set-read auto
 engram set-proof compact
 ```
-Las instalaciones de hooks v1 están limitadas a `codex`, `claude` y `gemini`. La compatibilidad con Antigravity actualmente se enruta a través de `gemini`; Cursor, Copilot, Cline y Windsurf/Cascade siguen siendo impulsados por instrucciones/skillset/carga manual hasta que sus superficies de hook admitan una inyección de contexto confiable en el momento del prompt.
+Las instalaciones de hooks v1 están disponibles para `codex`, `claude`, `gemini` y `opencode`. La compatibilidad con Antigravity actualmente se enruta a través de `gemini`; Cursor, Copilot, Cline y Windsurf/Cascade siguen siendo impulsados por instrucciones/skillset/carga manual hasta que sus superficies de hook admitan una inyección de contexto confiable en el momento del prompt.
 Use `engram set-proof compact` cuando desee que los hooks compatibles agreguen una línea corta `Engram proof:` en cada turno elegible para mostrar si la memoria de Engram fue cargada, reutilizada o omitida sin cambiar el comportamiento de inyección de `set-read`.
 
 
@@ -225,7 +226,7 @@ Cuando un agente de IA propone candidatos a memoria con formato `TYPE: ... | TEX
 | **Límite de Tải** | `engram set-load-limit <1..32>` | `/engram set-load-limit <count>` |
 | **Configurar Lectura Automática** | `engram set-read startup|auto|always|manual|off` | `/engram set-read auto` |
 | **Visibilidad de Prueba** | `engram set-proof off|compact` | `/engram set-proof compact` |
-| **Instalar Hooks del Agente** | `engram link codex|claude|gemini` | Ejecutar una vez desde terminal |
+| **Instalar Hooks del Agente** | `engram link codex|claude|gemini|opencode` | Ejecutar una vez desde terminal |
 | **Actualizar Ruta Global** | `engram update-global-folder <nueva-ruta>` | `/engram set global memory path to <new-path>` |
 | **Clonar Memoria** | `engram clone-memory <origen> <destino>` | `/engram clone workspace memory to global` |
 | **Establecer Roles** | `engram set-role <roles>` | `/engram set-role <roles>` |

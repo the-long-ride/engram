@@ -31,7 +31,7 @@ This page holds detailed usage so the README can stay short.
 | Set compact load limit | `engram set-load-limit 1..32\|status\|reset` |
 | Set automatic hook reads | `engram set-read startup\|auto\|always\|manual\|off\|status` |
 | Set hook proof visibility | `engram set-proof off\|compact\|status` |
-| Install agent hooks | `engram link codex\|claude\|gemini\|opencode` |
+| Install agent hooks | `engram link codex\|claude\|gemini\|opencode\|cursor\|windsurf` |
 | Manage global profiles | `engram profile status\|create\|use\|merge` |
 | Clone workspace/global memory | `engram clone-memory workspace global [--metacognize]` |
 

@@ -174,6 +174,8 @@ session start and later prompt turns:
 engram link codex
 engram link claude
 engram link gemini
+engram link cursor
+engram link windsurf
 engram link --global opencode
 engram set-read auto
 engram set-proof compact
@@ -191,10 +193,14 @@ cache remains hashes, session IDs, host, cwd, and routed signatures only.
 `engram unlink --global opencode` removes only the Engram-generated plugin; a
 human-authored `engram.js` is preserved unless `--force` is explicit.
 
-v1 hook installs are available for `codex`, `claude`, `gemini`, and `opencode`.
-Antigravity compatibility currently routes through `gemini`; Cursor, Copilot,
-Cline, and Windsurf/Cascade remain instruction/skillset/manual-load driven until
-their hook surfaces support reliable prompt-time context injection.
+v1 hook installs are available for `codex`, `claude`, `gemini`, `opencode`,
+`cursor`, and `windsurf`/`cascade`. Antigravity compatibility currently routes
+through `gemini`. Cursor hooks inject startup context via `sessionStart` and
+`additional_context`; `beforeSubmitPrompt` is allow/block-only, not context
+injection. Windsurf/Cascade hooks can audit/preload/block on `pre_user_prompt`
+but cannot inject model context; rules and MCP provide the reliable AI context
+channels. Copilot and Cline remain instruction/skillset/manual-load driven
+until their hook surfaces support reliable prompt-time context injection.
 Use `engram set-proof compact` when you want supported hooks to append a short
 `Engram proof:` line on each eligible turn showing whether Engram memory was
 loaded, reused, or skipped without changing `set-read` injection behavior.
@@ -245,7 +251,7 @@ When an AI agent proposes `TYPE: ... | TEXT: ...` memory candidates, it may add 
 | **Configure Load Limit** | `engram set-load-limit <1..32>` | `/engram set-load-limit <count>` |
 | **Configure Auto Read** | `engram set-read startup|auto|always|manual|off` | `/engram set-read auto` |
 | **Configure Proof Visibility** | `engram set-proof off|compact` | `/engram set-proof compact` |
-| **Install Agent Hooks** | `engram link codex|claude|gemini|opencode` | Run once from terminal |
+| **Install Agent Hooks** | `engram link codex|claude|gemini|opencode|cursor|windsurf` | Run once from terminal |
 | **Update Global Path** | `engram update-global-folder <new-path>` | `/engram set global memory path to <new-path>` |
 | **Clone Memory** | `engram clone-memory <src> <dest>` | `/engram clone workspace memory to global` |
 | **Manage Workspaces** | `engram workspace list|info|set|unregister|link|unlink` | `/engram workspace list` |

@@ -113,9 +113,9 @@ Proof visibility is separate:
 - `engram set-proof off`
 - `engram set-proof compact`
 
-With `compact`, supported hooks (codex, claude, gemini, opencode) may append
-a short `Engram proof:` line showing whether memory was loaded, reused, or
-skipped.
+With `compact`, supported hooks (codex, claude, gemini, opencode, cursor,
+windsurf) may append a short `Engram proof:` line showing whether memory was
+loaded, reused, or skipped.
 
 Write path and approval
 
@@ -271,12 +271,20 @@ To link Engram to a host (skillset + MCP + slash + agent hooks):
 - `engram link codex`
 - `engram link claude`
 - `engram link gemini`
+- `engram link cursor`
+- `engram link windsurf`
 - `engram link --global opencode`
 - `engram link slash`
 - `engram link mcp`
 - `engram link --global <target>`
 
-`engram link <target>` installs skillset files, MCP config, slash adapters, and agent hooks together. Use `--plan` to preview, `--force` to overwrite. `engram unlink <target>` removes all of these together.
+`engram link <target>` installs skillset files, MCP config, slash adapters, and
+agent hooks together. Use `--plan` to preview, `--force` to overwrite. `engram
+unlink <target>` removes all of these together. For Cursor, workspace MCP is
+written to `.cursor/mcp.json` with `type: "stdio"`, and the `sessionStart` hook
+injects startup context via `additional_context`. For Windsurf/Cascade,
+workspace MCP is skipped (global-only); the `pre_user_prompt` hook can
+audit/preload/block but does not inject model context.
 
 For OpenCode, `engram link --global opencode` also installs a managed local
 JavaScript plugin at `~/.config/opencode/plugins/engram.js` (or the

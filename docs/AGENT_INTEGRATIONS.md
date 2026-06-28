@@ -38,7 +38,10 @@ Existing human-authored files are skipped.
 **Runtime-first targets:** `codex`, `claude`, `cursor`, `gemini`
 — install short bootstrap instructions plus full Agent Skills and MCP config.
 
-**Compact/manual fallback targets:** `agents-md`, `copilot`, `cline`, `windsurf`, `opencode`
+**Hook-capable targets:** `codex`, `claude`, `gemini`, `opencode`, `cursor`, `windsurf`/`cascade`
+— install agent hooks with host-specific event schemas and context channels.
+
+**Compact/manual fallback targets:** `agents-md`, `copilot`, `cline`, `opencode`
 — install the full compact protocol since these hosts do not have reliable
 runtime context injection in v1.
 
@@ -103,6 +106,9 @@ To install automatic context injection hooks where v1 supports them:
 engram link codex
 engram link claude
 engram link gemini
+engram link cursor
+engram link windsurf
+engram link --global opencode
 engram set-proof compact
 ```
 
@@ -124,23 +130,26 @@ without changing when full Engram memory is injected.
 | `agents-md` | `AGENTS.md` | Generic fallback for unlisted AGENTS.md-compatible agents |
 | `copilot` | `.github/copilot-instructions.md`; global: `~/.copilot/copilot-instructions.md` | GitHub Copilot repository and user instructions |
 | `claude` | `CLAUDE.md` | Claude Code project guidance |
-| `cursor` | `.cursor/rules/engram.mdc` | Cursor project rules |
+| `cursor` | `.cursor/rules/engram.mdc`; global: `~/.cursor/plugins/local/engram/` | Cursor project rules and local plugin |
 | `gemini` | `GEMINI.md`; global: `~/.gemini/GEMINI.md`, `~/.gemini/skills/engram/SKILL.md`, Gemini MCP config | Gemini CLI context, including current Antigravity Gemini-compatible surfaces |
 | `cline` | `.clinerules` | Cline-style workspace rules |
-| `windsurf` | `.windsurfrules` | Windsurf workspace rules |
+| `windsurf` | `.windsurf/rules/engram.md`; global: `~/.codeium/windsurf/memories/global_rules.md`, `~/.codeium/windsurf/mcp_config.json` | Windsurf workspace rules and global rules/MCP |
 | `opencode` | `opencode.json`, `.opencode/engram.md`; global: `~/.config/opencode/AGENTS.md`, `~/.config/opencode/skills/engram/SKILL.md`, OpenCode MCP config | OpenCode custom instructions, MCP tools, and custom commands |
 | `mcp` | `.mcp.json`; global: Claude and Gemini MCP config files | MCP-style JSON-lines wrapper registration |
 | `slash` | `.claude/commands/engram.md`, `.claude/skills/engram/SKILL.md`, `.cursor/commands/engram.md`, `.gemini/commands/engram.toml`, `.opencode/commands/engram.md` | Native `/engram` slash adapters |
 
 Aliases: `codex` installs the `agents-md` adapter plus the generic Agent Skill
-file, and `open-code` maps to `opencode`. The old `antigravity` and
-`antigravity-cli` targets are hidden compatibility aliases for now.
+file, `open-code` maps to `opencode`, and `cascade` maps to `windsurf`. The old
+`antigravity` and `antigravity-cli` targets are hidden compatibility aliases for now.
 
 `engram link <target>` also installs the known MCP registration for that target
-by default. Workspace target links write `.mcp.json`; global Claude links write
-`~/.claude/mcp.json`; global Gemini and Antigravity-compatible links write the
-Gemini MCP config file; global OpenCode links write the `mcp` field into
-`~/.config/opencode/opencode.json`.
+by default. Workspace target links write `.mcp.json` (or `.cursor/mcp.json` for
+Cursor); global Claude links write `~/.claude/mcp.json`; global Gemini and
+Antigravity-compatible links write the Gemini MCP config file; global OpenCode
+links write the `mcp` field into `~/.config/opencode/opencode.json`; global
+Cursor links bundle MCP in the local plugin; global Windsurf links write
+`~/.codeium/windsurf/mcp_config.json`. Windsurf workspace MCP is skipped
+because the official contract documents only user-level MCP config.
 
 ## Agent Hook Capability Matrix
 
@@ -150,10 +159,10 @@ Gemini MCP config file; global OpenCode links write the `mcp` field into
 | `claude` | Yes | `.claude/settings.json`; global `~/.claude/settings.json` | `SessionStart`, `UserPromptSubmit` | Supports startup and prompt-time additional context injection |
 | `gemini` | Yes | `.gemini/settings.json`; global `~/.gemini/settings.json` | `SessionStart`, `BeforeAgent` | Supports startup and prompt-time `hookSpecificOutput.additionalContext` |
 | `antigravity`, `antigravity-cli` | Hidden alias | Gemini paths | Gemini events | Normalized to `gemini` until stable primary Antigravity hook/config docs are verified |
-| `cursor` | Skipped | None written | N/A | Current hook support is partial/startup-only for context injection; prompt hooks are blocking-oriented |
+| `cursor` | Yes | `.cursor/hooks.json`; global plugin `hooks/hooks.json` | `sessionStart` | Supports startup context injection via `additional_context`; `beforeSubmitPrompt` is allow/block-only, not context injection |
 | `copilot` | Skipped | None written | N/A | Current hooks expose session-start context but no reliable prompt-time context injection |
 | `cline` | Skipped | None written | N/A | Hook support is plugin-based, not aligned with Engram's file-first adapter installer in v1 |
-| `windsurf` / `cascade` | Skipped | None written | N/A | Cascade hooks are blocking/audit hooks, not reliable context injection hooks |
+| `windsurf` / `cascade` | Yes | `.windsurf/hooks.json`; global `~/.codeium/windsurf/hooks.json` | `pre_user_prompt` | Hook can audit/preload/block; rules and MCP provide AI context and tools |
 | `opencode` | Supported via local plugin | `~/.config/opencode/plugins/engram.js` | `chat.message`, `experimental.chat.system.transform` | Plugin-based hook system; uses `chat.message` to route prompt and `experimental.chat.system.transform` (OpenCode experimental API) to inject routed memory before each LLM request |
 
 `engram link all` installs the public target set and reports deterministic `SKIPPED` reasons for partial hosts across skillset instruction files, MCP config, slash adapters, and agent hooks in one unified install. `engram unlink`
@@ -418,8 +427,9 @@ command to name Codex directly. The Codex alias also writes
 Engram as an invokable skill.
 
 Claude Code and Cursor support external tool configuration, so Engram can be
-registered through `.mcp.json` where that wrapper is accepted. The `slash`
-target also writes Claude and Cursor project-level command files for `/engram`.
+registered through `.mcp.json` or `.cursor/mcp.json` where those wrappers are
+accepted. The `slash` target also writes Claude and Cursor project-level
+command files for `/engram`.
 For Claude, Engram writes both the classic command file and the newer skill file
 because Claude Code supports both forms for slash invocation.
 For global Claude installs, Engram appends its managed block to
@@ -489,6 +499,28 @@ hook cache remains hashes, session IDs, host, cwd, and routed signatures only.
 `engram unlink --global opencode` removes only the Engram-generated plugin; a
 human-authored `engram.js` is preserved unless `--force` is explicit.
 
+Cursor reads project rules from `.cursor/rules/*.mdc` files. Engram writes
+`.cursor/rules/engram.mdc` with valid frontmatter (`alwaysApply: true`) and a
+bootstrap instruction block. Workspace MCP is written to `.cursor/mcp.json`
+with `type: "stdio"`. The `sessionStart` hook injects Engram startup context
+through the `additional_context` output field; `beforeSubmitPrompt` is
+allow/block-only and is not used for context injection. For global installs,
+Engram creates a local plugin at `~/.cursor/plugins/local/engram/` containing
+the plugin manifest, rules, skills, commands, MCP config, and hooks. The
+`slash` target also writes `.cursor/commands/engram.md` for `/engram` support.
+
+Windsurf reads workspace rules from `.windsurf/rules/*.md`. Engram writes
+`.windsurf/rules/engram.md` with `trigger: always_on` frontmatter. Workspace
+MCP is not generated because the official contract documents only user-level MCP
+config; `engram link windsurf` reports this explicitly and suggests
+`engram link --global windsurf` for MCP. The `pre_user_prompt` hook can
+audit/preload/block but cannot inject model context directly; rules and MCP
+provide the reliable AI context channels. For global installs, Engram writes a
+managed block into `~/.codeium/windsurf/memories/global_rules.md` (preserving
+user text and staying below the character budget), merges MCP into
+`~/.codeium/windsurf/mcp_config.json`, and merges hooks into
+`~/.codeium/windsurf/hooks.json`. `cascade` is an alias for `windsurf`.
+
 ## References
 
 - [GitHub Copilot repository custom instructions](https://docs.github.com/en/copilot/how-tos/custom-instructions/adding-repository-custom-instructions-for-github-copilot)
@@ -498,11 +530,15 @@ human-authored `engram.js` is preserved unless `--force` is explicit.
 - [Cursor MCP](https://docs.cursor.com/context/model-context-protocol)
 - [Cursor hooks](https://cursor.com/docs/hooks)
 - [Cursor custom commands](https://docs.cursor.com/en/agent/chat/commands)
+- [Cursor local plugins](https://cursor.com/docs/plugins)
+- [Cursor rules](https://cursor.com/docs/rules)
 - [Gemini CLI context files](https://google-gemini.github.io/gemini-cli/docs/cli/gemini-md.html)
 - [Gemini CLI hooks](https://geminicli.com/docs/hooks/)
 - [Gemini CLI custom commands](https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/custom-commands.md)
 - [Cline hooks](https://docs.cline.bot/customization/hooks)
 - [Windsurf Cascade hooks](https://docs.devin.ai/desktop/cascade/hooks)
+- [Windsurf Cascade MCP](https://docs.devin.ai/desktop/cascade/mcp)
+- [Windsurf Cascade rules and memories](https://docs.devin.ai/desktop/cascade/memories)
 - [AGENTS.md](https://github.com/openai/agents.md)
 - [Codex Agent Skills](https://developers.openai.com/codex/skills)
 - [Antigravity CLI migration from Gemini CLI](https://www.antigravity.google/docs/gcli-migration)

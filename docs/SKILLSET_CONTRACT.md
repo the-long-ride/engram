@@ -146,18 +146,39 @@ Hosts that support custom slash commands can also load generated `/engram` adapt
   and Antigravity-compatible links write the Gemini MCP config file; global
   OpenCode links write the `mcp` field into `~/.config/opencode/opencode.json`.
 - Treat AI agent hooks as opt-in and narrower than skillset links. v1 may
-  install hooks for `codex`, `claude`, and `gemini` as managed JSON
+  install hooks for `codex`, `claude`, `gemini`, and `opencode` as managed JSON
   command-hook entries because those hosts expose both session-start and later
   prompt-turn context injection. `opencode` uses a managed local JavaScript
-  plugin because its hook system is plugin-based. Hook installers must
-  preserve human-authored JSON config by merging/removing only
-  Engram-managed entries named `engram-auto-load`.
+  plugin because its hook system is plugin-based. `cursor` installs a
+  `sessionStart` command hook that returns `additional_context` for startup
+  injection; `beforeSubmitPrompt` is allow/block-only and is not used for context
+  injection. `windsurf`/`cascade` installs a `pre_user_prompt` hook that can
+  audit/preload/block but cannot inject model context; rules and MCP provide
+  the reliable AI context channels. Hook installers must preserve human-authored
+  JSON config by merging/removing only Engram-managed entries named
+  `engram-auto-load`.
 - Treat `antigravity` and `antigravity-cli` hook targets as hidden compatibility
   aliases that normalize to Gemini hook behavior and paths until stable primary
   Antigravity hook/config docs are verified.
-- For `cursor`, `copilot`, `cline`, and `windsurf`/`cascade`, hook
-  installers must return deterministic `SKIPPED` records with host-specific
-  reasons and keep those hosts instruction/skillset/manual-load driven in v1.
+- For `cursor`, hook installers write a `sessionStart` command hook that
+  injects Engram startup context through `additional_context`. Do not use
+  `beforeSubmitPrompt` for context injection; it is allow/block-only. Cursor
+  workspace MCP is written to `.cursor/mcp.json` with `type: "stdio"`. Cursor
+  global install creates a local plugin at `~/.cursor/plugins/local/engram/`
+  with plugin manifest, rules, skills, commands, MCP config, and hooks.
+- For `windsurf`/`cascade`, hook installers write a `pre_user_prompt` hook
+  entry that can audit/preload/block but cannot inject model context directly.
+  Rules and MCP provide the reliable AI context channels. Workspace MCP is not
+  generated because the official contract documents only user-level MCP config;
+  `engram link windsurf` reports this and suggests `engram link --global windsurf`
+  for MCP. Global install writes a managed block into
+  `~/.codeium/windsurf/memories/global_rules.md` (preserving user text and
+  staying below the character budget), merges MCP into
+  `~/.codeium/windsurf/mcp_config.json`, and merges hooks into
+  `~/.codeium/windsurf/hooks.json`. `cascade` is an alias for `windsurf`.
+- For `copilot` and `cline`, hook installers must return deterministic
+  `SKIPPED` records with host-specific reasons and keep those hosts
+  instruction/skillset/manual-load driven in v1.
   For `opencode`, hooks are supported via a managed local JavaScript plugin
   at `~/.config/opencode/plugins/engram.js` (or the platform/config override
   equivalent); the plugin uses `chat.message` to route the current user prompt
@@ -172,8 +193,10 @@ Hosts that support custom slash commands can also load generated `/engram` adapt
 - For runtime-first targets (`codex`, `claude`, `cursor`, `gemini`),
   shared instruction files use the `bootstrap` profile — short instructions
   that rely on MCP tools and hooks. For fallback targets (`agents-md`,
-  `copilot`, `cline`, `windsurf`, `opencode`), shared instructions use the
-  `compact` profile — the full manual protocol.
+  `copilot`, `cline`, `opencode`), shared instructions use the
+  `compact` profile — the full manual protocol. `windsurf`/`cascade`
+  uses compact manual instructions at the workspace level because Cascade
+  hooks cannot inject model context; global rules get a managed block.
 - Hook runtimes must fail open. On malformed input, load failure, or unsupported
   host/event, emit an empty JSON object and do not block the agent session.
 - Engram's SQLite config DB is an optimization for workspace/profile management.
@@ -271,7 +294,7 @@ proposal and collect explicit human approval before invoking a CLI write flow.
 | `engram stats` | Show visible memory counts, scope mix, and author ownership |
 | `engram link [all|list|target] [--global] [--force] [--all-supported]` | Link skillset, MCP, slash adapters, and agent hooks to an AI agent; reports skipped reasons for partial hosts |
 | `engram unlink [all|target] [--global] [--force]` | Remove skillset, MCP, managed blocks, and agent hooks |
-| `engram agent-hook --host codex|claude|gemini|opencode` | Internal hook runtime; reads hook payload from stdin and emits host-compatible JSON to stdout; the OpenCode host emits retain/replace/clear directives |
+| `engram agent-hook --host codex|claude|gemini|opencode|cursor|windsurf` | Internal hook runtime; reads hook payload from stdin and emits host-compatible JSON to stdout; the OpenCode host emits retain/replace/clear directives, the Cursor host emits `additional_context` on `sessionStart`, and the Windsurf host processes `pre_user_prompt` input |
 | `engram clone-memory workspace global [--force] [--dry-run] [--metacognize] [--accept-all]` / `engram clone-memory global workspace [--force] [--dry-run] [--metacognize] [--accept-all]` | Clone active `rules/`, `skills/`, and `knowledge/` Markdown memories between workspace and global scopes while rewriting destination scope frontmatter and hashes; `--metacognize` routes verified source memories through save-session-style approval and cannot be combined with `--force` |
 | `engram sync` | Sync global memory Git and refresh live-sync targets |
 

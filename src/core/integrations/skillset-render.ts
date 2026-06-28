@@ -1,5 +1,6 @@
 /** Render Engram agent skillset instructions for supported adapters. */
 import type { SkillsetTarget } from './skillset.js';
+import { VERSION } from '../runtime/constants.js';
 
 export type InstructionProfile = 'bootstrap' | 'compact';
 export type InstallAction = 'written' | 'updated' | 'skipped' | 'planned';
@@ -33,12 +34,13 @@ export function isGenerated(content: string, file = ''): boolean {
     || hasWorkspaceManagedBlock(content)
     || isLegacyFullInstructionFile(content, file)
     || (content.includes('@the-long-ride/engram') && content.includes('engram-mcp'))
-    || (content.includes('https://opencode.ai/config.json') && content.includes('.opencode/engram.md') && content.includes('"engram-mcp"'));
+    || (content.includes('https://opencode.ai/config.json') && content.includes('.opencode/engram.md') && content.includes('"engram-mcp"'))
+    || isEngramPluginManifest(content, file);
 }
 
 /** Detect legacy full generated instruction files (AGENTS.md, CLAUDE.md etc with full compact body). */
 function isLegacyFullInstructionFile(content: string, file: string): boolean {
-  const instructionFiles = ['AGENTS.md', 'CLAUDE.md', 'GEMINI.md', '.cursor/rules/engram.mdc', '.clinerules', '.windsurfrules'];
+  const instructionFiles = ['AGENTS.md', 'CLAUDE.md', 'GEMINI.md', '.cursor/rules/engram.mdc', '.clinerules', '.windsurfrules', '.windsurf/rules/engram.md'];
   const normalized = file.replace(/\\/g, '/');
   if (!instructionFiles.some((f) => normalized.endsWith(f))) return false;
   // Must have Engram header AND compact protocol markers to be considered legacy generated
@@ -53,8 +55,19 @@ function isLegacyEngramSkill(content: string, file: string): boolean {
     && /Engram\s+(?:Memory Skill|=|workspace memory|Agent Skillset)/i.test(content);
 }
 
+function isEngramPluginManifest(content: string, file: string): boolean {
+  const normalized = file.replace(/\\/g, '/');
+  if (!normalized.includes('plugin.json')) return false;
+  try {
+    const parsed = JSON.parse(content);
+    return parsed.name === 'engram' && parsed._managedBy === 'engram';
+  } catch {
+    return false;
+  }
+}
+
 export function renderSkillsetFile(target: SkillsetTarget, file: string, readMode = 'auto', profile: InstructionProfile = 'compact'): string {
-  if (target === 'mcp') return mcpConfig();
+  if (target === 'mcp') return mcpConfig(file);
   if (target === 'opencode' && file.endsWith('opencode.json')) return opencodeConfig();
   if (target === 'slash' && file.endsWith('.toml')) return geminiSlashCommand();
   if (target === 'slash') return slashMarkdown(file.endsWith('SKILL.md') ? 'Engram Slash Skill' : 'Engram Slash Command', file.endsWith('SKILL.md'));
@@ -259,8 +272,94 @@ Supported: any \`engram\` CLI arguments after \`/engram\`. Use \`engram help <to
 `;
 }
 
-function mcpConfig(): string {
-  return `${JSON.stringify({ mcpServers: { engram: { command: 'npx', args: ['-y', '--package', '@the-long-ride/engram', 'engram-mcp'] } } }, null, 2)}\n`;
+/** Render a Cursor .mdc rule file with valid frontmatter. */
+export function renderCursorRule(guidePath = '.cursor/engram.md'): string {
+  const block = renderMinimalInstructionBlock(guidePath);
+  return `---
+description: Engram portable memory instructions
+alwaysApply: true
+---
+${block}
+`;
+}
+
+/** Render a Windsurf rule file with trigger: always_on frontmatter. */
+export function renderWindsurfRule(guidePath = '.windsurf/engram.md'): string {
+  const block = renderMinimalInstructionBlock(guidePath);
+  return `---
+trigger: always_on
+---
+${block}
+`;
+}
+
+/** Render a compact global rules block for Windsurf global_rules.md (<1000 chars). */
+export function renderWindsurfGlobalRulesBlock(): string {
+  return `${WORKSPACE_BEGIN}
+# Engram
+
+Engram memory may arrive through hooks and MCP.
+
+Use MCP tools when present: \`engram_load\`, \`engram_search\`, \`engram_save\`,
+\`engram_save_session\`, \`engram_verify\`, \`engram_status\`.
+
+If no Engram context is injected and memory matters, run:
+\`engram load --for-agents "<task>"\`.
+
+Never save memory silently. Never use \`--accept-all\` unless the user explicitly typed it.
+${WORKSPACE_END}`;
+}
+
+/** Render a Cursor plugin.json manifest. */
+export function renderCursorPluginJson(): string {
+  return `${JSON.stringify({
+    name: 'engram',
+    version: VERSION,
+    description: 'Engram memory integration for Cursor',
+    author: 'The Long Ride',
+    _managedBy: 'engram'
+  }, null, 2)}\n`;
+}
+
+/** Merge a generated MCP JSON config into an existing one, preserving user servers. */
+export function mergeMcpJson(existing: string, incoming: string): string | null {
+  try {
+    const ex = JSON.parse(existing);
+    const inc = JSON.parse(incoming);
+    if (!ex.mcpServers || typeof ex.mcpServers !== 'object') ex.mcpServers = {};
+    if (ex.mcpServers.engram) return null;
+    ex.mcpServers.engram = inc.mcpServers?.engram;
+    return `${JSON.stringify(ex, null, 2)}\n`;
+  } catch {
+    return null;
+  }
+}
+
+/** Remove the engram MCP server entry from a JSON config. */
+export function unmergeMcpJson(existing: string): string | null {
+  try {
+    const ex = JSON.parse(existing);
+    if (!ex.mcpServers?.engram) return null;
+    delete ex.mcpServers.engram;
+    if (!Object.keys(ex.mcpServers).length) delete ex.mcpServers;
+    if (!Object.keys(ex).filter((k) => k !== 'mcpServers').length && !ex.mcpServers) return '';
+    return `${JSON.stringify(ex, null, 2)}\n`;
+  } catch {
+    return null;
+  }
+}
+
+function mcpConfig(file = ''): string {
+  const normFile = file.replace(/\\/g, '/');
+  const needsStdioType = normFile.includes('.cursor/mcp.json')
+    || normFile.includes('.cursor/plugins/local/engram/mcp.json')
+    || normFile.includes('.codeium/windsurf/mcp_config.json');
+  const engram: Record<string, any> = {
+    command: 'npx',
+    args: ['-y', '--package', '@the-long-ride/engram', 'engram-mcp']
+  };
+  if (needsStdioType) engram.type = 'stdio';
+  return `${JSON.stringify({ mcpServers: { engram } }, null, 2)}\n`;
 }
 
 function opencodeConfig(): string {

@@ -361,10 +361,10 @@ const TARGET_FILES: Record<string, string[]> = {
   'agents-md': ['AGENTS.md'],
   copilot: ['.github/copilot-instructions.md'],
   claude: ['CLAUDE.md'],
-  cursor: ['.cursor/rules/engram.mdc'],
+  cursor: ['.cursor/rules/engram.mdc', '.cursor/engram.md', '.cursor/mcp.json'],
   gemini: ['GEMINI.md'],
   cline: ['.clinerules'],
-  windsurf: ['.windsurfrules'],
+  windsurf: ['.windsurf/rules/engram.md', '.windsurf/engram.md'],
   'agent-skill': ['.agents/skills/engram/SKILL.md'],
   antigravity: [
     '.antigravity/skills/engram/SKILL.md',
@@ -379,8 +379,9 @@ const TARGET_FILES: Record<string, string[]> = {
 
 function skillsetHookTarget(target: string): string {
   if (target === "all" || target === "all-supported") return "all";
-  if (["codex", "claude", "gemini", "opencode"].includes(target)) return target;
+  if (["codex", "claude", "gemini", "opencode", "cursor", "windsurf"].includes(target)) return target;
   if (target === "antigravity" || target === "antigravity-cli") return "gemini";
+  if (target === "cascade") return "windsurf";
   if (target === "open-code") return "opencode";
   return "";
 }

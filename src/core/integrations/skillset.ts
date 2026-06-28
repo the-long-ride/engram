@@ -11,13 +11,20 @@ import {
   isGenerated,
   removeWorkspaceManagedBlock,
   renderAgentGuide,
+  renderCursorPluginJson,
+  renderCursorRule,
   renderMinimalInstructionBlock,
   renderSkillsetFile,
-  upsertWorkspaceManagedBlock
+  renderWindsurfGlobalRulesBlock,
+  renderWindsurfRule,
+  upsertWorkspaceManagedBlock,
+  mergeMcpJson,
+  unmergeMcpJson
 } from './skillset-render.js';
 import type { InstructionProfile } from './skillset-render.js';
 import { globalAgentHome, globalAgentConfigHome } from './agent-paths.js';
 import { resolveAllTargets, allSupportedTargets } from './agent-detect.js';
+import { unmergeManagedHooks } from './agent-hooks.js';
 
 export type SkillsetTarget =
   | 'agents-md' | 'copilot' | 'claude' | 'cursor' | 'gemini'
@@ -37,21 +44,29 @@ const hiddenTargets = new Set<SkillsetTarget>(['agent-skill', 'antigravity']);
 const aliases: Record<string, SkillsetTarget[]> = {
   'antigravity-cli': ['antigravity'],
   codex: ['agents-md', 'agent-skill'],
-  'open-code': ['opencode']
+  'open-code': ['opencode'],
+  cascade: ['windsurf']
 };
 const aliasLabels: Record<string, string> = {
   'antigravity-cli': 'antigravity',
-  codex: 'codex'
+  codex: 'codex',
+  cascade: 'windsurf'
 };
+
+function normalizeGlobalTarget(target: string): string {
+  if (target === 'all') return 'all';
+  if (target === 'cascade') return 'windsurf';
+  return target;
+}
 
 const targets: Record<SkillsetTarget, string[]> = {
   'agents-md': ['AGENTS.md'],
   copilot: ['.github/copilot-instructions.md'],
   claude: ['CLAUDE.md'],
-  cursor: ['.cursor/rules/engram.mdc'],
+  cursor: ['.cursor/rules/engram.mdc', '.cursor/mcp.json'],
   gemini: ['GEMINI.md'],
   cline: ['.clinerules'],
-  windsurf: ['.windsurfrules'],
+  windsurf: ['.windsurf/rules/engram.md'],
   'agent-skill': ['.agents/skills/engram/SKILL.md'],
   antigravity: [
     '.antigravity/skills/engram/SKILL.md',
@@ -71,7 +86,7 @@ const workspaceGuideFiles: Partial<Record<SkillsetTarget, string>> = {
   cursor: '.cursor/engram.md',
   gemini: '.gemini/engram.md',
   cline: '.agents/engram.md',
-  windsurf: '.agents/engram.md',
+  windsurf: '.windsurf/engram.md',
   copilot: '.agents/engram.md'
 };
 
@@ -87,7 +102,7 @@ const instructionFileNames = new Set([
   'GEMINI.md',
   '.cursor/rules/engram.mdc',
   '.clinerules',
-  '.windsurfrules',
+  '.windsurf/rules/engram.md',
   '.github/copilot-instructions.md'
 ]);
 
@@ -108,6 +123,16 @@ async function instructionProfileForWorkspaceRefresh(cwd: string, target: Skills
     return 'bootstrap';
   }
   return instructionProfileForTarget(target, target);
+}
+
+function renderInstructionBlock(target: SkillsetTarget, relativeFile: string, guidePath: string): string {
+  if (target === 'cursor' && relativeFile === '.cursor/rules/engram.mdc') {
+    return renderCursorRule(guidePath);
+  }
+  if (target === 'windsurf' && relativeFile === '.windsurf/rules/engram.md') {
+    return renderWindsurfRule(guidePath);
+  }
+  return renderMinimalInstructionBlock(guidePath);
 }
 
 function wasBootstrap(content: string): boolean {
@@ -141,21 +166,35 @@ export async function installSkillset(cwd: string, target = 'all', force = false
       if (isInstructionFile(relativeFile)) {
         // Minimal block path: upsert managed block, write companion guide
         const guidePath = workspaceGuideFileForTarget(name);
-        const block = renderMinimalInstructionBlock(guidePath ?? '.agents/engram.md');
+        const effectiveGuidePath = guidePath ?? '.agents/engram.md';
+        const block = renderInstructionBlock(name, relativeFile, effectiveGuidePath);
+        // For cursor .mdc and windsurf .md: the block includes frontmatter, so write it directly
+        const isFrontmatterFile = (name === 'cursor' && relativeFile === '.cursor/rules/engram.mdc') || (name === 'windsurf' && relativeFile === '.windsurf/rules/engram.md');
         const existing = await readText(file);
         if (existing && !force && !isGenerated(existing, relativeFile)) {
-          // Human-authored without Engram block: append block
-          const { text, action } = upsertWorkspaceManagedBlock(existing, block);
-          await ensureDir(path.dirname(file));
-          await writeText(file, text);
-          results.push({ target: label, file: relativeFile, action });
+          if (isFrontmatterFile) {
+            // Human-authored frontmatter file: ensure required frontmatter and append managed block
+            const { text: mergedFrontmatter, changed: frontmatterChanged } = ensureRequiredFrontmatter(existing, name);
+            const base = frontmatterChanged ? mergedFrontmatter : existing;
+            const { text, action } = upsertWorkspaceManagedBlock(base, renderMinimalInstructionBlock(effectiveGuidePath));
+            await ensureDir(path.dirname(file));
+            await writeText(file, text);
+            results.push({ target: label, file: relativeFile, action: frontmatterChanged ? 'updated' : action, reason: frontmatterChanged ? 'merged required frontmatter (alwaysApply/trigger) into human file' : undefined });
+          } else {
+            const { text, action } = upsertWorkspaceManagedBlock(existing, block);
+            await ensureDir(path.dirname(file));
+            await writeText(file, text);
+            results.push({ target: label, file: relativeFile, action });
+          }
         } else if (!existing) {
           await ensureDir(path.dirname(file));
-          await writeText(file, `${block}\n`);
+          await writeText(file, isFrontmatterFile ? block : `${block}\n`);
           results.push({ target: label, file: relativeFile, action: 'written' });
         } else {
           // Existing generated or forced: upsert block (replaces legacy full content)
-          const { text, action } = upsertWorkspaceManagedBlock(existing, block);
+          const { text, action } = isFrontmatterFile
+            ? { text: block, action: 'written' as InstallAction }
+            : upsertWorkspaceManagedBlock(existing, block);
           await ensureDir(path.dirname(file));
           await writeText(file, text);
           results.push({ target: label, file: relativeFile, action });
@@ -174,7 +213,26 @@ export async function installSkillset(cwd: string, target = 'all', force = false
           }
         }
       } else {
-        // Non-instruction file: original behavior
+        // Non-instruction file
+        if (isCursorMcpFile(relativeFile)) {
+          const existing = await readText(file);
+          const incoming = renderSkillsetFile('mcp', relativeFile, config.read, 'compact');
+          if (existing) {
+            const merged = mergeMcpJson(existing, incoming);
+            if (merged) {
+              await ensureDir(path.dirname(file));
+              await writeText(file, merged);
+              results.push({ target: label, file: relativeFile, action: 'updated' });
+            } else {
+              results.push({ target: label, file: relativeFile, action: 'skipped', reason: 'engram MCP entry already present' });
+            }
+          } else {
+            await ensureDir(path.dirname(file));
+            await writeText(file, incoming);
+            results.push({ target: label, file: relativeFile, action: 'written' });
+          }
+          continue;
+        }
         const existing = await readText(file);
         if (existing && !force && !isGenerated(existing, relativeFile)) {
           results.push({ target: label, file: relativeFile, action: 'skipped' });
@@ -293,14 +351,22 @@ export async function installGlobalSkillset(target = 'all', options: { force?: b
   const plans = globalInstallPlans(target, options.home);
   const results: InstallResult[] = [];
   for (const plan of plans) {
-    if (plan.reason || !plan.mode || !plan.renderTarget) {
+    if (plan.reason || !plan.mode) {
+      results.push({ target: plan.label, file: plan.file, action: 'skipped', reason: plan.reason ?? 'global install is not supported for this target yet' });
+      continue;
+    }
+    if (!plan.renderTarget && !plan.file.endsWith('plugin.json') && !plan.file.endsWith('hooks.json') && !plan.file.endsWith('global_rules.md')) {
       results.push({ target: plan.label, file: plan.file, action: 'skipped', reason: plan.reason ?? 'global install is not supported for this target yet' });
       continue;
     }
     const profile = instructionProfileForTarget(plan.renderTarget ?? plan.name, plan.label);
     let content = renderGlobalInstallContent(plan, config.read, profile);
+    const isWindsurfGlobalRules = plan.file.endsWith('global_rules.md');
     if (plan.mode === 'block') {
       content = renderMinimalInstructionBlock('~/.agents/engram.md');
+    }
+    if (isWindsurfGlobalRules) {
+      content = renderWindsurfGlobalRulesBlock();
     }
     if (options.plan) {
       results.push({ target: plan.label, file: plan.file, action: 'planned', mode: plan.mode, hash: sha256(content) });
@@ -316,12 +382,30 @@ export async function installGlobalSkillset(target = 'all', options: { force?: b
           continue;
         }
       }
+      if (plan.renderTarget === 'mcp' && (plan.file.endsWith('mcp.json') || plan.file.endsWith('mcp_config.json'))) {
+        const merged = mergeMcpJson(existing, content);
+        if (merged) {
+          await writeText(plan.file, merged);
+          results.push({ target: plan.label, file: plan.file, action: 'updated', mode: plan.mode, hash: sha256(merged) });
+          continue;
+        }
+        results.push({ target: plan.label, file: plan.file, action: 'skipped', mode: plan.mode, reason: 'engram MCP entry already present' });
+        continue;
+      }
+      if (isWindsurfGlobalRules) {
+        const { text, action } = upsertWorkspaceManagedBlock(existing, content);
+        await writeText(plan.file, text);
+        results.push({ target: plan.label, file: plan.file, action, mode: plan.mode, hash: sha256(text) });
+        continue;
+      }
       results.push({ target: plan.label, file: plan.file, action: 'skipped', mode: plan.mode, reason: 'human-authored file exists; re-run with --force to replace' });
       continue;
     }
-    const next = plan.mode === 'block'
+    const next = plan.mode === 'block' || isWindsurfGlobalRules
       ? upsertWorkspaceManagedBlock(existing.includes(GLOBAL_BEGIN) ? removeManagedBlock(existing) : existing, content)
-      : { text: content, action: existing ? 'updated' as InstallAction : 'written' as InstallAction };
+      : !existing || isGenerated(existing, plan.file) || options.force
+        ? { text: content, action: existing ? 'updated' as InstallAction : 'written' as InstallAction }
+        : { text: content, action: 'written' as InstallAction };
     await writeText(plan.file, next.text);
     results.push({ target: plan.label, file: plan.file, action: next.action, mode: plan.mode, hash: sha256(next.text) });
   }
@@ -419,7 +503,14 @@ function globalFilesForTarget(target: ResolvedTarget, home: string): GlobalInsta
         plan(path.join(home, '.agents', 'engram.md'), 'file')
       ];
     case 'cursor':
-      return [skip('Cursor user rules are configured in app settings; no stable local global file path is published')];
+      return [
+        plan(path.join(home, '.cursor', 'plugins', 'local', 'engram', '.cursor-plugin', 'plugin.json'), 'file'),
+        plan(path.join(home, '.cursor', 'plugins', 'local', 'engram', 'rules', 'engram.mdc'), 'file', 'cursor'),
+        plan(path.join(home, '.cursor', 'plugins', 'local', 'engram', 'skills', 'engram', 'SKILL.md'), 'file', 'agent-skill'),
+        plan(path.join(home, '.cursor', 'plugins', 'local', 'engram', 'commands', 'engram.md'), 'file', 'slash'),
+        plan(path.join(home, '.cursor', 'plugins', 'local', 'engram', 'mcp.json'), 'file', 'mcp'),
+        plan(path.join(home, '.cursor', 'plugins', 'local', 'engram', 'hooks', 'hooks.json'), 'file')
+      ];
     case 'gemini':
       return [
         plan(path.join(home, '.gemini', 'GEMINI.md'), 'block'),
@@ -429,7 +520,11 @@ function globalFilesForTarget(target: ResolvedTarget, home: string): GlobalInsta
     case 'cline':
       return [plan(path.join(home, 'Documents', 'Cline', 'Rules', 'engram.md'), 'file')];
     case 'windsurf':
-      return [skip('Windsurf user-level global rules are managed by app settings; only enterprise system paths are stable')];
+      return [
+        plan(path.join(home, '.codeium', 'windsurf', 'memories', 'global_rules.md'), 'file', 'windsurf'),
+        plan(path.join(home, '.codeium', 'windsurf', 'mcp_config.json'), 'file', 'mcp'),
+        plan(path.join(home, '.codeium', 'windsurf', 'hooks.json'), 'file', 'windsurf')
+      ];
     case 'agent-skill':
       return [plan(path.join(home, '.agents', 'skills', 'engram', 'SKILL.md'), 'file')];
     case 'antigravity':
@@ -457,12 +552,19 @@ function globalFilesForTarget(target: ResolvedTarget, home: string): GlobalInsta
 }
 
 function workspaceMcpFilesForTarget(target: SkillsetTarget): string[] {
+  if (target === 'windsurf') return [];
+  if (target === 'cursor') return [];
   return target === 'mcp' || target === 'slash' ? [] : targets.mcp;
 }
 
 function renderTargetForFile(target: SkillsetTarget, relativeFile: string): SkillsetTarget {
-  return targets.mcp.includes(relativeFile) ? 'mcp' : target;
+  const normalized = relativeFile.replace(/\\/g, '/');
+  if (targets.mcp.includes(normalized)) return 'mcp';
+  if (normalized === '.cursor/mcp.json') return 'mcp';
+  return target;
 }
+
+function isCursorMcpFile(relativeFile: string): boolean { return relativeFile.replace(/\\/g, '/') === '.cursor/mcp.json'; }
 
 function globalMcpFilesForTarget(target: ResolvedTarget, home: string): GlobalInstallPlan[] {
   const configHome = globalAgentConfigHome(home);
@@ -470,21 +572,31 @@ function globalMcpFilesForTarget(target: ResolvedTarget, home: string): GlobalIn
   switch (target.name) {
     case 'claude':
       return [plan(path.join(home, '.claude', 'mcp.json'))];
+    case 'cursor':
+      return [];
     case 'gemini':
     case 'antigravity':
       return [plan(path.join(configHome, 'gemini', 'mcp.json'))];
     case 'opencode':
       return [{ ...target, file: path.join(configHome, 'opencode', 'opencode.json'), mode: 'file', renderTarget: 'opencode' }];
+    case 'windsurf':
+      return [];
     default:
       return [];
   }
 }
 
 function renderGlobalInstallContent(plan: GlobalInstallPlan, readMode = 'auto', profile: InstructionProfile = 'compact'): string {
+  const normFile = plan.file.replace(/\\/g, '/');
   if (plan.name === 'slash' || plan.renderTarget === 'slash') return renderSkillsetFile('slash', plan.file, readMode);
   if (plan.renderTarget === 'mcp') return renderSkillsetFile('mcp', plan.file, readMode);
-  if (plan.renderTarget === 'opencode' && plan.file.endsWith('opencode.json')) return renderSkillsetFile('opencode', plan.file, readMode);
-  if (plan.file.endsWith('SKILL.md')) return renderSkillsetFile(plan.renderTarget ?? 'agent-skill', plan.file, readMode);
+  if (plan.renderTarget === 'opencode' && normFile.endsWith('opencode.json')) return renderSkillsetFile('opencode', plan.file, readMode);
+  if (normFile.endsWith('SKILL.md')) return renderSkillsetFile(plan.renderTarget ?? 'agent-skill', plan.file, readMode);
+  if (normFile.endsWith('plugin.json')) return renderCursorPluginJson();
+  if (normFile.endsWith('rules/engram.mdc')) return renderCursorRule();
+  if (normFile.endsWith('commands/engram.md')) return renderSkillsetFile('slash', plan.file, readMode);
+  if (normFile.endsWith('hooks.json')) return '{}\n';
+  if (normFile.endsWith('global_rules.md')) return `${renderWindsurfGlobalRulesBlock()}\n`;
   return globalSkillsetMarkdown(readMode, profile);
 }
 
@@ -543,9 +655,22 @@ export async function unlinkSkillset(cwd: string, target = 'all', force = false)
           }
         }
       } else {
-        // Non-instruction file: original behavior, with opencode.json merge-aware unlink
+        // Non-instruction file: merge-aware unlink
         if (relativeFile === 'opencode.json') {
           const unmerged = unmergeOpencodeMcp(existing);
+          if (unmerged !== null) {
+            if (unmerged === '') {
+              await fs.rm(file, { force: true });
+              results.push({ target: label, file: relativeFile, action: 'removed' });
+            } else {
+              await writeText(file, unmerged);
+              results.push({ target: label, file: relativeFile, action: 'cleaned' });
+            }
+            continue;
+          }
+        }
+        if (isCursorMcpFile(relativeFile)) {
+          const unmerged = unmergeMcpJson(existing);
           if (unmerged !== null) {
             if (unmerged === '') {
               await fs.rm(file, { force: true });
@@ -572,7 +697,8 @@ export async function unlinkSkillset(cwd: string, target = 'all', force = false)
 /** Remove one or all global agent adapter files. */
 export async function unlinkGlobalSkillset(target = 'all', options: { force?: boolean; home?: string } = {}): Promise<UnlinkResult[]> {
   const registry = await readGlobalSkillsetRegistry();
-  const targetsToRemove = target === 'all' ? Object.keys(registry.installs) : [target];
+  const normalizedTarget = normalizeGlobalTarget(target);
+  const targetsToRemove = normalizedTarget === 'all' ? Object.keys(registry.installs) : [normalizedTarget];
   const results: UnlinkResult[] = [];
   for (const current of targetsToRemove) {
     const install = registry.installs[current];
@@ -617,6 +743,66 @@ export async function unlinkGlobalSkillset(target = 'all', options: { force?: bo
             continue;
           }
         }
+        if (file.endsWith('global_rules.md')) {
+          const cleaned = hasWorkspaceManagedBlock(existing)
+            ? removeWorkspaceManagedBlock(existing).trimEnd()
+            : existing.trimEnd();
+          if (cleaned && cleaned !== existing.trimEnd()) {
+            await writeText(file, `${cleaned}\n`);
+            results.push({ target: current, file, action: 'cleaned' });
+          } else if (!cleaned) {
+            await fs.rm(file, { force: true });
+            results.push({ target: current, file, action: 'removed' });
+          } else {
+            results.push({ target: current, file, action: 'skipped', reason: 'no Engram managed block found' });
+          }
+          continue;
+        }
+        if (file.endsWith('mcp.json') || file.endsWith('mcp_config.json')) {
+          const unmerged = unmergeMcpJson(existing);
+          if (unmerged !== null) {
+            if (unmerged === '') {
+              await fs.rm(file, { force: true });
+              results.push({ target: current, file, action: 'removed' });
+            } else {
+              await writeText(file, unmerged);
+              results.push({ target: current, file, action: 'cleaned' });
+            }
+            continue;
+          }
+        }
+        if (file.endsWith('hooks.json')) {
+          try {
+            const config = JSON.parse(existing);
+            const host = current === 'cursor' ? 'cursor' as const : current === 'windsurf' ? 'windsurf' as const : undefined;
+            const schema = host === 'cursor' ? 'cursor' as const : host === 'windsurf' ? 'windsurf' as const : undefined;
+            const events = host === 'cursor' ? ['sessionStart'] : host === 'windsurf' ? ['pre_user_prompt'] : [];
+            if (schema && host) {
+              const meta = { kind: 'json' as const, host, events, schema, configFile: '', globalFile: () => '', };
+              const changed = unmergeManagedHooks(config, meta);
+              if (changed) {
+                const remaining = Object.keys(config).length;
+                if (!remaining) {
+                  await fs.rm(file, { force: true });
+                  results.push({ target: current, file, action: 'removed' });
+                } else {
+                  await writeText(file, `${JSON.stringify(config, null, 2)}\n`);
+                  results.push({ target: current, file, action: 'cleaned' });
+                }
+              } else {
+                results.push({ target: current, file, action: 'skipped', reason: 'no Engram-managed hook entries found' });
+              }
+            } else if (isGenerated(existing, file) || options.force) {
+              await fs.rm(file, { force: true });
+              results.push({ target: current, file, action: 'removed' });
+            } else {
+              results.push({ target: current, file, action: 'skipped', reason: 'human-authored file; use --force to remove' });
+            }
+          } catch {
+            results.push({ target: current, file, action: 'skipped', reason: 'could not parse hooks.json' });
+          }
+          continue;
+        }
         if (!options.force && !isGenerated(existing, file)) {
           results.push({ target: current, file, action: 'skipped', reason: 'human-authored file; use --force to remove' });
           continue;
@@ -636,6 +822,38 @@ export async function unlinkGlobalSkillset(target = 'all', options: { force?: bo
 function removeManagedBlock(content: string): string {
   const pattern = new RegExp(`${escapeRegExp(GLOBAL_BEGIN)}[\\s\\S]*?${escapeRegExp(GLOBAL_END)}`, 'g');
   return content.replace(pattern, '').replace(/\n{3,}/g, '\n\n');
+}
+
+function ensureRequiredFrontmatter(content: string, target: SkillsetTarget): { text: string; changed: boolean } {
+  const fmMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!fmMatch) return { text: content, changed: false };
+  const eol = content.includes('\r\n') ? '\r\n' : '\n';
+  let frontmatter = fmMatch[1];
+  let changed = false;
+  if (target === 'cursor') {
+    if (/alwaysApply:\s*true\b/.test(frontmatter)) {
+      // already correct
+    } else if (/alwaysApply:/.test(frontmatter)) {
+      frontmatter = frontmatter.replace(/alwaysApply:\s*\S+/, 'alwaysApply: true');
+      changed = true;
+    } else {
+      frontmatter += `${eol}alwaysApply: true`;
+      changed = true;
+    }
+  }
+  if (target === 'windsurf') {
+    if (/trigger:\s*always_on\b/.test(frontmatter)) {
+      // already correct
+    } else if (/trigger:/.test(frontmatter)) {
+      frontmatter = frontmatter.replace(/trigger:\s*\S+/, 'trigger: always_on');
+      changed = true;
+    } else {
+      frontmatter += `${eol}trigger: always_on`;
+      changed = true;
+    }
+  }
+  if (!changed) return { text: content, changed: false };
+  return { text: `---${eol}${frontmatter}${eol}---${content.slice(fmMatch[0].length)}`, changed: true };
 }
 
 function normalizePath(file: string): string {

@@ -147,7 +147,10 @@ function skillsetInstallHints(results: InstallResult[], global = false): string[
   if (results.some((result) => result.target === "gemini")) {
     hints.push("Note: gemini also covers current Antigravity 2.0, Antigravity CLI, and Antigravity IDE Gemini-compatible paths while Google keeps those surfaces in flux.");
   }
-  hints.push("Agent hooks are automatically installed for Codex, Claude, Gemini, and OpenCode targets.");
+  hints.push("Agent hooks are automatically installed for Codex, Claude, Gemini, Cursor, Windsurf, and OpenCode targets.");
+  if (results.some((result) => result.target === "windsurf" || result.target === "cascade") && !global) {
+    hints.push("Note: workspace MCP is not generated for Windsurf; run `engram link --global windsurf` for MCP.");
+  }
   if (!results.some((result) => result.target === "slash")) return hints;
   hints.push(
     "Hint: if /engram is not visible in an already-open chat, restart or reload the agent chat after the new slash files are written.",
@@ -159,9 +162,10 @@ function skillsetInstallHints(results: InstallResult[], global = false): string[
 /** Return the agent-hook target for a skillset target, or empty string if no hooks apply. */
 function skillsetHookTarget(target: string): string {
   if (target === "all" || target === "all-supported") return "all";
-  if (["codex", "claude", "gemini", "opencode"].includes(target)) return target;
+  if (["codex", "claude", "gemini", "opencode", "cursor", "windsurf"].includes(target)) return target;
   if (target === "antigravity" || target === "antigravity-cli") return "gemini";
-  if (["cursor", "copilot", "cline", "windsurf", "cascade", "open-code"].includes(target)) return target;
+  if (target === "cascade") return "windsurf";
+  if (["copilot", "cline", "open-code"].includes(target)) return target;
   return "";
 }
 

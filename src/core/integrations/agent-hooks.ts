@@ -9,7 +9,7 @@ import {
 } from './opencode-hook-plugin.js';
 import { exists, readJson, readText, writeJson, writeText } from '../system/fsx.js';
 
-export type AgentHookHost = 'codex' | 'claude' | 'gemini' | 'opencode';
+export type AgentHookHost = 'codex' | 'claude' | 'gemini' | 'opencode' | 'cursor' | 'windsurf';
 export type AgentHookAction = 'install' | 'uninstall';
 
 type JsonHookTarget = {
@@ -18,6 +18,7 @@ type JsonHookTarget = {
   configFile: string;
   globalFile: () => string;
   events: string[];
+  schema: 'claude-codex' | 'cursor' | 'windsurf';
 };
 
 type PluginHookTarget = {
@@ -52,21 +53,40 @@ const TARGETS: Record<AgentHookHost, HookTarget> = {
     host: 'codex',
     configFile: path.join('.codex', 'hooks.json'),
     globalFile: () => path.join(globalAgentHome(), '.codex', 'hooks.json'),
-    events: ['SessionStart', 'UserPromptSubmit']
+    events: ['SessionStart', 'UserPromptSubmit'],
+    schema: 'claude-codex'
   },
   claude: {
     kind: 'json',
     host: 'claude',
     configFile: path.join('.claude', 'settings.json'),
     globalFile: () => path.join(globalAgentHome(), '.claude', 'settings.json'),
-    events: ['SessionStart', 'UserPromptSubmit']
+    events: ['SessionStart', 'UserPromptSubmit'],
+    schema: 'claude-codex'
   },
   gemini: {
     kind: 'json',
     host: 'gemini',
     configFile: path.join('.gemini', 'settings.json'),
     globalFile: () => path.join(globalAgentHome(), '.gemini', 'settings.json'),
-    events: ['SessionStart', 'BeforeAgent']
+    events: ['SessionStart', 'BeforeAgent'],
+    schema: 'claude-codex'
+  },
+  cursor: {
+    kind: 'json',
+    host: 'cursor',
+    configFile: path.join('.cursor', 'hooks.json'),
+    globalFile: () => path.join(globalAgentHome(), '.cursor', 'plugins', 'local', 'engram', 'hooks', 'hooks.json'),
+    events: ['sessionStart'],
+    schema: 'cursor'
+  },
+  windsurf: {
+    kind: 'json',
+    host: 'windsurf',
+    configFile: path.join('.windsurf', 'hooks.json'),
+    globalFile: () => path.join(globalAgentHome(), '.codeium', 'windsurf', 'hooks.json'),
+    events: ['pre_user_prompt'],
+    schema: 'windsurf'
   },
   opencode: {
     kind: 'plugin',
@@ -78,11 +98,8 @@ const TARGETS: Record<AgentHookHost, HookTarget> = {
 };
 
 const UNSUPPORTED: Record<string, string> = {
-  cursor: 'partial hook support: sessionStart can inject context, but prompt-time hooks are startup-only/blocking; use Engram skillset/manual load in v1',
   copilot: 'partial hook support: sessionStart can inject context, but userPromptSubmitted does not provide prompt-time context injection; use Engram skillset/manual load in v1',
-  cline: 'plugin-based hook support is real, but install UX is not file-first; use Engram skillset/manual load in v1',
-  windsurf: 'Cascade hooks are blocking/audit oriented and do not expose reliable prompt context injection; use Engram skillset/manual load in v1',
-  cascade: 'Cascade hooks are blocking/audit oriented and do not expose reliable prompt context injection; use Engram skillset/manual load in v1'
+  cline: 'plugin-based hook support is real, but install UX is not file-first; use Engram skillset/manual load in v1'
 };
 
 /** Install or uninstall managed Engram agent hooks for one target or all known targets. */
@@ -131,7 +148,8 @@ export function normalizeTarget(target: string): AgentHookHost | UnsupportedTarg
   const lower = target.toLowerCase();
   if (lower === 'antigravity' || lower === 'antigravity-cli') return 'gemini';
   if (lower === 'open-code') return 'opencode';
-  if (lower === 'codex' || lower === 'claude' || lower === 'gemini' || lower === 'opencode') return lower;
+  if (lower === 'cascade') return 'windsurf';
+  if (lower === 'codex' || lower === 'claude' || lower === 'gemini' || lower === 'opencode' || lower === 'cursor' || lower === 'windsurf') return lower;
   if (UNSUPPORTED[lower]) return { target: lower, reason: UNSUPPORTED[lower] };
   return { target: lower || 'all', reason: 'unknown agent hook target' };
 }
@@ -144,6 +162,8 @@ function expandTargets(target: string): string[] {
 }
 
 function mergeManagedHooks(config: Record<string, any>, meta: JsonHookTarget, force: boolean): boolean {
+  if (meta.schema === 'cursor') return mergeCursorHooks(config, meta, force);
+  if (meta.schema === 'windsurf') return mergeWindsurfHooks(config, meta, force);
   config.hooks = isObject(config.hooks) ? config.hooks : {};
   let changed = false;
   for (const event of meta.events) {
@@ -159,7 +179,28 @@ function mergeManagedHooks(config: Record<string, any>, meta: JsonHookTarget, fo
   return changed;
 }
 
-function unmergeManagedHooks(config: Record<string, any>, meta: JsonHookTarget): boolean {
+function mergeCursorHooks(config: Record<string, any>, meta: JsonHookTarget, force: boolean): boolean {
+  return mergeFlatHooks(config, meta, force, isCursorManagedEntry, cursorManagedEntry);
+}
+
+function mergeWindsurfHooks(config: Record<string, any>, meta: JsonHookTarget, force: boolean): boolean {
+  return mergeFlatHooks(config, meta, force, isWindsurfManagedEntry, windsurfManagedEntry);
+}
+
+function mergeFlatHooks(config: Record<string, any>, meta: JsonHookTarget, force: boolean, isManaged: (e: any) => boolean, makeEntry: () => Record<string, any>): boolean {
+  let changed = false;
+  for (const event of meta.events) {
+    const entries = Array.isArray(config[event]) ? config[event] : [];
+    const cleaned = entries.filter((e: any) => !isManaged(e));
+    config[event] = [...cleaned, makeEntry()];
+    changed ||= force || cleaned.length !== entries.length || !entries.some(isManaged);
+  }
+  return changed;
+}
+
+export function unmergeManagedHooks(config: Record<string, any>, meta: JsonHookTarget): boolean {
+  if (meta.schema === 'cursor') return unmergeCursorHooks(config, meta);
+  if (meta.schema === 'windsurf') return unmergeWindsurfHooks(config, meta);
   if (!isObject(config.hooks)) return false;
   let changed = false;
   for (const event of meta.events) {
@@ -170,6 +211,26 @@ function unmergeManagedHooks(config: Record<string, any>, meta: JsonHookTarget):
     else delete config.hooks[event];
   }
   if (!Object.keys(config.hooks).length) delete config.hooks;
+  return changed;
+}
+
+function unmergeCursorHooks(config: Record<string, any>, meta: JsonHookTarget): boolean {
+  return unmergeFlatHooks(config, meta, isCursorManagedEntry);
+}
+
+function unmergeWindsurfHooks(config: Record<string, any>, meta: JsonHookTarget): boolean {
+  return unmergeFlatHooks(config, meta, isWindsurfManagedEntry);
+}
+
+function unmergeFlatHooks(config: Record<string, any>, meta: JsonHookTarget, isManaged: (e: any) => boolean): boolean {
+  let changed = false;
+  for (const event of meta.events) {
+    const entries = Array.isArray(config[event]) ? config[event] : [];
+    const cleaned = entries.filter((e: any) => !isManaged(e));
+    if (cleaned.length !== entries.length) changed = true;
+    if (cleaned.length) config[event] = cleaned;
+    else delete config[event];
+  }
   return changed;
 }
 
@@ -259,6 +320,34 @@ function resultRecord(result: AgentHookResult): RecordBlock {
       ...(result.reason ? [['Reason', result.reason] as [string, string]] : [])
     ]
   };
+}
+
+function isCursorManagedEntry(entry: any): boolean {
+  return isObject(entry) && entry.name === MANAGED_NAME && typeof entry.command === 'string' && entry.command.includes(managedCommand('cursor'));
+}
+
+function cursorManagedEntry(): Record<string, any> {
+  return {
+    ...managedHook('cursor'),
+    description: 'Load routed Engram memory context for Cursor session start.'
+  };
+}
+
+function isWindsurfManagedEntry(entry: any): boolean {
+  if (!isObject(entry)) return false;
+  const cmd = entry.command ?? entry.powershell ?? '';
+  return cmd.includes(managedCommand('windsurf'));
+}
+
+function windsurfManagedEntry(): Record<string, any> {
+  const entry: Record<string, any> = {
+    command: managedCommand('windsurf'),
+    timeout: TIMEOUT_MS
+  };
+  if (process.platform === 'win32') {
+    entry.powershell = managedCommand('windsurf');
+  }
+  return entry;
 }
 
 function isObject(value: unknown): value is Record<string, any> {

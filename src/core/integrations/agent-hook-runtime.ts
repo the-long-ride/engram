@@ -38,9 +38,17 @@ function hostOutput(
   output: Record<string, any>,
   action: OpenCodeHookAction
 ): Record<string, any> {
-  return host === 'opencode'
-    ? { ...output, engramHook: { action } }
-    : output;
+  if (host === 'opencode') return { ...output, engramHook: { action } };
+  if (host === 'cursor') {
+    const additional_context = output?.hookSpecificOutput?.additionalContext ?? '';
+    return { additional_context };
+  }
+  if (host === 'windsurf') {
+    const proofText = output?.hookSpecificOutput?.additionalContext ?? '';
+    if (!proofText) return {};
+    return { proof: proofText };
+  }
+  return output;
 }
 
 const CACHE_FILE = 'agent-hook-cache.json';
@@ -57,6 +65,10 @@ export async function runAgentHook(host: AgentHookHost, rawInput: string): Promi
   }
 }
 
+function isSessionStart(event: string): boolean {
+  return event === 'SessionStart' || event === 'sessionStart';
+}
+
 async function computeHookOutput(host: AgentHookHost, payload: HookPayload, cwd: string): Promise<Record<string, any>> {
   const event = eventName(payload);
   if (!isEligibleEvent(host, event)) return {};
@@ -69,7 +81,7 @@ async function computeHookOutput(host: AgentHookHost, payload: HookPayload, cwd:
   if (configMode === 'off') {
     return hostOutput(host, proofOnlyOutput(event, proofMode, skippedProof(configMode, 'off')), 'clear');
   }
-  if (configMode === 'startup' && event !== 'SessionStart') {
+  if (configMode === 'startup' && !isSessionStart(event)) {
     return hostOutput(host, proofOnlyOutput(event, proofMode, skippedProof(configMode, 'startup-only')), 'retain');
   }
 
@@ -84,10 +96,12 @@ async function computeHookOutput(host: AgentHookHost, payload: HookPayload, cwd:
   const cache = await readCache(cwd);
   const key = cacheKey(host, cwd, sessionId(payload));
   const previous = cache.records[key];
-  const shouldInject = configMode === 'always'
-    || event === 'SessionStart'
-    || !previous
-    || previous.routedSignature !== signature;
+  const shouldInject = host === 'windsurf'
+    ? false
+    : configMode === 'always'
+      || isSessionStart(event)
+      || !previous
+      || previous.routedSignature !== signature;
   cache.records[key] = {
     host,
     cwd,
@@ -132,26 +146,29 @@ function proofOnlyOutput(event: string, proofMode: HookProofMode, proof: HookPro
 }
 
 function eventName(payload: HookPayload): string {
-  return String(payload.hook_event_name ?? payload.hookEventName ?? payload.event ?? '');
+  return String(payload.hook_event_name ?? payload.hookEventName ?? payload.event ?? payload.agent_action_name ?? '');
 }
 
 function payloadCwd(payload: HookPayload): string {
-  const found = String(payload.cwd ?? process.env.GEMINI_CWD ?? process.env.CLAUDE_PROJECT_DIR ?? process.cwd());
+  const found = String(payload.cwd ?? process.env.CURSOR_PROJECT_DIR ?? process.env.GEMINI_CWD ?? process.env.CLAUDE_PROJECT_DIR ?? process.cwd());
   return path.resolve(found || process.cwd());
 }
 
 function sessionId(payload: HookPayload): string {
-  return String(payload.session_id ?? payload.sessionId ?? process.env.GEMINI_SESSION_ID ?? 'default');
+  return String(payload.session_id ?? payload.sessionId ?? payload.conversation_id ?? payload.trajectory_id ?? process.env.GEMINI_SESSION_ID ?? 'default');
 }
 
 function queryText(payload: HookPayload, event: string): string {
-  if (event === 'SessionStart') return `session start ${String(payload.source ?? '')}`.trim();
-  return String(payload.prompt ?? payload.user_prompt ?? payload.message ?? 'current task').trim() || 'current task';
+  if (isSessionStart(event)) return `session start ${String(payload.source ?? '')}`.trim();
+  const windsurfPrompt = payload.tool_info?.user_prompt;
+  return String(payload.prompt ?? payload.user_prompt ?? windsurfPrompt ?? payload.message ?? 'current task').trim() || 'current task';
 }
 
 function isEligibleEvent(host: AgentHookHost, event: string): boolean {
-  if (event === 'SessionStart') return true;
+  if (event === 'SessionStart' || event === 'sessionStart') return true;
   if (host === 'gemini') return event === 'BeforeAgent';
+  if (host === 'cursor') return event === 'sessionStart';
+  if (host === 'windsurf') return event === 'pre_user_prompt';
   return event === 'UserPromptSubmit';
 }
 

@@ -110,3 +110,28 @@ test('help and completions expose OpenCode hook support', async () => {
   }
   await rm(cwd, { recursive: true, force: true });
 });
+
+test('help and completions expose Cursor and Windsurf hook support', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cursor-windsurf-help-');
+  const help = await runEngram(cwd, env, ['help', 'agent-hook']);
+  assert.equal(help.code, 0, help.stderr);
+  assert.match(help.stdout, /--host cursor/);
+  assert.match(help.stdout, /--host windsurf/);
+
+  for (const shell of ['bash', 'zsh', 'powershell']) {
+    const completion = await runEngram(cwd, env, ['completion', shell]);
+    assert.equal(completion.code, 0, completion.stderr);
+    assert.match(completion.stdout, /cursor/);
+    assert.match(completion.stdout, /windsurf/);
+  }
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('help agent-hook mentions Cursor and Windsurf capabilities', async () => {
+  const { cwd, env } = await tempWorkspace('engram-agent-hook-help-');
+  const help = await runEngram(cwd, env, ['help', 'agent-hook']);
+  assert.equal(help.code, 0, help.stderr);
+  assert.match(help.stdout, /Cursor/);
+  assert.match(help.stdout, /Windsurf/);
+  await rm(cwd, { recursive: true, force: true });
+});

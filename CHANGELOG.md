@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.0.22
+
+- Added Cursor as a `link` target: workspace rules (`.cursor/rules/engram.mdc`), MCP (`.cursor/mcp.json` with `type: "stdio"`), sessionStart hook, and guide file. Global install creates a local Cursor plugin with rules, skills, commands, MCP, and hooks.
+- Added Windsurf as a `link` target: workspace rules (`.windsurf/rules/engram.md`), pre_user_prompt hook (proof-only, no AI context injection), and guide file. Global install writes global rules, MCP (`mcp_config.json` with `type: "stdio"`), and hooks. Workspace MCP is not generated for Windsurf.
+- Added `cascade` as a compatibility alias for `windsurf` in both `link`/`unlink` and `agent-hook` commands.
+- Shared `mergeFlatHooks`/`unmergeFlatHooks` for flat cursor/windsurf hook schemas, replacing duplicated per-target merge logic.
+- Added `ensureRequiredFrontmatter` to merge `alwaysApply: true` (Cursor) and `trigger: always_on` (Windsurf) into human-authored rule files, with CRLF line-ending support.
+- Added `_managedBy: 'engram'` marker to Cursor plugin.json so `unlink --global cursor` detects and removes the plugin.
+- Fixed `sessionStart`/`SessionStart` case mismatch in hook runtime using `isSessionStart()` helper.
+- Fixed Windsurf hook output: `shouldInject` forced `false`, output is always `{ proof }` (no AI context injection).
+- Fixed `unlink --global cascade` by normalizing the alias to `windsurf` in `normalizeGlobalTarget`.
+- Added 297 new tests covering Cursor/Windsurf workspace link, global link/unlink, hooks, MCP merge, frontmatter (LF/CRLF), plugin.json marker, cascade alias, and proof-only output.
+- Updated all documentation (README, AGENT_INTEGRATIONS, SKILLSET_CONTRACT, llm.txt, 8-language translations) for Cursor and Windsurf.
+
 ## 0.0.21
 
 - Restructured memory file content for `engram load` and `engram save`.

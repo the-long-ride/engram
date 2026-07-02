@@ -29,7 +29,22 @@ test('profiles isolate global memory and support workspace defaults, cross-profi
   assert.equal(workspaceDefault.code, 0, workspaceDefault.stderr);
   assert.match(workspaceDefault.stdout, /Workspace default profile: company/);
   const entry = await runEngram(cwd, env, ['entry']);
-  assert.match(entry.stdout.replace(/\x1b\[[0-9;]*m/g, ''), /profile\.active:\s*company/);
+  const entryText = entry.stdout.replace(/\x1b\[[0-9;]*m/g, '');
+  assert.match(entryText, /profile\.active:\s*company/);
+  assert.ok(entryText.includes(`roots.global: ${companyRoot}`), entryText);
+  assert.ok(!entryText.includes(`roots.global: ${personalRoot}`), entryText);
+
+  const companyGlobal = await runEngram(
+    cwd,
+    env,
+    ['save', '--profile', 'company', '--scope', 'global', 'knowledge', 'Company cobalt profile isolation marker'],
+    'A\n'
+  );
+  assert.equal(companyGlobal.code, 0, companyGlobal.stderr);
+  const selectedProfileLoad = await runEngram(cwd, env, ['load', '--all', '--dry-run', 'profile isolation marker']);
+  assert.equal(selectedProfileLoad.code, 0, selectedProfileLoad.stderr);
+  assert.match(selectedProfileLoad.stdout, /global:knowledge\/company-cobalt-profile-isolation-marker\.md/);
+  assert.doesNotMatch(selectedProfileLoad.stdout, /personal-default-profile-memory\.md/);
 
   const companyWorkspace = await runEngram(cwd, env, ['save', '--scope', 'workspace', 'knowledge', 'Company workspace deployment policy'], 'A\n');
   assert.equal(companyWorkspace.code, 0, companyWorkspace.stderr);

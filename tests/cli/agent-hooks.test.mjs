@@ -199,6 +199,44 @@ test('agent-hook runtime injects startup, skips repeated auto signatures, and re
   await rm(cwd, { recursive: true, force: true });
 });
 
+test('agent hook loads workspace profile memory instead of active user profile memory', async () => {
+  const { cwd, env } = await tempWorkspace('engram-agent-hook-profile-isolation-');
+  const personalRoot = path.join(cwd, 'profiles', 'personal');
+  const companyRoot = path.join(cwd, 'profiles', 'company');
+
+  assert.equal((await runEngram(cwd, env, ['profile', 'create', 'personal', '--global-path', personalRoot])).code, 0);
+  assert.equal((await runEngram(cwd, env, ['profile', 'create', 'company', '--global-path', companyRoot])).code, 0);
+  assert.equal((await runEngram(cwd, env, ['profile', 'use', 'personal', '--user'])).code, 0);
+  assert.equal((await runEngram(cwd, env, ['inject', '--no-skillset'])).code, 0);
+  assert.equal((await runEngram(cwd, env, ['profile', 'use', 'company', '--workspace'])).code, 0);
+  assert.equal((await runEngram(cwd, env, ['profile', 'use', 'personal', '--user'])).code, 0);
+
+  assert.equal((await runEngram(
+    cwd,
+    env,
+    ['save', '--profile', 'personal', '--scope', 'global', 'knowledge', 'Personal amber profile marker'],
+    'A\n'
+  )).code, 0);
+  assert.equal((await runEngram(
+    cwd,
+    env,
+    ['save', '--profile', 'company', '--scope', 'global', 'knowledge', 'Workspace cobalt profile marker'],
+    'A\n'
+  )).code, 0);
+  assert.equal((await runEngram(cwd, env, ['set-read', 'always'])).code, 0);
+
+  const output = await hookJson(cwd, env, ['agent-hook', '--host', 'codex'], {
+    hook_event_name: 'UserPromptSubmit',
+    session_id: 'profile-isolation-1',
+    cwd,
+    prompt: 'workspace cobalt profile marker'
+  });
+  assert.match(additionalContext(output), /Workspace cobalt profile marker/);
+  assert.doesNotMatch(additionalContext(output), /Personal amber profile marker/);
+
+  await rm(cwd, { recursive: true, force: true });
+});
+
 test('agent-hook emits compact proof for loaded reused and skipped turns', async () => {
   const { cwd, env } = await tempWorkspace('engram-agent-hooks-proof-');
   await runEngram(cwd, env, ['inject', '--no-skillset']);

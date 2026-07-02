@@ -1,8 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { rm } from 'node:fs/promises';
+import { mkdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { writeFile } from 'node:fs/promises';
 import { tempWorkspace } from '../helpers.mjs';
 
 // The source modules are TypeScript; tests import from compiled dist/.
@@ -193,6 +192,60 @@ test('profiles CRUD', async () => {
   assert.equal(queries.listProfiles(db.db).length, all.length - 1);
 
   db.close();
+});
+
+test('loadConfig keeps workspace profile metadata, root, and persisted config aligned', async () => {
+  const { cwd, env } = await tempWorkspace('engram-db-profile-isolation-');
+  Object.assign(process.env, env);
+  delete process.env.ENGRAM_PROFILE;
+
+  const aRoot = path.join(cwd, 'profiles', 'a');
+  const bRoot = path.join(cwd, 'profiles', 'b');
+  const workspaceConfigFile = path.join(cwd, '.agents', '.engram', 'engram.config.json');
+  await mkdir(path.dirname(workspaceConfigFile), { recursive: true });
+  await mkdir(env.ENGRAM_CONFIG_DIR, { recursive: true });
+  await writeFile(workspaceConfigFile, JSON.stringify({ default_profile: 'b', global_path: '' }, null, 2));
+  await writeFile(path.join(env.ENGRAM_CONFIG_DIR, 'profiles.json'), JSON.stringify({
+    active_profile: 'a',
+    profiles: {
+      a: { global_path: aRoot, scope: 'global' },
+      b: { global_path: bRoot, scope: 'global' }
+    }
+  }, null, 2));
+
+  const { schema, queries } = await loadModules();
+  const db = await schema.openConfigDb();
+  if (!db) {
+    await rm(cwd, { recursive: true, force: true });
+    return;
+  }
+  schema.ensureSchema(db.db);
+  queries.upsertProfile(db.db, 'a', aRoot, 'global');
+  queries.upsertProfile(db.db, 'b', bRoot, 'global');
+  queries.setActiveProfile(db.db, 'a');
+  const workspace = queries.upsertWorkspace(db.db, cwd, 'Profile isolation workspace');
+  queries.setWorkspaceConfigKey(db.db, workspace.id, 'default_profile', 'b');
+  queries.setWorkspaceConfigKey(db.db, workspace.id, 'global_path', '');
+  db.close();
+
+  const { loadConfig, profileResolutionForConfig, writeConfig } = await import('../../dist/core/runtime/config.js');
+  const loaded = await loadConfig(cwd);
+  const profile = profileResolutionForConfig(loaded);
+  assert.equal(profile.active, 'b');
+  assert.equal(profile.source, 'workspace');
+  assert.equal(profile.global_path, path.resolve(bRoot));
+  assert.equal(loaded.global_path, path.resolve(bRoot));
+
+  await writeConfig(cwd, loaded);
+  const reopened = await schema.openConfigDb();
+  assert.ok(reopened);
+  const storedWorkspace = queries.getWorkspaceByPath(reopened.db, cwd);
+  const storedConfig = queries.getWorkspaceConfig(reopened.db, storedWorkspace.id);
+  assert.equal(storedConfig.default_profile, 'b');
+  assert.equal(storedConfig.global_path, '');
+  reopened.close();
+
+  await rm(cwd, { recursive: true, force: true });
 });
 
 test('flattenConfig and unflattenConfig roundtrip', async () => {

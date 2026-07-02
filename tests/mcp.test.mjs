@@ -5,6 +5,7 @@ import path from 'node:path';
 import { handleMcp } from '../dist/mcp/server.js';
 import { runCli } from '../dist/cli.js';
 import { tempWorkspace, workspaceMemoryRoot } from './helpers.mjs';
+import { profileMemoryRaw, writeProfileMemory } from './cli/fixtures.mjs';
 
 test('mcp status and save proposal do not write silently', async () => {
   const { cwd, env } = await tempWorkspace('engram-mcp-');
@@ -137,6 +138,56 @@ test('mcp status and save proposal do not write silently', async () => {
     assert.match(empty.error.message, /non-empty text/);
     const badType = await handleMcp({ id: 13, method: 'engram_save', params: { text: 'Use Vitest', type: 'bogus' } });
     assert.match(badType.error.message, /rule, skill, workflow, or knowledge/);
+  } finally {
+    process.chdir(previous);
+    if (previousConfigDir === undefined) delete process.env.ENGRAM_CONFIG_DIR;
+    else process.env.ENGRAM_CONFIG_DIR = previousConfigDir;
+    if (previousGlobalDir === undefined) delete process.env.ENGRAM_GLOBAL_DIR;
+    else process.env.ENGRAM_GLOBAL_DIR = previousGlobalDir;
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('mcp load uses workspace default profile instead of active user profile', async () => {
+  const { cwd, env } = await tempWorkspace('engram-mcp-profile-isolation-');
+  const personalRoot = path.join(cwd, 'profiles', 'personal');
+  const companyRoot = path.join(cwd, 'profiles', 'company');
+  const previous = process.cwd();
+  const previousGlobalDir = process.env.ENGRAM_GLOBAL_DIR;
+  const previousConfigDir = process.env.ENGRAM_CONFIG_DIR;
+  process.chdir(cwd);
+  process.env.ENGRAM_CONFIG_DIR = env.ENGRAM_CONFIG_DIR;
+  process.env.ENGRAM_GLOBAL_DIR = env.ENGRAM_GLOBAL_DIR;
+  try {
+    assert.match(await runCli(['profile', 'create', 'personal', '--global-path', personalRoot]), /Profile created: personal/);
+    assert.match(await runCli(['profile', 'create', 'company', '--global-path', companyRoot]), /Profile created: company/);
+    assert.match(await runCli(['profile', 'use', 'personal', '--user']), /User default profile: personal/);
+    await runCli(['inject', '--no-skillset']);
+    assert.match(await runCli(['profile', 'use', 'company', '--workspace']), /Workspace default profile: company/);
+    assert.match(await runCli(['profile', 'use', 'personal', '--user']), /User default profile: personal/);
+
+    await writeProfileMemory(
+      personalRoot,
+      'knowledge/personal-amber-profile-marker.md',
+      profileMemoryRaw('personal-amber-profile-marker', 'Personal amber profile marker should stay out of workspace-pinned MCP loads.')
+    );
+    await writeProfileMemory(
+      companyRoot,
+      'knowledge/workspace-cobalt-profile-marker.md',
+      profileMemoryRaw('workspace-cobalt-profile-marker', 'Workspace cobalt profile marker should load through MCP for the workspace default profile.')
+    );
+    await runCli(['rebuild-index', 'global']);
+
+    const loaded = await handleMcp({
+      id: 20,
+      method: 'tools/call',
+      params: {
+        name: 'engram_load',
+        arguments: { query: 'workspace cobalt profile marker', forAgents: true }
+      }
+    });
+    assert.match(loaded.result, /Workspace cobalt profile marker/);
+    assert.doesNotMatch(loaded.result, /Personal amber profile marker/);
   } finally {
     process.chdir(previous);
     if (previousConfigDir === undefined) delete process.env.ENGRAM_CONFIG_DIR;

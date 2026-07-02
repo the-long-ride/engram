@@ -4,7 +4,7 @@ import path from 'node:path';
 import { VERSION } from '../runtime/constants.js';
 import { loadConfig, userConfigDir } from '../runtime/config.js';
 import { sha256 } from '../safety/hash.js';
-import { ensureDir, readJson, readText, writeJson, writeText } from '../system/fsx.js';
+import { ensureDir, exists, parseJsonLike, readJson, readText, writeJson, writeText } from '../system/fsx.js';
 import {
   globalSkillsetMarkdown,
   hasWorkspaceManagedBlock,
@@ -70,11 +70,11 @@ const targets: Record<SkillsetTarget, string[]> = {
   'agent-skill': ['.agents/skills/engram/SKILL.md'],
   antigravity: [
     '.antigravity/skills/engram/SKILL.md',
-    '.antigravity-cli/skills/engram/SKILL.md',
-    '.antigravity-ide/skills/engram/SKILL.md',
-    '.antigravityrules'
+      '.antigravity-cli/skills/engram/SKILL.md',
+      '.antigravity-ide/skills/engram/SKILL.md',
+      '.antigravityrules'
   ],
-  opencode: ['opencode.json', '.opencode/engram.md'],
+  opencode: ['AGENTS.md', '.opencode/skills/engram/SKILL.md', 'opencode.json'],
   mcp: ['.mcp.json'],
   slash: ['.claude/commands/engram.md', '.claude/skills/engram/SKILL.md', '.cursor/commands/engram.md', '.gemini/commands/engram.toml', '.opencode/commands/engram.md']
 };
@@ -87,13 +87,17 @@ const workspaceGuideFiles: Partial<Record<SkillsetTarget, string>> = {
   gemini: '.gemini/engram.md',
   cline: '.agents/engram.md',
   windsurf: '.windsurf/engram.md',
-  copilot: '.agents/engram.md'
+  copilot: '.agents/engram.md',
+  opencode: '.opencode/engram.md'
 };
 
 /** Return the guide file path for a given workspace target, or undefined if none. */
 function workspaceGuideFileForTarget(target: SkillsetTarget): string | undefined {
   return workspaceGuideFiles[target];
 }
+
+const OPENCODE_JSON = 'opencode.json';
+const OPENCODE_JSONC = 'opencode.jsonc';
 
 /** Instruction files: files that should receive the minimal block instead of full content. */
 const instructionFileNames = new Set([
@@ -110,6 +114,27 @@ const instructionFileNames = new Set([
 function isInstructionFile(relativeFile: string): boolean {
   const normalized = relativeFile.replace(/\\/g, '/');
   return instructionFileNames.has(normalized);
+}
+
+function isOpencodeConfigFile(relativeFile: string): boolean {
+  const normalized = normalizePath(relativeFile);
+  return normalized === OPENCODE_JSON
+    || normalized === OPENCODE_JSONC
+    || normalized.endsWith(`/${OPENCODE_JSON}`)
+    || normalized.endsWith(`/${OPENCODE_JSONC}`);
+}
+
+async function resolveOpencodeConfigPath(file: string): Promise<string> {
+  const normalized = normalizePath(file);
+  if (!normalized.endsWith(`/${OPENCODE_JSON}`) && normalized !== OPENCODE_JSON) return file;
+  const jsoncFile = file.slice(0, -'.json'.length) + '.jsonc';
+  return await exists(jsoncFile) ? jsoncFile : file;
+}
+
+async function resolveWorkspaceRelativeFile(cwd: string, relativeFile: string): Promise<string> {
+  if (!isOpencodeConfigFile(relativeFile)) return relativeFile;
+  const resolved = await resolveOpencodeConfigPath(path.join(cwd, OPENCODE_JSON));
+  return path.relative(cwd, resolved) || OPENCODE_JSON;
 }
 
 function instructionProfileForTarget(target: SkillsetTarget, label: string): InstructionProfile {
@@ -157,21 +182,25 @@ export async function installSkillset(cwd: string, target = 'all', force = false
   const results: InstallResult[] = [];
   const plannedFiles = new Set<string>();
   const plannedGuideFiles = new Set<string>();
+  const preferOpenCodeGuide = names.some((item) => item.name === 'opencode');
   for (const { name, label } of names) {
     const files = target === 'all' ? targets[name] : [...targets[name], ...workspaceMcpFilesForTarget(name)];
     for (const relativeFile of files) {
-      if (plannedFiles.has(relativeFile)) continue;
-      plannedFiles.add(relativeFile);
-      const file = path.join(cwd, relativeFile);
-      if (isInstructionFile(relativeFile)) {
+      const resolvedRelativeFile = await resolveWorkspaceRelativeFile(cwd, relativeFile);
+      if (plannedFiles.has(resolvedRelativeFile)) continue;
+      plannedFiles.add(resolvedRelativeFile);
+      const file = path.join(cwd, resolvedRelativeFile);
+      if (isInstructionFile(resolvedRelativeFile)) {
         // Minimal block path: upsert managed block, write companion guide
-        const guidePath = workspaceGuideFileForTarget(name);
+        const guidePath = resolvedRelativeFile === 'AGENTS.md' && name === 'agents-md' && preferOpenCodeGuide
+          ? '.opencode/engram.md'
+          : workspaceGuideFileForTarget(name);
         const effectiveGuidePath = guidePath ?? '.agents/engram.md';
-        const block = renderInstructionBlock(name, relativeFile, effectiveGuidePath);
+        const block = renderInstructionBlock(name, resolvedRelativeFile, effectiveGuidePath);
         // For cursor .mdc and windsurf .md: the block includes frontmatter, so write it directly
-        const isFrontmatterFile = (name === 'cursor' && relativeFile === '.cursor/rules/engram.mdc') || (name === 'windsurf' && relativeFile === '.windsurf/rules/engram.md');
+        const isFrontmatterFile = (name === 'cursor' && resolvedRelativeFile === '.cursor/rules/engram.mdc') || (name === 'windsurf' && resolvedRelativeFile === '.windsurf/rules/engram.md');
         const existing = await readText(file);
-        if (existing && !force && !isGenerated(existing, relativeFile)) {
+        if (existing && !force && !isGenerated(existing, resolvedRelativeFile)) {
           if (isFrontmatterFile) {
             // Human-authored frontmatter file: ensure required frontmatter and append managed block
             const { text: mergedFrontmatter, changed: frontmatterChanged } = ensureRequiredFrontmatter(existing, name);
@@ -179,17 +208,17 @@ export async function installSkillset(cwd: string, target = 'all', force = false
             const { text, action } = upsertWorkspaceManagedBlock(base, renderMinimalInstructionBlock(effectiveGuidePath));
             await ensureDir(path.dirname(file));
             await writeText(file, text);
-            results.push({ target: label, file: relativeFile, action: frontmatterChanged ? 'updated' : action, reason: frontmatterChanged ? 'merged required frontmatter (alwaysApply/trigger) into human file' : undefined });
+            results.push({ target: label, file: resolvedRelativeFile, action: frontmatterChanged ? 'updated' : action, reason: frontmatterChanged ? 'merged required frontmatter (alwaysApply/trigger) into human file' : undefined });
           } else {
             const { text, action } = upsertWorkspaceManagedBlock(existing, block);
             await ensureDir(path.dirname(file));
             await writeText(file, text);
-            results.push({ target: label, file: relativeFile, action });
+            results.push({ target: label, file: resolvedRelativeFile, action });
           }
         } else if (!existing) {
           await ensureDir(path.dirname(file));
           await writeText(file, isFrontmatterFile ? block : `${block}\n`);
-          results.push({ target: label, file: relativeFile, action: 'written' });
+          results.push({ target: label, file: resolvedRelativeFile, action: 'written' });
         } else {
           // Existing generated or forced: upsert block (replaces legacy full content)
           const { text, action } = isFrontmatterFile
@@ -197,7 +226,7 @@ export async function installSkillset(cwd: string, target = 'all', force = false
             : upsertWorkspaceManagedBlock(existing, block);
           await ensureDir(path.dirname(file));
           await writeText(file, text);
-          results.push({ target: label, file: relativeFile, action });
+          results.push({ target: label, file: resolvedRelativeFile, action });
         }
         // Write companion guide file
         if (guidePath && !plannedGuideFiles.has(guidePath)) {
@@ -214,39 +243,64 @@ export async function installSkillset(cwd: string, target = 'all', force = false
         }
       } else {
         // Non-instruction file
-        if (isCursorMcpFile(relativeFile)) {
+        if (isOpencodeConfigFile(resolvedRelativeFile)) {
           const existing = await readText(file);
-          const incoming = renderSkillsetFile('mcp', relativeFile, config.read, 'compact');
-          if (existing && force) {
-            await ensureDir(path.dirname(file));
-            await writeText(file, incoming);
-            results.push({ target: label, file: relativeFile, action: 'updated' });
-          } else if (existing) {
-            const merged = mergeMcpJson(existing, incoming);
+          const incoming = renderSkillsetFile('opencode', resolvedRelativeFile, config.read, 'compact');
+          if (existing) {
+            const merged = mergeOpencodeMcp(existing, incoming, { replaceExisting: force });
             if (merged) {
               await ensureDir(path.dirname(file));
               await writeText(file, merged);
-              results.push({ target: label, file: relativeFile, action: 'updated' });
+              results.push({ target: label, file: resolvedRelativeFile, action: 'updated' });
+              continue;
+            }
+            results.push({
+              target: label,
+              file: resolvedRelativeFile,
+              action: 'skipped',
+              reason: force
+                ? 'could not merge existing OpenCode config'
+                : hasEngramOpenCodeConfig(existing)
+                  ? 'engram MCP entry already present'
+                  : 'human-authored file exists; use --force to replace'
+            });
+            continue;
+          } else {
+            await ensureDir(path.dirname(file));
+            await writeText(file, incoming);
+            results.push({ target: label, file: resolvedRelativeFile, action: 'written' });
+            continue;
+          }
+        }
+        if (isCursorMcpFile(resolvedRelativeFile)) {
+          const existing = await readText(file);
+          const incoming = renderSkillsetFile('mcp', resolvedRelativeFile, config.read, 'compact');
+          if (existing) {
+            const merged = mergeMcpJson(existing, incoming, { replaceExisting: force });
+            if (merged) {
+              await ensureDir(path.dirname(file));
+              await writeText(file, merged);
+              results.push({ target: label, file: resolvedRelativeFile, action: 'updated' });
             } else {
-              results.push({ target: label, file: relativeFile, action: 'skipped', reason: 'engram MCP entry already present' });
+              results.push({ target: label, file: resolvedRelativeFile, action: 'skipped', reason: force ? 'could not merge existing MCP config' : 'engram MCP entry already present' });
             }
           } else {
             await ensureDir(path.dirname(file));
             await writeText(file, incoming);
-            results.push({ target: label, file: relativeFile, action: 'written' });
+            results.push({ target: label, file: resolvedRelativeFile, action: 'written' });
           }
           continue;
         }
         const existing = await readText(file);
-        if (existing && !force && !isGenerated(existing, relativeFile)) {
-          results.push({ target: label, file: relativeFile, action: 'skipped' });
+        if (existing && !force && !isGenerated(existing, resolvedRelativeFile)) {
+          results.push({ target: label, file: resolvedRelativeFile, action: 'skipped' });
           continue;
         }
         await ensureDir(path.dirname(file));
-        const renderTarget = renderTargetForFile(name, relativeFile);
+        const renderTarget = renderTargetForFile(name, resolvedRelativeFile);
         const profile = instructionProfileForTarget(renderTarget, label);
-        await writeText(file, renderSkillsetFile(renderTarget, relativeFile, config.read, profile));
-        results.push({ target: label, file: relativeFile, action: 'written' });
+        await writeText(file, renderSkillsetFile(renderTarget, resolvedRelativeFile, config.read, profile));
+        results.push({ target: label, file: resolvedRelativeFile, action: 'written' });
       }
     }
   }
@@ -272,7 +326,7 @@ export async function detectLinkedWorkspaceTargets(cwd: string): Promise<Skillse
 }
 
 async function workspaceTargetIsLinked(cwd: string, target: SkillsetTarget): Promise<boolean> {
-  for (const relativeFile of workspaceInstallFilesForTarget(target)) {
+  for (const relativeFile of workspaceDetectionFilesForTarget(target)) {
     const existing = await readText(path.join(cwd, relativeFile));
     if (!existing) continue;
     if (isLinkedWorkspaceArtifact(relativeFile, existing)) return true;
@@ -299,16 +353,28 @@ function workspaceInstallFilesForTarget(target: SkillsetTarget): string[] {
   return [...targets[target], ...workspaceMcpFilesForTarget(target), ...(guidePath ? [guidePath] : [])];
 }
 
+function workspaceDetectionFilesForTarget(target: SkillsetTarget): string[] {
+  const files = workspaceInstallFilesForTarget(target);
+  if (target === 'opencode') {
+    return [...new Set([
+      ...files.filter((file) => normalizePath(file) !== 'AGENTS.md' && !isOpencodeConfigFile(file)),
+      OPENCODE_JSON,
+      OPENCODE_JSONC
+    ])];
+  }
+  return files;
+}
+
 function isLinkedWorkspaceArtifact(relativeFile: string, existing: string): boolean {
   const normalized = normalizePath(relativeFile);
   if (normalized === '.mcp.json' || normalized === '.cursor/mcp.json') return hasEngramMcpConfig(existing);
-  if (normalized === 'opencode.json') return hasEngramOpenCodeConfig(existing);
+  if (normalized === OPENCODE_JSON || normalized === OPENCODE_JSONC) return hasEngramOpenCodeConfig(existing);
   return isGenerated(existing, relativeFile);
 }
 
 function hasEngramMcpConfig(existing: string): boolean {
   try {
-    const parsed = JSON.parse(existing);
+    const parsed = parseJsonLike<Record<string, any>>(existing);
     return Boolean(parsed?.mcpServers?.engram);
   } catch {
     return false;
@@ -317,7 +383,7 @@ function hasEngramMcpConfig(existing: string): boolean {
 
 function hasEngramOpenCodeConfig(existing: string): boolean {
   try {
-    const parsed = JSON.parse(existing);
+    const parsed = parseJsonLike<Record<string, any>>(existing);
     return Boolean(parsed?.mcp?.engram) || (Array.isArray(parsed?.instructions) && parsed.instructions.includes('.opencode/engram.md'));
   } catch {
     return false;
@@ -342,31 +408,48 @@ export async function refreshGeneratedWorkspaceSkillsets(cwd: string, options: {
   const handledGuideFiles = new Set<string>();
   for (const name of Object.keys(targets) as SkillsetTarget[]) {
     for (const relativeFile of targets[name]) {
-      const file = path.join(cwd, relativeFile);
+      const resolvedRelativeFile = await resolveWorkspaceRelativeFile(cwd, relativeFile);
+      const file = path.join(cwd, resolvedRelativeFile);
       const existing = await readText(file);
       if (!existing) continue;
-      // Migration: merge MCP into opencode.json that predates MCP support
-      if (name === 'opencode' && relativeFile === 'opencode.json' && !isGenerated(existing, relativeFile)) {
+      if (name === 'opencode' && isOpencodeConfigFile(resolvedRelativeFile)) {
         try {
-          const parsed = JSON.parse(existing);
-          if (parsed.$schema === 'https://opencode.ai/config.json' && parsed.instructions?.includes('.opencode/engram.md') && !parsed.mcp?.engram) {
-            const next = renderSkillsetFile(name, relativeFile, config.read, 'compact');
-            const merged = mergeOpencodeMcp(existing, next);
-            if (merged) {
-              if (options.plan) {
-                results.push({ target: name, file: relativeFile, action: 'planned' });
-              } else {
-                await writeText(file, merged);
-                results.push({ target: name, file: relativeFile, action: 'updated' });
-              }
+          const parsed = parseJsonLike<Record<string, any>>(existing);
+          const hasLegacyInstruction = Array.isArray(parsed.instructions) && parsed.instructions.includes('.opencode/engram.md');
+          if (!parsed.mcp?.engram && !hasLegacyInstruction) continue;
+          const next = renderSkillsetFile(name, resolvedRelativeFile, config.read, 'compact');
+          const merged = mergeOpencodeMcp(existing, next, { replaceExisting: true });
+          if (merged && merged !== existing) {
+            if (options.plan) {
+              results.push({ target: name, file: resolvedRelativeFile, action: 'planned' });
+            } else {
+              await writeText(file, merged);
+              results.push({ target: name, file: resolvedRelativeFile, action: 'updated' });
             }
           }
         } catch { /* not valid JSON, skip */ }
         continue;
       }
-      if (!isGenerated(existing, relativeFile)) continue;
+      if (name === 'cursor' && isCursorMcpFile(resolvedRelativeFile)) {
+        try {
+          const parsed = parseJsonLike<Record<string, any>>(existing);
+          if (!parsed.mcpServers?.engram) continue;
+          const next = renderSkillsetFile('mcp', resolvedRelativeFile, config.read, 'compact');
+          const merged = mergeMcpJson(existing, next, { replaceExisting: true });
+          if (merged && merged !== existing) {
+            if (options.plan) {
+              results.push({ target: name, file: resolvedRelativeFile, action: 'planned' });
+            } else {
+              await writeText(file, merged);
+              results.push({ target: name, file: resolvedRelativeFile, action: 'updated' });
+            }
+          }
+        } catch { /* not valid JSON, skip */ }
+        continue;
+      }
+      if (!isGenerated(existing, resolvedRelativeFile)) continue;
 
-      if (isInstructionFile(relativeFile)) {
+      if (isInstructionFile(resolvedRelativeFile)) {
         // Handle instruction file: migrate to minimal block or refresh block
         const guidePath = workspaceGuideFileForTarget(name);
         const effectiveGuidePath = guidePath ?? '.agents/engram.md';
@@ -376,10 +459,10 @@ export async function refreshGeneratedWorkspaceSkillsets(cwd: string, options: {
 
         if (existing !== normalizedNext) {
           if (options.plan) {
-            results.push({ target: name, file: relativeFile, action: 'planned' });
+            results.push({ target: name, file: resolvedRelativeFile, action: 'planned' });
           } else {
             await writeText(file, normalizedNext);
-            results.push({ target: name, file: relativeFile, action: blockAction === 'written' ? 'updated' : 'updated' });
+            results.push({ target: name, file: resolvedRelativeFile, action: blockAction === 'written' ? 'updated' : 'updated' });
           }
         }
 
@@ -405,16 +488,16 @@ export async function refreshGeneratedWorkspaceSkillsets(cwd: string, options: {
         }
       } else {
         // Non-instruction generated file: original refresh behavior
-        const profile = await instructionProfileForWorkspaceRefresh(cwd, name, relativeFile, existing);
-        const next = renderSkillsetFile(name, relativeFile, config.read, profile);
+        const profile = await instructionProfileForWorkspaceRefresh(cwd, name, resolvedRelativeFile, existing);
+        const next = renderSkillsetFile(name, resolvedRelativeFile, config.read, profile);
         const normalized = next.endsWith('\n') ? next : `${next}\n`;
         if (existing === normalized) continue;
         if (options.plan) {
-          results.push({ target: name, file: relativeFile, action: 'planned' });
+          results.push({ target: name, file: resolvedRelativeFile, action: 'planned' });
           continue;
         }
         await writeText(file, normalized);
-        results.push({ target: name, file: relativeFile, action: 'updated' });
+        results.push({ target: name, file: resolvedRelativeFile, action: 'updated' });
       }
     }
   }
@@ -436,7 +519,9 @@ export async function installGlobalSkillset(target = 'all', options: { force?: b
   const config = await loadConfig(process.cwd());
   const plans = globalInstallPlans(target, options.home);
   const results: InstallResult[] = [];
-  for (const plan of plans) {
+  for (const rawPlan of plans) {
+    const resolvedFile = await resolveOpencodeConfigPath(rawPlan.file);
+    const plan = resolvedFile === rawPlan.file ? rawPlan : { ...rawPlan, file: resolvedFile };
     if (plan.reason || !plan.mode) {
       results.push({ target: plan.label, file: plan.file, action: 'skipped', reason: plan.reason ?? 'global install is not supported for this target yet' });
       continue;
@@ -449,7 +534,7 @@ export async function installGlobalSkillset(target = 'all', options: { force?: b
     let content = renderGlobalInstallContent(plan, config.read, profile);
     const isWindsurfGlobalRules = plan.file.endsWith('global_rules.md');
     if (plan.mode === 'block') {
-      content = renderMinimalInstructionBlock('~/.agents/engram.md');
+      content = renderMinimalInstructionBlock(globalGuidePathForPlan(plan));
     }
     if (isWindsurfGlobalRules) {
       content = renderWindsurfGlobalRulesBlock();
@@ -460,7 +545,7 @@ export async function installGlobalSkillset(target = 'all', options: { force?: b
     }
     const existing = await readText(plan.file);
     if (plan.mode === 'file' && existing && !options.force && !isGenerated(existing, plan.file)) {
-      if (plan.renderTarget === 'opencode' && plan.file.endsWith('opencode.json')) {
+      if (plan.renderTarget === 'opencode' && isOpencodeConfigFile(plan.file)) {
         const merged = mergeOpencodeMcp(existing, content);
         if (merged) {
           await writeText(plan.file, merged);
@@ -485,6 +570,26 @@ export async function installGlobalSkillset(target = 'all', options: { force?: b
         continue;
       }
       results.push({ target: plan.label, file: plan.file, action: 'skipped', mode: plan.mode, reason: 'human-authored file exists; re-run with --force to replace' });
+      continue;
+    }
+    if (plan.mode === 'file' && existing && plan.renderTarget === 'opencode' && isOpencodeConfigFile(plan.file)) {
+      const merged = mergeOpencodeMcp(existing, content, { replaceExisting: true });
+      if (merged) {
+        await writeText(plan.file, merged);
+        results.push({ target: plan.label, file: plan.file, action: 'updated', mode: plan.mode, hash: sha256(merged) });
+        continue;
+      }
+      results.push({ target: plan.label, file: plan.file, action: 'skipped', mode: plan.mode, reason: 'could not merge existing OpenCode config' });
+      continue;
+    }
+    if (plan.mode === 'file' && existing && plan.renderTarget === 'mcp' && (plan.file.endsWith('mcp.json') || plan.file.endsWith('mcp_config.json'))) {
+      const merged = mergeMcpJson(existing, content, { replaceExisting: true });
+      if (merged) {
+        await writeText(plan.file, merged);
+        results.push({ target: plan.label, file: plan.file, action: 'updated', mode: plan.mode, hash: sha256(merged) });
+        continue;
+      }
+      results.push({ target: plan.label, file: plan.file, action: 'skipped', mode: plan.mode, reason: 'could not merge existing MCP config' });
       continue;
     }
     const next = plan.mode === 'block' || isWindsurfGlobalRules
@@ -623,7 +728,7 @@ function globalFilesForTarget(target: ResolvedTarget, home: string): GlobalInsta
       return [
         plan(path.join(configHome, 'opencode', 'AGENTS.md'), 'block', 'agents-md'),
         plan(path.join(configHome, 'opencode', 'skills', 'engram', 'SKILL.md'), 'file', 'agent-skill'),
-        plan(path.join(home, '.agents', 'engram.md'), 'file')
+        plan(path.join(configHome, 'opencode', 'engram.md'), 'file', 'agents-md')
       ];
     case 'mcp':
       return [plan(path.join(home, '.claude', 'mcp.json'), 'file', 'mcp'), plan(path.join(configHome, 'gemini', 'mcp.json'), 'file', 'mcp')];
@@ -640,6 +745,7 @@ function globalFilesForTarget(target: ResolvedTarget, home: string): GlobalInsta
 function workspaceMcpFilesForTarget(target: SkillsetTarget): string[] {
   if (target === 'windsurf') return [];
   if (target === 'cursor') return [];
+  if (target === 'opencode') return [];
   return target === 'mcp' || target === 'slash' ? [] : targets.mcp;
 }
 
@@ -647,6 +753,8 @@ function renderTargetForFile(target: SkillsetTarget, relativeFile: string): Skil
   const normalized = relativeFile.replace(/\\/g, '/');
   if (targets.mcp.includes(normalized)) return 'mcp';
   if (normalized === '.cursor/mcp.json') return 'mcp';
+  if (normalized === OPENCODE_JSON || normalized === OPENCODE_JSONC) return 'opencode';
+  if (normalized === '.opencode/skills/engram/SKILL.md') return 'agent-skill';
   return target;
 }
 
@@ -664,7 +772,7 @@ function globalMcpFilesForTarget(target: ResolvedTarget, home: string): GlobalIn
     case 'antigravity':
       return [plan(path.join(configHome, 'gemini', 'mcp.json'))];
     case 'opencode':
-      return [{ ...target, file: path.join(configHome, 'opencode', 'opencode.json'), mode: 'file', renderTarget: 'opencode' }];
+      return [{ ...target, file: path.join(configHome, 'opencode', OPENCODE_JSON), mode: 'file', renderTarget: 'opencode' }];
     case 'windsurf':
       return [];
     default:
@@ -676,7 +784,7 @@ function renderGlobalInstallContent(plan: GlobalInstallPlan, readMode = 'auto', 
   const normFile = plan.file.replace(/\\/g, '/');
   if (plan.name === 'slash' || plan.renderTarget === 'slash') return renderSkillsetFile('slash', plan.file, readMode);
   if (plan.renderTarget === 'mcp') return renderSkillsetFile('mcp', plan.file, readMode);
-  if (plan.renderTarget === 'opencode' && normFile.endsWith('opencode.json')) return renderSkillsetFile('opencode', plan.file, readMode);
+  if (plan.renderTarget === 'opencode' && /opencode\.jsonc?$/u.test(normFile)) return renderSkillsetFile('opencode', plan.file, readMode);
   if (normFile.endsWith('SKILL.md')) return renderSkillsetFile(plan.renderTarget ?? 'agent-skill', plan.file, readMode);
   if (normFile.endsWith('plugin.json')) return renderCursorPluginJson();
   if (normFile.endsWith('rules/engram.mdc')) return renderCursorRule();
@@ -684,6 +792,14 @@ function renderGlobalInstallContent(plan: GlobalInstallPlan, readMode = 'auto', 
   if (normFile.endsWith('hooks.json')) return '{}\n';
   if (normFile.endsWith('global_rules.md')) return `${renderWindsurfGlobalRulesBlock()}\n`;
   return globalSkillsetMarkdown(readMode, profile);
+}
+
+function globalGuidePathForPlan(plan: GlobalInstallPlan): string {
+  const normFile = plan.file.replace(/\\/g, '/');
+  if (plan.name === 'opencode' && normFile.endsWith('/opencode/AGENTS.md')) {
+    return '~/.config/opencode/engram.md';
+  }
+  return '~/.agents/engram.md';
 }
 
 function upsertManagedBlock(existing: string, content: string): { text: string; action: InstallAction } {
@@ -701,29 +817,30 @@ export async function unlinkSkillset(cwd: string, target = 'all', force = false)
   const handledGuideFiles = new Set<string>();
   for (const { name, label } of names) {
     for (const relativeFile of targets[name]) {
-      const file = path.join(cwd, relativeFile);
+      const resolvedRelativeFile = await resolveWorkspaceRelativeFile(cwd, relativeFile);
+      const file = path.join(cwd, resolvedRelativeFile);
       const existing = await readText(file);
       if (!existing) {
-        results.push({ target: label, file: relativeFile, action: 'skipped', reason: 'file not found' });
+        results.push({ target: label, file: resolvedRelativeFile, action: 'skipped', reason: 'file not found' });
         continue;
       }
-      if (isInstructionFile(relativeFile)) {
+      if (isInstructionFile(resolvedRelativeFile)) {
         // Minimal block path: remove the block, handle remaining content
         if (hasWorkspaceManagedBlock(existing)) {
           const cleaned = removeWorkspaceManagedBlock(existing).trimEnd();
           if (!cleaned) {
             await fs.rm(file, { force: true });
-            results.push({ target: label, file: relativeFile, action: 'removed' });
+            results.push({ target: label, file: resolvedRelativeFile, action: 'removed' });
           } else {
             await writeText(file, `${cleaned}\n`);
-            results.push({ target: label, file: relativeFile, action: 'cleaned' });
+            results.push({ target: label, file: resolvedRelativeFile, action: 'cleaned' });
           }
-        } else if (isGenerated(existing, relativeFile) || force) {
+        } else if (isGenerated(existing, resolvedRelativeFile) || force) {
           // Legacy generated full content without block, or forced
           await fs.rm(file, { force: true });
-          results.push({ target: label, file: relativeFile, action: 'removed' });
+          results.push({ target: label, file: resolvedRelativeFile, action: 'removed' });
         } else {
-          results.push({ target: label, file: relativeFile, action: 'skipped', reason: 'human-authored file; use --force to remove' });
+          results.push({ target: label, file: resolvedRelativeFile, action: 'skipped', reason: 'human-authored file; use --force to remove' });
         }
         // Handle guide file cleanup
         const guidePath = workspaceGuideFileForTarget(name);
@@ -742,38 +859,38 @@ export async function unlinkSkillset(cwd: string, target = 'all', force = false)
         }
       } else {
         // Non-instruction file: merge-aware unlink
-        if (relativeFile === 'opencode.json') {
+        if (isOpencodeConfigFile(resolvedRelativeFile)) {
           const unmerged = unmergeOpencodeMcp(existing);
           if (unmerged !== null) {
             if (unmerged === '') {
               await fs.rm(file, { force: true });
-              results.push({ target: label, file: relativeFile, action: 'removed' });
+              results.push({ target: label, file: resolvedRelativeFile, action: 'removed' });
             } else {
               await writeText(file, unmerged);
-              results.push({ target: label, file: relativeFile, action: 'cleaned' });
+              results.push({ target: label, file: resolvedRelativeFile, action: 'cleaned' });
             }
             continue;
           }
         }
-        if (isCursorMcpFile(relativeFile)) {
+        if (isCursorMcpFile(resolvedRelativeFile)) {
           const unmerged = unmergeMcpJson(existing);
           if (unmerged !== null) {
             if (unmerged === '') {
               await fs.rm(file, { force: true });
-              results.push({ target: label, file: relativeFile, action: 'removed' });
+              results.push({ target: label, file: resolvedRelativeFile, action: 'removed' });
             } else {
               await writeText(file, unmerged);
-              results.push({ target: label, file: relativeFile, action: 'cleaned' });
+              results.push({ target: label, file: resolvedRelativeFile, action: 'cleaned' });
             }
             continue;
           }
         }
-        if (!force && !isGenerated(existing, relativeFile)) {
-          results.push({ target: label, file: relativeFile, action: 'skipped', reason: 'human-authored file; use --force to remove' });
+        if (!force && !isGenerated(existing, resolvedRelativeFile)) {
+          results.push({ target: label, file: resolvedRelativeFile, action: 'skipped', reason: 'human-authored file; use --force to remove' });
           continue;
         }
         await fs.rm(file, { force: true });
-        results.push({ target: label, file: relativeFile, action: 'removed' });
+        results.push({ target: label, file: resolvedRelativeFile, action: 'removed' });
       }
     }
   }
@@ -793,7 +910,7 @@ export async function unlinkGlobalSkillset(target = 'all', options: { force?: bo
       continue;
     }
     for (const entry of install.files) {
-      const file = entry.path;
+      const file = await resolveOpencodeConfigPath(entry.path);
       const existing = await readText(file);
       if (!existing) {
         results.push({ target: current, file, action: 'skipped', reason: 'file not found' });
@@ -816,7 +933,7 @@ export async function unlinkGlobalSkillset(target = 'all', options: { force?: bo
           results.push({ target: current, file, action: 'cleaned' });
         }
       } else {
-        if (file.endsWith('opencode.json')) {
+        if (isOpencodeConfigFile(file)) {
           const unmerged = unmergeOpencodeMcp(existing);
           if (unmerged !== null) {
             if (unmerged === '') {
@@ -859,7 +976,7 @@ export async function unlinkGlobalSkillset(target = 'all', options: { force?: bo
         }
         if (file.endsWith('hooks.json')) {
           try {
-            const config = JSON.parse(existing);
+            const config = parseJsonLike<Record<string, any>>(existing);
             const host = current === 'cursor' ? 'cursor' as const : current === 'windsurf' ? 'windsurf' as const : undefined;
             const schema = host === 'cursor' ? 'cursor' as const : host === 'windsurf' ? 'windsurf' as const : undefined;
             const events = host === 'cursor' ? ['sessionStart'] : host === 'windsurf' ? ['pre_user_prompt'] : [];
@@ -950,14 +1067,19 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function mergeOpencodeMcp(existingJson: string, newJson: string): string | null {
+function mergeOpencodeMcp(existingJson: string, newJson: string, options: { replaceExisting?: boolean } = {}): string | null {
   try {
-    const existing = JSON.parse(existingJson);
-    const incoming = JSON.parse(newJson);
+    const existing = parseJsonLike<Record<string, any>>(existingJson);
+    const incoming = parseJsonLike<Record<string, any>>(newJson);
+    if (Array.isArray(existing.instructions)) {
+      const nextInstructions = existing.instructions.filter((item: string) => item !== '.opencode/engram.md');
+      if (nextInstructions.length) existing.instructions = nextInstructions;
+      else delete existing.instructions;
+    }
     if (!existing.mcp || typeof existing.mcp !== 'object') {
       existing.mcp = {};
     }
-    if (existing.mcp.engram) return null;
+    if (existing.mcp.engram && !options.replaceExisting) return null;
     existing.mcp.engram = incoming.mcp.engram;
     return `${JSON.stringify(existing, null, 2)}\n`;
   } catch {
@@ -967,7 +1089,7 @@ function mergeOpencodeMcp(existingJson: string, newJson: string): string | null 
 
 function unmergeOpencodeMcp(existingJson: string): string | null {
   try {
-    const existing = JSON.parse(existingJson);
+    const existing = parseJsonLike<Record<string, any>>(existingJson);
     if (!existing.mcp || !existing.mcp.engram) return null;
     delete existing.mcp.engram;
     if (!Object.keys(existing.mcp).length) delete existing.mcp;

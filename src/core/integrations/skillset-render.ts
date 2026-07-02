@@ -2,6 +2,7 @@
 import type { SkillsetTarget } from './skillset.js';
 import { VERSION } from '../runtime/constants.js';
 import { agentMemoryProtocolText } from '../memory/agent-proposal-protocol.js';
+import { parseJsonLike } from '../system/fsx.js';
 
 export type InstructionProfile = 'bootstrap' | 'compact';
 export type InstallAction = 'written' | 'updated' | 'skipped' | 'planned';
@@ -60,7 +61,7 @@ function isEngramPluginManifest(content: string, file: string): boolean {
   const normalized = file.replace(/\\/g, '/');
   if (!normalized.includes('plugin.json')) return false;
   try {
-    const parsed = JSON.parse(content);
+    const parsed = parseJsonLike<Record<string, any>>(content);
     return parsed.name === 'engram' && parsed._managedBy === 'engram';
   } catch {
     return false;
@@ -69,7 +70,7 @@ function isEngramPluginManifest(content: string, file: string): boolean {
 
 export function renderSkillsetFile(target: SkillsetTarget, file: string, readMode = 'auto', profile: InstructionProfile = 'compact'): string {
   if (target === 'mcp') return mcpConfig(file);
-  if (target === 'opencode' && file.endsWith('opencode.json')) return opencodeConfig();
+  if (target === 'opencode' && /opencode\.jsonc?$/u.test(file)) return opencodeConfig();
   if (target === 'slash' && file.endsWith('.toml')) return geminiSlashCommand();
   if (target === 'slash') return slashMarkdown(file.endsWith('SKILL.md') ? 'Engram Slash Skill' : 'Engram Slash Command', file.endsWith('SKILL.md'));
   if ((target === 'agent-skill' || target === 'antigravity') && file.endsWith('SKILL.md')) return agentSkillFile(readMode);
@@ -336,12 +337,12 @@ export function renderCursorPluginJson(): string {
 }
 
 /** Merge a generated MCP JSON config into an existing one, preserving user servers. */
-export function mergeMcpJson(existing: string, incoming: string): string | null {
+export function mergeMcpJson(existing: string, incoming: string, options: { replaceExisting?: boolean } = {}): string | null {
   try {
-    const ex = JSON.parse(existing);
-    const inc = JSON.parse(incoming);
+    const ex = parseJsonLike<Record<string, any>>(existing);
+    const inc = parseJsonLike<Record<string, any>>(incoming);
     if (!ex.mcpServers || typeof ex.mcpServers !== 'object') ex.mcpServers = {};
-    if (ex.mcpServers.engram) return null;
+    if (ex.mcpServers.engram && !options.replaceExisting) return null;
     ex.mcpServers.engram = inc.mcpServers?.engram;
     return `${JSON.stringify(ex, null, 2)}\n`;
   } catch {
@@ -352,7 +353,7 @@ export function mergeMcpJson(existing: string, incoming: string): string | null 
 /** Remove the engram MCP server entry from a JSON config. */
 export function unmergeMcpJson(existing: string): string | null {
   try {
-    const ex = JSON.parse(existing);
+    const ex = parseJsonLike<Record<string, any>>(existing);
     if (!ex.mcpServers?.engram) return null;
     delete ex.mcpServers.engram;
     if (!Object.keys(ex.mcpServers).length) delete ex.mcpServers;
@@ -379,7 +380,6 @@ function mcpConfig(file = ''): string {
 function opencodeConfig(): string {
   return `${JSON.stringify({
     $schema: 'https://opencode.ai/config.json',
-    instructions: ['.opencode/engram.md'],
     mcp: {
       engram: {
         type: 'local',

@@ -86,15 +86,21 @@ test('skillset installer writes all supported agent adapter files (--all-support
   assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /replace prior Engram-loaded context/i);
   assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /If the request is only .*\/engram.*with no args/);
   assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /\/engram propose/);
-  const opencodeConfig = await readFile(path.join(cwd, 'opencode.json'), 'utf8');
-  assert.match(opencodeConfig, /\.opencode\/engram\.md/);
-  const opencodeParsed = JSON.parse(opencodeConfig);
-  assert.deepEqual(opencodeParsed.instructions, ['.opencode/engram.md']);
+  const opencodeAgentsMd = await readFile(path.join(cwd, 'AGENTS.md'), 'utf8');
+  assert.match(opencodeAgentsMd, /<!-- engram:start -->/);
+  assert.match(opencodeAgentsMd, /Full guide: `\.opencode\/engram\.md`/);
+  const opencodeSkill = await readFile(path.join(cwd, '.opencode', 'skills', 'engram', 'SKILL.md'), 'utf8');
+  assert.match(opencodeSkill, /name: engram/);
+  assert.match(opencodeSkill, /Engram Memory Management Skill/);
+  const opencodeGuide = await readFile(path.join(cwd, '.opencode', 'engram.md'), 'utf8');
+  assert.match(opencodeGuide, /Preferred replies/);
+  assert.match(opencodeGuide, /Save flow:/);
+  const opencodeParsed = JSON.parse(await readFile(path.join(cwd, 'opencode.json'), 'utf8'));
   assert.ok(opencodeParsed.mcp && opencodeParsed.mcp.engram, 'opencode.json should include engram MCP config');
   assert.deepEqual(opencodeParsed.mcp.engram.command, ['npx', '-y', '--package', '@the-long-ride/engram', 'engram-mcp']);
   assert.equal(opencodeParsed.mcp.engram.type, 'local');
   assert.equal(opencodeParsed.mcp.engram.enabled, true);
-  assert.match(await readFile(path.join(cwd, '.opencode/engram.md'), 'utf8'), /Preferred replies/);
+  assert.ok(!opencodeParsed.instructions?.includes('.opencode/engram.md'), 'OpenCode should use AGENTS.md, not opencode.json instructions, for Engram rules');
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -153,11 +159,14 @@ test('cli installs open-code alias and hidden antigravity compatibility files', 
   const { cwd, env } = await tempWorkspace('engram-skillset-cli-');
   const opencode = await runEngram(cwd, env, ['link', 'open-code']);
   assert.equal(opencode.code, 0, opencode.stderr);
-  assert.match(opencode.stdout, /WRITTEN open-code: opencode\.json/);
+  assert.match(opencode.stdout, /WRITTEN open-code: AGENTS\.md/);
+  assert.match(opencode.stdout, /WRITTEN open-code: \.opencode\/skills\/engram\/SKILL\.md/);
   assert.match(opencode.stdout, /WRITTEN open-code: \.opencode\/engram\.md/);
+  assert.match(opencode.stdout, /WRITTEN open-code: opencode\.json/);
   const workspaceOpencodeJson = JSON.parse(await readFile(path.join(cwd, 'opencode.json'), 'utf8'));
   assert.ok(workspaceOpencodeJson.mcp && workspaceOpencodeJson.mcp.engram, 'workspace opencode.json should include engram MCP config');
   assert.deepEqual(workspaceOpencodeJson.mcp.engram.command, ['npx', '-y', '--package', '@the-long-ride/engram', 'engram-mcp']);
+  await assert.rejects(readFile(path.join(cwd, '.mcp.json'), 'utf8'), 'OpenCode target should not create root .mcp.json');
   const antigravity = await runEngram(cwd, env, ['link', 'antigravity']);
   assert.equal(antigravity.code, 0, antigravity.stderr);
   assert.match(antigravity.stdout, /WRITTEN antigravity: \.antigravity\/skills\/engram\/SKILL\.md/);
@@ -279,7 +288,11 @@ test('global skill-capable targets write host skill folders', async () => {
   assert.equal(opencode.code, 0, opencode.stderr);
   assert.match(opencode.stdout, /WRITTEN open-code: .*opencode[\\\/]AGENTS\.md/);
   assert.match(opencode.stdout, /WRITTEN open-code: .*opencode[\\\/]skills[\\\/]engram[\\\/]SKILL\.md/);
+  assert.match(opencode.stdout, /WRITTEN open-code: .*opencode[\\\/]engram\.md/);
   assert.match(opencode.stdout, /WRITTEN open-code: .*opencode[\\\/]opencode\.json/);
+  const globalAgents = await readFile(path.join(configHome, 'opencode', 'AGENTS.md'), 'utf8');
+  assert.match(globalAgents, /Full guide: `~\/\.config\/opencode\/engram\.md`/);
+  assert.match(await readFile(path.join(configHome, 'opencode', 'engram.md'), 'utf8'), /Global Startup/);
   assert.match(await readFile(path.join(configHome, 'opencode', 'skills', 'engram', 'SKILL.md'), 'utf8'), /Default agent mode: compact/);
   const globalOpencodeConfig = JSON.parse(await readFile(path.join(configHome, 'opencode', 'opencode.json'), 'utf8'));
   assert.ok(globalOpencodeConfig.mcp && globalOpencodeConfig.mcp.engram, 'global opencode.json should include engram MCP config');
@@ -316,6 +329,102 @@ test('global opencode MCP merges into existing human-authored opencode.json', as
   assert.ok(merged.mcp.engram, 'engram MCP entry should be merged in');
   assert.deepEqual(merged.mcp.engram.command, ['npx', '-y', '--package', '@the-long-ride/engram', 'engram-mcp']);
   assert.deepEqual(merged.instructions, ['.opencode/custom.md'], 'human instructions should be preserved');
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('workspace opencode link merges into existing opencode.jsonc and preserves user settings', async () => {
+  const { cwd, env } = await tempWorkspace('engram-opencode-workspace-jsonc-');
+  await writeFile(path.join(cwd, 'opencode.jsonc'), [
+    '{',
+    '  "$schema": "https://opencode.ai/config.json",',
+    '  // keep user settings',
+    '  "plugin": ["user-plugin"],',
+    '  "theme": "system",',
+    '}',
+    ''
+  ].join('\n'));
+
+  const linked = await runEngram(cwd, env, ['link', 'opencode']);
+  assert.equal(linked.code, 0, linked.stderr);
+  const merged = JSON.parse(await readFile(path.join(cwd, 'opencode.jsonc'), 'utf8'));
+  assert.deepEqual(merged.plugin, ['user-plugin']);
+  assert.equal(merged.theme, 'system');
+  assert.ok(merged.mcp?.engram, 'engram MCP should be added to opencode.jsonc');
+  await assert.rejects(readFile(path.join(cwd, 'opencode.json'), 'utf8'));
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('workspace opencode force link preserves unparseable opencode.jsonc', async () => {
+  const { cwd, env } = await tempWorkspace('engram-opencode-workspace-invalid-jsonc-');
+  const opencodeJsoncPath = path.join(cwd, 'opencode.jsonc');
+  const invalidConfig = '{\n  "plugin": ["user-plugin"],\n  "mcp": {\n';
+  await writeFile(opencodeJsoncPath, invalidConfig);
+
+  const linked = await runEngram(cwd, env, ['link', 'opencode', '--force']);
+  assert.equal(linked.code, 0, linked.stderr);
+  assert.equal(await readFile(opencodeJsoncPath, 'utf8'), invalidConfig);
+  assert.match(linked.stdout, /SKIPPED opencode: opencode\.jsonc/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('global opencode MCP merges into existing human-authored opencode.jsonc', async () => {
+  const { cwd, env } = await tempWorkspace('engram-opencode-global-jsonc-');
+  const agentHome = path.join(cwd, 'agent-home');
+  const configHome = path.join(cwd, 'agent-config');
+  const globalEnv = { ...env, ENGRAM_AGENT_HOME: agentHome, ENGRAM_AGENT_CONFIG_HOME: configHome };
+  const opencodeDir = path.join(configHome, 'opencode');
+  await mkdir(opencodeDir, { recursive: true });
+  await writeFile(path.join(opencodeDir, 'opencode.jsonc'), [
+    '{',
+    '  "$schema": "https://opencode.ai/config.json",',
+    '  // keep user settings',
+    '  "plugin": ["user-plugin"],',
+    '  "theme": "system",',
+    '}',
+    ''
+  ].join('\n'));
+
+  const result = await runEngram(cwd, globalEnv, ['link', '--global', 'opencode']);
+  assert.equal(result.code, 0, result.stderr);
+  const merged = JSON.parse(await readFile(path.join(opencodeDir, 'opencode.jsonc'), 'utf8'));
+  assert.deepEqual(merged.plugin, ['user-plugin']);
+  assert.equal(merged.theme, 'system');
+  assert.ok(merged.mcp?.engram, 'engram MCP should be added');
+  await assert.rejects(readFile(path.join(opencodeDir, 'opencode.json'), 'utf8'));
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('global opencode force link preserves unparseable config', async () => {
+  const { cwd, env } = await tempWorkspace('engram-opencode-global-invalid-');
+  const agentHome = path.join(cwd, 'agent-home');
+  const configHome = path.join(cwd, 'agent-config');
+  const globalEnv = { ...env, ENGRAM_AGENT_HOME: agentHome, ENGRAM_AGENT_CONFIG_HOME: configHome };
+  const opencodeDir = path.join(configHome, 'opencode');
+  const opencodeJsonPath = path.join(opencodeDir, 'opencode.json');
+  const invalidConfig = '{\n  "plugin": ["user-plugin"],\n  "mcp": {\n';
+  await mkdir(opencodeDir, { recursive: true });
+  await writeFile(opencodeJsonPath, invalidConfig);
+
+  const result = await runEngram(cwd, globalEnv, ['link', '--global', 'opencode', '--force']);
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(await readFile(opencodeJsonPath, 'utf8'), invalidConfig);
+  assert.match(result.stdout, /SKIPPED opencode:/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('global MCP force link preserves unparseable shared config', async () => {
+  const { cwd, env } = await tempWorkspace('engram-mcp-global-invalid-');
+  const agentHome = path.join(cwd, 'agent-home');
+  const globalEnv = { ...env, ENGRAM_AGENT_HOME: agentHome, ENGRAM_AGENT_CONFIG_HOME: path.join(cwd, 'agent-config') };
+  const mcpPath = path.join(agentHome, '.claude', 'mcp.json');
+  const invalidConfig = '{\n  "mcpServers": {\n';
+  await mkdir(path.dirname(mcpPath), { recursive: true });
+  await writeFile(mcpPath, invalidConfig);
+
+  const result = await runEngram(cwd, globalEnv, ['link', '--global', 'claude', '--force']);
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(await readFile(mcpPath, 'utf8'), invalidConfig);
+  assert.match(result.stdout, /SKIPPED claude:/);
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -816,6 +925,30 @@ test('workspace unlink opencode preserves human MCP entries in opencode.json', a
   await rm(cwd, { recursive: true, force: true });
 });
 
+test('workspace unlink opencode removes MCP from opencode.jsonc and preserves user settings', async () => {
+  const { cwd } = await tempWorkspace('engram-unlink-opencode-jsonc-');
+  const opencodeJsoncPath = path.join(cwd, 'opencode.jsonc');
+  await writeFile(opencodeJsoncPath, [
+    '{',
+    '  "$schema": "https://opencode.ai/config.json",',
+    '  "plugin": ["user-plugin"],',
+    '  "mcp": {',
+    '    "keep": { "type": "local", "command": ["other-bin"], "enabled": true },',
+    '    "engram": { "type": "local", "command": ["npx"], "enabled": true },',
+    '  },',
+    '}',
+    ''
+  ].join('\n'));
+
+  const results = await unlinkSkillset(cwd, 'opencode');
+  assert.ok(results.some((item) => item.file === 'opencode.jsonc' && item.action === 'cleaned'));
+  const after = JSON.parse(await readFile(opencodeJsoncPath, 'utf8'));
+  assert.deepEqual(after.plugin, ['user-plugin']);
+  assert.ok(after.mcp?.keep, 'other MCP entry should be preserved');
+  assert.ok(!after.mcp?.engram, 'engram MCP should be removed');
+  await rm(cwd, { recursive: true, force: true });
+});
+
 test('workspace refresh migrates opencode.json without MCP to include MCP', async () => {
   const { cwd } = await tempWorkspace('engram-upgrade-opencode-');
   const opencodeJsonPath = path.join(cwd, 'opencode.json');
@@ -832,6 +965,64 @@ test('workspace refresh migrates opencode.json without MCP to include MCP', asyn
   const updated = JSON.parse(await readFile(opencodeJsonPath, 'utf8'));
   assert.ok(updated.mcp?.engram, 'refresh should merge engram MCP into opencode.json');
   assert.deepEqual(updated.mcp.engram.command, ['npx', '-y', '--package', '@the-long-ride/engram', 'engram-mcp']);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('workspace refresh updates only engram MCP in user opencode.jsonc', async () => {
+  const { cwd } = await tempWorkspace('engram-refresh-opencode-user-jsonc-');
+  const opencodeJsoncPath = path.join(cwd, 'opencode.jsonc');
+  await writeFile(opencodeJsoncPath, [
+    '{',
+    '  "$schema": "https://opencode.ai/config.json",',
+    '  "plugin": ["user-plugin"],',
+    '  "mcp": {',
+    '    "other": { "type": "local", "command": ["other-bin"], "enabled": true },',
+    '    "engram": {',
+    '      "type": "local",',
+    '      "command": ["npx", "-y", "--package", "@the-long-ride/engram", "engram-mcp"],',
+    '      "enabled": false',
+    '    },',
+    '  },',
+    '}',
+    ''
+  ].join('\n'));
+
+  const { refreshGeneratedWorkspaceSkillsets } = await import('../dist/core/integrations/skillset.js');
+  const refreshed = await refreshGeneratedWorkspaceSkillsets(cwd);
+  assert.ok(refreshed.some((item) => item.file === 'opencode.jsonc'), 'opencode.jsonc should be refreshed');
+
+  const updated = JSON.parse(await readFile(opencodeJsoncPath, 'utf8'));
+  assert.deepEqual(updated.plugin, ['user-plugin']);
+  assert.ok(updated.mcp?.other, 'other MCP entries should be preserved');
+  assert.equal(updated.mcp.engram.enabled, true);
+  assert.deepEqual(updated.mcp.engram.command, ['npx', '-y', '--package', '@the-long-ride/engram', 'engram-mcp']);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('workspace refresh updates only engram server in user cursor mcp.json', async () => {
+  const { cwd } = await tempWorkspace('engram-refresh-cursor-user-mcp-');
+  const mcpPath = path.join(cwd, '.cursor', 'mcp.json');
+  await mkdir(path.dirname(mcpPath), { recursive: true });
+  await writeFile(mcpPath, `${JSON.stringify({
+    mcpServers: {
+      other: { type: 'stdio', command: 'other-bin', args: [] },
+      engram: {
+        type: 'stdio',
+        command: 'npx',
+        args: ['-y', '--package', '@the-long-ride/engram', 'engram-mcp'],
+        env: { ENGRAM_READ: 'manual' }
+      }
+    }
+  }, null, 2)}\n`);
+
+  const { refreshGeneratedWorkspaceSkillsets } = await import('../dist/core/integrations/skillset.js');
+  const refreshed = await refreshGeneratedWorkspaceSkillsets(cwd);
+  assert.ok(refreshed.some((item) => item.file === '.cursor/mcp.json'), 'cursor mcp.json should be refreshed');
+
+  const updated = JSON.parse(await readFile(mcpPath, 'utf8'));
+  assert.ok(updated.mcpServers?.other, 'other MCP servers should be preserved');
+  assert.deepEqual(updated.mcpServers.engram.args, ['-y', '--package', '@the-long-ride/engram', 'engram-mcp']);
+  assert.equal(updated.mcpServers.engram.env, undefined);
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -1438,7 +1629,14 @@ test('renderCursorPluginJson produces valid JSON with name and version', () => {
 });
 
 test('mergeMcpJson preserves existing servers and adds engram with stdio for cursor paths', () => {
-  const existing = JSON.stringify({ mcpServers: { other: { command: 'other-bin' } } });
+  const existing = [
+    '{',
+    '  // keep user server',
+    '  "mcpServers": {',
+    '    "other": { "command": "other-bin" },',
+    '  },',
+    '}'
+  ].join('\n');
   const incoming = JSON.stringify({ mcpServers: { engram: { type: 'stdio', command: 'npx', args: ['-y', '--package', '@the-long-ride/engram', 'engram-mcp'] } } });
   const merged = mergeMcpJson(existing, incoming);
   assert.ok(merged, 'merge should succeed');

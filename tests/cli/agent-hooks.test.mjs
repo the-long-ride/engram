@@ -99,6 +99,49 @@ test('install-agent-hooks preserves human config and uninstall removes only Engr
   await rm(cwd, { recursive: true, force: true });
 });
 
+test('install-agent-hooks supports JSONC-style human config and preserves unrelated settings', async () => {
+  const { cwd, env } = await tempWorkspace('engram-agent-hooks-jsonc-');
+  const codexDir = path.join(cwd, '.codex');
+  await mkdir(codexDir, { recursive: true });
+  const file = path.join(codexDir, 'hooks.json');
+  await writeFile(file, [
+    '{',
+    '  // keep human hooks',
+    '  "theme": "dark",',
+    '  "hooks": {',
+    '    "SessionStart": [',
+    '      {',
+    '        "matcher": "startup",',
+    '        "hooks": [',
+    '          { "name": "human-start", "type": "command", "command": "echo human" },',
+    '        ]',
+    '      },',
+    '    ]',
+    '  },',
+    '}',
+    ''
+  ].join('\n'));
+
+  const install = await runEngram(cwd, env, ['install-agent-hooks', 'codex']);
+  assert.equal(install.code, 0, install.stderr);
+  const installed = JSON.parse(await readFile(file, 'utf8'));
+  assert.equal(installed.theme, 'dark');
+  assert.equal(installed.hooks.SessionStart[0].hooks[0].name, 'human-start');
+  assert.equal(installed.hooks.UserPromptSubmit[0].hooks[0].name, 'engram-auto-load');
+
+  const uninstall = await runEngram(cwd, env, ['uninstall-agent-hooks', 'codex']);
+  assert.equal(uninstall.code, 0, uninstall.stderr);
+  const after = JSON.parse(await readFile(file, 'utf8'));
+  assert.equal(after.theme, 'dark');
+  assert.deepEqual(after.hooks, {
+    SessionStart: [{
+      matcher: 'startup',
+      hooks: [{ name: 'human-start', type: 'command', command: 'echo human' }]
+    }]
+  });
+  await rm(cwd, { recursive: true, force: true });
+});
+
 test('agent-hook runtime injects startup, skips repeated auto signatures, and respects manual/off', async () => {
   const { cwd, env } = await tempWorkspace('engram-agent-hooks-runtime-');
   await runEngram(cwd, env, ['inject', '--no-skillset']);
@@ -392,6 +435,16 @@ test('global opencode link installs and unlinks the managed plugin', async () =>
   assert.equal(unlinked.code, 0, unlinked.stderr);
   assert.match(unlinked.stdout, /REMOVED opencode/);
   await assert.rejects(readFile(pluginFile, 'utf8'));
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('workspace opencode link installs managed plugin hook path', async () => {
+  const { cwd, env } = await tempWorkspace('engram-opencode-workspace-plugin-');
+  const linked = await runEngram(cwd, env, ['link', 'opencode']);
+  assert.equal(linked.code, 0, linked.stderr);
+  const pluginFile = path.join(cwd, '.opencode', 'plugins', 'engram.js');
+  assert.match(await readFile(pluginFile, 'utf8'), /EngramOpenCodePlugin/);
+  assert.doesNotMatch(linked.stdout, /\.opencode[\\\/]hooks\.json/);
   await rm(cwd, { recursive: true, force: true });
 });
 

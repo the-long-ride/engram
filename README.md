@@ -194,6 +194,16 @@ LLM request. OpenCode must be restarted or reloaded after `link`/`unlink`
 because local plugin files are loaded at startup. The plugin fails open and
 keeps raw routed memory only in the running OpenCode process; Engram's disk hook
 cache remains hashes, session IDs, host, cwd, and routed signatures only.
+Workspace OpenCode links write `AGENTS.md`, `.opencode/engram.md`,
+`.opencode/skills/engram/SKILL.md`, and `opencode.json`; if an existing
+`opencode.jsonc` is already present, Engram updates that file instead of
+creating a parallel `opencode.json`. Global OpenCode links write
+`~/.config/opencode/AGENTS.md`, `~/.config/opencode/engram.md`,
+`~/.config/opencode/skills/engram/SKILL.md`, and
+`~/.config/opencode/opencode.json`, or update an existing
+`~/.config/opencode/opencode.jsonc`. OpenCode, Cursor, Windsurf, Codex,
+Claude, and Gemini JSON/JSONC config merges preserve unrelated user settings
+while only adding or refreshing Engram-managed entries.
 `engram unlink --global opencode` removes only the Engram-generated plugin; a
 human-authored `engram.js` is preserved unless `--force` is explicit.
 

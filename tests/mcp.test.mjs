@@ -20,7 +20,8 @@ test('mcp status and save proposal do not write silently', async () => {
     assert.match(status.result, /Memory health/);
 
     const proposal = await handleMcp({ id: 2, method: 'engram_save', params: { text: 'Use Vitest', type: 'rule' } });
-    assert.match(proposal.result, /Human approval required/);
+    assert.match(proposal.result, /AI-agent chat approval required/);
+    assert.match(proposal.result, /yes.*audit.*cancel/is);
 
     const workflow = await handleMcp({
       id: 3,
@@ -46,16 +47,20 @@ test('mcp status and save proposal do not write silently', async () => {
       method: 'engram_save_session',
       params: {
         text: [
-          'TYPE: rule | TEXT: Always run tests before release.',
-          'TYPE: knowledge | TEXT: The release checklist lives in CHANGELOG.md.'
+          'TYPE: rule | TEXT: Always run tests before release. | TRIGGERS: release, tests | LIGHT: Mention release tests when release work starts. | BALANCED: Always run tests before release. | STRICT: Block release completion claims until tests pass.',
+          'TYPE: knowledge | TEXT: The release checklist lives in CHANGELOG.md. | TRIGGERS: release, changelog'
         ].join('\n'),
-        role: ['release']
+        role: ['release'],
+        showRuleVariants: true
       }
     });
     assert.match(saveSession.result, /ENGRAM SAVE-SESSION PROPOSAL/);
     assert.match(saveSession.result, /Candidate: 1/);
     assert.match(saveSession.result, /Candidate: 2/);
-    assert.match(saveSession.result, /Human approval required/);
+    assert.match(saveSession.result, /triggers: \[release, tests\]/);
+    assert.match(saveSession.result, /### Light/);
+    assert.match(saveSession.result, /Block release completion claims until tests pass/);
+    assert.match(saveSession.result, /AI-agent chat approval required/);
     assert.match(await runCli(['stats']), /Total: 0/);
 
     const knowledgeDir = path.join(workspaceMemoryRoot(cwd), 'knowledge');
@@ -78,7 +83,7 @@ test('mcp status and save proposal do not write silently', async () => {
     assert.match(related.result, /ENGRAM SAVE PROPOSAL/);
     assert.match(related.result, /Related memories found/);
     assert.match(related.result, /Suggested depends_on: \[release-foundation-checklist\]/);
-    assert.match(related.result, /Human approval required/);
+    assert.match(related.result, /AI-agent chat approval required/);
     assert.match(await runCli(['stats']), /Total: 1/);
 
     const cliLoad = await runCli(['load', 'release foundation checklist']);
@@ -170,3 +175,5 @@ MCP test fixture.
 Use this memory when validating MCP save proposals.
 `;
 }
+
+

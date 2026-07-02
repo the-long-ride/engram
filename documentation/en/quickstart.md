@@ -1,5 +1,10 @@
 # AI-Agent Quickstart
 
+## AI-Agent Chat Approval
+
+In AI-agent chat, Engram approval is conversational. The agent shows refined `TYPE: ... | TEXT: ...` candidates first, including Light/Balanced/Strict variants for rules. Reply `yes` to save the exact candidates, `audit` to revise them, or `cancel` to stop. After `yes`, the agent uses `engram save-session --accept-all` with the exact approved candidates. Direct terminal CLI saves still use A/B/C unless an accept-all command was explicitly invoked.
+
+
 Use Engram through your agent first. The CLI exists, but the best experience is: ask the agent to load memory, do the work, then propose durable memory when something useful emerges.
 
 ## First Message In A New Session

@@ -22,6 +22,11 @@ import { searchEntries } from '../dist/core/analysis/search.js';
 import { tagsFrom } from '../dist/core/system/text.js';
 import { convertDocumentToMarkdown, isConvertibleDocument } from '../dist/core/integrations/markdown-them.js';
 import { mergeIndexes } from '../dist/core/memory/index.js';
+import {
+  agentMemoryChatApprovalText,
+  agentMemoryProtocolText,
+  agentMemoryValueGateText
+} from '../dist/core/memory/agent-proposal-protocol.js';
 import { parseMemoryCandidate, generatedMemoryGuidance, saveSessionGuidance } from '../dist/core/memory/memory-candidate.js';
 import { canonicalRuleText, renderMemoryForAgent, ruleVariantsAreCustomized, stripRuleVariantSection } from '../dist/core/memory/rule-variants.js';
 import { route, routeDetailed } from '../dist/core/memory/routing.js';
@@ -302,6 +307,60 @@ test('memory candidates can carry dependency structure', () => {
     context: 'Created after debugging payment retries showed the baseline needed follow-up knowledge.',
     dependsOn: ['webhook-baseline', 'retry-foundation'],
     updateId: 'invoice-retry-policy'
+  });
+});
+
+
+test('agent memory proposal protocol defines value gate and chat approval loop', () => {
+  const gate = agentMemoryValueGateText();
+  assert.match(gate, /durable beyond the current turn/i);
+  assert.match(gate, /future agent is likely to reuse/i);
+  assert.match(gate, /Block the proposal/i);
+  assert.match(gate, /secrets/i);
+  assert.match(gate, /duplicates existing memory/i);
+
+  const approval = agentMemoryChatApprovalText();
+  assert.match(approval, /Do not run .*save.*directly/i);
+  assert.match(approval, /yes/i);
+  assert.match(approval, /audit/i);
+  assert.match(approval, /cancel/i);
+  assert.match(approval, /engram save-session --accept-all/i);
+  assert.match(approval, /exact displayed candidates/i);
+
+  const protocol = agentMemoryProtocolText();
+  assert.match(protocol, /Memory value gate/i);
+  assert.match(protocol, /AI-agent chat save protocol/i);
+});
+
+test('memory candidates can carry explicit rule variants', () => {
+  const candidate = parseMemoryCandidate([
+    'TYPE: rule',
+    'TEXT: Use pnpm for package installs.',
+    'LIGHT: Mention pnpm when dependency tooling matters.',
+    'BALANCED: Prefer pnpm for package installs unless the repo specifies another package manager.',
+    'STRICT: Block npm and yarn install suggestions unless the human explicitly asks.'
+  ].join('\n'));
+
+  assert.deepEqual(candidate, {
+    type: 'rule',
+    text: 'Use pnpm for package installs.',
+    variants: {
+      light: 'Mention pnpm when dependency tooling matters.',
+      balanced: 'Prefer pnpm for package installs unless the repo specifies another package manager.',
+      strict: 'Block npm and yarn install suggestions unless the human explicitly asks.'
+    }
+  });
+});
+
+test('pipe memory candidates can carry triggers and rule variants', () => {
+  const candidate = parseMemoryCandidate('TYPE: rule | TEXT: Use rtk wrappers for shell commands. | TRIGGERS: rtk, shell, commands | LIGHT: Prefer rtk when a mapping exists. | BALANCED: Use rtk wrappers for shell commands when mappings exist. | STRICT: Do not run raw shell commands when an rtk mapping exists.');
+
+  assert.equal(candidate.type, 'rule');
+  assert.deepEqual(candidate.triggers, ['rtk', 'shell', 'commands']);
+  assert.deepEqual(candidate.variants, {
+    light: 'Prefer rtk when a mapping exists.',
+    balanced: 'Use rtk wrappers for shell commands when mappings exist.',
+    strict: 'Do not run raw shell commands when an rtk mapping exists.'
   });
 });
 
@@ -1139,16 +1198,23 @@ test('rule memory above 100 effective body lines fails hard limit', () => {
   assert.throws(() => validateMemoryRaw(limitMemory({ contentLines: maxContentLines })), /100-line hard limit/);
 });
 
-test('generatedMemoryGuidance mentions ORIGIN and TRIGGERS', () => {
+test('generatedMemoryGuidance mentions value gate and chat approval fields', () => {
   const guidance = generatedMemoryGuidance();
   assert.ok(guidance.includes('ORIGIN'), 'guidance should mention ORIGIN');
   assert.ok(guidance.includes('TRIGGERS'), 'guidance should mention TRIGGERS');
   assert.ok(!guidance.includes('add `| CONTEXT'), 'guidance should not recommend CONTEXT as primary');
 });
 
-test('saveSessionGuidance mentions ORIGIN and TRIGGERS with 100-line hard limit', () => {
+test('saveSessionGuidance mentions value gate, chat approval, and 100-line hard limit', () => {
   const guidance = saveSessionGuidance();
   assert.ok(guidance.includes('ORIGIN'), 'guidance should mention ORIGIN');
   assert.ok(guidance.includes('TRIGGERS'), 'guidance should mention TRIGGERS');
   assert.ok(guidance.includes('100'), 'guidance should mention 100-line hard limit');
+  assert.ok(guidance.includes('Memory value gate'), 'guidance should mention value gate');
+  assert.ok(guidance.includes('yes'), 'guidance should mention chat approval');
+  assert.ok(guidance.includes('audit'), 'guidance should mention chat audit');
+  assert.ok(guidance.includes('cancel'), 'guidance should mention cancel');
 });
+
+
+

@@ -7,6 +7,7 @@ import { getContext } from '../core/memory/context.js';
 import { planMemorySave, previewSavePlans, type SavePreviewOptions } from '../core/memory/save-plan.js';
 import { resolveAuthor } from '../core/memory/storage.js';
 import { normalizeMemoryType, parseMemoryCandidate, parseMemoryCandidates } from '../core/memory/memory-candidate.js';
+import { agentMemoryChatApprovalText } from '../core/memory/agent-proposal-protocol.js';
 import { normalizeTaskType } from '../core/memory/task-classifier.js';
 import { parseSaveTarget, writeScopes } from '../core/runtime/config.js';
 import type { Scope } from '../core/runtime/types.js';
@@ -60,13 +61,15 @@ async function saveProposal(args: any): Promise<string> {
     author: await resolveAuthor(),
     role: rolesFromArgs(args),
     taskType: normalizeTaskType(args.taskType ?? args['task-type']),
+    context: candidate.context,
+    triggers: candidate.triggers,
     dependsOn: candidate.dependsOn,
     level: candidate.level,
-    updateId: candidate.updateId
+    updateId: candidate.updateId,
+    variants: candidate.variants
   });
-  return `ENGRAM SAVE PROPOSAL\n${previewSavePlans(plans, previewOptionsFromArgs(args))}\n\nHuman approval required before writing.`;
+  return `ENGRAM SAVE PROPOSAL\n${previewSavePlans(plans, previewOptionsFromArgs(args))}\n\n${mcpAgentApprovalFooter()}`;
 }
-
 /** Return a save-session proposal only; MCP never writes memory silently. */
 async function saveSessionProposal(args: any): Promise<string> {
   const ctx = await getContext();
@@ -89,14 +92,20 @@ async function saveSessionProposal(args: any): Promise<string> {
       triggers: candidate.triggers,
       dependsOn: candidate.dependsOn,
       level: candidate.level,
-      updateId: candidate.updateId
+      updateId: candidate.updateId,
+      variants: candidate.variants
     });
     plans.push(...next.map((plan) => ({ ...plan, candidateIndex })));
     candidateIndex += 1;
   }
-  return `ENGRAM SAVE-SESSION PROPOSAL\n${previewSavePlans(plans, previewOptionsFromArgs(args))}\n\nHuman approval required before writing.`;
+  return `ENGRAM SAVE-SESSION PROPOSAL\n${previewSavePlans(plans, previewOptionsFromArgs(args))}\n\n${mcpAgentApprovalFooter()}`;
 }
-
+function mcpAgentApprovalFooter(): string {
+  return [
+    'AI-agent chat approval required before writing.',
+    agentMemoryChatApprovalText()
+  ].join('\n');
+}
 function proposalScopes(ctx: Awaited<ReturnType<typeof getContext>>, rawScope: unknown, label: string): Scope[] {
   const target = rawScope === undefined ? ctx.config.scope : parseSaveTarget(String(rawScope), label);
   if (rawScope !== undefined && target !== 'workspace' && !ctx.roots.global) {
@@ -147,3 +156,9 @@ function ok(id: unknown, result: unknown): any {
 function fail(id: unknown, message: string): any {
   return { jsonrpc: '2.0', id, error: { code: -32000, message } };
 }
+
+
+
+
+
+

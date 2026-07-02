@@ -1,5 +1,10 @@
 # Giao Thức Bộ Nhớ Do Con Người Sở Hữu
 
+## Phe duyet trong chat AI
+
+Trong chat voi tac nhan AI, phe duyet Engram la dang hoi dap. Tac nhan truoc tien hien thi cac ung vien da duoc bien tap `TYPE: ... | TEXT: ...`, va voi rule thi kem theo cac bien the Light/Balanced/Strict. Tra loi `yes` de luu dung cac ung vien do, `audit` de sua lai, hoac `cancel` de dung. Sau `yes`, tac nhan dung `engram save-session --accept-all` voi chinh cac ung vien da duoc phe duyet. Cac lan luu truc tiep tren CLI van dung A/B/C tru khi lenh accept-all da duoc goi ro rang.
+
+
 Engram không chỉ đơn thuần là "bộ nhớ của tác nhân AI". Nó là một giao thức giúp bộ nhớ có thể được kiểm tra, di chuyển và quản lý bởi con người.
 
 ## Hợp Đồng Giao Thức

@@ -255,6 +255,56 @@ test('save-session accept-all saves generated candidates without final approval 
   await rm(cwd, { recursive: true, force: true });
 });
 
+
+test('save-session accept-all writes approved agent rule variants', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['inject']);
+  const input = [
+    'TYPE: rule | TEXT: Use pnpm for package installs. | LIGHT: Mention pnpm when dependency tooling matters. | BALANCED: Prefer pnpm for package installs unless the repo specifies another package manager. | STRICT: Block npm and yarn install suggestions unless the human explicitly asks.',
+    ''
+  ].join('\n');
+
+  const saved = await runEngram(cwd, env, ['save-session', '--scope', 'workspace', '--accept-all'], input);
+  assert.equal(saved.code, 0, saved.stderr);
+  assert.match(saved.stdout, /Accepted all save-session candidates/);
+
+  const content = await readFile(path.join(workspaceMemoryRoot(cwd), 'rules', 'use-pnpm-for-package-installs.md'), 'utf8');
+  assert.match(content, /### Light\r?\n\r?\nMention pnpm when dependency tooling matters\./);
+  assert.match(content, /### Balanced\r?\n\r?\nPrefer pnpm for package installs unless the repo specifies another package manager\./);
+  assert.match(content, /### Strict\r?\n\r?\nBlock npm and yarn install suggestions unless the human explicitly asks\./);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('save-session accept-all persists triggers from approved candidates', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['inject']);
+  const input = 'TYPE: knowledge | TEXT: Webhook retries use exponential backoff. | TRIGGERS: webhook, retry, backoff\n';
+
+  const saved = await runEngram(cwd, env, ['save-session', '--scope', 'workspace', '--accept-all'], input);
+  assert.equal(saved.code, 0, saved.stderr);
+
+  const content = await readFile(path.join(workspaceMemoryRoot(cwd), 'knowledge', 'webhook-retries-use-exponential-backoff.md'), 'utf8');
+  assert.match(content, /triggers: \[webhook, retry, backoff\]/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('direct CLI save still uses A/B/C approval without accept-all', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['inject']);
+
+  const proposed = await runEngram(cwd, env, [
+    'save', 'knowledge', '--scope', 'workspace',
+    'CLI approval remains A B C for direct terminal saves.'
+  ], 'C\n');
+
+  assert.equal(proposed.code, 0, proposed.stderr);
+  assert.match(proposed.stdout, /Reply: A/);
+  assert.match(proposed.stdout, /B/);
+  assert.match(proposed.stdout, /C/);
+  assert.match(proposed.stdout, /Discarded\. No file written\./);
+  assert.match((await runEngram(cwd, env, ['stats'])).stdout, /Total: 0/);
+  await rm(cwd, { recursive: true, force: true });
+});
 test('generated memories use standard markdown spacing and links', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
   await runEngram(cwd, env, ['inject']);
@@ -572,3 +622,4 @@ Use this memory when the task touches package management.
   assert.doesNotMatch(proposed.stdout, /Action: Update existing memory/);
   await rm(cwd, { recursive: true, force: true });
 });
+

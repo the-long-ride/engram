@@ -90,6 +90,10 @@ engram link all
 `engram upgrade` refreshes generated workspace help, memory indexes, graph
 files, eligible vector sidecars, existing Engram-generated workspace skillset
 files, and registered global skillsets while preserving human-authored files.
+`engram upgrade --latest` is stronger: it overwrites current Engram-managed
+linked agent artifacts for already-linked workspace agents and registered global
+installs, including instruction files, rules, MCP/plugin config, and managed
+hooks, so linked hosts pick up the new package output immediately.
 Use `--force` only when replacing generated Engram adapter files intentionally.
 Claude receives both `.claude/commands/engram.md` and
 `.claude/skills/engram/SKILL.md` so `/engram` appears in older command menus and
@@ -123,6 +127,14 @@ separate from `set-read`: `compact` can report loaded, reused, or skipped turns
 without changing when full Engram memory is injected.
 
 ## Supported Targets
+## AI-Agent Memory Proposal Protocol
+
+Agent hosts must not turn normal chat into silent memory writes. For user-requested saves, the host asks the model to refine objective candidates and show them before writing. For agent-initiated proposals, the host lets the model append a proposal only when the memory value gate passes.
+
+Approval words are `yes`, `approve`, `confirm`, or `save`. Audit words are `audit`, `revise`, `correct`, or edited replacement text. Cancel words are `cancel`, `stop`, or rejection. Only approval after exact candidate display authorizes `engram save-session --accept-all` for those candidates.
+
+Direct terminal CLI remains A/B/C. MCP proposal tools remain no-write.
+
 
 | Target | File | Main use |
 | --- | --- | --- |

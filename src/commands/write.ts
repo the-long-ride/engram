@@ -46,7 +46,7 @@ export async function cmdSave(args: string[], flags: Record<string, any>): Promi
       type = candidate.type;
       text = candidate.text;
       const resolvedTaskType = await saveTaskType(text, flags, explicitTaskType);
-      plans = await planMemorySave({ ctx, text, type, scopes, author, role, context: candidate.context, triggers: candidate.triggers, dependsOn: candidate.dependsOn, level: candidate.level, updateId: candidate.updateId, taskType: resolvedTaskType });
+      plans = await planMemorySave({ ctx, text, type, scopes, author, role, context: candidate.context, triggers: candidate.triggers, dependsOn: candidate.dependsOn, level: candidate.level, updateId: candidate.updateId, taskType: resolvedTaskType, variants: candidate.variants });
       return previewSavePlans(plans, previewOptions);
     }, { explicitType, guidance: generatedMemoryGuidance(explicitType, { ruleLineTarget: ctx.config.memory.rule_line_target, ruleLineHardLimit: ctx.config.memory.rule_line_hard_limit }) });
     if (!captured) return 'Discarded. No file written.';
@@ -56,7 +56,7 @@ export async function cmdSave(args: string[], flags: Record<string, any>): Promi
     const candidate = parseMemoryCandidate(text, { explicitType });
     type = candidate.type;
     text = candidate.text;
-    plans = await planMemorySave({ ctx, text, type, scopes, author, role, context: candidate.context, triggers: candidate.triggers, dependsOn: candidate.dependsOn, level: candidate.level, updateId: candidate.updateId, taskType });
+    plans = await planMemorySave({ ctx, text, type, scopes, author, role, context: candidate.context, triggers: candidate.triggers, dependsOn: candidate.dependsOn, level: candidate.level, updateId: candidate.updateId, taskType, variants: candidate.variants });
     approval = await requestApproval(previewSavePlans(plans, previewOptions));
   }
   if (!approval.accepted) return 'Discarded. No file written.';
@@ -194,11 +194,13 @@ async function planSaveSessionCandidates(ctx: Awaited<ReturnType<typeof getConte
       author,
       role,
       context: candidate.context,
+      triggers: candidate.triggers,
       dependsOn: candidate.dependsOn,
       level: candidate.level,
       updateId: candidate.updateId,
       source,
-      taskType
+      taskType,
+      variants: candidate.variants
     });
     plans.push(...candidatePlans.map((plan) => ({ ...plan, candidateIndex })));
     candidateIndex += 1;
@@ -382,3 +384,4 @@ async function saveTaskType(text: string, flags: Record<string, any>, seed?: Tas
 function looksLikeApprovalAnswer(answer: string): boolean {
   return /^(?:a(?:\s|$)|b(?:\s|$)|c(?:\s|$))/i.test(answer.trim());
 }
+

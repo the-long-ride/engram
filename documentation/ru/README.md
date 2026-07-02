@@ -1,5 +1,10 @@
 # Engram (Русский)
 
+## Одобрение в чате с ИИ
+
+В чате с ИИ-агентом одобрение Engram является разговорным. Сначала агент показывает уточненные кандидаты `TYPE: ... | TEXT: ...`, а для правил также варианты Light/Balanced/Strict. Ответьте `yes`, чтобы сохранить именно эти кандидаты, `audit`, чтобы их исправить, или `cancel`, чтобы остановить процесс. После `yes` агент использует `engram save-session --accept-all` с точно одобренными кандидатами. Прямые сохранения через CLI по-прежнему используют A/B/C, если только команда accept-all не была вызвана явно.
+
+
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-orange)](../../LICENSE) [![GitHub](https://img.shields.io/badge/GitHub-Repository-orange?logo=github)](https://github.com/the-long-ride/engram) [![npm version](https://img.shields.io/npm/v/@the-long-ride/engram?color=orange&logo=npm)](https://www.npmjs.com/package/@the-long-ride/engram) [![npm](https://img.shields.io/badge/npm-Package-orange?logo=npm)](https://www.npmjs.com/package/@the-long-ride/engram)
 
 ![Engram cover](https://raw.githubusercontent.com/the-long-ride/engram/main/media/cover/engram-cover.png)

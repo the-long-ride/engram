@@ -1,5 +1,10 @@
 # Bắt Đầu Nhanh Với Tác Nhân AI
 
+## Phe duyet trong chat AI
+
+Trong chat voi tac nhan AI, phe duyet Engram la dang hoi dap. Tac nhan truoc tien hien thi cac ung vien da duoc bien tap `TYPE: ... | TEXT: ...`, va voi rule thi kem theo cac bien the Light/Balanced/Strict. Tra loi `yes` de luu dung cac ung vien do, `audit` de sua lai, hoac `cancel` de dung. Sau `yes`, tac nhan dung `engram save-session --accept-all` voi chinh cac ung vien da duoc phe duyet. Cac lan luu truc tiep tren CLI van dung A/B/C tru khi lenh accept-all da duoc goi ro rang.
+
+
 Hãy sử dụng Engram thông qua tác nhân AI trước tiên. Mặc dù giao diện dòng lệnh (CLI) có sẵn, nhưng trải nghiệm tốt nhất là: yêu cầu tác nhân AI tải bộ nhớ, thực hiện công việc, sau đó đề xuất ghi nhận bộ nhớ bền vững khi có thông tin hữu ích xuất hiện.
 
 ## Tin Nhắn Đầu Tiên Trong Một Phiên Làm Việc Mới

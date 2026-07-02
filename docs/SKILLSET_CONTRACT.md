@@ -52,6 +52,12 @@ Hosts that support custom slash commands can also load generated `/engram` adapt
   meaningful query term; a missing, stale, noisy, or unavailable vector DB cannot
   hide saved memories or load unrelated ones by itself.
 - Never write memory silently.
+- Direct terminal CLI approval uses A/B/C unless the human invoked an accept-all flow.
+- AI-agent chat approval uses exact-candidate review: the agent refines and displays `TYPE: ... | TEXT: ...` candidates, shows Light/Balanced/Strict variants for rules, then waits for `yes`, `audit`, or `cancel`.
+- `yes`, `approve`, `confirm`, or `save` after exact candidate display authorizes the agent to run `engram save-session --accept-all` with those exact candidates.
+- `audit`, `revise`, `correct`, or edited wording means the agent must revise candidates and ask again before writing.
+- `cancel`, `stop`, or rejection means no memory write.
+- Agents may propose memories at the end of a response only when the candidate passes the memory value gate: durable, reusable, objective, triggerable, and not duplicative.
 - Treat `engram_save` and `engram save` as proposal flows with human approval.
   Engram may automatically choose update-vs-new before presenting the preview.
 - When save previews report related existing memories, treat those rows as
@@ -256,8 +262,8 @@ Hosts that support custom slash commands can also load generated `/engram` adapt
 | `engram_set_rule_variant` | Update active rule-variant mode and return immediate reload guidance | Yes |
 
 The MCP save/autosave proposal tools intentionally do not write. A host must display the
-proposal and collect explicit human approval before invoking a CLI write flow.
-
+proposal and collect explicit human approval. After exact-candidate chat approval, the host may
+invoke the CLI `save-session --accept-all` path with the exact approved candidate text.
 ## CLI Contract
 
 | Command | Purpose |

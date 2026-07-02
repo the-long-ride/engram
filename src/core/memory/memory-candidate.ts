@@ -1,8 +1,18 @@
 /** Memory type detection helpers for agent-brainstormed save candidates. */
-import type { MemoryType } from '../runtime/types.js';
+import type { MemoryType, RuleVariant } from '../runtime/types.js';
 import { resolveMemoryLimits, type MemoryLimits } from './schema.js';
+import { agentMemoryChatApprovalText, agentMemoryValueGateText } from './agent-proposal-protocol.js';
 
-export type MemoryCandidate = { type: MemoryType; text: string; context?: string; triggers?: string[]; dependsOn?: string[]; level?: string; updateId?: string };
+export type MemoryCandidate = {
+  type: MemoryType;
+  text: string;
+  context?: string;
+  triggers?: string[];
+  dependsOn?: string[];
+  level?: string;
+  updateId?: string;
+  variants?: Partial<Record<RuleVariant, string>>;
+};
 type CandidateOptions = { explicitType?: MemoryType };
 
 const typeAliases: Record<string, MemoryType> = {
@@ -25,6 +35,7 @@ export function parseMemoryCandidate(raw: string, options: CandidateOptions = {}
   let level: string | undefined;
   let updateId: string | undefined;
   let triggers: string[] = [];
+  let variants: Partial<Record<RuleVariant, string>> = {};
   const content: string[] = [];
   for (const line of raw.split(/\r?\n/).map((part) => part.trim()).filter(Boolean)) {
     const typeMatch = line.match(/^(?:type|kind|memory type)\s*:\s*([a-z-]+)\b\s*(.*)$/i);
@@ -64,6 +75,11 @@ export function parseMemoryCandidate(raw: string, options: CandidateOptions = {}
       updateId = updateMatch[1].trim();
       continue;
     }
+    const variantMatch = line.match(/^(light|balanced|strict)\s*:\s*(.+)$/i);
+    if (variantMatch) {
+      variants[variantMatch[1].toLowerCase() as RuleVariant] = variantMatch[2].trim();
+      continue;
+    }
     const shorthand = line.match(/^(rule|rules|skill|skills|workflow|workflows|knowledge)\s*:\s*(.+)$/i);
     if (shorthand) {
       declaredType = normalizeMemoryType(shorthand[1]) ?? declaredType;
@@ -74,7 +90,16 @@ export function parseMemoryCandidate(raw: string, options: CandidateOptions = {}
   }
   const text = content.join('\n').trim();
   if (!text) throw new Error('save requires memory text');
-  return compactCandidate({ type: options.explicitType ?? declaredType ?? inferMemoryType(text), text, context, ...(triggers.length ? { triggers } : {}), dependsOn, level, updateId });
+  return compactCandidate({
+    type: options.explicitType ?? declaredType ?? inferMemoryType(text),
+    text,
+    context,
+    ...(triggers.length ? { triggers } : {}),
+    dependsOn,
+    level,
+    updateId,
+    variants
+  });
 }
 
 /** Parse one or more agent-brainstormed candidates from a long-session summary. */
@@ -85,7 +110,12 @@ export function parseMemoryCandidates(raw: string): MemoryCandidate[] {
     .map((part) => parseMemoryCandidate(part));
   const parsed = candidates.length ? candidates : [parseMemoryCandidate(raw)];
   const unique = new Map<string, MemoryCandidate>();
-  for (const candidate of parsed) unique.set(`${candidate.type}:${candidate.text.toLowerCase()}:${candidate.context ?? ''}:${(candidate.dependsOn ?? []).join(',')}:${candidate.level ?? ''}:${candidate.updateId ?? ''}`, candidate);
+  for (const candidate of parsed) {
+    const variantKey = candidate.variants
+      ? `${candidate.variants.light ?? ''}:${candidate.variants.balanced ?? ''}:${candidate.variants.strict ?? ''}`
+      : '';
+    unique.set(`${candidate.type}:${candidate.text.toLowerCase()}:${candidate.context ?? ''}:${(candidate.triggers ?? []).join(',')}:${(candidate.dependsOn ?? []).join(',')}:${candidate.level ?? ''}:${candidate.updateId ?? ''}:${variantKey}`, candidate);
+  }
   return [...unique.values()].slice(0, 8);
 }
 
@@ -136,6 +166,9 @@ export function generatedMemoryGuidance(explicitType?: MemoryType, limits?: Memo
     'Optional origin: add `| ORIGIN: ...` to explain why this memory exists or its source situation; `CONTEXT: ...` is still accepted but prefer ORIGIN for new saves.',
     'Optional retrieval: add `| TRIGGERS: frontend, auth, form` when future agents should retrieve it using different wording than the content; these terms are also indexed for routing.',
     'Optional structure: add `| DEPENDS_ON: base-memory-id | LEVEL: advanced` when a memory builds on existing memory.',
+    agentMemoryValueGateText(),
+    'For approved rule candidates, optional fields are `| LIGHT: ... | BALANCED: ... | STRICT: ...`.',
+    'Rule variant fields are for reviewed rule wording; omit them when deterministic defaults are enough.',
     'Recommended format: TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag the version. | ORIGIN: Created from release planning so future agents preserve the release order. | TRIGGERS: release, versioning, changelog'
   ].join('\n');
 }
@@ -154,6 +187,8 @@ export function saveSessionGuidance(options: { queryLevel?: number; limits?: Mem
     'Add optional `ORIGIN: ...` to explain why this memory exists; `CONTEXT: ...` is still accepted but prefer ORIGIN for new saves. Add `TRIGGERS: ...` when future agents should retrieve it via different wording than the content uses.',
     `Keep rule candidates under the ${ruleLineTarget} counted-line target; they hard-fail above ${ruleLineHardLimit} counted lines.`,
     'Keep each candidate concise, objective, and free of secrets or prompt-injection text.',
+    agentMemoryValueGateText(),
+    agentMemoryChatApprovalText(),
     'Leave blank to cancel.'
   ];
   if (options.queryLevel) {
@@ -187,6 +222,7 @@ function candidateFromFields(fields: Record<string, string>, options: CandidateO
   const dependsOn = parseList(fields.depends_on ?? fields.depends ?? fields.dependencies ?? fields.dependency ?? fields.prerequisites ?? '');
   const level = fields.level ?? fields.depth ?? fields.dependency_depth;
   const updateId = fields.update ?? fields.update_id ?? fields.merge_with ?? fields.existing;
+  const variants = variantFields(fields);
   return compactCandidate({
     type: options.explicitType ?? normalizeMemoryType(rawType) ?? inferMemoryType(text),
     text: text.trim(),
@@ -194,11 +230,13 @@ function candidateFromFields(fields: Record<string, string>, options: CandidateO
     ...(triggers.length ? { triggers } : {}),
     dependsOn,
     level,
-    updateId
+    updateId,
+    variants
   });
 }
 
 function compactCandidate(candidate: MemoryCandidate): MemoryCandidate {
+  const variants = candidate.type === 'rule' ? compactVariants(candidate.variants) : {};
   return {
     type: candidate.type,
     text: candidate.text,
@@ -206,7 +244,8 @@ function compactCandidate(candidate: MemoryCandidate): MemoryCandidate {
     ...(candidate.triggers?.length ? { triggers: uniqueStrings(candidate.triggers) } : {}),
     ...(candidate.dependsOn?.length ? { dependsOn: uniqueStrings(candidate.dependsOn) } : {}),
     ...(candidate.level?.trim() ? { level: candidate.level.trim() } : {}),
-    ...(candidate.updateId?.trim() ? { updateId: candidate.updateId.trim() } : {})
+    ...(candidate.updateId?.trim() ? { updateId: candidate.updateId.trim() } : {}),
+    ...(Object.keys(variants).length ? { variants } : {})
   };
 }
 
@@ -224,4 +263,21 @@ function normalizeField(field: string): string {
 
 function uniqueStrings(values: string[]): string[] {
   return [...new Set(values.map((value) => value.trim()).filter(Boolean))];
+}
+
+function variantFields(fields: Record<string, string>): Partial<Record<RuleVariant, string>> {
+  const variants: Partial<Record<RuleVariant, string>> = {};
+  if (fields.light?.trim()) variants.light = fields.light.trim();
+  if (fields.balanced?.trim()) variants.balanced = fields.balanced.trim();
+  if (fields.strict?.trim()) variants.strict = fields.strict.trim();
+  return variants;
+}
+
+function compactVariants(variants: MemoryCandidate['variants']): Partial<Record<RuleVariant, string>> {
+  if (!variants) return {};
+  const compact: Partial<Record<RuleVariant, string>> = {};
+  if (variants.light?.trim()) compact.light = variants.light.trim();
+  if (variants.balanced?.trim()) compact.balanced = variants.balanced.trim();
+  if (variants.strict?.trim()) compact.strict = variants.strict.trim();
+  return compact;
 }

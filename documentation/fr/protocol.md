@@ -1,5 +1,10 @@
 # Protocole de Mémoire Humaine
 
+## Approbation en Chat IA
+
+Dans le chat avec un agent IA, l'approbation Engram est conversationnelle. L'agent montre d'abord des candidats affines `TYPE: ... | TEXT: ...`, y compris les variantes Light/Balanced/Strict pour les regles. Repondez `yes` pour enregistrer exactement ces candidats, `audit` pour les reviser, ou `cancel` pour arreter. Apres `yes`, l'agent utilise `engram save-session --accept-all` avec les candidats approuves. Les enregistrements directs en CLI continuent d'utiliser A/B/C sauf si une commande accept-all a ete invoquee explicitement.
+
+
 Engram n'est pas simplement une « mémoire d'agent ». C'est un protocole qui rend la mémoire inspectable, portable et gouvernée par les humains.
 
 ## Le Contrat

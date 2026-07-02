@@ -21,6 +21,7 @@ export function draftMemory(input: {
   source?: MemorySourceMeta;
   taskType?: TaskType;
   triggers?: string[];
+  variants?: Partial<Record<'light' | 'balanced' | 'strict', string>>;
 }, options: MemoryDraftOptions = {}): { file: string; id: string; content: string; tags: string[] } {
   const title = titleFor(input.text, input.type);
   const id = slugify(title);
@@ -42,12 +43,14 @@ export function updateMemory(raw: string, input: {
   source?: MemorySourceMeta;
   taskType?: TaskType;
   triggers?: string[];
+  variants?: Partial<Record<'light' | 'balanced' | 'strict', string>>;
 }, options: MemoryDraftOptions = {}): string {
   const doc = parseMemory(raw);
   const tags = unique([...(doc.frontmatter.tags ?? []), ...taskTypeTags(input.taskType), ...tagsFrom(input.text)]);
   const bullets = unique([...contentBullets(doc.body), ...plainBullets(input.text)]).slice(0, 8);
   const text = bullets.map((line) => line.replace(/^-\s*/, '')).join(' ');
-  const variants = preservedRuleVariants(raw, input.type, options);
+  const incomingVariants = input.variants && Object.keys(input.variants).length ? input.variants : undefined;
+  const variants = incomingVariants ?? preservedRuleVariants(raw, input.type, options);
   const context = input.context?.trim() ? input.context : contextSection(doc.body);
   return renderMemory({
     ...input,
@@ -196,3 +199,5 @@ function formatInlineMarkdown(text: string): string {
     return `${prefix}[${label}](${href})${trailing}`;
   });
 }
+
+

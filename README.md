@@ -14,7 +14,7 @@ It gives agents memory without giving agents ownership of memory. Durable rules,
 
 ## Key Highlights
 
-- **Human in the Loop**: AI proposes memory candidates; humans review and approve (A/B/C gate, automatable via rules).
+- **Human in the Loop**: Direct CLI saves use A/B/C approval. AI-agent chat saves use an exact-candidate `yes` / `audit` / `cancel` loop before the agent writes with `save-session --accept-all`.
 - **Context-Optimized**: Routes meaningful task matches plus prerequisites into a compact pack (default: 8 files) to avoid context bloat.
 - **Git-Native & Portable**: Plain Markdown files stored in `.agents/.engram/` synced via Git—completely vendor-agnostic and offline-first.
 - **Privacy & Security Control**: Runs 100% locally and scans for PII/secrets before writing.
@@ -163,6 +163,10 @@ Alternatively, you can manually link Engram to your agent:
 engram link codex
 ```
 
+After upgrading the npm package, run `engram upgrade --latest` when you want
+Engram to overwrite current linked agent instruction files, rules, MCP/plugin
+config, and managed hooks with the new package version.
+
 For Gemini / Antigravity surfaces:
 ```bash
 engram link gemini
@@ -215,6 +219,10 @@ engram inject
 ---
 
 ## AI-Agent Quickstart
+When you ask an AI agent to save memory, the agent should first show the refined `TYPE: ... | TEXT: ...` candidate. For rule memories it should also show Light, Balanced, and Strict variants. Reply `yes` to save the exact candidate, `audit` to revise it, or `cancel` to stop. After `yes`, the agent writes the exact shown candidate with `engram save-session --accept-all`.
+
+When the agent notices a durable rule, workflow, skill, or knowledge item during normal work, it should propose it at the end of its response only if it passes the value gate: durable, reusable, objective, triggerable, and not already covered by existing memory.
+
 
 You can instruct your agent to use the following slash commands in chat:
 

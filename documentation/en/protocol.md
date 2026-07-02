@@ -1,5 +1,10 @@
 # Human-Owned Memory Protocol
 
+## AI-Agent Chat Approval
+
+In AI-agent chat, Engram approval is conversational. The agent shows refined `TYPE: ... | TEXT: ...` candidates first, including Light/Balanced/Strict variants for rules. Reply `yes` to save the exact candidates, `audit` to revise them, or `cancel` to stop. After `yes`, the agent uses `engram save-session --accept-all` with the exact approved candidates. Direct terminal CLI saves still use A/B/C unless an accept-all command was explicitly invoked.
+
+
 Engram is not just "agent memory." It is a protocol that makes memory inspectable, portable, and governed by humans.
 
 ## The Contract
@@ -38,10 +43,10 @@ Every active memory file has `Context`, `Content`, and `Example` sections. Rule 
 2. Engram parses candidate type and target scope.
 3. Engram checks schema, secrets, prompt-injection patterns, and path safety.
 4. Human sees a preview.
-5. Human replies `A`, `A 1,3`, `B <note>`, or `C`.
-6. Only approved memory is written.
-7. Index, graph, hashes, and changelog are refreshed.
-
+5. Direct CLI replies use `A`, `A 1,3`, `B <note>`, or `C`.
+6. AI-agent chat replies use `yes`, `audit`, or `cancel` after the exact displayed candidates.
+7. Only approved memory is written.
+8. Index, graph, hashes, and changelog are refreshed.
 ## Read Flow
 
 1. Engram loads workspace and optional global indexes.

@@ -1,5 +1,10 @@
 # Operations Guide
 
+## AI-Agent Chat Approval
+
+In AI-agent chat, Engram approval is conversational. The agent shows refined `TYPE: ... | TEXT: ...` candidates first, including Light/Balanced/Strict variants for rules. Reply `yes` to save the exact candidates, `audit` to revise them, or `cancel` to stop. After `yes`, the agent uses `engram save-session --accept-all` with the exact approved candidates. Direct terminal CLI saves still use A/B/C unless an accept-all command was explicitly invoked.
+
+
 This page holds detailed usage so the README can stay short.
 
 ## Command Surface
@@ -83,6 +88,10 @@ vector sidecars, generated workspace skillsets, global memory scaffolding, and
 registered global agent skillsets while preserving human-authored files. Normal
 commands also run the same root reconciliation quietly once per package version unless
 `--no-auto-upgrade` or `ENGRAM_NO_AUTO_UPGRADE=1` is set.
+Use `engram upgrade --latest` when the new package output must overwrite current
+Engram-managed linked agent artifacts. That path reapplies linked workspace
+instruction files, rules, MCP/plugin config, and managed hooks, and also
+refreshes registered global agent installs with the latest generated files.
 
 ### Skillset Render Profiles
 

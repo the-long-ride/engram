@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.0.23
+
+- Added an agent chat memory approval flow so agents can propose memories through a chat approval protocol, with updated README, protocol, quickstart, skillset contract, `llm.txt`, and translated docs.
+- Added `engram upgrade --latest` refresh support for linked agent integrations so generated hook and skillset files update with the latest templates.
+- Improved the `/engram` slash/menu entry and upgrade hook refresh behavior, plus refreshed related integration documentation.
+- Updated translated operations guides for the new approval and upgrade flows.
+
 ## 0.0.22
 
 - Added Cursor as a `link` target: workspace rules (`.cursor/rules/engram.mdc`), MCP (`.cursor/mcp.json` with `type: "stdio"`), sessionStart hook, and guide file. Global install creates a local Cursor plugin with rules, skills, commands, MCP, and hooks.

@@ -1,5 +1,10 @@
 # 运维指南
 
+## AI 聊天审批
+
+在 AI 代理聊天中，Engram 的审批是对话式的。代理会先展示整理后的 `TYPE: ... | TEXT: ...` 候选内容；如果是规则记忆，还会同时展示 Light/Balanced/Strict 变体。回复 `yes` 表示按当前候选原样保存，回复 `audit` 表示继续修改，回复 `cancel` 表示取消。收到 `yes` 后，代理会使用 `engram save-session --accept-all` 写入刚刚获批的候选内容。直接在 CLI 中保存时，除非明确调用了 accept-all 命令，否则仍然使用 A/B/C。
+
+
 本页面包含详细的用法，以便 README 可以保持简短。
 
 ## 命令集

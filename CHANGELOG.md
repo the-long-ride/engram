@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.0.24
+
+- Fixed OpenCode integration paths so workspace links use `AGENTS.md`, `.opencode/engram.md`, `.opencode/skills/engram/SKILL.md`, and `opencode.json` or an existing `opencode.jsonc`, while global links use `~/.config/opencode/AGENTS.md`, `~/.config/opencode/engram.md`, `~/.config/opencode/skills/engram/SKILL.md`, and `~/.config/opencode/opencode.json` or an existing `opencode.jsonc`.
+- Updated OpenCode hook/plugin and MCP merge flows so `engram upgrade --latest` refreshes only Engram-managed entries, preserves unrelated user settings, and skips invalid existing JSON/JSONC instead of overwriting it.
+- Hardened shared JSON/JSONC merge helpers and refresh logic for other linked agents, including Cursor, Claude, Gemini, and Windsurf, so user-authored config stays intact while Engram-managed MCP and hook entries update cleanly.
+- Added regression coverage for OpenCode and shared MCP refresh/force-link cases, including malformed config preservation and user-setting-safe merges.
+
 ## 0.0.23
 
 - Added an agent chat memory approval flow so agents can propose memories through a chat approval protocol, with updated README, protocol, quickstart, skillset contract, `llm.txt`, and translated docs.

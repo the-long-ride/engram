@@ -15,13 +15,15 @@ import { isIgnored } from '../core/safety/ignore.js';
 import { ensureDir, exists, readText, writeText } from '../core/system/fsx.js';
 import { findConflicts, resolveConflicts } from '../core/vcs/conflict.js';
 import {
+  detectLinkedWorkspaceTargets,
   installGlobalSkillset,
+  overwriteLinkedWorkspaceSkillsets,
   readGlobalSkillsetRegistry,
   refreshGeneratedWorkspaceSkillsets,
   refreshGlobalSkillsets,
   type InstallResult
 } from '../core/integrations/skillset.js';
-import { applyAgentHookAction, normalizeTarget } from '../core/integrations/agent-hooks.js';
+import { applyAgentHookAction, normalizeTarget, refreshInstalledAgentHooks } from '../core/integrations/agent-hooks.js';
 import { runAgentHook } from '../core/integrations/agent-hook-runtime.js';
 import { git } from '../core/vcs/git.js';
 import { formatRecords, type RecordBlock } from '../core/cli/format.js';
@@ -216,14 +218,20 @@ export async function cmdUpgrade(args: string[] = [], flags: Record<string, any>
   if (flags['memory-only'] === true && flags['global-skillsets-only'] === true) throw new Error('upgrade cannot use --memory-only and --global-skillsets-only together');
   const plan = flags.plan === true || flags['dry-run'] === true;
   const dbMigrate = flags['db-migrate'] === true;
+  const overwriteLinked = flags.latest === true;
+  const target = upgradeTarget(args, flags);
   const records: RecordBlock[] = [];
   records.push(await upgradePackageRecord(flags, plan));
   if (flags['global-skillsets-only'] !== true && !dbMigrate) {
     records.push(await workspaceMemoryUpgradeRecord(plan, Boolean(flags.force)));
-    records.push(await workspaceSkillsetUpgradeRecord(plan));
+    records.push(await workspaceSkillsetUpgradeRecord(plan, overwriteLinked));
+    if (overwriteLinked) records.push(await workspaceHookUpgradeRecord(plan));
     records.push(...await globalMemoryUpgradeRecords(plan, Boolean(flags.force)));
   }
-  if (flags['memory-only'] !== true && !dbMigrate) records.push(...await globalSkillsetUpgradeRecords(args, flags, plan));
+  if (flags['memory-only'] !== true && !dbMigrate) {
+    records.push(...await globalSkillsetUpgradeRecords(target, flags, plan, overwriteLinked));
+    if (overwriteLinked) records.push(await globalHookUpgradeRecord(target, plan));
+  }
 
   // DB migration via --db-migrate flag
   if (dbMigrate) {
@@ -253,7 +261,7 @@ export async function cmdUpgrade(args: string[] = [], flags: Record<string, any>
     '',
     'Quick update:',
     '  npm install -g @the-long-ride/engram@latest',
-    '  engram upgrade'
+    '  engram upgrade --latest'
   ].join('\n');
 }
 
@@ -282,18 +290,42 @@ async function workspaceMemoryUpgradeRecord(plan: boolean, force: boolean): Prom
   return { title: 'UPDATED workspace memory', fields: [['Path', root], ['Reconciled', reconciled]] };
 }
 
-async function workspaceSkillsetUpgradeRecord(plan: boolean): Promise<RecordBlock> {
-  const results = await refreshGeneratedWorkspaceSkillsets(process.cwd(), { plan });
+async function workspaceSkillsetUpgradeRecord(plan: boolean, overwriteLinked: boolean): Promise<RecordBlock> {
+  const results = overwriteLinked
+    ? await overwriteLinkedWorkspaceSkillsets(process.cwd(), { plan })
+    : await refreshGeneratedWorkspaceSkillsets(process.cwd(), { plan });
   if (!results.length) {
-    return { title: 'SKIPPED workspace skillsets', fields: [['Reason', 'no generated workspace skillset files need refresh']] };
+    return { title: 'SKIPPED workspace skillsets', fields: [['Reason', overwriteLinked ? 'no linked workspace skillset files need overwrite' : 'no generated workspace skillset files need refresh']] };
   }
   return {
     title: plan ? 'PLAN workspace skillsets' : 'UPDATED workspace skillsets',
-    fields: [['Files', results.map((result) => result.file).join(', ')]],
+    fields: [['Files', [...new Set(results.map((result) => result.file))].join(', ')]],
     lines: results.map((result) => `${result.action.toUpperCase()} ${result.target}: ${result.file}`)
   };
 }
 
+async function workspaceHookUpgradeRecord(plan: boolean): Promise<RecordBlock> {
+  const hookTargets = await workspaceHookTargets();
+  if (!hookTargets.length) {
+    return { title: 'SKIPPED workspace agent hooks', fields: [['Reason', 'no linked workspace agent hooks need refresh']] };
+  }
+  const results = [];
+  for (const target of hookTargets) {
+    results.push(...await refreshInstalledAgentHooks(target, { cwd: process.cwd(), plan, force: true, installMissing: true }));
+  }
+  return {
+    title: plan ? 'PLAN workspace agent hooks' : 'UPDATED workspace agent hooks',
+    fields: [['Hosts', [...new Set(results.map((result) => result.host))].join(', ')]],
+    lines: results.map((result) => `${result.status} ${result.host}: ${result.file ?? '<unknown>'}`)
+  };
+}
+
+async function workspaceHookTargets(): Promise<string[]> {
+  const linkedTargets = await detectLinkedWorkspaceTargets(process.cwd());
+  const targets = hookTargetsForLinkedSkillsets(linkedTargets);
+  if (targets.has('codex') || await exists(path.join(process.cwd(), '.codex', 'hooks.json'))) targets.add('codex');
+  return [...targets];
+}
 async function upgradePackageRecord(flags: Record<string, any>, plan: boolean): Promise<RecordBlock> {
   const latest = await latestVersion(flags);
   if (flags.self === true && !plan) {
@@ -320,8 +352,7 @@ async function globalMemoryUpgradeRecords(plan: boolean, force: boolean): Promis
   return [{ title: 'UPDATED global memory', fields: [['Path', roots.global]], lines }];
 }
 
-async function globalSkillsetUpgradeRecords(args: string[], flags: Record<string, any>, plan: boolean): Promise<RecordBlock[]> {
-  const target = typeof flags.target === 'string' ? flags.target : args[0] ?? '';
+async function globalSkillsetUpgradeRecords(target: string, flags: Record<string, any>, plan: boolean, overwriteLinked: boolean): Promise<RecordBlock[]> {
   const registry = await readGlobalSkillsetRegistry();
   if (!target && !Object.keys(registry.installs).length) {
     return [{
@@ -332,10 +363,49 @@ async function globalSkillsetUpgradeRecords(args: string[], flags: Record<string
       ]
     }];
   }
+  const force = overwriteLinked || Boolean(flags.force);
   const results = target
-    ? await installGlobalSkillset(target, { force: Boolean(flags.force), plan })
-    : await refreshGlobalSkillsets('', { force: Boolean(flags.force), plan });
+    ? await installGlobalSkillset(target, { force, plan })
+    : await refreshGlobalSkillsets('', { force, plan });
   return installResultRecords(results);
+}
+
+async function globalHookUpgradeRecord(target: string, plan: boolean): Promise<RecordBlock> {
+  const hookTargets = await globalHookTargets(target);
+  if (!hookTargets.length) {
+    return { title: 'SKIPPED global agent hooks', fields: [['Reason', 'no linked global agent hooks need refresh']] };
+  }
+  const results = [];
+  for (const current of hookTargets) {
+    results.push(...await refreshInstalledAgentHooks(current, { global: true, plan, force: true, installMissing: true }));
+  }
+  return {
+    title: plan ? 'PLAN global agent hooks' : 'UPDATED global agent hooks',
+    fields: [['Hosts', [...new Set(results.map((result) => result.host))].join(', ')]],
+    lines: results.map((result) => `${result.status} ${result.host}: ${result.file ?? '<unknown>'}`)
+  };
+}
+
+async function globalHookTargets(target: string): Promise<string[]> {
+  if (target) return [...hookTargetsForLinkedSkillsets([target])];
+  const registry = await readGlobalSkillsetRegistry();
+  return [...hookTargetsForLinkedSkillsets(Object.keys(registry.installs))];
+}
+
+function hookTargetsForLinkedSkillsets(linkedTargets: string[]): Set<string> {
+  const targets = new Set<string>();
+  const linked = new Set(linkedTargets.map((item) => item.toLowerCase()));
+  if (linked.has('claude')) targets.add('claude');
+  if (linked.has('cursor')) targets.add('cursor');
+  if (linked.has('gemini') || linked.has('antigravity') || linked.has('antigravity-cli')) targets.add('gemini');
+  if (linked.has('opencode') || linked.has('open-code')) targets.add('opencode');
+  if (linked.has('windsurf') || linked.has('cascade')) targets.add('windsurf');
+  if (linked.has('codex') || (linked.has('agents-md') && linked.has('agent-skill'))) targets.add('codex');
+  return targets;
+}
+
+function upgradeTarget(args: string[], flags: Record<string, any>): string {
+  return typeof flags.target === 'string' ? flags.target : args[0] ?? '';
 }
 
 async function latestVersion(flags: Record<string, any>): Promise<string> {
@@ -383,3 +453,16 @@ function saveTargetStatus(scope: string, hasGlobal: boolean): string {
 function loadLimitStatus(limit: number): string {
   return `Load limit: ${limit} (default ${DEFAULT_LOAD_LIMIT}, range ${MIN_LOAD_LIMIT}-${MAX_LOAD_LIMIT})`;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+

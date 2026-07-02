@@ -217,7 +217,11 @@ export async function installSkillset(cwd: string, target = 'all', force = false
         if (isCursorMcpFile(relativeFile)) {
           const existing = await readText(file);
           const incoming = renderSkillsetFile('mcp', relativeFile, config.read, 'compact');
-          if (existing) {
+          if (existing && force) {
+            await ensureDir(path.dirname(file));
+            await writeText(file, incoming);
+            results.push({ target: label, file: relativeFile, action: 'updated' });
+          } else if (existing) {
             const merged = mergeMcpJson(existing, incoming);
             if (merged) {
               await ensureDir(path.dirname(file));
@@ -250,6 +254,88 @@ export async function installSkillset(cwd: string, target = 'all', force = false
 }
 
 /** Refresh only existing Engram-generated workspace adapter files. */
+export async function overwriteLinkedWorkspaceSkillsets(cwd: string, options: { plan?: boolean } = {}): Promise<InstallResult[]> {
+  const linkedTargets = await detectLinkedWorkspaceTargets(cwd);
+  if (!linkedTargets.length) return [];
+  if (options.plan) return planLinkedWorkspaceSkillsets(linkedTargets);
+  const results: InstallResult[] = [];
+  for (const target of linkedTargets) results.push(...await installSkillset(cwd, target, true));
+  return dedupeInstallResults(results);
+}
+
+export async function detectLinkedWorkspaceTargets(cwd: string): Promise<SkillsetTarget[]> {
+  const linked: SkillsetTarget[] = [];
+  for (const name of Object.keys(targets) as SkillsetTarget[]) {
+    if (await workspaceTargetIsLinked(cwd, name)) linked.push(name);
+  }
+  return linked;
+}
+
+async function workspaceTargetIsLinked(cwd: string, target: SkillsetTarget): Promise<boolean> {
+  for (const relativeFile of workspaceInstallFilesForTarget(target)) {
+    const existing = await readText(path.join(cwd, relativeFile));
+    if (!existing) continue;
+    if (isLinkedWorkspaceArtifact(relativeFile, existing)) return true;
+  }
+  return false;
+}
+
+function planLinkedWorkspaceSkillsets(linkedTargets: SkillsetTarget[]): InstallResult[] {
+  const results: InstallResult[] = [];
+  const seen = new Set<string>();
+  for (const target of linkedTargets) {
+    for (const relativeFile of workspaceInstallFilesForTarget(target)) {
+      const key = `${target}\u0000${relativeFile}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      results.push({ target, file: relativeFile, action: 'planned' });
+    }
+  }
+  return results;
+}
+
+function workspaceInstallFilesForTarget(target: SkillsetTarget): string[] {
+  const guidePath = workspaceGuideFileForTarget(target);
+  return [...targets[target], ...workspaceMcpFilesForTarget(target), ...(guidePath ? [guidePath] : [])];
+}
+
+function isLinkedWorkspaceArtifact(relativeFile: string, existing: string): boolean {
+  const normalized = normalizePath(relativeFile);
+  if (normalized === '.mcp.json' || normalized === '.cursor/mcp.json') return hasEngramMcpConfig(existing);
+  if (normalized === 'opencode.json') return hasEngramOpenCodeConfig(existing);
+  return isGenerated(existing, relativeFile);
+}
+
+function hasEngramMcpConfig(existing: string): boolean {
+  try {
+    const parsed = JSON.parse(existing);
+    return Boolean(parsed?.mcpServers?.engram);
+  } catch {
+    return false;
+  }
+}
+
+function hasEngramOpenCodeConfig(existing: string): boolean {
+  try {
+    const parsed = JSON.parse(existing);
+    return Boolean(parsed?.mcp?.engram) || (Array.isArray(parsed?.instructions) && parsed.instructions.includes('.opencode/engram.md'));
+  } catch {
+    return false;
+  }
+}
+
+function dedupeInstallResults(results: InstallResult[]): InstallResult[] {
+  const out: InstallResult[] = [];
+  const seen = new Set<string>();
+  for (const result of results) {
+    const key = `${result.target}\u0000${normalizePath(result.file)}\u0000${result.action}\u0000${result.reason ?? ''}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(result);
+  }
+  return out;
+}
+
 export async function refreshGeneratedWorkspaceSkillsets(cwd: string, options: { plan?: boolean } = {}): Promise<InstallResult[]> {
   const config = await loadConfig(cwd);
   const results: InstallResult[] = [];
@@ -895,3 +981,5 @@ function unmergeOpencodeMcp(existingJson: string): string | null {
     return null;
   }
 }
+
+

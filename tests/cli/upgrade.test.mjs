@@ -208,6 +208,81 @@ test('upgrade refresh keeps codex-linked AGENTS.md as bootstrap', async () => {
   await rm(cwd, { recursive: true, force: true });
 });
 
+test('upgrade --latest overwrites linked workspace cursor files and hooks', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-upgrade-latest-workspace-');
+  const linked = await runEngram(cwd, env, ['link', 'cursor']);
+  assert.equal(linked.code, 0, linked.stderr);
+
+  const cursorDir = path.join(cwd, '.cursor');
+  await writeFile(path.join(cursorDir, 'rules', 'engram.mdc'), '---\ndescription: stale\nalwaysApply: false\n---\n\n# stale rule\n');
+  await writeFile(path.join(cursorDir, 'mcp.json'), `${JSON.stringify({ mcpServers: { engram: { type: 'stdio', command: 'old-bin', args: ['old'] } } }, null, 2)}\n`);
+  await writeFile(path.join(cursorDir, 'hooks.json'), `${JSON.stringify({
+    sessionStart: [{ name: 'engram-auto-load', type: 'command', command: 'echo stale', timeout: 1 }],
+    custom: [{ name: 'keep-me', type: 'command', command: 'echo keep' }]
+  }, null, 2)}\n`);
+
+  const upgraded = await runEngram(cwd, env, ['upgrade', '--latest', '--no-version-check']);
+  assert.equal(upgraded.code, 0, upgraded.stderr);
+  assert.match(upgraded.stdout, /UPDATED workspace skillsets/);
+  assert.match(upgraded.stdout, /UPDATED workspace agent hooks/);
+
+  const rule = await readFile(path.join(cursorDir, 'rules', 'engram.mdc'), 'utf8');
+  assert.match(rule, /alwaysApply:\s*true/);
+  assert.match(rule, /<!-- engram:start -->/);
+
+  const mcp = JSON.parse(await readFile(path.join(cursorDir, 'mcp.json'), 'utf8'));
+  assert.equal(mcp.mcpServers.engram.command, 'npx');
+
+  const hooks = JSON.parse(await readFile(path.join(cursorDir, 'hooks.json'), 'utf8'));
+  const managed = hooks.sessionStart.find((entry) => entry.name === 'engram-auto-load');
+  assert.ok(managed, 'cursor sessionStart should keep the managed engram hook');
+  assert.equal(managed.command, 'engram agent-hook --host cursor');
+  assert.equal(managed.timeout, 10000);
+  assert.ok(hooks.custom.some((entry) => entry.name === 'keep-me'));
+
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('upgrade --latest overwrites registered global cursor files and hooks', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-upgrade-latest-global-');
+  const agentHome = path.join(cwd, 'agent-home');
+  const globalEnv = { ...env, ENGRAM_AGENT_HOME: agentHome, ENGRAM_AGENT_CONFIG_HOME: path.join(cwd, 'agent-config') };
+  const linked = await runEngram(cwd, globalEnv, ['link', '--global', 'cursor']);
+  assert.equal(linked.code, 0, linked.stderr);
+
+  const pluginRoot = path.join(agentHome, '.cursor', 'plugins', 'local', 'engram');
+  await writeFile(path.join(pluginRoot, 'rules', 'engram.mdc'), '---\ndescription: stale\nalwaysApply: false\n---\n\n# stale rule\n');
+  await writeFile(path.join(pluginRoot, 'mcp.json'), `${JSON.stringify({ mcpServers: { engram: { type: 'stdio', command: 'old-bin', args: ['old'] } } }, null, 2)}\n`);
+  await writeFile(path.join(pluginRoot, 'hooks', 'hooks.json'), `${JSON.stringify({
+    sessionStart: [{ name: 'engram-auto-load', type: 'command', command: 'echo stale', timeout: 1 }],
+    custom: [{ name: 'keep-me', type: 'command', command: 'echo keep' }]
+  }, null, 2)}\n`);
+  await writeFile(path.join(pluginRoot, '.cursor-plugin', 'plugin.json'), `${JSON.stringify({ name: 'engram', version: '0.0.0', _managedBy: 'engram' }, null, 2)}\n`);
+
+  const upgraded = await runEngram(cwd, globalEnv, ['upgrade', '--latest', '--no-version-check']);
+  assert.equal(upgraded.code, 0, upgraded.stderr);
+  assert.match(upgraded.stdout, /UPDATED global agent hooks/);
+
+  const rule = await readFile(path.join(pluginRoot, 'rules', 'engram.mdc'), 'utf8');
+  assert.match(rule, /alwaysApply:\s*true/);
+  assert.match(rule, /<!-- engram:start -->/);
+
+  const pluginJson = JSON.parse(await readFile(path.join(pluginRoot, '.cursor-plugin', 'plugin.json'), 'utf8'));
+  assert.equal(pluginJson.name, 'engram');
+  assert.equal(pluginJson._managedBy, 'engram');
+  assert.equal(pluginJson.author, 'The Long Ride');
+
+  const mcp = JSON.parse(await readFile(path.join(pluginRoot, 'mcp.json'), 'utf8'));
+  assert.equal(mcp.mcpServers.engram.command, 'npx');
+
+  const hooks = JSON.parse(await readFile(path.join(pluginRoot, 'hooks', 'hooks.json'), 'utf8'));
+  const managed = hooks.sessionStart.find((entry) => entry.name === 'engram-auto-load');
+  assert.ok(managed, 'global cursor hooks should keep the managed engram hook');
+  assert.equal(managed.command, 'engram agent-hook --host cursor');
+  assert.equal(managed.timeout, 10000);
+
+  await rm(cwd, { recursive: true, force: true });
+});
 test('auto-upgrade can be skipped for one command', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-autoupgrade-skip-');
   const init = await runEngram(cwd, env, ['inject', '--no-skillset']);
@@ -223,3 +298,8 @@ test('auto-upgrade can be skipped for one command', async () => {
   assert.equal(unchanged.auto_upgrade.version, '0.0.0');
   await rm(cwd, { recursive: true, force: true });
 });
+
+
+
+
+

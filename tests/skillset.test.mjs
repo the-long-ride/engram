@@ -40,6 +40,10 @@ test('skillset installer writes all supported agent adapter files (--all-support
   assert.match(guide, /Save flow:/);
   assert.match(guide, /Rule memories:/);
   assert.match(guide, /Default agent mode: compact/);
+  assert.match(guide, /Memory value gate/);
+  assert.match(guide, /AI-agent chat save protocol/);
+  assert.match(guide, /engram save-session --accept-all/);
+  assert.match(guide, /yes.*audit.*cancel/is);
   const mcpConfig = await readFile(path.join(cwd, '.mcp.json'), 'utf8');
   assert.match(mcpConfig, /engram-mcp/);
   assert.equal(JSON.parse(mcpConfig).mcpServers.engram.command, 'npx');
@@ -1712,3 +1716,4 @@ test('windsurf link adds trigger when missing from CRLF human frontmatter', asyn
 function isObject(v) {
   return Boolean(v) && typeof v === 'object' && !Array.isArray(v);
 }
+

@@ -14,7 +14,7 @@ export const HELP_DATA: HelpSection[] = [
       { command: 'engram profile status|list|create|use|merge', alias: 'pf', purpose: 'Manage isolated global memory profiles for company, personal, or team contexts' },
       { command: 'engram update-global-folder <new-path> [--move-from-path path]', alias: 'ugf', purpose: 'Update the configured global memory folder and optionally move an old global root' },
       { command: 'engram completion [bash|zsh|powershell]', alias: 'c', purpose: 'Generate shell completion support for Tab suggestions' },
-      { command: 'engram upgrade [--plan] [--latest] [--self] [--memory-only|--global-skillsets-only] [--target agent]', alias: 'up', purpose: 'Recommend package update and refresh generated help, indexes, graphs, workspace skillsets, global memory, and registered global agent skillsets' }
+      { command: 'engram upgrade [--plan] [--latest] [--self] [--memory-only|--global-skillsets-only] [--target agent]', alias: 'up', purpose: 'Recommend package update and refresh generated help, indexes, graphs, linked agent configs/hooks, global memory, and registered global agent skillsets' }
     ]
   },
   {
@@ -109,3 +109,4 @@ export function commandNames(): string[] {
     .filter((alias): alias is string => Boolean(alias));
   return [...new Set([...names, ...aliases])];
 }
+

@@ -143,6 +143,46 @@ export async function applyAgentHookAction(action: AgentHookAction, targetArg = 
   return formatRecords(action === 'install' ? 'Engram agent hook install' : 'Engram agent hook uninstall', results.map(resultRecord));
 }
 
+export async function refreshInstalledAgentHooks(targetArg = 'all', options: { global?: boolean; plan?: boolean; force?: boolean; cwd?: string; installMissing?: boolean } = {}): Promise<AgentHookResult[]> {
+  const results: AgentHookResult[] = [];
+  for (const target of expandTargets(targetArg)) {
+    const normalized = normalizeTarget(target);
+    if (typeof normalized !== 'string') continue;
+    const meta = TARGETS[normalized];
+    const file = options.global
+      ? meta.globalFile()
+      : path.join(options.cwd ?? process.cwd(), meta.configFile);
+    if (!options.installMissing && !(await hasManagedHookInstall(meta, file))) continue;
+    if (options.plan) {
+      results.push({ status: 'PLAN', host: meta.host, file, events: meta.events });
+      continue;
+    }
+    if (meta.kind === 'plugin') {
+      results.push(await applyOpenCodePlugin('install', meta, file, Boolean(options.force)));
+      continue;
+    }
+    const config = await readJson<Record<string, any>>(file, {});
+    mergeManagedHooks(config, meta, Boolean(options.force));
+    await writeJson(file, config);
+    results.push({ status: 'UPDATED', host: meta.host, file, events: meta.events });
+  }
+  return results;
+}
+
+async function hasManagedHookInstall(meta: HookTarget, file: string): Promise<boolean> {
+  if (!(await exists(file))) return false;
+  if (meta.kind === 'plugin') return isGeneratedOpenCodeHookPlugin(await readText(file));
+  const config = await readJson<Record<string, any>>(file, {});
+  if (meta.schema === 'cursor') {
+    return meta.events.some((event) => Array.isArray(config[event]) && config[event].some((entry: any) => isCursorManagedEntry(entry)));
+  }
+  if (meta.schema === 'windsurf') {
+    return meta.events.some((event) => Array.isArray(config[event]) && config[event].some((entry: any) => isWindsurfManagedEntry(entry)));
+  }
+  if (!isObject(config.hooks)) return false;
+  return meta.events.some((event) => Array.isArray(config.hooks[event]) && config.hooks[event].some((group: any) => hasManagedHook(group, meta.host)));
+}
+
 /** Return canonical supported host or unsupported target reason. */
 export function normalizeTarget(target: string): AgentHookHost | UnsupportedTarget {
   const lower = target.toLowerCase();
@@ -174,7 +214,7 @@ function mergeManagedHooks(config: Record<string, any>, meta: JsonHookTarget, fo
       hooks: [managedHook(meta.host)]
     };
     config.hooks[event] = [...cleaned, group];
-    changed ||= force || cleaned.length !== groups.length || !groups.some((item: any) => hasManagedHook(item, meta.host));
+    changed ||= force || cleaned.length !== groups.length || !groups.some((item: any) => hasManagedHook(item, meta.host, force));
   }
   return changed;
 }
@@ -187,13 +227,13 @@ function mergeWindsurfHooks(config: Record<string, any>, meta: JsonHookTarget, f
   return mergeFlatHooks(config, meta, force, isWindsurfManagedEntry, windsurfManagedEntry);
 }
 
-function mergeFlatHooks(config: Record<string, any>, meta: JsonHookTarget, force: boolean, isManaged: (e: any) => boolean, makeEntry: () => Record<string, any>): boolean {
+function mergeFlatHooks(config: Record<string, any>, meta: JsonHookTarget, force: boolean, isManaged: (e: any, force?: boolean) => boolean, makeEntry: () => Record<string, any>): boolean {
   let changed = false;
   for (const event of meta.events) {
     const entries = Array.isArray(config[event]) ? config[event] : [];
-    const cleaned = entries.filter((e: any) => !isManaged(e));
+    const cleaned = entries.filter((e: any) => !isManaged(e, force));
     config[event] = [...cleaned, makeEntry()];
-    changed ||= force || cleaned.length !== entries.length || !entries.some(isManaged);
+    changed ||= force || cleaned.length !== entries.length || !entries.some((e: any) => isManaged(e));
   }
   return changed;
 }
@@ -234,25 +274,25 @@ function unmergeFlatHooks(config: Record<string, any>, meta: JsonHookTarget, isM
   return changed;
 }
 
-function removeManagedFromGroups(groups: any[], host: AgentHookHost): any[] {
+function removeManagedFromGroups(groups: any[], host: AgentHookHost, force = false): any[] {
   const out = [];
   for (const group of groups) {
     if (!isObject(group) || !Array.isArray(group.hooks)) {
       out.push(group);
       continue;
     }
-    const hooks = group.hooks.filter((hook: any) => !isManagedHook(hook, host));
+    const hooks = group.hooks.filter((hook: any) => !isManagedHook(hook, host, force));
     if (hooks.length) out.push({ ...group, hooks });
   }
   return out;
 }
 
-function hasManagedHook(group: any, host: AgentHookHost): boolean {
-  return isObject(group) && Array.isArray(group.hooks) && group.hooks.some((hook: any) => isManagedHook(hook, host));
+function hasManagedHook(group: any, host: AgentHookHost, force = false): boolean {
+  return isObject(group) && Array.isArray(group.hooks) && group.hooks.some((hook: any) => isManagedHook(hook, host, force));
 }
 
-function isManagedHook(hook: any, host: AgentHookHost): boolean {
-  return isObject(hook) && hook.name === MANAGED_NAME && hook.command === managedCommand(host);
+function isManagedHook(hook: any, host: AgentHookHost, force = false): boolean {
+  return isObject(hook) && hook.name === MANAGED_NAME && (force || hook.command === managedCommand(host));
 }
 
 function managedHook(host: AgentHookHost): Record<string, any> {
@@ -322,8 +362,8 @@ function resultRecord(result: AgentHookResult): RecordBlock {
   };
 }
 
-function isCursorManagedEntry(entry: any): boolean {
-  return isObject(entry) && entry.name === MANAGED_NAME && typeof entry.command === 'string' && entry.command.includes(managedCommand('cursor'));
+function isCursorManagedEntry(entry: any, force = false): boolean {
+  return isObject(entry) && entry.name === MANAGED_NAME && typeof entry.command === 'string' && (force || entry.command.includes(managedCommand('cursor')));
 }
 
 function cursorManagedEntry(): Record<string, any> {
@@ -333,10 +373,10 @@ function cursorManagedEntry(): Record<string, any> {
   };
 }
 
-function isWindsurfManagedEntry(entry: any): boolean {
+function isWindsurfManagedEntry(entry: any, force = false): boolean {
   if (!isObject(entry)) return false;
   const cmd = entry.command ?? entry.powershell ?? '';
-  return cmd.includes(managedCommand('windsurf'));
+  return cmd.includes(managedCommand('windsurf')) || (force && entry.name === MANAGED_NAME);
 }
 
 function windsurfManagedEntry(): Record<string, any> {
@@ -353,3 +393,8 @@ function windsurfManagedEntry(): Record<string, any> {
 function isObject(value: unknown): value is Record<string, any> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
+
+
+
+
+

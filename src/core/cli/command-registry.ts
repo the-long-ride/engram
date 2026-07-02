@@ -78,10 +78,12 @@ export function commandPrefixes(): string[] {
 
 /** Render the slash adapter command surface from the canonical registry. */
 export function slashCommandSurface(): string {
-  return HELP_DATA.flatMap((section) => section.commands)
-    .map((item) => item.command.replace(/^engram\s+/, ''))
-    .map((command) => `- \`/engram ${command}\` -> \`engram ${command}\``)
-    .join('\n');
+  return [
+    '- `/engram` -> show the Engram command menu (`load`, `search`, `save`, `propose`, `entry`, `help`)',
+    ...HELP_DATA.flatMap((section) => section.commands)
+      .map((item) => item.command.replace(/^engram\s+/, ''))
+      .map((command) => `- \`/engram ${command}\` -> \`engram ${command}\``)
+  ].join('\n');
 }
 
 /** Map short user-facing command aliases to canonical top-level commands. */

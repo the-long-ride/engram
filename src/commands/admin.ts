@@ -23,7 +23,8 @@ import {
   refreshGlobalSkillsets,
   type InstallResult
 } from '../core/integrations/skillset.js';
-import { applyAgentHookAction, normalizeTarget, refreshInstalledAgentHooks } from '../core/integrations/agent-hooks.js';
+import { applyAgentHookAction, detectInstalledHookTargets, normalizeTarget, refreshInstalledAgentHooks } from '../core/integrations/agent-hooks.js';
+import type { AgentHookHost } from '../core/integrations/agent-hooks.js';
 import { runAgentHook } from '../core/integrations/agent-hook-runtime.js';
 import { git } from '../core/vcs/git.js';
 import { formatRecords, type RecordBlock } from '../core/cli/format.js';
@@ -307,7 +308,7 @@ async function workspaceSkillsetUpgradeRecord(plan: boolean, overwriteLinked: bo
 async function workspaceHookUpgradeRecord(plan: boolean): Promise<RecordBlock> {
   const hookTargets = await workspaceHookTargets();
   if (!hookTargets.length) {
-    return { title: 'SKIPPED workspace agent hooks', fields: [['Reason', 'no linked workspace agent hooks need refresh']] };
+    return { title: 'SKIPPED workspace agent hooks', fields: [['Reason', 'no managed workspace agent hooks need refresh']] };
   }
   const results = [];
   for (const target of hookTargets) {
@@ -321,10 +322,10 @@ async function workspaceHookUpgradeRecord(plan: boolean): Promise<RecordBlock> {
 }
 
 async function workspaceHookTargets(): Promise<string[]> {
-  const linkedTargets = await detectLinkedWorkspaceTargets(process.cwd());
-  const targets = hookTargetsForLinkedSkillsets(linkedTargets);
-  if (targets.has('codex') || await exists(path.join(process.cwd(), '.codex', 'hooks.json'))) targets.add('codex');
-  return [...targets];
+  const linkedTargets = hookTargetsForLinkedSkillsets(await detectLinkedWorkspaceTargets(process.cwd()));
+  const installedTargets = new Set(await detectInstalledHookTargets({ cwd: process.cwd(), includeStale: true }));
+  for (const target of linkedTargets) installedTargets.add(target);
+  return [...installedTargets];
 }
 async function upgradePackageRecord(flags: Record<string, any>, plan: boolean): Promise<RecordBlock> {
   const latest = await latestVersion(flags);
@@ -392,8 +393,8 @@ async function globalHookTargets(target: string): Promise<string[]> {
   return [...hookTargetsForLinkedSkillsets(Object.keys(registry.installs))];
 }
 
-function hookTargetsForLinkedSkillsets(linkedTargets: string[]): Set<string> {
-  const targets = new Set<string>();
+function hookTargetsForLinkedSkillsets(linkedTargets: string[]): Set<AgentHookHost> {
+  const targets = new Set<AgentHookHost>();
   const linked = new Set(linkedTargets.map((item) => item.toLowerCase()));
   if (linked.has('claude')) targets.add('claude');
   if (linked.has('cursor')) targets.add('cursor');

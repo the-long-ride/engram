@@ -253,6 +253,8 @@ removes all of these together as well.
 4. If the host supports custom slash commands, type:
 
    ```text
+   /engram
+   /engram propose
    /engram load deployment workflow
    /engram entry
    /engram save knowledge
@@ -275,6 +277,9 @@ removes all of these together as well.
    /engram set-rule-variant strict
    /engram verify
    ```
+
+   If the host exposes only one visible `/engram` command, bare `/engram` should return a compact menu of `load`, `search`, `save`, `propose`, `entry`, and `help` instead of running the CLI. `/engram propose` is a slash-level alias: normalize it to `engram save-session` over the current chat/session.
+
 
    `engram save` captures the best single memory candidate, automatically
    updates a matching memory or creates a new one, and always shows the A/B/C

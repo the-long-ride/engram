@@ -283,6 +283,68 @@ test('upgrade --latest overwrites registered global cursor files and hooks', asy
 
   await rm(cwd, { recursive: true, force: true });
 });
+test('upgrade --latest replaces stale linked workspace claude hooks without duplicates', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-upgrade-latest-claude-hooks-');
+  const linked = await runEngram(cwd, env, ['link', 'claude']);
+  assert.equal(linked.code, 0, linked.stderr);
+
+  const claudeDir = path.join(cwd, '.claude');
+  await writeFile(path.join(claudeDir, 'settings.json'), `${JSON.stringify({
+    hooks: {
+      SessionStart: [{
+        matcher: '*',
+        hooks: [
+          { name: 'engram-auto-load', type: 'command', command: 'echo stale', timeout: 1 },
+          { name: 'keep-me', type: 'command', command: 'echo keep', timeout: 2 }
+        ]
+      }]
+    }
+  }, null, 2)}\n`);
+
+  const upgraded = await runEngram(cwd, env, ['upgrade', '--latest', '--no-version-check']);
+  assert.equal(upgraded.code, 0, upgraded.stderr);
+  assert.match(upgraded.stdout, /UPDATED workspace agent hooks/);
+
+  const settings = JSON.parse(await readFile(path.join(claudeDir, 'settings.json'), 'utf8'));
+  const groups = settings.hooks.SessionStart;
+  const managed = groups.flatMap((group) => group.hooks).filter((entry) => entry.name === 'engram-auto-load');
+  assert.equal(managed.length, 1, 'claude SessionStart should keep exactly one managed engram hook');
+  assert.equal(managed[0].command, 'engram agent-hook --host claude');
+  assert.equal(managed[0].timeout, 10000);
+  assert.ok(groups.some((group) => group.hooks.some((entry) => entry.name === 'keep-me')));
+
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('upgrade --latest refreshes standalone workspace claude hooks without linked skillset', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-upgrade-latest-standalone-hooks-');
+  const claudeDir = path.join(cwd, '.claude');
+  await mkdir(claudeDir, { recursive: true });
+  await writeFile(path.join(claudeDir, 'settings.json'), `${JSON.stringify({
+    hooks: {
+      SessionStart: [{
+        matcher: '*',
+        hooks: [
+          { name: 'engram-auto-load', type: 'command', command: 'echo stale', timeout: 1 },
+          { name: 'keep-me', type: 'command', command: 'echo keep', timeout: 2 }
+        ]
+      }]
+    }
+  }, null, 2)}\n`);
+
+  const upgraded = await runEngram(cwd, env, ['upgrade', '--latest', '--no-version-check']);
+  assert.equal(upgraded.code, 0, upgraded.stderr);
+  assert.match(upgraded.stdout, /UPDATED workspace agent hooks/);
+
+  const settings = JSON.parse(await readFile(path.join(claudeDir, 'settings.json'), 'utf8'));
+  const managed = settings.hooks.SessionStart.flatMap((group) => group.hooks).filter((entry) => entry.name === 'engram-auto-load');
+  assert.equal(managed.length, 1, 'standalone claude hook install should be refreshed');
+  assert.equal(managed[0].command, 'engram agent-hook --host claude');
+  assert.equal(managed[0].timeout, 10000);
+
+  await rm(cwd, { recursive: true, force: true });
+});
+
 test('auto-upgrade can be skipped for one command', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-autoupgrade-skip-');
   const init = await runEngram(cwd, env, ['inject', '--no-skillset']);

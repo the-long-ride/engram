@@ -169,18 +169,30 @@ export async function refreshInstalledAgentHooks(targetArg = 'all', options: { g
   return results;
 }
 
-async function hasManagedHookInstall(meta: HookTarget, file: string): Promise<boolean> {
+export async function detectInstalledHookTargets(options: { global?: boolean; cwd?: string; includeStale?: boolean } = {}): Promise<AgentHookHost[]> {
+  const hosts: AgentHookHost[] = [];
+  for (const host of Object.keys(TARGETS) as AgentHookHost[]) {
+    const meta = TARGETS[host];
+    const file = options.global
+      ? meta.globalFile()
+      : path.join(options.cwd ?? process.cwd(), meta.configFile);
+    if (await hasManagedHookInstall(meta, file, Boolean(options.includeStale))) hosts.push(host);
+  }
+  return hosts;
+}
+
+async function hasManagedHookInstall(meta: HookTarget, file: string, force = false): Promise<boolean> {
   if (!(await exists(file))) return false;
   if (meta.kind === 'plugin') return isGeneratedOpenCodeHookPlugin(await readText(file));
   const config = await readJson<Record<string, any>>(file, {});
   if (meta.schema === 'cursor') {
-    return meta.events.some((event) => Array.isArray(config[event]) && config[event].some((entry: any) => isCursorManagedEntry(entry)));
+    return meta.events.some((event) => Array.isArray(config[event]) && config[event].some((entry: any) => isCursorManagedEntry(entry, force)));
   }
   if (meta.schema === 'windsurf') {
-    return meta.events.some((event) => Array.isArray(config[event]) && config[event].some((entry: any) => isWindsurfManagedEntry(entry)));
+    return meta.events.some((event) => Array.isArray(config[event]) && config[event].some((entry: any) => isWindsurfManagedEntry(entry, force)));
   }
   if (!isObject(config.hooks)) return false;
-  return meta.events.some((event) => Array.isArray(config.hooks[event]) && config.hooks[event].some((group: any) => hasManagedHook(group, meta.host)));
+  return meta.events.some((event) => Array.isArray(config.hooks[event]) && config.hooks[event].some((group: any) => hasManagedHook(group, meta.host, force)));
 }
 
 /** Return canonical supported host or unsupported target reason. */
@@ -208,7 +220,7 @@ function mergeManagedHooks(config: Record<string, any>, meta: JsonHookTarget, fo
   let changed = false;
   for (const event of meta.events) {
     const groups = Array.isArray(config.hooks[event]) ? config.hooks[event] : [];
-    const cleaned = removeManagedFromGroups(groups, meta.host);
+    const cleaned = removeManagedFromGroups(groups, meta.host, force);
     const group = {
       matcher: (event === 'SessionStart' || event === 'BeforeAgent') ? '*' : '',
       hooks: [managedHook(meta.host)]

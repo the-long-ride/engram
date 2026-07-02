@@ -10,7 +10,7 @@ import {
   validateMemoryRaw
 } from '../dist/core/memory/schema.js';
 import { parseArgs } from '../dist/cli/args.js';
-import { HELP_DATA, commandAliases } from '../dist/core/cli/command-registry.js';
+import { HELP_DATA, commandAliases, slashCommandSurface } from '../dist/core/cli/command-registry.js';
 import { detectCompletionTarget } from '../dist/core/cli/completion-target.js';
 import { COMMAND_TOPICS } from '../dist/core/cli/help-topics.js';
 import { INIT_WORDMARK, renderInitWordmark } from '../dist/core/cli/banner.js';
@@ -553,6 +553,12 @@ test('command registry has topic help and stable aliases', () => {
   assert.equal(commandAliases().mc, 'metacognize');
   assert.equal(commandAliases().pf, 'profile');
   assert.equal(commandAliases()['-v'], '--version');
+});
+
+test('slash command surface includes bare /engram menu entry', () => {
+  const surface = slashCommandSurface();
+  assert.match(surface, /\/engram` -> show the Engram command menu/);
+  assert.match(surface, /`\/engram save-session/);
 });
 
 test('merged memory priority keeps workspace before global fallback', () => {

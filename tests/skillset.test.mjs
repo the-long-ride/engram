@@ -57,6 +57,8 @@ test('skillset installer writes all supported agent adapter files (--all-support
   assert.match(await readFile(path.join(cwd, '.claude/commands/engram.md'), 'utf8'), /restructure workspace memory/);
   assert.match(await readFile(path.join(cwd, '.claude/commands/engram.md'), 'utf8'), /Agent action:/);
   assert.match(await readFile(path.join(cwd, '.claude/commands/engram.md'), 'utf8'), /replace prior Engram-loaded context/i);
+  assert.match(await readFile(path.join(cwd, '.claude/commands/engram.md'), 'utf8'), /If the request is only .*\/engram.*with no args/);
+  assert.match(await readFile(path.join(cwd, '.claude/commands/engram.md'), 'utf8'), /\/engram propose/);
   assert.match(await readFile(path.join(cwd, '.claude/skills/engram/SKILL.md'), 'utf8'), /any `engram` CLI arguments/);
   assert.match(await readFile(path.join(cwd, '.claude/skills/engram/SKILL.md'), 'utf8'), /Your knowledge memory manager, synced across every device with Git/);
   assert.match(await readFile(path.join(cwd, '.claude/skills/engram/SKILL.md'), 'utf8'), /take-control/);
@@ -64,6 +66,8 @@ test('skillset installer writes all supported agent adapter files (--all-support
   assert.match(await readFile(path.join(cwd, '.claude/skills/engram/SKILL.md'), 'utf8'), /source pack token-light/);
   assert.match(await readFile(path.join(cwd, '.claude/skills/engram/SKILL.md'), 'utf8'), /ss -a/);
   assert.match(await readFile(path.join(cwd, '.claude/skills/engram/SKILL.md'), 'utf8'), /Never add `--accept-all` yourself/);
+  assert.match(await readFile(path.join(cwd, '.claude/skills/engram/SKILL.md'), 'utf8'), /compact menu/);
+  assert.match(await readFile(path.join(cwd, '.claude/skills/engram/SKILL.md'), 'utf8'), /what should we save to engram\?/);
   assert.match(await readFile(path.join(cwd, '.cursor/commands/engram.md'), 'utf8'), /Engram Slash Command/);
   assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /\/engram \{\{args\}\}/);
   assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /Your knowledge memory manager, synced across every device with Git/);
@@ -80,6 +84,8 @@ test('skillset installer writes all supported agent adapter files (--all-support
   assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /metacognize accept-all/);
   assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /Agent action:/);
   assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /replace prior Engram-loaded context/i);
+  assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /If the request is only .*\/engram.*with no args/);
+  assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /\/engram propose/);
   const opencodeConfig = await readFile(path.join(cwd, 'opencode.json'), 'utf8');
   assert.match(opencodeConfig, /\.opencode\/engram\.md/);
   const opencodeParsed = JSON.parse(opencodeConfig);

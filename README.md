@@ -226,8 +226,12 @@ When the agent notices a durable rule, workflow, skill, or knowledge item during
 
 You can instruct your agent to use the following slash commands in chat:
 
+If the host exposes only one visible `/engram` command, send bare `/engram` first to get a compact menu of `load`, `search`, `save`, `propose`, `entry`, and `help`.
+
+
 - **Start of a task**: `/engram load "design pricing table component"`
 - **Save key decisions/facts**: `/engram save knowledge "Webhook secret is process.env.STRIPE_WEBHOOK"`
+- **Brainstorm proposed memories**: `/engram propose`
 - **Summarize & save session**: `/engram save-session` (or `--query-level 3`, or `ss -a last 50 sessions` to auto-approve)
 
 When an agent asks how to use Engram, run `engram llm`. It prints the packaged
@@ -241,11 +245,12 @@ When an AI agent proposes `TYPE: ... | TEXT: ...` memory candidates, it may add 
 
 | Task | CLI Command | AI Agent Suggestion |
 | --- | --- | --- |
+| **Open Slash Menu** | `engram help` | `/engram` |
 | **Load Memory** | `engram load "<task>"` | `/engram load "<task>"` |
 | **Agent-Facing Load** | `engram load --for-agents "<task>"` | `/engram load --for-agents "<task>"` |
 | **Dry Run Load** | `engram load --dry-run "<task>"` | `/engram load --dry-run "<task>"` |
 | **Save Single Memory** | `engram save <type> "<text>"` | `/engram save <type> "<text>"` |
-| **Propose Memories** | `engram save-session` | `/engram ss` |
+| **Propose Memories** | `engram save-session` | `/engram propose` or `/engram ss` |
 | **Mine Recent Sessions** | `engram save-session --query-level <n>` | `/engram save-session --query-level <n>` |
 | **Auto-Approve Saves** | `engram save-session --accept-all` | `/engram ss -a` |
 | **Import Files / Docs** | `engram take-control --all` | `/engram take-control --all` |

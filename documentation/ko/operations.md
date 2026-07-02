@@ -62,7 +62,16 @@ level: advanced
 
 ## 업그레이드 및 정합성 조율 (Upgrade Reconciliation)
 
-새 버전의 Engram 패키지를 설치한 뒤에는 `engram upgrade`를 사용하십시오. 이 명령어는 v0.0.8 버전부터 초기화된 메모리 루트들을 현재 릴리스 스키마와 비교하여 자동으로 생성된 HELP.md, 메모리 인덱스, 그래프 파일, 유효한 벡터 사이드카, 생성된 워크스페이스 스킬셋, 글로벌 메모리 스캐폴딩 및 등록된 글로벌 에이전트 스킬셋을 갱신하면서도 사용자가 작성한 고유 메모리 파일은 손상 없이 보존합니다. 일반적인 명령어들도 `--no-auto-upgrade` 또는 `ENGRAM_NO_AUTO_UPGRADE=1` 환경변수가 구성되지 않았다면 패키지 버전당 최초 1회 자동으로 이 정합성 조율 과정을 조용히 처리합니다.
+새로운 Engram 패키지를 설치한 후에는 `engram upgrade`를 사용하십시오. 이 명령어는 v0.0.8 버전 이후에 초기화된 메모리 루트를 현재 릴리스 스키마와 비교하고, 직접 작성한 메모리 파일은 그대로 보존하면서 자동 생성된 HELP.md, 메모리 인덱스, 그래프 파일, 유효한 벡터 사이드카, 생성된 워크스페이스 스킬셋, 글로벌 메모리 스캐폴딩, 등록된 글로벌 에이전트 스킬셋을 최신화합니다. 일반 명령어들 또한 `--no-auto-upgrade` 또는 `ENGRAM_NO_AUTO_UPGRADE=1`이 설정되어 있지 않은 한, 패키지 버전당 최초 1회 자동으로 이 조율 작업을 백그라운드에서 실행합니다.
+새 패키지 출력으로 현재 Engram이 관리하는 연결된 에이전트 아티팩트를 덮어써야 하는 경우 `engram upgrade --latest`를 사용하십시오. 이 경로는 연결된 워크스페이스 지침 파일, 규칙, MCP/플러그인 설정 및 관리형 후크(hooks)를 다시 적용하고, 등록된 글로벌 에이전트 설치도 최신 생성된 파일로 업데이트합니다.
+
+### 스킬셋 렌더 프로필 (Skillset Render Profiles)
+
+런타임 실행이 가능한 호스트의 경우, Engram은 이제 전체 프로토콜 대신 작은 부트스트랩 지침을 설치합니다. 후크는 라우팅된 작업 컨텍스트를 제공하고, MCP 도구는 로드/검색/제안 동작을 제공하며, 슬래시 어댑터 또는 에이전트 스킬(Agent Skills)은 상세한 명령 워크플로를 수행합니다. 신뢰할 수 있는 런타임 컨텍스트 주입이 없는 폴백(fallback) 대상은 여전히 압축된 수동 지침을 받습니다.
+
+### SQLite 설정 DB 폴백 (SQLite Config DB Fallback)
+
+Engram의 SQLite 설정 DB는 워크스페이스/프로필 관리를 위한 최적화입니다. DB를 열거나 초기화할 수 없는 경우, 일반적인 읽기/쓰기 명령은 JSON 설정 스냅샷으로 폴백됩니다. DB 전용 명령은 일반적인 메모리 사용을 차단하는 대신 SQLite를 사용할 수 없음으로 보고합니다.
 `engram save` 실행 중 연관된 기존 메모리가 감지되면 승인 미리보기 창에 제안 의존성(`depends_on`)이나 중복 위험 경고가 표시됩니다. 승인하면 미리보기 상태대로 저장되므로, 의존성을 다르게 구조화하거나 중복 메모리를 아카이브하려면 먼저 거절(reject)하십시오.
 `save-session --accept-all` 실행 시 이러한 연관 메모리 힌트가 탐지되면 쓰기 전에 잠시 대기합니다. 에이전트는 이 응답을 토대로 구조화된 재요청을 준비해야 합니다. 의존 관계에는 `DEPENDS_ON: memory-id`, 선행 조건보다 깊은 메모리에는 `LEVEL: advanced`, 기존 중복 후보에 합병할 때는 `UPDATE: memory-id`를 조합해 보완하십시오.
 
@@ -84,6 +93,13 @@ engram profile create personal --global-path ~/Documents/engram-personal --use
 engram profile use company --workspace
 engram profile merge personal company --dry-run
 ```
+
+프로필 해석 순서는 명시적 `--profile` 또는 `ENGRAM_PROFILE`, 워크스페이스
+`default_profile`, 사용자 활성 프로필 순입니다. 워크스페이스 `W`가 프로필 `B`에
+고정되어 있고 사용자 기본값이 프로필 `A`로 남아 있어도, `W`에 대한 일반 로드,
+MCP 로드, 에이전트 후크 주입은 모두 프로필 `B`의 글로벌 메모리만 읽고 프로필
+`A`는 읽지 않습니다. 워크스페이스 기본값과 다른 명시적 프로필은 해당 프로필의
+글로벌 메모리를 사용하고, 그 명령에서는 워크스페이스 메모리를 비활성화합니다.
 
 워크스페이스와 글로벌 범위 간에 활성화된 `rules/`, `skills/`, `knowledge/` 마크다운 파일을 복사하려면 `clone-memory`를 실행하십시오.
 
@@ -169,6 +185,39 @@ engram save-session --file .agents/.engram/inbox/<파일명>.md
 ```
 
 완전한 지속 메모리로 등록하기 전에 가벼운 임시 초안을 안전히 갈무리해 두고 싶을 때 사용하십시오.
+
+## 설정 (Configuration)
+
+런타임 설정을 보고 관리하려면 `config` 명령을 사용하십시오.
+
+- **활성 설정 보기**:
+  ```bash
+  engram config view
+  ```
+- **설정 값 지정**:
+  ```bash
+  engram config set <key> <value>
+  ```
+
+### 주요 설정 참조 (Key Settings Reference)
+
+| 키 | 설명 | 기본값 | 범위 / 옵션 |
+| --- | --- | --- | --- |
+| `memory.rule_line_target` | 규칙 메모리에 권장되는 줄 수 목표 | `70` | `50` 에서 `200` |
+| `memory.rule_line_hard_limit` | 규칙 메모리에 허용되는 최대 줄 수 | `100` | `50` 에서 `200` |
+| `load.limit` | 일반 로드 시 반환되는 최대 메모리 수 | `8` | `1` 에서 `32` |
+| `rule_variants.enabled` | 규칙 변형 생성 활성화 또는 비활성화 | `true` | `true`, `false` |
+| `rule_variants.active` | 활성 규칙 변형 모드 | `balanced` | `light`, `balanced`, `strict` |
+| `graph.enabled` | 그래프 인식 라우팅 활성화 또는 비활성화 | `true` | `true`, `false` |
+| `graph.max_related` | 그래프 에지에서 가져올 최대 관련 메모리 수 | `8` | `1` 에서 `20` |
+| `graph.min_related_score` | 그래프 에지를 추가하기 위한 최소 유사도 점수 | `0.3` | `0.0` 에서 `1.0` |
+| `vector.enabled` | 벡터 검색 폴백 활성화 또는 비활성화 | `true` | `true`, `false` |
+| `live_sync.enabled` | 저장 시 생성된 에이전트 컨텍스트 파일 동기화 | `true` | `true`, `false` |
+| `global_git.enabled` | 글로벌 Git 리포지토리 동기화 자동화 활성화 | `false` | `true`, `false` |
+| `global_git.remote` | 글로벌 동기화용 Git 원격 이름 | `origin` | 문자열 |
+| `global_git.branch` | 글로벌 동기화용 Git 브랜치 이름 | `main` | 문자열 |
+
+이러한 설정은 `engram entry`의 **Construct** 탭에서 시각적으로 관리할 수도 있습니다.
 
 ## 검증 및 복구
 

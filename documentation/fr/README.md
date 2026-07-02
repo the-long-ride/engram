@@ -109,7 +109,7 @@ graph TD
 - **L'index JSON, le graphe et sqlite-vec optionnel** agissent comme des couches d'accélération.
 - **L'approbation est la frontière de confiance** — l'agent propose, l'humain approuve.
 - **Les empreintes (hashes) vérifient l'intégrité** et les **Règles d'ignorance protègent la confidentialité**.
-- **Les profils isolent les contextes de mémoire** (personnel, client et entreprise).
+- **Les profils isolent les contextes de mémoire** (personnel, client et entreprise). L'ordre de résolution est explicite : `--profile`/`ENGRAM_PROFILE`, valeur par défaut du workspace, puis valeur par défaut de l'utilisateur ; un profil épinglé au workspace contrôle tous les chargements CLI, MCP et hooks d'agent dans ce workspace.
 - **Git offre la portabilité et l'historique d'audit** — partagez les règles au sein de l'équipe.
 - **Les adaptateurs sont des commodités, pas des autorités**.
 - **Des règles strictes gouvernent les sorties de l'agent** pour éviter les dérives et alucinations.

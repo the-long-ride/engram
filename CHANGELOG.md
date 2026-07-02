@@ -2,6 +2,8 @@
 
 ## 0.0.24
 
+- Fixed workspace-profile precedence so DB-backed config, CLI loads, MCP/shared loads, and agent-hook injections all resolve global memory with `--profile`/`ENGRAM_PROFILE`, then workspace default profile, then user default profile.
+- Fixed SQLite/JSON config persistence so workspace configs keep raw `default_profile` settings without storing profile-derived `global_path` values, preventing cross-profile memory leaks after reload.
 - Fixed OpenCode integration paths so workspace links use `AGENTS.md`, `.opencode/engram.md`, `.opencode/skills/engram/SKILL.md`, and `opencode.json` or an existing `opencode.jsonc`, while global links use `~/.config/opencode/AGENTS.md`, `~/.config/opencode/engram.md`, `~/.config/opencode/skills/engram/SKILL.md`, and `~/.config/opencode/opencode.json` or an existing `opencode.jsonc`.
 - Updated OpenCode hook/plugin and MCP merge flows so `engram upgrade --latest` refreshes only Engram-managed entries, preserves unrelated user settings, and skips invalid existing JSON/JSONC instead of overwriting it.
 - Hardened shared JSON/JSONC merge helpers and refresh logic for other linked agents, including Cursor, Claude, Gemini, and Windsurf, so user-authored config stays intact while Engram-managed MCP and hook entries update cleanly.

@@ -109,7 +109,7 @@ graph TD
 - **El índice JSON, grafo y sqlite-vec opcional** actúan como capas de aceleración.
 - **La aprobación es el límite de confianza** — el agente propone, el humano aprueba.
 - **Los hashes comprueban la integridad** y las **Reglas ignore manejan la privacidad**.
-- **Los perfiles aíslan los contextos de memoria** (personal, cliente y empresa).
+- **Los perfiles aíslan los contextos de memoria** (personal, cliente y empresa). El orden de resolución es explícito: `--profile`/`ENGRAM_PROFILE`, el valor predeterminado del espacio de trabajo y luego el valor predeterminado del usuario; un perfil anclado al espacio de trabajo controla todas las cargas de CLI, MCP y ganchos de agente en ese espacio de trabajo.
 - **Git proporciona portabilidad e historial de auditoría** — comparte reglas con tu equipo.
 - **Los adaptadores son conveniencia, no autoridad**.
 - **Reglas estrictas gobiernan la salida del agente** para evitar alucinaciones.

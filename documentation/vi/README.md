@@ -109,7 +109,7 @@ graph TD
 - **Chỉ mục JSON, đồ thị và sqlite-vec tùy chọn** đóng vai trò là các lớp tăng tốc.
 - **Phê duyệt là ranh giới tin cậy** — AI đề xuất, con người phê duyệt.
 - **Mã băm kiểm tra tính toàn vẹn** và **Quy tắc bỏ qua xử lý quyền riêng tư**.
-- **Profile tách biệt ngữ cảnh bộ nhớ** (cá nhân, khách hàng và doanh nghiệp).
+- **Profile tách biệt ngữ cảnh bộ nhớ** (cá nhân, khách hàng và doanh nghiệp). Thứ tự ưu tiên phân giải là chỉ định rõ ràng `--profile`/`ENGRAM_PROFILE`, mặc định của không gian làm việc (workspace), sau đó là mặc định của người dùng; một profile được ghim vào workspace sẽ kiểm soát tất cả các lần tải CLI, MCP và hook của tác nhân trong workspace đó.
 - **Git cung cấp tính di động và lịch sử kiểm toán** — dễ dàng chia sẻ quy tắc trong nhóm.
 - **Bộ điều hợp là tiện ích, không có quyền quyết định**.
 - **Quy tắc nghiêm ngặt quản lý phản hồi của tác nhân AI** để tránh ảo tưởng.

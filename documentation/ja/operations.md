@@ -63,6 +63,15 @@ level: advanced
 ## アップグレードと整合性調整 (Upgrade Reconciliation)
 
 新しいバージョンの Engram パッケージをインストールした後は、`engram upgrade` を使用します。このコマンドは、v0.0.8 バージョン以降に初期化されたメモリルートを現在のリリーススキーマと比較し、自動生成された HELP.md、メモリインデックス、グラフファイル、有効なベクトルサイドカー、生成されたワークスペーススキルセット、グローバルメモリのスキャフォールディング、および登録されたグローバルエージェントスキルセットを更新しながら、ユーザーが作成したメモリファイルはそのまま保存します。通常のコマンドも、`--no-auto-upgrade` 或いは `ENGRAM_NO_AUTO_UPGRADE=1` が設定されていない限り、パッケージバージョンごとに初回1回自動的にこの調整処理をバックグラウンドで行います。
+新しいパッケージの出力で、現在Engramが管理するリンクされたエージェントアーティファクトを上書きする必要がある場合は、`engram upgrade --latest`を使用します。このパスは、リンクされたワークスペースの指示ファイル、ルール、MCP/プラグイン設定、および管理されたフック（hooks）を再適用し、登録済みのグローバルエージェントのインストールも最新の生成ファイルで更新します。
+
+### スキルセットレンダリングプロファイル (Skillset Render Profiles)
+
+ランタイム実行が可能なホスト向けに、Engramは完全なプロトコルの代わりに、小さなブートストラップ指示をインストールするようになりました。フックはルーティングされたタスクコンテキストを提供し、MCPツールはロード/検索/提案の動作を提供し、スラッシュアダプターまたはエージェントスキル（Agent Skills）は詳細なコマンドワークフローを実行します。信頼性の高いランタイムコンテキスト挿入がないフォールバックターゲットは、引き続きコンパクトな手動指示を受け取ります。
+
+### SQLite構成DBフォールバック (SQLite Config DB Fallback)
+
+EngramのSQLite構成DBは、ワークスペース/プロファイル管理のための最適化です。DBを開けない、または初期化できない場合、通常の読み取り/書き込みコマンドはJSON構成スナップショットにフォールバックします。DB固有のコマンドは、通常のメモリ使用をブロックするのではなく、SQLiteが利用不可であることを報告します。
 `engram save` 実行中に関連する既存のメモリが検出されると、承認プレビュー画面に推奨される依存関係（`depends_on`）や重複リスクの警告が表示されます。承認するとプレビューの通りに保存されるため、依存関係を再構築したい場合や重複メモリをアーカイブしたい場合は、まず却下（reject）してください。
 `save-session --accept-all` 実行時に関連メモリのヒントが検出された場合、書き込む前に一時停止します。エージェントは、この応答をもとに構造化された再実行を準備する必要があります。依存関係には `DEPENDS_ON: memory-id`、前提条件より深いメモリには `LEVEL: advanced`、既存の重複候補にマージする場合は `UPDATE: memory-id` を指定して再提案します。
 
@@ -84,6 +93,14 @@ engram profile create personal --global-path ~/Documents/engram-personal --use
 engram profile use company --workspace
 engram profile merge personal company --dry-run
 ```
+
+プロファイルの解決順序は、明示的な `--profile` または
+`ENGRAM_PROFILE`、次にワークスペースの `default_profile`、最後にユーザーの
+アクティブプロファイルです。ワークスペース `W` がプロファイル `B` に固定され、
+ユーザー既定がプロファイル `A` のままでも、`W` に対する通常ロード、MCP
+ロード、エージェントフック注入はすべてプロファイル `B` のグローバルメモリを読み、
+プロファイル `A` は読みません。ワークスペース既定と異なる明示的なプロファイルは、
+そのプロファイルのグローバルメモリを使い、そのコマンドではワークスペースメモリを無効化します。
 
 ワークスペースとグローバル範囲の間で、アクティブな `rules/`、`skills/`、`knowledge/` Markdown ファイルをコピーするには `clone-memory` を実行します。
 
@@ -169,6 +186,39 @@ engram save-session --file .agents/.engram/inbox/<メモファイル名>.md
 ```
 
 完全な永続メモリとして登録する前に、一時的な草案を安全に保存しておきたい場合に使用します。
+
+## 設定 (Configuration)
+
+ランタイム設定を表示および管理するには、`config`コマンドを使用します。
+
+- **アクティブな設定の表示**:
+  ```bash
+  engram config view
+  ```
+- **設定値の指定**:
+  ```bash
+  engram config set <key> <value>
+  ```
+
+### 主要設定リファレンス (Key Settings Reference)
+
+| キー | 説明 | デフォルト | 範囲 / オプション |
+| --- | --- | --- | --- |
+| `memory.rule_line_target` | ルールメモリの推奨行数ターゲット | `70` | `50` から `200` |
+| `memory.rule_line_hard_limit` | ルールメモリの許容最大行数 | `100` | `50` から `200` |
+| `load.limit` | 通常のロードで返される最大メモリ数 | `8` | `1` から `32` |
+| `rule_variants.enabled` | ルールバリアントの生成の有効化または無効化 | `true` | `true`, `false` |
+| `rule_variants.active` | アクティブなルールバリアントモード | `balanced` | `light`, `balanced`, `strict` |
+| `graph.enabled` | グラフ対応ルーティングの有効化または無効化 | `true` | `true`, `false` |
+| `graph.max_related` | グラフのエッジから取得する最大関連メモリ数 | `8` | `1` から `20` |
+| `graph.min_related_score` | グラフのエッジを追加する最小類似度スコア | `0.3` | `0.0` から `1.0` |
+| `vector.enabled` | ベクトル検索フォールバックの有効化または無効化 | `true` | `true`, `false` |
+| `live_sync.enabled` | 保存時に生成されたエージェントコンテキストファイルを同期 | `true` | `true`, `false` |
+| `global_git.enabled` | グローバルGitリポジトリ同期自動化の有効化 | `false` | `true`, `false` |
+| `global_git.remote` | グローバル同期用のGitリモート名 | `origin` | 文字列 |
+| `global_git.branch` | グローバル同期用のGitブランチ名 | `main` | 文字列 |
+
+これらの設定は、`engram entry`の **Construct** タブで視覚的に管理することもできます。
 
 ## 修復とレビュー
 

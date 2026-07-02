@@ -104,7 +104,7 @@ graph TD
 - **JSON index, graph, and optional sqlite-vec sidecars** act as acceleration layers.
 - **Approval is the trust boundary** — the core principle is that agents suggest, humans approve.
 - **Hashes check integrity** and **Ignore rules handle privacy**.
-- **Profiles isolate memory contexts** (personal, client, and corporate).
+- **Profiles isolate memory contexts** (personal, client, and corporate). Resolution order is explicit `--profile`/`ENGRAM_PROFILE`, workspace default, then user default; a workspace-pinned profile controls all CLI, MCP, and agent-hook loads in that workspace.
 - **Git provides portability and audit history** — share rules across the team.
 - **Agent adapters are convenience, not authority**.
 - **Runtime-capable hosts get bootstrap instructions** — short `AGENTS.md`/`CLAUDE.md`/`GEMINI.md` text plus MCP tools and Agent Skills for the full workflow. Fallback targets get complete compact protocol.

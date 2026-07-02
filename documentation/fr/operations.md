@@ -63,6 +63,15 @@ Exécutez `engram graph --rebuild` après des modifications manuelles. Le graphe
 ## Réconciliation des Mises à Jour (Upgrade Reconciliation)
 
 Utilisez `engram upgrade` après avoir installé un pack Engram plus récent. La commande compare les racines de mémoire initialisées depuis la version v0.0.8 et ultérieures avec le schéma de la version actuelle et met à jour les fichiers HELP.md générés, les index de mémoire, les fichiers de graphe, les sidecars vectoriels éligibles, les ensembles de compétences du workspace générés, la structure de la mémoire globale et les ensembles de compétences des agents globaux enregistrés tout en préservant les fichiers créés par l'humain. Les commandes normales exécutent également la même réconciliation de manière silencieuse une fois par version de package, à moins que `--no-auto-upgrade` ou `ENGRAM_NO_AUTO_UPGRADE=1` ne soit défini.
+Utilisez `engram upgrade --latest` lorsque la sortie du nouveau package doit remplacer les artefacts d'agent liés et gérés par Engram. Ce chemin réapplique les fichiers d'instructions du workspace liés, les règles, la configuration MCP/plugin et les hooks gérés, et actualise également les installations d'agents globaux enregistrées avec les derniers fichiers générés.
+
+### Profils de Rendu des Ensembles de Compétences (Skillset Render Profiles)
+
+Pour les hôtes capables d'exécuter un runtime, Engram installe désormais de petites instructions de démarrage (bootstrap) au lieu du protocole complet. Les hooks fournissent le contexte de la tâche routée, les outils MCP fournissent le comportement de chargement/recherche/proposition, et les adaptateurs de barre oblique (slash) ou les compétences de l'agent (Agent Skills) prennent en charge les flux de travail de commandes détaillés. Les cibles de repli (fallback) sans injection fiable de contexte de runtime reçoivent toujours des instructions manuelles compactas.
+
+### Solution de Repli SQLite Config DB (SQLite Config DB Fallback)
+
+La base de données de configuration SQLite d'Engram est une optimisation pour la gestion des workspaces/profils. Si la base de données ne peut pas être ouverte ou initialisée, les commandes de lecture/écriture normales se rabattent sur des instantanés de configuration JSON. Les commandes spécifiques à la base de données signalent que SQLite est indisponible au lieu de bloquer l'utilisation normale de la mémoire.
 Lorsque `engram save` trouve des mémoires actives associées, l'aperçu de validation signale celles-ci avec un `depends_on` suggéré ou un avertissement de doublon potentiel. Accepter enregistre l'aperçu tel quel ; rejetez d'abord si vous souhaitez restructurer les dépendances ou archiver les doublons avant d'enregistrer.
 Pour `save-session --accept-all`, Engram s'arrête avant d'écrire lorsque ces suggestions de mémoire associée apparaissent. L'agent doit utiliser la réponse pour proposer une nouvelle exécution structurée : ajouter `DEPENDS_ON: memory-id` pour les dépendances, `LEVEL: advanced` lorsqu'une mémoire est plus profonde que son prérequis, ou `UPDATE: memory-id` lorsqu'un candidat doit fusionner dans un doublon potentiel.
 
@@ -84,6 +93,15 @@ engram profile create personal --global-path ~/Documents/engram-personal --use
 engram profile use company --workspace
 engram profile merge personal company --dry-run
 ```
+
+L'ordre de résolution des profils est `--profile` explicite ou
+`ENGRAM_PROFILE`, puis le `default_profile` du workspace, puis le profil actif
+de l'utilisateur. Si le workspace `W` est épinglé au profil `B` tandis que le
+profil utilisateur par défaut reste `A`, chaque chargement normal, chargement
+MCP et injection de hook d'agent pour `W` lit la mémoire globale du profil `B`
+et jamais celle du profil `A`. Un profil explicite différent du profil par
+défaut du workspace utilise la mémoire globale de ce profil et désactive la
+mémoire du workspace pour cette commande.
 
 Utilisez `clone-memory` pour copier le Markdown actif de `rules/`, `skills/` et `knowledge/` entre les étendues de workspace et global :
 
@@ -169,6 +187,39 @@ engram save-session --file .agents/.engram/inbox/<note>.md
 ```
 
 Utilisez ceci lorsque vous souhaitez préserver des notes provisoires avant de décider ce qui doit devenir de la mémoire durable.
+
+## Configuration
+
+Pour afficher et gérer les paramètres d'exécution, utilisez les commandes `config` :
+
+- **Afficher la configuration active** :
+  ```bash
+  engram config view
+  ```
+- **Définir une valeur de configuration** :
+  ```bash
+  engram config set <key> <value>
+  ```
+
+### Référence des Paramètres Clés (Key Settings Reference)
+
+| Clé | Description | Par défaut | Plage / Options |
+| --- | --- | --- | --- |
+| `memory.rule_line_target` | Nombre de lignes recommandé ciblé pour les mémoires de règles | `70` | `50` à `200` |
+| `memory.rule_line_hard_limit` | Limite maximale de lignes autorisée pour les mémoires de règles | `100` | `50` à `200` |
+| `load.limit` | Nombre maximum de mémoires renvoyées par une charge normale | `8` | `1` à `32` |
+| `rule_variants.enabled` | Activer ou désactiver la génération de variantes de règles | `true` | `true`, `false` |
+| `rule_variants.active` | Mode de variante de règle actif | `balanced` | `light`, `balanced`, `strict` |
+| `graph.enabled` | Activer ou désactiver le routage basé sur le graphe | `true` | `true`, `false` |
+| `graph.max_related` | Nombre maximum de mémoires associées à récupérer à partir des arêtes du graphe | `8` | `1` à `20` |
+| `graph.min_related_score` | Score de similitude minimum pour ajouter des arêtes de graphe | `0.3` | `0.0` à `1.0` |
+| `vector.enabled` | Activer ou désactiver la recherche vectorielle de repli | `true` | `true`, `false` |
+| `live_sync.enabled` | Synchroniser les fichiers de contexte d'agent générés lors de la sauvegarde | `true` | `true`, `false` |
+| `global_git.enabled` | Activer l'automatisation de la synchronisation du dépôt Git global | `false` | `true`, `false` |
+| `global_git.remote` | Nom du dépôt Git distant pour la synchronisation globale | `origin` | Chaîne |
+| `global_git.branch` | Nom de la branche Git pour la synchronisation globale | `main` | Chaîne |
+
+Ces paramètres sont également gérables visuellement sous l'onglet **Construct** dans `engram entry`.
 
 ## Réparation et Révision
 

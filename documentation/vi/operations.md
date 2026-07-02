@@ -60,6 +60,15 @@ Chạy `engram graph --rebuild` sau khi chỉnh sửa thủ công. Đồ thị s
 ## Đối Soát Nâng Cấp (Upgrade Reconciliation)
 
 Sử dụng `engram upgrade` sau khi cài đặt gói Engram mới hơn. Lệnh này so sánh các thư mục gốc bộ nhớ đã khởi tạo từ v0.0.8 trở đi với lược đồ phát hành hiện tại và làm mới các tệp HELP.md được tạo, chỉ mục bộ nhớ, tệp đồ thị, sidecar vector đủ điều kiện, bộ kỹ năng workspace được tạo, khung bộ nhớ toàn cục và bộ kỹ năng tác nhân toàn cục đã đăng ký trong khi vẫn bảo tồn các tệp do con người viết. Các lệnh thông thường cũng chạy đối soát thư mục gốc một cách âm thầm mỗi phiên bản gói trừ khi `--no-auto-upgrade` hoặc `ENGRAM_NO_AUTO_UPGRADE=1` được đặt.
+Sử dụng `engram upgrade --latest` khi kết quả của gói mới cần ghi đè lên các tệp cấu phần tác nhân (agent artifacts) được liên kết và quản lý bởi Engram. Đường dẫn đó sẽ áp dụng lại các tệp hướng dẫn không gian làm việc (workspace), quy tắc, cấu hình MCP/plugin và các hook được quản lý, đồng thời cập nhật các cài đặt tác nhân toàn cục (global agent) đã đăng ký với các tệp mới nhất được tạo.
+
+### Hồ sơ kết xuất bộ kỹ năng (Skillset Render Profiles)
+
+Đối với các máy chủ hỗ trợ môi trường chạy (runtime-capable), Engram hiện cài đặt các hướng dẫn khởi động (bootstrap) nhỏ thay vì giao thức đầy đủ. Các hook cung cấp ngữ cảnh tác vụ được định tuyến, các công cụ MCP cung cấp hành vi tải/tìm kiếm/đề xuất, và các bộ chuyển đổi lệnh gạch chéo (slash) hoặc Kỹ năng Tác nhân (Agent Skills) mang theo các luồng công việc lệnh chi tiết. Các mục tiêu dự phòng (fallback) không có tính năng chèn ngữ cảnh thời gian chạy đáng tin cậy vẫn sẽ nhận được các hướng dẫn thủ công thu gọn.
+
+### Dự phòng DB cấu hình SQLite (SQLite Config DB Fallback)
+
+DB cấu hình SQLite của Engram là một tối ưu hóa cho việc quản lý không gian làm việc/hồ sơ (profile). Nếu DB không thể mở hoặc khởi tạo, các lệnh đọc/ghi bình thường sẽ tự động chuyển sang cấu hình JSON. Các lệnh cụ thể của DB sẽ báo cáo SQLite không khả dụng thay vì chặn việc sử dụng bộ nhớ thông thường.
 Khi `engram save` tìm thấy các bộ nhớ đang hoạt động có liên quan, bản xem trước phê duyệt sẽ báo cáo chúng kèm theo gợi ý `depends_on` hoặc cảnh báo trùng lặp tiềm ẩn. Việc chấp nhận sẽ lưu bản xem trước nguyên trạng; hãy từ chối trước nếu bạn muốn cấu trúc lại các phụ thuộc hoặc lưu trữ các bộ nhớ trùng lặp trước khi lưu.
 Đối với `save-session --accept-all`, Engram sẽ tạm dừng trước khi ghi khi các gợi ý bộ nhớ liên quan đó xuất hiện. Tác nhân nên sử dụng phản hồi để brainstorm một lượt chạy lại có cấu trúc: thêm `DEPENDS_ON: memory-id` cho các phụ thuộc, `LEVEL: advanced` khi một bộ nhớ sâu hơn điều kiện tiên quyết của nó, hoặc `UPDATE: memory-id` khi một ứng viên nên được hợp nhất vào một bộ nhớ trùng lặp tiềm ẩn.
 
@@ -81,6 +90,14 @@ engram profile create personal --global-path ~/Documents/engram-personal --use
 engram profile use company --workspace
 engram profile merge personal company --dry-run
 ```
+
+Thứ tự phân giải hồ sơ là `--profile` rõ ràng hoặc `ENGRAM_PROFILE`, sau đó là
+`default_profile` của không gian làm việc, rồi hồ sơ người dùng đang hoạt động.
+Nếu không gian làm việc `W` được ghim vào hồ sơ `B` trong khi mặc định người
+dùng vẫn là hồ sơ `A`, mọi lượt tải thông thường, tải MCP và chèn hook tác nhân
+cho `W` đều đọc bộ nhớ toàn cục của hồ sơ `B` và không bao giờ đọc hồ sơ `A`.
+Một hồ sơ rõ ràng khác mặc định không gian làm việc sẽ dùng bộ nhớ toàn cục của
+hồ sơ đó và tắt bộ nhớ không gian làm việc cho lệnh đó.
 
 Dùng `clone-memory` để sao chép Markdown đang hoạt động trong `rules/`, `skills/` và `knowledge/` giữa phạm vi workspace và global:
 
@@ -166,6 +183,39 @@ engram save-session --file .agents/.engram/inbox/<ghi-chú>.md
 ```
 
 Sử dụng tính năng này khi bạn muốn lưu giữ các ghi chú sơ bộ trước khi quyết định những gì sẽ trở thành bộ nhớ bền vững.
+
+## Cấu hình (Configuration)
+
+Để xem và quản lý các thiết lập thời gian chạy, hãy sử dụng các lệnh `config`:
+
+- **Xem cấu hình đang hoạt động**:
+  ```bash
+  engram config view
+  ```
+- **Đặt giá trị cấu hình**:
+  ```bash
+  engram config set <key> <value>
+  ```
+
+### Tham chiếu thiết lập chính (Key Settings Reference)
+
+| Khóa | Mô tả | Mặc định | Phạm vi / Tùy chọn |
+| --- | --- | --- | --- |
+| `memory.rule_line_target` | Mục tiêu số dòng được đề xuất cho bộ nhớ quy tắc | `70` | `50` đến `200` |
+| `memory.rule_line_hard_limit` | Giới hạn số dòng tối đa cho phép đối với bộ nhớ quy tắc | `100` | `50` đến `200` |
+| `load.limit` | Số lượng bộ nhớ tối đa được trả về bởi tải thông thường | `8` | `1` đến `32` |
+| `rule_variants.enabled` | Bật hoặc tắt tính năng tạo các biến thể quy tắc | `true` | `true`, `false` |
+| `rule_variants.active` | Chế độ biến thể quy tắc đang hoạt động | `balanced` | `light`, `balanced`, `strict` |
+| `graph.enabled` | Bật hoặc tắt định tuyến dựa trên đồ thị | `true` | `true`, `false` |
+| `graph.max_related` | Số bộ nhớ liên quan tối đa cần lấy từ các cạnh đồ thị | `8` | `1` đến `20` |
+| `graph.min_related_score` | Điểm tương đồng tối thiểu để thêm các cạnh đồ thị | `0.3` | `0.0` đến `1.0` |
+| `vector.enabled` | Bật hoặc tắt chức năng tìm kiếm vectơ dự phòng | `true` | `true`, `false` |
+| `live_sync.enabled` | Đồng bộ hóa các tệp ngữ cảnh tác nhân được tạo khi lưu | `true` | `true`, `false` |
+| `global_git.enabled` | Bật tự động hóa đồng bộ hóa kho lưu trữ Git toàn cục | `false` | `true`, `false` |
+| `global_git.remote` | Tên remote Git để đồng bộ hóa toàn cục | `origin` | Chuỗi |
+| `global_git.branch` | Tên nhánh Git để đồng bộ hóa toàn cục | `main` | Chuỗi |
+
+Các thiết lập này cũng có thể được quản lý trực quan trong tab **Construct** của `engram entry`.
 
 ## Sửa Chữa Và Đánh Giá
 

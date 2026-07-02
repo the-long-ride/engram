@@ -136,6 +136,13 @@ engram profile use company --workspace
 engram profile merge personal company --dry-run
 ```
 
+Profile resolution order is explicit `--profile` or `ENGRAM_PROFILE`, then the
+workspace `default_profile`, then the active user profile. If workspace `W` is
+pinned to profile `B` while the user default remains profile `A`, every normal
+load, MCP load, and agent-hook injection for `W` reads profile `B` global memory
+and never profile `A`. An explicit profile different from the workspace default
+uses that profile's global memory and disables workspace memory for that command.
+
 Use `clone-memory` to copy active `rules/`, `skills/`, and `knowledge/`
 Markdown between workspace and global scopes:
 

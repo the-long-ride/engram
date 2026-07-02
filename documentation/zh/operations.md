@@ -63,6 +63,15 @@ level: advanced
 ## 升级对账 (Upgrade Reconciliation)
 
 安装较新的 Engram 包后使用 `engram upgrade`。该命令会将自 v0.0.8 起初始化的内存根目录与当前发布版本模式进行比较，并刷新生成的 HELP.md、内存索引、图文件、合格的向量侧车、生成的工空间技能集、全局内存脚手架和注册的全局智能体技能集，同时保留人类编写的文件。正常命令也会在每个包版本安静地运行相同的根目录对账，除非设置了 `--no-auto-upgrade` 或 `ENGRAM_NO_AUTO_UPGRADE=1`。
+当新包输出必须覆盖当前由 Engram 管理的已链接智能体产物时，使用 `engram upgrade --latest`。该路径将重新应用链接的工做区指令文件、规则、MCP/插件配置以及托管的钩子（hooks），并使用最新生成的程序文件刷新已注册的全局智能体安装。
+
+### 技能集渲染配置文件 (Skillset Render Profiles)
+
+对于支持运行时的宿主环境，Engram 现在安装精简的引导指令（bootstrap）而不是完整协议。钩子提供路由任务上下文，MCP 工具提供加载/搜索/提案行为，斜杠适配器或智能体技能（Agent Skills）承载详细的命令工作流。没有可靠运行时上下文注入的备用目标仍将接收紧凑的手动指令。
+
+### SQLite 配置数据库备用 (SQLite Config DB Fallback)
+
+Engram 的 SQLite 配置数据库是针对工作区/配置文件管理的一项优化。如果数据库无法打开或初始化，正常的读/写命令将回退到 JSON 配置快照。特定于数据库的命令将报告 SQLite 不可用，而不是阻止正常的内存使用。
 当 `engram save` 发现相关的活动内存时，审批预览会报告它们，并带有建议 of `depends_on` 或可能重复的警告。接受将按原样保存预览；如果要在保存前重构依赖关系或归档重复项，请先拒绝。
 对于 `save-session --accept-all`，当这些相关的内存提示出现时，Engram 会在写入前暂停。智能体应使用该响应来构思有结构的重新运行：对于依赖关系添加 `DEPENDS_ON: memory-id` 为依赖关系，当内存比其先决条件更深时添加 `LEVEL: advanced`，或者当候选应合并到可能的重复项中时添加 `UPDATE: memory-id`。
 
@@ -84,6 +93,12 @@ engram profile create personal --global-path ~/Documents/engram-personal --use
 engram profile use company --workspace
 engram profile merge personal company --dry-run
 ```
+
+配置文件解析顺序为显式 `--profile` 或 `ENGRAM_PROFILE`，然后是工作区的
+`default_profile`，最后是用户活动配置文件。如果工作区 `W` 固定到配置文件 `B`，
+而用户默认配置文件仍为 `A`，则 `W` 的每次正常加载、MCP 加载和智能体 hook
+注入都会读取配置文件 `B` 的全局内存，绝不会读取配置文件 `A`。与工作区默认值不同
+的显式配置文件会使用该配置文件的全局内存，并在该命令中禁用工作区内存。
 
 使用 `clone-memory` 在工作区和全局范围之间复制活动的 `rules/`、`skills/` 和 `knowledge/` Markdown 文件：
 
@@ -169,6 +184,39 @@ engram save-session --file .agents/.engram/inbox/<笔记名称>.md
 ```
 
 当您想在决定哪些内容应成为持久内存之前保留粗略笔记时，请使用此功能。
+
+## 配置 (Configuration)
+
+要查看和管理运行时设置，请使用 `config` 命令：
+
+- **查看活动配置**：
+  ```bash
+  engram config view
+  ```
+- **设置配置值**：
+  ```bash
+  engram config set <key> <value>
+  ```
+
+### 关键设置参考 (Key Settings Reference)
+
+| 键 | 描述 | 默认值 | 范围 / 选项 |
+| --- | --- | --- | --- |
+| `memory.rule_line_target` | 规则内存推荐的行数目标 | `70` | `50` 到 `200` |
+| `memory.rule_line_hard_limit` | 规则内存允许的最大行数 | `100` | `50` 到 `200` |
+| `load.limit` | 正常加载返回的最大内存数 | `8` | `1` 到 `32` |
+| `rule_variants.enabled` | 启用或禁用规则变体生成 | `true` | `true`, `false` |
+| `rule_variants.active` | 活动的规则变体模式 | `balanced` | `light`, `balanced`, `strict` |
+| `graph.enabled` | 启用或禁用感知图的路由 | `true` | `true`, `false` |
+| `graph.max_related` | 从图边中获取的最大相关内存数 | `8` | `1` 到 `20` |
+| `graph.min_related_score` | 添加图边的最小相似度分数 | `0.3` | `0.0` 到 `1.0` |
+| `vector.enabled` | 启用或禁用向量搜索备用 | `true` | `true`, `false` |
+| `live_sync.enabled` | 保存时同步生成的智能体上下文文件 | `true` | `true`, `false` |
+| `global_git.enabled` | 启用全局 Git 仓库同步自动化 | `false` | `true`, `false` |
+| `global_git.remote` | 用于全局同步的 Git 远程名称 | `origin` | 字符串 |
+| `global_git.branch` | 用于全局同步的 Git 分支名称 | `main` | 字符串 |
+
+这些设置也可以在 `engram entry` 的 **Construct** 选项卡下进行可视化管理。
 
 ## 修复和审查
 

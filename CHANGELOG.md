@@ -1,10 +1,18 @@
 # Changelog
 
+## 0.0.25
+
+- Corrected global OpenCode integration to always use `~/.config/opencode/` for rules, skills, plugin, and MCP configuration.
+- Switched the global OpenCode default MCP config file to `~/.config/opencode/opencode.jsonc`, while still merging existing `opencode.json` files in place.
+- Confirmed OpenCode local plugin setup uses `~/.config/opencode/plugins/engram.js` without adding an npm-style `plugin` entry to `opencode.jsonc`.
+- Implemented the MCP JSON-RPC handshake for OpenCode by supporting `initialize`, `notifications/initialized`, `tools/list`, and `tools/call` content responses.
+- Added regression coverage for global OpenCode config-home isolation, plugin installation, JSON/JSONC upgrade refresh, unlink, and web API connection flows.
+
 ## 0.0.24
 
 - Fixed workspace-profile precedence so DB-backed config, CLI loads, MCP/shared loads, and agent-hook injections all resolve global memory with `--profile`/`ENGRAM_PROFILE`, then workspace default profile, then user default profile.
 - Fixed SQLite/JSON config persistence so workspace configs keep raw `default_profile` settings without storing profile-derived `global_path` values, preventing cross-profile memory leaks after reload.
-- Fixed OpenCode integration paths so workspace links use `AGENTS.md`, `.opencode/engram.md`, `.opencode/skills/engram/SKILL.md`, and `opencode.json` or an existing `opencode.jsonc`, while global links use `~/.config/opencode/AGENTS.md`, `~/.config/opencode/engram.md`, `~/.config/opencode/skills/engram/SKILL.md`, and `~/.config/opencode/opencode.json` or an existing `opencode.jsonc`.
+- Fixed OpenCode integration paths so workspace links use `AGENTS.md`, `.opencode/engram.md`, `.opencode/skills/engram/SKILL.md`, and `opencode.json` or an existing `opencode.jsonc`, while global links use `~/.config/opencode/AGENTS.md`, `~/.config/opencode/engram.md`, `~/.config/opencode/skills/engram/SKILL.md`, and `~/.config/opencode/opencode.jsonc` or an existing `opencode.json`.
 - Updated OpenCode hook/plugin and MCP merge flows so `engram upgrade --latest` refreshes only Engram-managed entries, preserves unrelated user settings, and skips invalid existing JSON/JSONC instead of overwriting it.
 - Hardened shared JSON/JSONC merge helpers and refresh logic for other linked agents, including Cursor, Claude, Gemini, and Windsurf, so user-authored config stays intact while Engram-managed MCP and hook entries update cleanly.
 - Added regression coverage for OpenCode and shared MCP refresh/force-link cases, including malformed config preservation and user-setting-safe merges.

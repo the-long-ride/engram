@@ -6,6 +6,7 @@
 - Switched the global OpenCode default MCP config file to `~/.config/opencode/opencode.jsonc`, while still merging existing `opencode.json` files in place.
 - Confirmed OpenCode local plugin setup uses `~/.config/opencode/plugins/engram.js` without adding an npm-style `plugin` entry to `opencode.jsonc`.
 - Implemented the MCP JSON-RPC handshake for OpenCode by supporting `initialize`, `notifications/initialized`, `tools/list`, and `tools/call` content responses.
+- Simplified generated OpenCode MCP config to `command: ["engram-mcp"]`, `args: []`, `timeout: 1000000`, `type: "local"`, and `enabled: true`.
 - Added regression coverage for global OpenCode config-home isolation, plugin installation, JSON/JSONC upgrade refresh, unlink, and web API connection flows.
 
 ## 0.0.24

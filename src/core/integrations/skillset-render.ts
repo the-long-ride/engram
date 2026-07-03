@@ -383,7 +383,9 @@ function opencodeConfig(): string {
     mcp: {
       engram: {
         type: 'local',
-        command: ['npx', '-y', '--package', '@the-long-ride/engram', 'engram-mcp'],
+        command: ['engram-mcp'],
+        args: [],
+        timeout: 1000000,
         enabled: true
       }
     }

@@ -5,6 +5,16 @@ import path from 'node:path';
 import { initGit, runEngram, tempWorkspace, workspaceMemoryRoot } from '../helpers.mjs';
 import { machineProfileName, packageVersion, testMemory } from './fixtures.mjs';
 
+function assertSimpleOpenCodeMcp(server) {
+  assert.deepEqual(server, {
+    type: 'local',
+    command: ['engram-mcp'],
+    args: [],
+    timeout: 1000000,
+    enabled: true
+  });
+}
+
 test('upgrade plan reports quick package update and registered global skillset refresh', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-upgrade-');
   const agentHome = path.join(cwd, 'agent-home');
@@ -272,7 +282,7 @@ test('upgrade --latest migrates linked workspace opencode paths', async () => {
   assert.match(await readFile(path.join(cwd, '.opencode', 'plugins', 'engram.js'), 'utf8'), /EngramOpenCodePlugin/);
 
   const config = JSON.parse(await readFile(path.join(cwd, 'opencode.json'), 'utf8'));
-  assert.equal(config.mcp.engram.command[0], 'npx');
+  assertSimpleOpenCodeMcp(config.mcp.engram);
   assert.ok(!config.instructions?.includes('.opencode/engram.md'));
   await rm(cwd, { recursive: true, force: true });
 });
@@ -304,7 +314,7 @@ test('upgrade --latest migrates linked workspace opencode.jsonc paths', async ()
 
   const config = JSON.parse(await readFile(path.join(cwd, 'opencode.jsonc'), 'utf8'));
   assert.deepEqual(config.plugin, ['user-plugin']);
-  assert.equal(config.mcp.engram.command[0], 'npx');
+  assertSimpleOpenCodeMcp(config.mcp.engram);
   assert.ok(!config.instructions?.includes('.opencode/engram.md'));
   await assert.rejects(readFile(path.join(cwd, 'opencode.json'), 'utf8'));
   await rm(cwd, { recursive: true, force: true });
@@ -377,7 +387,7 @@ test('upgrade --latest refreshes registered global opencode paths and plugin', a
   assert.match(await readFile(path.join(opencodeHome, 'plugins', 'engram.js'), 'utf8'), /EngramOpenCodePlugin/);
 
   const config = JSON.parse(await readFile(path.join(opencodeHome, 'opencode.json'), 'utf8'));
-  assert.equal(config.mcp.engram.command[0], 'npx');
+  assertSimpleOpenCodeMcp(config.mcp.engram);
   assert.ok(!config.instructions?.includes('.opencode/engram.md'));
   await rm(cwd, { recursive: true, force: true });
 });
@@ -409,7 +419,7 @@ test('upgrade --latest refreshes registered global opencode.jsonc paths and plug
 
   const config = JSON.parse(await readFile(path.join(opencodeHome, 'opencode.jsonc'), 'utf8'));
   assert.deepEqual(config.plugin, ['user-plugin']);
-  assert.equal(config.mcp.engram.command[0], 'npx');
+  assertSimpleOpenCodeMcp(config.mcp.engram);
   assert.ok(!config.instructions?.includes('.opencode/engram.md'));
   await assert.rejects(readFile(path.join(opencodeHome, 'opencode.json'), 'utf8'));
   await rm(cwd, { recursive: true, force: true });

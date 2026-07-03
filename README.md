@@ -203,6 +203,19 @@ creating a parallel `opencode.json`. Global OpenCode links write
 `~/.config/opencode/opencode.json`. OpenCode, Cursor, Windsurf, Codex,
 Claude, and Gemini JSON/JSONC config merges preserve unrelated user settings
 while only adding or refreshing Engram-managed entries.
+The OpenCode MCP entry is intentionally simple and matches OpenCode's local MCP
+shape:
+
+```json
+"engram": {
+  "type": "local",
+  "command": ["engram-mcp"],
+  "args": [],
+  "timeout": 1000000,
+  "enabled": true
+}
+```
+
 `engram unlink --global opencode` removes only the Engram-generated plugin; a
 human-authored `engram.js` is preserved unless `--force` is explicit.
 

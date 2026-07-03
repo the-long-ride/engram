@@ -507,7 +507,19 @@ MCP registration. Engram registers the Engram MCP server in project
 use `engram_load`, `engram_search`, and other MCP tools directly. The MCP
 server implements the standard JSON-RPC handshake (`initialize`,
 `notifications/initialized`, `tools/list`, and `tools/call`) so OpenCode can
-discover and call Engram tools. The `slash`
+discover and call Engram tools. Engram emits a simple local OpenCode MCP entry:
+
+```json
+"engram": {
+  "type": "local",
+  "command": ["engram-mcp"],
+  "args": [],
+  "timeout": 1000000,
+  "enabled": true
+}
+```
+
+The `slash`
 target writes `.opencode/commands/engram.md` so `/engram <args>` becomes a
 native custom command in OpenCode. When an existing human-authored
 `opencode.json` or `opencode.jsonc` already has MCP entries, Engram merges only `mcp.engram`

@@ -20,6 +20,16 @@ import {
   isGenerated
 } from '../dist/core/integrations/skillset-render.js';
 
+function assertSimpleOpenCodeMcp(server) {
+  assert.deepEqual(server, {
+    type: 'local',
+    command: ['engram-mcp'],
+    args: [],
+    timeout: 1000000,
+    enabled: true
+  });
+}
+
 test('skillset installer writes all supported agent adapter files (--all-supported)', async () => {
   const { cwd } = await tempWorkspace('engram-skillset-');
   const results = await installSkillset(cwd, 'all-supported');
@@ -97,9 +107,7 @@ test('skillset installer writes all supported agent adapter files (--all-support
   assert.match(opencodeGuide, /Save flow:/);
   const opencodeParsed = JSON.parse(await readFile(path.join(cwd, 'opencode.json'), 'utf8'));
   assert.ok(opencodeParsed.mcp && opencodeParsed.mcp.engram, 'opencode.json should include engram MCP config');
-  assert.deepEqual(opencodeParsed.mcp.engram.command, ['npx', '-y', '--package', '@the-long-ride/engram', 'engram-mcp']);
-  assert.equal(opencodeParsed.mcp.engram.type, 'local');
-  assert.equal(opencodeParsed.mcp.engram.enabled, true);
+  assertSimpleOpenCodeMcp(opencodeParsed.mcp.engram);
   assert.ok(!opencodeParsed.instructions?.includes('.opencode/engram.md'), 'OpenCode should use AGENTS.md, not opencode.json instructions, for Engram rules');
   await rm(cwd, { recursive: true, force: true });
 });
@@ -165,7 +173,7 @@ test('cli installs open-code alias and hidden antigravity compatibility files', 
   assert.match(opencode.stdout, /WRITTEN open-code: opencode\.json/);
   const workspaceOpencodeJson = JSON.parse(await readFile(path.join(cwd, 'opencode.json'), 'utf8'));
   assert.ok(workspaceOpencodeJson.mcp && workspaceOpencodeJson.mcp.engram, 'workspace opencode.json should include engram MCP config');
-  assert.deepEqual(workspaceOpencodeJson.mcp.engram.command, ['npx', '-y', '--package', '@the-long-ride/engram', 'engram-mcp']);
+  assertSimpleOpenCodeMcp(workspaceOpencodeJson.mcp.engram);
   await assert.rejects(readFile(path.join(cwd, '.mcp.json'), 'utf8'), 'OpenCode target should not create root .mcp.json');
   const antigravity = await runEngram(cwd, env, ['link', 'antigravity']);
   assert.equal(antigravity.code, 0, antigravity.stderr);
@@ -297,7 +305,7 @@ test('global skill-capable targets write host skill folders', async () => {
   assert.match(await readFile(path.join(opencodeHome, 'skills', 'engram', 'SKILL.md'), 'utf8'), /Default agent mode: compact/);
   const globalOpencodeConfig = JSON.parse(await readFile(path.join(opencodeHome, 'opencode.jsonc'), 'utf8'));
   assert.ok(globalOpencodeConfig.mcp && globalOpencodeConfig.mcp.engram, 'global opencode.jsonc should include engram MCP config');
-  assert.deepEqual(globalOpencodeConfig.mcp.engram.command, ['npx', '-y', '--package', '@the-long-ride/engram', 'engram-mcp']);
+  assertSimpleOpenCodeMcp(globalOpencodeConfig.mcp.engram);
 
   const slash = await runEngram(cwd, globalEnv, ['link', '--global', 'slash']);
   assert.equal(slash.code, 0, slash.stderr);
@@ -351,7 +359,7 @@ test('global opencode MCP merges into existing human-authored opencode.json', as
   const merged = JSON.parse(await readFile(path.join(opencodeDir, 'opencode.json'), 'utf8'));
   assert.ok(merged.mcp.other, 'existing MCP entries should be preserved');
   assert.ok(merged.mcp.engram, 'engram MCP entry should be merged in');
-  assert.deepEqual(merged.mcp.engram.command, ['npx', '-y', '--package', '@the-long-ride/engram', 'engram-mcp']);
+  assertSimpleOpenCodeMcp(merged.mcp.engram);
   assert.deepEqual(merged.instructions, ['.opencode/custom.md'], 'human instructions should be preserved');
   await rm(cwd, { recursive: true, force: true });
 });
@@ -986,7 +994,7 @@ test('workspace refresh migrates opencode.json without MCP to include MCP', asyn
 
   const updated = JSON.parse(await readFile(opencodeJsonPath, 'utf8'));
   assert.ok(updated.mcp?.engram, 'refresh should merge engram MCP into opencode.json');
-  assert.deepEqual(updated.mcp.engram.command, ['npx', '-y', '--package', '@the-long-ride/engram', 'engram-mcp']);
+  assertSimpleOpenCodeMcp(updated.mcp.engram);
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -1001,7 +1009,7 @@ test('workspace refresh updates only engram MCP in user opencode.jsonc', async (
     '    "other": { "type": "local", "command": ["other-bin"], "enabled": true },',
     '    "engram": {',
     '      "type": "local",',
-    '      "command": ["npx", "-y", "--package", "@the-long-ride/engram", "engram-mcp"],',
+    '      "command": ["old-bin"],',
     '      "enabled": false',
     '    },',
     '  },',
@@ -1017,7 +1025,7 @@ test('workspace refresh updates only engram MCP in user opencode.jsonc', async (
   assert.deepEqual(updated.plugin, ['user-plugin']);
   assert.ok(updated.mcp?.other, 'other MCP entries should be preserved');
   assert.equal(updated.mcp.engram.enabled, true);
-  assert.deepEqual(updated.mcp.engram.command, ['npx', '-y', '--package', '@the-long-ride/engram', 'engram-mcp']);
+  assertSimpleOpenCodeMcp(updated.mcp.engram);
   await rm(cwd, { recursive: true, force: true });
 });
 

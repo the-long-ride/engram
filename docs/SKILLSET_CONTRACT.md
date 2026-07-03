@@ -155,6 +155,9 @@ Hosts that support custom slash commands can also load generated `/engram` adapt
 - Implement standard MCP JSON-RPC methods (`initialize`,
   `notifications/initialized`, `tools/list`, and `tools/call`) for hosts such
   as OpenCode that discover tools through the MCP handshake.
+- For OpenCode MCP config, emit a local entry with `command: ["engram-mcp"]`,
+  `args: []`, `timeout: 1000000`, and `enabled: true`; do not use an npm-style
+  plugin entry for the local JavaScript plugin file.
 - Treat AI agent hooks as opt-in and narrower than skillset links. v1 may
   install hooks for `codex`, `claude`, `gemini`, and `opencode` as managed JSON
   command-hook entries because those hosts expose both session-start and later

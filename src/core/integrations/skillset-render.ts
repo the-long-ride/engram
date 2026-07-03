@@ -385,7 +385,6 @@ function opencodeConfig(): string {
         type: 'local',
         command: ['engram-mcp'],
         args: [],
-        timeout: 1000000,
         enabled: true
       }
     }

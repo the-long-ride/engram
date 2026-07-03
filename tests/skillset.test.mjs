@@ -25,7 +25,6 @@ function assertSimpleOpenCodeMcp(server) {
     type: 'local',
     command: ['engram-mcp'],
     args: [],
-    timeout: 1000000,
     enabled: true
   });
 }

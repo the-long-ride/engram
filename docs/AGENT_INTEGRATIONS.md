@@ -514,7 +514,6 @@ discover and call Engram tools. Engram emits a simple local OpenCode MCP entry:
   "type": "local",
   "command": ["engram-mcp"],
   "args": [],
-  "timeout": 1000000,
   "enabled": true
 }
 ```

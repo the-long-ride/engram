@@ -186,8 +186,7 @@ engram set-proof compact
 ```
 
 **OpenCode hook support:** `engram link --global opencode` installs a managed local
-JavaScript plugin at `~/.config/opencode/plugins/engram.js` (or the
-platform/config override equivalent) alongside rules, the Engram skill, and MCP
+JavaScript plugin at `~/.config/opencode/plugins/engram.js` alongside rules, the Engram skill, and MCP
 configuration. The plugin uses `chat.message` to route the current user prompt
 and `experimental.chat.system.transform` to inject routed memory before each
 LLM request. OpenCode must be restarted or reloaded after `link`/`unlink`
@@ -200,8 +199,8 @@ Workspace OpenCode links write `AGENTS.md`, `.opencode/engram.md`,
 creating a parallel `opencode.json`. Global OpenCode links write
 `~/.config/opencode/AGENTS.md`, `~/.config/opencode/engram.md`,
 `~/.config/opencode/skills/engram/SKILL.md`, and
-`~/.config/opencode/opencode.json`, or update an existing
-`~/.config/opencode/opencode.jsonc`. OpenCode, Cursor, Windsurf, Codex,
+`~/.config/opencode/opencode.jsonc`, or update an existing
+`~/.config/opencode/opencode.json`. OpenCode, Cursor, Windsurf, Codex,
 Claude, and Gemini JSON/JSONC config merges preserve unrelated user settings
 while only adding or refreshing Engram-managed entries.
 `engram unlink --global opencode` removes only the Engram-generated plugin; a

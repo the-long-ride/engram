@@ -18,3 +18,7 @@ export function globalAgentConfigHome(home = globalAgentHome()): string {
   }
   return path.join(home, '.config');
 }
+
+export function globalOpenCodeConfigHome(home = globalAgentHome()): string {
+  return path.join(home, '.config', 'opencode');
+}

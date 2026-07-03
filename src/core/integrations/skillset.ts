@@ -22,7 +22,7 @@ import {
   unmergeMcpJson
 } from './skillset-render.js';
 import type { InstructionProfile } from './skillset-render.js';
-import { globalAgentHome, globalAgentConfigHome } from './agent-paths.js';
+import { globalAgentHome, globalAgentConfigHome, globalOpenCodeConfigHome } from './agent-paths.js';
 import { resolveAllTargets, allSupportedTargets } from './agent-detect.js';
 import { unmergeManagedHooks } from './agent-hooks.js';
 
@@ -126,9 +126,18 @@ function isOpencodeConfigFile(relativeFile: string): boolean {
 
 async function resolveOpencodeConfigPath(file: string): Promise<string> {
   const normalized = normalizePath(file);
-  if (!normalized.endsWith(`/${OPENCODE_JSON}`) && normalized !== OPENCODE_JSON) return file;
-  const jsoncFile = file.slice(0, -'.json'.length) + '.jsonc';
-  return await exists(jsoncFile) ? jsoncFile : file;
+  if (!isOpencodeConfigFile(normalized)) return file;
+  const baseFile = normalized.endsWith(`/${OPENCODE_JSONC}`) || normalized === OPENCODE_JSONC
+    ? file.slice(0, -'.jsonc'.length)
+    : normalized.endsWith(`/${OPENCODE_JSON}`) || normalized === OPENCODE_JSON
+      ? file.slice(0, -'.json'.length)
+      : '';
+  if (!baseFile) return file;
+  const jsoncFile = `${baseFile}.jsonc`;
+  const jsonFile = `${baseFile}.json`;
+  if (await exists(jsoncFile)) return jsoncFile;
+  if (await exists(jsonFile)) return jsonFile;
+  return file;
 }
 
 async function resolveWorkspaceRelativeFile(cwd: string, relativeFile: string): Promise<string> {
@@ -674,6 +683,7 @@ function globalInstallPlans(target: string, home = globalAgentHome()): GlobalIns
 
 function globalFilesForTarget(target: ResolvedTarget, home: string): GlobalInstallPlan[] {
   const configHome = globalAgentConfigHome(home);
+  const opencodeHome = globalOpenCodeConfigHome(home);
   const plan = (file: string, mode: GlobalInstallMode, renderTarget = target.name): GlobalInstallPlan => ({ ...target, file, mode, renderTarget });
   const skip = (reason: string): GlobalInstallPlan => ({ ...target, file: '<manual>', reason });
   switch (target.name) {
@@ -726,9 +736,9 @@ function globalFilesForTarget(target: ResolvedTarget, home: string): GlobalInsta
       ];
     case 'opencode':
       return [
-        plan(path.join(configHome, 'opencode', 'AGENTS.md'), 'block', 'agents-md'),
-        plan(path.join(configHome, 'opencode', 'skills', 'engram', 'SKILL.md'), 'file', 'agent-skill'),
-        plan(path.join(configHome, 'opencode', 'engram.md'), 'file', 'agents-md')
+        plan(path.join(opencodeHome, 'AGENTS.md'), 'block', 'agents-md'),
+        plan(path.join(opencodeHome, 'skills', 'engram', 'SKILL.md'), 'file', 'agent-skill'),
+        plan(path.join(opencodeHome, 'engram.md'), 'file', 'agents-md')
       ];
     case 'mcp':
       return [plan(path.join(home, '.claude', 'mcp.json'), 'file', 'mcp'), plan(path.join(configHome, 'gemini', 'mcp.json'), 'file', 'mcp')];
@@ -737,7 +747,7 @@ function globalFilesForTarget(target: ResolvedTarget, home: string): GlobalInsta
         plan(path.join(home, '.claude', 'commands', 'engram.md'), 'file'),
         plan(path.join(home, '.claude', 'skills', 'engram', 'SKILL.md'), 'file'),
         plan(path.join(home, '.gemini', 'commands', 'engram.toml'), 'file'),
-        plan(path.join(configHome, 'opencode', 'commands', 'engram.md'), 'file')
+        plan(path.join(opencodeHome, 'commands', 'engram.md'), 'file')
       ];
   }
 }
@@ -762,6 +772,7 @@ function isCursorMcpFile(relativeFile: string): boolean { return relativeFile.re
 
 function globalMcpFilesForTarget(target: ResolvedTarget, home: string): GlobalInstallPlan[] {
   const configHome = globalAgentConfigHome(home);
+  const opencodeHome = globalOpenCodeConfigHome(home);
   const plan = (file: string): GlobalInstallPlan => ({ ...target, file, mode: 'file', renderTarget: 'mcp' });
   switch (target.name) {
     case 'claude':
@@ -772,7 +783,7 @@ function globalMcpFilesForTarget(target: ResolvedTarget, home: string): GlobalIn
     case 'antigravity':
       return [plan(path.join(configHome, 'gemini', 'mcp.json'))];
     case 'opencode':
-      return [{ ...target, file: path.join(configHome, 'opencode', OPENCODE_JSON), mode: 'file', renderTarget: 'opencode' }];
+      return [{ ...target, file: path.join(opencodeHome, OPENCODE_JSONC), mode: 'file', renderTarget: 'opencode' }];
     case 'windsurf':
       return [];
     default:

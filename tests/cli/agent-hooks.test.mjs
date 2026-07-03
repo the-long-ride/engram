@@ -462,12 +462,13 @@ test('global opencode link installs and unlinks the managed plugin', async () =>
     ENGRAM_AGENT_HOME: agentHome,
     ENGRAM_AGENT_CONFIG_HOME: configHome
   };
-  const pluginFile = path.join(configHome, 'opencode', 'plugins', 'engram.js');
+  const pluginFile = path.join(agentHome, '.config', 'opencode', 'plugins', 'engram.js');
 
   const linked = await runEngram(cwd, globalEnv, ['link', '--global', 'opencode']);
   assert.equal(linked.code, 0, linked.stderr);
   assert.match(linked.stdout, /UPDATED opencode/);
   assert.match(await readFile(pluginFile, 'utf8'), /EngramOpenCodePlugin/);
+  await assert.rejects(readFile(path.join(configHome, 'opencode', 'plugins', 'engram.js'), 'utf8'));
 
   const unlinked = await runEngram(cwd, globalEnv, ['unlink', '--global', 'opencode']);
   assert.equal(unlinked.code, 0, unlinked.stderr);
@@ -488,13 +489,13 @@ test('workspace opencode link installs managed plugin hook path', async () => {
 
 test('opencode link preserves a human plugin unless force is explicit', async () => {
   const { cwd, env } = await tempWorkspace('engram-opencode-human-');
-  const configHome = path.join(cwd, 'agent-config');
+  const agentHome = path.join(cwd, 'agent-home');
   const globalEnv = {
     ...env,
-    ENGRAM_AGENT_HOME: path.join(cwd, 'agent-home'),
-    ENGRAM_AGENT_CONFIG_HOME: configHome
+    ENGRAM_AGENT_HOME: agentHome,
+    ENGRAM_AGENT_CONFIG_HOME: path.join(cwd, 'agent-config')
   };
-  const pluginFile = path.join(configHome, 'opencode', 'plugins', 'engram.js');
+  const pluginFile = path.join(agentHome, '.config', 'opencode', 'plugins', 'engram.js');
   await mkdir(path.dirname(pluginFile), { recursive: true });
   await writeFile(pluginFile, 'export const HumanPlugin = async () => ({})\n');
 

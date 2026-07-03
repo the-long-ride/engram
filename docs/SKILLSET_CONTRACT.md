@@ -150,7 +150,11 @@ Hosts that support custom slash commands can also load generated `/engram` adapt
   knows a stable MCP config path for that target. Workspace target links write
   `.mcp.json`; global Claude links write `~/.claude/mcp.json`; global Gemini
   and Antigravity-compatible links write the Gemini MCP config file; global
-  OpenCode links write the `mcp` field into `~/.config/opencode/opencode.json`.
+  OpenCode links write the `mcp` field into `~/.config/opencode/opencode.jsonc`
+  by default, or an existing `~/.config/opencode/opencode.json`.
+- Implement standard MCP JSON-RPC methods (`initialize`,
+  `notifications/initialized`, `tools/list`, and `tools/call`) for hosts such
+  as OpenCode that discover tools through the MCP handshake.
 - Treat AI agent hooks as opt-in and narrower than skillset links. v1 may
   install hooks for `codex`, `claude`, `gemini`, and `opencode` as managed JSON
   command-hook entries because those hosts expose both session-start and later
@@ -186,8 +190,7 @@ Hosts that support custom slash commands can also load generated `/engram` adapt
   `SKIPPED` records with host-specific reasons and keep those hosts
   instruction/skillset/manual-load driven in v1.
   For `opencode`, hooks are supported via a managed local JavaScript plugin
-  at `~/.config/opencode/plugins/engram.js` (or the platform/config override
-  equivalent); the plugin uses `chat.message` to route the current user prompt
+  at `~/.config/opencode/plugins/engram.js`; the plugin uses `chat.message` to route the current user prompt
   and `experimental.chat.system.transform` (an OpenCode experimental API) to
   inject routed memory before each LLM request. OpenCode must be restarted or
   reloaded after `link`/`unlink` because local plugin files are loaded at

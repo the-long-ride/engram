@@ -333,7 +333,7 @@ import { detectInstalledAgents } from '../integrations/agent-detect.js';
 import { isGenerated } from '../integrations/skillset-render.js';
 import { readGlobalSkillsetRegistry, installSkillset, unlinkSkillset, installGlobalSkillset, unlinkGlobalSkillset, type SkillsetTarget } from '../integrations/skillset.js';
 import { applyAgentHookAction } from '../integrations/agent-hooks.js';
-import { globalAgentConfigHome } from '../integrations/agent-paths.js';
+import { globalAgentConfigHome, globalOpenCodeConfigHome } from '../integrations/agent-paths.js';
 
 export interface AgentUiInfo {
   id: string;
@@ -462,7 +462,7 @@ function agentPath(agentId: string): string {
     copilot: path.join(home, '.copilot'),
     cline: path.join(home, '.cline'),
     windsurf: path.join(localAppData, 'Programs', 'Windsurf'),
-    opencode: path.join(configHome, 'opencode'),
+    opencode: globalOpenCodeConfigHome(home),
     antigravity: path.join(home, '.antigravity')
   };
   return paths[agentId] || configHome;
@@ -1314,6 +1314,5 @@ export async function apiArchiveMemory(cwd: string, body: ArchiveMemoryRequest):
     path: archivedPath
   };
 }
-
 
 

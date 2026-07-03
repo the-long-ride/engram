@@ -4,6 +4,7 @@ import { homedir, platform } from 'node:os';
 import { execSync } from 'node:child_process';
 import path from 'node:path';
 import type { SkillsetTarget } from './skillset.js';
+import { globalOpenCodeConfigHome } from './agent-paths.js';
 
 /** Agent names we can detect, mapped to their corresponding skillset targets. */
 const AGENT_TARGET_MAP: Record<string, SkillsetTarget[]> = {
@@ -25,7 +26,6 @@ const ALWAYS_TARGETS: SkillsetTarget[] = ['mcp', 'slash'];
 export function detectInstalledAgents(home = homedir()): Set<string> {
   const detected = new Set<string>();
   const win = platform() === 'win32';
-  const appData = win ? (process.env.APPDATA ?? path.join(home, 'AppData', 'Roaming')) : '';
   const localAppData = win ? (process.env.LOCALAPPDATA ?? path.join(home, 'AppData', 'Local')) : '';
   const xdgConfig = process.env.XDG_CONFIG_HOME ?? path.join(home, '.config');
 
@@ -68,8 +68,7 @@ export function detectInstalledAgents(home = homedir()): Set<string> {
   }
 
   // OpenCode: check opencode config dir or executable
-  if (dirExists(path.join(xdgConfig, 'opencode')) ||
-      (win && dirExists(path.join(appData, 'opencode'))) ||
+  if (dirExists(globalOpenCodeConfigHome(home)) ||
       which('opencode') || which('open-code')) {
     detected.add('opencode');
   }

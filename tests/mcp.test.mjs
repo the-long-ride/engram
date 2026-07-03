@@ -7,6 +7,40 @@ import { runCli } from '../dist/cli.js';
 import { tempWorkspace, workspaceMemoryRoot } from './helpers.mjs';
 import { profileMemoryRaw, writeProfileMemory } from './cli/fixtures.mjs';
 
+test('mcp protocol handshake lists tools and wraps tool call content', async () => {
+  const initialized = await handleMcp({
+    id: 1,
+    method: 'initialize',
+    params: {
+      protocolVersion: '2024-11-05',
+      capabilities: {},
+      clientInfo: { name: 'opencode', version: 'test' }
+    }
+  });
+  assert.equal(initialized.result.protocolVersion, '2024-11-05');
+  assert.deepEqual(initialized.result.capabilities, { tools: {} });
+  assert.equal(initialized.result.serverInfo.name, 'engram');
+
+  const notification = await handleMcp({ method: 'notifications/initialized', params: {} });
+  assert.equal(notification, undefined);
+
+  const tools = await handleMcp({ id: 2, method: 'tools/list', params: {} });
+  const names = tools.result.tools.map((tool) => tool.name);
+  assert.ok(names.includes('engram_load'));
+  assert.ok(names.includes('engram_save_session'));
+  const loadTool = tools.result.tools.find((tool) => tool.name === 'engram_load');
+  assert.equal(loadTool.inputSchema.type, 'object');
+  assert.ok(loadTool.inputSchema.properties.query);
+
+  const status = await handleMcp({
+    id: 3,
+    method: 'tools/call',
+    params: { name: 'engram_status', arguments: {} }
+  });
+  assert.equal(status.result.content[0].type, 'text');
+  assert.match(status.result.content[0].text, /Memory health|Workspace:/);
+});
+
 test('mcp status and save proposal do not write silently', async () => {
   const { cwd, env } = await tempWorkspace('engram-mcp-');
   const previous = process.cwd();
@@ -99,8 +133,8 @@ test('mcp status and save proposal do not write silently', async () => {
         arguments: { query: 'release foundation checklist' }
       }
     });
-    assert.match(mcpLoad.result, /loaded 1 memory files/);
-    assert.match(mcpLoad.result, /release-foundation-checklist/);
+    assert.match(mcpLoad.result.content[0].text, /loaded 1 memory files/);
+    assert.match(mcpLoad.result.content[0].text, /release-foundation-checklist/);
 
     const setRole = await handleMcp({
       id: 8,
@@ -186,8 +220,8 @@ test('mcp load uses workspace default profile instead of active user profile', a
         arguments: { query: 'workspace cobalt profile marker', forAgents: true }
       }
     });
-    assert.match(loaded.result, /Workspace cobalt profile marker/);
-    assert.doesNotMatch(loaded.result, /Personal amber profile marker/);
+    assert.match(loaded.result.content[0].text, /Workspace cobalt profile marker/);
+    assert.doesNotMatch(loaded.result.content[0].text, /Personal amber profile marker/);
   } finally {
     process.chdir(previous);
     if (previousConfigDir === undefined) delete process.env.ENGRAM_CONFIG_DIR;

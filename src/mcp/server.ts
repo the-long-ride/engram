@@ -10,26 +10,155 @@ import { normalizeMemoryType, parseMemoryCandidate, parseMemoryCandidates } from
 import { agentMemoryChatApprovalText } from '../core/memory/agent-proposal-protocol.js';
 import { normalizeTaskType } from '../core/memory/task-classifier.js';
 import { parseSaveTarget, writeScopes } from '../core/runtime/config.js';
+import { VERSION } from '../core/runtime/version.js';
 import type { Scope } from '../core/runtime/types.js';
 
 /** Handle one MCP-like request object. */
 export async function handleMcp(request: any): Promise<any> {
+  if (request.method === 'initialize') return ok(request.id, initializeResult(request));
+  if (request.method === 'notifications/initialized') return undefined;
+  if (request.method === 'tools/list') return ok(request.id, { tools: toolDefinitions() });
+  const isToolCall = request.method === 'tools/call';
   const method = mcpMethod(request);
   const args = mcpArgs(request);
   try {
-    if (method === 'engram_load') return ok(request.id, await cmdLoad([args.query ?? 'current session'], { 'for-agents': args.forAgents ?? true }));
-    if (method === 'engram_route') return ok(request.id, cmdRoute([String(args.query ?? args.task ?? '')]));
-    if (method === 'engram_search') return ok(request.id, await cmdSearch([args.query ?? '']));
-    if (method === 'engram_verify') return ok(request.id, await cmdVerify(args.scope));
-    if (method === 'engram_set_role') return ok(request.id, await cmdSetRole(roleArgs(args)));
-    if (method === 'engram_set_rule_variant') return ok(request.id, await cmdSetRuleVariant(ruleVariantArgs(args)));
-    if (method === 'engram_status') return ok(request.id, await cmdHealth());
-    if (method === 'engram_save') return ok(request.id, await saveProposal(args));
-    if (method === 'engram_save_session') return ok(request.id, await saveSessionProposal(args));
+    const result = await callTool(method, args);
+    if (result !== undefined) return ok(request.id, isToolCall ? toolResult(result) : result);
     return fail(request.id, `Unknown tool: ${method}`);
   } catch (error: any) {
+    if (isToolCall) return ok(request.id, toolResult(error.message, true));
     return fail(request.id, error.message);
   }
+}
+
+async function callTool(method: string | undefined, args: any): Promise<string | undefined> {
+  if (method === 'engram_load') return await cmdLoad([args.query ?? 'current session'], { 'for-agents': args.forAgents ?? true });
+  if (method === 'engram_route') return cmdRoute([String(args.query ?? args.task ?? '')]);
+  if (method === 'engram_search') return await cmdSearch([args.query ?? '']);
+  if (method === 'engram_verify') return await cmdVerify(args.scope);
+  if (method === 'engram_set_role') return await cmdSetRole(roleArgs(args));
+  if (method === 'engram_set_rule_variant') return await cmdSetRuleVariant(ruleVariantArgs(args));
+  if (method === 'engram_status') return await cmdHealth();
+  if (method === 'engram_save') return await saveProposal(args);
+  if (method === 'engram_save_session') return await saveSessionProposal(args);
+  return undefined;
+}
+
+function initializeResult(request: any): any {
+  return {
+    protocolVersion: request.params?.protocolVersion ?? '2024-11-05',
+    capabilities: { tools: {} },
+    serverInfo: { name: 'engram', version: VERSION }
+  };
+}
+
+function toolResult(text: unknown, isError = false): any {
+  return {
+    content: [{ type: 'text', text: String(text ?? '') }],
+    ...(isError ? { isError: true } : {})
+  };
+}
+
+function toolDefinitions(): any[] {
+  const stringProperty = (description: string) => ({ type: 'string', description });
+  return [
+    {
+      name: 'engram_load',
+      description: 'Load routed Engram memory for the current task or query.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          query: stringProperty('Task or search query for routed memory.'),
+          forAgents: { type: 'boolean', description: 'Render compact agent-facing memory context.' }
+        }
+      }
+    },
+    {
+      name: 'engram_route',
+      description: 'Preview which Engram memories match a query.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          query: stringProperty('Task or search query.'),
+          task: stringProperty('Alternative task text.')
+        }
+      }
+    },
+    {
+      name: 'engram_search',
+      description: 'Search Engram memory.',
+      inputSchema: {
+        type: 'object',
+        properties: { query: stringProperty('Search query.') }
+      }
+    },
+    {
+      name: 'engram_verify',
+      description: 'Verify Engram memory integrity.',
+      inputSchema: {
+        type: 'object',
+        properties: { scope: stringProperty('Optional scope: workspace, global, or all.') }
+      }
+    },
+    {
+      name: 'engram_status',
+      description: 'Show Engram memory health and status.',
+      inputSchema: { type: 'object', properties: {} }
+    },
+    {
+      name: 'engram_set_role',
+      description: 'Set active Engram role filters.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          role: stringProperty('Comma-separated roles.'),
+          roles: {
+            oneOf: [
+              { type: 'string' },
+              { type: 'array', items: { type: 'string' } }
+            ],
+            description: 'Roles as string or array.'
+          }
+        }
+      }
+    },
+    {
+      name: 'engram_set_rule_variant',
+      description: 'Set active Engram rule strictness variant.',
+      inputSchema: {
+        type: 'object',
+        properties: { variant: stringProperty('Rule variant: light, balanced, strict, or status.') }
+      }
+    },
+    {
+      name: 'engram_save',
+      description: 'Preview a human-approved Engram memory save proposal. Does not write silently.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          text: stringProperty('Memory candidate text.'),
+          type: stringProperty('Optional type: rule, skill, workflow, or knowledge.'),
+          scope: stringProperty('Optional save scope.'),
+          role: stringProperty('Optional role metadata.')
+        },
+        required: ['text']
+      }
+    },
+    {
+      name: 'engram_save_session',
+      description: 'Preview multiple human-approved Engram memory save proposals. Does not write silently.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          text: stringProperty('TYPE/TEXT memory candidate lines.'),
+          scope: stringProperty('Optional save scope.'),
+          role: stringProperty('Optional role metadata.'),
+          showRuleVariants: { type: 'boolean', description: 'Include rule variant previews.' }
+        },
+        required: ['text']
+      }
+    }
+  ];
 }
 
 function mcpMethod(request: any): string | undefined {
@@ -145,7 +274,7 @@ export async function runMcp(): Promise<void> {
   for await (const line of rl) {
     if (!line.trim()) continue;
     const response = await handleMcp(JSON.parse(line));
-    process.stdout.write(`${JSON.stringify(response)}\n`);
+    if (response !== undefined) process.stdout.write(`${JSON.stringify(response)}\n`);
   }
 }
 

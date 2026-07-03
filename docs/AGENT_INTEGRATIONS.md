@@ -146,7 +146,7 @@ Direct terminal CLI remains A/B/C. MCP proposal tools remain no-write.
 | `gemini` | `GEMINI.md`; global: `~/.gemini/GEMINI.md`, `~/.gemini/skills/engram/SKILL.md`, Gemini MCP config | Gemini CLI context, including current Antigravity Gemini-compatible surfaces |
 | `cline` | `.clinerules` | Cline-style workspace rules |
 | `windsurf` | `.windsurf/rules/engram.md`; global: `~/.codeium/windsurf/memories/global_rules.md`, `~/.codeium/windsurf/mcp_config.json` | Windsurf workspace rules and global rules/MCP |
-| `opencode` | `AGENTS.md`, `.opencode/engram.md`, `.opencode/skills/engram/SKILL.md`, `opencode.json` (or existing `opencode.jsonc`); global: `~/.config/opencode/AGENTS.md`, `~/.config/opencode/engram.md`, `~/.config/opencode/skills/engram/SKILL.md`, `~/.config/opencode/opencode.json` (or existing `opencode.jsonc`) | OpenCode rules, Agent Skill, MCP tools, custom commands, and plugin hooks |
+| `opencode` | `AGENTS.md`, `.opencode/engram.md`, `.opencode/skills/engram/SKILL.md`, `opencode.json` (or existing `opencode.jsonc`); global: `~/.config/opencode/AGENTS.md`, `~/.config/opencode/engram.md`, `~/.config/opencode/skills/engram/SKILL.md`, `~/.config/opencode/opencode.jsonc` (or existing `opencode.json`) | OpenCode rules, Agent Skill, MCP tools, custom commands, and plugin hooks |
 | `mcp` | `.mcp.json`; global: Claude and Gemini MCP config files | MCP-style JSON-lines wrapper registration |
 | `slash` | `.claude/commands/engram.md`, `.claude/skills/engram/SKILL.md`, `.cursor/commands/engram.md`, `.gemini/commands/engram.toml`, `.opencode/commands/engram.md` | Native `/engram` slash adapters |
 
@@ -159,8 +159,8 @@ by default. Workspace target links write `.mcp.json` (or `.cursor/mcp.json` for
 Cursor); workspace OpenCode links write the `mcp` field into project
 `opencode.json` or an existing `opencode.jsonc`; global Claude links write `~/.claude/mcp.json`; global Gemini
 and Antigravity-compatible links write the Gemini MCP config file; global
-OpenCode links write the `mcp` field into `~/.config/opencode/opencode.json` or an
-existing `~/.config/opencode/opencode.jsonc`;
+OpenCode links write the `mcp` field into `~/.config/opencode/opencode.jsonc` or an
+existing `~/.config/opencode/opencode.json`;
 global Cursor links bundle MCP in the local plugin; global Windsurf links write
 `~/.codeium/windsurf/mcp_config.json`. Windsurf workspace MCP is skipped
 because the official contract documents only user-level MCP config.
@@ -499,12 +499,15 @@ OpenCode reads project `AGENTS.md` and global `~/.config/opencode/AGENTS.md`
 for rules. Engram writes a managed block there, writes the full guide to
 `.opencode/engram.md` or `~/.config/opencode/engram.md`, writes the full skill
 to `.opencode/skills/engram/SKILL.md` or
-`~/.config/opencode/skills/engram/SKILL.md`, and reserves `opencode.json` (or an
-existing `opencode.jsonc`) for
+`~/.config/opencode/skills/engram/SKILL.md`, and reserves project `opencode.json` (or an
+existing `opencode.jsonc`) and global `~/.config/opencode/opencode.jsonc` for
 MCP registration. Engram registers the Engram MCP server in project
-`opencode.json` / `opencode.jsonc` and global `~/.config/opencode/opencode.json` /
-`~/.config/opencode/opencode.jsonc` so OpenCode can
-use `engram_load`, `engram_search`, and other MCP tools directly. The `slash`
+`opencode.json` / `opencode.jsonc` and global `~/.config/opencode/opencode.jsonc` /
+`~/.config/opencode/opencode.json` so OpenCode can
+use `engram_load`, `engram_search`, and other MCP tools directly. The MCP
+server implements the standard JSON-RPC handshake (`initialize`,
+`notifications/initialized`, `tools/list`, and `tools/call`) so OpenCode can
+discover and call Engram tools. The `slash`
 target writes `.opencode/commands/engram.md` so `/engram <args>` becomes a
 native custom command in OpenCode. When an existing human-authored
 `opencode.json` or `opencode.jsonc` already has MCP entries, Engram merges only `mcp.engram`

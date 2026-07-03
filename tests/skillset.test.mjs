@@ -289,13 +289,14 @@ test('global skill-capable targets write host skill folders', async () => {
   assert.match(opencode.stdout, /WRITTEN open-code: .*opencode[\\\/]AGENTS\.md/);
   assert.match(opencode.stdout, /WRITTEN open-code: .*opencode[\\\/]skills[\\\/]engram[\\\/]SKILL\.md/);
   assert.match(opencode.stdout, /WRITTEN open-code: .*opencode[\\\/]engram\.md/);
-  assert.match(opencode.stdout, /WRITTEN open-code: .*opencode[\\\/]opencode\.json/);
-  const globalAgents = await readFile(path.join(configHome, 'opencode', 'AGENTS.md'), 'utf8');
+  assert.match(opencode.stdout, /WRITTEN open-code: .*opencode[\\\/]opencode\.jsonc/);
+  const opencodeHome = path.join(agentHome, '.config', 'opencode');
+  const globalAgents = await readFile(path.join(opencodeHome, 'AGENTS.md'), 'utf8');
   assert.match(globalAgents, /Full guide: `~\/\.config\/opencode\/engram\.md`/);
-  assert.match(await readFile(path.join(configHome, 'opencode', 'engram.md'), 'utf8'), /Global Startup/);
-  assert.match(await readFile(path.join(configHome, 'opencode', 'skills', 'engram', 'SKILL.md'), 'utf8'), /Default agent mode: compact/);
-  const globalOpencodeConfig = JSON.parse(await readFile(path.join(configHome, 'opencode', 'opencode.json'), 'utf8'));
-  assert.ok(globalOpencodeConfig.mcp && globalOpencodeConfig.mcp.engram, 'global opencode.json should include engram MCP config');
+  assert.match(await readFile(path.join(opencodeHome, 'engram.md'), 'utf8'), /Global Startup/);
+  assert.match(await readFile(path.join(opencodeHome, 'skills', 'engram', 'SKILL.md'), 'utf8'), /Default agent mode: compact/);
+  const globalOpencodeConfig = JSON.parse(await readFile(path.join(opencodeHome, 'opencode.jsonc'), 'utf8'));
+  assert.ok(globalOpencodeConfig.mcp && globalOpencodeConfig.mcp.engram, 'global opencode.jsonc should include engram MCP config');
   assert.deepEqual(globalOpencodeConfig.mcp.engram.command, ['npx', '-y', '--package', '@the-long-ride/engram', 'engram-mcp']);
 
   const slash = await runEngram(cwd, globalEnv, ['link', '--global', 'slash']);
@@ -309,12 +310,35 @@ test('global skill-capable targets write host skill folders', async () => {
   await rm(cwd, { recursive: true, force: true });
 });
 
+test('global opencode ignores generic config home and writes ~/.config/opencode defaults', async () => {
+  const { cwd, env } = await tempWorkspace('engram-opencode-global-config-home-');
+  const agentHome = path.join(cwd, 'agent-home');
+  const configHome = path.join(cwd, 'agent-config');
+  const appDataHome = path.join(cwd, 'appdata');
+  const globalEnv = {
+    ...env,
+    ENGRAM_AGENT_HOME: agentHome,
+    ENGRAM_AGENT_CONFIG_HOME: configHome,
+    APPDATA: appDataHome
+  };
+  delete globalEnv.XDG_CONFIG_HOME;
+
+  const result = await runEngram(cwd, globalEnv, ['link', '--global', 'opencode']);
+  assert.equal(result.code, 0, result.stderr);
+  const opencodeHome = path.join(agentHome, '.config', 'opencode');
+  assert.match(await readFile(path.join(opencodeHome, 'AGENTS.md'), 'utf8'), /~\/\.config\/opencode\/engram\.md/);
+  assert.match(await readFile(path.join(opencodeHome, 'skills', 'engram', 'SKILL.md'), 'utf8'), /Engram Memory Management Skill/);
+  assert.ok(JSON.parse(await readFile(path.join(opencodeHome, 'opencode.jsonc'), 'utf8')).mcp?.engram);
+  await assert.rejects(readFile(path.join(configHome, 'opencode', 'opencode.jsonc'), 'utf8'));
+  await assert.rejects(readFile(path.join(appDataHome, 'opencode', 'opencode.jsonc'), 'utf8'));
+  await rm(cwd, { recursive: true, force: true });
+});
+
 test('global opencode MCP merges into existing human-authored opencode.json', async () => {
   const { cwd, env } = await tempWorkspace('engram-skillset-global-');
   const agentHome = path.join(cwd, 'agent-home');
-  const configHome = path.join(cwd, 'agent-config');
-  const globalEnv = { ...env, ENGRAM_AGENT_HOME: agentHome, ENGRAM_AGENT_CONFIG_HOME: configHome };
-  const opencodeDir = path.join(configHome, 'opencode');
+  const globalEnv = { ...env, ENGRAM_AGENT_HOME: agentHome };
+  const opencodeDir = path.join(agentHome, '.config', 'opencode');
   await mkdir(opencodeDir, { recursive: true });
   await writeFile(path.join(opencodeDir, 'opencode.json'), JSON.stringify({
     $schema: 'https://opencode.ai/config.json',
@@ -370,9 +394,8 @@ test('workspace opencode force link preserves unparseable opencode.jsonc', async
 test('global opencode MCP merges into existing human-authored opencode.jsonc', async () => {
   const { cwd, env } = await tempWorkspace('engram-opencode-global-jsonc-');
   const agentHome = path.join(cwd, 'agent-home');
-  const configHome = path.join(cwd, 'agent-config');
-  const globalEnv = { ...env, ENGRAM_AGENT_HOME: agentHome, ENGRAM_AGENT_CONFIG_HOME: configHome };
-  const opencodeDir = path.join(configHome, 'opencode');
+  const globalEnv = { ...env, ENGRAM_AGENT_HOME: agentHome };
+  const opencodeDir = path.join(agentHome, '.config', 'opencode');
   await mkdir(opencodeDir, { recursive: true });
   await writeFile(path.join(opencodeDir, 'opencode.jsonc'), [
     '{',
@@ -397,9 +420,8 @@ test('global opencode MCP merges into existing human-authored opencode.jsonc', a
 test('global opencode force link preserves unparseable config', async () => {
   const { cwd, env } = await tempWorkspace('engram-opencode-global-invalid-');
   const agentHome = path.join(cwd, 'agent-home');
-  const configHome = path.join(cwd, 'agent-config');
-  const globalEnv = { ...env, ENGRAM_AGENT_HOME: agentHome, ENGRAM_AGENT_CONFIG_HOME: configHome };
-  const opencodeDir = path.join(configHome, 'opencode');
+  const globalEnv = { ...env, ENGRAM_AGENT_HOME: agentHome };
+  const opencodeDir = path.join(agentHome, '.config', 'opencode');
   const opencodeJsonPath = path.join(opencodeDir, 'opencode.json');
   const invalidConfig = '{\n  "plugin": ["user-plugin"],\n  "mcp": {\n';
   await mkdir(opencodeDir, { recursive: true });
@@ -1026,14 +1048,13 @@ test('workspace refresh updates only engram server in user cursor mcp.json', asy
   await rm(cwd, { recursive: true, force: true });
 });
 
-test('global unlink opencode removes engram MCP from opencode.json', async () => {
+test('global unlink opencode removes engram MCP from opencode.jsonc', async () => {
   const { cwd, env } = await tempWorkspace('engram-unlink-global-opencode-');
   const agentHome = path.join(cwd, 'agent-home');
-  const configHome = path.join(cwd, 'agent-config');
-  const globalEnv = { ...env, ENGRAM_AGENT_HOME: agentHome, ENGRAM_AGENT_CONFIG_HOME: configHome };
+  const globalEnv = { ...env, ENGRAM_AGENT_HOME: agentHome, ENGRAM_AGENT_CONFIG_HOME: path.join(cwd, 'agent-config') };
 
   await runEngram(cwd, globalEnv, ['link', '--global', 'opencode']);
-  const opencodeJsonPath = path.join(configHome, 'opencode', 'opencode.json');
+  const opencodeJsonPath = path.join(agentHome, '.config', 'opencode', 'opencode.jsonc');
   const linked = JSON.parse(await readFile(opencodeJsonPath, 'utf8'));
   assert.ok(linked.mcp?.engram, 'global link should add engram MCP');
 

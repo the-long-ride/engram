@@ -2,7 +2,7 @@
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import { formatRecords, type RecordBlock } from '../cli/format.js';
-import { globalAgentHome, globalAgentConfigHome } from './agent-paths.js';
+import { globalAgentHome, globalOpenCodeConfigHome } from './agent-paths.js';
 import {
   isGeneratedOpenCodeHookPlugin,
   renderOpenCodeHookPlugin
@@ -92,7 +92,7 @@ const TARGETS: Record<AgentHookHost, HookTarget> = {
     kind: 'plugin',
     host: 'opencode',
     configFile: path.join('.opencode', 'plugins', 'engram.js'),
-    globalFile: () => path.join(globalAgentConfigHome(), 'opencode', 'plugins', 'engram.js'),
+    globalFile: () => path.join(globalOpenCodeConfigHome(), 'plugins', 'engram.js'),
     events: ['chat.message', 'experimental.chat.system.transform']
   }
 };

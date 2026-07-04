@@ -55,9 +55,10 @@ graph TD
     end
 
     subgraph Write ["写入路径"]
-        Proposal["提议流程\n(save, save-session, take-control, metacognize)"]:::action
+        Proposal["提议 / 预览流程\n(save, save-session / propose,\ntake-control, metacognize,\nresolve-conflicts)"]:::action
+        Observe["Observe 只写入\n已净化的 inbox note"]:::action
         Scan["安全检查\n(PII、secrets、prompt injection)"]:::action
-        Review["人工审批关口\n(A / B / C 或显式 accept-all)"]:::action
+        Review["人工审批关口\n(A / B / C 或 yes / audit / cancel，\n以及显式 accept-all)"]:::action
         Persist["写入已批准的 Markdown 记忆"]:::action
         Rebuild["刷新 hashes、index、graph、\n以及可选 sqlite-vec"]:::action
     end
@@ -89,16 +90,110 @@ graph TD
     Inject --> Proof
     Proof -->|仅用于可见性| AI
     AI -->|提议持久内存| Proposal
+    AI -->|记录原始笔记| Observe
     Proposal --> Scan
     Scan --> Review
     User -->|批准、拒绝或编辑| Review
     Review --> Persist
+    Observe --> Workspace
+    Observe --> Global
     Persist --> Workspace
     Persist --> Global
     Persist --> Rebuild
     Rebuild --> Derived
     Workspace --> Sync
     Global --> Sync
+```
+
+---
+
+### DB 与记忆架构
+
+```mermaid
+flowchart TB
+    classDef source fill:#234e52,stroke:#319795,stroke-width:2px,color:#fff;
+    classDef derived fill:#2c5282,stroke:#4299e1,stroke-width:1px,color:#fff;
+    classDef runtime fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#fff;
+    classDef write fill:#744210,stroke:#d69e2e,stroke-width:1px,color:#fff;
+
+    Agent["智能体 / CLI / MCP / Hook"]:::runtime
+    Query["load, search, route"]:::runtime
+    Rank["路由并排序相关记忆"]:::runtime
+    WorkspaceMD["workspace Markdown 记忆\n(.agents/.engram/)"]:::source
+    GlobalMD["global/profile Markdown 记忆\n($ENGRAM_GLOBAL_DIR)"]:::source
+    Rebuild["重建派生层"]:::derived
+    Hashes["hashes"]:::derived
+    Index["JSON index"]:::derived
+    Graph["依赖图"]:::derived
+    Vec["可选 sqlite-vec"]:::derived
+    ConfigDB["可选 SQLite config DB\n(仅配置，不是真实来源)"]:::derived
+    Approve["人工审批"]:::write
+    Persist["写入已批准 Markdown"]:::write
+
+    Agent --> Query --> Rank
+    Rank --> WorkspaceMD
+    Rank --> GlobalMD
+    WorkspaceMD --> Rebuild
+    GlobalMD --> Rebuild
+    Rebuild --> Hashes
+    Rebuild --> Index
+    Rebuild --> Graph
+    Rebuild --> Vec
+    Query --> ConfigDB
+    Hashes --> Rank
+    Index --> Rank
+    Graph --> Rank
+    Vec --> Rank
+    Agent --> Approve --> Persist
+    Persist --> WorkspaceMD
+    Persist --> GlobalMD
+```
+
+### Scope 解析示例
+
+```mermaid
+flowchart TD
+    classDef scope fill:#234e52,stroke:#319795,stroke-width:2px,color:#fff;
+    classDef cmd fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#fff;
+    classDef result fill:#2c5282,stroke:#4299e1,stroke-width:1px,color:#fff;
+
+    subgraph Example1 ["示例 1：普通 workspace 任务"]
+        Cmd1["engram load --for-agents TASK"]:::cmd
+        Ws1["workspace 记忆"]:::scope
+        Prof1["固定或默认 profile"]:::scope
+        G1["global root"]:::scope
+        Out1["优先 workspace，\n再 fallback 到\nprofile/global"]:::result
+        Cmd1 --> Ws1 --> Out1
+        Cmd1 --> Prof1 --> Out1
+        Prof1 --> G1
+    end
+
+    subgraph Example2 ["示例 2：workspace 固定到 profile"]
+        Cmd2["engram profile use client-a --workspace"]:::cmd
+        Ws2["workspace 记忆"]:::scope
+        Prof2["固定 profile: client-a"]:::scope
+        Out2["此 workspace 内所有\n加载都使用 workspace +\nclient-a"]:::result
+        Cmd2 --> Ws2 --> Out2
+        Cmd2 --> Prof2 --> Out2
+    end
+
+    subgraph Example3 ["示例 3：显式指定其他 profile"]
+        Cmd3["engram load --profile ops TASK"]:::cmd
+        Prof3["显式 profile: ops"]:::scope
+        Off3["此命令禁用\nworkspace\n记忆"]:::result
+        Cmd3 --> Prof3 --> Off3
+    end
+
+    subgraph Example4 ["示例 4：global-only 模式"]
+        Cmd4["engram inject --global-only\n--global-path PATH"]:::cmd
+        G4["global root +\n所选 profile"]:::scope
+        Out4["没有 workspace root。\n读写都留在\nglobal。"]:::result
+        Cmd4 --> G4 --> Out4
+    end
+
+    Example1 --> Example2
+    Example2 --> Example3
+    Example3 --> Example4
 ```
 
 ---

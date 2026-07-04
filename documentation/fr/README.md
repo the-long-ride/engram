@@ -55,9 +55,10 @@ graph TD
     end
 
     subgraph Write ["Chemin d'écriture"]
-        Proposal["Flux de proposition\n(save, save-session, take-control, metacognize)"]:::action
+        Proposal["Flux de proposition / apercu\n(save, save-session / propose,\ntake-control, metacognize,\nresolve-conflicts)"]:::action
+        Observe["Observe ecrit\nseulement des notes sanitisees en inbox"]:::action
         Scan["Contrôles de sécurité\n(PII, secrets, prompt injection)"]:::action
-        Review["Porte d'approbation humaine\n(A / B / C ou flux accept-all explicites)"]:::action
+        Review["Porte d'approbation humaine\n(A / B / C ou yes / audit / cancel,\nplus flux accept-all explicites)"]:::action
         Persist["Écrire la mémoire Markdown approuvée"]:::action
         Rebuild["Rafraîchir hashes, index, graph,\net sqlite-vec optionnel"]:::action
     end
@@ -89,16 +90,110 @@ graph TD
     Inject --> Proof
     Proof -->|Visibilité seulement| AI
     AI -->|Propose une mémoire durable| Proposal
+    AI -->|Capture une note brute| Observe
     Proposal --> Scan
     Scan --> Review
     User -->|Approuve, rejette ou édite| Review
     Review --> Persist
+    Observe --> Workspace
+    Observe --> Global
     Persist --> Workspace
     Persist --> Global
     Persist --> Rebuild
     Rebuild --> Derived
     Workspace --> Sync
     Global --> Sync
+```
+
+---
+
+### Architecture Base de Donnees et Mémoires
+
+```mermaid
+flowchart TB
+    classDef source fill:#234e52,stroke:#319795,stroke-width:2px,color:#fff;
+    classDef derived fill:#2c5282,stroke:#4299e1,stroke-width:1px,color:#fff;
+    classDef runtime fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#fff;
+    classDef write fill:#744210,stroke:#d69e2e,stroke-width:1px,color:#fff;
+
+    Agent["Agents / CLI / MCP / Hooks"]:::runtime
+    Query["Charger, chercher, router"]:::runtime
+    Rank["Router et classer la memoire"]:::runtime
+    WorkspaceMD["Memoires Markdown du workspace\n(.agents/.engram/)"]:::source
+    GlobalMD["Memoires Markdown globales/profils\n($ENGRAM_GLOBAL_DIR)"]:::source
+    Rebuild["Reconstruire les couches derivees"]:::derived
+    Hashes["Hashes"]:::derived
+    Index["Index JSON"]:::derived
+    Graph["Graphe de dependances"]:::derived
+    Vec["sqlite-vec optionnel"]:::derived
+    ConfigDB["SQLite config DB optionnelle\n(config, pas source de verite)"]:::derived
+    Approve["Approbation humaine"]:::write
+    Persist["Ecrire le Markdown approuve"]:::write
+
+    Agent --> Query --> Rank
+    Rank --> WorkspaceMD
+    Rank --> GlobalMD
+    WorkspaceMD --> Rebuild
+    GlobalMD --> Rebuild
+    Rebuild --> Hashes
+    Rebuild --> Index
+    Rebuild --> Graph
+    Rebuild --> Vec
+    Query --> ConfigDB
+    Hashes --> Rank
+    Index --> Rank
+    Graph --> Rank
+    Vec --> Rank
+    Agent --> Approve --> Persist
+    Persist --> WorkspaceMD
+    Persist --> GlobalMD
+```
+
+### Exemples de Resolution de Scope
+
+```mermaid
+flowchart TD
+    classDef scope fill:#234e52,stroke:#319795,stroke-width:2px,color:#fff;
+    classDef cmd fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#fff;
+    classDef result fill:#2c5282,stroke:#4299e1,stroke-width:1px,color:#fff;
+
+    subgraph Example1 ["Exemple 1 : tache normale dans le workspace"]
+        Cmd1["engram load --for-agents TASK"]:::cmd
+        Ws1["Memoire workspace"]:::scope
+        Prof1["Profil epingle ou par defaut"]:::scope
+        G1["Racine globale"]:::scope
+        Out1["Workspace d'abord,\npuis repli\nprofil/global"]:::result
+        Cmd1 --> Ws1 --> Out1
+        Cmd1 --> Prof1 --> Out1
+        Prof1 --> G1
+    end
+
+    subgraph Example2 ["Exemple 2 : workspace epingle a un profil"]
+        Cmd2["engram profile use client-a --workspace"]:::cmd
+        Ws2["Memoire workspace"]:::scope
+        Prof2["Profil epingle : client-a"]:::scope
+        Out2["Tous les chargements\nutilisent workspace +\nclient-a"]:::result
+        Cmd2 --> Ws2 --> Out2
+        Cmd2 --> Prof2 --> Out2
+    end
+
+    subgraph Example3 ["Exemple 3 : profil explicite different"]
+        Cmd3["engram load --profile ops TASK"]:::cmd
+        Prof3["Profil explicite : ops"]:::scope
+        Off3["Workspace desactive\npour cette\ncommande"]:::result
+        Cmd3 --> Prof3 --> Off3
+    end
+
+    subgraph Example4 ["Exemple 4 : mode global-only"]
+        Cmd4["engram inject --global-only\n--global-path PATH"]:::cmd
+        G4["Racine globale +\nprofil choisi"]:::scope
+        Out4["Pas de racine workspace.\nLecture et ecriture\nglobales."]:::result
+        Cmd4 --> G4 --> Out4
+    end
+
+    Example1 --> Example2
+    Example2 --> Example3
+    Example3 --> Example4
 ```
 
 ---

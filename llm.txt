@@ -230,6 +230,41 @@ Profiles, scope, and save targets
 
 Global memory can be isolated into profiles for company, team, or personal use.
 
+Architecture sketch:
+
+```mermaid
+flowchart TD
+    Agent["Agent / CLI / MCP / Hook"] --> Query["load / search / route"]
+    Query --> Rank["rank relevant memory"]
+    Rank --> Workspace["workspace Markdown"]
+    Rank --> Global["global/profile Markdown"]
+    Workspace --> Rebuild["rebuild derived layers"]
+    Global --> Rebuild
+    Rebuild --> Hashes["hashes"]
+    Rebuild --> Index["index"]
+    Rebuild --> Graph["dependency graph"]
+    Rebuild --> Vec["optional sqlite-vec"]
+    Query --> Config["optional SQLite config DB"]
+```
+
+Scope examples:
+
+```mermaid
+flowchart TB
+    Normal["normal workspace load"] --> W1["workspace memory first"]
+    Normal --> P1["profile/global fallback"]
+    Pinned["workspace pinned profile"] --> W2["workspace memory"]
+    Pinned --> P2["pinned profile"]
+    Explicit["--profile different-name"] --> Off["workspace disabled for that command"]
+    GlobalOnly["global-only mode"] --> G["global root only"]
+    Normal --> Pinned
+    Pinned --> Explicit
+    Explicit --> GlobalOnly
+```
+
+Markdown memory stays source of truth. Hashes, index, graph, sqlite-vec, and
+the optional SQLite config DB are support layers only.
+
 Useful commands:
 
 - `engram profile create <name> --global-path <path>`

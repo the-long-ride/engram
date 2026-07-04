@@ -55,9 +55,10 @@ graph TD
     end
 
     subgraph Write ["Luồng ghi"]
-        Proposal["Luồng đề xuất\n(save, save-session, take-control, metacognize)"]:::action
+        Proposal["Luồng đề xuất / xem trước\n(save, save-session / propose,\ntake-control, metacognize,\nresolve-conflicts)"]:::action
+        Observe["Observe chi ghi\ninbox note da duoc lam sach"]:::action
         Scan["Kiểm tra an toàn\n(PII, bí mật, prompt injection)"]:::action
-        Review["Cổng phê duyệt của con người\n(A / B / C hoặc accept-all rõ ràng)"]:::action
+        Review["Cổng phê duyệt của con người\n(A / B / C hoặc yes / audit / cancel,\nkem theo accept-all ro rang)"]:::action
         Persist["Ghi bộ nhớ Markdown đã duyệt"]:::action
         Rebuild["Làm mới hashes, index, graph,\nvà sqlite-vec tùy chọn"]:::action
     end
@@ -89,16 +90,110 @@ graph TD
     Inject --> Proof
     Proof -->|Chỉ hiển thị| AI
     AI -->|Đề xuất bộ nhớ bền vững| Proposal
+    AI -->|Ghi chú thô| Observe
     Proposal --> Scan
     Scan --> Review
     User -->|Phê duyệt, từ chối hoặc chỉnh sửa| Review
     Review --> Persist
+    Observe --> Workspace
+    Observe --> Global
     Persist --> Workspace
     Persist --> Global
     Persist --> Rebuild
     Rebuild --> Derived
     Workspace --> Sync
     Global --> Sync
+```
+
+---
+
+### Kien Truc DB va Bo Nho
+
+```mermaid
+flowchart TB
+    classDef source fill:#234e52,stroke:#319795,stroke-width:2px,color:#fff;
+    classDef derived fill:#2c5282,stroke:#4299e1,stroke-width:1px,color:#fff;
+    classDef runtime fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#fff;
+    classDef write fill:#744210,stroke:#d69e2e,stroke-width:1px,color:#fff;
+
+    Agent["Tac nhan / CLI / MCP / Hook"]:::runtime
+    Query["load, search, route"]:::runtime
+    Rank["Dinh tuyen va xep hang bo nho"]:::runtime
+    WorkspaceMD["Bo nho Markdown workspace\n(.agents/.engram/)"]:::source
+    GlobalMD["Bo nho Markdown global/profile\n($ENGRAM_GLOBAL_DIR)"]:::source
+    Rebuild["Dung lai cac lop dan xuat"]:::derived
+    Hashes["hashes"]:::derived
+    Index["JSON index"]:::derived
+    Graph["Do thi phu thuoc"]:::derived
+    Vec["sqlite-vec tuy chon"]:::derived
+    ConfigDB["SQLite config DB tuy chon\n(cau hinh, khong phai nguon su that)"]:::derived
+    Approve["Con nguoi phe duyet"]:::write
+    Persist["Ghi Markdown da duyet"]:::write
+
+    Agent --> Query --> Rank
+    Rank --> WorkspaceMD
+    Rank --> GlobalMD
+    WorkspaceMD --> Rebuild
+    GlobalMD --> Rebuild
+    Rebuild --> Hashes
+    Rebuild --> Index
+    Rebuild --> Graph
+    Rebuild --> Vec
+    Query --> ConfigDB
+    Hashes --> Rank
+    Index --> Rank
+    Graph --> Rank
+    Vec --> Rank
+    Agent --> Approve --> Persist
+    Persist --> WorkspaceMD
+    Persist --> GlobalMD
+```
+
+### Vi Du Giai Scope
+
+```mermaid
+flowchart TD
+    classDef scope fill:#234e52,stroke:#319795,stroke-width:2px,color:#fff;
+    classDef cmd fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#fff;
+    classDef result fill:#2c5282,stroke:#4299e1,stroke-width:1px,color:#fff;
+
+    subgraph Example1 ["Vi du 1: tac vu workspace thong thuong"]
+        Cmd1["engram load --for-agents TASK"]:::cmd
+        Ws1["Bo nho workspace"]:::scope
+        Prof1["Profile ghim hoac mac dinh"]:::scope
+        G1["Global root"]:::scope
+        Out1["Workspace uu tien,\nsau do profile/global\nfallback"]:::result
+        Cmd1 --> Ws1 --> Out1
+        Cmd1 --> Prof1 --> Out1
+        Prof1 --> G1
+    end
+
+    subgraph Example2 ["Vi du 2: workspace ghim vao profile"]
+        Cmd2["engram profile use client-a --workspace"]:::cmd
+        Ws2["Bo nho workspace"]:::scope
+        Prof2["Profile ghim: client-a"]:::scope
+        Out2["Moi lan load trong\nworkspace nay su dung\nworkspace + client-a"]:::result
+        Cmd2 --> Ws2 --> Out2
+        Cmd2 --> Prof2 --> Out2
+    end
+
+    subgraph Example3 ["Vi du 3: chi dinh profile khac"]
+        Cmd3["engram load --profile ops TASK"]:::cmd
+        Prof3["Profile chi dinh: ops"]:::scope
+        Off3["Tat bo nho\nworkspace cho\nlenh nay"]:::result
+        Cmd3 --> Prof3 --> Off3
+    end
+
+    subgraph Example4 ["Vi du 4: che do global-only"]
+        Cmd4["engram inject --global-only\n--global-path PATH"]:::cmd
+        G4["Global root +\nprofile duoc chon"]:::scope
+        Out4["Khong co workspace root.\nDoc va luu deu\no global."]:::result
+        Cmd4 --> G4 --> Out4
+    end
+
+    Example1 --> Example2
+    Example2 --> Example3
+    Example3 --> Example4
 ```
 
 ---

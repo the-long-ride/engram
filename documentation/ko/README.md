@@ -55,9 +55,10 @@ graph TD
     end
 
     subgraph Write ["쓰기 경로"]
-        Proposal["제안 흐름\n(save, save-session, take-control, metacognize)"]:::action
+        Proposal["제안 / 미리보기 흐름\n(save, save-session / propose,\ntake-control, metacognize,\nresolve-conflicts)"]:::action
+        Observe["Observe 는\n정제된 inbox note 만 기록"]:::action
         Scan["안전성 검사\n(PII, 비밀정보, prompt injection)"]:::action
-        Review["사람 승인 게이트\n(A / B / C 또는 명시적 accept-all)"]:::action
+        Review["사람 승인 게이트\n(A / B / C 또는 yes / audit / cancel,\n그리고 명시적 accept-all)"]:::action
         Persist["승인된 Markdown 메모리 기록"]:::action
         Rebuild["hashes, index, graph,\n선택적 sqlite-vec 갱신"]:::action
     end
@@ -89,16 +90,110 @@ graph TD
     Inject --> Proof
     Proof -->|표시만| AI
     AI -->|지속 메모리 제안| Proposal
+    AI -->|원시 노트 기록| Observe
     Proposal --> Scan
     Scan --> Review
     User -->|승인, 거절, 편집| Review
     Review --> Persist
+    Observe --> Workspace
+    Observe --> Global
     Persist --> Workspace
     Persist --> Global
     Persist --> Rebuild
     Rebuild --> Derived
     Workspace --> Sync
     Global --> Sync
+```
+
+---
+
+### DB 및 메모리 아키텍처
+
+```mermaid
+flowchart TB
+    classDef source fill:#234e52,stroke:#319795,stroke-width:2px,color:#fff;
+    classDef derived fill:#2c5282,stroke:#4299e1,stroke-width:1px,color:#fff;
+    classDef runtime fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#fff;
+    classDef write fill:#744210,stroke:#d69e2e,stroke-width:1px,color:#fff;
+
+    Agent["에이전트 / CLI / MCP / Hook"]:::runtime
+    Query["load, search, route"]:::runtime
+    Rank["관련 메모리 라우팅 및 우선순위"]:::runtime
+    WorkspaceMD["workspace Markdown 메모리\n(.agents/.engram/)"]:::source
+    GlobalMD["global/profile Markdown 메모리\n($ENGRAM_GLOBAL_DIR)"]:::source
+    Rebuild["파생 계층 재구성"]:::derived
+    Hashes["hashes"]:::derived
+    Index["JSON index"]:::derived
+    Graph["의존성 그래프"]:::derived
+    Vec["선택형 sqlite-vec"]:::derived
+    ConfigDB["선택형 SQLite config DB\n(설정용, 진실의 원천 아님)"]:::derived
+    Approve["사람 승인"]:::write
+    Persist["승인된 Markdown 기록"]:::write
+
+    Agent --> Query --> Rank
+    Rank --> WorkspaceMD
+    Rank --> GlobalMD
+    WorkspaceMD --> Rebuild
+    GlobalMD --> Rebuild
+    Rebuild --> Hashes
+    Rebuild --> Index
+    Rebuild --> Graph
+    Rebuild --> Vec
+    Query --> ConfigDB
+    Hashes --> Rank
+    Index --> Rank
+    Graph --> Rank
+    Vec --> Rank
+    Agent --> Approve --> Persist
+    Persist --> WorkspaceMD
+    Persist --> GlobalMD
+```
+
+### scope 해석 예시
+
+```mermaid
+flowchart TD
+    classDef scope fill:#234e52,stroke:#319795,stroke-width:2px,color:#fff;
+    classDef cmd fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#fff;
+    classDef result fill:#2c5282,stroke:#4299e1,stroke-width:1px,color:#fff;
+
+    subgraph Example1 ["예시 1: 일반 workspace 작업"]
+        Cmd1["engram load --for-agents TASK"]:::cmd
+        Ws1["workspace 메모리"]:::scope
+        Prof1["고정 또는 기본 profile"]:::scope
+        G1["global root"]:::scope
+        Out1["workspace 우선,\n다음 profile/global\nfallback"]:::result
+        Cmd1 --> Ws1 --> Out1
+        Cmd1 --> Prof1 --> Out1
+        Prof1 --> G1
+    end
+
+    subgraph Example2 ["예시 2: workspace 에 profile 고정"]
+        Cmd2["engram profile use client-a --workspace"]:::cmd
+        Ws2["workspace 메모리"]:::scope
+        Prof2["고정 profile: client-a"]:::scope
+        Out2["이 workspace 의 모든\nload 는 workspace +\nclient-a 사용"]:::result
+        Cmd2 --> Ws2 --> Out2
+        Cmd2 --> Prof2 --> Out2
+    end
+
+    subgraph Example3 ["예시 3: 다른 profile 명시"]
+        Cmd3["engram load --profile ops TASK"]:::cmd
+        Prof3["명시 profile: ops"]:::scope
+        Off3["이 명령에서는\nworkspace\n비활성화"]:::result
+        Cmd3 --> Prof3 --> Off3
+    end
+
+    subgraph Example4 ["예시 4: global-only 모드"]
+        Cmd4["engram inject --global-only\n--global-path PATH"]:::cmd
+        G4["global root +\n선택 profile"]:::scope
+        Out4["workspace root 없음.\n읽기와 저장 모두\nglobal."]:::result
+        Cmd4 --> G4 --> Out4
+    end
+
+    Example1 --> Example2
+    Example2 --> Example3
+    Example3 --> Example4
 ```
 
 ---

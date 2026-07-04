@@ -175,6 +175,18 @@ engram set-proof compact
 ```
 Cài đặt hook v1 khả dụng cho `codex`, `claude`, `gemini`, `opencode`, `cursor` và `windsurf`/`cascade`. Khả năng tương thích với Antigravity hiện định tuyến qua `gemini`. Hook Cursor bơm ngữ cảnh khởi động qua `sessionStart` và `additional_context`; `beforeSubmitPrompt` chỉ cho phép Allow/Block, không phải bơm ngữ cảnh. Hook Windsurf/Cascade có thể kiểm tra/tải trước/chặn trên `pre_user_prompt` nhưng không thể bơm ngữ cảnh mô hình; rules và MCP cung cấp kênh ngữ cảnh AI đáng tin cậy. Copilot và Cline vẫn hoạt động dựa trên hướng dẫn/skillset/tải thủ công cho đến khi các bề mặt hook của chúng hỗ trợ bơm ngữ cảnh đáng tin cậy tại thời điểm prompt.
 Sử dụng `engram set-proof compact` khi bạn muốn các hook được hỗ trợ nối thêm một dòng ngắn `Engram proof:` vào mỗi lượt đủ điều kiện để hiển thị xem bộ nhớ Engram đã được tải, sử dụng lại hay bỏ qua mà không làm thay đổi hành vi bơm của `set-read`.
+Mục MCP được tạo cho OpenCode là:
+
+```json
+"engram": {
+  "type": "local",
+  "command": ["engram-mcp"],
+  "args": [],
+  "enabled": true
+}
+```
+
+Plugin cục bộ vẫn nằm ở `~/.config/opencode/plugins/engram.js`; không thêm mục `plugin` kiểu npm cho tệp cục bộ đó.
 
 ### 3. Khởi tạo Không gian làm việc
 Chạy lệnh này tại thư mục gốc của dự án:

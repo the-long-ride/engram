@@ -175,6 +175,18 @@ engram set-proof compact
 ```
 v1 훅 설치는 `codex`, `claude`, `gemini`, `opencode`, `cursor`, `windsurf`/`cascade`에서 사용할 수 있습니다. Antigravity 호환성은 현재 `gemini`를 통해 라우팅됩니다. Cursor 훅은 `sessionStart` 및 `additional_context`를 통해 시작 컨텍스트를 주입하며, `beforeSubmitPrompt`는 허용/차단 전용으로 컨텍스트 주입이 아닙니다. Windsurf/Cascade 훅은 `pre_user_prompt`에서 감사/사전 로드/차단이 가능하지만 모델 컨텍스트를 주입할 수 없으며, rules와 MCP가 신뢰할 수 있는 AI 컨텍스트 채널을 제공합니다. Copilot과 Cline은 훅 표면이 프롬프트 시점에 안정적인 컨텍스트 주입을 지원할 때까지 지침/스킬셋/수동 로드 방식으로 유지됩니다.
 `set-read` 주입 동작을 변경하지 않고 각 적격 턴마다 Engram 메모리가 로드, 재사용 또는 건너뛰었는지 여부를 보여주는 짧 'Engram proof:' 줄을 지원되는 훅이 추가하도록 하려면 `engram set-proof compact`를 사용하십시오.
+OpenCode용으로 생성되는 MCP 항목은 다음과 같습니다:
+
+```json
+"engram": {
+  "type": "local",
+  "command": ["engram-mcp"],
+  "args": [],
+  "enabled": true
+}
+```
+
+로컬 plugin은 `~/.config/opencode/plugins/engram.js`에 유지됩니다. 이 로컬 파일에 대해 npm 스타일 `plugin` 항목을 추가하지 마세요.
 
 
 ### 3. 워크스페이스 초기화

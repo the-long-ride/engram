@@ -175,6 +175,18 @@ engram set-proof compact
 ```
 Las instalaciones de hooks v1 están disponibles para `codex`, `claude`, `gemini`, `opencode`, `cursor` y `windsurf`/`cascade`. La compatibilidad con Antigravity actualmente se enruta a través de `gemini`. Los hooks de Cursor inyectan contexto de inicio vía `sessionStart` y `additional_context`; `beforeSubmitPrompt` es solo allow/block, no inyección de contexto. Los hooks de Windsurf/Cascade pueden auditar/pre-cargar/bloquear en `pre_user_prompt` pero no pueden inyectar contexto de modelo; las rules y MCP proporcionan los canales confiables de contexto AI. Copilot y Cline siguen siendo impulsados por instrucciones/skillset/carga manual hasta que sus superficies de hook admitan una inyección de contexto confiable en el momento del prompt.
 Use `engram set-proof compact` cuando desee que los hooks compatibles agreguen una línea corta `Engram proof:` en cada turno elegible para mostrar si la memoria de Engram fue cargada, reutilizada o omitida sin cambiar el comportamiento de inyección de `set-read`.
+Para OpenCode, la entrada MCP generada es:
+
+```json
+"engram": {
+  "type": "local",
+  "command": ["engram-mcp"],
+  "args": [],
+  "enabled": true
+}
+```
+
+El plugin local permanece en `~/.config/opencode/plugins/engram.js`; no agregue una entrada `plugin` de estilo npm para ese archivo local.
 
 
 ### 3. Inicializar el Espacio de Trabajo

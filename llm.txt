@@ -298,6 +298,21 @@ session IDs, host, cwd, and routed signatures only. `engram unlink --global
 opencode` removes only the Engram-generated plugin; a human-authored
 `engram.js` is preserved unless `--force` is explicit.
 
+OpenCode MCP config uses a simple local entry:
+
+```json
+"engram": {
+  "type": "local",
+  "command": ["engram-mcp"],
+  "args": [],
+  "enabled": true
+}
+```
+
+The local JavaScript plugin is loaded from
+`~/.config/opencode/plugins/engram.js`; do not add an npm-style `plugin` entry
+for that local file.
+
 The current public Antigravity fallback is `gemini`. Hidden compatibility aliases
 may still exist, but they should not be the default public recommendation.
 

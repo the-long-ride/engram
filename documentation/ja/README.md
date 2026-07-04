@@ -175,6 +175,18 @@ engram set-proof compact
 ```
 v1 フックのインストールは `codex`、`claude`、`gemini`、`opencode`、`cursor`、`windsurf`/`cascade` で利用可能です。Antigravity との互換性は現在 `gemini` を経由してルーティングされます。Cursor フックは `sessionStart` と `additional_context` を介して起動時コンテキストを注入します。`beforeSubmitPrompt` は allow/block のみで、コンテキスト注入ではありません。Windsurf/Cascade のフックは `pre_user_prompt` で監査/プリロード/ブロックが可能ですが、モデルコンテキストの注入はできません。rules と MCP が信頼できる AI コンテキストチャネルを提供します。Copilot と Cline は、フックのインターフェースがプロンプト実行時の信頼性の高いコンテキスト注入をサポートするまで、指示/スキルセット/手動ロード駆動のままとなります。
 `set-read` の注入動作を変更せずに、サポートされているフックが対象となるターンごとに Engram メモリがロード、再利用、またはスキップされたかを示す短い `Engram proof:` 行を追加したい場合は、`engram set-proof compact` を使用します。
+OpenCode 向けに生成される MCP エントリは次です:
+
+```json
+"engram": {
+  "type": "local",
+  "command": ["engram-mcp"],
+  "args": [],
+  "enabled": true
+}
+```
+
+ローカル plugin は `~/.config/opencode/plugins/engram.js` のままです。このローカルファイル用に npm 形式の `plugin` エントリは追加しません。
 
 
 ### 3. ワークスペースの初期化

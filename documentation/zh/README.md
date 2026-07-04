@@ -175,6 +175,18 @@ engram set-proof compact
 ```
 v1 钩子安装可用于 `codex`、`claude`、`gemini`、`opencode`、`cursor` 和 `windsurf`/`cascade`。Antigravity 的兼容性目前通过 `gemini` 进行路由。Cursor 钩子通过 `sessionStart` 和 `additional_context` 注入启动上下文；`beforeSubmitPrompt` 仅支持允许/阻止模式，而非上下文注入。Windsurf/Cascade 钩子可以在 `pre_user_prompt` 上进行审计/预加载/阻止，但无法注入模型上下文；rules 和 MCP 提供可靠的 AI 上下文通道。Copilot 和 Cline 仍由指令/技能集/手动加载驱动，直到它们的钩子表面支持在提示时进行可靠的上下文注入。
 当您希望支持的钩子在每个符合条件的轮次中追加一行简短的 `Engram proof:`，以显示 Engram 内存是被加载、重用还是跳过，而不改变 `set-read` 的注入行为时，请使用 `engram set-proof compact`。
+为 OpenCode 生成的 MCP 条目如下：
+
+```json
+"engram": {
+  "type": "local",
+  "command": ["engram-mcp"],
+  "args": [],
+  "enabled": true
+}
+```
+
+本地 plugin 仍位于 `~/.config/opencode/plugins/engram.js`；不要为这个本地文件添加 npm 风格的 `plugin` 条目。
 
 
 ### 3. 初始化工作空间

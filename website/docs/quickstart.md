@@ -1,0 +1,181 @@
+---
+title: AI-Agent Quickstart
+sidebar_position: 2
+description: Start using Engram through your AI agent. Load memory, do the work, then propose durable memory when something useful emerges.
+---
+
+# AI-Agent Quickstart
+
+Use Engram through your agent first. The CLI exists, but the best experience is: ask the agent to load memory, do the work, then propose durable memory when something useful emerges.
+
+## AI-agent chat approval
+
+In AI-agent chat, Engram approval is conversational. The agent shows refined `TYPE: ... | TEXT: ...` candidates first, including Light/Balanced/Strict variants for rules. Reply `yes` to save the exact candidates, `audit` to revise them, or `cancel` to stop. After `yes`, the agent uses `engram save-session --accept-all` with the exact approved candidates. Direct terminal CLI saves still use A/B/C unless an accept-all command was explicitly invoked.
+
+## First message in a new session
+
+Ask:
+
+```text
+Use Engram for this task. Load memory for: <what we are doing>.
+```
+
+If slash adapters are installed:
+
+```text
+/engram load --for-agents "<current task>"
+```
+
+The agent should reply with a compact count line by default, such as `Engram loaded: 8 memories / 24 total related memories.` With slash adapters, `load --for-agents` is the agent-facing route.
+
+When an agent needs a self-contained Engram usage guide, run:
+
+```bash
+engram llm
+```
+
+This prints the packaged `llm.txt` guide and does not require `engram inject`.
+
+## Recommended setup conversation
+
+Ask the agent:
+
+```text
+Inject Engram memory routing for this workspace, configure it, and connect this agent.
+```
+
+The agent will suggest running:
+
+```bash
+engram entry
+```
+
+To configure memory and link AI agents in a clean web UI. Under the hood, to initialize the workspace:
+
+```bash
+engram inject
+```
+
+To link the same agent globally, so new workspaces can load Engram global memory without running `engram inject` first:
+
+```bash
+engram link --global <agent-name>
+```
+
+For chat-native use, ask:
+
+```text
+Install slash support so I can use /engram directly from this agent.
+```
+
+## Daily loop
+
+Start:
+
+```text
+/engram load --for-agents "current task"
+```
+
+During work:
+
+```text
+/engram search "topic I might be missing"
+```
+
+When the agent learns one durable fact:
+
+```text
+/engram save knowledge
+```
+
+When the session produced several useful rules, facts, or workflows:
+
+```text
+/engram save-session
+```
+
+Short form:
+
+```text
+/engram ss
+```
+
+To include recent chat history the agent can actually access:
+
+```text
+/engram save-session --query-level 3
+```
+
+`--query-level` must be a positive integer. The agent may use up to that many recent human-agent chat sessions, including the current one, and must not invent unavailable history.
+
+Accept-all shortcut only when you truly mean it:
+
+```text
+/engram ss -a
+```
+
+`-a` means the human explicitly approves every agent-recommended candidate. Agents must not add it by themselves.
+
+To mine recent accessible chats and accept all generated candidates in one request:
+
+```text
+/engram ss -a last 50 sessions
+```
+
+That normalizes to `engram save-session --query-level 50 --accept-all`.
+
+## Import existing knowledge
+
+For a repo that already has `AGENTS.md`, `CLAUDE.md`, Cursor rules, notes, or docs:
+
+```text
+/engram take-control --plan
+/engram take-control --all
+```
+
+Use `--plan` first when you want to see selected files, skipped files, token estimates, and likely memory types.
+
+## Global memory
+
+Use global memory for preferences that should follow you across repos:
+
+```text
+Set up global Engram memory at <path>, then save this preference globally:
+Use pnpm for package management.
+```
+
+The agent may use:
+
+```bash
+engram inject --global-only --global-path <path>
+engram save --scope global "Use pnpm for package management."
+engram link --global <agent-name>
+```
+
+When inject sees configured global memory, it creates or selects a user default profile for that global root so future workspaces can reuse it.
+
+## Keep it healthy
+
+Ask the agent at the end of meaningful work:
+
+```text
+Check Engram health, report invalid memories, and propose anything worth saving from this session.
+```
+
+Useful commands:
+
+```bash
+engram upgrade
+engram upgrade --plan
+engram verify
+engram repair
+engram graph "<topic>"
+engram quality-check
+engram archive --reason "<why>" <id-or-file>
+```
+
+## Next steps
+
+- [Daily workflow](daily-workflow.md)
+- [Install and configure](install.md)
+- [Human-owned protocol](concepts/protocol.md)

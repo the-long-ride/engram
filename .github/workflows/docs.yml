@@ -1,0 +1,43 @@
+name: docs
+
+on:
+  pull_request:
+    paths:
+      - 'website/**'
+      - 'documentation/**'
+      - 'docs/**'
+      - 'README.md'
+      - 'CHANGELOG.md'
+      - '.github/workflows/docs.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'website/**'
+      - 'documentation/**'
+      - 'docs/**'
+      - 'README.md'
+      - 'CHANGELOG.md'
+      - '.github/workflows/docs.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+      - name: Install docs dependencies
+        working-directory: website
+        run: npm ci
+      - name: Typecheck docs
+        working-directory: website
+        run: npm run typecheck
+      - name: Build docs
+        working-directory: website
+        run: npm run build
+      - name: Verify field docs coverage
+        working-directory: website
+        run: npm run check:entry-fields

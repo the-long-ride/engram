@@ -1,0 +1,11 @@
+# Exclude Docusaurus website source code and builds from the published npm package
+website/
+documentation/
+
+# Exclude local development and test assets
+coverage/
+tmp/
+.cache/
+.npm-cache/
+.opencode/
+*.tgz

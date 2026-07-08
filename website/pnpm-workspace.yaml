@@ -1,0 +1,11 @@
+allowBuilds:
+  '@swc/core': true
+  core-js: true
+  esbuild: true
+packages:
+  - '.'
+
+onlyBuiltDependencies:
+  - '@swc/core'
+  - core-js
+  - esbuild

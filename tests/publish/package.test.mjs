@@ -6,6 +6,9 @@ import path from 'node:path';
 test('npm publish metadata declares a package README', async () => {
   const root = path.resolve('.');
   const manifest = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
+  const npmignore = await readFile(path.join(root, '.npmignore'), 'utf8');
+  const websiteManifest = JSON.parse(await readFile(path.join(root, 'website', 'package.json'), 'utf8'));
+  const websitePnpmWorkspace = await readFile(path.join(root, 'website', 'pnpm-workspace.yaml'), 'utf8');
   const readme = await readFile(path.join(root, 'README.md'), 'utf8');
   const llm = await readFile(path.join(root, 'llm.txt'), 'utf8');
   assert.match(readme, /^# Engram/m);
@@ -13,6 +16,13 @@ test('npm publish metadata declares a package README', async () => {
   assert.ok(manifest.files.includes('README.md'));
   assert.ok(manifest.files.includes('llm.txt'));
   assert.ok(!manifest.files.includes('media'));
+  assert.ok(!manifest.files.includes('website'));
+  assert.match(npmignore, /^website\/$/m);
+  assert.match(websiteManifest.packageManager, /^pnpm@\d+\.\d+\.\d+$/);
+  assert.equal(websiteManifest.scripts.test, 'pnpm exec tsx --test "src/**/*.test.ts"');
+  assert.ok(Object.hasOwn(websiteManifest.devDependencies, 'tsx'));
+  assert.equal(websiteManifest.pnpm, undefined);
+  assert.match(websitePnpmWorkspace, /^packages:\n  - '\.'\n\nonlyBuiltDependencies:\n  - '@swc\/core'\n  - core-js\n  - esbuild\n$/m);
   assert.match(llm, /Engram LLM Guide/);
   assert.match(llm, /AI agents/);
   assert.equal(manifest.files.filter((file) => file === 'README.md').length, 1);

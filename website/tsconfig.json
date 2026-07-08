@@ -6,7 +6,11 @@
   "compilerOptions": {
     "baseUrl": ".",
     "ignoreDeprecations": "6.0",
-    "strict": true
+    "strict": true,
+    "paths": {
+      "@site/*": ["./*"],
+      "@docusaurus/theme-common": ["./node_modules/@docusaurus/theme-common"]
+    }
   },
   "exclude": [".docusaurus", "build", "scripts"]
 }

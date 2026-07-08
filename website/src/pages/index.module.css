@@ -1,12 +1,51 @@
-.heroBanner {
-  padding: 4rem 0;
+.heroButtons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 24px;
+}
+
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.sectionHeading {
   text-align: center;
-  position: relative;
-  overflow: hidden;
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+
+.installPre {
+  margin: 24px 0;
+  border-radius: 12px;
+  padding: 24px;
+  background: var(--geist-bg-200);
+  border: 1px solid var(--geist-gray-alpha-200);
+  font-family: var(--geist-font-mono);
+  font-size: 14px;
+  overflow-x: auto;
+}
+
+.installNote {
+  text-align: center;
+  color: var(--geist-gray-900);
+  font-size: 14px;
 }
 
 @media screen and (max-width: 996px) {
-  .heroBanner {
-    padding: 2rem;
+  .heroButtons {
+    flex-direction: column;
+  }
+
+  .heroButtons .button {
+    width: 100%;
+  }
+
+  .sectionHeading {
+    font-size: 1.5rem;
   }
 }

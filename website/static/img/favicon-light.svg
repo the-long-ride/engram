@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="254 103 516 777" role="img" aria-labelledby="title desc">
+  <title id="title">Engram Logo - Black</title>
+  <desc id="desc">Monochrome transparent SVG version of the Engram logo.</desc>
+  <defs>
+    <style>
+      .bracket-main { fill: none; stroke-width: 30; stroke-linecap: butt; stroke-linejoin: miter; }
+      .bracket-highlight { fill: none; stroke-width: 4; stroke-linecap: butt; stroke-linejoin: miter; opacity: .85; }
+      .circuit-line { fill: none; stroke-width: 4.6; stroke-linecap: round; stroke-linejoin: round; }
+      .node { fill: none; stroke-width: 4.2; }
+      .center-line { fill: none; stroke-width: 5.2; stroke-linecap: round; }
+      .tree-trunk { fill: none; stroke-width: 5.4; stroke-linecap: round; stroke-linejoin: round; }
+    </style>
+  </defs>
+  <g id="engram-mark" transform="translate(0 0)">
+    <!-- Split code brackets -->
+    <g id="left-blue-code-bracket">
+      <path class="bracket-main" d="M435 248 L254 431 L254 593 L435 776" stroke="#000000"/>
+      <path class="bracket-highlight" d="M424 287 L288 424 L288 573 L424 711" stroke="#000000" opacity=".72"/>
+    </g>
+    <g id="right-orange-code-bracket">
+      <path class="bracket-main" d="M589 248 L770 431 L770 593 L589 776" stroke="#000000"/>
+      <path class="bracket-highlight" d="M600 287 L736 424 L736 573 L600 711" stroke="#000000" opacity=".72"/>
+    </g>
+
+    <!-- Central neural divider -->
+    <g id="central-divider">
+      <path class="center-line" d="M512 103 L512 880" stroke="#000000"/>
+      <circle cx="512" cy="314" r="12.5" fill="none" stroke="#000000" stroke-width="5"/>
+    </g>
+
+    <!-- Neural circuit tree -->
+    <g id="neural-circuit-tree">
+      <g id="left-blue-circuit-branches">
+      <path class="circuit-line" d="M512 640 L466 594" stroke="#000000"/>
+      <path class="circuit-line" d="M466 594 L405 574" stroke="#000000"/>
+      <path class="circuit-line" d="M405 574 L362 548" stroke="#000000"/>
+      <path class="circuit-line" d="M405 574 L365 574" stroke="#000000"/>
+      <path class="circuit-line" d="M466 594 L449 548" stroke="#000000"/>
+      <path class="circuit-line" d="M449 548 L418 516" stroke="#000000"/>
+      <path class="circuit-line" d="M449 548 L444 508" stroke="#000000"/>
+      <path class="circuit-line" d="M512 548 L471 506" stroke="#000000"/>
+      <path class="circuit-line" d="M471 506 L424 476" stroke="#000000"/>
+      <path class="circuit-line" d="M424 476 L386 448" stroke="#000000"/>
+      <path class="circuit-line" d="M471 506 L462 464" stroke="#000000"/>
+      <path class="circuit-line" d="M462 464 L427 432" stroke="#000000"/>
+      <path class="circuit-line" d="M512 492 L484 454" stroke="#000000"/>
+      <path class="circuit-line" d="M484 454 L484 418" stroke="#000000"/>
+      <path class="circuit-line" d="M484 454 L446 430" stroke="#000000"/>
+      <path class="circuit-line" d="M512 414 L492 393" stroke="#000000"/>
+      <path class="circuit-line" d="M492 393 L490 363" stroke="#000000"/>
+      <path class="circuit-line" d="M492 393 L470 372" stroke="#000000"/>
+      <circle class="node" cx="362" cy="548" r="6.2" stroke="#000000"/>
+      <circle class="node" cx="365" cy="574" r="6.2" stroke="#000000"/>
+      <circle class="node" cx="418" cy="516" r="6.2" stroke="#000000"/>
+      <circle class="node" cx="444" cy="508" r="6.2" stroke="#000000"/>
+      <circle class="node" cx="386" cy="448" r="6.2" stroke="#000000"/>
+      <circle class="node" cx="427" cy="432" r="6.2" stroke="#000000"/>
+      <circle class="node" cx="484" cy="418" r="6.2" stroke="#000000"/>
+      <circle class="node" cx="446" cy="430" r="6.2" stroke="#000000"/>
+      <circle class="node" cx="490" cy="363" r="6.2" stroke="#000000"/>
+      <circle class="node" cx="470" cy="372" r="6.2" stroke="#000000"/>
+      </g>
+      <g id="right-orange-circuit-branches">
+      <path class="circuit-line" d="M512 640 L558 594" stroke="#000000"/>
+      <path class="circuit-line" d="M558 594 L619 574" stroke="#000000"/>
+      <path class="circuit-line" d="M619 574 L662 548" stroke="#000000"/>
+      <path class="circuit-line" d="M619 574 L659 574" stroke="#000000"/>
+      <path class="circuit-line" d="M558 594 L575 548" stroke="#000000"/>
+      <path class="circuit-line" d="M575 548 L606 516" stroke="#000000"/>
+      <path class="circuit-line" d="M575 548 L580 508" stroke="#000000"/>
+      <path class="circuit-line" d="M512 548 L553 506" stroke="#000000"/>
+      <path class="circuit-line" d="M553 506 L600 476" stroke="#000000"/>
+      <path class="circuit-line" d="M600 476 L638 448" stroke="#000000"/>
+      <path class="circuit-line" d="M553 506 L562 464" stroke="#000000"/>
+      <path class="circuit-line" d="M562 464 L597 432" stroke="#000000"/>
+      <path class="circuit-line" d="M512 492 L540 454" stroke="#000000"/>
+      <path class="circuit-line" d="M540 454 L540 418" stroke="#000000"/>
+      <path class="circuit-line" d="M540 454 L578 430" stroke="#000000"/>
+      <path class="circuit-line" d="M512 414 L532 393" stroke="#000000"/>
+      <path class="circuit-line" d="M532 393 L534 363" stroke="#000000"/>
+      <path class="circuit-line" d="M532 393 L554 372" stroke="#000000"/>
+      <circle class="node" cx="662" cy="548" r="6.2" stroke="#000000"/>
+      <circle class="node" cx="659" cy="574" r="6.2" stroke="#000000"/>
+      <circle class="node" cx="606" cy="516" r="6.2" stroke="#000000"/>
+      <circle class="node" cx="580" cy="508" r="6.2" stroke="#000000"/>
+      <circle class="node" cx="638" cy="448" r="6.2" stroke="#000000"/>
+      <circle class="node" cx="597" cy="432" r="6.2" stroke="#000000"/>
+      <circle class="node" cx="540" cy="418" r="6.2" stroke="#000000"/>
+      <circle class="node" cx="578" cy="430" r="6.2" stroke="#000000"/>
+      <circle class="node" cx="534" cy="363" r="6.2" stroke="#000000"/>
+      <circle class="node" cx="554" cy="372" r="6.2" stroke="#000000"/>
+      </g>
+      <g id="center-trunk">
+        <path class="tree-trunk" d="M512 641 L512 545 L512 492 L512 412" stroke="#000000"/>
+        <path class="tree-trunk" d="M512 641 L512 545 L512 492 L512 412" stroke="#000000" opacity=".38"/>
+      </g>
+    </g>
+  </g>
+</svg>

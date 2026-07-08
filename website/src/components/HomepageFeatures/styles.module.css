@@ -9,3 +9,18 @@
   height: 200px;
   width: 200px;
 }
+
+.featureCard {
+  border: 1px solid var(--geist-gray-alpha-200);
+  border-radius: var(--geist-radius-md);
+  padding: 24px;
+  background-color: var(--geist-bg-100);
+  box-shadow: var(--geist-shadow-raised);
+  transition: border-color 150ms var(--geist-easing), box-shadow 200ms var(--geist-easing);
+  height: 100%;
+}
+
+.featureCard:hover {
+  border-color: var(--geist-gray-alpha-400);
+  box-shadow: var(--geist-shadow-popover);
+}

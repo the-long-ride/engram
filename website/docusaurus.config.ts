@@ -2,17 +2,35 @@ import {themes as prismThemes} from 'prism-react-renderer';
 import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
+const baseUrl = '/engram/';
+
 const config: Config = {
   title: 'Engram',
   tagline: 'Human-owned memory for AI agents.',
-  favicon: 'img/favicon.ico',
 
-  future: {
-    v4: true,
-  },
+  headTags: [
+    {
+      tagName: 'link',
+      attributes: {
+        rel: 'icon',
+        type: 'image/svg+xml',
+        href: `${baseUrl}img/favicon-light.svg`,
+        media: '(prefers-color-scheme: light)',
+      },
+    },
+    {
+      tagName: 'link',
+      attributes: {
+        rel: 'icon',
+        type: 'image/svg+xml',
+        href: `${baseUrl}img/favicon-dark.svg`,
+        media: '(prefers-color-scheme: dark)',
+      },
+    },
+  ],
 
   url: 'https://the-long-ride.github.io',
-  baseUrl: '/engram/',
+  baseUrl,
   trailingSlash: false,
 
   organizationName: 'the-long-ride',
@@ -66,8 +84,7 @@ const config: Config = {
               banner: 'none',
               badge: false,
             },
-          },
-          editUrl: 'https://github.com/the-long-ride/engram/tree/main/website/',
+            },
         },
         blog: false,
         theme: {
@@ -102,44 +119,24 @@ const config: Config = {
         alt: 'Engram logo',
         src: 'img/logo.svg',
         srcDark: 'img/logo-light.svg',
+        href: 'https://the-long-ride.github.io/engram/',
+        target: '_self',
       },
       items: [
         {type: 'docSidebar', sidebarId: 'docs', position: 'left', label: 'Docs'},
         {to: '/docs/quickstart', label: 'Quickstart', position: 'left'},
         {type: 'docsVersionDropdown', position: 'right'},
         {type: 'localeDropdown', position: 'right'},
-        {
-          href: 'https://github.com/the-long-ride/engram',
-          label: 'GitHub',
-          position: 'right',
-        },
       ],
     },
     footer: {
       style: 'dark',
-      links: [
-        {
-          title: 'Docs',
-          items: [
-            {label: 'Quickstart', to: '/docs/quickstart'},
-            {label: 'Protocol', to: '/docs/concepts/protocol'},
-            {label: 'CLI Reference', to: '/docs/cli/overview'},
-            {label: 'Entry Web UI', to: '/docs/entry'},
-          ],
-        },
-        {
-          title: 'Community',
-          items: [
-            {label: 'GitHub', href: 'https://github.com/the-long-ride/engram'},
-            {label: 'Issues', href: 'https://github.com/the-long-ride/engram/issues'},
-          ],
-        },
-      ],
-      copyright: `Copyright © ${new Date().getFullYear()} The Long Ride. Built with Docusaurus.`,
+      copyright: `Copyright © ${new Date().getFullYear()} the-long-ride — <a href="https://github.com/the-long-ride/engram/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">GPL-3.0 License</a> — <a href="https://github.com/the-long-ride/engram" target="_blank" rel="noopener noreferrer">GitHub</a> — <a href="https://github.com/the-long-ride/engram/issues" target="_blank" rel="noopener noreferrer">Issues</a>`,
     },
     prism: {
       theme: prismThemes.github,
-      darkTheme: prismThemes.dracula,
+      darkTheme: prismThemes.vsDark,
+      additionalLanguages: ['bash', 'json', 'yaml', 'markdown', 'diff', 'typescript', 'python'],
     },
   } satisfies Preset.ThemeConfig,
 };

@@ -101,5 +101,8 @@
   "dependencies": {
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
+  },
+  "overrides": {
+    "js-yaml": "^3.14.2"
   }
 }

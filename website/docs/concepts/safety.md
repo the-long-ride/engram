@@ -41,5 +41,5 @@ These limits are intentional to state clearly. Engram should tell users what is 
 
 ## Next steps
 
-- [Write path and approval](write-path.md)
+- [Write path and approval](./write-path.md)
 - [Operations troubleshooting](../operations/troubleshooting.md)

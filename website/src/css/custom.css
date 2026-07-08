@@ -1,65 +1,813 @@
+@import '@fontsource-variable/geist';
+@import '@fontsource-variable/geist-mono';
+
+/**
+ * Geist Design System — Vercel's design system applied to Docusaurus
+ * Light theme tokens from .agents/vercel-design.md
+ * Dark theme derived from Geist dark theme conventions.
+ */
+
+/* ──────────────────────────────────────────────
+   Geist Design Tokens — Light Theme
+   ────────────────────────────────────────────── */
 :root {
-  --ifm-color-primary: #0891b2;
-  --ifm-color-primary-dark: #067e9b;
-  --ifm-color-primary-darker: #067e9b;
-  --ifm-color-primary-darkest: #067e9b;
-  --ifm-color-primary-light: #0aa5ca;
-  --ifm-color-primary-lighter: #0aa5ca;
-  --ifm-color-primary-lightest: #0eaed4;
-  --ifm-code-font-size: 95%;
-  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+  /* Font families */
+  --geist-font-sans: 'Geist Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --geist-font-mono: 'Geist Mono Variable', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+
+  /* Colors — backgrounds */
+  --geist-bg-100: #ffffff;
+  --geist-bg-200: #fafafa;
+
+  /* Colors — gray scale */
+  --geist-gray-100: #f2f2f2;
+  --geist-gray-200: #ebebeb;
+  --geist-gray-300: #e6e6e6;
+  --geist-gray-400: #eaeaea;
+  --geist-gray-500: #c9c9c9;
+  --geist-gray-600: #a8a8a8;
+  --geist-gray-700: #8f8f8f;
+  --geist-gray-800: #7d7d7d;
+  --geist-gray-900: #4d4d4d;
+  --geist-gray-1000: #171717;
+
+  /* Colors — gray alpha (translucent, layer over any bg) */
+  --geist-gray-alpha-100: #0000000d;
+  --geist-gray-alpha-200: #00000015;
+  --geist-gray-alpha-300: #0000001a;
+  --geist-gray-alpha-400: #00000014;
+  --geist-gray-alpha-500: #00000036;
+  --geist-gray-alpha-600: #0000003d;
+  --geist-gray-alpha-700: #00000070;
+  --geist-gray-alpha-800: #00000082;
+  --geist-gray-alpha-900: #000000b3;
+  --geist-gray-alpha-1000: #000000e8;
+
+  /* Colors — accent scales */
+  --geist-blue-100: #f0f7ff;
+  --geist-blue-200: #e9f4ff;
+  --geist-blue-300: #dfefff;
+  --geist-blue-400: #cae7ff;
+  --geist-blue-500: #94ccff;
+  --geist-blue-600: #48aeff;
+  --geist-blue-700: #006bff;
+  --geist-blue-800: #0059ec;
+  --geist-blue-900: #005ff2;
+  --geist-blue-1000: #002359;
+
+  --geist-red-100: #ffeeef;
+  --geist-red-200: #ffe8ea;
+  --geist-red-300: #ffe3e4;
+  --geist-red-400: #ffd7d6;
+  --geist-red-500: #ffb1b3;
+  --geist-red-600: #ff676d;
+  --geist-red-700: #fc0035;
+  --geist-red-800: #ea001d;
+  --geist-red-900: #d8001b;
+  --geist-red-1000: #47000c;
+
+  --geist-amber-100: #fff6de;
+  --geist-amber-400: #ffdc73;
+  --geist-amber-500: #ffc543;
+  --geist-amber-600: #ffa600;
+  --geist-amber-700: #ffae00;
+  --geist-amber-800: #ff9300;
+  --geist-amber-900: #aa4d00;
+
+  --geist-green-100: #ecfdec;
+  --geist-green-500: #82eb8d;
+  --geist-green-600: #4ce15e;
+  --geist-green-700: #28a948;
+  --geist-green-800: #279141;
+  --geist-green-900: #107d32;
+
+  /* Semantic colors */
+  --geist-primary: var(--geist-gray-1000);
+  --geist-secondary: var(--geist-gray-900);
+  --geist-tertiary: var(--geist-blue-700);
+  --geist-success: var(--geist-green-700);
+  --geist-error: var(--geist-red-700);
+  --geist-warning: var(--geist-amber-700);
+
+  /* Spacing (4px base) */
+  --geist-space-1: 4px;
+  --geist-space-2: 8px;
+  --geist-space-3: 12px;
+  --geist-space-4: 16px;
+  --geist-space-6: 24px;
+  --geist-space-8: 32px;
+  --geist-space-10: 40px;
+  --geist-space-16: 64px;
+  --geist-space-24: 96px;
+
+  /* Rounded */
+  --geist-radius-sm: 6px;
+  --geist-radius-md: 12px;
+  --geist-radius-lg: 16px;
+  --geist-radius-full: 9999px;
+
+  /* Shadows */
+  --geist-shadow-raised: 0 2px 2px rgba(0, 0, 0, 0.04);
+  --geist-shadow-popover: 0 1px 1px rgba(0, 0, 0, 0.02), 0 4px 8px -4px rgba(0, 0, 0, 0.04), 0 16px 24px -8px rgba(0, 0, 0, 0.06);
+  --geist-shadow-modal: 0 1px 1px rgba(0, 0, 0, 0.02), 0 8px 16px -4px rgba(0, 0, 0, 0.04), 0 24px 32px -8px rgba(0, 0, 0, 0.06);
+
+  /* Motion */
+  --geist-easing: cubic-bezier(0.175, 0.885, 0.32, 1.1);
+
+  /* ── Docusaurus variable mappings ── */
+
+  /* Primary color → amber for links/interactive accents */
+  --ifm-color-primary: #a97200;
+  --ifm-color-primary-dark: #8f6100;
+  --ifm-color-primary-darker: #825a00;
+  --ifm-color-primary-darkest: #694900;
+  --ifm-color-primary-light: #c2841a;
+  --ifm-color-primary-lighter: #d09530;
+  --ifm-color-primary-lightest: #e0b05a;
+
+  /* Fonts */
+  --ifm-font-family-base: var(--geist-font-sans);
+  --ifm-font-family-monospace: var(--geist-font-mono);
+  --ifm-heading-font-family: var(--geist-font-sans);
+  --ifm-heading-font-weight: 600;
+  --ifm-font-size-base: 16px;
+
+  /* Code */
+  --ifm-code-font-size: 90%;
+  --ifm-code-background: var(--geist-gray-100);
+  --docusaurus-highlighted-code-line-bg: rgba(169, 114, 0, 0.08);
+
+  /* Backgrounds */
+  --ifm-background-color: var(--geist-bg-100);
+  --ifm-background-surface-color: var(--geist-bg-200);
+
+  /* Text */
+  --ifm-font-color-base: var(--geist-gray-1000);
+  --ifm-heading-color: var(--geist-gray-1000);
+  --ifm-color-emphasis-0: var(--geist-gray-alpha-100);
+  --ifm-color-emphasis-100: var(--geist-gray-100);
+  --ifm-color-emphasis-200: var(--geist-gray-200);
+  --ifm-color-emphasis-300: var(--geist-gray-300);
+  --ifm-color-emphasis-400: var(--geist-gray-400);
+  --ifm-color-emphasis-500: var(--geist-gray-500);
+  --ifm-color-emphasis-600: var(--geist-gray-600);
+  --ifm-color-emphasis-700: var(--geist-gray-700);
+  --ifm-color-emphasis-800: var(--geist-gray-800);
+  --ifm-color-emphasis-900: var(--geist-gray-900);
+
+  /* Borders */
+  --ifm-global-border-width: 1px;
+  --ifm-color-emphasis-200: var(--geist-gray-alpha-200);
+
+  /* Typography — heading sizes with tight letter-spacing */
+  --ifm-h1-font-size: 2.5rem;
+  --ifm-h2-font-size: 1.75rem;
+  --ifm-h3-font-size: 1.375rem;
+  --ifm-h4-font-size: 1.125rem;
+  --ifm-h5-font-size: 1rem;
+  --ifm-h6-font-size: 0.875rem;
+
+  /* Content max-width */
+  --ifm-container-width: 1200px;
+  --ifm-container-width-xl: 1200px;
+
+  /* Radius */
+  --ifm-global-radius: var(--geist-radius-sm);
 }
 
+/* ──────────────────────────────────────────────
+   Geist Design Tokens — Dark Theme
+   ────────────────────────────────────────────── */
 [data-theme='dark'] {
-  --ifm-color-primary: #22d3ee;
-  --ifm-color-primary-dark: #06b6d4;
-  --ifm-color-primary-darker: #0891b2;
-  --ifm-color-primary-darkest: #0e7490;
-  --ifm-color-primary-light: #38bdf8;
-  --ifm-color-primary-lighter: #7dd3fc;
-  --ifm-color-primary-lightest: #bae6fd;
-  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+  /* Colors — backgrounds */
+  --geist-bg-100: #000000;
+  --geist-bg-200: #0a0a0a;
+
+  /* Colors — gray scale (inverted for dark) */
+  --geist-gray-100: #1a1a1a;
+  --geist-gray-200: #222222;
+  --geist-gray-300: #2a2a2a;
+  --geist-gray-400: #333333;
+  --geist-gray-500: #444444;
+  --geist-gray-600: #666666;
+  --geist-gray-700: #888888;
+  --geist-gray-800: #a1a1a1;
+  --geist-gray-900: #b4b4b4;
+  --geist-gray-1000: #ededed;
+
+  /* Colors — gray alpha (white-based for dark) */
+  --geist-gray-alpha-100: #ffffff0d;
+  --geist-gray-alpha-200: #ffffff15;
+  --geist-gray-alpha-300: #ffffff1a;
+  --geist-gray-alpha-400: #ffffff14;
+  --geist-gray-alpha-500: #ffffff36;
+  --geist-gray-alpha-600: #ffffff3d;
+  --geist-gray-alpha-700: #ffffff70;
+  --geist-gray-alpha-800: #ffffff82;
+  --geist-gray-alpha-900: #ffffffb3;
+  --geist-gray-alpha-1000: #ffffffe8;
+
+  /* Accent scales — adjusted for dark backgrounds */
+  --geist-blue-100: #0a1929;
+  --geist-blue-700: #3b82f6;
+  --geist-blue-800: #2563eb;
+
+  --geist-red-100: #2a0a0e;
+  --geist-red-700: #ff4458;
+  --geist-red-800: #ff3344;
+
+  --geist-amber-100: #2a1a00;
+  --geist-amber-700: #ffbb33;
+
+  --geist-green-100: #0a2a0a;
+  --geist-green-700: #3fcc55;
+
+  /* Shadows — stronger for dark */
+  --geist-shadow-raised: 0 2px 4px rgba(0, 0, 0, 0.4);
+  --geist-shadow-popover: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 8px -4px rgba(0, 0, 0, 0.4), 0 16px 24px -8px rgba(0, 0, 0, 0.5);
+  --geist-shadow-modal: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 16px -4px rgba(0, 0, 0, 0.4), 0 24px 32px -8px rgba(0, 0, 0, 0.5);
+
+  /* Docusaurus mappings */
+  --ifm-color-primary: #FFCA5C;
+  --ifm-color-primary-dark: #f0b840;
+  --ifm-color-primary-darker: #e5ab30;
+  --ifm-color-primary-darkest: #cc9219;
+  --ifm-color-primary-light: #ffd576;
+  --ifm-color-primary-lighter: #ffdf90;
+  --ifm-color-primary-lightest: #ffebb8;
+
+  --ifm-background-color: var(--geist-bg-100);
+  --ifm-background-surface-color: var(--geist-bg-200);
+
+  --ifm-font-color-base: var(--geist-gray-1000);
+  --ifm-heading-color: var(--geist-gray-1000);
+  --ifm-color-emphasis-100: var(--geist-gray-100);
+  --ifm-color-emphasis-200: var(--geist-gray-200);
+  --ifm-color-emphasis-300: var(--geist-gray-300);
+  --ifm-color-emphasis-400: var(--geist-gray-400);
+  --ifm-color-emphasis-500: var(--geist-gray-500);
+  --ifm-color-emphasis-600: var(--geist-gray-600);
+  --ifm-color-emphasis-700: var(--geist-gray-700);
+  --ifm-color-emphasis-800: var(--geist-gray-800);
+  --ifm-color-emphasis-900: var(--geist-gray-900);
+
+  --ifm-code-background: var(--geist-gray-100);
+  --docusaurus-highlighted-code-line-bg: rgba(255, 202, 92, 0.15);
 }
 
+/* ──────────────────────────────────────────────
+   Base Typography
+   ────────────────────────────────────────────── */
+html {
+  font-family: var(--geist-font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'cv11', 'ss01';
+  font-variation-settings: 'opsz' 32;
+}
+
+body {
+  font-family: var(--geist-font-sans);
+  letter-spacing: -0.32px;
+}
+
+/* Headings — tight letter-spacing per Geist spec */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--geist-font-sans);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+h1 { letter-spacing: -0.045em; }
+h2 { letter-spacing: -0.03em; }
+h3 { letter-spacing: -0.025em; }
+
+/* Code & mono */
+code, pre, kbd, samp {
+  font-family: var(--geist-font-mono);
+  font-feature-settings: 'ss01', 'ss02';
+}
+
+/* ──────────────────────────────────────────────
+   Navbar
+   ────────────────────────────────────────────── */
+.navbar {
+  background-color: var(--geist-bg-100);
+  border-bottom: 1px solid var(--geist-gray-alpha-200);
+  box-shadow: none;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+[data-theme='dark'] .navbar {
+  background-color: rgba(0, 0, 0, 0.8);
+  border-bottom: 1px solid var(--geist-gray-alpha-200);
+}
+
+.navbar__logo {
+  height: 28px;
+}
+
+.navbar__title {
+  font-weight: 600;
+  font-size: 1rem;
+  letter-spacing: -0.02em;
+  color: var(--geist-gray-1000);
+}
+
+.navbar__brand:hover {
+  text-decoration: none;
+}
+
+.navbar__link {
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--geist-gray-900);
+  transition: color 150ms var(--geist-easing);
+}
+
+.navbar__link:hover,
+.navbar__link--active {
+  color: var(--geist-gray-1000);
+}
+
+/* ──────────────────────────────────────────────
+   Buttons — Geist component spec
+   ────────────────────────────────────────────── */
+.button {
+  font-family: var(--geist-font-sans);
+  font-weight: 500;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  border-radius: var(--geist-radius-sm);
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 150ms var(--geist-easing), border-color 150ms var(--geist-easing), color 150ms var(--geist-easing);
+}
+
+.button--lg {
+  height: 48px;
+  font-size: 1rem;
+  padding: 0 14px;
+}
+
+.button--sm {
+  height: 32px;
+  font-size: 0.875rem;
+  padding: 0 6px;
+}
+
+/* Primary button — solid gray-1000 fill */
+.button--primary {
+  background-color: var(--geist-gray-1000);
+  color: var(--geist-bg-100);
+  border: 1px solid var(--geist-gray-1000);
+}
+
+.button--primary:hover {
+  background-color: var(--geist-gray-900);
+  border-color: var(--geist-gray-900);
+  color: var(--geist-bg-100);
+}
+
+[data-theme='dark'] .button--primary {
+  background-color: var(--geist-gray-1000);
+  color: var(--geist-bg-100);
+  border-color: var(--geist-gray-1000);
+}
+
+[data-theme='dark'] .button--primary:hover {
+  background-color: var(--geist-gray-900);
+  border-color: var(--geist-gray-900);
+  color: var(--geist-bg-100);
+}
+
+/* Secondary button — bg-100 fill with translucent border */
+.button--secondary {
+  background-color: var(--geist-bg-100);
+  color: var(--geist-gray-1000);
+  border: 1px solid var(--geist-gray-alpha-400);
+}
+
+.button--secondary:hover {
+  background-color: var(--geist-gray-100);
+  border-color: var(--geist-gray-alpha-500);
+  color: var(--geist-gray-1000);
+}
+
+/* Outline / tertiary button */
+.button--outline,
+.button--tertiary {
+  background-color: transparent;
+  color: var(--geist-gray-1000);
+  border: 1px solid var(--geist-gray-alpha-400);
+}
+
+.button--outline:hover,
+.button--tertiary:hover {
+  background-color: var(--geist-gray-alpha-100);
+  border-color: var(--geist-gray-alpha-500);
+  color: var(--geist-gray-1000);
+}
+
+/* Error button */
+.button--danger {
+  background-color: var(--geist-red-800);
+  color: #ffffff;
+  border: 1px solid var(--geist-red-800);
+}
+
+/* Focus ring — two-layer blue-700 ring */
+.button:focus-visible,
+a:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--geist-bg-100), 0 0 0 4px var(--geist-blue-700);
+}
+
+[data-theme='dark'] .button:focus-visible,
+[data-theme='dark'] a:focus-visible {
+  box-shadow: 0 0 0 2px var(--geist-bg-100), 0 0 0 4px var(--ifm-color-primary);
+}
+
+/* ──────────────────────────────────────────────
+   Links
+   ────────────────────────────────────────────── */
+a {
+  color: var(--ifm-color-primary);
+  text-decoration: none;
+  transition: color 150ms var(--geist-easing);
+}
+
+a:hover {
+  text-decoration: none;
+}
+
+.markdown a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: var(--geist-gray-alpha-400);
+}
+
+.markdown a:hover {
+  text-decoration-color: var(--ifm-color-primary);
+}
+
+/* ──────────────────────────────────────────────
+   Cards
+   ────────────────────────────────────────────── */
+.card {
+  border-radius: var(--geist-radius-md);
+  border: 1px solid var(--geist-gray-alpha-200);
+  box-shadow: var(--geist-shadow-raised);
+  transition: box-shadow 200ms var(--geist-easing), border-color 150ms var(--geist-easing);
+}
+
+.card:hover {
+  box-shadow: var(--geist-shadow-popover);
+  border-color: var(--geist-gray-alpha-300);
+}
+
+/* ──────────────────────────────────────────────
+   Homepage hero — Geist style
+   ────────────────────────────────────────────── */
 .hero--primary {
-  background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
+  background: var(--geist-bg-100);
+  color: var(--geist-gray-1000);
+  border-bottom: 1px solid var(--geist-gray-alpha-200);
+  padding: 6rem 0 4rem;
 }
 
 [data-theme='dark'] .hero--primary {
-  background: linear-gradient(135deg, #0e7490 0%, #083344 100%);
+  background: var(--geist-bg-100);
+  border-bottom: 1px solid var(--geist-gray-alpha-200);
 }
 
 .hero__title {
-  font-size: 3rem;
+  font-size: clamp(2.5rem, 5vw, 3.5rem);
+  font-weight: 600;
+  letter-spacing: -0.045em;
+  line-height: 1.1;
 }
 
 .hero__subtitle {
   font-size: 1.25rem;
-  opacity: 0.9;
+  font-weight: 400;
+  line-height: 1.75rem;
+  color: var(--geist-gray-900);
+  opacity: 1;
+  max-width: 560px;
 }
 
+/* ──────────────────────────────────────────────
+   Homepage cards
+   ────────────────────────────────────────────── */
 .homepage-card {
-  border: 1px solid var(--ifm-color-emphasis-300);
-  border-radius: 8px;
-  padding: 1.25rem;
-  transition: border-color 0.2s;
+  border: 1px solid var(--geist-gray-alpha-200);
+  border-radius: var(--geist-radius-md);
+  padding: var(--geist-space-6);
+  background-color: var(--geist-bg-100);
+  box-shadow: var(--geist-shadow-raised);
+  transition: border-color 150ms var(--geist-easing), box-shadow 200ms var(--geist-easing);
 }
 
 .homepage-card:hover {
-  border-color: var(--ifm-color-primary);
+  border-color: var(--geist-gray-alpha-400);
+  box-shadow: var(--geist-shadow-popover);
+}
+
+.homepage-card h3 {
+  margin-bottom: var(--geist-space-2);
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.homepage-card p {
+  color: var(--geist-gray-900);
+  font-size: 0.95rem;
+  line-height: 1.5rem;
+  margin-bottom: 0;
 }
 
 .agent-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 0.75rem;
+  gap: var(--geist-space-3);
 }
 
 .agent-badge {
-  border: 1px solid var(--ifm-color-emphasis-300);
-  border-radius: 8px;
-  padding: 0.75rem;
+  border: 1px solid var(--geist-gray-alpha-200);
+  border-radius: var(--geist-radius-sm);
+  padding: var(--geist-space-3);
   text-align: center;
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--geist-gray-900);
+  background-color: var(--geist-bg-100);
+  transition: border-color 150ms var(--geist-easing), color 150ms var(--geist-easing);
+}
+
+.agent-badge:hover {
+  border-color: var(--geist-gray-alpha-400);
+  color: var(--geist-gray-1000);
+}
+
+/* ──────────────────────────────────────────────
+   Sidebar
+   ────────────────────────────────────────────── */
+.menu {
+  font-family: var(--geist-font-sans);
+  font-size: 0.875rem;
+}
+
+.menu__link {
+  border-radius: var(--geist-radius-sm);
+  font-weight: 400;
+  color: var(--geist-gray-900);
+  transition: background-color 150ms var(--geist-easing), color 150ms var(--geist-easing);
+}
+
+.menu__link:hover {
+  background-color: var(--geist-gray-alpha-100);
+  color: var(--geist-gray-1000);
+}
+
+.menu__link--active {
+  background-color: var(--geist-gray-alpha-100);
+  color: var(--geist-gray-1000);
+  font-weight: 500;
+}
+
+.menu__list-item-collapsible > .menu__link {
+  font-weight: 500;
+  color: var(--geist-gray-1000);
+}
+
+/* ──────────────────────────────────────────────
+   Footer — tight single line
+   ────────────────────────────────────────────── */
+.footer {
+  background-color: var(--geist-bg-100);
+  border-top: 1px solid var(--geist-gray-alpha-200);
+  color: var(--geist-gray-900);
+  padding: 8px 0;
+}
+
+[data-theme='dark'] .footer {
+  background-color: var(--geist-bg-100);
+  border-top: 1px solid var(--geist-gray-alpha-200);
+}
+
+.footer .container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.footer__bottom {
+  margin-top: 0;
+  text-align: center;
+}
+
+.footer__copyright {
+  font-size: 0.8125rem;
+  color: var(--geist-gray-700);
+  line-height: 1.5;
+}
+
+.footer__copyright a {
+  color: var(--ifm-color-primary);
+  text-decoration: none;
+}
+
+.footer__copyright a:hover {
+  text-decoration: underline;
+}
+
+/* ──────────────────────────────────────────────
+   Code blocks
+   ────────────────────────────────────────────── */
+.markdown code {
+  border-radius: var(--geist-radius-sm);
+  font-size: 0.85em;
+  background-color: var(--geist-gray-100);
+  padding: 0.15em 0.4em;
+  border: 1px solid var(--geist-gray-alpha-200);
+}
+
+[data-theme='dark'] .markdown code {
+  background-color: var(--geist-gray-100);
+  border: 1px solid var(--geist-gray-300);
+}
+
+pre {
+  border-radius: var(--geist-radius-md);
+  border: 1px solid var(--geist-gray-alpha-200);
+}
+
+pre code {
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+/* ──────────────────────────────────────────────
+   Tables
+   ────────────────────────────────────────────── */
+table {
+  border-collapse: collapse;
+  border-radius: var(--geist-radius-md);
+  overflow: hidden;
+}
+
+th {
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 0.875rem;
+  background-color: var(--geist-gray-100);
+  border: 1px solid var(--geist-gray-alpha-200);
+}
+
+td {
+  border: 1px solid var(--geist-gray-alpha-200);
+}
+
+tr:hover td {
+  background-color: var(--geist-gray-alpha-100);
+}
+
+/* ──────────────────────────────────────────────
+   Search
+   ────────────────────────────────────────────── */
+[data-theme='dark'] .DocSearch-Modal {
+  background-color: var(--geist-bg-200);
+}
+
+/* ──────────────────────────────────────────────
+   Breadcrumbs
+   ────────────────────────────────────────────── */
+.breadcrumbs__link {
+  color: var(--geist-gray-900);
+  font-size: 0.8125rem;
+  transition: color 150ms var(--geist-easing);
+}
+
+.breadcrumbs__link:hover {
+  color: var(--ifm-color-primary);
+  text-decoration: none;
+}
+
+.breadcrumbs__item--active .breadcrumbs__link {
+  color: var(--ifm-color-primary);
+}
+
+/* ──────────────────────────────────────────────
+   Pagination
+   ────────────────────────────────────────────── */
+.pagination-nav__link {
+  border: 1px solid var(--geist-gray-alpha-200);
+  border-radius: var(--geist-radius-sm);
+  transition: border-color 150ms var(--geist-easing);
+}
+
+.pagination-nav__link:hover {
+  border-color: var(--geist-gray-alpha-400);
+  background-color: var(--geist-gray-alpha-100);
+}
+
+/* ──────────────────────────────────────────────
+   Admonitions
+   ────────────────────────────────────────────── */
+.admonition {
+  border-radius: var(--geist-radius-md);
+  border: 1px solid var(--geist-gray-alpha-200);
+  border-left-width: 3px;
+}
+
+.admonition-note {
+  border-left-color: var(--geist-blue-700);
+}
+
+.admonition-tip,
+.admonition-info {
+  border-left-color: var(--geist-blue-700);
+}
+
+.admonition-warning,
+.admonition-caution {
+  border-left-color: var(--geist-amber-700);
+}
+
+.admonition-danger {
+  border-left-color: var(--geist-red-700);
+}
+
+/* ──────────────────────────────────────────────
+   Tabs
+   ────────────────────────────────────────────── */
+.tabs__item {
+  border-radius: var(--geist-radius-sm) var(--geist-radius-sm) 0 0;
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--geist-gray-900);
+  border-bottom: 2px solid transparent;
+}
+
+.tabs__item--active {
+  color: var(--geist-gray-1000);
+  border-bottom-color: var(--geist-gray-1000);
+}
+
+/* ──────────────────────────────────────────────
+   Docs page
+   ────────────────────────────────────────────── */
+.markdown h1 {
+  letter-spacing: -0.03em;
+}
+
+.markdown h2 {
+  letter-spacing: -0.025em;
+  margin-top: 2.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--geist-gray-alpha-200);
+}
+
+.markdown h3 {
+  letter-spacing: -0.02em;
+  margin-top: 2rem;
+}
+
+/* ──────────────────────────────────────────────
+   Reduced motion
+   ────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ──────────────────────────────────────────────
+   Scrollbar (subtle Geist style)
+   ────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--geist-gray-alpha-300);
+  border-radius: var(--geist-radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--geist-gray-alpha-500);
 }

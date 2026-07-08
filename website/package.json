@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "docusaurus": "docusaurus",
-    "start": "docusaurus start",
-    "start:vi": "docusaurus start --locale vi",
+    "start": "docusaurus start --port 4001",
+    "start:vi": "docusaurus start --locale vi --port 4001",
     "build": "docusaurus build",
     "build:fast": "docusaurus build --locale en",
     "swizzle": "docusaurus swizzle",
@@ -15,7 +15,9 @@
     "write-translations": "docusaurus write-translations",
     "write-heading-ids": "docusaurus write-heading-ids",
     "typecheck": "tsc",
+    "test": "npx tsx --test \"src/**/*.test.ts\"",
     "check:entry-fields": "node scripts/check-entry-field-docs.mjs",
+    "sync-i18n-docs": "node scripts/sync-all-i18n-docs.mjs",
     "version": "docusaurus docs:version"
   },
   "dependencies": {
@@ -24,11 +26,17 @@
     "@docusaurus/preset-classic": "3.10.1",
     "@docusaurus/theme-mermaid": "3.10.1",
     "@easyops-cn/docusaurus-search-local": "^0.52.1",
+    "@fontsource-variable/geist": "^5.2.9",
+    "@fontsource-variable/geist-mono": "^5.2.8",
     "@mdx-js/react": "^3.0.0",
     "clsx": "^2.0.0",
     "prism-react-renderer": "^2.3.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
+  },
+  "overrides": {
+    "serialize-javascript": "^7.0.5",
+    "uuid": "^11.1.1"
   },
   "devDependencies": {
     "@docusaurus/module-type-aliases": "3.10.1",

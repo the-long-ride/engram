@@ -6,9 +6,9 @@ type Props = {
 };
 
 const riskStyles: Record<string, {bg: string; border: string; label: string}> = {
-  normal: {bg: 'var(--ifm-color-emphasis-100)', border: 'var(--ifm-color-emphasis-300)', label: 'Normal'},
-  caution: {bg: 'rgba(255, 193, 7, 0.1)', border: '#ffc107', label: 'Caution'},
-  risky: {bg: 'rgba(220, 53, 69, 0.1)', border: '#dc3545', label: 'Risky'},
+  normal: {bg: 'var(--geist-gray-alpha-100)', border: 'var(--geist-gray-alpha-300)', label: 'Normal'},
+  caution: {bg: 'var(--geist-amber-100)', border: 'var(--geist-amber-700)', label: 'Caution'},
+  risky: {bg: 'var(--geist-red-100)', border: 'var(--geist-red-700)', label: 'Risky'},
 };
 
 export default function EntryFieldCard({field}: Props) {
@@ -17,10 +17,11 @@ export default function EntryFieldCard({field}: Props) {
     <div
       style={{
         border: `1px solid ${risk.border}`,
-        borderRadius: '8px',
-        padding: '1rem',
-        margin: '1rem 0',
+        borderRadius: 'var(--geist-radius-md)',
+        padding: '16px',
+        margin: '16px 0',
         background: risk.bg,
+        boxShadow: 'var(--geist-shadow-raised)',
       }}>
       <h3 style={{marginTop: 0}}>
         {field.label} <code>{field.key}</code>

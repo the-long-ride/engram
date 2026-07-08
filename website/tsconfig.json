@@ -5,12 +5,7 @@
   "extends": "@docusaurus/tsconfig",
   "compilerOptions": {
     "baseUrl": ".",
-    "ignoreDeprecations": "6.0",
-    "strict": true,
-    "paths": {
-      "@site/*": ["./*"],
-      "@docusaurus/theme-common": ["./node_modules/@docusaurus/theme-common"]
-    }
+    "strict": true
   },
   "exclude": [".docusaurus", "build", "scripts"]
 }

@@ -1,5 +1,4 @@
 import React, {type ReactNode} from 'react';
-import type {History} from 'history';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import {translate} from '@docusaurus/Translate';
 import {mergeSearchStrings, useHistorySelector} from '@docusaurus/theme-common';
@@ -24,8 +23,8 @@ function useLocaleDropdownUtils() {
     siteConfig,
     i18n: {currentLocale, localeConfigs},
   } = useDocusaurusContext();
-  const search = useHistorySelector((history: History<unknown>) => history.location.search);
-  const hash = useHistorySelector((history: History<unknown>) => history.location.hash);
+  const search = useHistorySelector((history) => history.location.search);
+  const hash = useHistorySelector((history) => history.location.hash);
   const {pathname} = useLocation();
   const {baseUrl, trailingSlash, url: siteUrl} = siteConfig;
 

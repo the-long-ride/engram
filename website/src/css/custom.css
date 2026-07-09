@@ -30,6 +30,7 @@
   --geist-gray-800: #7d7d7d;
   --geist-gray-900: #4d4d4d;
   --geist-gray-1000: #171717;
+  --npm-logo-color: #231F20;
 
   /* Colors — gray alpha (translucent, layer over any bg) */
   --geist-gray-alpha-100: #0000000d;
@@ -194,6 +195,7 @@
   --geist-gray-800: #a1a1a1;
   --geist-gray-900: #b4b4b4;
   --geist-gray-1000: #ededed;
+  --npm-logo-color: #ffffff;
 
   /* Colors — gray alpha (white-based for dark) */
   --geist-gray-alpha-100: #ffffff0d;

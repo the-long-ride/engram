@@ -5,6 +5,10 @@ on:
     branches: [main]
     paths:
       - 'website/**'
+      - 'documentation/**'
+      - 'docs/**'
+      - 'README.md'
+      - 'CHANGELOG.md'
       - '.github/workflows/deploy-docs.yml'
   workflow_dispatch:
 

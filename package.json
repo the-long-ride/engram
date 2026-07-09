@@ -30,7 +30,7 @@
   "bugs": {
     "url": "https://github.com/the-long-ride/engram/issues"
   },
-  "homepage": "https://github.com/the-long-ride/engram#readme",
+  "homepage": "https://the-long-ride.github.io/engram/",
   "bin": {
     "engram": "./dist/bin/engram.js",
     "engram-mcp": "./dist/bin/engram-mcp.js"

@@ -2,6 +2,17 @@ name: Test & Coverage
 
 on:
   push:
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+      - 'jest.config.cjs'
+      - '.github/workflows/test.yml'
+      - '.github/workflows/docs.yml'
+      - '.github/workflows/deploy-docs.yml'
   workflow_call:
   workflow_dispatch:
 
@@ -13,54 +24,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Detect related changes
-        id: changes
-        uses: dorny/paths-filter@v3
-        with:
-          filters: |
-            core:
-              - 'src/cli/**'
-              - 'src/commands/**'
-              - 'src/core/analysis/**'
-              - 'src/core/cli/**'
-              - 'src/core/config-db/**'
-              - 'src/core/integrations/**'
-              - 'src/core/memory/**'
-              - 'src/core/runtime/**'
-              - 'src/core/safety/**'
-              - 'src/core/system/**'
-              - 'src/core/vcs/**'
-              - 'src/core/web/**'
-              - 'src/mcp/**'
-              - 'tests/*.test.mjs'
-              - 'tests/cli/**'
-              - 'tests/mcp.test.mjs'
-              - 'tests/publish/**'
-              - 'tests/helpers.mjs'
-              - 'scripts/run-tests.mjs'
-              - 'scripts/generate-version.mjs'
-              - 'package.json'
-              - 'package-lock.json'
-              - 'tsconfig.json'
-              - '.github/workflows/test.yml'
-            app:
-              - 'src/core/web/app/**'
-              - 'tests/app/**'
-              - 'jest.config.cjs'
-              - 'package.json'
-              - 'package-lock.json'
-              - 'tsconfig.json'
-              - '.github/workflows/test.yml'
-            lines:
-              - 'src/**'
-              - 'scripts/**'
-              - 'media/logo/**'
-              - 'package.json'
-              - 'package-lock.json'
-              - 'tsconfig.json'
-              - '.github/workflows/test.yml'
-
-      - name: Decide verification scope
+      - name: Decide event scope
         id: scope
         run: |
           force=false
@@ -68,37 +32,51 @@ jobs:
             force=true
           fi
           echo "force=$force" >> "$GITHUB_OUTPUT"
-          echo "core=$([ "$force" = "true" ] || [ "${{ steps.changes.outputs.core }}" = "true" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
-          echo "app=$([ "$force" = "true" ] || [ "${{ steps.changes.outputs.app }}" = "true" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
-          echo "lines=$([ "$force" = "true" ] || [ "${{ steps.changes.outputs.lines }}" = "true" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+      - name: Detect changed files
+        if: steps.scope.outputs.force != 'true'
+        id: changed
+        uses: tj-actions/changed-files@v46
+        with:
+          files: |
+            src/**
+            tests/**
+            scripts/**
+            package.json
+            package-lock.json
+            tsconfig.json
+            jest.config.cjs
+            .github/workflows/test.yml
+            .github/workflows/docs.yml
+            .github/workflows/deploy-docs.yml
 
       - name: Setup Node
-        if: steps.scope.outputs.core == 'true' || steps.scope.outputs.app == 'true' || steps.scope.outputs.lines == 'true'
+        if: steps.scope.outputs.force == 'true' || steps.changed.outputs.any_changed == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
 
       - name: Install dependencies
-        if: steps.scope.outputs.core == 'true' || steps.scope.outputs.app == 'true' || steps.scope.outputs.lines == 'true'
+        if: steps.scope.outputs.force == 'true' || steps.changed.outputs.any_changed == 'true'
         run: npm ci
 
       - name: Typecheck
-        if: steps.scope.outputs.core == 'true' || steps.scope.outputs.app == 'true'
+        if: steps.scope.outputs.force == 'true' || steps.changed.outputs.any_changed == 'true'
         run: npm run typecheck
 
       - name: Line check
-        if: steps.scope.outputs.lines == 'true'
+        if: steps.scope.outputs.force == 'true' || steps.changed.outputs.any_changed == 'true'
         run: npm run lint:lines
 
-      - name: Test Core
-        if: steps.scope.outputs.core == 'true'
+      - name: Run all tests
+        if: steps.scope.outputs.force == 'true'
         run: npm test
 
-      - name: Test App
-        if: steps.scope.outputs.app == 'true'
-        run: npm run test:app
+      - name: Run related tests
+        if: steps.scope.outputs.force != 'true' && steps.changed.outputs.any_changed == 'true'
+        run: npm run test:related -- ${{ steps.changed.outputs.all_changed_files }}
 
       - name: Run coverage
-        if: steps.scope.outputs.core == 'true'
+        if: steps.scope.outputs.force == 'true' || steps.changed.outputs.any_changed == 'true'
         run: npm run coverage

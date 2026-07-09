@@ -8,7 +8,7 @@ test('npm publish metadata declares a package README', async () => {
   const manifest = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
   const npmignore = await readFile(path.join(root, '.npmignore'), 'utf8');
   const websiteManifest = JSON.parse(await readFile(path.join(root, 'website', 'package.json'), 'utf8'));
-  const websitePnpmWorkspace = await readFile(path.join(root, 'website', 'pnpm-workspace.yaml'), 'utf8');
+  const websitePnpmWorkspace = (await readFile(path.join(root, 'website', 'pnpm-workspace.yaml'), 'utf8')).replace(/\r\n/g, '\n');
   const readme = await readFile(path.join(root, 'README.md'), 'utf8');
   const llm = await readFile(path.join(root, 'llm.txt'), 'utf8');
   assert.match(readme, /^# Engram/m);

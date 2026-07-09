@@ -463,8 +463,11 @@ Built-in memory (ChatGPT, Claude Projects, Cursor rules) is siloed and invisible
 Full documentation lives on the website: [https://the-long-ride.github.io/engram/](https://the-long-ride.github.io/engram/)
 
 ## Roadmap & Companion Project
-We are working on **Making Engram easier to use first, then documentation page**, **Documentation site**, **AI Web Chat Integration** and **Improving Natural Language Command Mapping**. 
+
+We are working on **Making Engram easier to use first even for non-technical users**, **AI Web Chat Integration**.
+
 For visual Markdown vault navigation, use [Markdown Explorer](https://the-long-ride.github.io/markdown-explorer/).
 
 ## License & Changelog
+
 Licensed under [GPL-3.0](LICENSE). See [Changelog](https://github.com/the-long-ride/engram/blob/main/CHANGELOG.md).

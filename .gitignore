@@ -25,7 +25,6 @@ pnpm-debug.log*
 *.secret
 
 # Editor and OS files
-.vscode/
 .idea/
 *.swp
 *.swo

@@ -6,6 +6,18 @@ async function read(rel) {
   return readFile(new URL('../' + rel, import.meta.url), 'utf8');
 }
 
+async function readPanelCss() {
+  const files = [
+    'src/core/web/panel.css',
+    'src/core/web/panel-core.css',
+    'src/core/web/panel-data.css',
+    'src/core/web/panel-graph.css',
+    'src/core/web/panel-memory.css'
+  ];
+  const parts = await Promise.all(files.map((file) => read(file)));
+  return parts.join('\n');
+}
+
 async function exists(rel) {
   try {
     await stat(new URL('../' + rel, import.meta.url));
@@ -83,11 +95,12 @@ test('web build pipeline bundles React app to existing panel route', async () =>
 
   const copyAssets = await read('scripts/copy-assets.mjs');
   assert.equal(copyAssets.includes("'panel.js'"), false);
+  assert.ok(copyAssets.includes("asset.endsWith('.css')"));
   assert.ok(copyAssets.includes('engram-logo-black-transparent.svg'));
 });
 
 test('panel css keeps existing visual primitives', async () => {
-  const css = await read('src/core/web/panel.css');
+  const css = await readPanelCss();
   assert.ok(css.includes('--logo-url: url("/favicon.svg")'));
   assert.ok(css.includes('--logo-url: url("/engram-logo-black-transparent.svg")'));
   assert.match(css, /\.form-input\s*\{[^}]*color:\s*var\(--g1000\)/);
@@ -95,6 +108,16 @@ test('panel css keeps existing visual primitives', async () => {
   for (const token of ['.conn-grid', '.core-toolbar', '.memories-shell', '.memory-edge-dependency']) {
     assert.ok(css.includes(token), token);
   }
+});
+
+test('panel css reflows index panes and expands sidebar full vertical on small viewports', async () => {
+  const css = await readPanelCss();
+  assert.ok(css.includes('width: 100vw;'));
+  assert.ok(css.includes('right: 0;'));
+  assert.ok(css.includes('padding-bottom: 24px;'));
+  assert.ok(css.includes('flex-wrap: wrap;'));
+  assert.ok(css.includes('justify-content: flex-start;'));
+  assert.ok(css.includes('.tbl-wrap {\n    overflow-x: auto;'));
 });
 
 

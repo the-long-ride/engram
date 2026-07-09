@@ -1,0 +1,546 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--g400) transparent;
+}
+/* Thin scrollbars for WebKit browsers */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: var(--g400);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--g500);
+}
+:root {
+  --bg: #0a0a0a;
+  --bg2: #000;
+  --g100: #1a1a1a;
+  --g200: #262626;
+  --g300: #333;
+  --g400: #444;
+  --g500: #666;
+  --g600: #888;
+  --g700: #a0a0a0;
+  --g900: #e5e5e5;
+  --g1000: #fff;
+  --blue: #006bff;
+  --blue-bg: #001d4a;
+  --blue-dk: #9cd1ff;
+  --green: #28a948;
+  --green-bg: #062d13;
+  --green-dk: #a3e0b3;
+  --red: #e0314f;
+  --red-bg: #2d000a;
+  --red-dk: #ff8f9f;
+  --amber: #ffae00;
+  --amber-bg: #2d1a00;
+  --amber-dk: #ffe4ad;
+  --r4: 4px;
+  --r6: 6px;
+  --r8: 8px;
+  --r12: 12px;
+  --ease: cubic-bezier(0.175, 0.885, 0.32, 1.1);
+  --font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --logo-url: url("/favicon.svg");
+}
+:root.light {
+  --bg: #fff;
+  --bg2: #fafafa;
+  --g100: #f2f2f2;
+  --g200: #ebebeb;
+  --g300: #e6e6e6;
+  --g400: #eaeaea;
+  --g500: #c9c9c9;
+  --g600: #a8a8a8;
+  --g700: #8f8f8f;
+  --g900: #4d4d4d;
+  --g1000: #171717;
+  --blue: #006bff;
+  --blue-bg: #f0f7ff;
+  --blue-dk: #002359;
+  --green: #28a948;
+  --green-bg: #ecfdec;
+  --green-dk: #003a00;
+  --red: #c91835;
+  --red-bg: #ffeeef;
+  --red-dk: #47000c;
+  --amber: #ffae00;
+  --amber-bg: #fff6de;
+  --amber-dk: #561900;
+
+  --logo-url: url("/engram-logo-black-transparent.svg");
+}
+html {
+  font-family: var(--font);
+  font-size: 14px;
+  color: var(--g1000);
+  background: var(--bg2);
+  -webkit-font-smoothing: antialiased;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+button {
+  font-family: var(--font);
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+/* ── Layout ── */
+.app {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--bg);
+  border-right: 1px solid var(--g300);
+  display: flex;
+  flex-direction: column;
+}
+.main {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--bg2);
+}
+
+/* ── Sidebar ── */
+.sb-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--g200);
+}
+.sb-mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.sb-logo-icon {
+  width: 100%;
+  height: 100%;
+  background-image: var(--logo-url);
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+.sb-upgrade {
+  margin: 4px 12px 10px 12px;
+  padding: 8px 10px;
+  background: var(--amber-bg);
+  border: 1px solid var(--amber-dk);
+  border-radius: var(--r6);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: opacity 120ms;
+  text-align: left;
+}
+.sb-upgrade:hover {
+  opacity: 0.9;
+}
+.sb-upgrade-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--amber-dk);
+  letter-spacing: 0.3px;
+}
+.sb-upgrade-cmd {
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: 1.35;
+  color: var(--g900);
+  background: var(--bg2);
+  padding: 4px 5px;
+  border-radius: var(--r4);
+  white-space: pre-line;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sb-theme {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--g700);
+  padding: 6px 4px;
+  margin-bottom: 6px;
+}
+.sb-name {
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: -0.3px;
+}
+.sb-badge {
+  font-size: 10px;
+  font-weight: 500;
+  font-family: var(--mono);
+  background: var(--g100);
+  color: var(--g700);
+  border: 1px solid var(--g300);
+  border-radius: 3px;
+  padding: 1px 5px;
+  margin-left: 2px;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background 80ms,
+    color 80ms;
+}
+.sb-badge:hover {
+  background: var(--g200);
+  color: var(--g1000);
+}
+.sb-links {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--g600);
+  margin-top: 4px;
+}
+.sb-link {
+  color: var(--g700);
+  transition: color 80ms;
+  text-decoration: none;
+}
+.sb-link:hover {
+  color: var(--g1000);
+  text-decoration: underline;
+}
+.sb-dot {
+  color: var(--g500);
+}
+.sb-nav {
+  flex: 1;
+  padding: 8px;
+  overflow-y: auto;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: var(--r6);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--g700);
+  cursor: pointer;
+  transition:
+    background 80ms,
+    color 80ms;
+  user-select: none;
+  margin-bottom: 1px;
+}
+.nav-item:hover {
+  background: var(--g100);
+  color: var(--g1000);
+}
+.nav-item.active {
+  background: var(--g100);
+  color: var(--g1000);
+}
+.nav-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+.nav-item.active .nav-icon {
+  opacity: 1;
+}
+.sb-footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--g200);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.close-btn {
+  height: 32px;
+  width: 100%;
+  background: var(--g1000);
+  color: var(--bg);
+  border-radius: var(--r6);
+  font-size: 13px;
+  font-weight: 500;
+  transition: opacity 150ms;
+}
+.close-btn:hover {
+  opacity: 0.85;
+}
+.sb-cwd {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--g600);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Tab panes ── */
+.tab-pane {
+  display: none;
+  padding: 28px 32px;
+  width: 100%;
+}
+.tab-pane.active {
+  display: block;
+}
+.tab-hdr {
+  margin-bottom: 24px;
+}
+.tab-hdr h1 {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.4px;
+  margin-bottom: 4px;
+}
+.tab-hdr p {
+  font-size: 13px;
+  color: var(--g700);
+}
+.tab-actions {
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* ── Cards ── */
+.card {
+  background: var(--bg);
+  border: 1px solid var(--g300);
+  border-radius: var(--r12);
+  overflow: hidden;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+.card-hdr {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--g200);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.card-title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--g700);
+}
+.grid-2 {
+  display: flex;
+  gap: 16px;
+}
+.grid-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+@media (max-width: 768px) {
+  .grid-2 {
+    flex-direction: column;
+  }
+}
+
+/* ── Config rows ── */
+.cfg-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 6px 16px;
+  border-bottom: 1px solid var(--g100);
+}
+.cfg-row:last-child {
+  border-bottom: none;
+}
+.cfg-lbl {
+  flex: 1;
+  font-size: 13px;
+  color: var(--g900);
+  font-weight: 500;
+}
+.cfg-ctl {
+  flex-shrink: 0;
+  min-width: 160px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+/* ── Toggle ── */
+.tgl {
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
+  background: var(--g300);
+  position: relative;
+  cursor: pointer;
+  transition: background 150ms var(--ease);
+  flex-shrink: 0;
+}
+.tgl.on {
+  background: var(--g1000);
+}
+.tgl-thumb {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  top: 3px;
+  left: 3px;
+  transition: transform 150ms var(--ease), background 150ms var(--ease);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+.tgl.on .tgl-thumb {
+  transform: translateX(16px);
+  background: var(--bg);
+}
+
+/* ── Form controls ── */
+.cfg-select,
+.cfg-input {
+  height: 32px;
+  border: 1px solid var(--g300);
+  border-radius: var(--r6);
+  font-family: var(--font);
+  font-size: 13px;
+  color: var(--g1000);
+  background: var(--bg);
+  padding: 0 8px;
+  outline: none;
+  transition: border-color 120ms;
+  min-width: 140px;
+}
+.cfg-select:focus,
+.cfg-input:focus {
+  border-color: var(--g700);
+}
+.cfg-input[type="number"] {
+  min-width: 80px;
+  max-width: 100px;
+}
+.cfg-input.wide {
+  min-width: 200px;
+  max-width: 320px;
+}
+
+/* ── Inline text edit ── */
+.edit-val {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--g700);
+  cursor: pointer;
+  border-bottom: 1px dashed var(--g400);
+  padding-bottom: 1px;
+  transition: color 80ms;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 260px;
+}
+.edit-val:hover {
+  color: var(--g1000);
+  border-color: var(--g700);
+}
+.edit-row-form {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: var(--r6);
+  font-size: 12px;
+  font-weight: 500;
+  transition:
+    background 100ms,
+    border-color 100ms,
+    opacity 100ms;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.btn-primary {
+  background: var(--g1000);
+  color: var(--bg);
+  border-color: var(--g1000);
+}
+.btn-primary:hover {
+  opacity: 0.85;
+}
+.btn-outline {
+  background: var(--bg);
+  color: var(--g900);
+  border-color: var(--g300);
+}
+.btn-outline:hover {
+  background: var(--g100);
+}
+.btn-ghost {
+  color: var(--g700);
+  padding: 0 6px;
+}
+.btn-ghost:hover {
+  color: var(--g1000);
+}
+.btn-danger {
+  color: var(--red);
+  padding: 0 6px;
+}
+.btn-danger:hover {
+  color: #a00023;
+}
+.btn-save {
+  background: var(--g1000);
+  color: var(--bg);
+  height: 26px;
+  padding: 0 8px;
+  border-radius: var(--r4);
+  font-size: 11px;
+}
+.btn-save:hover {
+  opacity: 0.85;
+}
+.btn-cancel {
+  color: var(--g700);
+  height: 26px;
+  padding: 0 6px;
+  font-size: 11px;
+}
+.btn-cancel:hover {
+  color: var(--g1000);
+}

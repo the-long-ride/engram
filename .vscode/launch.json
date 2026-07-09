@@ -1,0 +1,12 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Start Docs Site",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "pnpm start",
+      "cwd": "${workspaceFolder}/website"
+    }
+  ]
+}

@@ -19,7 +19,7 @@ test('VS Code website tasks use pnpm commands', async () => {
   const tasks = JSON.parse(await readFile(tasksPath, 'utf8'));
 
   assert.equal(launch.configurations[0].cwd, '${workspaceFolder}/website');
-  assert.equal(launch.configurations[0].command, 'pnpm build && pnpm serve');
+  assert.equal(launch.configurations[0].command, 'pnpm start');
 
   const startTask = tasks.tasks.find((task) => task.label === 'Start Docusaurus Dev Server');
   const buildTask = tasks.tasks.find((task) => task.label === 'Build Docusaurus (Fast, EN only)');

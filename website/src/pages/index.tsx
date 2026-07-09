@@ -416,8 +416,8 @@ function ArchitectureSection() {
   const t = translations[currentLocale] || translations.en;
 
   const sources = {
-    light: useBaseUrl('/img/demo/engram-interaction-diagram-light.png'),
-    dark: useBaseUrl('/img/demo/engram-interaction-diagram-dark.png'),
+    light: useBaseUrl('/img/demo/engram_diagram_white_transparent.svg'),
+    dark: useBaseUrl('/img/demo/engram_diagram_dark_transparent.svg'),
   };
 
   return (

@@ -1,0 +1,140 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#71717a"/></marker>
+<marker id="arrowStart" viewBox="0 0 10 10" refX="2" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 10 0 L 0 5 L 10 10 z" fill="#71717a"/></marker>
+<filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%"><feDropShadow dx="0" dy="8" stdDeviation="10" flood-opacity="0.08"/></filter>
+</defs>
+<path d="M 56 777 H 1864" stroke="#e5e7eb" stroke-width="1" opacity="0.55"/>
+<rect x="690" y="38" width="600" height="156" rx="22" fill="#ffffff" stroke="#e5e7eb" stroke-width="1.2"/>
+<text x="712" y="70" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="18" font-weight="650" text-anchor="start"><tspan x="712" dy="0">How Engram Reaches the Agent</tspan></text>
+<rect x="50" y="212" width="870" height="536" rx="22" fill="#ffffff" stroke="#e5e7eb" stroke-width="1.2"/>
+<text x="72" y="244" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="18" font-weight="650" text-anchor="start"><tspan x="72" dy="0">Read Path</tspan></text>
+<rect x="960" y="212" width="900" height="536" rx="22" fill="#ffffff" stroke="#e5e7eb" stroke-width="1.2"/>
+<text x="982" y="244" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="18" font-weight="650" text-anchor="start"><tspan x="982" dy="0">Write Path</tspan></text>
+<rect x="80" y="790" width="1760" height="238" rx="22" fill="#ffffff" stroke="#e5e7eb" stroke-width="1.2"/>
+<text x="102" y="822" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="18" font-weight="650" text-anchor="start"><tspan x="102" dy="0">Memory Layer</tspan></text>
+<path d="M 232.0 109.0 L 284.0 109.0" fill="none" stroke="#71717a" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" opacity="0.86" marker-start="url(#arrowStart)"/>
+<path d="M 649.0 109.0 L 690.0 109.0 L 690.0 132.0 L 735.0 132.0" fill="none" stroke="#71717a" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" opacity="0.86"/>
+<path d="M 620.0 66.0 L 620.0 48.0 L 1140.0 48.0 L 1140.0 96.0" fill="none" stroke="#71717a" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" opacity="0.86"/>
+<path d="M 857.5 168.0 L 858.0 226.0 L 228.0 226.0 L 228.0 276.0" fill="none" stroke="#71717a" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" opacity="0.86"/>
+<path d="M 1140.5 168.0 L 1140.0 204.0 L 300.0 204.0 L 300.0 276.0" fill="none" stroke="#71717a" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" opacity="0.86"/>
+<path d="M 228.0 346.0 L 228.0 384.0" fill="none" stroke="#71717a" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" opacity="0.86"/>
+<path d="M 408.0 424.0 L 468.0 400.0" fill="none" stroke="#71717a" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" opacity="0.86"/>
+<path d="M 650.0 458.0 L 650.0 512.0" fill="none" stroke="#71717a" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" opacity="0.86"/>
+<path d="M 650.0 594.0 L 650.0 626.0" fill="none" stroke="#71717a" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" opacity="0.86"/>
+<path d="M 500.0 659.0 L 430.0 659.0 L 430.0 608.0 L 384.0 608.0" fill="none" stroke="#71717a" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" opacity="0.86"/>
+<path d="M 500.0 676.0 L 430.0 676.0 L 384.0 701.0" fill="none" stroke="#71717a" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" opacity="0.86"/>
+<path d="M 238.0 646.0 L 238.0 668.0" fill="none" stroke="#71717a" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" opacity="0.86"/>
+<path d="M 238.0 570.0 L 238.0 246.0 L 466.0 246.0 L 466.0 152.0" fill="none" stroke="#71717a" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" opacity="0.86"/>
+<path d="M 92.0 701.0 L 34.0 701.0 L 34.0 112.0 L 284.0 109.0" fill="none" stroke="#71717a" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" opacity="0.70" stroke-dasharray="6 7"/>
+<path d="M 590.0 458.0 L 590.0 760.0 L 320.0 760.0 L 320.0 880.0" fill="none" stroke="#71717a" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" opacity="0.86"/>
+<path d="M 736.0 458.0 L 736.0 760.0 L 735.0 760.0 L 735.0 880.0" fill="none" stroke="#71717a" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" opacity="0.86"/>
+<path d="M 500.0 921.0 L 520.0 921.0 L 520.0 840.0 L 1165.0 840.0 L 1165.0 880.0" fill="none" stroke="#71717a" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" opacity="0.86"/>
+<path d="M 930.0 921.0 L 970.0 921.0" fill="none" stroke="#71717a" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" opacity="0.86"/>
+<path d="M 1165.0 880.0 L 1165.0 760.0 L 880.0 760.0 L 880.0 400.0 L 858.0 400.0" fill="none" stroke="#71717a" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" opacity="0.86"/>
+<path d="M 466.0 152.0 L 466.0 202.0 L 1175.0 202.0 L 1175.0 270.0" fill="none" stroke="#71717a" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" opacity="0.86"/>
+<path d="M 512.0 152.0 L 512.0 214.0 L 976.0 214.0 L 976.0 602.0 L 1000.0 602.0" fill="none" stroke="#71717a" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" opacity="0.86"/>
+<path d="M 1350.0 328.0 L 1390.0 331.0" fill="none" stroke="#71717a" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" opacity="0.86"/>
+<path d="M 1516.0 370.0 L 1516.0 420.0" fill="none" stroke="#71717a" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" opacity="0.86"/>
+<path d="M 1570.0 536.0 L 1540.0 568.0" fill="none" stroke="#71717a" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" opacity="0.86"/>
+<path d="M 1540.0 644.0 L 1540.0 666.0" fill="none" stroke="#71717a" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" opacity="0.86"/>
+<path d="M 152.0 142.0 L 152.0 202.0 L 1812.0 202.0 L 1812.0 478.0 L 1750.0 478.0" fill="none" stroke="#71717a" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" opacity="0.86"/>
+<path d="M 1160.0 646.0 L 1160.0 760.0 L 320.0 760.0 L 320.0 880.0" fill="none" stroke="#71717a" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" opacity="0.86"/>
+<path d="M 1168.0 646.0 L 1168.0 776.0 L 735.0 776.0 L 735.0 880.0" fill="none" stroke="#71717a" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" opacity="0.86"/>
+<path d="M 1500.0 644.0 L 1500.0 768.0 L 320.0 768.0 L 320.0 880.0" fill="none" stroke="#71717a" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" opacity="0.86"/>
+<path d="M 1582.0 644.0 L 1582.0 776.0 L 735.0 776.0 L 735.0 880.0" fill="none" stroke="#71717a" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" opacity="0.86"/>
+<path d="M 1553.0 740.0 L 1553.0 776.0 L 1165.0 776.0 L 1165.0 880.0" fill="none" stroke="#71717a" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" opacity="0.86"/>
+<path d="M 500.0 921.0 L 520.0 972.0 L 520.0 1000.0 L 1565.0 1000.0 L 1565.0 962.0" fill="none" stroke="#71717a" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" opacity="0.86"/>
+<path d="M 930.0 921.0 L 950.0 990.0 L 1565.0 990.0 L 1565.0 962.0" fill="none" stroke="#71717a" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)" opacity="0.86"/>
+<rect x="72" y="76" width="160" height="66" rx="18" fill="#f8fbff" stroke="#bfdbfe" stroke-width="1.35" filter="url(#softShadow)"/>
+<path d="M 90 77 H 214" stroke="#bfdbfe" stroke-width="2" opacity="0.75"/>
+<g transform="translate(94,97.0)" fill="none" stroke="#18181b" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4.5 21c1.4-5 13.6-5 15 0"/></g>
+<text x="130" y="114.1" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="18" font-weight="600" text-anchor="start"><tspan x="130" dy="0">You</tspan></text>
+<rect x="284" y="66" width="365" height="86" rx="18" fill="#f4f4f5" stroke="#d4d4d8" stroke-width="1.35" filter="url(#softShadow)"/>
+<path d="M 302 67 H 631" stroke="#d4d4d8" stroke-width="2" opacity="0.75"/>
+<g transform="translate(306,97.0)" fill="none" stroke="#18181b" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="7" width="16" height="12" rx="3"/><path d="M12 7V3"/><path d="M8.5 3h7"/><circle cx="9" cy="13" r="1" fill="#18181b" stroke="none"/><circle cx="15" cy="13" r="1" fill="#18181b" stroke="none"/><path d="M9 17h6"/></g>
+<text x="342" y="103.6" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="17" font-weight="650" text-anchor="start"><tspan x="342" dy="0">AI Host</tspan></text>
+<text x="342" y="124.6" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="17" font-weight="430" text-anchor="start"><tspan x="342" dy="0">(Codex, Claude, Gemini, etc.)</tspan></text>
+<rect x="735" y="96" width="245" height="72" rx="18" fill="#fafafa" stroke="#d4d4d8" stroke-width="1.35" filter="url(#softShadow)"/>
+<text x="757" y="126.6" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="17" font-weight="650" text-anchor="start"><tspan x="757" dy="0">Linked instructions,</tspan></text>
+<text x="757" y="147.6" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="17" font-weight="430" text-anchor="start"><tspan x="757" dy="0">slash commands, MCP</tspan></text>
+<rect x="1018" y="96" width="245" height="72" rx="18" fill="#fafafa" stroke="#d4d4d8" stroke-width="1.35" filter="url(#softShadow)"/>
+<text x="1040" y="126.6" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="17" font-weight="650" text-anchor="start"><tspan x="1040" dy="0">Optional hooks</tspan></text>
+<text x="1040" y="147.6" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="17" font-weight="430" text-anchor="start"><tspan x="1040" dy="0">(SessionStart and prompt turns)</tspan></text>
+<rect x="92" y="276" width="272" height="70" rx="18" fill="#fafafa" stroke="#d4d4d8" stroke-width="1.35" filter="url(#softShadow)"/>
+<text x="114" y="316.1" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="18" font-weight="600" text-anchor="start"><tspan x="114" dy="0">Task request or prompt turn</tspan></text>
+<rect x="92" y="384" width="316" height="80" rx="18" fill="#fafafa" stroke="#d4d4d8" stroke-width="1.35" filter="url(#softShadow)"/>
+<text x="114" y="418.6" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="17" font-weight="650" text-anchor="start"><tspan x="114" dy="0">Load/search request</tspan></text>
+<text x="114" y="439.6" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="17" font-weight="430" text-anchor="start"><tspan x="114" dy="0">(engram load, search, graph)</tspan></text>
+<rect x="468" y="342" width="390" height="116" rx="18" fill="#fafafa" stroke="#d4d4d8" stroke-width="1.35" filter="url(#softShadow)"/>
+<text x="490" y="384.1" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="17" font-weight="650" text-anchor="start"><tspan x="490" dy="0">Anchor on meaningful terms</tspan></text>
+<text x="490" y="405.1" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="17" font-weight="430" text-anchor="start"><tspan x="490" dy="0">then rerank by tags, recency,</tspan><tspan x="490" dy="21">dependency graph, sqlite-vec</tspan></text>
+<rect x="500" y="512" width="300" height="82" rx="18" fill="#fafafa" stroke="#d4d4d8" stroke-width="1.35" filter="url(#softShadow)"/>
+<text x="522" y="547.6" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="17" font-weight="650" text-anchor="start"><tspan x="522" dy="0">Refine to compact top-N pack</tspan></text>
+<text x="522" y="568.6" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="17" font-weight="430" text-anchor="start"><tspan x="522" dy="0">(default 8 unless --all)</tspan></text>
+<rect x="500" y="626" width="300" height="66" rx="18" fill="#fafafa" stroke="#d4d4d8" stroke-width="1.35" filter="url(#softShadow)"/>
+<text x="522" y="653.6" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="17" font-weight="650" text-anchor="start"><tspan x="522" dy="0">Hook cache checks</tspan></text>
+<text x="522" y="674.6" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="17" font-weight="430" text-anchor="start"><tspan x="522" dy="0">routed signature</tspan></text>
+<rect x="92" y="570" width="292" height="76" rx="18" fill="#fafafa" stroke="#d4d4d8" stroke-width="1.35" filter="url(#softShadow)"/>
+<text x="114" y="602.6" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="17" font-weight="650" text-anchor="start"><tspan x="114" dy="0">Inject compact</tspan></text>
+<text x="114" y="623.6" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="17" font-weight="430" text-anchor="start"><tspan x="114" dy="0">memory pack</tspan></text>
+<rect x="92" y="668" width="292" height="66" rx="18" fill="#fafafa" stroke="#d4d4d8" stroke-width="1.35" filter="url(#softShadow)"/>
+<text x="114" y="695.6" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="17" font-weight="650" text-anchor="start"><tspan x="114" dy="0">Proof line</tspan></text>
+<text x="114" y="716.6" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="17" font-weight="430" text-anchor="start"><tspan x="114" dy="0">loaded, reused, or skipped</tspan></text>
+<rect x="1000" y="270" width="350" height="116" rx="18" fill="#fafafa" stroke="#d4d4d8" stroke-width="1.35" filter="url(#softShadow)"/>
+<text x="1022" y="304.3" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="16" font-weight="650" text-anchor="start"><tspan x="1022" dy="0">Proposal / preview flows</tspan></text>
+<text x="1022" y="323.3" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="16" font-weight="430" text-anchor="start"><tspan x="1022" dy="0">(save, save-session / propose,</tspan><tspan x="1022" dy="19">take-control, metacognize,</tspan><tspan x="1022" dy="19">resolve-conflicts)</tspan></text>
+<rect x="1390" y="292" width="252" height="78" rx="18" fill="#fafafa" stroke="#d4d4d8" stroke-width="1.35" filter="url(#softShadow)"/>
+<text x="1412" y="325.6" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="17" font-weight="650" text-anchor="start"><tspan x="1412" dy="0">Safety checks</tspan></text>
+<text x="1412" y="346.6" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="17" font-weight="430" text-anchor="start"><tspan x="1412" dy="0">(PII, secrets, prompt injection)</tspan></text>
+<rect x="1390" y="420" width="360" height="116" rx="18" fill="#fafafa" stroke="#d4d4d8" stroke-width="1.35" filter="url(#softShadow)"/>
+<text x="1412" y="463.8" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="16" font-weight="650" text-anchor="start"><tspan x="1412" dy="0">Human approval gate</tspan></text>
+<text x="1412" y="482.8" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="16" font-weight="430" text-anchor="start"><tspan x="1412" dy="0">(A / B / C or yes / audit / cancel,</tspan><tspan x="1412" dy="19">plus explicit accept-all flows)</tspan></text>
+<rect x="1000" y="558" width="320" height="88" rx="18" fill="#fafafa" stroke="#d4d4d8" stroke-width="1.35" filter="url(#softShadow)"/>
+<text x="1022" y="596.6" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="17" font-weight="650" text-anchor="start"><tspan x="1022" dy="0">Observe writes</tspan></text>
+<text x="1022" y="617.6" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="17" font-weight="430" text-anchor="start"><tspan x="1022" dy="0">sanitized inbox notes only</tspan></text>
+<rect x="1390" y="568" width="300" height="76" rx="18" fill="#fafafa" stroke="#d4d4d8" stroke-width="1.35" filter="url(#softShadow)"/>
+<text x="1412" y="600.6" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="17" font-weight="650" text-anchor="start"><tspan x="1412" dy="0">Write approved</tspan></text>
+<text x="1412" y="621.6" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="17" font-weight="430" text-anchor="start"><tspan x="1412" dy="0">Markdown memory</tspan></text>
+<rect x="1390" y="666" width="326" height="74" rx="18" fill="#fafafa" stroke="#d4d4d8" stroke-width="1.35" filter="url(#softShadow)"/>
+<text x="1412" y="697.6" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="17" font-weight="650" text-anchor="start"><tspan x="1412" dy="0">Refresh hashes, index, graph,</tspan></text>
+<text x="1412" y="718.6" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="17" font-weight="430" text-anchor="start"><tspan x="1412" dy="0">optional sqlite-vec</tspan></text>
+<rect x="140" y="880" width="360" height="82" rx="18" fill="#f4fffd" stroke="#99f6e4" stroke-width="1.35" filter="url(#softShadow)"/>
+<path d="M 158 881 H 482" stroke="#99f6e4" stroke-width="2" opacity="0.75"/>
+<g transform="translate(162,909.0)" fill="none" stroke="#18181b" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7.5h6l2 2h10v8.5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M3 10h18"/></g>
+<text x="198" y="915.6" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="17" font-weight="650" text-anchor="start"><tspan x="198" dy="0">Workspace memory</tspan></text>
+<text x="198" y="936.6" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="17" font-weight="430" text-anchor="start"><tspan x="198" dy="0">(.agents/.engram/)</tspan></text>
+<rect x="540" y="880" width="390" height="82" rx="18" fill="#f4fffd" stroke="#99f6e4" stroke-width="1.35" filter="url(#softShadow)"/>
+<path d="M 558 881 H 912" stroke="#99f6e4" stroke-width="2" opacity="0.75"/>
+<g transform="translate(562,909.0)" fill="none" stroke="#18181b" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c3 3.4 3 14.6 0 18"/><path d="M12 3c-3 3.4-3 14.6 0 18"/></g>
+<text x="598" y="915.6" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="17" font-weight="650" text-anchor="start"><tspan x="598" dy="0">Global memory and profiles</tspan></text>
+<text x="598" y="936.6" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="17" font-weight="430" text-anchor="start"><tspan x="598" dy="0">($ENGRAM_GLOBAL_DIR)</tspan></text>
+<rect x="970" y="880" width="390" height="82" rx="18" fill="#f4fffd" stroke="#99f6e4" stroke-width="1.35" filter="url(#softShadow)"/>
+<path d="M 988 881 H 1342" stroke="#99f6e4" stroke-width="2" opacity="0.75"/>
+<g transform="translate(992,909.0)" fill="none" stroke="#18181b" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="8" r="2.5"/><circle cx="17" cy="7" r="2.5"/><circle cx="12" cy="17" r="2.5"/><path d="M9.3 8h5.4"/><path d="M8.2 10.2l2.6 4.7"/><path d="M15.8 9.5l-2.6 5.4"/></g>
+<text x="1028" y="915.6" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="17" font-weight="650" text-anchor="start"><tspan x="1028" dy="0">Derived data</tspan></text>
+<text x="1028" y="936.6" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="17" font-weight="430" text-anchor="start"><tspan x="1028" dy="0">(hashes, index, graph, sqlite-vec)</tspan></text>
+<rect x="1400" y="880" width="330" height="82" rx="18" fill="#f4fffd" stroke="#99f6e4" stroke-width="1.35" filter="url(#softShadow)"/>
+<path d="M 1418 881 H 1712" stroke="#99f6e4" stroke-width="2" opacity="0.75"/>
+<g transform="translate(1422,909.0)" fill="none" stroke="#18181b" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18h10a4 4 0 0 0 .8-7.9A6 6 0 0 0 6.5 8.2 4.8 4.8 0 0 0 7 18z"/><path d="M12 12v5"/><path d="M9.5 14.5L12 12l2.5 2.5"/></g>
+<text x="1458" y="926.1" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="18" font-weight="600" text-anchor="start"><tspan x="1458" dy="0">Git / cloud sync</tspan></text>
+<rect x="230" y="40" width="162.0" height="24" rx="12" fill="#ffffff" stroke="#e5e7eb" stroke-width="0.8" opacity="0.96"/>
+<text x="238" y="57" fill="#3f3f46" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="14" font-weight="520" text-anchor="start"><tspan x="238" dy="0">Chat and collaborate</tspan></text>
+<rect x="384" y="598" width="176.6" height="24" rx="12" fill="#ffffff" stroke="#e5e7eb" stroke-width="0.8" opacity="0.96"/>
+<text x="392" y="615" fill="#3f3f46" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="14" font-weight="520" text-anchor="start"><tspan x="392" dy="0">New or changed context</tspan></text>
+<rect x="386" y="691" width="154.7" height="24" rx="12" fill="#ffffff" stroke="#e5e7eb" stroke-width="0.8" opacity="0.96"/>
+<text x="394" y="708" fill="#3f3f46" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="14" font-weight="520" text-anchor="start"><tspan x="394" dy="0">Same routed context</tspan></text>
+<rect x="302" y="235" width="96.3" height="24" rx="12" fill="#ffffff" stroke="#e5e7eb" stroke-width="0.8" opacity="0.96"/>
+<text x="310" y="252" fill="#3f3f46" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="14" font-weight="520" text-anchor="start"><tspan x="310" dy="0">Memory pack</tspan></text>
+<rect x="62" y="145" width="125.5" height="24" rx="12" fill="#ffffff" stroke="#e5e7eb" stroke-width="0.8" opacity="0.96"/>
+<text x="70" y="162" fill="#3f3f46" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="14" font-weight="520" text-anchor="start"><tspan x="70" dy="0">Visibility only</tspan></text>
+<rect x="1018" y="733" width="125.5" height="24" rx="12" fill="#ffffff" stroke="#e5e7eb" stroke-width="0.8" opacity="0.96"/>
+<text x="1026" y="750" fill="#3f3f46" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="14" font-weight="520" text-anchor="start"><tspan x="1026" dy="0">Ranking signals</tspan></text>
+<rect x="774" y="177" width="176.6" height="24" rx="12" fill="#ffffff" stroke="#e5e7eb" stroke-width="0.8" opacity="0.96"/>
+<text x="782" y="194" fill="#3f3f46" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="14" font-weight="520" text-anchor="start"><tspan x="782" dy="0">Propose durable memory</tspan></text>
+<rect x="618" y="189" width="132.8" height="24" rx="12" fill="#ffffff" stroke="#e5e7eb" stroke-width="0.8" opacity="0.96"/>
+<text x="626" y="206" fill="#3f3f46" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="14" font-weight="520" text-anchor="start"><tspan x="626" dy="0">Capture raw note</tspan></text>
+<rect x="1572" y="177" width="191.2" height="24" rx="12" fill="#ffffff" stroke="#e5e7eb" stroke-width="0.8" opacity="0.96"/>
+<text x="1580" y="194" fill="#3f3f46" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="14" font-weight="520" text-anchor="start"><tspan x="1580" dy="0">Approve, reject, or edit</tspan></text>
+<text x="1816" y="1042" fill="#52525b" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="13" font-weight="520" text-anchor="end"><tspan x="1816" dy="0">Engram flow</tspan></text>
+</svg>

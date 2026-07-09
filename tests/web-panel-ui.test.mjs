@@ -97,6 +97,16 @@ test('panel css keeps existing visual primitives', async () => {
   }
 });
 
+test('panel css reflows index panes and expands sidebar full vertical on small viewports', async () => {
+  const css = await read('src/core/web/panel.css');
+  assert.ok(css.includes('width: 100vw;'));
+  assert.ok(css.includes('right: 0;'));
+  assert.ok(css.includes('padding-bottom: 24px;'));
+  assert.ok(css.includes('flex-wrap: wrap;'));
+  assert.ok(css.includes('justify-content: flex-start;'));
+  assert.ok(css.includes('.tbl-wrap {\n    overflow-x: auto;'));
+});
+
 
 test('React migration restores tab icons, shared preview modal, and core prompt previews', async () => {
   const sidebar = await read('src/core/web/app/layout/Sidebar.tsx');

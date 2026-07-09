@@ -1,14 +1,16 @@
 # Engram
 
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-orange)](LICENSE) [![GitHub](https://img.shields.io/badge/GitHub-Repository-orange?logo=github)](https://github.com/the-long-ride/engram) [![npm version](https://img.shields.io/npm/v/@the-long-ride/engram?color=orange&logo=npm)](https://www.npmjs.com/package/@the-long-ride/engram) [![npm](https://img.shields.io/badge/npm-Package-orange?logo=npm)](https://www.npmjs.com/package/@the-long-ride/engram)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-orange)](LICENSE) [![GitHub](https://img.shields.io/badge/GitHub-Repository-orange?logo=github)](https://github.com/the-long-ride/engram) [![Website](https://img.shields.io/badge/Website-Homepage-orange)](https://the-long-ride.github.io/engram/) [![npm version](https://img.shields.io/npm/v/@the-long-ride/engram?color=orange&logo=npm)](https://www.npmjs.com/package/@the-long-ride/engram)
 
 ![Engram cover](https://raw.githubusercontent.com/the-long-ride/engram/main/media/cover/engram-cover.png)
 
-[English](README.md) | [Tiếng Việt](documentation/vi/README.md) | [Español](documentation/es/README.md) | [Français](documentation/fr/README.md) | [中文](documentation/zh/README.md) | [한국어](documentation/ko/README.md) | [日本語](documentation/ja/README.md) | [Русский](documentation/ru/README.md)
+
 
 **Engram is a human-owned, file-first memory protocol for AI agents. Grow with you & your teams.**
 
 It gives agents memory without giving agents ownership of memory. Durable rules, workflows, and project knowledge live as plain Markdown, reviewed by humans, portable through Git, and usable by any agent.
+
+Full documentation lives on the website: [@the-long-ride/engram docs-site](https://the-long-ride.github.io/engram/docs/intro)
 
 ---
 
@@ -458,8 +460,7 @@ Built-in memory (ChatGPT, Claude Projects, Cursor rules) is siloed and invisible
 
 ## Documentation
 
-Full documentation lives in `documentation/`:
-- [English](documentation/en/index.md) | [Tiếng Việt](documentation/vi/index.md) | [Español](documentation/es/index.md) | [Français](documentation/fr/index.md) | [中文](documentation/zh/index.md) | [한국어](documentation/ko/index.md) | [日本語](documentation/ja/index.md) | [Русский](documentation/ru/index.md)
+Full documentation lives on the website: [https://the-long-ride.github.io/engram/](https://the-long-ride.github.io/engram/)
 
 ## Roadmap & Companion Project
 We are working on **Making Engram easier to use first, then documentation page**, **Documentation site**, **AI Web Chat Integration** and **Improving Natural Language Command Mapping**. 

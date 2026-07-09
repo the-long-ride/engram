@@ -1,5 +1,5 @@
 // Verify WebUI assets stay small enough for fast local panel startup.
-import { access, readFile, stat } from 'node:fs/promises';
+import { access, readFile, readdir, stat } from 'node:fs/promises';
 
 const rawBudgets = [
   ['src/core/web/panel.html', 7000],
@@ -7,25 +7,28 @@ const rawBudgets = [
   ['media/logo/engram-logo-black-transparent.svg', 12000]
 ];
 
-const staticBudgets = [
-  ['src/core/web/panel.css', 28000, minifyCss]
-];
+const cssDir = 'src/core/web';
+const cssLineBudgetMax = 600;
 
 const bundleBudgets = [
   ['dist/core/web/panel.js', 260000]
 ];
 
-function minifyCss(source) {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/\s+/g, ' ')
-    .replace(/\s*([{}:;,>])\s*/g, '$1')
-    .replace(/;}\s*/g, '}')
-    .trim();
+function lineCount(source) {
+  const trimmed = source.trimEnd();
+  if (!trimmed) return 0;
+  return trimmed.split(/\r\n|\r|\n/).length;
 }
 
 async function exists(file) {
   try { await access(file); return true; } catch { return false; }
+}
+
+async function cssFiles() {
+  const assets = await readdir(cssDir);
+  return assets
+    .filter((file) => file.endsWith('.css'))
+    .map((file) => cssDir + '/' + file);
 }
 
 const failures = [];
@@ -34,10 +37,10 @@ for (const [file, maxBytes] of rawBudgets) {
   if (size > maxBytes) failures.push(file + ': ' + size + ' bytes > ' + maxBytes + ' bytes (raw)');
 }
 
-for (const [file, maxBytes, transform] of staticBudgets) {
+for (const file of await cssFiles()) {
   const source = await readFile(file, 'utf8');
-  const size = Buffer.byteLength(transform(source));
-  if (size > maxBytes) failures.push(file + ': ' + size + ' bytes > ' + maxBytes + ' bytes (static)');
+  const lines = lineCount(source);
+  if (lines > cssLineBudgetMax) failures.push(file + ': ' + lines + ' lines > ' + cssLineBudgetMax + ' lines (css)');
 }
 
 for (const [file, maxBytes] of bundleBudgets) {

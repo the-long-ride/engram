@@ -41,19 +41,20 @@ Lorsque les variantes sont désactivées, Engram affiche par défaut la formulat
 engram set-rule-variant strict|balanced|light|off
 ```
 
-## Sortie destinée aux agents (`--for-agents`)
+## Sortie destinée aux agents (`--full`)
 
-Lorsque `engram load --for-agents "<task>"` est exécuté, la sortie est allégée pour les agents d'IA :
+Lorsque `engram load "<task>"` est exécuté, la sortie est allégée pour les agents d'IA :
 
-| Aspect | Humain (`engram load`) | Agent (`--for-agents`) |
+| Aspect | Humain (`engram load`) | Agent (`--full`) |
 | --- | --- | --- |
 | Frontmatter | Tous les champs (id, type, tags, confidence, scope, author, created, updated, depends_on, etc.) | Uniquement `id`, `type`, `tags`, `confidence`, `depends_on` |
 | Corps de la règle | Section complète `## Rule Variants` avec les trois variantes | Une variante sélectionnée sous `## Rule variants (1/3 based on current: <active>)` |
 | Contenu hors règle | Section complète `## Content` | Même contenu, titre inchangé |
 
-L'outil MCP `engram_load` et les hooks SessionStart utilisent par défaut `--for-agents` (désactivation via `forAgents: false` sur l'outil MCP). Les adaptateurs de skillset codent en dur `--for-agents` dans leurs instructions générées.
+L'outil MCP `engram_load` et les hooks SessionStart utilisent par défaut `--full` (désactivation via `full: true` sur l'outil MCP). Les adaptateurs de skillset codent en dur `--full` dans leurs instructions générées.
 
 ## Étapes suivantes
 
 - [Mémoire de l'espace de travail vs mémoire globale](scopes.md)
 - [Chemin de lecture et routage](read-path.md)
+

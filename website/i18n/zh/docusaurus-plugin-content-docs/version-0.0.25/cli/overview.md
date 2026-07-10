@@ -8,7 +8,7 @@ description: "每个 Engram CLI 命令及其功能的映射。"
 
 ## AI 聊天审批
 
-在 AI 代理聊天中，Engram 的审批是对话式的。代理会先展示整理后的 `TYPE: ... | TEXT: ...` 候选内容；如果是规则记忆，还会同时展示 Light/Balanced/Strict 变体。回复 `yes` 表示按当前候选原样保存，回复 `audit` 表示继续修改，回复 `cancel` 表示取消。收到 `yes` 后，代理会使用 `engram save-session --accept-all` 写入刚刚获批的候选内容。直接在 CLI 中保存时，除非明确调用了 accept-all 命令，否则仍然使用 A/B/C。
+在 AI 代理聊天中，Engram 的审批是对话式的。代理会先展示整理后的 `TYPE: ... | TEXT: ...` 候选内容；如果是规则记忆，还会同时展示 Light/Balanced/Strict 变体。回复 `yes` 表示按当前候选原样保存，回复 `audit` 表示继续修改，回复 `cancel` 表示取消。收到 `yes` 后，代理会使用 `engram save-session --force` 写入刚刚获批的候选内容。直接在 CLI 中保存时，除非明确调用了 accept-all 命令，否则仍然使用 A/B/C。
 
 
 本页面包含详细的用法，以便 README 可以保持简短。
@@ -18,19 +18,19 @@ description: "每个 Engram CLI 命令及其功能的映射。"
 | 需求 | 命令 |
 | --- | --- |
 | 加载任务内存 | `engram load "<任务内容>"` |
-| 加载智能体紧凑内存 | `engram load --for-agents "<任务内容>"` |
+| 加载智能体紧凑内存 | `engram load "<任务内容>"` |
 | 打印 AI 智能体使用指南 | `engram llm` |
 | 预览路由的内存文件 | `engram load --dry-run "<任务内容>"` |
 | 搜索内存 | `engram search "<主题>"` |
 | 保存单条内存 | `engram save [rule\|workflow\|knowledge] "<内容>"` |
 | 保存多条会话内存 | `engram save-session` 或 `engram ss` |
 | 提取近期可访问的聊天 | `engram save-session --query-level 3` |
-| 接受所有会话候选 | `engram ss -a` |
-| 提取并接受近期会话 | `engram ss -a last 50 sessions` |
+| 接受所有会话候选 | `engram ss -f` |
+| 提取并接受近期会话 | `engram ss -f last 50 sessions` |
 | 捕获原始笔记 | `engram observe --file session.md` |
 | 转换现有文档/指南 | `engram take-control --all` |
 | 预览源接管计划 | `engram take-control --plan` |
-| 导入并重构现有指南 | `engram take-control --all --metacognize --accept-all` |
+| 导入并重构现有指南 | `engram take-control --all --metacognize --force` |
 | 重构现有内存文件夹 | `engram metacognize --workspace\|--global\|--all` |
 | 解决冲突并进行重构 | `engram resolve-conflicts --metacognize` |
 | 检查图路由 | `engram graph "<主题>"` |
@@ -47,11 +47,11 @@ description: "每个 Engram CLI 命令及其功能的映射。"
 | 克隆工作区/全局内存 | `engram clone-memory workspace global [--metacognize]` |
 
 对于长会话的内存提议，请使用 `save-session`。简写：`ss`。
-当人类希望智能体挖掘多达 n 个近期可访问的人类-智能体聊天，而不是仅当前会话时，使用 `--query-level <n>`。自然语言表述如 `engram ss -a last 50 sessions` 会被标准化为 `engram save-session --query-level 50 --accept-all`。
+当人类希望智能体挖掘多达 n 个近期可访问的人类-智能体聊天，而不是仅当前会话时，使用 `--query-level <n>`。自然语言表述如 `engram ss -f last 50 sessions` 会被标准化为 `engram save-session --query-level 50 --force`。
 
 当您想检查哪些内存文件会被路由而不打印其内容时，请使用 `load --dry-run`。
-对于 AI 智能体上下文，请使用 `load --for-agents`：它仅保留 frontmatter 中的 `id`、`type`、`tags` 和 `confidence`，渲染一个选定的规则变体，并标注为 `## Rule variants (1/3 based on current: <active>)`。
-`load` 默认为面向智能体的主机使用相同的紧凑路由。MCP `engram_load` 方法默认使用 `--for-agents`，因此智能体主机无需重复该标志即可接收紧凑形式。SessionStart hook 在启动时调用相同的路由加载路径，当路由签名未变化时则复用或跳过。
+对于 AI 智能体上下文，请使用 `load`：它仅保留 frontmatter 中的 `id`、`type`、`tags` 和 `confidence`，渲染一个选定的规则变体，并标注为 `## Rule variants (1/3 based on current: <active>)`。
+`load` 默认为面向智能体的主机使用相同的紧凑路由。MCP `engram_load` 方法默认使用 `--full`，因此智能体主机无需重复该标志即可接收紧凑形式。SessionStart hook 在启动时调用相同的路由加载路径，当路由签名未变化时则复用或跳过。
 `load` 首先在有意义的查询词上定位路由，忽略如 `rule`、`knowledge` 等通用内存词汇以及常见停用词 (stopwords)。然后它将更广泛的候选池提炼为紧凑的上下文包。正常加载会报告选定和相关的总数，例如 `loaded 8 memory files / 14 total related memories`。`load --dry-run` 显示候选数量、收窄标签和匹配原因；`load --all` 返回每个可见的路由匹配，而不是应用紧凑限制。
 `workflow` 和 `workflows` 仍会路由 to 技能内存，但通用类型词汇本身不会创建广泛匹配。
 
@@ -79,7 +79,7 @@ level: advanced
 
 Engram 的 SQLite 配置数据库是针对工作区/配置文件管理的一项优化。如果数据库无法打开或初始化，正常的读/写命令将回退到 JSON 配置快照。特定于数据库的命令将报告 SQLite 不可用，而不是阻止正常的内存使用。
 当 `engram save` 发现相关的活动内存时，审批预览会报告它们，并带有建议 of `depends_on` 或可能重复的警告。接受将按原样保存预览；如果要在保存前重构依赖关系或归档重复项，请先拒绝。
-对于 `save-session --accept-all`，当这些相关的内存提示出现时，Engram 会在写入前暂停。智能体应使用该响应来构思有结构的重新运行：对于依赖关系添加 `DEPENDS_ON: memory-id` 为依赖关系，当内存比其先决条件更深时添加 `LEVEL: advanced`，或者当候选应合并到可能的重复项中时添加 `UPDATE: memory-id`。
+对于 `save-session --force`，当这些相关的内存提示出现时，Engram 会在写入前暂停。智能体应使用该响应来构思有结构的重新运行：对于依赖关系添加 `DEPENDS_ON: memory-id` 为依赖关系，当内存比其先决条件更深时添加 `LEVEL: advanced`，或者当候选应合并到可能的重复项中时添加 `UPDATE: memory-id`。
 
 ## 配置文件、保存目标和克隆
 
@@ -122,10 +122,10 @@ engram clone-memory global workspace --force
 ```bash
 engram metacognize --workspace
 engram metacognize --global --dry-run
-engram metacognize --all --accept-all
+engram metacognize --all --force
 ```
 
-该命令在选定范围内验证活动的 `rules/`、`skills/` 和 `knowledge/` 内存，在未提供候选时返回紧凑的源包，然后在批准后仅写入生成的 `TYPE: ... | TEXT: ...` 行。智能体应使用 `UPDATE: memory-id` 进行巩固或词句清理，使用 `DEPENDS_ON: memory-id` 进行分层内存。自然表述如 `engram restructure workspace memory accept all` 会标准化为 `engram metacognize --workspace --accept-all`。
+该命令在选定范围内验证活动的 `rules/`、`skills/` 和 `knowledge/` 内存，在未提供候选时返回紧凑的源包，然后在批准后仅写入生成的 `TYPE: ... | TEXT: ...` 行。智能体应使用 `UPDATE: memory-id` 进行巩固或词句清理，使用 `DEPENDS_ON: memory-id` 进行分层内存。自然表述如 `engram restructure workspace memory accept all` 会标准化为 `engram metacognize --workspace --force`。
 
 ## 保存会话 (Save Session)
 
@@ -139,7 +139,7 @@ TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
 
 `CONTEXT: ...` 是可选的。仅当它解释内存存在的原因、来源情况、预期用途或边界时才添加它。简单的客观事实内存可以省略它并使用 Engram 的默认批准上下文。
 
-如果不带 `--accept-all`，Engram 会询问要保存哪些候选。带有 `ss -a` 时，每个生成的候选都会被保存，因为人类显式批准了该快捷方式。
+如果不带 `--force`，Engram 会询问要保存哪些候选。带有 `ss -f` 时，每个生成的候选都会被保存，因为人类显式批准了该快捷方式。
 当 accept-all 运行在写入前报告相关内存时，尚未保存任何文件。智能体应使用结构化的候选重新运行，例如：
 
 ```text
@@ -147,7 +147,7 @@ TYPE: rule | TEXT: OAuth rotation follows release foundations. | DEPENDS_ON: rel
 TYPE: knowledge | TEXT: Invoice retries use exponential backoff. | UPDATE: invoice-retry-baseline
 ```
 
-`--query-level` 必须是正整数。智能体应仅包含它们实际可以访问的聊天，且不得虚构不可用的历史记录。`engram ss -a last 50 sessions` 使用 `50` 作为查询级别，并将 `-a` 作为显式的人类 accept-all 批准。
+`--query-level` 必须是正整数。智能体应仅包含它们实际可以访问的聊天，且不得虚构不可用的历史记录。`engram ss -f last 50 sessions` 使用 `50` 作为查询级别，并将 `-f` 作为显式的人类 accept-all 批准。
 
 ## 接管控制 (Take Control)
 
@@ -162,7 +162,7 @@ engram take-control --file AGENTS.md
 engram take-control --dir docs
 engram take-control --include "docs/**/*.md" --exclude "docs/private/**"
 engram take-control --max-sources 5 --max-chars 900
-engram take-control --all --metacognize --accept-all
+engram take-control --all --metacognize --force
 ```
 
 保存的 take-control 内存会记录 `source_files` 和 `source_hashes`，因此未更改的源在以后会被跳过。
@@ -243,3 +243,5 @@ engram archive --reason "Repo migrated to npm." rules/use-pnpm.md
 ```
 
 下一步：[对比与路线图](../comparison/overview.md)。
+
+

@@ -53,7 +53,7 @@ Bộ nhớ workspace luôn giành chiến thắng. Bộ nhớ global đóng vai 
 Engram bao gồm:
 
 - `save` để lưu trữ một bộ nhớ đã phê duyệt.
-- `save-session` / `ss` để lưu nhiều bộ nhớ rút ra từ một phiên làm việc, với `--query-level <n>` tùy chọn để khai thác tối đa n phiên chat gần đây mà tác nhân có thể truy cập; `/engram ss -a last 50 sessions` được chuẩn hóa thành `engram save-session --query-level 50 --accept-all`.
+- `save-session` / `ss` để lưu nhiều bộ nhớ rút ra từ một phiên làm việc, với `--query-level <n>` tùy chọn để khai thác tối đa n phiên chat gần đây mà tác nhân có thể truy cập; `/engram ss -f last 50 sessions` được chuẩn hóa thành `engram save-session --query-level 50 --force`.
 - `observe` để ghi lại các ghi chú thô chưa được đưa vào bộ nhớ hoạt động.
 - `take-control` để nhập (import) các hướng dẫn và tài liệu hiện có của tác nhân AI.
 - `graph` và `quality-check` để cung cấp các tín hiệu xem xét cấu trúc bộ nhớ.
@@ -65,3 +65,4 @@ Engram bao gồm:
 Trước khi sử dụng các lệnh, vui lòng đọc trang khái niệm: [Hiểu Về Engram](concepts/protocol.md).
 
 Tiếp theo: [Bắt đầu nhanh với tác nhân AI](quickstart.md).
+

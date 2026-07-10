@@ -66,7 +66,7 @@ engram take-control --file AGENTS.md
 engram take-control --dir docs
 engram take-control --include "docs/**/*.md" --exclude "docs/private/**"
 engram take-control --max-sources 5 --max-chars 900
-engram take-control --all --metacognize --accept-all
+engram take-control --all --metacognize --force
 ```
 
 `take-control` is the flux de prise de contrôle assisté par agent pour les directives d'espace de travail existantes. Il construit un dossier source compact à partir de fichiers tels que `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, les règles Cursor, les notes de banque de mémoire et les dossiers de niveau supérieur `rules/`, `skills/`, `workflows/`, `knowledge/` ou `notes/`, y compris les notes `.txt`.
@@ -78,7 +78,7 @@ Les mémoires enregistrées par take-control enregistrent `source_files` et `sou
 ```bash
 engram metacognize --workspace
 engram metacognize --global --dry-run
-engram metacognize --all --accept-all
+engram metacognize --all --force
 ```
 
 Utilisez `metacognize` lorsque vous souhaitez qu'un agent d'IA examine un dossier de mémoire Engram existant et propose une structure plus sûre via le même flux d'approbation save-session. Les agents doivent utiliser `UPDATE: memory-id` pour la consolidation ou le nettoyage de la formulation et `DEPENDS_ON: memory-id` pour les mémoires superposées.
@@ -87,3 +87,4 @@ Utilisez `metacognize` lorsque vous souhaitez qu'un agent d'IA examine un dossie
 
 - [profiles / workspaces / config](profiles-workspaces-config.md)
 - [Présentation des intégrations d'agents](../integrations/overview.md)
+

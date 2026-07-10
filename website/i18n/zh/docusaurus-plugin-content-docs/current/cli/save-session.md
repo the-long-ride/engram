@@ -26,10 +26,10 @@ engram save --scope global "<text>"
 engram save-session
 engram ss
 engram save-session --query-level 3
-engram ss -a
-engram ss -a last 50 sessions
+engram ss -f
+engram ss -f last 50 sessions
 engram save-session --file transcript.md
-engram save-session --accept-all
+engram save-session --force
 ```
 
 当长时间的交互产生了多个候选时，使用 `save-session`：
@@ -43,10 +43,10 @@ TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
 `CONTEXT: ...` 是可选的。仅在解释内存存在的原因时添加它。重构相关内存时，候选还可以添加 `DEPENDS_ON`、`LEVEL` 或 `UPDATE` 字段。
 
 - `--query-level <n>` — 挖掘最多 n 次最近的可访问人类与 Agent 的聊天；必须为正整数；Agent 不得编造不可用的历史记录
-- `--accept-all` / `-a` — 由于人类明确批准了该快捷方式，生成的每个候选都会被保存
+- `--force` / `-f` — 由于人类明确批准了该快捷方式，生成的每个候选都会被保存
 - `--file <path>` — 针对磁盘上已有的记录或长总结
 
-对于 `/engram take-control --accept-all` 或自然的 `/engram take control accept all`，斜杠适配器会标准化表述，仅生成简明的 `TYPE: ... | TEXT: ...` 候选，并允许 Engram 保存它们而无需第二次审批提示。
+对于 `/engram take-control --force` 或自然的 `/engram take control accept all`，斜杠适配器会标准化表述，仅生成简明的 `TYPE: ... | TEXT: ...` 候选，并允许 Engram 保存它们而无需第二次审批提示。
 
 ## observe
 
@@ -70,3 +70,4 @@ TYPE: knowledge | TEXT: Invoice retries use exponential backoff. | UPDATE: invoi
 
 - [inject / link / upgrade](inject-link-upgrade.md)
 - [概念：写入路径和审批](../concepts/write-path.md)
+

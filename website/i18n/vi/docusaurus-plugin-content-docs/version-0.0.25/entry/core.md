@@ -33,10 +33,11 @@ Hiển thị gợi ý trước khi sao chép. Khuyến khích xem trước cho c
 ```bash
 engram resolve-conflicts --dry-run --metacognize
 engram resolve-conflicts --metacognize
-engram metacognize --workspace --accept-all
+engram metacognize --workspace --force
 ```
 
 ## Các bước tiếp theo
 
 - [Tab Memories](memories.md)
 - [CLI: verify / repair / quality-check](../cli/verify-repair-quality.md)
+

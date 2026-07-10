@@ -3,7 +3,7 @@ export type FlagValue = string | boolean | string[];
 export type ParsedArgs = { command: string; rest: string[]; flags: Record<string, FlagValue> };
 
 const booleanFlags = new Set([
-  'accept-all', 'all', 'auto', 'dry-run', 'for-agents', 'force', 'h', 'help',
+  'all', 'auto', 'dry-run', 'force', 'full', 'h', 'help',
   'global', 'global-only', 'global-skillsets-only', 'latest', 'low-confidence', 'memory-only', 'no-auto-upgrade', 'no-global', 'no-skillset',
   'no-submodule', 'no-version-check', 'plan', 'propose', 'rebuild', 'metacognize', 'restructure', 'self', 'semantic', 'show-rule-variants', 'skip-task-type-prompt', 'stale',
   'submodule', 'use', 'user', 'v', 'version', 'workspace', 'host-only'
@@ -13,7 +13,8 @@ const takeControlCommands = new Set(['take-control', 'tc']);
 const metacognizeCommands = new Set(['metacognize', 'mc']);
 const cloneMemoryCommands = new Set(['clone-memory', 'cm']);
 const resolveConflictCommands = new Set(['resolve-conflicts', 'rc']);
-const acceptAllCommands = new Set([...saveSessionCommands, ...takeControlCommands, ...metacognizeCommands, ...resolveConflictCommands]);
+const forceCommands = new Set([...saveSessionCommands, ...takeControlCommands, ...metacognizeCommands, ...resolveConflictCommands]);
+const fullLoadCommands = new Set(['load', 'ld']);
 const repeatableFlags = new Set(['dir', 'exclude', 'file', 'include', 'id']);
 const recentSessionWords = new Set(['session', 'sessions', 'chat', 'chats', 'conversation', 'conversations']);
 const recentSessionPrefixes = new Set(['last', 'latest', 'past', 'previous', 'recent']);
@@ -29,19 +30,20 @@ const metacognizeOptionCommands = new Set([...cloneMemoryCommands, ...takeContro
 const metacognizeOptionWords = new Set(['metacognize', 'metacognition', 'restructure', 'reorganize', 'organize']);
 const naturalOptionFillers = new Set(['and', 'then', 'with', 'using', 'use', 'agent', 'ai']);
 const metacognizeFillers = new Set(['engram', 'memory', 'memories', 'folder', 'folders', 'bank', 'store', 'root', 'the', 'my']);
-const forAgentsFillers = new Set(['for', 'to', 'use', 'using', 'agent', 'ai']);
 const globalFolderVerbs = new Set(['change', 'move', 'rename', 'set', 'update']);
 const globalFolderNouns = new Set(['dir', 'directory', 'folder', 'path', 'root']);
 const globalFolderFillers = new Set(['engram', 'my', 'the']);
 
 /** Parse argv into command, positional args, and --flags. */
 export function parseArgs(argv: string[]): ParsedArgs {
-  const [command = 'help', ...tokens] = normalizeNaturalArgs(normalizeLeadingGlobalFlags(argv));
+  const [command = 'entry', ...tokens] = normalizeNaturalArgs(normalizeLeadingGlobalFlags(argv));
   const rest: string[] = [];
   const flags: Record<string, FlagValue> = {};
   for (let i = 0; i < tokens.length; i += 1) {
     const token = tokens[i];
-    if (token === '-a' && acceptAllCommands.has(command)) flags['accept-all'] = true;
+    assertSupportedFlag(command, token);
+    if (token === '-f' && fullLoadCommands.has(command)) flags.full = true;
+    else if (token === '-f' && forceCommands.has(command)) flags.force = true;
     else if (!token.startsWith('--')) rest.push(token);
     else if (token.includes('=')) {
       const [name, ...valueParts] = token.slice(2).split('=');
@@ -112,14 +114,13 @@ function normalizeNaturalArgs(argv: string[]): string[] {
   const rehashArgs = normalizeNaturalRehash(argv);
   const metacognizeArgs = normalizeNaturalMetacognize(rehashArgs);
   const cloneMemoryArgs = normalizeNaturalCloneMemory(metacognizeArgs);
-  const forAgentsArgs = normalizeNaturalForAgents(cloneMemoryArgs);
-  const globalFolderArgs = normalizeNaturalGlobalFolder(forAgentsArgs);
+  const globalFolderArgs = normalizeNaturalGlobalFolder(cloneMemoryArgs);
   const resolveConflictArgs = normalizeNaturalResolveConflicts(globalFolderArgs);
   const takeControlArgs = normalizeNaturalTakeControl(resolveConflictArgs);
   const optionArgs = normalizeNaturalCommandOptions(takeControlArgs);
   const configArgs = normalizeNaturalConfig(optionArgs);
   const workspaceArgs = normalizeNaturalWorkspace(configArgs);
-  return normalizeSaveSessionQueryLevel(normalizeAcceptAll(normalizeInstallSkillset(workspaceArgs)));
+  return normalizeSaveSessionQueryLevel(normalizeForce(normalizeInstallSkillset(workspaceArgs)));
 }
 
 function normalizeInstallSkillset(argv: string[]): string[] {
@@ -188,9 +189,14 @@ function normalizeMetacognizeTokens(tokens: string[]): string[] {
       normalized.push(...tokens.slice(i));
       break;
     }
-    if (lower === 'accept-all') normalized.push('--accept-all');
+    if (lower === 'force') normalized.push('--force');
+    else if (lower === 'accept-all' || (lower === 'accept' && tokens[i + 1]?.toLowerCase() === 'all')) {
+      throw new Error('`--accept-all` was removed. Use `--force`.');
+    }
+    else if (lower === 'force-all') {
+      normalized.push('--force');
+    }
     else if (lower === 'accept' && tokens[i + 1]?.toLowerCase() === 'all') {
-      normalized.push('--accept-all');
       i += 1;
     }
     else if (lower === 'workspace' || lower === 'global' || lower === 'all') normalized.push(`--${lower}`);
@@ -210,9 +216,11 @@ function normalizeNaturalCommandOptions(argv: string[]): string[] {
       normalized.push(...tokens.slice(i));
       break;
     }
-    if (lower === 'accept-all') normalized.push('--accept-all');
+    if (lower === 'force') normalized.push('--force');
+    else if (lower === 'accept-all' || (lower === 'accept' && tokens[i + 1]?.toLowerCase() === 'all')) {
+      throw new Error('`--accept-all` was removed. Use `--force`.');
+    }
     else if (lower === 'accept' && tokens[i + 1]?.toLowerCase() === 'all') {
-      normalized.push('--accept-all');
       i += 1;
     }
     else if (metacognizeOptionWords.has(lower)) normalized.push('--metacognize');
@@ -227,9 +235,11 @@ function naturalOptionTokens(tokens: string[]): string[] {
     const token = tokens[i];
     const lower = token.toLowerCase();
     if (token.startsWith('-')) out.push(token);
-    else if (lower === 'accept-all') out.push('--accept-all');
+    else if (lower === 'force') out.push('--force');
+    else if (lower === 'accept-all' || (lower === 'accept' && tokens[i + 1]?.toLowerCase() === 'all')) {
+      throw new Error('`--accept-all` was removed. Use `--force`.');
+    }
     else if (lower === 'accept' && tokens[i + 1]?.toLowerCase() === 'all') {
-      out.push('--accept-all');
       i += 1;
     }
     else if (metacognizeOptionWords.has(lower)) out.push('--metacognize');
@@ -239,26 +249,6 @@ function naturalOptionTokens(tokens: string[]): string[] {
 
 function looksLikeCandidateToken(token: string): boolean {
   return /^\s*(?:[-*]\s*)?(?:type|kind|memory type|rule|rules|skill|skills|workflow|workflows|knowledge)\s*:/i.test(token);
-}
-
-function normalizeNaturalForAgents(argv: string[]): string[] {
-  const [command = 'help', ...tokens] = argv;
-  if (command.toLowerCase() !== 'load') return argv;
-  const normalized = ['load'];
-  let hasFlag = false;
-  let sawFiller = false;
-  for (const token of tokens) {
-    const lower = token.toLowerCase();
-    if (lower === '--for-agents' || lower === '--for_agents') {
-      normalized.push('--for-agents');
-      hasFlag = true;
-      continue;
-    }
-    if (forAgentsFillers.has(lower)) { sawFiller = true; continue; }
-    if (sawFiller && !hasFlag) { normalized.push('--for-agents'); hasFlag = true; }
-    normalized.push(token);
-  }
-  return hasFlag ? normalized : argv;
 }
 
 function normalizeNaturalGlobalFolder(argv: string[]): string[] {
@@ -338,12 +328,20 @@ function trimPathWords(tokens: string[]): string {
   return tokens.join(' ').trim();
 }
 
-function normalizeAcceptAll(argv: string[]): string[] {
+function normalizeForce(argv: string[]): string[] {
   const [command = 'help', ...tokens] = argv;
-  if (!acceptAllCommands.has(command)) return argv;
-  if (tokens[0]?.toLowerCase() === 'accept-all') return [command, '--accept-all', ...tokens.slice(1)];
-  if (tokens[0]?.toLowerCase() === 'accept' && tokens[1]?.toLowerCase() === 'all') return [command, '--accept-all', ...tokens.slice(2)];
+  if (!forceCommands.has(command)) return argv;
+  if (tokens[0]?.toLowerCase() === 'force') return [command, '--force', ...tokens.slice(1)];
+  if (tokens[0]?.toLowerCase() === 'accept-all') throw new Error('`--accept-all` was removed. Use `--force`.');
+  if (tokens[0]?.toLowerCase() === 'accept' && tokens[1]?.toLowerCase() === 'all') throw new Error('`--accept-all` was removed. Use `--force`.');
   return argv;
+}
+
+function assertSupportedFlag(command: string, token: string): void {
+  const normalized = token.startsWith('--') ? token.split('=')[0] : token;
+  if (normalized === '-a') throw new Error('`-a` was removed. Use `-f` or `--force`.');
+  if (normalized === '--accept-all') throw new Error('`--accept-all` was removed. Use `--force`.');
+  if (normalized === '--for-agents' || normalized === '--for_agents') throw new Error('`--for-agents` was removed. Use `engram load "<task>"` or `engram load --full "<task>"`.');
 }
 
 function normalizeSaveSessionQueryLevel(argv: string[]): string[] {

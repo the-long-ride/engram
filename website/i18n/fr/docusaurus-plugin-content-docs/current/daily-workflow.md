@@ -11,13 +11,13 @@ La boucle quotidienne d'Engram est volontairement simple : charger la mémoire a
 ## Début de session
 
 ```text
-/engram load --for-agents "tâche actuelle"
+/engram load "tâche actuelle"
 ```
 
 Ou depuis le terminal :
 
 ```bash
-engram load --for-agents "<tâche>"
+engram load "<tâche>"
 ```
 
 L'agent doit répondre avec une ligne de comptage compacte telle que `Engram loaded: 8 memories / 24 total related memories.` à moins que l'humain ne demande des identifiants, des règles ou une sortie brute.
@@ -71,7 +71,7 @@ TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
 
 ```text
 /engram save-session --query-level 3
-/engram ss -a last 50 sessions
+/engram ss -f last 50 sessions
 ```
 
 `--query-level` doit être un entier positif. L'agent peut utiliser jusqu'à ce nombre de sessions de discussion humain-agent récentes, y compris l'actuelle, et ne doit pas inventer d'historique non disponible.
@@ -79,10 +79,10 @@ TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
 ## Raccourci pour tout accepter
 
 ```text
-/engram ss -a
+/engram ss -f
 ```
 
-`-a` signifie que l'humain approuve explicitement chaque candidat recommandé par l'agent. Les agents ne doivent pas ajouter `--accept-all` à moins que l'humain ne l'ait demandé.
+`-f` signifie que l'humain approuve explicitement chaque candidat recommandé par l'agent. Les agents ne doivent pas ajouter `--force` à moins que l'humain ne l'ait demandé.
 
 Lorsqu'une exécution de type tout accepter signale des mémoires associées avant d'écrire, aucun fichier n'a encore été enregistré. L'agent doit relancer avec des candidats structurés :
 
@@ -132,3 +132,4 @@ engram archive --reason "<pourquoi>" <id-ou-fichier>
 - [Référence CLI](cli/overview.md)
 - [Dépannage des opérations](operations/troubleshooting.md)
 - [Interface Web d'Entry](entry/index.md)
+

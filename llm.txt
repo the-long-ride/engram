@@ -15,7 +15,7 @@ Core operating model
 - Global memory is fallback for cross-repo personal or team context.
 - Read commands are compact by default.
 - Write commands require human-visible approval unless the human explicitly
-  requested an accept-all path for that command.
+  requested a force path for that command.
 - Markdown memory files are the source of truth. Indexes, graphs, and optional
   vector sidecars are acceleration layers.
 - For runtime-capable hosts, Engram installs small bootstrap instructions
@@ -28,7 +28,7 @@ What AI agents should do first
 
 At the start of a task, run:
 
-engram load --for-agents "<current task>"
+engram load "<current task>"
 
 Default reply shape:
 
@@ -50,7 +50,7 @@ Run `engram load` again when:
 If `engram set-role ...` or `engram set-rule-variant ...` returns `Agent action:`
 then rerun:
 
-engram load --for-agents "<current task/request>"
+engram load "<current task/request>"
 
 That reload replaces earlier Engram-derived context in the current conversation.
 
@@ -58,7 +58,7 @@ Read path
 
 Primary read commands:
 
-- `engram load --for-agents "<task>"`: route relevant memory for the current task and render compact AI-agent output
+- `engram load "<task>"`: route relevant memory for the current task and render compact AI-agent output
 - `engram load --dry-run "<task>"`: preview routed files, candidate counts, and
   narrowing tags without printing memory contents
 - `engram load --all "<task>"`: bypass the compact load cap only when broad
@@ -74,7 +74,7 @@ Primary read commands:
 
 How routing works
 
-`engram load --for-agents` keeps only `id`, `type`, `tags`, and `confidence` in frontmatter. For rules, it renders one selected variant and labels the section as `## Rule variants (1/3 based on current: <active>)`.
+Default `engram load` keeps only `id`, `type`, `tags`, and `confidence` in frontmatter. For rules, it renders one selected variant and labels the section as `## Rule variants (1/3 based on current: <active>)`.
 
 `engram load` does not blindly load all memory. It:
 
@@ -186,31 +186,31 @@ TYPE: knowledge | TEXT: Release notes live in CHANGELOG.md. | CONTEXT: Created a
 Approval boundary
 
 Normal writes require human review. Agents should treat Engram as approval-first
-unless the human explicitly requested an accept-all path.
+unless the human explicitly requested a force path.
 
-Accept-all boundaries
+Force boundaries
 
-Use `--accept-all` only when the human explicitly included it.
+Use `--force` only when the human explicitly included it.
 
 Examples:
 
-- `engram save-session --accept-all`
-- `engram ss -a`
-- `engram take-control --accept-all`
-- `engram metacognize --workspace --accept-all`
+- `engram save-session --force`
+- `engram ss -f`
+- `engram take-control --force`
+- `engram metacognize --workspace --force`
 
 Natural wording such as:
 
-engram ss -a last 50 sessions
+engram ss -f last 50 sessions
 
 means:
 
-engram save-session --query-level 50 --accept-all
+engram save-session --query-level 50 --force
 
 Only include recent human-agent chats the agent can actually access. Never
 invent unavailable history.
 
-If an accept-all command reports related memories before writing, no file was
+If a force command reports related memories before writing, no file was
 saved yet. Use those hints to rerun with `DEPENDS_ON` or `UPDATE` instead of
 claiming a save happened.
 
@@ -222,7 +222,7 @@ Save previews may surface:
 - possible duplicate warnings
 - suggested restructure opportunities
 
-These are advisory unless you are in an accept-all restructuring flow that
+These are advisory unless you are in a force restructuring flow that
 explicitly pauses before writing. Do not auto-archive memory or silently rewrite
 memory just because a related-memory hint exists.
 
@@ -358,9 +358,9 @@ Agents may normalize human wording into canonical Engram commands.
 Examples:
 
 - `auto save` -> `save-session`
-- `take control accept all` -> `take-control --accept-all`
-- `take control accept all metacognize` -> `take-control --accept-all --metacognize`
-- `restructure workspace memory accept all` -> `metacognize --workspace --accept-all`
+- `take control force` -> `take-control --force`
+- `take control force metacognize` -> `take-control --force --metacognize`
+- `restructure workspace memory force` -> `metacognize --workspace --force`
 - `clone workspace memory to global` -> `clone-memory workspace global`
 - `clone workspace memory to global and metacognize` -> `clone-memory workspace global --metacognize`
 - `resolve conflicts and metacognize` -> `resolve-conflicts --metacognize`
@@ -428,7 +428,7 @@ Agent checklist
 2. Keep read responses compact unless the human asked for raw detail.
 3. Reload when the task changes materially or after `Agent action:` commands.
 4. Never write memory silently.
-5. Use accept-all only when the human explicitly included it.
+5. Use force mode only when the human explicitly included it.
 6. Never invent inaccessible recent chat history.
 7. Use `DEPENDS_ON`, `LEVEL`, `UPDATE`, and optional `CONTEXT` when restructuring
    related memory.
@@ -436,14 +436,14 @@ Agent checklist
 
 Useful examples
 
-engram load --for-agents "fix the CLI parser bug"
+engram load "fix the CLI parser bug"
 engram load --dry-run "release workflow"
 engram search "profile merge behavior"
 engram route "bump version to v0.0.16"
 engram save knowledge "The release workflow runs npm run test:package before publish."
 engram save-session
 engram save-session --file transcript.md
-engram ss -a last 50 sessions
+engram ss -f last 50 sessions
 engram take-control --plan
 engram take-control --all
 engram metacognize --workspace

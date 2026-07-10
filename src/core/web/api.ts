@@ -1134,7 +1134,7 @@ function corePrompts(filter: CoreScopeFilter, duplicates: CoreDuplicateCandidate
     ].join('\n'),
     metacognize: [
       `Run Engram metacognition for ${filter} memory scope.`,
-      `Preferred command: engram metacognize ${scopeFlag} --accept-all`,
+      `Preferred command: engram metacognize ${scopeFlag} --force`,
       'Use UPDATE for duplicates, DEPENDS_ON for prerequisites, and omit candidates already covered.'
     ].join('\n')
   };
@@ -1314,5 +1314,4 @@ export async function apiArchiveMemory(cwd: string, body: ArchiveMemoryRequest):
     path: archivedPath
   };
 }
-
 

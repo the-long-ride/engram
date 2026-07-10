@@ -16,7 +16,7 @@ test('completion emits shell helper with command suggestions', async () => {
   assert.doesNotMatch(bash.stdout, /local commands="[^"]*save rule/);
   assert.match(bash.stdout, /--file --scope --profile --role --roles/);
   assert.match(bash.stdout, /--query-level/);
-  assert.match(bash.stdout, /--all --dry-run --for-agents/);
+assert.match(bash.stdout, /--all --dry-run -f --full/);
   assert.match(bash.stdout, /update-global-folder/);
   assert.match(bash.stdout, /\bugf\b/);
   assert.match(bash.stdout, /clone-memory/);
@@ -26,7 +26,7 @@ test('completion emits shell helper with command suggestions', async () => {
   assert.doesNotMatch(bash.stdout, /--restructure/);
   assert.match(bash.stdout, /metacognize\|mc/);
   assert.match(bash.stdout, /\$metacognize_args/);
-  assert.match(bash.stdout, /--workspace --global --all --accept-all --dry-run/);
+assert.match(bash.stdout, /--workspace --global --all --force --dry-run/);
   assert.match(bash.stdout, /profile\|pf/);
   assert.match(bash.stdout, /\$profile_actions/);
   assert.match(bash.stdout, /--from-profile --to-profile/);
@@ -44,7 +44,8 @@ test('completion emits shell helper with command suggestions', async () => {
   assert.match(zsh.stdout, /save-session\|ss/);
   assert.doesNotMatch(zsh.stdout, /save-session\|ss\|autosave/);
   assert.match(zsh.stdout, /--file\[read session summary file\]/);
-  assert.match(zsh.stdout, /--for-agents\[slim memory output for AI agents\]/);
+assert.match(zsh.stdout, /-f\[load broader legacy memory output\]/);
+  assert.match(zsh.stdout, /--full\[load broader legacy memory output\]/);
   assert.match(zsh.stdout, /--query-level\[recent chat sessions to mine\]/);
   assert.match(zsh.stdout, /update-global-folder/);
   assert.match(zsh.stdout, /update-global-folder\|ugf/);
@@ -79,6 +80,8 @@ test('completion emits shell helper with command suggestions', async () => {
   assert.match(powershell.stdout, /'pf'/);
   assert.match(powershell.stdout, /'set-proof'/);
   assert.match(powershell.stdout, /'sp'/);
+  assert.match(powershell.stdout, /'load', 'ld'/);
+  assert.match(powershell.stdout, /'--all', '--dry-run', '-f', '--full'/);
   await rm(cwd, { recursive: true, force: true });
 });
 

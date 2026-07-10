@@ -1,9 +1,10 @@
 /* ── Tables ── */
 .tbl-wrap {
-  background: var(--bg);
-  border: 1px solid var(--g300);
-  border-radius: var(--r12);
-  overflow: hidden;
+    overflow-x: auto;
+    background: var(--bg);
+    border: 1px solid var(--g300);
+    border-radius: var(--r12);
+    overflow: hidden;
 }
 .tbl {
   width: 100%;

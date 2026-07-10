@@ -8,7 +8,7 @@ description: "Commencez à utiliser Engram via votre agent IA. Chargez la mémoi
 
 ## Approbation en Chat IA
 
-Dans le chat avec un agent IA, l'approbation Engram est conversationnelle. L'agent montre d'abord des candidats affines `TYPE: ... | TEXT: ...`, y compris les variantes Light/Balanced/Strict pour les regles. Repondez `yes` pour enregistrer exactement ces candidats, `audit` pour les reviser, ou `cancel` pour arreter. Apres `yes`, l'agent utilise `engram save-session --accept-all` avec les candidats approuves. Les enregistrements directs en CLI continuent d'utiliser A/B/C sauf si une commande accept-all a ete invoquee explicitement.
+Dans le chat avec un agent IA, l'approbation Engram est conversationnelle. L'agent montre d'abord des candidats affines `TYPE: ... | TEXT: ...`, y compris les variantes Light/Balanced/Strict pour les regles. Repondez `yes` pour enregistrer exactement ces candidats, `audit` pour les reviser, ou `cancel` pour arreter. Apres `yes`, l'agent utilise `engram save-session --force` avec les candidats approuves. Les enregistrements directs en CLI continuent d'utiliser A/B/C sauf si une commande accept-all a ete invoquee explicitement.
 
 
 Utilisez d'abord Engram par le biais de votre agent. Le CLI existe, mais la meilleure expérience est la suivante : demandez à l'agent de charger la mémoire, effectuez le travail, puis proposez une mémoire durable lorsque quelque chose d'utile se dégage.
@@ -109,18 +109,18 @@ Pour inclure l'historique de chat récent auquel l'agent peut réellement accéd
 Raccourci d'approbation totale (accept-all) uniquement lorsque vous le souhaitez vraiment :
 
 ```text
-/engram ss -a
+/engram ss -f
 ```
 
-`-a` signifie que l'humain approuve explicitement chaque candidat recommandé par l'agent. Les agents ne doivent pas l'ajouter d'eux-mêmes.
+`-f` signifie que l'humain approuve explicitement chaque candidat recommandé par l'agent. Les agents ne doivent pas l'ajouter d'eux-mêmes.
 
 Pour exploiter des conversations récentes accessibles et accepter tous les candidats générés en une seule requête :
 
 ```text
-/engram ss -a last 50 sessions
+/engram ss -f last 50 sessions
 ```
 
-Cela se normalise en `engram save-session --query-level 50 --accept-all`.
+Cela se normalise en `engram save-session --query-level 50 --force`.
 
 ## Importer des Connaissances Existantes
 
@@ -175,3 +175,4 @@ engram archive --reason "<pourquoi>" <id-ou-fichier>
 
 
 Suivant : [Protocole de mémoire humaine](concepts/write-path.md).
+

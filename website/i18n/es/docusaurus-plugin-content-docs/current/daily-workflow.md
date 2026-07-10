@@ -11,13 +11,13 @@ El bucle diario de Engram es intencionalmente simple: cargar la memoria al inici
 ## Inicio de la sesión
 
 ```text
-/engram load --for-agents "tarea actual"
+/engram load "tarea actual"
 ```
 
 O desde la terminal:
 
 ```bash
-engram load --for-agents "<tarea>"
+engram load "<tarea>"
 ```
 
 El agente debe responder con una línea de recuento compacta como `Engram loaded: 8 memories / 24 total related memories.` a menos que el humano solicite IDs, reglas o salida sin procesar.
@@ -71,7 +71,7 @@ TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
 
 ```text
 /engram save-session --query-level 3
-/engram ss -a last 50 sessions
+/engram ss -f last 50 sessions
 ```
 
 `--query-level` debe ser un entero positivo. El agente puede usar hasta esa cantidad de sesiones de chat recientes entre humano y agente, incluida la actual, y no debe inventar historial no disponible.
@@ -79,10 +79,10 @@ TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
 ## Atajo para aceptar todo
 
 ```text
-/engram ss -a
+/engram ss -f
 ```
 
-`-a` significa que el humano aprueba explícitamente cada candidato recomendado por el agente. Los agentes no deben agregar `--accept-all` a menos que el humano lo haya solicitado.
+`-f` significa que el humano aprueba explícitamente cada candidato recomendado por el agente. Los agentes no deben agregar `--force` a menos que el humano lo haya solicitado.
 
 Cuando una ejecución de aceptar todo informa memorias relacionadas antes de escribir, no se guardó ningún archivo aún. El agente debe volver a ejecutar con candidatos estructurados:
 
@@ -132,3 +132,4 @@ engram archive --reason "<por-qué>" <id-o-archivo>
 - [Referencia de CLI](cli/overview.md)
 - [Resolución de problemas de operaciones](operations/troubleshooting.md)
 - [Interfaz Web de Entry](entry/index.md)
+

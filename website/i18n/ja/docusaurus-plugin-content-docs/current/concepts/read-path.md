@@ -24,7 +24,7 @@ description: Engram はワークスペースとグローバルのインデック
 
 - `load --dry-run` は、候補数、絞り込みタグ、および一致理由を示します。
 - `load --all` は、コンパクト制限を適用せず、表示可能なすべてのルーティングされた一致を返します。
-- `load --for-agents` は、エージェント向けのコンパクトなルートです。
+- `load` は、エージェント向けのコンパクトなルートです。
 
 `workflow` や `workflows` は依然としてスキルメモリにルーティングされますが、一般的な型を表す単語自体だけでは広範な一致にはなりません。
 
@@ -55,3 +55,4 @@ flowchart LR
 
 - [書き込みパスと承認](write-path.md)
 - [CLI: load / search / graph](../cli/load-search-graph.md)
+

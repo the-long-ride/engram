@@ -16,7 +16,7 @@ Full documentation lives on the website: [@the-long-ride/engram docs-site](https
 
 ## Key Highlights
 
-- **Human in the Loop**: Direct CLI saves use A/B/C approval. AI-agent chat saves use an exact-candidate `yes` / `audit` / `cancel` loop before the agent writes with `save-session --accept-all`.
+- **Human in the Loop**: Direct CLI saves use A/B/C approval. AI-agent chat saves use an exact-candidate `yes` / `audit` / `cancel` loop before the agent writes with `save-session --force`.
 - **Context-Optimized**: Routes meaningful task matches plus prerequisites into a compact pack (default: 8 files) to avoid context bloat.
 - **Git-Native & Portable**: Plain Markdown files stored in `.agents/.engram/` synced via Git—completely vendor-agnostic and offline-first.
 - **Privacy & Security Control**: Runs 100% locally and scans for PII/secrets before writing.
@@ -158,7 +158,7 @@ flowchart TD
     classDef result fill:#2c5282,stroke:#4299e1,stroke-width:1px,color:#fff;
 
     subgraph Example1 ["Example 1: normal workspace task"]
-        Cmd1["engram load --for-agents TASK"]:::cmd
+        Cmd1["engram load TASK"]:::cmd
         Ws1["Workspace memory"]:::scope
         Prof1["Pinned/default profile"]:::scope
         G1["Global root"]:::scope
@@ -340,7 +340,7 @@ engram inject
 ---
 
 ## AI-Agent Quickstart
-When you ask an AI agent to save memory, the agent should first show the refined `TYPE: ... | TEXT: ...` candidate. For rule memories it should also show Light, Balanced, and Strict variants. Reply `yes` to save the exact candidate, `audit` to revise it, or `cancel` to stop. After `yes`, the agent writes the exact shown candidate with `engram save-session --accept-all`.
+When you ask an AI agent to save memory, the agent should first show the refined `TYPE: ... | TEXT: ...` candidate. For rule memories it should also show Light, Balanced, and Strict variants. Reply `yes` to save the exact candidate, `audit` to revise it, or `cancel` to stop. After `yes`, the agent writes the exact shown candidate with `engram save-session --force`.
 
 When the agent notices a durable rule, workflow, skill, or knowledge item during normal work, it should propose it at the end of its response only if it passes the value gate: durable, reusable, objective, triggerable, and not already covered by existing memory.
 
@@ -353,7 +353,7 @@ If the host exposes only one visible `/engram` command, send bare `/engram` firs
 - **Start of a task**: `/engram load "design pricing table component"`
 - **Save key decisions/facts**: `/engram save knowledge "Webhook secret is process.env.STRIPE_WEBHOOK"`
 - **Brainstorm proposed memories**: `/engram propose`
-- **Summarize & save session**: `/engram save-session` (or `--query-level 3`, or `ss -a last 50 sessions` to auto-approve)
+- **Summarize & save session**: `/engram save-session` (or `--query-level 3`, or `ss -f last 50 sessions` to force-save approved candidates)
 
 When an agent asks how to use Engram, run `engram llm`. It prints the packaged
 `llm.txt` AI-agent guide, which is safe to use before `engram inject`.
@@ -368,15 +368,16 @@ When an AI agent proposes `TYPE: ... | TEXT: ...` memory candidates, it may add 
 | --- | --- | --- |
 | **Open Slash Menu** | `engram help` | `/engram` |
 | **Load Memory** | `engram load "<task>"` | `/engram load "<task>"` |
-| **Agent-Facing Load** | `engram load --for-agents "<task>"` | `/engram load --for-agents "<task>"` |
+| **Compact Load** | `engram load "<task>"` | `/engram load "<task>"` |
+| **Full Load** | `engram load --full "<task>"` | `/engram load --full "<task>"` |
 | **Dry Run Load** | `engram load --dry-run "<task>"` | `/engram load --dry-run "<task>"` |
 | **Save Single Memory** | `engram save <type> "<text>"` | `/engram save <type> "<text>"` |
 | **Propose Memories** | `engram save-session` | `/engram propose` or `/engram ss` |
 | **Mine Recent Sessions** | `engram save-session --query-level <n>` | `/engram save-session --query-level <n>` |
-| **Auto-Approve Saves** | `engram save-session --accept-all` | `/engram ss -a` |
+| **Force Saves** | `engram save-session --force` | `/engram ss -f` |
 | **Import Files / Docs** | `engram take-control --all` | `/engram take-control --all` |
-| **Import & Metacognize** | `engram take-control --all --metacognize --accept-all` | `/engram take control accept all metacognize` |
-| **Restructure Memory** | `engram metacognize --workspace` | `/engram restructure workspace memory accept all` |
+| **Import & Metacognize** | `engram take-control --all --metacognize --force` | `/engram take control force metacognize` |
+| **Restructure Memory** | `engram metacognize --workspace --force` | `/engram restructure workspace memory force` |
 | **Resolve Conflicts** | `engram resolve-conflicts --metacognize` | `/engram resolve conflicts and metacognize` |
 | **Check Config / Paths** | `engram entry` | `/engram entry` |
 | **Show Agent Guide** | `engram llm` | Run once when an agent needs Engram usage guidance |
@@ -397,7 +398,7 @@ When an AI agent proposes `TYPE: ... | TEXT: ...` memory candidates, it may add 
 | **Scan Contradictions** | `engram quality-check` | `/engram quality-check` |
 | **Sync Memories** | `engram sync` | `/engram sync` |
 
-When `engram set-role ...` or `engram set-rule-variant ...` succeeds, Engram now returns an `Agent action:` line. Engram-aware adapters and MCP hosts should immediately rerun `engram load --for-agents "<current task/request>"` and replace earlier Engram-derived context in the same conversation. This happens after the command completes, not in the middle of a response, and installed skillset files still control future or reloaded chats.
+When `engram set-role ...` or `engram set-rule-variant ...` succeeds, Engram now returns an `Agent action:` line. Engram-aware adapters and MCP hosts should immediately rerun `engram load "<current task/request>"` and replace earlier Engram-derived context in the same conversation. This happens after the command completes, not in the middle of a response, and installed skillset files still control future or reloaded chats.
 
 ---
 

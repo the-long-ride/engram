@@ -8,7 +8,7 @@ description: "智能体建议，人类批准。仅写入经批准的内存，然
 
 ## AI 聊天审批
 
-在 AI 代理聊天中，Engram 的审批是对话式的。代理会先展示整理后的 `TYPE: ... | TEXT: ...` 候选内容；如果是规则记忆，还会同时展示 Light/Balanced/Strict 变体。回复 `yes` 表示按当前候选原样保存，回复 `audit` 表示继续修改，回复 `cancel` 表示取消。收到 `yes` 后，代理会使用 `engram save-session --accept-all` 写入刚刚获批的候选内容。直接在 CLI 中保存时，除非明确调用了 accept-all 命令，否则仍然使用 A/B/C。
+在 AI 代理聊天中，Engram 的审批是对话式的。代理会先展示整理后的 `TYPE: ... | TEXT: ...` 候选内容；如果是规则记忆，还会同时展示 Light/Balanced/Strict 变体。回复 `yes` 表示按当前候选原样保存，回复 `audit` 表示继续修改，回复 `cancel` 表示取消。收到 `yes` 后，代理会使用 `engram save-session --force` 写入刚刚获批的候选内容。直接在 CLI 中保存时，除非明确调用了 accept-all 命令，否则仍然使用 A/B/C。
 
 
 Engram 不仅仅是“智能体内存”。它是一个使内存可检查、可移植且由人类治理的协议。
@@ -45,7 +45,7 @@ Git 是可移植性和审计历史。
 
 1. 智能体提议一个或多个候选。
    使用 `save-session --query-level <n>` 时，智能体可以考虑最多 n 个可访问的最近人类-智能体聊天，但这只作为候选提议的上下文。
-   自然写法 `/engram ss -a last 50 sessions` 使用相同范围并带有显式一键批准：`engram save-session --query-level 50 --accept-all`。
+   自然写法 `/engram ss -f last 50 sessions` 使用相同范围并带有显式一键批准：`engram save-session --query-level 50 --force`。
 2. Engram 解析候选类型和目标作用域（scope）。
 3. Engram 检查 Schema、秘密信息、提示词注入模式和路径安全。
 4. 人类看到预览。
@@ -68,3 +68,4 @@ Git 是可移植性和审计历史。
 Engram 故意让内存管理变得简单无趣：文件、差异对比（diffs）、哈希、评审门槛以及人类可以重新运行的的命令。
 
 下一步：[操作指南](../cli/overview.md)。
+

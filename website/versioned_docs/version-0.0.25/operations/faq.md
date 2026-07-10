@@ -12,7 +12,7 @@ No. Default Engram search is deterministic lexical search. `engram search --sema
 
 ## Does Engram write memory automatically?
 
-No. Agents propose candidates; humans approve. Direct terminal CLI uses A/B/C. AI-agent chat uses `yes`/`audit`/`cancel`. Only explicit accept-all requests (`ss -a`) save every candidate, and agents must not add `--accept-all` unless the human requested it.
+No. Agents propose candidates; humans approve. Direct terminal CLI uses A/B/C. AI-agent chat uses `yes`/`audit`/`cancel`. Only explicit accept-all requests (`ss -f`) save every candidate, and agents must not add `--force` unless the human requested it.
 
 ## Where does memory live?
 
@@ -55,3 +55,4 @@ Add `--move-from-path <old-path>` when they also want Engram to move the whole o
 
 - [Troubleshooting](troubleshooting.md)
 - [Comparison and roadmap](../comparison/overview.md)
+

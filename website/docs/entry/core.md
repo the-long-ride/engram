@@ -33,7 +33,7 @@ Shows the prompt before copying. Encourage preview for risky cleanup operations.
 ```bash
 engram resolve-conflicts --dry-run --metacognize
 engram resolve-conflicts --metacognize
-engram metacognize --workspace --accept-all
+engram metacognize --workspace --force
 ```
 
 ## Next steps

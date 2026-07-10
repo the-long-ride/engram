@@ -31,14 +31,14 @@ export async function cmdMetacognize(args: string[], flags: Record<string, any> 
   const scopes = metacognizeScopes(ctx, args, flags);
   const pack = await buildMetacognitionPack(ctx, scopes);
   const inline = inlineCandidates(args);
-  const guidance = metacognitionGuidance(pack, flags['accept-all'] === true);
+  const guidance = metacognitionGuidance(pack, flags.force === true || flags.f === true);
   if (flags['dry-run'] === true && !inline) return guidance;
   if (!pack.memories.length && !inline) return `${packHeader(pack)}\nNo active target memories found.`;
 
   let text = inline;
   if (!text) {
     if (!input.isTTY) return guidance;
-    text = await requestGeneratedSelectionText({ guidance, acceptAll: flags['accept-all'] === true }) ?? '';
+    text = await requestGeneratedSelectionText({ guidance, acceptAll: flags.force === true || flags.f === true }) ?? '';
   }
   if (!text) return 'Discarded. No file written.';
 
@@ -53,8 +53,8 @@ export async function cmdMetacognize(args: string[], flags: Record<string, any> 
       sourceHashes: pack.memories.map((memory) => memory.hash)
     },
     dryRunLabel: `${packHeader(pack)}\nMode: dry-run candidate preview`,
-    acceptAllLabel: 'Metacognize accepted all candidates (--accept-all).',
-    acceptAllRerunCommand: rerunCommand(scopes)
+    forceLabel: 'Metacognize forced candidates (--force).',
+    forceRerunCommand: rerunCommand(scopes)
   });
 }
 
@@ -123,7 +123,7 @@ async function readTargetMemory(ctx: EngramContext, root: string, entry: MemoryE
   };
 }
 
-function metacognitionGuidance(pack: MetacognitionPack, acceptAll: boolean): string {
+function metacognitionGuidance(pack: MetacognitionPack, force: boolean): string {
   const lines = [
     packHeader(pack),
     '',
@@ -131,7 +131,7 @@ function metacognitionGuidance(pack: MetacognitionPack, acceptAll: boolean): str
     'Return one candidate per line: TYPE: rule|skill|knowledge | TEXT: ... | UPDATE: existing-memory-id',
     'Use UPDATE for duplicates, over-broad memories, or wording cleanup; use DEPENDS_ON for layered memories; omit content that is already covered.',
     'Do not delete or archive from this command. Use engram archive --reason <why> <id|file> separately after review.',
-    acceptAll ? 'Because --accept-all is active, every generated candidate will be saved unless related-memory hints require another restructuring pass.' : 'Engram will show a numbered approval preview before writing.',
+    force ? 'Because --force is active, every generated candidate will be saved unless related-memory hints require another restructuring pass.' : 'Engram will show a numbered approval preview before writing.',
     '',
     'Source pack:'
   ];
@@ -174,5 +174,5 @@ function compactText(text: string, max: number): string {
 }
 
 function rerunCommand(scopes: Scope[]): string {
-  return scopes.length > 1 ? 'engram metacognize --all --accept-all' : `engram metacognize --${scopes[0]} --accept-all`;
+  return scopes.length > 1 ? 'engram metacognize --all --force' : `engram metacognize --${scopes[0]} --force`;
 }

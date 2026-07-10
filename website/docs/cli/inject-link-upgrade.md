@@ -66,7 +66,7 @@ engram take-control --file AGENTS.md
 engram take-control --dir docs
 engram take-control --include "docs/**/*.md" --exclude "docs/private/**"
 engram take-control --max-sources 5 --max-chars 900
-engram take-control --all --metacognize --accept-all
+engram take-control --all --metacognize --force
 ```
 
 `take-control` is the agent-assisted takeover flow for existing workspace guidance. It builds a compact source pack from files such as `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, Cursor rules, memory-bank notes, and top-level `rules/`, `skills/`, `workflows/`, `knowledge/`, or `notes/` folders, including `.txt` notes.
@@ -78,7 +78,7 @@ Saved take-control memories record `source_files` and `source_hashes`, so unchan
 ```bash
 engram metacognize --workspace
 engram metacognize --global --dry-run
-engram metacognize --all --accept-all
+engram metacognize --all --force
 ```
 
 Use `metacognize` when you want an AI agent to review an existing Engram memory folder and propose safer structure through the same save-session approval flow. Agents should use `UPDATE: memory-id` for consolidation or wording cleanup and `DEPENDS_ON: memory-id` for layered memories.

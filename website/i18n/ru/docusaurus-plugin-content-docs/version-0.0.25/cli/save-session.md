@@ -26,10 +26,10 @@ engram save --scope global "<text>"
 engram save-session
 engram ss
 engram save-session --query-level 3
-engram ss -a
-engram ss -a last 50 sessions
+engram ss -f
+engram ss -f last 50 sessions
 engram save-session --file transcript.md
-engram save-session --accept-all
+engram save-session --force
 ```
 
 Используйте `save-session`, когда долгое взаимодействие привело к созданию нескольких кандидатов:
@@ -43,10 +43,10 @@ TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
 `CONTEXT: ...` необязателен. Добавляйте его только тогда, когда он объясняет, почему память существует. Кандидаты также могут добавлять поля `DEPENDS_ON`, `LEVEL` или `UPDATE` при реструктуризации связанной памяти.
 
 - `--query-level <n>` — извлечь до n недавних доступных чатов между человеком и агентом; должно быть положительным целым числом; агенты не должны придумывать недоступную историю
-- `--accept-all` / `-a` — каждый сгенерированный кандидат сохраняется, потому что человек явно одобрил это сокращение
+- `--force` / `-f` — каждый сгенерированный кандидат сохраняется, потому что человек явно одобрил это сокращение
 - `--file <path>` — для транскриптов или длинных резюме, уже находящихся на диске
 
-Для `/engram take-control --accept-all` или обычного `/engram take control accept all` слеш-адаптер нормализует формулировку, генерирует только кратких кандидатов `TYPE: ... | TEXT: ...` и позволяет Engram сохранить их без второго запроса одобрения.
+Для `/engram take-control --force` или обычного `/engram take control accept all` слеш-адаптер нормализует формулировку, генерирует только кратких кандидатов `TYPE: ... | TEXT: ...` и позволяет Engram сохранить их без второго запроса одобрения.
 
 ## observe
 
@@ -70,3 +70,4 @@ TYPE: knowledge | TEXT: Invoice retries use exponential backoff. | UPDATE: invoi
 
 - [inject / link / upgrade](inject-link-upgrade.md)
 - [Концепции: путь записи и одобрение](../concepts/write-path.md)
+

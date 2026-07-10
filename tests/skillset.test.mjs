@@ -51,7 +51,7 @@ test('skillset installer writes all supported agent adapter files (--all-support
   assert.match(guide, /Default agent mode: compact/);
   assert.match(guide, /Memory value gate/);
   assert.match(guide, /AI-agent chat save protocol/);
-  assert.match(guide, /engram save-session --accept-all/);
+assert.match(guide, /engram save-session --force/);
   assert.match(guide, /yes.*audit.*cancel/is);
   const mcpConfig = await readFile(path.join(cwd, '.mcp.json'), 'utf8');
   assert.match(mcpConfig, /engram-mcp/);
@@ -61,7 +61,7 @@ test('skillset installer writes all supported agent adapter files (--all-support
   assert.match(await readFile(path.join(cwd, '.claude/commands/engram.md'), 'utf8'), /any `engram` CLI arguments/);
   assert.match(await readFile(path.join(cwd, '.claude/commands/engram.md'), 'utf8'), /current AI agent chat\/session/);
   assert.match(await readFile(path.join(cwd, '.claude/commands/engram.md'), 'utf8'), /recent accessible human-agent chat sessions/);
-  assert.match(await readFile(path.join(cwd, '.claude/commands/engram.md'), 'utf8'), /save-session --query-level 50 --accept-all/);
+assert.match(await readFile(path.join(cwd, '.claude/commands/engram.md'), 'utf8'), /save-session --query-level 50 --force/);
   assert.match(await readFile(path.join(cwd, '.claude/commands/engram.md'), 'utf8'), /metacognize --workspace/);
   assert.match(await readFile(path.join(cwd, '.claude/commands/engram.md'), 'utf8'), /restructure workspace memory/);
   assert.match(await readFile(path.join(cwd, '.claude/commands/engram.md'), 'utf8'), /Agent action:/);
@@ -73,8 +73,8 @@ test('skillset installer writes all supported agent adapter files (--all-support
   assert.match(await readFile(path.join(cwd, '.claude/skills/engram/SKILL.md'), 'utf8'), /take-control/);
   assert.match(await readFile(path.join(cwd, '.claude/skills/engram/SKILL.md'), 'utf8'), /take control` means `take-control/);
   assert.match(await readFile(path.join(cwd, '.claude/skills/engram/SKILL.md'), 'utf8'), /source pack token-light/);
-  assert.match(await readFile(path.join(cwd, '.claude/skills/engram/SKILL.md'), 'utf8'), /ss -a/);
-  assert.match(await readFile(path.join(cwd, '.claude/skills/engram/SKILL.md'), 'utf8'), /Never add `--accept-all` yourself/);
+assert.match(await readFile(path.join(cwd, '.claude/skills/engram/SKILL.md'), 'utf8'), /ss -f/);
+assert.match(await readFile(path.join(cwd, '.claude/skills/engram/SKILL.md'), 'utf8'), /Never use `--force`/);
   assert.match(await readFile(path.join(cwd, '.claude/skills/engram/SKILL.md'), 'utf8'), /compact menu/);
   assert.match(await readFile(path.join(cwd, '.claude/skills/engram/SKILL.md'), 'utf8'), /what should we save to engram\?/);
   assert.match(await readFile(path.join(cwd, '.cursor/commands/engram.md'), 'utf8'), /Engram Slash Command/);
@@ -87,10 +87,10 @@ test('skillset installer writes all supported agent adapter files (--all-support
   assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /current AI agent chat\/session/);
   assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /recent accessible human-agent chat sessions/);
   assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /source pack token-light/);
-  assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /ss -a/);
-  assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /ss -a last 50 sessions/);
-  assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /save-session --accept-all/);
-  assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /metacognize accept-all/);
+assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /ss -f/);
+assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /ss -f last 50 sessions/);
+assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /save-session --force/);
+  assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /metacognize force mode/);
   assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /Agent action:/);
   assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /replace prior Engram-loaded context/i);
   assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /If the request is only .*\/engram.*with no args/);
@@ -240,7 +240,7 @@ test('global skillset installer writes managed rules, skills, and registry', asy
   assert.doesNotMatch(agents, /Global Startup/);
   const guide = await readFile(path.join(agentHome, '.agents', 'engram.md'), 'utf8');
   assert.match(guide, /Global Startup/);
-  assert.match(guide, /engram load --for-agents "<current task>"/);
+assert.match(guide, /engram load "<current task>"/);
   const skill = await readFile(path.join(agentHome, '.agents', 'skills', 'engram', 'SKILL.md'), 'utf8');
   assert.match(skill, /name: engram/);
   assert.match(skill, /Default agent mode: compact/);
@@ -269,7 +269,7 @@ test('global antigravity install writes 2.0, CLI, and IDE skill folders', async 
   assert.match(result.stdout, /WRITTEN antigravity: .*gemini[\\\/]mcp\.json/);
   assert.match(await readFile(path.join(agentHome, '.antigravity', 'skills', 'engram', 'SKILL.md'), 'utf8'), /name: engram/);
   assert.match(await readFile(path.join(agentHome, '.antigravity-cli', 'skills', 'engram', 'SKILL.md'), 'utf8'), /Default agent mode: compact/);
-  assert.match(await readFile(path.join(agentHome, '.antigravity-ide', 'skills', 'engram', 'SKILL.md'), 'utf8'), /save-session --accept-all/);
+assert.match(await readFile(path.join(agentHome, '.antigravity-ide', 'skills', 'engram', 'SKILL.md'), 'utf8'), /save-session --force/);
   assert.equal(JSON.parse(await readFile(path.join(configHome, 'gemini', 'mcp.json'), 'utf8')).mcpServers.engram.command, 'npx');
   const registry = JSON.parse(await readFile(path.join(globalEnv.ENGRAM_CONFIG_DIR, 'global-skillsets.json'), 'utf8'));
   assert.equal(registry.installs.antigravity.files.length, 4);
@@ -474,7 +474,7 @@ test('global copilot install appends user instruction file', async () => {
   assert.match(copilot, /- Keep this rule\./);
   assert.match(copilot, /<!-- engram:start -->/);
   assert.match(copilot, /Full guide:/);
-  assert.match(copilot, /engram load --for-agents "<task>"/);
+assert.match(copilot, /engram load "<task>"/);
 
   const registry = JSON.parse(await readFile(path.join(globalEnv.ENGRAM_CONFIG_DIR, 'global-skillsets.json'), 'utf8'));
   assert.equal(registry.installs.copilot.files.length, 2);
@@ -688,7 +688,7 @@ test('codex alias writes minimal AGENTS.md block and full SKILL.md', async () =>
   // SKILL.md still has full compact instructions
   const skill = await readFile(path.join(cwd, '.agents/skills/engram/SKILL.md'), 'utf8');
   assert.match(skill, /Save flow:/);
-  assert.match(skill, /never add `--accept-all`/i);
+  assert.match(skill, /Never use `--force`/i);
   assert.match(skill, /Default agent mode: compact/);
   // Full guide at .agents/engram.md
   const guide = await readFile(path.join(cwd, '.agents/engram.md'), 'utf8');
@@ -1707,7 +1707,7 @@ test('renderMinimalInstructionBlock contains guide reference and managed block m
   assert.match(block, /<!-- engram:start -->/);
   assert.match(block, /<!-- engram:end -->/);
   assert.match(block, /Full guide: `\.agents\/engram\.md`/);
-  assert.match(block, /engram load --for-agents/);
+assert.match(block, /engram load /);
   assert.match(block, /Never save memory silently/);
 });
 

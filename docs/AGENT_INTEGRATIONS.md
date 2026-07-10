@@ -131,7 +131,7 @@ without changing when full Engram memory is injected.
 
 Agent hosts must not turn normal chat into silent memory writes. For user-requested saves, the host asks the model to refine objective candidates and show them before writing. For agent-initiated proposals, the host lets the model append a proposal only when the memory value gate passes.
 
-Approval words are `yes`, `approve`, `confirm`, or `save`. Audit words are `audit`, `revise`, `correct`, or edited replacement text. Cancel words are `cancel`, `stop`, or rejection. Only approval after exact candidate display authorizes `engram save-session --accept-all` for those candidates.
+Approval words are `yes`, `approve`, `confirm`, or `save`. Audit words are `audit`, `revise`, `correct`, or edited replacement text. Cancel words are `cancel`, `stop`, or rejection. Only approval after exact candidate display authorizes `engram save-session --force` for those candidates.
 
 Direct terminal CLI remains A/B/C. MCP proposal tools remain no-write.
 
@@ -266,13 +266,13 @@ removes all of these together as well.
    /engram auto save
    /engram observe --file session.md
    /engram take-control
-   /engram take control accept all
-   /engram take control accept all metacognize
-   /engram restructure workspace memory accept all
+   /engram take control force
+   /engram take control force metacognize
+   /engram restructure workspace memory force
    /engram resolve conflicts and metacognize
-   /engram ss -a
-   /engram ss -a last 50 sessions
-   /engram save-session --accept-all
+   /engram ss -f
+   /engram ss -f last 50 sessions
+   /engram save-session --force
    /engram graph release workflow
    /engram archive --reason "Superseded" knowledge/old-fact.md
    /engram help set-role
@@ -291,21 +291,21 @@ removes all of these together as well.
   For transcripts or long summaries already on disk, use
   `engram save-session --file transcript.md`. The save-session approval prompt supports
   selected candidate replies such as `A 1,3`. When the human explicitly includes
-  `--accept-all`, or uses the `/engram ss -a` shortcut, the slash adapter should
+  `--force`, or uses the `/engram ss -f` shortcut, the slash adapter should
   generate/provide concise candidates, run the CLI with
-  `engram save-session --accept-all`, and report the saved files without asking for
+  `engram save-session --force`, and report the saved files without asking for
   another A/B/C reply. If the shortcut includes a count such as
-  `/engram ss -a last 50 sessions`, normalize it to
-  `engram save-session --query-level 50 --accept-all` and mine only recent
+  `/engram ss -f last 50 sessions`, normalize it to
+  `engram save-session --query-level 50 --force` and mine only recent
   human-agent chats the agent can actually access. If Engram returns a
   related-memory response before writing, no file was saved yet; the adapter
   should use those duplicate/dependency hints to generate a restructured
-  candidate set and rerun the same accept-all command. Use `DEPENDS_ON:
+  candidate set and rerun the same force command. Use `DEPENDS_ON:
   memory-id` when a candidate builds on existing memory, `LEVEL: advanced` for
   deeper memory when useful, and `UPDATE: memory-id` when a candidate should
   merge into a possible duplicate. For
-  `/engram take-control --accept-all` or natural
-  `/engram take control accept all`, the slash adapter should normalize the
+  `/engram take-control --force` or natural
+  `/engram take control force`, the slash adapter should normalize the
   wording, keep the source pack token-light, generate only concise
   `TYPE: ... | TEXT: ...` candidates, add optional `CONTEXT: ...` only when it
   helps explain why the memory exists, pass them to the CLI, and let Engram save
@@ -329,12 +329,12 @@ removes all of these together as well.
   For `/engram observe`, slash adapters should run the CLI and report the saved
   inbox file. If the human included `--propose`, the adapter may generate
   concise save-session candidates from the sanitized note, but writes still use the
-  normal approval flow unless the human explicitly included `--accept-all`.
+  normal approval flow unless the human explicitly included `--force`.
   For `/engram graph` and `/engram quality-check`, report contradiction
   candidates compactly. If a memory is wrong or superseded, use
   `/engram archive --reason <why> <id-or-file>` so the file leaves active
   routing only after approval and remains preserved under `archive/`.
-  Agents must not add `--accept-all` unless the human requested it.
+  Agents must not add `--force` unless the human requested it.
 
    Generated knowledge should be objective and durable. Corrections and
    preferences become rules. Repeatable procedures become workflows/skills.
@@ -362,9 +362,9 @@ removes all of these together as well.
    `engram take-control --dry-run` to inspect the source pack first, repeated
    `--file`, `--dir`, and `--include` selectors to combine sources, plus
    `--exclude`, `--max-sources`, and `--max-chars` to keep scans token-safe.
-  `--accept-all` uses smaller token-light source defaults unless explicit
+  `--force` uses smaller token-light source defaults unless explicit
   `--max-sources` or `--max-chars` values are provided.
-  Add `--metacognize` when the human wants take-control accept-all to pause on
+  Add `--metacognize` when the human wants take-control force mode to pause on
   related-memory hints so the agent can rerun with `UPDATE` or `DEPENDS_ON`
   before any file is written.
   Saved take-control memories record `source_files` and `source_hashes`
@@ -379,9 +379,9 @@ removes all of these together as well.
    concise `TYPE: ... | TEXT: ...` candidates, usually with `UPDATE:
    existing-memory-id` for consolidation or wording cleanup and `DEPENDS_ON:
    memory-id` for layered memories, then rerun the same scope. Natural wording
-   such as `/engram restructure workspace memory accept all` maps to
-   `engram metacognize --workspace --accept-all`. Agents must not add
-   `--accept-all` unless the human requested it.
+   such as `/engram restructure workspace memory force` maps to
+   `engram metacognize --workspace --force`. Agents must not add
+   `--force` unless the human requested it.
 
    Engram always saves rule memories with light, balanced, and strict versions.
    Rule variant mode is a render lens for agent-facing memory. Strict helps
@@ -409,7 +409,7 @@ global`. Reverse the scopes to copy global memory into a workspace; use
 `--force` only when the human explicitly asks to overwrite destination copies.
 For metacognition, normalize "clone workspace memory to global and metacognize"
 to `engram clone-memory workspace global --metacognize`. Do not add
-`--accept-all` unless the human said it. If accept-all reports related memories
+`--force` unless the human said it. If force reports related memories
 before writing, rerun with `DEPENDS_ON` or `UPDATE` candidates.
 
 Agents may normalize natural conflict requests into `engram resolve-conflicts`,
@@ -420,8 +420,8 @@ concise `TYPE/TEXT` candidates.
 
 Agents may normalize natural metacognition requests into `engram metacognize`,
 for example "restructure workspace memory" -> `engram metacognize --workspace`
-and "organize all memories accept all" -> `engram metacognize --all
---accept-all`. Run the CLI once to get the source pack when no inline
+and "organize all memories force" -> `engram metacognize --all
+--force`. Run the CLI once to get the source pack when no inline
 candidates are present, then rerun with generated `TYPE/TEXT` lines.
 
 Shell completion scripts are available for bash, zsh, and PowerShell:
@@ -459,20 +459,19 @@ across every device with Git."
 MCP hosts should treat `engram_save` and `engram_autosave` as proposal-only
 tools; they must still route final writes through the human-visible CLI approval
 flow. When `/engram save-session --query-level <n>` is present, or natural
-wording such as `/engram ss -a last 50 sessions` is used, the host may include
+wording such as `/engram ss -f last 50 sessions` is used, the host may include
 up to n recent accessible human-agent chat sessions in the proposal context, but
 must not invent inaccessible history. Explicit
-`/engram save-session --accept-all` requests, including the shortcut
-`/engram ss -a`, should use the CLI write path because MCP autosave remains
-proposal-only. The counted shortcut `/engram ss -a last 50 sessions` should use
-`engram save-session --query-level 50 --accept-all`. Legacy
-`/engram autosave --accept-all` and `/engram at -a` remain compatible. `/engram take-control` and `/engram metacognize` should use the CLI flow because they need
+`/engram save-session --force` requests, including the shortcut
+`/engram ss -f`, should use the CLI write path because MCP autosave remains
+proposal-only. The counted shortcut `/engram ss -f last 50 sessions` should use
+`engram save-session --query-level 50 --force`. `/engram take-control` and `/engram metacognize` should use the CLI flow because they need
 workspace source discovery plus human-visible approval. Slash adapters normalize
-`/engram auto save` to `engram save-session` and `/engram take control accept all`
-to `engram take-control --accept-all`; normalize `/engram restructure workspace
-memory accept all` to `engram metacognize --workspace --accept-all`,
-`/engram take control accept all metacognize` to
-`engram take-control --accept-all --metacognize`, and
+`/engram auto save` to `engram save-session` and `/engram take control force`
+to `engram take-control --force`; normalize `/engram restructure workspace
+memory force` to `engram metacognize --workspace --force`,
+`/engram take control force metacognize` to
+`engram take-control --force --metacognize`, and
 `/engram resolve conflicts and metacognize` to
 `engram resolve-conflicts --metacognize`.
 `/engram observe`, `/engram archive`, and `/engram benchmark` should use the CLI

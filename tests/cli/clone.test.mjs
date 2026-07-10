@@ -82,27 +82,14 @@ test('clone-memory metacognize uses numbered approval and writes selected candid
   await rm(cwd, { recursive: true, force: true });
 });
 
-test('clone-memory metacognize accept-all pauses when related memories need agent restructuring', async () => {
+test('clone-memory metacognize force is rejected', async () => {
   const { cwd, env } = await tempWorkspace('engram-clone-metacognize-');
   await runEngram(cwd, env, ['inject', '--no-skillset']);
   await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'global', 'Release foundation checklist lives in docs release md'], 'A\n');
   await runEngram(cwd, env, ['save', 'rule', '--scope', 'workspace', 'OAuth rotation must follow the release foundation checklist'], 'A\n');
 
-  const paused = await runEngram(cwd, env, ['clone-memory', 'workspace', 'global', '--metacognize', '--accept-all']);
-  assert.equal(paused.code, 0, paused.stderr);
-  assert.match(paused.stdout, /found related memories before writing/);
-  assert.match(paused.stdout, /No file written yet/);
-  assert.match(paused.stdout, /DEPENDS_ON/);
-  assert.doesNotMatch(paused.stdout, /Saved ->/);
-  await assert.rejects(readFile(path.join(env.ENGRAM_GLOBAL_DIR, 'rules', 'oauth-rotation-must-follow-the-release-foundation-checklist.md'), 'utf8'));
-  await rm(cwd, { recursive: true, force: true });
-});
-
-test('clone-memory rejects force with metacognize', async () => {
-  const { cwd, env } = await tempWorkspace('engram-clone-metacognize-');
-  await runEngram(cwd, env, ['inject', '--no-skillset']);
-  const result = await runEngram(cwd, env, ['clone-memory', 'workspace', 'global', '--metacognize', '--force']);
-  assert.equal(result.code, 1);
-  assert.match(result.stderr, /--force cannot be used with --metacognize/);
+  const paused = await runEngram(cwd, env, ['clone-memory', 'workspace', 'global', '--metacognize', '--force']);
+  assert.equal(paused.code, 1);
+  assert.match(paused.stderr, /--force cannot be used with --metacognize/);
   await rm(cwd, { recursive: true, force: true });
 });

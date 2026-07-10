@@ -8,7 +8,7 @@ description: "Los agentes proponen, los humanos aprueban. Solo se escribe la mem
 
 ## Aprobacion en Chat con IA
 
-En el chat con un agente de IA, la aprobacion de Engram es conversacional. El agente muestra primero candidatos refinados `TYPE: ... | TEXT: ...`, incluyendo variantes Light/Balanced/Strict para las reglas. Responde `yes` para guardar exactamente esos candidatos, `audit` para revisarlos o `cancel` para detenerte. Despues de `yes`, el agente usa `engram save-session --accept-all` con los candidatos aprobados. Los guardados directos en la CLI siguen usando A/B/C salvo que se haya invocado explicitamente un comando accept-all.
+En el chat con un agente de IA, la aprobacion de Engram es conversacional. El agente muestra primero candidatos refinados `TYPE: ... | TEXT: ...`, incluyendo variantes Light/Balanced/Strict para las reglas. Responde `yes` para guardar exactamente esos candidatos, `audit` para revisarlos o `cancel` para detenerte. Despues de `yes`, el agente usa `engram save-session --force` con los candidatos aprobados. Los guardados directos en la CLI siguen usando A/B/C salvo que se haya invocado explicitamente un comando accept-all.
 
 
 Engram no es solo "memoria de agente". Es un protocolo que hace que la memoria sea inspeccionable, portable y gobernada por humanos.
@@ -45,7 +45,7 @@ Cada archivo de memoria activa tiene secciones de `Context`, `Content` y `Exampl
 
 1. El agente propone uno o más candidatos.
    Con `save-session --query-level <n>`, el agente puede considerar hasta n chats humano-agente recientes y accesibles, pero solo como contexto de propuesta.
-   La forma natural `/engram ss -a last 50 sessions` usa el mismo alcance con aprobación explícita de todos los candidatos: `engram save-session --query-level 50 --accept-all`.
+   La forma natural `/engram ss -f last 50 sessions` usa el mismo alcance con aprobación explícita de todos los candidatos: `engram save-session --query-level 50 --force`.
 2. Engram analiza el tipo de candidato y el alcance de destino (scope).
 3. Engram comprueba el esquema, secretos, patrones de inyección de prompts y seguridad de ruta.
 4. El humano ve una vista previa.
@@ -68,3 +68,4 @@ Sin un protocolo, la memoria puede convertirse en un estado invisible. El estado
 Engram hace que la memoria sea aburrida a propósito: archivos, diferencias (diffs), hashes, puertas de revisión y comandos que un humano puede volver a ejecutar.
 
 Siguiente: [Operaciones](../cli/overview.md).
+

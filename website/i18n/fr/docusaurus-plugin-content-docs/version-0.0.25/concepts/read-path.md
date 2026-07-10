@@ -24,7 +24,7 @@ Un chargement normal signale le nombre d'éléments sélectionnés et le total d
 
 - `load --dry-run` affiche le nombre de candidats, les étiquettes de restriction et les raisons des correspondances.
 - `load --all` renvoie toutes les correspondances routées visibles au lieu d'appliquer la limite du pack compact.
-- `load --for-agents` représente la route compacte destinée aux agents.
+- `load` représente la route compacte destinée aux agents.
 
 `workflow` et `workflows` ciblent toujours les mémoires de compétences (skill memories), mais les termes de types génériques ne suffisent pas à eux seuls à établir une correspondance large.
 
@@ -55,3 +55,4 @@ flowchart LR
 
 - [Chemin d'écriture et approbation](write-path.md)
 - [CLI : load / search / graph](../cli/load-search-graph.md)
+

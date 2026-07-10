@@ -29,9 +29,9 @@ test('inject, help, save reject, save accept, load, verify, audit', async () => 
   assert.match((await runEngram(cwd, env, ['help', 'set-save-target'])).stdout, /workspace\|global\|both/);
   assert.match((await runEngram(cwd, env, ['help', 'set-load-limit'])).stdout, /1 to 32/);
   assert.match((await runEngram(cwd, env, ['help', 'set-role'])).stdout, /frontend-only memory/);
-  assert.match((await runEngram(cwd, env, ['help', 'save-session'])).stdout, /--accept-all/);
+assert.match((await runEngram(cwd, env, ['help', 'save-session'])).stdout, /--force/);
   assert.match((await runEngram(cwd, env, ['help', 'save-session'])).stdout, /--query-level <n>/);
-  assert.match((await runEngram(cwd, env, ['help', 'save-session'])).stdout, /engram ss -a/);
+assert.match((await runEngram(cwd, env, ['help', 'save-session'])).stdout, /engram ss -f/);
   assert.match((await runEngram(cwd, env, ['help', 'search'])).stdout, /--semantic/);
   assert.match((await runEngram(cwd, env, ['help', 'take-control'])).stdout, /workspace guidance/);
   assert.match((await runEngram(cwd, env, ['help', 'load'])).stdout, /--dry-run/);

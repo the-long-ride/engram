@@ -426,7 +426,7 @@ Memories graph test.
 
 ## Example
 
-engram load --for-agents graph
+engram load graph
 `;
 
     await writeFile(path.join(rules, 'base-memory.md'), memory({

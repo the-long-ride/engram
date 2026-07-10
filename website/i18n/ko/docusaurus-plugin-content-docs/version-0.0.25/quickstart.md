@@ -8,7 +8,7 @@ description: "AI 에이전트를 통해 Engram을 사용해 보세요. 메모리
 
 ## AI 채팅 승인
 
-AI 에이전트와의 채팅에서 Engram 승인은 대화형으로 진행됩니다. 에이전트는 먼저 다듬은 `TYPE: ... | TEXT: ...` 후보를 보여 주고, 규칙 메모리라면 Light/Balanced/Strict 변형도 함께 제시합니다. 정확히 그 후보를 저장하려면 `yes`, 수정하려면 `audit`, 중단하려면 `cancel` 로 답합니다. `yes` 이후 에이전트는 승인된 후보 그대로 `engram save-session --accept-all` 을 사용합니다. 직접 CLI 에서 저장할 때는 accept-all 명령을 명시적으로 호출하지 않는 한 계속 A/B/C 를 사용합니다.
+AI 에이전트와의 채팅에서 Engram 승인은 대화형으로 진행됩니다. 에이전트는 먼저 다듬은 `TYPE: ... | TEXT: ...` 후보를 보여 주고, 규칙 메모리라면 Light/Balanced/Strict 변형도 함께 제시합니다. 정확히 그 후보를 저장하려면 `yes`, 수정하려면 `audit`, 중단하려면 `cancel` 로 답합니다. `yes` 이후 에이전트는 승인된 후보 그대로 `engram save-session --force` 을 사용합니다. 직접 CLI 에서 저장할 때는 accept-all 명령을 명시적으로 호출하지 않는 한 계속 A/B/C 를 사용합니다.
 
 
 먼저 에이전트를 통해 Engram을 사용하는 것이 가장 좋습니다. CLI 명령어도 사용 가능하지만, 에이전트가 메모리를 자동으로 읽어 들인 다음 작업을 진행하고 세션 종료 시점에 유용한 영속 메모리를 제안하도록 유도하는 흐름이 최적의 경험을 제공합니다.
@@ -108,18 +108,18 @@ engram link --global <에이전트명>
 확실히 모든 제안 내용을 저장해도 괜찮다고 판단될 때만 일괄 승인(accept-all) 단축키를 씁니다:
 
 ```text
-/engram ss -a
+/engram ss -f
 ```
 
-`-a` 옵션은 에이전트가 제안하는 모든 후보군을 인간이 즉시 저장하도록 사전 동의함을 의미합니다. 에이전트 스스로 이 옵션을 임의로 추가하여 실행해선 안 됩니다.
+`-f` 옵션은 에이전트가 제안하는 모든 후보군을 인간이 즉시 저장하도록 사전 동의함을 의미합니다. 에이전트 스스로 이 옵션을 임의로 추가하여 실행해선 안 됩니다.
 
 접근 가능한 최근 채팅을 추출하고 생성된 모든 후보를 한 번에 승인하려면:
 
 ```text
-/engram ss -a last 50 sessions
+/engram ss -f last 50 sessions
 ```
 
-이 표현은 `engram save-session --query-level 50 --accept-all`로 정규화됩니다.
+이 표현은 `engram save-session --query-level 50 --force`로 정규화됩니다.
 
 ## 기존 지식 가져오기 (Import)
 
@@ -172,3 +172,4 @@ engram archive --reason "<이유>" <id 또는 파일>
 ```
 
 다음 단계: [인간 소유 메모리 프로토콜](concepts/write-path.md).
+

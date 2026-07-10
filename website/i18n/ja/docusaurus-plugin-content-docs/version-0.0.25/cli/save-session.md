@@ -26,10 +26,10 @@ engram save --scope global "<text>"
 engram save-session
 engram ss
 engram save-session --query-level 3
-engram ss -a
-engram ss -a last 50 sessions
+engram ss -f
+engram ss -f last 50 sessions
 engram save-session --file transcript.md
-engram save-session --accept-all
+engram save-session --force
 ```
 
 長い相互作用によって複数の候補が生成された場合は、`save-session` を使用します：
@@ -43,10 +43,10 @@ TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
 `CONTEXT: ...` はオプションです。メモリが存在する理由を説明する場合にのみ追加します。候補は、関連メモリを再構成するときに `DEPENDS_ON`、`LEVEL`、または `UPDATE` フィールドを追加することもできます。
 
 - `--query-level <n>` — アクセス可能な最近の人間とエージェントのチャットを最大 n 件マイニングします。正の整数である必要があり、エージェントは利用できない履歴を捏造してはなりません。
-- `--accept-all` / `-a` — 人間がそのショートカットを明示的に承認したため、生成されたすべての候補が保存されます
+- `--force` / `-f` — 人間がそのショートカットを明示的に承認したため、生成されたすべての候補が保存されます
 - `--file <path>` — すでにディスク上にあるトランスクリプトや長い要約の場合
 
-`/engram take-control --accept-all` または自然な `/engram take control accept all` の場合、スラッシュアダプターは文言を正規化し、簡潔な `TYPE: ... | TEXT: ...` 候補のみを生成し、二度目の承認プロンプトなしで Engram がそれらを保存できるようにします。
+`/engram take-control --force` または自然な `/engram take control accept all` の場合、スラッシュアダプターは文言を正規化し、簡潔な `TYPE: ... | TEXT: ...` 候補のみを生成し、二度目の承認プロンプトなしで Engram がそれらを保存できるようにします。
 
 ## observe
 
@@ -70,3 +70,4 @@ TYPE: knowledge | TEXT: Invoice retries use exponential backoff. | UPDATE: invoi
 
 - [inject / link / upgrade](inject-link-upgrade.md)
 - [概念：書き込みパスと承認](../concepts/write-path.md)
+

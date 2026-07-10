@@ -27,11 +27,11 @@ L'espace de travail MCP de Windsurf est ignoré car les documents officiels ne d
 
 ## Outils
 
-Les hôtes MCP doivent traiter `engram_save` et `engram_autosave` comme des outils de **proposition uniquement** ; ils doivent toujours acheminer les écritures finales via le flux d'approbation CLI visible par l'homme. `engram_load` utilise par défaut `--for-agents` (désactivation via `forAgents : false`).
+Les hôtes MCP doivent traiter `engram_save` et `engram_autosave` comme des outils de **proposition uniquement** ; ils doivent toujours acheminer les écritures finales via le flux d'approbation CLI visible par l'homme. `engram_load` utilise par défaut `--full` (désactivation via `forAgents : false`).
 
 ## Règle tout accepter
 
-Les requêtes explicites `/engram save-session --accept-all`, y compris le raccourci `/engram ss -a`, doivent utiliser le chemin d'écriture CLI car la sauvegarde automatique MCP reste sur proposition uniquement. Le raccourci compté `/engram ss -a last 50 sessions` doit utiliser `engram save-session --query-level 50 --accept-all`.
+Les requêtes explicites `/engram save-session --force`, y compris le raccourci `/engram ss -f`, doivent utiliser le chemin d'écriture CLI car la sauvegarde automatique MCP reste sur proposition uniquement. Le raccourci compté `/engram ss -f last 50 sessions` doit utiliser `engram save-session --query-level 50 --force`.
 
 ## Entrée MCP OpenCode
 
@@ -50,3 +50,4 @@ Le serveur MCP implémente la liaison JSON-RPC standard (`initialize`, `notifica
 
 - [Présentation des intégrations d'agents](overview.md)
 - [Hooks et lignes de preuve](hooks.md)
+

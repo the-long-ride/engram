@@ -53,7 +53,7 @@ Engram は以下の順序でメモリを解決します：
 Engram には以下が含まれます：
 
 - `save`：1つの承認されたメモリを保存します。
-- `save-session` / `ss`：セッションからの複数のメモリ候補を保存します。任意で `--query-level <n>` を使い、アクセス可能な直近 n 件までのチャットから候補を抽出できます。`/engram ss -a last 50 sessions` は `engram save-session --query-level 50 --accept-all` に正規化されます。
+- `save-session` / `ss`：セッションからの複数のメモリ候補を保存します。任意で `--query-level <n>` を使い、アクセス可能な直近 n 件までのチャットから候補を抽出できます。`/engram ss -f last 50 sessions` は `engram save-session --query-level 50 --force` に正規化されます。
 - `observe`：まだアクティブなメモリになっていない生メモ（raw notes）をキャプチャします。
 - `take-control`：既存のエージェント向けガイドラインやドキュメントを取り込みます。
 - `graph` および `quality-check`：レビューのためのシグナルを出力します。
@@ -65,3 +65,4 @@ Engram には以下が含まれます：
 コマンドを使用する前に、コンセプトページをお読みください：[Engram を理解する](concepts/protocol.md)。
 
 次へ：[AI エージェントクイックスタート](quickstart.md)。
+

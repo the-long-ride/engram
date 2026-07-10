@@ -79,37 +79,37 @@ test('take-control plan supports repeated includes, excludes, and scan limits', 
   await rm(cwd, { recursive: true, force: true });
 });
 
-test('take-control accept-all natural wording uses token-light defaults', async () => {
+test('take-control force natural wording uses token-light defaults', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
   await runEngram(cwd, env, ['inject', '--no-skillset']);
   await mkdir(path.join(cwd, 'notes'), { recursive: true });
   for (let index = 1; index <= 6; index += 1) {
     await writeFile(path.join(cwd, 'notes', `note-${index}.txt`), `Always keep durable note ${index} concise.`);
   }
-  const planned = await runEngram(cwd, env, ['take', 'control', 'accept', 'all', '--plan']);
+  const planned = await runEngram(cwd, env, ['take', 'control', 'force', '--plan']);
   assert.equal(planned.code, 0, planned.stderr);
   assert.match(planned.stdout, /Selected sources: 5/);
   assert.match(planned.stdout, /Limits: max sources 5, max chars\/source 900/);
   assert.match(planned.stdout, /notes\/note-6\.txt: over --max-sources 5/);
-  const dryRun = await runEngram(cwd, env, ['take-control', 'accept', 'all', '--dry-run']);
+  const dryRun = await runEngram(cwd, env, ['take-control', 'force', '--dry-run']);
   assert.equal(dryRun.code, 0, dryRun.stderr);
-  assert.match(dryRun.stdout, /Token-light accept-all mode/);
+  assert.match(dryRun.stdout, /Token-light force mode/);
   assert.match(dryRun.stdout, /Return up to 5 candidates/);
   await rm(cwd, { recursive: true, force: true });
 });
 
-test('take-control metacognize accept-all pauses when related memories need agent restructuring', async () => {
+test('take-control metacognize force pauses when related memories need agent restructuring', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
   await runEngram(cwd, env, ['inject', '--no-skillset']);
   await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Release foundation checklist guides OAuth rotation'], 'A\n');
 
   const paused = await runEngram(cwd, env, [
-    'take', 'control', 'accept', 'all', 'metacognize', '--scope', 'workspace',
+    'take', 'control', 'force', 'metacognize', '--scope', 'workspace',
     'TYPE: rule | TEXT: OAuth rotation must follow the release foundation checklist.'
   ]);
   assert.equal(paused.code, 0, paused.stderr);
   assert.match(paused.stdout, /found related memories before writing/);
-  assert.match(paused.stdout, /engram take-control --metacognize --accept-all/);
+assert.match(paused.stdout, /engram take-control --metacognize --force/);
   assert.match(paused.stdout, /DEPENDS_ON/);
   assert.doesNotMatch(paused.stdout, /Saved ->/);
   await rm(cwd, { recursive: true, force: true });

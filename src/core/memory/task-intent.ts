@@ -1,4 +1,4 @@
-/** Deterministic task-intent extraction for enriched routing in --for-agents loads. */
+/** Deterministic task-intent extraction for enriched routing in compact default loads. */
 import { meaningfulWords } from '../system/text.js';
 
 export type TaskIntent = {

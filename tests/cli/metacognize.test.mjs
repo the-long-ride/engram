@@ -21,35 +21,35 @@ test('metacognize dry-run emits compact source pack for target memory', async ()
   await rm(cwd, { recursive: true, force: true });
 });
 
-test('metacognize accept-all writes inline restructure candidate and supports natural wording', async () => {
+test('metacognize force writes inline restructure candidate and supports natural wording', async () => {
   const { cwd, env } = await tempWorkspace('engram-metacognize-');
   await runEngram(cwd, env, ['inject', '--no-skillset']);
   await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Metacognize duplicate memory baseline'], 'A\n');
 
   const updated = await runEngram(cwd, env, [
-    'restructure', 'workspace', 'memory', 'accept', 'all',
+    'restructure', 'workspace', 'memory', 'force',
     'TYPE: knowledge | TEXT: Metacognize duplicate memory baseline now has clearer structure. | UPDATE: metacognize-duplicate-memory-baseline'
   ]);
   assert.equal(updated.code, 0, updated.stderr);
-  assert.match(updated.stdout, /Metacognize accepted all candidates/);
+  assert.match(updated.stdout, /Metacognize forced candidates/);
   assert.match(updated.stdout, /Saved ->/);
   assert.match(await readFile(path.join(workspaceMemoryRoot(cwd), 'knowledge', 'metacognize-duplicate-memory-baseline.md'), 'utf8'), /clearer structure/);
   await rm(cwd, { recursive: true, force: true });
 });
 
-test('metacognize accept-all pauses when related memories need restructuring', async () => {
+test('metacognize force pauses when related memories need restructuring', async () => {
   const { cwd, env } = await tempWorkspace('engram-metacognize-');
   await runEngram(cwd, env, ['inject', '--no-skillset']);
   await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Release foundation checklist guides OAuth rotation'], 'A\n');
   await runEngram(cwd, env, ['save', 'rule', '--scope', 'workspace', 'OAuth rotation must follow the release foundation checklist'], 'A\n');
 
   const paused = await runEngram(cwd, env, [
-    'metacognize', '--workspace', '--accept-all',
+  'metacognize', '--workspace', '--force',
     'TYPE: rule | TEXT: OAuth rotation must follow the release foundation checklist.'
   ]);
   assert.equal(paused.code, 0, paused.stderr);
   assert.match(paused.stdout, /found related memories before writing/);
-  assert.match(paused.stdout, /engram metacognize --workspace --accept-all/);
+assert.match(paused.stdout, /engram metacognize --workspace --force/);
   assert.match(paused.stdout, /DEPENDS_ON/);
   assert.doesNotMatch(paused.stdout, /Saved ->/);
   await rm(cwd, { recursive: true, force: true });

@@ -22,8 +22,8 @@ export type SaveSessionCandidateRunOptions = {
   flags?: Record<string, any>;
   source?: MemorySourceMeta;
   dryRunLabel?: string;
-  acceptAllLabel?: string;
-  acceptAllRerunCommand?: string;
+  forceLabel?: string;
+  forceRerunCommand?: string;
 };
 
 /** Draft, approve, and write a memory. */
@@ -70,16 +70,16 @@ export async function cmdSaveSession(args: string[], flags: Record<string, any> 
   const author = await resolveAuthor();
   const role = rolesFromFlags(flags);
   const explicitTaskType = explicitTaskTypeFromFlags(flags);
-  const acceptAll = flags['accept-all'] === true;
+  const force = flags.force === true || flags.f === true;
   const queryLevel = queryLevelFromFlags(flags);
   const guidance = saveSessionGuidance({ queryLevel, limits: { ruleLineTarget: ctx.config.memory.rule_line_target, ruleLineHardLimit: ctx.config.memory.rule_line_hard_limit } });
   const previewOptions = previewOptionsFromFlags(flags);
   let text = await saveSessionInput(args, flags);
   let plans: SavePlan[] = [];
-  let approval: SelectionApproval | undefined = acceptAll ? { accepted: true } : undefined;
+  let approval: SelectionApproval | undefined = force ? { accepted: true } : undefined;
   if (!text) {
-    if (acceptAll) {
-      text = await requestGeneratedSelectionText({ guidance, acceptAll }) ?? '';
+    if (force) {
+      text = await requestGeneratedSelectionText({ guidance, acceptAll: true }) ?? '';
       if (!text) return 'Discarded. No file written.';
     }
     else {
@@ -93,43 +93,43 @@ export async function cmdSaveSession(args: string[], flags: Record<string, any> 
     }
   } else {
     plans = await planSaveSessionCandidates(ctx, text, scopes, author, role, undefined, explicitTaskType);
-    if (!acceptAll) approval = await requestSelectionApproval(previewSavePlans(plans, previewOptions));
+    if (!force) approval = await requestSelectionApproval(previewSavePlans(plans, previewOptions));
   }
-  if (acceptAll && text && !plans.length) plans = await planSaveSessionCandidates(ctx, text, scopes, author, role, undefined, explicitTaskType);
+  if (force && text && !plans.length) plans = await planSaveSessionCandidates(ctx, text, scopes, author, role, undefined, explicitTaskType);
   if (!plans.length) return 'No memory candidates detected.';
   if (!approval?.accepted) return 'Discarded. No file written.';
   if (approval.selected?.length) plans = plans.filter((plan) => plan.candidateIndex === undefined || approval.selected?.includes(plan.candidateIndex));
   if (!plans.length) return 'Discarded. No selected candidates written.';
-  if (acceptAll) {
-    const restructure = acceptAllRestructureResponse(plans, undefined, previewOptions);
+  if (force) {
+    const restructure = forceRestructureResponse(plans, undefined, previewOptions);
     if (restructure) return restructure;
   }
   const saved = await writeSavePlans(plans, approval.edits);
-  return acceptAll ? `Accepted all save-session candidates (--accept-all).\n${saved}` : saved;
+  return force ? `Forced save-session candidates (--force).\n${saved}` : saved;
 }
 
 /** Run supplied save-session candidate lines through the normal approval/write path. */
 export async function runSaveSessionCandidates(options: SaveSessionCandidateRunOptions): Promise<string> {
   const author = await resolveAuthor();
   const role = rolesFromFlags(options.flags ?? {});
-  const acceptAll = options.flags?.['accept-all'] === true;
+  const force = options.flags?.force === true || options.flags?.f === true;
   const previewOptions = previewOptionsFromFlags(options.flags ?? {});
   const plans = await planSaveSessionCandidates(options.ctx, options.text, options.scopes, author, role, options.source, explicitTaskTypeFromFlags(options.flags ?? {}));
   if (!plans.length) return 'No memory candidates detected.';
   if (options.flags?.['dry-run'] === true) return `${options.dryRunLabel ?? 'Save-session dry-run'}\n${previewSavePlans(plans, previewOptions)}`;
-  let approval: SelectionApproval | undefined = acceptAll ? { accepted: true } : await requestSelectionApproval(previewSavePlans(plans, previewOptions));
+  let approval: SelectionApproval | undefined = force ? { accepted: true } : await requestSelectionApproval(previewSavePlans(plans, previewOptions));
   if (!approval?.accepted) return 'Discarded. No file written.';
   let selectedPlans = plans;
   if (approval.selected?.length) {
     selectedPlans = plans.filter((plan) => plan.candidateIndex === undefined || approval.selected?.includes(plan.candidateIndex));
   }
   if (!selectedPlans.length) return 'Discarded. No selected candidates written.';
-  if (acceptAll) {
-    const restructure = acceptAllRestructureResponse(selectedPlans, options.acceptAllRerunCommand, previewOptions);
+  if (force) {
+    const restructure = forceRestructureResponse(selectedPlans, options.forceRerunCommand, previewOptions);
     if (restructure) return restructure;
   }
   const saved = await writeSavePlans(selectedPlans, approval.edits);
-  return acceptAll ? `${options.acceptAllLabel ?? 'Accepted all save-session candidates (--accept-all).'}\n${saved}` : saved;
+  return force ? `${options.forceLabel ?? 'Forced save-session candidates (--force).'}\n${saved}` : saved;
 }
 
 /** Convert existing workspace guidance into approved Engram memories with agent help. */
@@ -138,9 +138,9 @@ export async function cmdTakeControl(args: string[], flags: Record<string, any> 
   const sourceHashes = await importedSourceHashes(ctx);
   const takeControlFlags = { ...flags, 'known-source-hashes': sourceHashes };
   if (flags.plan === true) return renderTakeControlPlan(await planTakeControlSources(process.cwd(), ctx.ignorePatterns, takeControlFlags));
-  const acceptAll = flags['accept-all'] === true;
+  const force = flags.force === true || flags.f === true;
   const sources = await discoverTakeControlSources(process.cwd(), ctx.ignorePatterns, takeControlFlags);
-  const guidance = takeControlGuidance(sources, { acceptAll });
+  const guidance = takeControlGuidance(sources, { acceptAll: force });
   if (flags['dry-run']) return guidance;
   if (!sources.length && !args.join(' ').trim()) return 'No workspace guidance files found. Try engram take-control --all or --file <path>.';
   const scopes = saveScopes(ctx, flags);
@@ -150,10 +150,10 @@ export async function cmdTakeControl(args: string[], flags: Record<string, any> 
   const previewOptions = previewOptionsFromFlags(flags);
   let text = args.join(' ').trim();
   let plans: SavePlan[] = [];
-  let approval: SelectionApproval | undefined = acceptAll ? { accepted: true } : undefined;
+  let approval: SelectionApproval | undefined = force ? { accepted: true } : undefined;
   const source = takeControlSourceMeta(sources);
   if (!text) {
-    if (acceptAll) text = await requestGeneratedSelectionText({ guidance, acceptAll }) ?? '';
+    if (force) text = await requestGeneratedSelectionText({ guidance, acceptAll: true }) ?? '';
     else {
       const captured = await requestGeneratedSelectionApproval(async (generated) => {
         text = generated;
@@ -165,19 +165,19 @@ export async function cmdTakeControl(args: string[], flags: Record<string, any> 
     }
   } else {
     plans = await planSaveSessionCandidates(ctx, text, scopes, author, role, source, explicitTaskType);
-    if (!acceptAll) approval = await requestSelectionApproval(previewSavePlans(plans, previewOptions));
+    if (!force) approval = await requestSelectionApproval(previewSavePlans(plans, previewOptions));
   }
-  if (acceptAll && text && !plans.length) plans = await planSaveSessionCandidates(ctx, text, scopes, author, role, source, explicitTaskType);
+  if (force && text && !plans.length) plans = await planSaveSessionCandidates(ctx, text, scopes, author, role, source, explicitTaskType);
   if (!plans.length) return 'No memory candidates detected.';
   if (!approval?.accepted) return 'Discarded. No file written.';
   if (approval.selected?.length) plans = plans.filter((plan) => plan.candidateIndex === undefined || approval.selected?.includes(plan.candidateIndex));
   if (!plans.length) return 'Discarded. No selected candidates written.';
-  if (acceptAll && flags.metacognize === true) {
-    const restructure = acceptAllRestructureResponse(plans, takeControlMetacognizeRerunCommand(flags), previewOptions);
+  if (force && flags.metacognize === true) {
+    const restructure = forceRestructureResponse(plans, takeControlMetacognizeRerunCommand(flags), previewOptions);
     if (restructure) return restructure;
   }
   const saved = await writeSavePlans(plans, approval.edits);
-  const prefix = acceptAll ? 'Take-control accepted all candidates (--accept-all).' : `Take-control consumed ${sources.length} source file${sources.length === 1 ? '' : 's'}.`;
+  const prefix = force ? 'Take-control forced candidates (--force).' : `Take-control consumed ${sources.length} source file${sources.length === 1 ? '' : 's'}.`;
   return `${prefix}\n${saved}`;
 }
 
@@ -208,11 +208,32 @@ async function planSaveSessionCandidates(ctx: Awaited<ReturnType<typeof getConte
   return plans;
 }
 
-function acceptAllRestructureResponse(plans: SavePlan[], rerunCommand = 'engram save-session --accept-all', previewOptions: SavePreviewOptions = {}): string {
+export function forceRestructureResponse(plans: SavePlan[], rerunCommand = 'engram save-session --force', previewOptions: SavePreviewOptions = {}): string {
   const pending = plans.filter((plan) => unresolvedRelatedHints(plan).length);
   if (!pending.length) return '';
+  const exactDuplicates = pending.flatMap((plan) => (plan.related ?? [])
+    .filter((hint) => hint.action === 'possible-duplicate' && scoreDisplaysAsExactDuplicate(hint.score))
+    .map((hint) => ({ plan, hint })));
+  if (exactDuplicates.length) {
+    const duplicateLines = exactDuplicates.map(({ plan, hint }) =>
+      `Candidate ${plan.candidateIndex ?? 1}: memory id ${hint.id} already covers this (${hint.scope}:${hint.file}, score ${displayExactDuplicateScore(hint.score)}).`);
+    const updateLines = exactDuplicates.map(({ plan, hint }) =>
+      `TYPE: ${kindFromPlan(plan)} | TEXT: ... | UPDATE: ${hint.id}`);
+    return [
+      exactDuplicates.length === 1
+        ? 'Existing memory already covers this candidate.'
+        : 'Existing memories already cover one or more candidates.',
+      ...duplicateLines,
+      'No file written.',
+      'If you need to extend one, rerun with:',
+      ...updateLines,
+      'Do not retry as a new memory.',
+      '',
+      previewSavePlans(pending, previewOptions)
+    ].filter(Boolean).join('\n');
+  }
   return [
-    'Accepted all save-session candidates (--accept-all), but Engram found related memories before writing.',
+    'Forced save-session candidates (--force), but Engram found related memories before writing.',
     `No file written yet. Agent action: brainstorm a restructured candidate set and rerun \`${rerunCommand}\`.`,
     'Use `DEPENDS_ON: memory-id` when a candidate builds on existing memory; use `UPDATE: memory-id` when it should merge into a possible duplicate; omit candidates that are already covered.',
     '',
@@ -265,8 +286,18 @@ function hasDependencyIntent(text: string): boolean {
   return /\b(depends? on|builds? on|based on|extends?|requires?|prerequisite|foundation|foundational|follow(?:s|ing)?|must follow)\b/i.test(text);
 }
 
+function scoreDisplaysAsExactDuplicate(score: number): boolean {
+  return Math.round((score + Number.EPSILON) * 100) >= 100;
+}
+
+function displayExactDuplicateScore(score: number): string {
+  return scoreDisplaysAsExactDuplicate(score)
+    ? '1.00'
+    : score.toFixed(2);
+}
+
 function takeControlMetacognizeRerunCommand(flags: Record<string, any>): string {
-  const parts = ['engram take-control --metacognize --accept-all'];
+  const parts = ['engram take-control --metacognize --force'];
   if (typeof flags.scope === 'string' && flags.scope.trim()) parts.push(`--scope ${flags.scope.trim()}`);
   return parts.join(' ');
 }
@@ -274,7 +305,6 @@ function takeControlMetacognizeRerunCommand(flags: Record<string, any>): string 
 async function saveSessionInput(args: string[], flags: Record<string, any>): Promise<string> {
   const files = [
     ...(Array.isArray(flags.file) ? flags.file : typeof flags.file === 'string' ? [flags.file] : []),
-    ...(typeof flags.f === 'string' ? [flags.f] : [])
   ];
   if (files.length > 1) throw new Error('save-session accepts only one --file');
   const file = files[0] ?? '';
@@ -383,5 +413,11 @@ async function saveTaskType(text: string, flags: Record<string, any>, seed?: Tas
 
 function looksLikeApprovalAnswer(answer: string): boolean {
   return /^(?:a(?:\s|$)|b(?:\s|$)|c(?:\s|$))/i.test(answer.trim());
+}
+
+function kindFromPlan(plan: SavePlan): MemoryType {
+  if (plan.file.startsWith('rules/')) return 'rule';
+  if (plan.file.startsWith('skills/')) return 'skill';
+  return 'knowledge';
 }
 

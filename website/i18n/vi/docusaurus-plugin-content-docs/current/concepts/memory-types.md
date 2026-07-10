@@ -41,19 +41,20 @@ Khi các biến thể bị tắt, Engram sẽ hiển thị từ ngữ quy tắc 
 engram set-rule-variant strict|balanced|light|off
 ```
 
-## Đầu ra hướng tới Agent (`--for-agents`)
+## Đầu ra hướng tới Agent (`--full`)
 
-Khi `engram load --for-agents "<task>"` chạy, đầu ra sẽ được tinh giản cho các AI agent:
+Khi `engram load "<task>"` chạy, đầu ra sẽ được tinh giản cho các AI agent:
 
-| Khía cạnh | Con người (`engram load`) | Agent (`--for-agents`) |
+| Khía cạnh | Con người (`engram load`) | Agent (`--full`) |
 | --- | --- | --- |
 | Frontmatter | Tất cả các trường (id, type, tags, confidence, scope, author, created, updated, depends_on, v.v.) | Chỉ `id`, `type`, `tags`, `confidence`, `depends_on` |
 | Thân quy tắc | Toàn bộ phần `## Rule Variants` với cả ba biến thể | Một biến thể được chọn dưới phần `## Rule variants (1/3 based on current: <active>)` |
 | Nội dung không phải quy tắc | Toàn bộ phần `## Content` | Cùng nội dung, tiêu đề không đổi |
 
-MCP `engram_load` và hook SessionStart mặc định sử dụng `--for-agents` (tắt thông qua `forAgents: false` trên công cụ MCP). Các bộ điều hợp skillset mã hóa cứng `--for-agents` trong các hướng dẫn được tạo của chúng.
+MCP `engram_load` và hook SessionStart mặc định sử dụng `--full` (tắt thông qua `full: true` trên công cụ MCP). Các bộ điều hợp skillset mã hóa cứng `--full` trong các hướng dẫn được tạo của chúng.
 
 ## Bước tiếp theo
 
 - [Bộ nhớ Workspace so với bộ nhớ Global](scopes.md)
 - [Đường dẫn đọc và định tuyến](read-path.md)
+

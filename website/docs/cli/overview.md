@@ -13,15 +13,15 @@ Run `engram -h` for the compact command surface. Run `engram help <topic>` or `e
 | Need | Command |
 | --- | --- |
 | Load task memory | `engram load "<task>"` |
-| Load agent-facing compact memory | `engram load --for-agents "<task>"` |
+| Load compact task memory | `engram load "<task>"` |
 | Print AI-agent usage guide | `engram llm` |
 | Preview routed memory files | `engram load --dry-run "<task>"` |
 | Search memory | `engram search "<topic>"` |
 | Save one memory | `engram save [rule\|workflow\|knowledge] "<text>"` |
 | Save several session memories | `engram save-session` or `engram ss` |
 | Mine recent accessible chats | `engram save-session --query-level 3` |
-| Accept all session candidates | `engram ss -a` |
-| Mine and accept recent chats | `engram ss -a last 50 sessions` |
+| Force-save session candidates | `engram ss -f` |
+| Mine and force-save recent chats | `engram ss -f last 50 sessions` |
 | Capture raw note | `engram observe --file session.md` |
 | Convert existing docs/guidance | `engram take-control --all` |
 | Preview source takeover | `engram take-control --plan` |

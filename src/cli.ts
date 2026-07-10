@@ -80,7 +80,7 @@ export async function runCli(argv: string[]): Promise<string> {
       case 'sync': return await cmdSync();
       case 'workspace': return await cmdWorkspace(rest, flags);
       case 'config': return await cmdConfig(rest, flags);
-      default: return await cmdHelp();
+      default: return command === 'entry' ? await cmdEntry(flags) : await cmdHelp();
     }
   } finally {
     if (previousProfile === undefined) delete process.env.ENGRAM_PROFILE;

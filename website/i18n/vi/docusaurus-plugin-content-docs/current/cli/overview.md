@@ -8,7 +8,7 @@ description: "Bản đồ của mọi lệnh Engram CLI và chức năng của c
 
 ## Phe duyet trong chat AI
 
-Trong chat voi tac nhan AI, phe duyet Engram la dang hoi dap. Tac nhan truoc tien hien thi cac ung vien da duoc bien tap `TYPE: ... | TEXT: ...`, va voi rule thi kem theo cac bien the Light/Balanced/Strict. Tra loi `yes` de luu dung cac ung vien do, `audit` de sua lai, hoac `cancel` de dung. Sau `yes`, tac nhan dung `engram save-session --accept-all` voi chinh cac ung vien da duoc phe duyet. Cac lan luu truc tiep tren CLI van dung A/B/C tru khi lenh accept-all da duoc goi ro rang.
+Trong chat voi tac nhan AI, phe duyet Engram la dang hoi dap. Tac nhan truoc tien hien thi cac ung vien da duoc bien tap `TYPE: ... | TEXT: ...`, va voi rule thi kem theo cac bien the Light/Balanced/Strict. Tra loi `yes` de luu dung cac ung vien do, `audit` de sua lai, hoac `cancel` de dung. Sau `yes`, tac nhan dung `engram save-session --force` voi chinh cac ung vien da duoc phe duyet. Cac lan luu truc tiep tren CLI van dung A/B/C tru khi lenh accept-all da duoc goi ro rang.
 
 
 Trang này chứa thông tin chi tiết về cách sử dụng để tệp README có thể duy trì dung lượng ngắn gọn.
@@ -24,12 +24,12 @@ Trang này chứa thông tin chi tiết về cách sử dụng để tệp READM
 | Lưu một bộ nhớ | `engram save [rule\|workflow\|knowledge] "<nội dung>"` |
 | Lưu nhiều bộ nhớ phiên làm việc | `engram save-session` hoặc `engram ss` |
 | Khai thác các chat gần đây có thể truy cập | `engram save-session --query-level 3` |
-| Phê duyệt toàn bộ đề xuất của phiên | `engram ss -a` |
-| Khai thác và phê duyệt chat gần đây | `engram ss -a last 50 sessions` |
+| Phê duyệt toàn bộ đề xuất của phiên | `engram ss -f` |
+| Khai thác và phê duyệt chat gần đây | `engram ss -f last 50 sessions` |
 | Ghi lại ghi chú thô | `engram observe --file session.md` |
 | Chuyển đổi tài liệu/hướng dẫn có sẵn | `engram take-control --all` |
 | Xem trước kế hoạch tiếp quản tài liệu | `engram take-control --plan` |
-| Nhập và tự đánh giá tài liệu | `engram take-control --all --metacognize --accept-all` |
+| Nhập và tự đánh giá tài liệu | `engram take-control --all --metacognize --force` |
 | Tái cấu trúc thư mục bộ nhớ hiện tại | `engram metacognize --workspace\|--global\|--all` |
 | Giải quyết xung đột và tự đánh giá | `engram resolve-conflicts --metacognize` |
 | Kiểm tra định tuyến đồ thị | `engram graph "<chủ đề>"` |
@@ -46,7 +46,7 @@ Trang này chứa thông tin chi tiết về cách sử dụng để tệp READM
 | Sao chép bộ nhớ workspace/global | `engram clone-memory workspace global [--metacognize]` |
 
 Sử dụng lệnh `save-session` cho các đề xuất bộ nhớ từ các phiên làm việc dài. Dạng viết tắt: `ss`.
-Sử dụng `--query-level <n>` khi con người muốn tác nhân AI khai thác tối đa n phiên chat người-tác nhân gần đây có thể truy cập, thay vì chỉ phiên hiện tại. Cách nói tự nhiên `engram ss -a last 50 sessions` được chuẩn hóa thành `engram save-session --query-level 50 --accept-all`.
+Sử dụng `--query-level <n>` khi con người muốn tác nhân AI khai thác tối đa n phiên chat người-tác nhân gần đây có thể truy cập, thay vì chỉ phiên hiện tại. Cách nói tự nhiên `engram ss -f last 50 sessions` được chuẩn hóa thành `engram save-session --query-level 50 --force`.
 
 Sử dụng `load --dry-run` khi bạn muốn kiểm tra xem những tệp bộ nhớ nào sẽ được định tuyến mà không cần in nội dung của chúng.
 `load` trước tiên neo định tuyến vào các từ khóa truy vấn có ý nghĩa, bỏ qua các từ nhớ chung chung như `rule`, `knowledge` và các từ dừng (stopwords) phổ biến. Sau đó, nó tinh chỉnh nhóm ứng viên rộng hơn thành gói ngữ cảnh gọn. Tải thông thường hiển thị số đã chọn và tổng số liên quan, ví dụ `loaded 8 memory files / 14 total related memories`. `load --dry-run` hiển thị số lượng ứng viên, các tag gợi ý để thu hẹp và lý do khớp; `load --all` trả về mọi kết quả khớp định tuyến thay vì áp dụng giới hạn gói gọn.
@@ -76,7 +76,7 @@ Sử dụng `engram upgrade --latest` khi kết quả của gói mới cần ghi
 
 DB cấu hình SQLite của Engram là một tối ưu hóa cho việc quản lý không gian làm việc/hồ sơ (profile). Nếu DB không thể mở hoặc khởi tạo, các lệnh đọc/ghi bình thường sẽ tự động chuyển sang cấu hình JSON. Các lệnh cụ thể của DB sẽ báo cáo SQLite không khả dụng thay vì chặn việc sử dụng bộ nhớ thông thường.
 Khi `engram save` tìm thấy các bộ nhớ đang hoạt động có liên quan, bản xem trước phê duyệt sẽ báo cáo chúng kèm theo gợi ý `depends_on` hoặc cảnh báo trùng lặp tiềm ẩn. Việc chấp nhận sẽ lưu bản xem trước nguyên trạng; hãy từ chối trước nếu bạn muốn cấu trúc lại các phụ thuộc hoặc lưu trữ các bộ nhớ trùng lặp trước khi lưu.
-Đối với `save-session --accept-all`, Engram sẽ tạm dừng trước khi ghi khi các gợi ý bộ nhớ liên quan đó xuất hiện. Tác nhân nên sử dụng phản hồi để brainstorm một lượt chạy lại có cấu trúc: thêm `DEPENDS_ON: memory-id` cho các phụ thuộc, `LEVEL: advanced` khi một bộ nhớ sâu hơn điều kiện tiên quyết của nó, hoặc `UPDATE: memory-id` khi một ứng viên nên được hợp nhất vào một bộ nhớ trùng lặp tiềm ẩn.
+Đối với `save-session --force`, Engram sẽ tạm dừng trước khi ghi khi các gợi ý bộ nhớ liên quan đó xuất hiện. Tác nhân nên sử dụng phản hồi để brainstorm một lượt chạy lại có cấu trúc: thêm `DEPENDS_ON: memory-id` cho các phụ thuộc, `LEVEL: advanced` khi một bộ nhớ sâu hơn điều kiện tiên quyết của nó, hoặc `UPDATE: memory-id` khi một ứng viên nên được hợp nhất vào một bộ nhớ trùng lặp tiềm ẩn.
 
 ## Profile, Đích Lưu Và Sao Chép
 
@@ -121,10 +121,10 @@ Sử dụng `metacognize` khi bạn muốn một tác nhân AI xem xét một th
 ```bash
 engram metacognize --workspace
 engram metacognize --global --dry-run
-engram metacognize --all --accept-all
+engram metacognize --all --force
 ```
 
-Lệnh xác minh các bộ nhớ `rules/`, `skills/` và `knowledge/` đang hoạt động trong phạm vi đã chọn, trả về một gói nguồn gọn khi các ứng viên không được cung cấp, sau đó chỉ ghi các dòng `TYPE: ... | TEXT: ...` được tạo sau khi phê duyệt. Các tác nhân nên sử dụng `UPDATE: memory-id` để hợp nhất hoặc dọn dẹp cách diễn đạt và `DEPENDS_ON: memory-id` cho các bộ nhớ phân lớp. Cách diễn đạt tự nhiên như `engram restructure workspace memory accept all` sẽ được chuẩn hóa thành `engram metacognize --workspace --accept-all`.
+Lệnh xác minh các bộ nhớ `rules/`, `skills/` và `knowledge/` đang hoạt động trong phạm vi đã chọn, trả về một gói nguồn gọn khi các ứng viên không được cung cấp, sau đó chỉ ghi các dòng `TYPE: ... | TEXT: ...` được tạo sau khi phê duyệt. Các tác nhân nên sử dụng `UPDATE: memory-id` để hợp nhất hoặc dọn dẹp cách diễn đạt và `DEPENDS_ON: memory-id` cho các bộ nhớ phân lớp. Cách diễn đạt tự nhiên như `engram restructure workspace memory accept all` sẽ được chuẩn hóa thành `engram metacognize --workspace --force`.
 
 ## Lưu Phiên Làm Việc (Save Session)
 
@@ -138,7 +138,7 @@ TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
 
 `CONTEXT: ...` là tùy chọn. Chỉ thêm nó khi nó giải thích lý do tại sao bộ nhớ tồn tại, tình huống nguồn, mục đích sử dụng hoặc ranh giới. Các bộ nhớ sự thật đơn giản có thể bỏ qua nó và sử dụng ngữ cảnh phê duyệt mặc định của Engram.
 
-Nếu không có cờ `--accept-all`, Engram sẽ hỏi ứng viên nào cần lưu. Với `ss -a`, mọi ứng viên được tạo ra sẽ được lưu lại vì con người đã phê duyệt rõ ràng cho phím tắt đó.
+Nếu không có cờ `--force`, Engram sẽ hỏi ứng viên nào cần lưu. Với `ss -f`, mọi ứng viên được tạo ra sẽ được lưu lại vì con người đã phê duyệt rõ ràng cho phím tắt đó.
 Khi một lượt chạy accept-all báo cáo các bộ nhớ liên quan trước khi ghi, không có tệp nào được lưu. Tác nhân nên chạy lại với các ứng viên có cấu trúc như:
 
 ```text
@@ -146,7 +146,7 @@ TYPE: rule | TEXT: OAuth rotation follows release foundations. | DEPENDS_ON: rel
 TYPE: knowledge | TEXT: Invoice retries use exponential backoff. | UPDATE: invoice-retry-baseline
 ```
 
-`--query-level` phải là số nguyên dương. Tác nhân AI chỉ nên dùng các phiên chat mà nó thật sự có thể truy cập và không được bịa lịch sử không có sẵn. `engram ss -a last 50 sessions` dùng `50` làm query level và `-a` làm phê duyệt rõ ràng của con người.
+`--query-level` phải là số nguyên dương. Tác nhân AI chỉ nên dùng các phiên chat mà nó thật sự có thể truy cập và không được bịa lịch sử không có sẵn. `engram ss -f last 50 sessions` dùng `50` làm query level và `-f` làm phê duyệt rõ ràng của con người.
 
 ## Tiếp Quản Bộ Nhớ (Take Control)
 
@@ -161,7 +161,7 @@ engram take-control --file AGENTS.md
 engram take-control --dir docs
 engram take-control --include "docs/**/*.md" --exclude "docs/private/**"
 engram take-control --max-sources 5 --max-chars 900
-engram take-control --all --metacognize --accept-all
+engram take-control --all --metacognize --force
 ```
 
 Các bộ nhớ được lưu bởi take-control ghi lại `source_files` và `source_hashes`, nhờ đó các nguồn không thay đổi sẽ được bỏ qua trong các lần quét sau.
@@ -242,3 +242,4 @@ engram archive --reason "Repo migrated to npm." rules/use-pnpm.md
 ```
 
 Tiếp theo: [So sánh và lộ trình phát triển](../comparison/overview.md).
+

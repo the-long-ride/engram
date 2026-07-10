@@ -11,13 +11,13 @@ Vòng lặp hàng ngày của Engram được thiết kế đơn giản: tải b
 ## Bắt đầu phiên làm việc
 
 ```text
-/engram load --for-agents "tác vụ hiện tại"
+/engram load "tác vụ hiện tại"
 ```
 
 Hoặc từ terminal:
 
 ```bash
-engram load --for-agents "<tác vụ>"
+engram load "<tác vụ>"
 ```
 
 Tác nhân nên trả lời bằng một dòng số lượng thu gọn như `Engram loaded: 8 memories / 24 total related memories.` trừ khi con người yêu cầu hiển thị ID, quy tắc hoặc kết quả thô.
@@ -71,7 +71,7 @@ TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
 
 ```text
 /engram save-session --query-level 3
-/engram ss -a last 50 sessions
+/engram ss -f last 50 sessions
 ```
 
 `--query-level` phải là một số nguyên dương. Tác nhân có thể sử dụng tối đa bấy nhiêu phiên chat gần đây giữa người và tác nhân, bao gồm cả phiên hiện tại, và không được tự tạo ra lịch sử không có sẵn.
@@ -79,10 +79,10 @@ TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
 ## Phím tắt chấp nhận tất cả
 
 ```text
-/engram ss -a
+/engram ss -f
 ```
 
-`-a` nghĩa là con người phê duyệt rõ ràng mọi ứng viên được đề xuất bởi tác nhân. Tác nhân không được tự ý thêm `--accept-all` trừ khi con người yêu cầu.
+`-f` nghĩa là con người phê duyệt rõ ràng mọi ứng viên được đề xuất bởi tác nhân. Tác nhân không được tự ý thêm `--force` trừ khi con người yêu cầu.
 
 Khi một lượt chạy chấp nhận tất cả báo cáo các bộ nhớ liên quan trước khi ghi, không có tệp nào được lưu. Tác nhân nên chạy lại với các ứng viên có cấu trúc:
 
@@ -132,3 +132,4 @@ engram archive --reason "<lý do>" <id-hoặc-tệp>
 - [Tài liệu tham khảo CLI](cli/overview.md)
 - [Khắc phục sự cố vận hành](operations/troubleshooting.md)
 - [Giao diện Web Entry](entry/index.md)
+

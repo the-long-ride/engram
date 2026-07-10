@@ -148,14 +148,14 @@ function writeGeneratedPrompt(options: GeneratedMemoryOptions): void {
   const title = options.explicitType === 'knowledge' ? 'KNOWLEDGE TEXT NEEDED' : 'MEMORY CANDIDATE NEEDED';
   output.write(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nENGRAM — ${title}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
   output.write(options.guidance ?? 'Write one concise memory candidate, or leave blank to cancel.\n');
-  if (options.acceptAll) output.write('\n--accept-all skips the final A/B/C approval after candidates are provided.\n');
+  if (options.acceptAll) output.write('\n--force skips the final A/B/C approval after candidates are provided.\n');
   output.write('\n');
 }
 
 async function readInteractiveSelectionText(rl: { question(query: string): Promise<string> }, options: GeneratedMemoryOptions): Promise<string> {
   output.write('Enter candidates one at a time. Leave Type blank when finished.\n');
   output.write('Types: rule, workflow, skill, knowledge. AI agents may provide TYPE/TEXT candidate lines directly.\n');
-  if (options.acceptAll) output.write('Because --accept-all is active, every candidate entered here will be saved.\n');
+  if (options.acceptAll) output.write('Because --force is active, every candidate entered here will be saved.\n');
   const lines: string[] = [];
   for (let index = 1; index <= 8; index += 1) {
     const type = (await rl.question(`Type ${index}: `)).trim();

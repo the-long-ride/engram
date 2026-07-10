@@ -86,7 +86,7 @@ async function computeHookOutput(host: AgentHookHost, payload: HookPayload, cwd:
   }
 
   const query = queryText(payload, event);
-  const context = await cmdLoad([query], { 'for-agents': true });
+  const context = await cmdLoad([query], {});
   if (!context.trim()) {
     return hostOutput(host, proofOnlyOutput(event, proofMode, skippedProof(configMode, 'no-context')), 'retain');
   }

@@ -26,10 +26,10 @@ Lorsque `engram save` trouve des mémoires actives associées, l'aperçu de l'ap
 engram save-session
 engram ss
 engram save-session --query-level 3
-engram ss -a
-engram ss -a last 50 sessions
+engram ss -f
+engram ss -f last 50 sessions
 engram save-session --file transcript.md
-engram save-session --accept-all
+engram save-session --force
 ```
 
 Utilisez `save-session` lorsqu'une longue interaction a produit plusieurs candidats :
@@ -43,10 +43,10 @@ TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
 `CONTEXT: ...` est facultatif. Ajoutez-le uniquement lorsqu'il explique pourquoi la mémoire existe. Les candidats peuvent également ajouter des champs `DEPENDS_ON`, `LEVEL` ou `UPDATE` lors de la restructuration d'une mémoire associée.
 
 - `--query-level <n>` — extrait jusqu'à n discussions récentes accessibles entre l'humain et l'agent ; doit être un entier positif ; les agents ne doivent pas inventer d'historique non disponible
-- `--accept-all` / `-a` — chaque candidat généré est enregistré parce que l'humain a explicitement approuvé ce raccourci
+- `--force` / `-f` — chaque candidat généré est enregistré parce que l'humain a explicitement approuvé ce raccourci
 - `--file <path>` — pour les transcriptions ou les longs résumés déjà présents sur le disque
 
-Pour `/engram take-control --accept-all` ou le `/engram take control accept all` naturel, l'adaptateur normalise la formulation, génère uniquement des candidats concis `TYPE: ... | TEXT: ...` et laisse Engram les enregistrer sans invite d'approbation secondaire.
+Pour `/engram take-control --force` ou le `/engram take control accept all` naturel, l'adaptateur normalise la formulation, génère uniquement des candidats concis `TYPE: ... | TEXT: ...` et laisse Engram les enregistrer sans invite d'approbation secondaire.
 
 ## observe
 
@@ -70,3 +70,4 @@ TYPE: knowledge | TEXT: Invoice retries use exponential backoff. | UPDATE: invoi
 
 - [inject / link / upgrade](inject-link-upgrade.md)
 - [Concepts : chemin d'écriture et approbation](../concepts/write-path.md)
+

@@ -24,7 +24,7 @@ Tải thông thường sẽ báo cáo số lượng bộ nhớ được chọn v
 
 - `load --dry-run` hiển thị số lượng ứng viên, thẻ thu hẹp phạm vi và lý do khớp.
 - `load --all` trả về mọi kết quả định tuyến hiển thị thay vì áp dụng giới hạn gói nhỏ gọn.
-- `load --for-agents` là đường dẫn rút gọn dành cho agent.
+- `load` là đường dẫn rút gọn dành cho agent.
 
 `workflow` và `workflows` vẫn định tuyến đến bộ nhớ kỹ năng (skill memories), nhưng các từ loại chung chung tự chúng không tạo ra một kết quả khớp rộng.
 
@@ -55,3 +55,4 @@ flowchart LR
 
 - [Đường dẫn ghi và phê duyệt](write-path.md)
 - [CLI: load / search / graph](../cli/load-search-graph.md)
+

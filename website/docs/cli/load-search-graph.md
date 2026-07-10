@@ -12,14 +12,15 @@ Read commands load routed memory, search the vault, and inspect graph routing.
 
 ```bash
 engram load "<task>"
-engram load --for-agents "<task>"
+engram load --full "<task>"
 engram load --dry-run "<task>"
 engram load --all "<task>"
 ```
 
 `load` first anchors routing on meaningful query terms, ignoring generic memory words such as `rule`, `knowledge`, and common stopwords. It then refines the wider candidate pool into a compact context pack. Normal load reports selected and total related counts, like `loaded 8 memory files / 14 total related memories`.
 
-- `--for-agents` — agent-facing compact route (only `id`, `type`, `tags`, `confidence`, `depends_on` in frontmatter; one selected rule variant)
+- default `load` — compact agent-facing route (only `id`, `type`, `tags`, `confidence`, `depends_on` in frontmatter; one selected rule variant)
+- `--full` — broader legacy output with full frontmatter and full rule variants
 - `--dry-run` — show candidate counts, narrowing tags, and match reasons without printing content
 - `--all` — return every visible routed match instead of the compact limit
 

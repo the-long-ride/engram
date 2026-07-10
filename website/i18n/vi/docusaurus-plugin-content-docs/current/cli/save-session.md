@@ -26,10 +26,10 @@ Khi `engram save` tìm thấy các bộ nhớ đang hoạt động có liên qua
 engram save-session
 engram ss
 engram save-session --query-level 3
-engram ss -a
-engram ss -a last 50 sessions
+engram ss -f
+engram ss -f last 50 sessions
 engram save-session --file transcript.md
-engram save-session --accept-all
+engram save-session --force
 ```
 
 Sử dụng `save-session` khi một tương tác dài tạo ra nhiều ứng viên:
@@ -43,10 +43,10 @@ TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
 `CONTEXT: ...` là tùy chọn. Chỉ thêm nó khi nó giải thích lý do tại sao bộ nhớ tồn tại. Các ứng viên cũng có thể thêm các trường `DEPENDS_ON`, `LEVEL`, hoặc `UPDATE` khi cấu trúc lại bộ nhớ liên quan.
 
 - `--query-level <n>` — khai thác tối đa n cuộc trò chuyện gần đây giữa người và tác nhân; phải là số nguyên dương; tác nhân không được tự ý bịa ra lịch sử không có sẵn
-- `--accept-all` / `-a` — mọi ứng viên được tạo đều được lưu lại vì con người đã phê duyệt rõ ràng cho phím tắt đó
+- `--force` / `-f` — mọi ứng viên được tạo đều được lưu lại vì con người đã phê duyệt rõ ràng cho phím tắt đó
 - `--file <path>` — dành cho bản ghi cuộc trò chuyện hoặc bản tóm tắt dài đã có trên đĩa
 
-Đối với `/engram take-control --accept-all` hoặc `/engram take control accept all` tự nhiên, bộ chuyển đổi slash sẽ chuẩn hóa cách diễn đạt, chỉ tạo ra các ứng viên `TYPE: ... | TEXT: ...` ngắn gọn và để Engram lưu chúng mà không cần thông báo phê duyệt lần thứ hai.
+Đối với `/engram take-control --force` hoặc `/engram take control accept all` tự nhiên, bộ chuyển đổi slash sẽ chuẩn hóa cách diễn đạt, chỉ tạo ra các ứng viên `TYPE: ... | TEXT: ...` ngắn gọn và để Engram lưu chúng mà không cần thông báo phê duyệt lần thứ hai.
 
 ## observe
 
@@ -70,3 +70,4 @@ TYPE: knowledge | TEXT: Invoice retries use exponential backoff. | UPDATE: invoi
 
 - [inject / link / upgrade](inject-link-upgrade.md)
 - [Khái niệm: đường dẫn ghi và phê duyệt](../concepts/write-path.md)
+

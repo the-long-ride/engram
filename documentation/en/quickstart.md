@@ -2,7 +2,7 @@
 
 ## AI-Agent Chat Approval
 
-In AI-agent chat, Engram approval is conversational. The agent shows refined `TYPE: ... | TEXT: ...` candidates first, including Light/Balanced/Strict variants for rules. Reply `yes` to save the exact candidates, `audit` to revise them, or `cancel` to stop. After `yes`, the agent uses `engram save-session --accept-all` with the exact approved candidates. Direct terminal CLI saves still use A/B/C unless an accept-all command was explicitly invoked.
+In AI-agent chat, Engram approval is conversational. The agent shows refined `TYPE: ... | TEXT: ...` candidates first, including Light/Balanced/Strict variants for rules. Reply `yes` to save the exact candidates, `audit` to revise them, or `cancel` to stop. After `yes`, the agent uses `engram save-session --force` with the exact approved candidates. Direct terminal CLI saves still use A/B/C unless a force command was explicitly invoked.
 
 
 Use Engram through your agent first. The CLI exists, but the best experience is: ask the agent to load memory, do the work, then propose durable memory when something useful emerges.
@@ -18,10 +18,10 @@ Use Engram for this task. Load memory for: <what we are doing>.
 If slash adapters are installed:
 
 ```text
-/engram load --for-agents "<current task>"
+/engram load "<current task>"
 ```
 
-The agent should reply with a compact count line by default, such as `Engram loaded: 8 memories / 24 total related memories.` With slash adapters, `load --for-agents` is the agent-facing route.
+The agent should reply with a compact count line by default, such as `Engram loaded: 8 memories / 24 total related memories.` With slash adapters, plain `load` is now the compact agent-facing route. Use `/engram load --full "<current task>"` only when broader legacy output is needed.
 
 When an agent needs a self-contained Engram usage guide, run:
 
@@ -68,7 +68,7 @@ Install slash support so I can use /engram directly from this agent.
 Start:
 
 ```text
-/engram load --for-agents "current task"
+/engram load "current task"
 ```
 
 During work:
@@ -103,21 +103,21 @@ To include recent chat history the agent can actually access:
 
 `--query-level` must be a positive integer. The agent may use up to that many recent human-agent chat sessions, including the current one, and must not invent unavailable history.
 
-Accept-all shortcut only when you truly mean it:
+Force shortcut only when you truly mean it:
 
 ```text
-/engram ss -a
+/engram ss -f
 ```
 
-`-a` means the human explicitly approves every agent-recommended candidate. Agents must not add it by themselves.
+`-f` means the human explicitly approves every agent-recommended candidate. Agents must not add it by themselves.
 
-To mine recent accessible chats and accept all generated candidates in one request:
+To mine recent accessible chats and force-save generated candidates in one request:
 
 ```text
-/engram ss -a last 50 sessions
+/engram ss -f last 50 sessions
 ```
 
-That normalizes to `engram save-session --query-level 50 --accept-all`.
+That normalizes to `engram save-session --query-level 50 --force`.
 
 ## Import Existing Knowledge
 

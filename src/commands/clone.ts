@@ -96,7 +96,7 @@ async function cloneMemoryMetacognized(
       sourceHashes: candidates.map((candidate) => candidate.hash)
     },
     dryRunLabel: header,
-    acceptAllLabel: 'Accepted all clone-memory metacognize candidates (--accept-all).'
+    forceLabel: 'Forced clone-memory metacognize candidates (--force).'
   });
   return skipLines ? `${output}\n${skipLines}` : output;
 }

@@ -8,7 +8,7 @@ description: "Les agents proposent, les humains approuvent. Seule la mémoire ap
 
 ## Approbation en Chat IA
 
-Dans le chat avec un agent IA, l'approbation Engram est conversationnelle. L'agent montre d'abord des candidats affines `TYPE: ... | TEXT: ...`, y compris les variantes Light/Balanced/Strict pour les regles. Repondez `yes` pour enregistrer exactement ces candidats, `audit` pour les reviser, ou `cancel` pour arreter. Apres `yes`, l'agent utilise `engram save-session --accept-all` avec les candidats approuves. Les enregistrements directs en CLI continuent d'utiliser A/B/C sauf si une commande accept-all a ete invoquee explicitement.
+Dans le chat avec un agent IA, l'approbation Engram est conversationnelle. L'agent montre d'abord des candidats affines `TYPE: ... | TEXT: ...`, y compris les variantes Light/Balanced/Strict pour les regles. Repondez `yes` pour enregistrer exactement ces candidats, `audit` pour les reviser, ou `cancel` pour arreter. Apres `yes`, l'agent utilise `engram save-session --force` avec les candidats approuves. Les enregistrements directs en CLI continuent d'utiliser A/B/C sauf si une commande accept-all a ete invoquee explicitement.
 
 
 Engram n'est pas simplement une « mémoire d'agent ». C'est un protocole qui rend la mémoire inspectable, portable et gouvernée par les humains.
@@ -45,7 +45,7 @@ Chaque fichier de mémoire active comporte des sections `Context`, `Content` et 
 
 1. L'agent propose un ou plusieurs candidats.
    Avec `save-session --query-level <n>`, l'agent peut prendre en compte jusqu'à n conversations humain-agent récentes et accessibles, mais seulement comme contexte de proposition.
-   La forme naturelle `/engram ss -a last 50 sessions` utilise le même périmètre avec approbation explicite de tous les candidats : `engram save-session --query-level 50 --accept-all`.
+   La forme naturelle `/engram ss -f last 50 sessions` utilise le même périmètre avec approbation explicite de tous les candidats : `engram save-session --query-level 50 --force`.
 2. Engram analyse le type de candidat et la portée cible (scope).
 3. Engram vérifie le schéma, les secrets, les modèles d'injection de prompt et la sécurité des chemins d'accès.
 4. L'humain voit un aperçu.
@@ -68,3 +68,4 @@ Sans protocole, la mémoire peut devenir un état invisible. Un état invisible 
 Engram rend la mémoire volontairement ennuyeuse : des fichiers, des diffs, des hashes, des barrières de révision et des commandes qu'un humain peut réexécuter.
 
 Suivant : [Opérations](../cli/overview.md).
+

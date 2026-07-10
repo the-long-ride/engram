@@ -66,7 +66,7 @@ engram take-control --file AGENTS.md
 engram take-control --dir docs
 engram take-control --include "docs/**/*.md" --exclude "docs/private/**"
 engram take-control --max-sources 5 --max-chars 900
-engram take-control --all --metacognize --accept-all
+engram take-control --all --metacognize --force
 ```
 
 `take-control`은 기존 작업 공간 지침을 위한 에이전트 지원 인수 흐름입니다. `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, Cursor 규칙, 메모리 뱅크 메모 및 최상위 `rules/`, `skills/`, `workflows/`, `knowledge/` 또는 `notes/` 폴더(.txt 메모 포함)와 같은 파일에서 간결한 소스 팩을 구축합니다.
@@ -78,7 +78,7 @@ engram take-control --all --metacognize --accept-all
 ```bash
 engram metacognize --workspace
 engram metacognize --global --dry-run
-engram metacognize --all --accept-all
+engram metacognize --all --force
 ```
 
 AI 에이전트가 기존 Engram 메모리 폴더를 검토하고 동일한 save-session 승인 흐름을 통해 더 안전한 구조를 제안하도록 하려면 `metacognize`를 사용합니다. 에이전트는 통합 또는 어구 정리를 위해 `UPDATE: memory-id`를 사용하고 레이어드 메모리를 위해 `DEPENDS_ON: memory-id`를 사용해야 합니다.
@@ -87,3 +87,4 @@ AI 에이전트가 기존 Engram 메모리 폴더를 검토하고 동일한 save
 
 - [profiles / workspaces / config](profiles-workspaces-config.md)
 - [에이전트 통합 개요](../integrations/overview.md)
+

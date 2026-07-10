@@ -10,11 +10,11 @@ import RiskCallout from '@site/src/components/RiskCallout';
 
 The Workspaces tab registers project repos and manages their link state.
 
-## Workspace name
+## Workspace name {#workspace-name}
 
 Friendly display name for a repo/project path. Keep it short and recognizable.
 
-## Workspace path
+## Workspace path {#workspace-path}
 
 Filesystem path to a repo/project. Validate the folder exists or can be initialized; avoid system folders.
 

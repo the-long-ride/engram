@@ -26,6 +26,18 @@
   margin: 0 0 16px;
 }
 
+.toolbar-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.toolbar-label {
+  color: var(--g700);
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .memories-scope-controls,
 .core-scope-controls {
   display: flex;
@@ -361,6 +373,43 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+}
+.title-with-help {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.card-title-wrap,
+.label-with-help,
+.cfg-label-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.help-link {
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--g400);
+  border-radius: 999px;
+  color: var(--g700);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  text-transform: none;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+.help-link:hover,
+.help-link:focus-visible {
+  border-color: var(--blue);
+  color: var(--blue-dk);
+}
+.help-link:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--blue-bg), 0 0 0 3px var(--blue);
 }
 .inline-actions {
   justify-content: flex-end;

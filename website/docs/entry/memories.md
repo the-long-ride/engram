@@ -10,15 +10,15 @@ import RiskCallout from '@site/src/components/RiskCallout';
 
 The Memories tab inspects the memory graph and performs memory maintenance actions.
 
-## Scope chips
+## Scope chips {#scope-chips}
 
 Filter the graph by memory source. Compare workspace vs global memory. Start with the current workspace only when the graph feels noisy.
 
-## Type chips
+## Type chips {#type-chips}
 
 Filter the graph by memory type. Inspect rules, skills, or knowledge separately.
 
-## Semantic links toggle
+## Semantic links toggle {#semantic-links-toggle}
 
 Shows semantic graph edges. Turn off when the graph is visually noisy.
 

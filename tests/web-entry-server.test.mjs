@@ -177,6 +177,13 @@ test('entry server exposes safe config metadata and validated config updates', a
     const faviconIcoRes = await fetch(baseUrl + '/favicon.ico');
     assert.equal(faviconIcoRes.status, 200);
     assert.equal(faviconIcoRes.headers.get('content-type'), 'image/svg+xml');
+
+    for (const asset of ['panel-core.css', 'panel-data.css', 'panel-graph.css', 'panel-memory.css']) {
+      const cssRes = await fetch(baseUrl + '/' + asset);
+      assert.equal(cssRes.status, 200, asset + ' should be served for panel.css @import');
+      assert.match(cssRes.headers.get('content-type') || '', /text\/css/);
+      assert.match(await cssRes.text(), /[.#][a-z0-9_-]+/i);
+    }
   } finally {
     stopServer();
     process.env.ENGRAM_CONFIG_DIR = oldEnv.ENGRAM_CONFIG_DIR;

@@ -231,7 +231,9 @@ async function handleRequest(req: any, res: any, cwd: string): Promise<void> {
           types: Array.isArray(body.types) ? body.types : undefined,
           semantic: body.semantic === true,
           rebuild: body.rebuild === true,
-          limit: Number(body.limit || 100)
+          limit: Number(body.limit || 100),
+          search: typeof body.search === 'string' ? body.search : undefined,
+          searchMode: body.searchMode === 'related' ? 'related' : 'direct'
         });
         json(200, { ok: true, data });
         return;

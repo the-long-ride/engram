@@ -254,7 +254,7 @@ engram entry
   ![Engram Construct Tab](media/demo/engram-entry-Constuct-tab.png)
 - **Core Tab**: Review and resolve duplicate memory candidates across workspace, global, and profile scopes, or run metacognitive analysis.
   ![Engram Core Settings](media/demo/engram-entry-Core-tab.png)
-- **Memories Tab**: Visualize active memories, their tags, and dependency edges using the interactive memory graph.
+- **Memories Tab**: Visualize active memories, search full Markdown content, include related matches, and inspect dependency edges using the interactive memory graph.
   ![Engram Memories Graph View](media/demo/Memories-graph-view.png)
 
 Alternatively, you can manually link Engram to your agent:

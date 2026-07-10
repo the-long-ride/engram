@@ -11,6 +11,7 @@ import { duplicatePairs, semanticDuplicatePairs, type DuplicatePair } from '../a
 import type { MemoryEntry, MemoryGraphEdge, MemoryGraphNode, Scope } from '../runtime/types.js';
 import { loadIndex, rebuildIndex } from '../memory/index.js';
 import { archiveMemory, planArchiveSet } from '../memory/archive.js';
+import { filterMemoryGraph, type MemoriesSearchMode } from './memories-search.js';
 
 import {
   configFieldsForPanel,
@@ -898,7 +899,7 @@ function memoryRefKeys(entry: PanelMemoryEntry): string[] {
 
 export async function apiMemoriesGraphData(
   cwd: string,
-  options: { scopes?: MemoriesScopeFilter[] | string; types?: ('rule' | 'skill' | 'workflow' | 'knowledge')[] | string; semantic?: boolean; rebuild?: boolean; limit?: number } = {}
+  options: { scopes?: MemoriesScopeFilter[] | string; types?: ('rule' | 'skill' | 'workflow' | 'knowledge')[] | string; semantic?: boolean; rebuild?: boolean; limit?: number; search?: string; searchMode?: MemoriesSearchMode } = {}
 ): Promise<MemoriesGraphData> {
   const enabledScopes = normalizeMemoriesScopes(options.scopes);
   const enabledTypes = normalizeMemoryTypes(options.types);
@@ -925,7 +926,8 @@ export async function apiMemoriesGraphData(
   }
 
   const allNodes = pack.entries.map((entry) => memoryGraphNode(entry, pack.activeProfile, workspaceName));
-  const visibleNodes = allNodes.filter((node) => enabledScopes.includes(node.sourceScope) && enabledTypes.includes(getMemoryType(node)));
+  const visibleNodesByFilter = allNodes.filter((node) => enabledScopes.includes(node.sourceScope) && enabledTypes.includes(getMemoryType(node)));
+  let visibleNodes = visibleNodesByFilter;
   const visibleIds = new Set(visibleNodes.map((node) => node.id));
   const entriesByKey = new Map<string, PanelMemoryEntry>();
   for (const entry of pack.entries) {
@@ -977,6 +979,29 @@ export async function apiMemoriesGraphData(
       thin: true,
       crossScope: memoriesSourceScope(a as PanelMemoryEntry, pack.activeProfile) !== memoriesSourceScope(b as PanelMemoryEntry, pack.activeProfile)
     });
+  }
+
+  const searchQuery = String(options.search || '').trim();
+  if (searchQuery) {
+    const profileStore = await readProfileStore();
+    const contentById = new Map<string, string>();
+    await Promise.all(pack.entries
+      .filter((entry) => visibleNodesByFilter.some((node) => node.id === memoriesNodeId(entry)))
+      .map(async (entry) => {
+        const root = entry.profile === pack.activeProfile
+          ? (entry.scope === 'workspace' ? pack.ctx.roots.workspace : pack.ctx.roots.global)
+          : profileStore.profiles[entry.profile]?.global_path || '';
+        if (!root) return;
+        try {
+          contentById.set(memoriesNodeId(entry), await readText(resolveUnderRoot(root, entry.originalFile)));
+        } catch {
+          // An index entry can outlive its file; metadata remains searchable.
+        }
+      }));
+    const searchableNodes = visibleNodesByFilter.map((node) => ({ ...node, content: contentById.get(node.id) || '' }));
+    const searched = filterMemoryGraph(searchableNodes, links, searchQuery, options.searchMode || 'direct');
+    visibleNodes = searched.nodes.map(({ content: _content, ...node }) => node);
+    links.splice(0, links.length, ...searched.links);
   }
 
   const stats = {
@@ -1314,4 +1339,3 @@ export async function apiArchiveMemory(cwd: string, body: ArchiveMemoryRequest):
     path: archivedPath
   };
 }
-

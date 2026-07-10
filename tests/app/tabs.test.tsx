@@ -278,6 +278,26 @@ describe('MemoriesTab', () => {
       }));
     });
   });
+
+  test('searches memory content with the selected result mode', async () => {
+    (api.getJson as jest.Mock).mockResolvedValue(mockMemoriesData);
+    (api.postJson as jest.Mock).mockResolvedValue(mockMemoriesData);
+
+    render(<MemoriesTab active={true} toast={jest.fn()} modal={{ open: jest.fn(), close: jest.fn() }} />);
+    await waitFor(() => expect(screen.getByText('Summary 1')).toBeInTheDocument());
+
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Search memories' }), { target: { value: 'oauth' } });
+    fireEvent.change(screen.getByRole('combobox', { name: 'Search mode' }), { target: { value: 'related' } });
+
+    await waitFor(() => {
+      expect(api.postJson).toHaveBeenCalledWith('/api/memories', expect.objectContaining({
+        search: 'oauth',
+        searchMode: 'related'
+      }));
+    }, { timeout: 1000 });
+    expect(screen.getByRole('option', { name: 'Text matches only' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Text matches + related memories' })).toBeInTheDocument();
+  });
 });
 
 describe('ProfilesTab', () => {

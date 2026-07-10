@@ -1,3 +1,4 @@
+// Build links to the public Engram entry documentation.
 const DOCS_BASE_URL = 'https://the-long-ride.github.io/engram/docs';
 
 function docSlug(value: string): string {

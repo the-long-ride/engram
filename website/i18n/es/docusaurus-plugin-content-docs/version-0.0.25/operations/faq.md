@@ -12,7 +12,7 @@ No. La búsqueda predeterminada de Engram es una búsqueda léxica determinista.
 
 ## ¿Engram escribe la memoria automáticamente?
 
-No. Los agentes proponen candidatos; los humanos aprueban. La CLI directa de la terminal utiliza A/B/C. El chat del agente de IA utiliza `yes`/`audit`/`cancel`. Solo las solicitudes explícitas de aceptar todo (`ss -a`) guardan a todos los candidatos, y los agentes no deben agregar `--accept-all` a menos que el humano lo haya solicitado.
+No. Los agentes proponen candidatos; los humanos aprueban. La CLI directa de la terminal utiliza A/B/C. El chat del agente de IA utiliza `yes`/`audit`/`cancel`. Solo las solicitudes explícitas de aceptar todo (`ss -f`) guardan a todos los candidatos, y los agentes no deben agregar `--force` a menos que el humano lo haya solicitado.
 
 ## ¿Dónde vive la memoria?
 
@@ -55,3 +55,4 @@ Agregue `--move-from-path <ruta-anterior>` cuando también deseen que Engram mue
 
 - [Resolución de problemas](troubleshooting.md)
 - [Comparación y hoja de ruta](../comparison/overview.md)
+

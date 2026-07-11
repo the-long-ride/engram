@@ -11,13 +11,13 @@ The Engram daily loop is intentionally boring: load memory at the start, search 
 ## Start of session
 
 ```text
-/engram load --for-agents "current task"
+/engram load "current task"
 ```
 
 Or from the terminal:
 
 ```bash
-engram load --for-agents "<task>"
+engram load "<task>"
 ```
 
 The agent should reply with a compact count line such as `Engram loaded: 8 memories / 24 total related memories.` unless the human asks for IDs, rules, or raw output.
@@ -71,7 +71,7 @@ TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
 
 ```text
 /engram save-session --query-level 3
-/engram ss -a last 50 sessions
+/engram ss -f last 50 sessions
 ```
 
 `--query-level` must be a positive integer. The agent may use up to that many recent human-agent chat sessions, including the current one, and must not invent unavailable history.
@@ -79,10 +79,10 @@ TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
 ## Accept-all shortcut
 
 ```text
-/engram ss -a
+/engram ss -f
 ```
 
-`-a` means the human explicitly approves every agent-recommended candidate. Agents must not add `--accept-all` unless the human requested it.
+`-f` means the human explicitly approves every agent-recommended candidate. Agents must not add `--force` unless the human requested it.
 
 When an accept-all run reports related memories before writing, no file was saved yet. The agent should rerun with structured candidates:
 
@@ -132,3 +132,4 @@ engram archive --reason "<why>" <id-or-file>
 - [CLI Reference](cli/overview.md)
 - [Operations troubleshooting](operations/troubleshooting.md)
 - [Entry Web UI](entry/index.md)
+

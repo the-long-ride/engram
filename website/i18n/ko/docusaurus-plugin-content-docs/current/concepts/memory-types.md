@@ -41,19 +41,20 @@ Engram은 항상 규칙 메모리를 가벼운(light), 균형 잡힌(balanced), 
 engram set-rule-variant strict|balanced|light|off
 ```
 
-## 에이전트용 출력 (`--for-agents`)
+## 에이전트용 출력 (`--full`)
 
-`engram load --for-agents "<task>"`가 실행되면 AI 에이전트를 위해 출력이 간소화됩니다.
+`engram load "<task>"`가 실행되면 AI 에이전트를 위해 출력이 간소화됩니다.
 
-| 항목 | 인간 (`engram load`) | 에이전트 (`--for-agents`) |
+| 항목 | 인간 (`engram load`) | 에이전트 (`--full`) |
 | --- | --- | --- |
 | Frontmatter | 모든 필드 (id, type, tags, confidence, scope, author, created, updated, depends_on 등) | `id`, `type`, `tags`, `confidence`, `depends_on`만 포함 |
 | 규칙 본문 | 세 가지 변형이 모두 포함된 전체 `## Rule Variants` 섹션 | `## Rule variants (1/3 based on current: <active>)` 아래에 선택된 단 하나의 변형 |
 | 비규칙 내용 | 전체 `## Content` 섹션 | 동일한 내용, 제목 변경 없음 |
 
-MCP `engram_load` 및 SessionStart 훅은 기본적으로 `--for-agents`를 사용합니다 (MCP 도구에서 `forAgents: false`로 옵트아웃 가능). 스킬셋 어댑터는 생성된 지침에 `--for-agents`를 하드코딩합니다.
+MCP `engram_load` 및 SessionStart 훅은 기본적으로 `--full`를 사용합니다 (MCP 도구에서 `full: true`로 옵트아웃 가능). 스킬셋 어댑터는 생성된 지침에 `--full`를 하드코딩합니다.
 
 ## 다음 단계
 
 - [작업 공간 메모리 vs 글로벌 메모리](scopes.md)
 - [읽기 경로 및 라우팅](read-path.md)
+

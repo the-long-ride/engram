@@ -123,9 +123,9 @@ test('save-session --file - reads transcript from stdin', async () => {
     'TYPE: workflow | TEXT: When stdin releases, first run tests. Then update changelog.',
     ''
   ].join('\n');
-  const saved = await runEngram(cwd, env, ['save-session', '--scope', 'workspace', '--file', '-', '--accept-all'], input);
+const saved = await runEngram(cwd, env, ['save-session', '--scope', 'workspace', '--file', '-', '--force'], input);
   assert.equal(saved.code, 0, saved.stderr);
-  assert.match(saved.stdout, /Accepted all save-session candidates/);
+  assert.match(saved.stdout, /Forced save-session candidates/);
   assert.match((await runEngram(cwd, env, ['stats'])).stdout, /Total: 2/);
   await rm(cwd, { recursive: true, force: true });
 });
@@ -139,7 +139,7 @@ test('save-session classifies each candidate text independently', async () => {
     'TYPE: knowledge | TEXT: Auth rotation requires scoped secrets.',
     ''
   ].join('\n');
-  const saved = await runEngram(cwd, env, ['save-session', '--scope', 'workspace', '--accept-all'], input);
+const saved = await runEngram(cwd, env, ['save-session', '--scope', 'workspace', '--force'], input);
   assert.equal(saved.code, 0, saved.stderr);
   const workflowContent = await readFile(path.join(workspaceMemoryRoot(cwd), 'skills', 'when-releasing-first-run-tests-then-update-changelog.md'), 'utf8');
   assert.match(workflowContent, /tags: \[task_type:release, releasing, first, run, tests, update\]/);
@@ -156,7 +156,7 @@ test('save-session preserves optional AI-generated context and falls back when o
     'TYPE: knowledge | TEXT: Simple factual memories may use default context.',
     ''
   ].join('\n');
-  const saved = await runEngram(cwd, env, ['save-session', '--scope', 'workspace', '--accept-all'], input);
+const saved = await runEngram(cwd, env, ['save-session', '--scope', 'workspace', '--force'], input);
   assert.equal(saved.code, 0, saved.stderr);
   const contextual = await readFile(path.join(workspaceMemoryRoot(cwd), 'rules', 'always-explain-why-durable-memories-exist.md'), 'utf8');
    assert.match(contextual, /## Origin\r?\n\r?\nCreated after the user clarified that Context should help humans and agents remember why a memory exists\./);
@@ -179,12 +179,12 @@ test('save-session query-level validates integer and expands agent guidance', as
   assert.match(saved.stdout, /do not invent unavailable history/);
   assert.match((await runEngram(cwd, env, ['stats'])).stdout, /Total: 1/);
 
-  const naturalInput = 'TYPE: knowledge | TEXT: Natural ss last-session shorthand maps to query-level accept-all.\n';
-  const natural = await runEngram(cwd, env, ['ss', '-a', 'last', '50', 'session', '--scope', 'workspace'], naturalInput);
+  const naturalInput = 'TYPE: knowledge | TEXT: Natural ss last-session shorthand maps to query-level force.\n';
+  const natural = await runEngram(cwd, env, ['ss', '-f', 'last', '50', 'session', '--scope', 'workspace'], naturalInput);
   assert.equal(natural.code, 0, natural.stderr);
   assert.match(natural.stdout, /Query level: use up to the 50 most recent human-agent chat sessions/);
-  assert.match(natural.stdout, /--accept-all skips the final A\/B\/C approval/);
-  assert.match(natural.stdout, /Accepted all save-session candidates/);
+assert.match(natural.stdout, /--force skips the final A\/B\/C approval/);
+  assert.match(natural.stdout, /Forced save-session candidates/);
   assert.match((await runEngram(cwd, env, ['stats'])).stdout, /Total: 2/);
 
   const invalid = await runEngram(cwd, env, ['save-session', '--query-level', 'two']);
@@ -217,7 +217,7 @@ test('save-session can read a transcript file and save selected candidates only'
   await rm(cwd, { recursive: true, force: true });
 });
 
-test('save-session accept-all writes every transcript candidate without approval prompt', async () => {
+test('save-session force writes every transcript candidate without approval prompt', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
   await runEngram(cwd, env, ['inject']);
   const transcript = path.join(cwd, 'session.md');
@@ -227,36 +227,36 @@ test('save-session accept-all writes every transcript candidate without approval
     ''
   ].join('\n'));
   const saved = await runEngram(cwd, env, [
-    'save-session', '--scope', 'workspace', '--file', transcript, '--accept-all'
+  'save-session', '--scope', 'workspace', '--file', transcript, '--force'
   ]);
   assert.equal(saved.code, 0, saved.stderr);
-  assert.match(saved.stdout, /Accepted all save-session candidates/);
+  assert.match(saved.stdout, /Forced save-session candidates/);
   assert.doesNotMatch(saved.stdout, /Reply: A/);
   assert.match((await runEngram(cwd, env, ['stats'])).stdout, /Total: 2/);
   await rm(cwd, { recursive: true, force: true });
 });
 
-test('save-session accept-all saves generated candidates without final approval line', async () => {
+test('save-session force saves generated candidates without final approval line', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
   await runEngram(cwd, env, ['inject']);
   const input = [
     'TYPE: rule | TEXT: Always update Engram skillsets after changing slash behavior.',
-    'TYPE: knowledge | TEXT: Slash save-session accept-all is explicit human approval.',
+    'TYPE: knowledge | TEXT: Slash save-session force is explicit human approval.',
     ''
   ].join('\n');
-  const saved = await runEngram(cwd, env, ['save-session', '--scope', 'workspace', '--accept-all'], input);
+const saved = await runEngram(cwd, env, ['save-session', '--scope', 'workspace', '--force'], input);
   assert.equal(saved.code, 0, saved.stderr);
   assert.match(saved.stdout, /MEMORY CANDIDATE NEEDED/);
   assert.match(saved.stdout, /Candidates:/);
-  assert.match(saved.stdout, /--accept-all skips the final A\/B\/C approval/);
-  assert.match(saved.stdout, /Accepted all save-session candidates/);
+assert.match(saved.stdout, /--force skips the final A\/B\/C approval/);
+  assert.match(saved.stdout, /Forced save-session candidates/);
   assert.doesNotMatch(saved.stdout, /A 1,3/);
   assert.match((await runEngram(cwd, env, ['stats'])).stdout, /Total: 2/);
   await rm(cwd, { recursive: true, force: true });
 });
 
 
-test('save-session accept-all writes approved agent rule variants', async () => {
+test('save-session force writes approved agent rule variants', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
   await runEngram(cwd, env, ['inject']);
   const input = [
@@ -264,9 +264,9 @@ test('save-session accept-all writes approved agent rule variants', async () => 
     ''
   ].join('\n');
 
-  const saved = await runEngram(cwd, env, ['save-session', '--scope', 'workspace', '--accept-all'], input);
+const saved = await runEngram(cwd, env, ['save-session', '--scope', 'workspace', '--force'], input);
   assert.equal(saved.code, 0, saved.stderr);
-  assert.match(saved.stdout, /Accepted all save-session candidates/);
+  assert.match(saved.stdout, /Forced save-session candidates/);
 
   const content = await readFile(path.join(workspaceMemoryRoot(cwd), 'rules', 'use-pnpm-for-package-installs.md'), 'utf8');
   assert.match(content, /### Light\r?\n\r?\nMention pnpm when dependency tooling matters\./);
@@ -275,12 +275,12 @@ test('save-session accept-all writes approved agent rule variants', async () => 
   await rm(cwd, { recursive: true, force: true });
 });
 
-test('save-session accept-all persists triggers from approved candidates', async () => {
+test('save-session force persists triggers from approved candidates', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
   await runEngram(cwd, env, ['inject']);
   const input = 'TYPE: knowledge | TEXT: Webhook retries use exponential backoff. | TRIGGERS: webhook, retry, backoff\n';
 
-  const saved = await runEngram(cwd, env, ['save-session', '--scope', 'workspace', '--accept-all'], input);
+const saved = await runEngram(cwd, env, ['save-session', '--scope', 'workspace', '--force'], input);
   assert.equal(saved.code, 0, saved.stderr);
 
   const content = await readFile(path.join(workspaceMemoryRoot(cwd), 'knowledge', 'webhook-retries-use-exponential-backoff.md'), 'utf8');
@@ -288,7 +288,7 @@ test('save-session accept-all persists triggers from approved candidates', async
   await rm(cwd, { recursive: true, force: true });
 });
 
-test('direct CLI save still uses A/B/C approval without accept-all', async () => {
+test('direct CLI save still uses A/B/C approval without force', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
   await runEngram(cwd, env, ['inject']);
 
@@ -417,7 +417,7 @@ test('save-session preview includes related-memory hints per candidate', async (
   await rm(cwd, { recursive: true, force: true });
 });
 
-test('save-session accept-all pauses for dependency restructuring and saves rerun structure', async () => {
+test('save-session force pauses for dependency restructuring and saves rerun structure', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
   await runEngram(cwd, env, ['inject']);
   await runEngram(cwd, env, [
@@ -426,7 +426,7 @@ test('save-session accept-all pauses for dependency restructuring and saves reru
   ], 'A\n');
 
   const paused = await runEngram(cwd, env, [
-    'save-session', '--scope', 'workspace', '--accept-all',
+  'save-session', '--scope', 'workspace', '--force',
     'TYPE: rule | TEXT: OAuth rotation must follow the release foundation checklist'
   ]);
 
@@ -438,12 +438,12 @@ test('save-session accept-all pauses for dependency restructuring and saves reru
   await assert.rejects(readFile(path.join(workspaceMemoryRoot(cwd), 'rules', 'oauth-rotation-must-follow-the-release-foundation-checklist.md'), 'utf8'));
 
   const saved = await runEngram(cwd, env, [
-    'save-session', '--scope', 'workspace', '--accept-all',
+  'save-session', '--scope', 'workspace', '--force',
     'TYPE: rule | TEXT: OAuth rotation must follow the release foundation checklist | DEPENDS_ON: release-foundation-checklist-lives-in-docs-release-md | LEVEL: advanced'
   ]);
 
   assert.equal(saved.code, 0, saved.stderr);
-  assert.match(saved.stdout, /Accepted all save-session candidates/);
+  assert.match(saved.stdout, /Forced save-session candidates/);
   assert.match(saved.stdout, /Saved ->/);
   assert.doesNotMatch(saved.stdout, /id:\s*undefined/i);
   assert.doesNotMatch(saved.stdout, /undefined\.md/i);
@@ -455,7 +455,7 @@ test('save-session accept-all pauses for dependency restructuring and saves reru
   await rm(cwd, { recursive: true, force: true });
 });
 
-test('save-session accept-all pauses on possible duplicate and supports explicit update rerun', async () => {
+test('save-session force pauses on possible duplicate and supports explicit update rerun', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
   await runEngram(cwd, env, ['inject']);
   const existing = path.join(workspaceMemoryRoot(cwd), 'knowledge', 'invoice-webhook-retry-baseline.md');
@@ -467,7 +467,7 @@ test('save-session accept-all pauses on possible duplicate and supports explicit
   await runEngram(cwd, env, ['rebuild-index', 'workspace']);
 
   const paused = await runEngram(cwd, env, [
-    'save-session', '--scope', 'workspace', '--accept-all',
+  'save-session', '--scope', 'workspace', '--force',
     'TYPE: knowledge | TEXT: Invoice retry backoff policy for webhook failures'
   ]);
 
@@ -477,12 +477,12 @@ test('save-session accept-all pauses on possible duplicate and supports explicit
   assert.match((await runEngram(cwd, env, ['stats'])).stdout, /Total: 1/);
 
   const updated = await runEngram(cwd, env, [
-    'save-session', '--scope', 'workspace', '--accept-all',
+  'save-session', '--scope', 'workspace', '--force',
     'TYPE: knowledge | TEXT: Invoice retry backoff policy for webhook failures | UPDATE: invoice-webhook-retry-baseline'
   ]);
 
   assert.equal(updated.code, 0, updated.stderr);
-  assert.match(updated.stdout, /Accepted all save-session candidates/);
+  assert.match(updated.stdout, /Forced save-session candidates/);
   assert.match(updated.stdout, /Saved ->/);
   assert.match((await runEngram(cwd, env, ['stats'])).stdout, /Total: 1/);
   assert.match(await readFile(existing, 'utf8'), /Invoice retry backoff policy for webhook failures/);

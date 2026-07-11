@@ -10,7 +10,7 @@ import RiskCallout from '@site/src/components/RiskCallout';
 
 The Runtime tab is the read-only resolved config and paths report. Treat it as the first troubleshooting page.
 
-## Runtime report groups
+## Runtime report groups {#runtime-report-groups}
 
 The report groups resolved values for:
 

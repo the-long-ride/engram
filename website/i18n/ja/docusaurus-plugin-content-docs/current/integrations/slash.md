@@ -29,8 +29,8 @@ description: Engram スラッシュアダプターは、Claude、Cursor、Gemini
 /engram save-session
 /engram save-session --query-level 3
 /engram ss
-/engram ss -a
-/engram ss -a last 50 sessions
+/engram ss -f
+/engram ss -f last 50 sessions
 /engram take-control
 /engram take control accept all
 /engram restructure workspace memory accept all
@@ -45,20 +45,21 @@ description: Engram スラッシュアダプターは、Claude、Cursor、Gemini
 
 ホストが視覚的な `/engram` コマンドを1つだけ公開している場合、引数なしの `/engram` は CLI を実行する代わりに、`load`、`search`、`save`、`propose`、`entry`、および `help` のコンパクトなメニューを返す必要があります。`/engram propose` はスラッシュレベルのエイリアスです。現在のチャット/セッションにおいて `engram save-session` に正規化されます。
 
-`/engram ss -a` は全承認のショートカットです。エージェントは、人間が明示的に要求しない限り `--accept-all` を追加してはなりません。
+`/engram ss -f` は全承認のショートカットです。エージェントは、人間が明示的に要求しない限り `--force` を追加してはなりません。
 
 ## 自然文の正規化
 
 | 自然な表記 | 正規化先 |
 | --- | --- |
 | `/engram auto save` | `engram save-session` |
-| `/engram take control accept all` | `engram take-control --accept-all` |
-| `/engram restructure workspace memory accept all` | `engram metacognize --workspace --accept-all` |
-| `/engram take control accept all metacognize` | `engram take-control --accept-all --metacognize` |
+| `/engram take control accept all` | `engram take-control --force` |
+| `/engram restructure workspace memory accept all` | `engram metacognize --workspace --force` |
+| `/engram take control accept all metacognize` | `engram take-control --force --metacognize` |
 | `/engram resolve conflicts and metacognize` | `engram resolve-conflicts --metacognize` |
-| `/engram ss -a last 50 sessions` | `engram save-session --query-level 50 --accept-all` |
+| `/engram ss -f last 50 sessions` | `engram save-session --query-level 50 --force` |
 
 ## 次のステップ
 
 - [MCP ツール](mcp.md)
 - [フックと検証行](hooks.md)
+

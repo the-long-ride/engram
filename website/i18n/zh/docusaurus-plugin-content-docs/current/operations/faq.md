@@ -12,7 +12,7 @@ description: 关于 Engram 的常见问题。
 
 ## Engram 会自动写入内存吗？
 
-不会。智能体提出候选方案；人类进行审批。终端 CLI 直接使用 A/B/C。AI 智能体聊天使用 `yes`/`audit`/`cancel`。只有显式的全部接受请求 (`ss -a`) 才会保存所有候选方案，并且除非人类要求，否则智能体绝不能添加 `--accept-all`。
+不会。智能体提出候选方案；人类进行审批。终端 CLI 直接使用 A/B/C。AI 智能体聊天使用 `yes`/`audit`/`cancel`。只有显式的全部接受请求 (`ss -f`) 才会保存所有候选方案，并且除非人类要求，否则智能体绝不能添加 `--force`。
 
 ## 内存保存在哪里？
 
@@ -55,3 +55,4 @@ engram move global folder from <旧路径> to <新路径>
 
 - [故障排除](troubleshooting.md)
 - [对比与路线图](../comparison/overview.md)
+

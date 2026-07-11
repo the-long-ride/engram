@@ -756,12 +756,115 @@ a:hover {
 pre {
   border-radius: var(--geist-radius-md);
   border: 1px solid var(--geist-gray-alpha-200);
+  padding: 1rem 1.125rem;
 }
 
 pre code {
   background: transparent;
   border: none;
   padding: 0;
+}
+
+.theme-code-block {
+  overflow: hidden;
+}
+
+.theme-code-block > div[class*='codeBlockContent'] {
+  padding: 0.125rem;
+}
+
+.theme-code-block button[class*='copyButton'] {
+  transform: scale(0.8);
+  transform-origin: top right;
+}
+
+.doc-page-copy-navbar-item {
+  display: flex;
+  align-items: center;
+}
+
+.doc-page-copy-button {
+  flex: 0 0 auto;
+  min-width: 0;
+  gap: 0.45rem;
+  padding: 0 0.75rem;
+  border-color: var(--geist-gray-alpha-300);
+  background-color: var(--geist-gray-alpha-100);
+  color: var(--geist-gray-1000);
+  box-shadow: none;
+}
+
+.doc-page-copy-button:hover {
+  background-color: var(--geist-gray-alpha-200);
+  border-color: var(--geist-gray-alpha-600);
+  color: var(--geist-gray-1000);
+}
+
+.doc-page-copy-button__icon {
+  width: 0.95rem;
+  height: 0.95rem;
+  flex: 0 0 auto;
+}
+
+.doc-page-copy-button__label {
+  white-space: nowrap;
+}
+
+.navbar__items--right .doc-page-copy-button {
+  height: 2rem;
+  padding-inline: 0.7rem 0.78rem;
+  border-radius: var(--geist-radius-full);
+}
+
+[data-theme='dark'] .navbar__items--right .doc-page-copy-button {
+  background-color: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+[data-theme='dark'] .navbar__items--right .doc-page-copy-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+}
+
+.navbar-sidebar .doc-page-copy-navbar-item {
+  width: 100%;
+}
+
+.navbar-sidebar .doc-page-copy-button {
+  width: 100%;
+  justify-content: flex-start;
+  height: 2.5rem;
+  padding-inline: 0.9rem;
+  border-radius: var(--geist-radius-sm);
+}
+
+[data-theme='dark'] .navbar-sidebar .doc-page-copy-button {
+  background-color: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+[data-theme='dark'] .navbar-sidebar .doc-page-copy-button:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+@media (max-width: 1200px) {
+  .navbar__items--right .doc-page-copy-button {
+    padding-inline: 0.62rem 0.7rem;
+  }
+
+  .navbar__items--right .doc-page-copy-button__label {
+    font-size: 0.8125rem;
+  }
+}
+
+@media (max-width: 996px) {
+  .navbar__items--right .doc-page-copy-navbar-item {
+    display: none;
+  }
 }
 
 /* ──────────────────────────────────────────────

@@ -66,7 +66,7 @@ engram take-control --file AGENTS.md
 engram take-control --dir docs
 engram take-control --include "docs/**/*.md" --exclude "docs/private/**"
 engram take-control --max-sources 5 --max-chars 900
-engram take-control --all --metacognize --accept-all
+engram take-control --all --metacognize --force
 ```
 
 `take-control` — это поддерживаемый агентом процесс перехвата существующих инструкций рабочего пространства. Он создает компактный пакет исходников из таких файлов, как `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, правила Cursor, заметки банка памяти и папки верхнего уровня `rules/`, `skills/`, `workflows/`, `knowledge/` или `notes/`, включая заметки `.txt`.
@@ -78,7 +78,7 @@ engram take-control --all --metacognize --accept-all
 ```bash
 engram metacognize --workspace
 engram metacognize --global --dry-run
-engram metacognize --all --accept-all
+engram metacognize --all --force
 ```
 
 Используйте `metacognize`, когда вы хотите, чтобы AI-агент проверил существующую папку памяти Engram и предложил более безопасную структуру через тот же поток подтверждения save-session. Агенты должны использовать `UPDATE: memory-id` для консолидации или очистки формулировок и `DEPENDS_ON: memory-id` для многоуровневой памяти.
@@ -87,3 +87,4 @@ engram metacognize --all --accept-all
 
 - [profiles / workspaces / config](profiles-workspaces-config.md)
 - [Обзор интеграции агентов](../integrations/overview.md)
+

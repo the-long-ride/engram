@@ -27,11 +27,11 @@ MCP workspace của Windsurf bị bỏ qua vì tài liệu chính thức chỉ q
 
 ## Công cụ
 
-Các máy chủ MCP nên xử lý `engram_save` và `engram_autosave` như các công cụ **chỉ-đề-xuất**; chúng vẫn phải định tuyến các lệnh ghi cuối cùng thông qua luồng phê duyệt CLI hiển thị với con người. `engram_load` mặc định là `--for-agents` (chọn bỏ qua thông qua `forAgents: false`).
+Các máy chủ MCP nên xử lý `engram_save` và `engram_autosave` như các công cụ **chỉ-đề-xuất**; chúng vẫn phải định tuyến các lệnh ghi cuối cùng thông qua luồng phê duyệt CLI hiển thị với con người. `engram_load` mặc định là `--full` (chọn bỏ qua thông qua `full: true`).
 
 ## Quy tắc phê duyệt tất cả
 
-Các yêu cầu rõ ràng `/engram save-session --accept-all`, bao gồm cả phím tắt `/engram ss -a`, nên sử dụng đường dẫn ghi của CLI vì tính năng tự động lưu của MCP vẫn chỉ là đề xuất. Phím tắt đếm số phiên `/engram ss -a last 50 sessions` nên sử dụng `engram save-session --query-level 50 --accept-all`.
+Các yêu cầu rõ ràng `/engram save-session --force`, bao gồm cả phím tắt `/engram ss -f`, nên sử dụng đường dẫn ghi của CLI vì tính năng tự động lưu của MCP vẫn chỉ là đề xuất. Phím tắt đếm số phiên `/engram ss -f last 50 sessions` nên sử dụng `engram save-session --query-level 50 --force`.
 
 ## Khai báo OpenCode MCP
 
@@ -50,3 +50,4 @@ Máy chủ MCP triển khai quy trình bắt tay JSON-RPC tiêu chuẩn (`initia
 
 - [Tổng quan về tích hợp Agent](overview.md)
 - [Hook và dòng kiểm chứng](hooks.md)
+

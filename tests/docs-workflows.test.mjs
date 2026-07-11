@@ -34,8 +34,11 @@ test('test workflow keeps full verification on push changes', async () => {
   const root = path.resolve('.');
   const workflow = await readFile(path.join(root, '.github', 'workflows', 'test.yml'), 'utf8');
 
+  assert.match(workflow, /pull_request:\n\s+paths:\n(?:(?!\n  push:)[\s\S])*?      - 'website\/\*\*'/);
+  assert.match(workflow, /files: \|\n(?:(?!\n\n      - name:)[\s\S])*?            website\/\*\*/);
   assert.match(workflow, /name: Typecheck\n\s+if: steps\.scope\.outputs\.force == 'true' \|\| steps\.changed\.outputs\.any_changed == 'true'\n\s+run: npm run typecheck/);
   assert.match(workflow, /name: Line check\n\s+if: steps\.scope\.outputs\.force == 'true' \|\| steps\.changed\.outputs\.any_changed == 'true'\n\s+run: npm run lint:lines/);
   assert.match(workflow, /name: Run coverage\n\s+if: steps\.scope\.outputs\.force == 'true' \|\| steps\.changed\.outputs\.any_changed == 'true'\n\s+run: npm run coverage/);
   assert.match(workflow, /name: Run related tests\n\s+if: steps\.scope\.outputs\.force != 'true' && steps\.changed\.outputs\.any_changed == 'true'\n\s+run: npm run test:related -- \$\{\{ steps\.changed\.outputs\.all_changed_files \}\}/);
+  assert.match(workflow, /name: Run website tests\n\s+if: steps\.scope\.outputs\.force == 'true' \|\| steps\.changed\.outputs\.any_changed == 'true'\n\s+working-directory: website\n\s+run: pnpm test/);
 });

@@ -66,7 +66,7 @@ engram take-control --file AGENTS.md
 engram take-control --dir docs
 engram take-control --include "docs/**/*.md" --exclude "docs/private/**"
 engram take-control --max-sources 5 --max-chars 900
-engram take-control --all --metacognize --accept-all
+engram take-control --all --metacognize --force
 ```
 
 `take-control` は、既存のワークスペース指示のためのエージェント支援によるテイクオーバーフローです。`AGENTS.md`、`CLAUDE.md`、`GEMINI.md`、Cursor ルール、メモリバンクメモ、および最上位の `rules/`、`skills/`、`workflows/`、`knowledge/`、または `notes/` フォルダ（.txt メモを含む）などのファイルからコンパクトなソースパックを構築します。
@@ -78,7 +78,7 @@ engram take-control --all --metacognize --accept-all
 ```bash
 engram metacognize --workspace
 engram metacognize --global --dry-run
-engram metacognize --all --accept-all
+engram metacognize --all --force
 ```
 
 AI エージェントに既存の Engram メモリフォルダをレビューさせ、同じ save-session 承認フローを通じてより安全な構造を提案させたい場合は、`metacognize` を使用します。エージェントは、統合や文言の整理には `UPDATE: memory-id` を使用し、階層化されたメモリには `DEPENDS_ON: memory-id` を使用する必要があります。
@@ -87,3 +87,4 @@ AI エージェントに既存の Engram メモリフォルダをレビューさ
 
 - [profiles / workspaces / config](profiles-workspaces-config.md)
 - [エージェント統合の概要](../integrations/overview.md)
+

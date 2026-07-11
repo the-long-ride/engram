@@ -33,10 +33,11 @@ Affiche l'invite avant la copie. Encouragez l'aperçu pour les opérations de ne
 ```bash
 engram resolve-conflicts --dry-run --metacognize
 engram resolve-conflicts --metacognize
-engram metacognize --workspace --accept-all
+engram metacognize --workspace --force
 ```
 
 ## Étapes suivantes
 
 - [Onglet Memories](memories.md)
 - [CLI : verify / repair / quality-check](../cli/verify-repair-quality.md)
+

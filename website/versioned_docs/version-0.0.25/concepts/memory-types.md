@@ -41,19 +41,20 @@ When variants are off, Engram renders balanced rule wording by default. Tune wit
 engram set-rule-variant strict|balanced|light|off
 ```
 
-## Agent-facing output (`--for-agents`)
+## Agent-facing output (`--full`)
 
-When `engram load --for-agents "<task>"` runs, the output is slimmed for AI agents:
+When `engram load "<task>"` runs, the output is slimmed for AI agents:
 
-| Aspect | Human (`engram load`) | Agent (`--for-agents`) |
+| Aspect | Human (`engram load`) | Agent (`--full`) |
 | --- | --- | --- |
 | Frontmatter | All fields (id, type, tags, confidence, scope, author, created, updated, depends_on, etc.) | Only `id`, `type`, `tags`, `confidence`, `depends_on` |
 | Rule body | Full `## Rule Variants` section with all three variants | One selected variant under `## Rule variants (1/3 based on current: <active>)` |
 | Non-rule content | Full `## Content` section | Same content, unchanged heading |
 
-MCP `engram_load` and SessionStart hooks default to `--for-agents` (opt-out via `forAgents: false` on the MCP tool). Skillset adapters hardcode `--for-agents` in their generated instructions.
+MCP `engram_load` and SessionStart hooks default to `--full` (opt-out via `full: true` on the MCP tool). Skillset adapters hardcode `--full` in their generated instructions.
 
 ## Next steps
 
 - [Workspace vs global memory](scopes.md)
 - [Read path and routing](read-path.md)
+

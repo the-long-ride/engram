@@ -32,7 +32,7 @@ export async function handleMcp(request: any): Promise<any> {
 }
 
 async function callTool(method: string | undefined, args: any): Promise<string | undefined> {
-  if (method === 'engram_load') return await cmdLoad([args.query ?? 'current session'], { 'for-agents': args.forAgents ?? true });
+  if (method === 'engram_load') return await cmdLoad([args.query ?? 'current session'], args.full === true ? { full: true } : {});
   if (method === 'engram_route') return cmdRoute([String(args.query ?? args.task ?? '')]);
   if (method === 'engram_search') return await cmdSearch([args.query ?? '']);
   if (method === 'engram_verify') return await cmdVerify(args.scope);
@@ -69,7 +69,7 @@ function toolDefinitions(): any[] {
         type: 'object',
         properties: {
           query: stringProperty('Task or search query for routed memory.'),
-          forAgents: { type: 'boolean', description: 'Render compact agent-facing memory context.' }
+          full: { type: 'boolean', description: 'Load full memory output instead of compact routed context.' }
         }
       }
     },

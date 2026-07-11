@@ -41,19 +41,20 @@ Engram は、ルールメモリを常にライト（light）、バランス（ba
 engram set-rule-variant strict|balanced|light|off
 ```
 
-## エージェント向け出力 (`--for-agents`)
+## エージェント向け出力 (`--full`)
 
-`engram load --for-agents "<task>"` が実行されると、出力は AI エージェント向けにスリム化されます：
+`engram load "<task>"` が実行されると、出力は AI エージェント向けにスリム化されます：
 
-| 側面 | 人間 (`engram load`) | エージェント (`--for-agents`) |
+| 側面 | 人間 (`engram load`) | エージェント (`--full`) |
 | --- | --- | --- |
 | フロントマター | すべてのフィールド (id, type, tags, confidence, scope, author, created, updated, depends_on など) | `id`、`type`、`tags`、`confidence`、`depends_on` のみ |
 | ルール本文 | 3つのバリアントすべてを含む完全な `## Rule Variants` セクション | `## Rule variants (1/3 based on current: <active>)` の下で選択された1つのバリアント |
 | ルール以外のコンテンツ | 完全な `## Content` セクション | 同じコンテンツ、見出しは変更なし |
 
-MCP の `engram_load` および SessionStart フックは、デフォルトで `--for-agents` になります（MCP ツールで `forAgents: false` を指定することでオプトアウト可能）。スキルセットアダプターは、生成する命令内に `--for-agents` をハードコードします。
+MCP の `engram_load` および SessionStart フックは、デフォルトで `--full` になります（MCP ツールで `full: true` を指定することでオプトアウト可能）。スキルセットアダプターは、生成する命令内に `--full` をハードコードします。
 
 ## 次のステップ
 
 - [ワークスペースメモリとグローバルメモリ](scopes.md)
 - [読み取りパスとルーティング](read-path.md)
+

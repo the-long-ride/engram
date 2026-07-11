@@ -2,7 +2,7 @@
 
 ## AI-Agent Chat Approval
 
-In AI-agent chat, Engram approval is conversational. The agent shows refined `TYPE: ... | TEXT: ...` candidates first, including Light/Balanced/Strict variants for rules. Reply `yes` to save the exact candidates, `audit` to revise them, or `cancel` to stop. After `yes`, the agent uses `engram save-session --accept-all` with the exact approved candidates. Direct terminal CLI saves still use A/B/C unless an accept-all command was explicitly invoked.
+In AI-agent chat, Engram approval is conversational. The agent shows refined `TYPE: ... | TEXT: ...` candidates first, including Light/Balanced/Strict variants for rules. Reply `yes` to save the exact candidates, `audit` to revise them, or `cancel` to stop. After `yes`, the agent uses `engram save-session --force` with the exact approved candidates. Direct terminal CLI saves still use A/B/C unless a force command was explicitly invoked.
 
 
 Engram is not just "agent memory." It is a protocol that makes memory inspectable, portable, and governed by humans.
@@ -39,7 +39,7 @@ Every active memory file has `Context`, `Content`, and `Example` sections. Rule 
 
 1. Agent proposes one or more candidates.
    With `save-session --query-level <n>`, the agent may consider up to n recent accessible human-agent chats, but only as proposal context.
-   Natural `/engram ss -a last 50 sessions` is the same scope plus explicit accept-all approval: `engram save-session --query-level 50 --accept-all`.
+   Natural `/engram ss -f last 50 sessions` is the same scope plus explicit force approval: `engram save-session --query-level 50 --force`.
 2. Engram parses candidate type and target scope.
 3. Engram checks schema, secrets, prompt-injection patterns, and path safety.
 4. Human sees a preview.

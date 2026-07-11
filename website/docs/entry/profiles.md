@@ -10,11 +10,11 @@ import RiskCallout from '@site/src/components/RiskCallout';
 
 The Profiles tab manages isolated global memory profiles. Profiles keep client, company, and personal memory from leaking across boundaries.
 
-## Profile name
+## Profile name {#profile-name}
 
 Named memory context such as `personal`, `client-a`, `team-platform`. Use letters, numbers, `.`, `_`, `-`; avoid spaces and sensitive names. Names must match `^[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$`.
 
-## Global path
+## Global path {#global-path}
 
 Filesystem folder backing the profile. Prefer absolute paths outside volatile temp folders; ensure write permission.
 

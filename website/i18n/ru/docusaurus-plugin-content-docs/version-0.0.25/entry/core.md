@@ -33,10 +33,11 @@ description: Просмотр дублирующихся и конфликтую
 ```bash
 engram resolve-conflicts --dry-run --metacognize
 engram resolve-conflicts --metacognize
-engram metacognize --workspace --accept-all
+engram metacognize --workspace --force
 ```
 
 ## Следующие шаги
 
 - [Вкладка Memories](memories.md)
 - [CLI: verify / repair / quality-check](../cli/verify-repair-quality.md)
+

@@ -3,6 +3,11 @@ import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
 const baseUrl = '/engram/';
+const docsCopy = {
+  currentVersionPath: 'future',
+  publishedVersionLabel: '0.0.25',
+  publishedVersionName: 'version-0.0.25',
+} as const;
 
 const config: Config = {
   title: 'Engram',
@@ -32,6 +37,7 @@ const config: Config = {
   url: 'https://the-long-ride.github.io',
   baseUrl,
   trailingSlash: false,
+  staticDirectories: ['static', 'docs', 'versioned_docs'],
 
   organizationName: 'the-long-ride',
   projectName: 'engram',
@@ -68,18 +74,18 @@ const config: Config = {
       {
         docs: {
           sidebarPath: './sidebars.ts',
-          lastVersion: '0.0.25',
+          lastVersion: docsCopy.publishedVersionLabel,
           includeCurrentVersion: true,
-          onlyIncludeVersions: ['current', '0.0.25'],
+          onlyIncludeVersions: ['current', docsCopy.publishedVersionLabel],
           versions: {
             current: {
               label: 'Future',
-              path: 'future',
+              path: docsCopy.currentVersionPath,
               banner: 'unreleased',
               badge: true,
             },
-            '0.0.25': {
-              label: '0.0.25',
+            [docsCopy.publishedVersionLabel]: {
+              label: docsCopy.publishedVersionLabel,
               path: '/',
               banner: 'none',
               badge: false,
@@ -93,6 +99,10 @@ const config: Config = {
       } satisfies Preset.Options,
     ],
   ],
+
+  customFields: {
+    docsCopy,
+  },
 
   plugins: [
     [

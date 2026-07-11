@@ -29,8 +29,8 @@ Mục tiêu `slash` ghi các bộ điều hợp slash `/engram` gốc cho các m
 /engram save-session
 /engram save-session --query-level 3
 /engram ss
-/engram ss -a
-/engram ss -a last 50 sessions
+/engram ss -f
+/engram ss -f last 50 sessions
 /engram take-control
 /engram take control accept all
 /engram restructure workspace memory accept all
@@ -45,20 +45,21 @@ Mục tiêu `slash` ghi các bộ điều hợp slash `/engram` gốc cho các m
 
 Nếu máy chủ chỉ hiển thị một lệnh `/engram` duy nhất, lệnh `/engram` không tham số sẽ trả về một menu thu gọn bao gồm `load`, `search`, `save`, `propose`, `entry` và `help` thay vì chạy CLI. `/engram propose` là bí danh cấp slash: chuẩn hóa nó thành `engram save-session` trên cuộc trò chuyện/phiên hiện tại.
 
-`/engram ss -a` là phím tắt chấp nhận tất cả. Agent không được tự động thêm `--accept-all` trừ khi con người yêu cầu điều đó.
+`/engram ss -f` là phím tắt chấp nhận tất cả. Agent không được tự động thêm `--force` trừ khi con người yêu cầu điều đó.
 
 ## Chuẩn hóa ngôn ngữ tự nhiên
 
 | Ngôn ngữ tự nhiên | Chuẩn hóa thành |
 | --- | --- |
 | `/engram auto save` | `engram save-session` |
-| `/engram take control accept all` | `engram take-control --accept-all` |
-| `/engram restructure workspace memory accept all` | `engram metacognize --workspace --accept-all` |
-| `/engram take control accept all metacognize` | `engram take-control --accept-all --metacognize` |
+| `/engram take control accept all` | `engram take-control --force` |
+| `/engram restructure workspace memory accept all` | `engram metacognize --workspace --force` |
+| `/engram take control accept all metacognize` | `engram take-control --force --metacognize` |
 | `/engram resolve conflicts and metacognize` | `engram resolve-conflicts --metacognize` |
-| `/engram ss -a last 50 sessions` | `engram save-session --query-level 50 --accept-all` |
+| `/engram ss -f last 50 sessions` | `engram save-session --query-level 50 --force` |
 
 ## Các bước tiếp theo
 
 - [Công cụ MCP](mcp.md)
 - [Hook và dòng kiểm chứng](hooks.md)
+

@@ -10,15 +10,26 @@ import RiskCallout from '@site/src/components/RiskCallout';
 
 The Memories tab inspects the memory graph and performs memory maintenance actions.
 
-## Scope chips
+## Search
+
+Use the search field to match text anywhere in each Markdown memory file. The search is case-insensitive and works together with the scope and type filters.
+
+The search mode menu has two options:
+
+- **Text matches only** shows memories whose file content or metadata directly matches the query.
+- **Text matches + related memories** also shows connected dependency, duplicate, and semantic memories.
+
+Clear the field to restore the full graph for the selected filters.
+
+## Scope chips {#scope-chips}
 
 Filter the graph by memory source. Compare workspace vs global memory. Start with the current workspace only when the graph feels noisy.
 
-## Type chips
+## Type chips {#type-chips}
 
 Filter the graph by memory type. Inspect rules, skills, or knowledge separately.
 
-## Semantic links toggle
+## Semantic links toggle {#semantic-links-toggle}
 
 Shows semantic graph edges. Turn off when the graph is visually noisy.
 

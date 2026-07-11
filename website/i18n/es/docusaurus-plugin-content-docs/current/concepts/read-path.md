@@ -24,7 +24,7 @@ La carga normal informa los recuentos seleccionados y relacionados totales, como
 
 - `load --dry-run` muestra los recuentos de candidatos, etiquetas de limitación y motivos de coincidencia.
 - `load --all` devuelve cada coincidencia enrutada visible en lugar de aplicar el límite compacto.
-- `load --for-agents` es la ruta compacta orientada al agente.
+- `load` es la ruta compacta orientada al agente.
 
 `workflow` y `workflows` todavía enrutan a memorias de habilidades (skill memories), pero las palabras de tipo genéricas no generan una coincidencia amplia por sí mismas.
 
@@ -55,3 +55,4 @@ flowchart LR
 
 - [Ruta de escritura y aprobación](write-path.md)
 - [CLI: load / search / graph](../cli/load-search-graph.md)
+

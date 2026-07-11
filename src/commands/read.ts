@@ -30,7 +30,8 @@ export async function cmdLoad(args: string[], flags: Record<string, any> = {}): 
 
   let entries: MemoryEntry[] = [];
   let routed: RouteDetail;
-  const forAgents = flags['for-agents'] === true;
+  const full = flags.full === true || flags.f === true;
+  const forAgents = !full;
   let intent: ReturnType<typeof inferTaskIntent> | undefined;
 
   if (targetIds.length > 0) {

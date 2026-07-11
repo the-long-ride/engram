@@ -12,7 +12,7 @@ Không. Tìm kiếm mặc định của Engram là tìm kiếm từ vựng xác 
 
 ## Engram có tự động ghi bộ nhớ không?
 
-Không. Các agent chỉ đề xuất ứng viên; con người sẽ phê duyệt. CLI terminal trực tiếp sử dụng A/B/C. Trò chuyện của AI agent sử dụng `yes`/`audit`/`cancel`. Chỉ các yêu cầu accept-all rõ ràng (`ss -a`) mới lưu mọi ứng viên và các agent không được phép thêm `--accept-all` trừ khi con người yêu cầu điều đó.
+Không. Các agent chỉ đề xuất ứng viên; con người sẽ phê duyệt. CLI terminal trực tiếp sử dụng A/B/C. Trò chuyện của AI agent sử dụng `yes`/`audit`/`cancel`. Chỉ các yêu cầu accept-all rõ ràng (`ss -f`) mới lưu mọi ứng viên và các agent không được phép thêm `--force` trừ khi con người yêu cầu điều đó.
 
 ## Bộ nhớ được lưu ở đâu?
 
@@ -55,3 +55,4 @@ Thêm `--move-from-path <đường-dẫn-cũ>` khi người dùng muốn Engram 
 
 - [Khắc phục sự cố](troubleshooting.md)
 - [So sánh và lộ trình phát triển](../comparison/overview.md)
+

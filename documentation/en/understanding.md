@@ -57,22 +57,22 @@ Generated JSON helps agents find memory faster, but it is not the authority. If 
 
 Memory files may declare `depends_on: [...]` in frontmatter when one rule,
 skill, or knowledge item needs another as a prerequisite. The graph derives
-foundation-to-deep layers from those dependencies, and `engram load --for-agents` keeps
+foundation-to-deep layers from those dependencies, and default `engram load` keeps
 prerequisites before dependent memories inside the compact agent-facing route.
 SessionStart hooks call that routed load path at startup and inject only changed
 context, while prompt-turn hooks reuse or skip unchanged routes.
 
-## Agent-Facing Output (`--for-agents`)
+## Compact Output By Default
 
-When `engram load --for-agents "<task>"` runs, the output is slimmed for AI agents:
+When `engram load "<task>"` runs, the output is slimmed for AI agents by default:
 
-| Aspect | Human (`engram load`) | Agent (`--for-agents`) |
+| Aspect | Default (`engram load`) | Full (`engram load --full`) |
 | --- | --- | --- |
-| Frontmatter | All fields (id, type, tags, confidence, scope, author, created, updated, depends_on, etc.) | Only `id`, `type`, `tags`, `confidence`, `depends_on` |
-| Rule body | Full `## Rule Variants` section with all three variants | One selected variant under `## Rule variants (1/3 based on current: <active>)` |
-| Non-rule content | Full `## Content` section | Same content, unchanged heading |
+| Frontmatter | Only `id`, `type`, `tags`, `confidence`, `depends_on` | All fields (id, type, tags, confidence, scope, author, created, updated, depends_on, etc.) |
+| Rule body | One selected variant under `## Rule variants (1/3 based on current: <active>)` | Full `## Rule Variants` section with all three variants |
+| Non-rule content | Same content, unchanged heading | Same content, unchanged heading |
 
-MCP `engram_load` and SessionStart hooks default to `--for-agents` (opt-out via `forAgents: false` on the MCP tool). Skillset adapters hardcode `--for-agents` in their generated instructions.
+MCP `engram_load` and SessionStart hooks now use this compact output by default. Pass `full: true` on the MCP tool or `engram load --full "<task>"` when a human wants the broader legacy output.
 
 ## Memory Lifecycle
 

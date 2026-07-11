@@ -5,6 +5,7 @@ import { Badge } from '../../src/core/web/app/components/Badge.js';
 import { Button } from '../../src/core/web/app/components/Button.js';
 import { Card } from '../../src/core/web/app/components/Card.js';
 import { ConfirmBody, ConfirmActions } from '../../src/core/web/app/components/ConfirmModal.js';
+import { HelpLink } from '../../src/core/web/app/components/HelpLink.js';
 import { Loading } from '../../src/core/web/app/components/Loading.js';
 import { Modal } from '../../src/core/web/app/components/Modal.js';
 import { ScopeChips } from '../../src/core/web/app/components/ScopeChips.js';
@@ -64,6 +65,41 @@ describe('Card', () => {
     expect(screen.getByText('My Badge')).toBeInTheDocument();
     expect(screen.getByText('Card Body')).toBeInTheDocument();
   });
+
+  test('renders help link when provided', () => {
+    render(
+      <Card title="Card Title" helpHref="https://the-long-ride.github.io/engram/docs/entry/core">
+        <p>Card Body</p>
+      </Card>
+    );
+    const link = screen.getByRole('link', { name: 'Open Card Title documentation' });
+    expect(link).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/core');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+  });
+});
+
+describe('HelpLink', () => {
+  test('renders accessible external docs link', () => {
+    render(<HelpLink href="https://the-long-ride.github.io/engram/docs/entry/construct" label="Open Construct documentation" />);
+    const link = screen.getByRole('link', { name: 'Open Construct documentation' });
+    expect(link).toHaveTextContent('i');
+    expect(link).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/construct');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+  });
+
+  test('stops parent click handlers', () => {
+    const parentClick = jest.fn();
+    render(
+      <div onClick={parentClick}>
+        <HelpLink href="https://the-long-ride.github.io/engram/docs/entry/core#include-semantic-candidates" label="Open semantic candidates documentation" />
+      </div>
+    );
+
+    fireEvent.click(screen.getByRole('link', { name: 'Open semantic candidates documentation' }));
+    expect(parentClick).not.toHaveBeenCalled();
+  });
 });
 
 describe('ConfirmModal components', () => {
@@ -121,6 +157,11 @@ describe('SectionHeader', () => {
   test('renders section header text', () => {
     render(<SectionHeader title="Database Settings" />);
     expect(screen.getByRole('heading', { level: 1, name: 'Database Settings' })).toBeInTheDocument();
+  });
+
+  test('renders section help link when provided', () => {
+    render(<SectionHeader title="Construct" helpHref="https://the-long-ride.github.io/engram/docs/entry/construct" />);
+    expect(screen.getByRole('link', { name: 'Open Construct documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/construct');
   });
 });
 

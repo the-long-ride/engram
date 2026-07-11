@@ -26,10 +26,10 @@ engram save --scope global "<text>"
 engram save-session
 engram ss
 engram save-session --query-level 3
-engram ss -a
-engram ss -a last 50 sessions
+engram ss -f
+engram ss -f last 50 sessions
 engram save-session --file transcript.md
-engram save-session --accept-all
+engram save-session --force
 ```
 
 긴 상호 작용으로 여러 후보가 생성된 경우 `save-session`을 사용합니다:
@@ -43,10 +43,10 @@ TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
 `CONTEXT: ...`는 선택 사항입니다. 메모리가 존재하는 이유를 설명하는 경우에만 추가합니다. 관련 메모리를 재구성할 때 후보가 `DEPENDS_ON`, `LEVEL` 또는 `UPDATE` 필드를 추가할 수도 있습니다.
 
 - `--query-level <n>` — 액세스 가능한 최근 인간-에이전트 대화를 최대 n개까지 마이닝합니다. 양의 정수여야 하며 에이전트는 사용할 수 없는 기록을 꾸며내서는 안 됩니다.
-- `--accept-all` / `-a` — 인간이 바로 가기를 명시적으로 승인했으므로 생성된 모든 후보가 저장됩니다.
+- `--force` / `-f` — 인간이 바로 가기를 명시적으로 승인했으므로 생성된 모든 후보가 저장됩니다.
 - `--file <path>` — 이미 디스크에 있는 전사본 또는 긴 요약의 경우
 
-`/engram take-control --accept-all` 또는 일반적인 `/engram take control accept all` 요청의 경우, 슬래시 어댑터는 어구를 표준화하고 간결한 `TYPE: ... | TEXT: ...` 후보만 생성하며 두 번째 승인 프롬프트 없이 Engram이 저장하도록 합니다.
+`/engram take-control --force` 또는 일반적인 `/engram take control accept all` 요청의 경우, 슬래시 어댑터는 어구를 표준화하고 간결한 `TYPE: ... | TEXT: ...` 후보만 생성하며 두 번째 승인 프롬프트 없이 Engram이 저장하도록 합니다.
 
 ## observe
 
@@ -70,3 +70,4 @@ TYPE: knowledge | TEXT: Invoice retries use exponential backoff. | UPDATE: invoi
 
 - [inject / link / upgrade](inject-link-upgrade.md)
 - [개념: 쓰기 경로 및 승인](../concepts/write-path.md)
+

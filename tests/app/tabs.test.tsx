@@ -28,6 +28,7 @@ describe('ConfigTab', () => {
     },
     configFields: [
       { key: 'global_git.branch', group: 'Global Git', label: 'Branch', input: 'text', risk: 'risky' },
+      { key: 'future.flag', group: 'Pattern Mining', label: 'Future Flag', input: 'toggle', risk: 'normal' },
     ],
   } as any;
 
@@ -46,6 +47,9 @@ describe('ConfigTab', () => {
     // Check input displays default value
     const input = container.querySelector('input') as HTMLInputElement;
     expect(input.value).toBe('main');
+    expect(screen.getByRole('link', { name: 'Open Construct documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/construct');
+    expect(screen.getByRole('link', { name: 'Open Branch documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/field-reference#global-git');
+    expect(screen.getByRole('link', { name: 'Open Future Flag documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/field-reference#pattern-mining');
 
     // Change input value and blur to trigger dirty state change
     fireEvent.change(input, { target: { value: 'dev' } });
@@ -113,6 +117,9 @@ describe('RuntimeTab', () => {
 
     render(<RuntimeTab data={mockData} toast={toastMock} />);
     expect(screen.getByText('12')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Open Runtime documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/runtime');
+    expect(screen.getByRole('link', { name: 'Open Runtime report groups documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/runtime#runtime-report-groups');
+    expect(screen.getByRole('link', { name: 'Open runtime report groups documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/runtime#runtime-report-groups');
 
     const valBtn = screen.getByRole('button', { name: '12' });
     fireEvent.click(valBtn);
@@ -166,6 +173,10 @@ describe('CoreTab', () => {
     });
 
     expect(screen.getByRole('heading', { level: 1, name: 'Core' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Open Core documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/core');
+    expect(screen.getByRole('link', { name: 'Open Core scope filter documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/core#scope-chips-profile-global-workspace');
+    expect(screen.getByRole('link', { name: 'Open Core type filter documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/core#type-chips-rule-skill-workflow-knowledge');
+    expect(screen.getByRole('link', { name: 'Open semantic candidates documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/core#include-semantic-candidates');
     expect(screen.getByText('Active profile: my-profile')).toBeInTheDocument();
     expect(screen.getByText('95%')).toBeInTheDocument();
 
@@ -186,6 +197,10 @@ describe('CoreTab', () => {
         semantic: true
       }));
     });
+
+    const requestCount = (api.postJson as jest.Mock).mock.calls.length;
+    fireEvent.click(screen.getByRole('link', { name: 'Open semantic candidates documentation' }));
+    expect((api.postJson as jest.Mock).mock.calls.length).toBe(requestCount);
 
     // Refresh button
     const refreshBtn = screen.getByRole('button', { name: 'Refresh' });
@@ -236,6 +251,10 @@ describe('MemoriesTab', () => {
     });
 
     expect(screen.getByRole('heading', { level: 1, name: 'Memories' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Open Memories documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/memories');
+    expect(screen.getByRole('link', { name: 'Open Memories scope filter documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/memories#scope-chips');
+    expect(screen.getByRole('link', { name: 'Open Memories type filter documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/memories#type-chips');
+    expect(screen.getByRole('link', { name: 'Open semantic links documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/memories#semantic-links-toggle');
 
     // Toggle semantic links check div
     const semanticDiv = container.querySelector('.core-check') as HTMLDivElement;
@@ -246,6 +265,10 @@ describe('MemoriesTab', () => {
       }));
     });
 
+    const memoryRequestCount = (api.postJson as jest.Mock).mock.calls.length;
+    fireEvent.click(screen.getByRole('link', { name: 'Open semantic links documentation' }));
+    expect((api.postJson as jest.Mock).mock.calls.length).toBe(memoryRequestCount);
+
     // Refresh
     const refreshBtn = screen.getByRole('button', { name: 'Refresh' });
     fireEvent.click(refreshBtn);
@@ -254,6 +277,26 @@ describe('MemoriesTab', () => {
         rebuild: true
       }));
     });
+  });
+
+  test('searches memory content with the selected result mode', async () => {
+    (api.getJson as jest.Mock).mockResolvedValue(mockMemoriesData);
+    (api.postJson as jest.Mock).mockResolvedValue(mockMemoriesData);
+
+    render(<MemoriesTab active={true} toast={jest.fn()} modal={{ open: jest.fn(), close: jest.fn() }} />);
+    await waitFor(() => expect(screen.getByText('Summary 1')).toBeInTheDocument());
+
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Search memories' }), { target: { value: 'oauth' } });
+    fireEvent.change(screen.getByRole('combobox', { name: 'Search mode' }), { target: { value: 'related' } });
+
+    await waitFor(() => {
+      expect(api.postJson).toHaveBeenCalledWith('/api/memories', expect.objectContaining({
+        search: 'oauth',
+        searchMode: 'related'
+      }));
+    }, { timeout: 1000 });
+    expect(screen.getByRole('option', { name: 'Text matches only' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Text matches + related memories' })).toBeInTheDocument();
   });
 });
 
@@ -277,6 +320,9 @@ describe('ProfilesTab', () => {
     const { container } = render(<ProfilesTab data={mockData} reload={reloadMock} toast={toastMock} />);
     expect(screen.getByText('personal')).toBeInTheDocument();
     expect(screen.getByText('work')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Open Profiles documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/profiles');
+    expect(screen.getByRole('link', { name: 'Open profile name documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/profiles#profile-name');
+    expect(screen.getByRole('link', { name: 'Open profile global path documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/profiles#global-path');
 
     // Toggle add form
     const addBtn = screen.getByRole('button', { name: 'Add Profile' });
@@ -333,6 +379,9 @@ describe('WorkspacesTab', () => {
 
     const { container } = render(<WorkspacesTab data={mockData} reload={reloadMock} toast={toastMock} />);
     expect(screen.getByText('/path/cwd')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Open Workspaces documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/workspaces');
+    expect(screen.getByRole('link', { name: 'Open workspace name documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/workspaces#workspace-name');
+    expect(screen.getByRole('link', { name: 'Open workspace path documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/workspaces#workspace-path');
 
     // Toggle add form
     const addBtn = screen.getByRole('button', { name: 'Add Workspace' });
@@ -389,6 +438,9 @@ describe('ConnectionsTab', () => {
     await waitFor(() => {
       expect(screen.getByText('Agent One')).toBeInTheDocument();
     });
+    expect(screen.getByRole('link', { name: 'Open Connections documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/connections');
+    expect(screen.queryByRole('link', { name: 'Open workspace connection documentation' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Open global connection documentation' })).not.toBeInTheDocument();
     
     // Link Workspace agent
     (api.postJson as jest.Mock).mockResolvedValueOnce({ message: 'Connected' });

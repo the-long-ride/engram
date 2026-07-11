@@ -8,7 +8,7 @@ description: "Mapa de cada comando de la CLI de Engram y lo que hace."
 
 ## Aprobacion en Chat con IA
 
-En el chat con un agente de IA, la aprobacion de Engram es conversacional. El agente muestra primero candidatos refinados `TYPE: ... | TEXT: ...`, incluyendo variantes Light/Balanced/Strict para las reglas. Responde `yes` para guardar exactamente esos candidatos, `audit` para revisarlos o `cancel` para detenerte. Despues de `yes`, el agente usa `engram save-session --accept-all` con los candidatos aprobados. Los guardados directos en la CLI siguen usando A/B/C salvo que se haya invocado explicitamente un comando accept-all.
+En el chat con un agente de IA, la aprobacion de Engram es conversacional. El agente muestra primero candidatos refinados `TYPE: ... | TEXT: ...`, incluyendo variantes Light/Balanced/Strict para las reglas. Responde `yes` para guardar exactamente esos candidatos, `audit` para revisarlos o `cancel` para detenerte. Despues de `yes`, el agente usa `engram save-session --force` con los candidatos aprobados. Los guardados directos en la CLI siguen usando A/B/C salvo que se haya invocado explicitamente un comando accept-all.
 
 
 Esta página contiene el uso detallado para que el README pueda mantenerse corto.
@@ -18,19 +18,19 @@ Esta página contiene el uso detallado para que el README pueda mantenerse corto
 | Necesidad | Comando |
 | --- | --- |
 | Cargar memoria de tarea | `engram load "<tarea>"` |
-| Cargar memoria compacta para agente | `engram load --for-agents "<tarea>"` |
+| Cargar memoria compacta para agente | `engram load "<tarea>"` |
 | Imprimir guía del agente de IA | `engram llm` |
 | Vista previa de archivos enrutados | `engram load --dry-run "<tarea>"` |
 | Buscar en la memoria | `engram search "<tema>"` |
 | Guardar una memoria | `engram save [rule\|workflow\|knowledge] "<texto>"` |
 | Guardar memorias de sesión | `engram save-session` o `engram ss` |
 | Minar chats recientes accesibles | `engram save-session --query-level 3` |
-| Aceptar todos los candidatos | `engram ss -a` |
-| Minar y aceptar chats recientes | `engram ss -a last 50 sessions` |
+| Aceptar todos los candidatos | `engram ss -f` |
+| Minar y aceptar chats recientes | `engram ss -f last 50 sessions` |
 | Capturar nota sin procesar | `engram observe --file session.md` |
 | Convertir documentos existentes | `engram take-control --all` |
 | Vista previa de importación | `engram take-control --plan` |
-| Importar e integrar documentación | `engram take-control --all --metacognize --accept-all` |
+| Importar e integrar documentación | `engram take-control --all --metacognize --force` |
 | Reestructurar carpeta de memoria | `engram metacognize --workspace\|--global\|--all` |
 | Resolver conflictos e integrar | `engram resolve-conflicts --metacognize` |
 | Inspeccionar enrutamiento de grafo | `engram graph "<tema>"` |
@@ -47,11 +47,11 @@ Esta página contiene el uso detallado para que el README pueda mantenerse corto
 | Clonar memoria workspace/global | `engram clone-memory workspace global [--metacognize]` |
 
 Use `save-session` para propuestas de memoria en sesiones largas. Forma corta: `ss`.
-Use `--query-level <n>` cuando el humano desee que el agente mine hasta n chats recientes humano-agente accesibles en lugar de solo la sesión actual. La redacción natural como `engram ss -a last 50 sessions` se normaliza a `engram save-session --query-level 50 --accept-all`.
+Use `--query-level <n>` cuando el humano desee que el agente mine hasta n chats recientes humano-agente accesibles en lugar de solo la sesión actual. La redacción natural como `engram ss -f last 50 sessions` se normaliza a `engram save-session --query-level 50 --force`.
 
 Use `load --dry-run` cuando desee inspeccionar qué archivos de memoria se enrutarían sin imprimir sus contenidos.
-Use `load --for-agents` para contexto de agente de IA: conserva solo `id`, `type`, `tags` y `confidence` en el frontmatter, renderiza una variante de regla seleccionada y la etiqueta como `## Rule variants (1/3 based on current: <active>)`.
-`load` mantiene por defecto la misma ruta compacta para hosts orientados a agentes. El método MCP `engram_load` usa `--for-agents` por defecto, así que los hosts de agentes reciben la forma compacta sin repetir la bandera. Los hooks SessionStart llaman la misma ruta enrutada al inicio y luego reutilizan u omiten rutas cuando la firma enrutada no cambia.
+Use `load` para contexto de agente de IA: conserva solo `id`, `type`, `tags` y `confidence` en el frontmatter, renderiza una variante de regla seleccionada y la etiqueta como `## Rule variants (1/3 based on current: <active>)`.
+`load` mantiene por defecto la misma ruta compacta para hosts orientados a agentes. El método MCP `engram_load` usa `--full` por defecto, así que los hosts de agentes reciben la forma compacta sin repetir la bandera. Los hooks SessionStart llaman la misma ruta enrutada al inicio y luego reutilizan u omiten rutas cuando la firma enrutada no cambia.
 `load` primero ancla el enrutamiento en términos de consulta significativos, ignorando palabras de memoria genéricas como `rule`, `knowledge` y stopwords comunes. Luego refina el grupo de candidatos más amplio en un paquete de contexto compacto. La carga normal informa de los recuentos seleccionados y totales relacionados, como `loaded 8 memory files / 14 total related memories`. `load --dry-run` muestra los recuentos de candidatos, las etiquetas de estrechamiento y los motivos de coincidencia; `load --all` devuelve cada coincidencia enrutada visible en lugar de aplicar el límite compacto.
 `workflow` y `workflows` todavía se enrutan a memorias de habilidades, pero las palabras de tipo genérico no crean una coincidencia amplia por sí mismas.
 
@@ -79,7 +79,7 @@ Para hosts con capacidad de ejecución (runtime), Engram ahora instala pequeñas
 
 La base de datos de configuración SQLite de Engram es una optimización para la gestión de espacios de trabajo/perfiles. Si la base de datos no se puede abrir o inicializar, los comandos normales de lectura/escritura recurren a instantáneas de configuración JSON. Los comandos específicos de la base de datos informan que SQLite no está disponible en lugar de bloquear el uso normal de la memoria.
 Cuando `engram save` encuentra memorias activas relacionadas, la vista previa de aprobación informa de ellas con un `depends_on` sugerido o una advertencia de posible duplicado. Aceptar guarda la vista previa tal cual; rechace primero si desea reestructurar dependencias o archivar duplicados antes de guardar.
-Para `save-session --accept-all`, Engram se detiene antes de escribir cuando aparecen esas sugerencias de memoria relacionadas. El agente debe usar la respuesta para proponer una nueva ejecución estructurada: agregar `DEPENDS_ON: memory-id` para las dependencias, `LEVEL: advanced` cuando una memoria es más profunda que su prerrequisito, o `UPDATE: memory-id` cuando un candidato deba fusionarse en un posible duplicado.
+Para `save-session --force`, Engram se detiene antes de escribir cuando aparecen esas sugerencias de memoria relacionadas. El agente debe usar la respuesta para proponer una nueva ejecución estructurada: agregar `DEPENDS_ON: memory-id` para las dependencias, `LEVEL: advanced` cuando una memoria es más profunda que su prerrequisito, o `UPDATE: memory-id` cuando un candidato deba fusionarse en un posible duplicado.
 
 ## Perfiles, Destinos de Guardado y Clonación
 
@@ -125,10 +125,10 @@ Use `metacognize` cuando desee que un agente de IA revise una carpeta de memoria
 ```bash
 engram metacognize --workspace
 engram metacognize --global --dry-run
-engram metacognize --all --accept-all
+engram metacognize --all --force
 ```
 
-El comando verifica las memorias activas `rules/`, `skills/` y `knowledge/` en el alcance seleccionado, devuelve un paquete de origen compacto cuando no se proporcionan candidatos, y luego escribe solo las líneas `TYPE: ... | TEXT: ...` generadas después de la aprobación. Los agentes deben usar `UPDATE: memory-id` para la consolidación o limpieza de la redacción y `DEPENDS_ON: memory-id` para memorias en capas. La redacción natural como `engram restructure workspace memory accept all` se normaliza a `engram metacognize --workspace --accept-all`.
+El comando verifica las memorias activas `rules/`, `skills/` y `knowledge/` en el alcance seleccionado, devuelve un paquete de origen compacto cuando no se proporcionan candidatos, y luego escribe solo las líneas `TYPE: ... | TEXT: ...` generadas después de la aprobación. Los agentes deben usar `UPDATE: memory-id` para la consolidación o limpieza de la redacción y `DEPENDS_ON: memory-id` para memorias en capas. La redacción natural como `engram restructure workspace memory accept all` se normaliza a `engram metacognize --workspace --force`.
 
 ## Guardar Sesión (Save Session)
 
@@ -142,7 +142,7 @@ TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
 
 `CONTEXT: ...` es opcional. Agréguelo solo cuando explique por qué existe la memoria, la situación de origen, el uso previsto o el límite. Las memorias de hechos simples pueden omitirlo y usar el contexto de aprobación predeterminado de Engram.
 
-Sin `--accept-all`, Engram pregunta qué candidatos guardar. Con `ss -a`, se guarda cada candidato generado porque el humano aprobó explícitamente ese atajo.
+Sin `--force`, Engram pregunta qué candidatos guardar. Con `ss -f`, se guarda cada candidato generado porque el humano aprobó explícitamente ese atajo.
 Cuando una ejecución de accept-all informa de memorias relacionadas antes de escribir, no se guardó ningún archivo aún. El agente debe volver a ejecutar con candidatos estructurados como:
 
 ```text
@@ -150,7 +150,7 @@ TYPE: rule | TEXT: OAuth rotation follows release foundations. | DEPENDS_ON: rel
 TYPE: knowledge | TEXT: Invoice retries use exponential backoff. | UPDATE: invoice-retry-baseline
 ```
 
-`--query-level` debe ser un entero positivo. Los agentes deben incluir solo chats a los que realmente puedan acceder y no deben inventar historial no disponible. `engram ss -a last 50 sessions` utiliza `50` como el nivel de consulta y `-a` como aprobación explícita del usuario.
+`--query-level` debe ser un entero positivo. Los agentes deben incluir solo chats a los que realmente puedan acceder y no deben inventar historial no disponible. `engram ss -f last 50 sessions` utiliza `50` como el nivel de consulta y `-f` como aprobación explícita del usuario.
 
 ## Tomar el Control (Take Control)
 
@@ -165,7 +165,7 @@ engram take-control --file AGENTS.md
 engram take-control --dir docs
 engram take-control --include "docs/**/*.md" --exclude "docs/private/**"
 engram take-control --max-sources 5 --max-chars 900
-engram take-control --all --metacognize --accept-all
+engram take-control --all --metacognize --force
 ```
 
 Las memorias de take-control guardadas registran `source_files` and `source_hashes`, por lo que las fuentes sin cambios se omiten más tarde.
@@ -246,3 +246,5 @@ engram archive --reason "Repo migrated to npm." rules/use-pnpm.md
 ```
 
 Siguiente: [Comparación y hoja de ruta](../comparison/overview.md).
+
+

@@ -27,11 +27,11 @@ Engram은 MCP 지원 호스트에 도구를 노출하는 MCP 서버 바이너리
 
 ## 도구
 
-MCP 호스트는 `engram_save` 및 `engram_autosave`를 **제안 전용** 도구로 취급해야 합니다. 최종 작성은 사람이 볼 수 있는 CLI 승인 워크플로우를 통해 라우팅해야 합니다. `engram_load`는 기본적으로 `--for-agents`로 설정됩니다(`forAgents: false`를 통해 선택 해제 가능).
+MCP 호스트는 `engram_save` 및 `engram_autosave`를 **제안 전용** 도구로 취급해야 합니다. 최종 작성은 사람이 볼 수 있는 CLI 승인 워크플로우를 통해 라우팅해야 합니다. `engram_load`는 기본적으로 `--full`로 설정됩니다(`full: true`를 통해 선택 해제 가능).
 
 ## 모두 허용 규칙
 
-단축키 `/engram ss -a`를 포함한 명시적인 `/engram save-session --accept-all` 요청은 MCP 자동 저장이 제안 전용으로 유지되므로 CLI 쓰기 경로를 사용해야 합니다. 카운트된 단축키 `/engram ss -a last 50 sessions`는 `engram save-session --query-level 50 --accept-all`을 사용해야 합니다.
+단축키 `/engram ss -f`를 포함한 명시적인 `/engram save-session --force` 요청은 MCP 자동 저장이 제안 전용으로 유지되므로 CLI 쓰기 경로를 사용해야 합니다. 카운트된 단축키 `/engram ss -f last 50 sessions`는 `engram save-session --query-level 50 --force`을 사용해야 합니다.
 
 ## OpenCode MCP 엔트리
 
@@ -50,3 +50,4 @@ MCP 서버는 표준 JSON-RPC 핸드셰이크(`initialize`, `notifications/initi
 
 - [에이전트 통합 개요](overview.md)
 - [훅 및 검증 라인](hooks.md)
+

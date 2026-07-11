@@ -18,7 +18,7 @@ Each field lists:
 - **Risk** — `normal`, `caution`, or `risky`
 - **Notes** — what the field does and when to change it
 
-## Core
+## Core {#core}
 
 | Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
@@ -31,20 +31,20 @@ Each field lists:
 | `roles` | roles | empty | normal | Comma-separated role names for routing. |
 | `theme` | select | `dark` | hidden | Internal/hidden. Not user-facing. |
 
-## Load Routing
+## Load Routing {#load-routing}
 
 | Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
 | `load.limit` | number 1–32 | `8` | normal | Max memories returned by normal load. |
 
-## Memory Limits
+## Memory Limits {#memory-limits}
 
 | Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
 | `memory.rule_line_target` | number 50–200, step 10 | `70` | normal | Recommended line count for rules. |
 | `memory.rule_line_hard_limit` | number 50–200, step 10 | `100` | risky | Hard max line count for rules. |
 
-## Graph
+## Graph {#graph}
 
 | Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
@@ -52,7 +52,7 @@ Each field lists:
 | `graph.max_related` | number 1–20 | `4` | normal | Limits related memories from graph edges. |
 | `graph.min_related_score` | number 0–1, step 0.01 | `0.22` | normal | Min similarity score for related edges. |
 
-## Vector Search
+## Vector Search {#vector-search}
 
 | Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
@@ -61,20 +61,20 @@ Each field lists:
 | `vector.candidate_pool` | number 8–100 | `24` | normal | Candidates considered before reranking. |
 | `vector.dimensions` | number 16–512 | `64` | normal | Embedding dimensions; rebuild after change. |
 
-## Rule Variants
+## Rule Variants {#rule-variants}
 
 | Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
 | `rule_variants.enabled` | toggle | `false` | normal | Enables role/strictness variants. |
 | `rule_variants.active` | select | `balanced` | normal | Active variant: `light`, `balanced`, `strict`. |
 
-## Live Sync
+## Live Sync {#live-sync}
 
 | Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
 | `live_sync.enabled` | toggle | `false` | normal | Sync generated agent context files on save. |
 
-## Global Git
+## Global Git {#global-git}
 
 | Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
@@ -85,7 +85,7 @@ Each field lists:
 | `global_git.auto_sync` | toggle | `true` | risky | Auto pull/push behavior. |
 | `global_git.auto_resolve` | toggle | `true` | risky | Auto conflict handling; review diffs. |
 
-## Pattern Mining
+## Pattern Mining {#pattern-mining}
 
 | Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
@@ -93,14 +93,14 @@ Each field lists:
 | `pattern_mining.threshold` | number 1–20 | `3` | normal | Repetitions before a pattern matters. |
 | `pattern_mining.lookback_sessions` | number 1–100 | `20` | normal | Recent sessions to inspect. |
 
-## PR Workflow
+## PR Workflow {#pr-workflow}
 
 | Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
 | `pr_workflow.enabled` | toggle | `false` | risky | Experimental team PR workflow. |
 | `pr_workflow.target_branch` | text | `main` | risky | Branch receiving memory PRs. |
 
-## Encryption
+## Encryption {#encryption}
 
 | Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |

@@ -41,19 +41,20 @@ Engram всегда сохраняет память правил в легкой
 engram set-rule-variant strict|balanced|light|off
 ```
 
-## Вывод для агентов (`--for-agents`)
+## Вывод для агентов (`--full`)
 
-При запуске `engram load --for-agents "<task>"` вывод сокращается для ИИ-агентов:
+При запуске `engram load "<task>"` вывод сокращается для ИИ-агентов:
 
-| Аспект | Человек (`engram load`) | Агент (`--for-agents`) |
+| Аспект | Человек (`engram load`) | Агент (`--full`) |
 | --- | --- | --- |
 | Frontmatter | Все поля (id, type, tags, confidence, scope, author, created, updated, depends_on и т. д.) | Только `id`, `type`, `tags`, `confidence`, `depends_on` |
 | Тело правила | Полный раздел `## Rule Variants` со всеми тремя вариантами | Один выбранный вариант в разделе `## Rule variants (1/3 based on current: <active>)` |
 | Содержимое без правил | Полный раздел `## Content` | То же содержимое, заголовок без изменений |
 
-Инструмент MCP `engram_load` и хуки SessionStart по умолчанию используют `--for-agents` (отказ через `forAgents: false` в инструменте MCP). Адаптеры наборов навыков жестко прописывают `--for-agents` в создаваемых ими инструкциях.
+Инструмент MCP `engram_load` и хуки SessionStart по умолчанию используют `--full` (отказ через `full: true` в инструменте MCP). Адаптеры наборов навыков жестко прописывают `--full` в создаваемых ими инструкциях.
 
 ## Следующие шаги
 
 - [Память Workspace против глобальной памяти](scopes.md)
 - [Путь чтения и маршрутизация](read-path.md)
+

@@ -2,7 +2,7 @@
 
 ## AI-Agent Chat Approval
 
-In AI-agent chat, Engram approval is conversational. The agent shows refined `TYPE: ... | TEXT: ...` candidates first, including Light/Balanced/Strict variants for rules. Reply `yes` to save the exact candidates, `audit` to revise them, or `cancel` to stop. After `yes`, the agent uses `engram save-session --accept-all` with the exact approved candidates. Direct terminal CLI saves still use A/B/C unless an accept-all command was explicitly invoked.
+In AI-agent chat, Engram approval is conversational. The agent shows refined `TYPE: ... | TEXT: ...` candidates first, including Light/Balanced/Strict variants for rules. Reply `yes` to save the exact candidates, `audit` to revise them, or `cancel` to stop. After `yes`, the agent uses `engram save-session --force` with the exact approved candidates. Direct terminal CLI saves still use A/B/C unless a force command was explicitly invoked.
 
 
 This page holds detailed usage so the README can stay short.
@@ -12,19 +12,20 @@ This page holds detailed usage so the README can stay short.
 | Need | Command |
 | --- | --- |
 | Load task memory | `engram load "<task>"` |
-| Load agent-facing compact memory | `engram load --for-agents "<task>"` |
+| Load compact task memory | `engram load "<task>"` |
+| Load broader legacy output | `engram load --full "<task>"` |
 | Print AI-agent usage guide | `engram llm` |
 | Preview routed memory files | `engram load --dry-run "<task>"` |
 | Search memory | `engram search "<topic>"` |
 | Save one memory | `engram save [rule|workflow|knowledge] "<text>"` |
 | Save several session memories | `engram save-session` or `engram ss` |
 | Mine recent accessible chats | `engram save-session --query-level 3` |
-| Accept all session candidates | `engram ss -a` |
-| Mine and accept recent chats | `engram ss -a last 50 sessions` |
+| Force-save session candidates | `engram ss -f` |
+| Mine and force-save recent chats | `engram ss -f last 50 sessions` |
 | Capture raw note | `engram observe --file session.md` |
 | Convert existing docs/guidance | `engram take-control --all` |
 | Preview source takeover | `engram take-control --plan` |
-| Import and metacognize guidance | `engram take-control --all --metacognize --accept-all` |
+| Import and metacognize guidance | `engram take-control --all --metacognize --force` |
 | Restructure existing memory folder | `engram metacognize --workspace\|--global\|--all` |
 | Resolve conflicts and metacognize | `engram resolve-conflicts --metacognize` |
 | Inspect graph routing | `engram graph "<topic>"` |
@@ -41,17 +42,17 @@ This page holds detailed usage so the README can stay short.
 | Clone workspace/global memory | `engram clone-memory workspace global [--metacognize]` |
 
 Use `save-session` for long-session memory proposals. Short form: `ss`.
-Use `--query-level <n>` when the human wants the agent to mine up to n recent accessible human-agent chats instead of only the current session. Natural wording such as `engram ss -a last 50 sessions` normalizes to `engram save-session --query-level 50 --accept-all`.
+Use `--query-level <n>` when the human wants the agent to mine up to n recent accessible human-agent chats instead of only the current session. Natural wording such as `engram ss -f last 50 sessions` normalizes to `engram save-session --query-level 50 --force`.
 
 Use `load --dry-run` when you want to inspect which memory files would route
 without printing their contents.
-Use `load --for-agents` for AI-agent context: it keeps only `id`, `type`,
+Default `load` is the AI-agent context route: it keeps only `id`, `type`,
 `tags`, and `confidence` in frontmatter, renders one selected rule variant, and
 labels it as `## Rule variants (1/3 based on current: <active>)`.
-Default `load` keeps the same compact route for agent-facing hosts. The MCP
-`engram_load` method uses `--for-agents` by default, so agent hosts receive the
-compact form without repeating the flag. SessionStart hooks call the same routed
-load path at startup, then reuse or skip it when the routed signature is unchanged.
+Use `load --full` when a human wants the broader legacy output. The MCP
+`engram_load` method uses compact output by default, and `full: true` opts into
+the broader output. SessionStart hooks call the same routed load path at startup,
+then reuse or skip it when the routed signature is unchanged.
 `load` first anchors routing on meaningful query terms, ignoring generic memory
 words such as `rule`, `knowledge`, and common stopwords. It then refines the
 wider candidate pool into a compact context pack. Normal load reports selected
@@ -111,7 +112,7 @@ When `engram save` finds related active memories, the approval preview reports
 them with a suggested `depends_on` or possible-duplicate warning. Accepting saves
 the preview as-is; reject first if you want to restructure dependencies or
 archive duplicates before saving.
-For `save-session --accept-all`, Engram pauses before writing when those related
+For `save-session --force`, Engram pauses before writing when those related
 memory hints appear. The agent should use the response to brainstorm a structured
 rerun: add `DEPENDS_ON: memory-id` for dependencies, `LEVEL: advanced` when a
 memory is deeper than its prerequisite, or `UPDATE: memory-id` when a candidate
@@ -162,7 +163,7 @@ folder and propose safer structure through the same save-session approval flow:
 ```bash
 engram metacognize --workspace
 engram metacognize --global --dry-run
-engram metacognize --all --accept-all
+engram metacognize --all --force
 ```
 
 The command verifies active `rules/`, `skills/`, and `knowledge/` memories in the
@@ -170,8 +171,8 @@ selected scope, returns a compact source pack when candidates are not provided,
 then writes only generated `TYPE: ... | TEXT: ...` lines after approval. Agents
 should use `UPDATE: memory-id` for consolidation or wording cleanup and
 `DEPENDS_ON: memory-id` for layered memories. Natural wording such as
-`engram restructure workspace memory accept all` normalizes to
-`engram metacognize --workspace --accept-all`.
+`engram restructure workspace memory force` normalizes to
+`engram metacognize --workspace --force`.
 
 ## Save Session
 
@@ -187,8 +188,8 @@ TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
 the source situation, intended use, or boundary. Simple factual memories can omit
 it and use Engram's default approval context.
 
-Without `--accept-all`, Engram asks which candidates to save. With `ss -a`, every generated candidate is saved because the human explicitly approved that shortcut.
-When an accept-all run reports related memories before writing, no file was
+Without `--force`, Engram asks which candidates to save. With `ss -f`, every generated candidate is saved because the human explicitly approved that shortcut.
+When a force run reports related memories before writing, no file was
 saved yet. The agent should rerun with structured candidates such as:
 
 ```text
@@ -196,7 +197,7 @@ TYPE: rule | TEXT: OAuth rotation follows release foundations. | DEPENDS_ON: rel
 TYPE: knowledge | TEXT: Invoice retries use exponential backoff. | UPDATE: invoice-retry-baseline
 ```
 
-`--query-level` must be a positive integer. Agents should include only chats they can actually access and must not invent unavailable history. `engram ss -a last 50 sessions` uses `50` as the query level and `-a` as explicit human accept-all approval.
+`--query-level` must be a positive integer. Agents should include only chats they can actually access and must not invent unavailable history. `engram ss -f last 50 sessions` uses `50` as the query level and `-f` as explicit human force approval.
 
 ## Take Control
 
@@ -211,11 +212,11 @@ engram take-control --file AGENTS.md
 engram take-control --dir docs
 engram take-control --include "docs/**/*.md" --exclude "docs/private/**"
 engram take-control --max-sources 5 --max-chars 900
-engram take-control --all --metacognize --accept-all
+engram take-control --all --metacognize --force
 ```
 
 Saved take-control memories record `source_files` and `source_hashes`, so unchanged sources are skipped later.
-Use `--metacognize` with human-requested accept-all when related-memory hints
+Use `--metacognize` with human-requested force mode when related-memory hints
 should pause the write and let the agent rerun with `UPDATE` or `DEPENDS_ON`.
 
 ## Resolve Conflicts With Metacognition

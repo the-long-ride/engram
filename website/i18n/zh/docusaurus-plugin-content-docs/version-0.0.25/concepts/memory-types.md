@@ -41,19 +41,20 @@ Engram 总是保存轻量版（light）、平衡版（balanced）和严格版（
 engram set-rule-variant strict|balanced|light|off
 ```
 
-## 面向智能体的输出 (`--for-agents`)
+## 面向智能体的输出 (`--full`)
 
-当运行 `engram load --for-agents "<task>"` 时，输出会针对 AI 智能体进行精简：
+当运行 `engram load "<task>"` 时，输出会针对 AI 智能体进行精简：
 
-| 方面 | 人类 (`engram load`) | 智能体 (`--for-agents`) |
+| 方面 | 人类 (`engram load`) | 智能体 (`--full`) |
 | --- | --- | --- |
 | Frontmatter | 所有字段 (id, type, tags, confidence, scope, author, created, updated, depends_on 等) | 仅 `id`, `type`, `tags`, `confidence`, `depends_on` |
 | 规则正文 | 包含所有三个变体的完整 `## Rule Variants` 部分 | 在 `## Rule variants (1/3 based on current: <active>)` 下选择的一个变体 |
 | 非规则内容 | 完整的 `## Content` 部分 | 相同内容，标题未更改 |
 
-MCP `engram_load` 和 SessionStart 钩子默认使用 `--for-agents`（可在 MCP 工具上通过 `forAgents: false` 选择退出）。技能集适配器在其生成的指令中硬编码了 `--for-agents`。
+MCP `engram_load` 和 SessionStart 钩子默认使用 `--full`（可在 MCP 工具上通过 `full: true` 选择退出）。技能集适配器在其生成的指令中硬编码了 `--full`。
 
 ## 下一步
 
 - [工作空间内存 vs 全局内存](scopes.md)
 - [读取路径与路由](read-path.md)
+

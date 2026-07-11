@@ -24,7 +24,7 @@ Normal load reports selected and total related counts, like `loaded 8 memory fil
 
 - `load --dry-run` shows candidate counts, narrowing tags, and match reasons.
 - `load --all` returns every visible routed match instead of applying the compact limit.
-- `load --for-agents` is the agent-facing compact route.
+- Default `load` is the agent-facing compact route. Use `load --full` for broader legacy output.
 
 `workflow` and `workflows` still route to skill memories, but generic type words do not make a broad match by themselves.
 

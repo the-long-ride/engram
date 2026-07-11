@@ -26,10 +26,10 @@ When `engram save` finds related active memories, the approval preview reports t
 engram save-session
 engram ss
 engram save-session --query-level 3
-engram ss -a
-engram ss -a last 50 sessions
+engram ss -f
+engram ss -f last 50 sessions
 engram save-session --file transcript.md
-engram save-session --accept-all
+engram save-session --force
 ```
 
 Use `save-session` when a long interaction produced multiple candidates:
@@ -43,10 +43,10 @@ TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
 `CONTEXT: ...` is optional. Add it only when it explains why the memory exists. Candidates may also add `DEPENDS_ON`, `LEVEL`, or `UPDATE` fields when restructuring related memory.
 
 - `--query-level <n>` — mine up to n recent accessible human-agent chats; must be a positive integer; agents must not invent unavailable history
-- `--accept-all` / `-a` — every generated candidate is saved because the human explicitly approved that shortcut
+- `--force` / `-f` — every generated candidate is saved because the human explicitly approved that shortcut
 - `--file <path>` — for transcripts or long summaries already on disk
 
-For `/engram take-control --accept-all` or natural `/engram take control accept all`, the slash adapter normalizes the wording, generates only concise `TYPE: ... | TEXT: ...` candidates, and lets Engram save them without a second approval prompt.
+For `/engram take-control --force` or natural `/engram take control accept all`, the slash adapter normalizes the wording, generates only concise `TYPE: ... | TEXT: ...` candidates, and lets Engram save them without a second approval prompt.
 
 ## observe
 
@@ -70,3 +70,4 @@ TYPE: knowledge | TEXT: Invoice retries use exponential backoff. | UPDATE: invoi
 
 - [inject / link / upgrade](inject-link-upgrade.md)
 - [Concepts: write path and approval](../concepts/write-path.md)
+

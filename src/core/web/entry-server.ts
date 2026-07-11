@@ -130,9 +130,9 @@ async function handleRequest(req: any, res: any, cwd: string): Promise<void> {
     return;
   }
 
-  if (url === '/panel.css' && method === 'GET') {
+  if ((url === '/panel.css' || /^\/panel-[a-z0-9-]+\.css$/u.test(url)) && method === 'GET') {
     res.writeHead(200, { ...SECURITY_HEADERS, 'Content-Type': 'text/css; charset=utf-8' });
-    res.end(readAsset('panel.css'));
+    res.end(readAsset(url.slice(1)));
     return;
   }
 
@@ -231,7 +231,9 @@ async function handleRequest(req: any, res: any, cwd: string): Promise<void> {
           types: Array.isArray(body.types) ? body.types : undefined,
           semantic: body.semantic === true,
           rebuild: body.rebuild === true,
-          limit: Number(body.limit || 100)
+          limit: Number(body.limit || 100),
+          search: typeof body.search === 'string' ? body.search : undefined,
+          searchMode: body.searchMode === 'related' ? 'related' : 'direct'
         });
         json(200, { ok: true, data });
         return;
@@ -338,4 +340,3 @@ export async function launchEntryUi(cwd: string, options: { hostOnly?: boolean }
   }
   return 'engram: Control panel at ' + url + '\n(Note: Only users on this device can access this server)\n(Click "Close Server" in the browser or press Ctrl+C to stop)';
 }
-

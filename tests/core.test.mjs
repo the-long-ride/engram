@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile, rm } from 'node:fs/promises';
+import { readFile, readdir, rm } from 'node:fs/promises';
 import {
   effectiveMemoryLines,
   entryFromMemory,
@@ -14,6 +14,7 @@ import { HELP_DATA, commandAliases, slashCommandSurface } from '../dist/core/cli
 import { detectCompletionTarget } from '../dist/core/cli/completion-target.js';
 import { COMMAND_TOPICS } from '../dist/core/cli/help-topics.js';
 import { INIT_WORDMARK, renderInitWordmark } from '../dist/core/cli/banner.js';
+import { forceRestructureResponse } from '../dist/commands/write.js';
 import { isIgnored } from '../dist/core/safety/ignore.js';
 import { scanInjection, scanSensitive, redactSensitive } from '../dist/core/safety/security.js';
 import { sha256 } from '../dist/core/safety/hash.js';
@@ -324,7 +325,7 @@ test('agent memory proposal protocol defines value gate and chat approval loop',
   assert.match(approval, /yes/i);
   assert.match(approval, /audit/i);
   assert.match(approval, /cancel/i);
-  assert.match(approval, /engram save-session --accept-all/i);
+  assert.match(approval, /engram save-session --force/i);
   assert.match(approval, /exact displayed candidates/i);
 
   const protocol = agentMemoryProtocolText();
@@ -803,42 +804,45 @@ test('markdown-them bridge converts document results through common exports', as
 });
 
 test('argument parser preserves positional text after known boolean flags', () => {
-  const saveSession = parseArgs(['save-session', '--accept-all', 'TYPE: rule | TEXT: Always test releases.']);
-  assert.equal(saveSession.flags['accept-all'], true);
+  const saveSession = parseArgs(['save-session', '--force', 'TYPE: rule | TEXT: Always test releases.']);
+  assert.equal(saveSession.flags.force, true);
   assert.deepEqual(saveSession.rest, ['TYPE: rule | TEXT: Always test releases.']);
   const saveSessionQueryLevel = parseArgs(['save-session', '--query-level', '3']);
   assert.equal(saveSessionQueryLevel.flags['query-level'], '3');
-  const naturalQueryLevel = parseArgs(['ss', '-a', 'last', '50', 'session']);
-  assert.equal(naturalQueryLevel.flags['accept-all'], true);
+  const naturalQueryLevel = parseArgs(['ss', '-f', 'last', '50', 'session']);
+  assert.equal(naturalQueryLevel.flags.force, true);
   assert.equal(naturalQueryLevel.flags['query-level'], '50');
   assert.deepEqual(naturalQueryLevel.rest, []);
-  const naturalAcceptAllQueryLevel = parseArgs(['save-session', 'accept', 'all', 'last', '50', 'sessions']);
-  assert.equal(naturalAcceptAllQueryLevel.flags['accept-all'], true);
+  const naturalAcceptAllQueryLevel = parseArgs(['save-session', 'force', 'last', '50', 'sessions']);
+  assert.equal(naturalAcceptAllQueryLevel.flags.force, true);
   assert.equal(naturalAcceptAllQueryLevel.flags['query-level'], '50');
   assert.deepEqual(naturalAcceptAllQueryLevel.rest, []);
-  const shortcut = parseArgs(['ss', '-a', 'TYPE: rule | TEXT: Always test releases.']);
-  assert.equal(shortcut.flags['accept-all'], true);
+  const shortcut = parseArgs(['ss', '-f', 'TYPE: rule | TEXT: Always test releases.']);
+  assert.equal(shortcut.flags.full, undefined);
+  assert.equal(shortcut.flags.force, true);
   assert.deepEqual(shortcut.rest, ['TYPE: rule | TEXT: Always test releases.']);
   const showRuleVariants = parseArgs(['save-session', '--show-rule-variants', 'TYPE: rule | TEXT: Always test releases.']);
   assert.equal(showRuleVariants.flags['show-rule-variants'], true);
   assert.deepEqual(showRuleVariants.rest, ['TYPE: rule | TEXT: Always test releases.']);
-  const removedLegacy = parseArgs(['autosave', '-a', 'TYPE: rule | TEXT: Always test releases.']);
-  assert.equal(removedLegacy.command, 'autosave');
-  assert.deepEqual(removedLegacy.rest, ['-a', 'TYPE: rule | TEXT: Always test releases.']);
+  assert.throws(() => parseArgs(['autosave', '-a', 'TYPE: rule | TEXT: Always test releases.']), /-a.*removed/i);
+  assert.throws(() => parseArgs(['save-session', '--accept-all=true', 'TYPE: rule | TEXT: Always test releases.']), /--accept-all.*removed/i);
   const removedNatural = parseArgs(['auto', 'save', 'accept', 'all', '--scope', 'workspace']);
   assert.equal(removedNatural.command, 'auto');
   assert.deepEqual(removedNatural.rest, ['save', 'accept', 'all']);
   const load = parseArgs(['load', '--all', 'deployment workflow']);
   assert.equal(load.flags.all, true);
   assert.deepEqual(load.rest, ['deployment workflow']);
-  const forAgents = parseArgs(['load', '--for-agents', 'deployment workflow']);
-  assert.equal(forAgents.flags['for-agents'], true);
-  assert.deepEqual(forAgents.rest, ['deployment workflow']);
+  assert.throws(() => parseArgs(['load', '--for-agents', 'deployment workflow']), /--for-agents.*removed/i);
+  assert.throws(() => parseArgs(['load', '--for-agents=true', 'deployment workflow']), /--for-agents.*removed/i);
   const loadId = parseArgs(['load', '--id', 'id1', '--id', 'id2']);
   assert.deepEqual(loadId.flags.id, ['id1', 'id2']);
-  const naturalForAgents = parseArgs(['load', 'for', 'agent', 'deployment workflow']);
-  assert.equal(naturalForAgents.flags['for-agents'], true);
-  assert.deepEqual(naturalForAgents.rest, ['deployment workflow']);
+  const fullLoad = parseArgs(['load', '--full', 'deployment workflow']);
+  assert.equal(fullLoad.flags.full, true);
+  assert.deepEqual(fullLoad.rest, ['deployment workflow']);
+  const shortFullLoad = parseArgs(['ld', '-f', 'deployment workflow']);
+  assert.equal(shortFullLoad.flags.full, true);
+  assert.equal(shortFullLoad.flags.force, undefined);
+  assert.deepEqual(shortFullLoad.rest, ['deployment workflow']);
   const globalSkillset = parseArgs(['install-skillset', '--global', 'codex']);
   assert.equal(globalSkillset.flags.global, true);
   assert.deepEqual(globalSkillset.rest, ['codex']);
@@ -889,20 +893,20 @@ test('argument parser preserves positional text after known boolean flags', () =
   const cloneNaturalReverse = parseArgs(['copy', 'global', 'memory', 'to', 'workspace']);
   assert.equal(cloneNaturalReverse.command, 'clone-memory');
   assert.deepEqual(cloneNaturalReverse.rest, ['global', 'workspace']);
-  const metacognizeWorkspace = parseArgs(['metacognize', '--workspace', '--accept-all']);
+  const metacognizeWorkspace = parseArgs(['metacognize', '--workspace', '--force']);
   assert.equal(metacognizeWorkspace.command, 'metacognize');
   assert.equal(metacognizeWorkspace.flags.workspace, true);
-  assert.equal(metacognizeWorkspace.flags['accept-all'], true);
+  assert.equal(metacognizeWorkspace.flags.force, true);
   assert.deepEqual(metacognizeWorkspace.rest, []);
-  const metacognizeAlias = parseArgs(['mc', '--global', '-a', 'TYPE: knowledge | TEXT: Global memory cleanup.']);
+  const metacognizeAlias = parseArgs(['mc', '--global', '-f', 'TYPE: knowledge | TEXT: Global memory cleanup.']);
   assert.equal(metacognizeAlias.command, 'metacognize');
   assert.equal(metacognizeAlias.flags.global, true);
-  assert.equal(metacognizeAlias.flags['accept-all'], true);
+  assert.equal(metacognizeAlias.flags.force, true);
   assert.deepEqual(metacognizeAlias.rest, ['TYPE: knowledge | TEXT: Global memory cleanup.']);
-  const naturalMetacognize = parseArgs(['restructure', 'workspace', 'memory', 'accept', 'all']);
+  const naturalMetacognize = parseArgs(['restructure', 'workspace', 'memory', 'force']);
   assert.equal(naturalMetacognize.command, 'metacognize');
   assert.equal(naturalMetacognize.flags.workspace, true);
-  assert.equal(naturalMetacognize.flags['accept-all'], true);
+  assert.equal(naturalMetacognize.flags.force, true);
   assert.deepEqual(naturalMetacognize.rest, []);
   const naturalMetacognizeAll = parseArgs(['organize', 'all', 'memories']);
   assert.equal(naturalMetacognizeAll.command, 'metacognize');
@@ -919,19 +923,19 @@ test('argument parser preserves positional text after known boolean flags', () =
   const takeControl = parseArgs(['take-control', '--plan', '--include', 'docs/**/*.txt', '--include', 'notes/*.txt']);
   assert.equal(takeControl.flags.plan, true);
   assert.deepEqual(takeControl.flags.include, ['docs/**/*.txt', 'notes/*.txt']);
-  const naturalTakeControl = parseArgs(['take', 'control', 'accept', 'all', 'metacognize', '--scope', 'workspace']);
+  const naturalTakeControl = parseArgs(['take', 'control', 'force', 'metacognize', '--scope', 'workspace']);
   assert.equal(naturalTakeControl.command, 'take-control');
-  assert.equal(naturalTakeControl.flags['accept-all'], true);
+  assert.equal(naturalTakeControl.flags.force, true);
   assert.equal(naturalTakeControl.flags.metacognize, true);
   assert.deepEqual(naturalTakeControl.rest, []);
-  const takeControlAlias = parseArgs(['tc', '-a', '--metacognize']);
+  const takeControlAlias = parseArgs(['tc', '-f', '--metacognize']);
   assert.equal(takeControlAlias.command, 'tc');
-  assert.equal(takeControlAlias.flags['accept-all'], true);
+  assert.equal(takeControlAlias.flags.force, true);
   assert.equal(takeControlAlias.flags.metacognize, true);
-  const naturalResolveConflicts = parseArgs(['resolve', 'conflicts', 'and', 'metacognize', 'accept', 'all']);
+  const naturalResolveConflicts = parseArgs(['resolve', 'conflicts', 'and', 'metacognize', 'force']);
   assert.equal(naturalResolveConflicts.command, 'resolve-conflicts');
   assert.equal(naturalResolveConflicts.flags.metacognize, true);
-  assert.equal(naturalResolveConflicts.flags['accept-all'], true);
+  assert.equal(naturalResolveConflicts.flags.force, true);
   assert.deepEqual(naturalResolveConflicts.rest, []);
 });
 
@@ -942,6 +946,110 @@ test('completion target detection follows shell hints and platform fallback', ()
   assert.equal(detectCompletionTarget({}, 'darwin'), 'zsh');
   assert.equal(detectCompletionTarget({}, 'linux'), 'bash');
 });
+
+test('forceRestructureResponse treats displayed 1.00 duplicate scores as merge guidance and aggregates pending candidates', () => {
+  const response = forceRestructureResponse([
+    {
+      action: 'add',
+      scope: 'workspace',
+      file: 'knowledge/invoice-retry-policy.md',
+      id: 'invoice-retry-policy',
+      content: '---\nid: invoice-retry-policy\ntype: knowledge\n---\n# Invoice retry policy',
+      message: 'add knowledge: invoice-retry-policy',
+      candidateIndex: 1,
+      related: [{
+        id: 'invoice-webhook-retry-baseline',
+        type: 'knowledge',
+        scope: 'workspace',
+        file: 'knowledge/invoice-webhook-retry-baseline.md',
+        summary: 'Existing retry baseline.',
+        score: 0.995,
+        action: 'possible-duplicate'
+      }]
+    },
+    {
+      action: 'add',
+      scope: 'workspace',
+      file: 'rules/oauth-rotation.md',
+      id: 'oauth-rotation',
+      content: '---\nid: oauth-rotation\ntype: rule\ndepends_on: []\n---\n# OAuth rotation must follow release foundations',
+      message: 'add rule: oauth-rotation',
+      candidateIndex: 2,
+      related: [{
+        id: 'release-foundation',
+        type: 'knowledge',
+        scope: 'workspace',
+        file: 'knowledge/release-foundation.md',
+        summary: 'Release foundation.',
+        score: 0.44,
+        action: 'suggested-dependency'
+      }]
+    }
+  ]);
+
+  assert.match(response, /Existing memor(?:y|ies) already cover(?:s)?/);
+  assert.match(response, /memory id invoice-webhook-retry-baseline already covers this/i);
+  assert.match(response, /score 1\.00/);
+  assert.match(response, /TYPE: knowledge \| TEXT: \.\.\. \| UPDATE: invoice-webhook-retry-baseline/);
+  assert.match(response, /Do not retry as a new memory/);
+  assert.match(response, /Candidate: 2/);
+  assert.match(response, /Suggested depends_on: \[release-foundation\]/);
+});
+
+test('documentation contract removes old load/save flags from active docs and guidance', async () => {
+  const roots = [
+    'README.md',
+    'docs',
+    'documentation',
+    'llm.txt',
+    'website/docs',
+    'website/i18n',
+    'website/versioned_docs',
+    'AGENTS.md',
+    '.agents/engram.md',
+    'missing-optional-guidance.md'
+  ];
+  const allowLegacy = [
+    'version-0.0.25/entry/',
+    'version-0.0.25/install.md',
+    'version-0.0.25/operations/',
+    'version-0.0.25/cli/sync-archive.md',
+    'version-0.0.25/cli/profiles-workspaces-config.md',
+    'version-0.0.25/entry/'
+  ];
+  const offenders = [];
+  for (const root of roots) {
+    for (const file of await walkDocs(root)) {
+      const normalized = file.replace(/\\/g, '/');
+      if (allowLegacy.some((allowed) => normalized.includes(allowed))) continue;
+      const text = await readFile(file, 'utf8');
+      if (/--for-agents|--accept-all/.test(text)) offenders.push(normalized);
+    }
+  }
+  assert.deepEqual(offenders, []);
+});
+
+async function walkDocs(target) {
+  const resolved = path.resolve(target);
+  const stat = await import('node:fs/promises').then(async ({ stat }) => {
+    try {
+      return await stat(resolved);
+    } catch (error) {
+      if (error?.code === 'ENOENT') return undefined;
+      throw error;
+    }
+  });
+  if (!stat) return [];
+  if (!stat.isDirectory()) return [resolved];
+  const entries = await readdir(resolved, { withFileTypes: true });
+  const files = [];
+  for (const entry of entries) {
+    const next = path.join(resolved, entry.name);
+    if (entry.isDirectory()) files.push(...await walkDocs(next));
+    else files.push(next);
+  }
+  return files;
+}
 
 test('ignore matcher supports common patterns', () => {
   assert.equal(isIgnored('dist/app.js', ['dist/']), true);

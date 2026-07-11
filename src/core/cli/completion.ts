@@ -16,14 +16,14 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
   const ignoreActions = ['status', 'check', 'add'].join(' ');
   const workspaceActions = ['list', 'info', 'set', 'unregister', 'link', 'unlink'].join(' ');
   const configActions = ['view', 'set'].join(' ');
-  const saveSessionArgs = ['--file', '--scope', '--profile', '--role', '--roles', '--query-level', '--accept-all', '--show-rule-variants'].join(' ');
-  const observeArgs = ['--file', '--scope', '--profile', '--role', '--roles', '--propose', '--accept-all'].join(' ');
-  const takeControlArgs = ['--file', '--dir', '--include', '--exclude', '--max-sources', '--max-chars', '--scope', '--profile', '--role', '--roles', '--all', '--accept-all', '--metacognize', '--dry-run', '--plan'].join(' ');
-  const metacognizeArgs = ['--workspace', '--global', '--all', '--accept-all', '--dry-run'].join(' ');
-  const resolveConflictArgs = ['--dry-run', '--metacognize', '--accept-all'].join(' ');
+  const saveSessionArgs = ['--file', '--scope', '--profile', '--role', '--roles', '--query-level', '--force', '--show-rule-variants'].join(' ');
+  const observeArgs = ['--file', '--scope', '--profile', '--role', '--roles', '--propose'].join(' ');
+  const takeControlArgs = ['--file', '--dir', '--include', '--exclude', '--max-sources', '--max-chars', '--scope', '--profile', '--role', '--roles', '--all', '--force', '--metacognize', '--dry-run', '--plan'].join(' ');
+  const metacognizeArgs = ['--workspace', '--global', '--all', '--force', '--dry-run'].join(' ');
+  const resolveConflictArgs = ['--dry-run', '--metacognize', '--force'].join(' ');
   const upgradeArgs = ['--plan', '--latest', '--self', '--memory-only', '--global-skillsets-only', '--target', '--force', '--no-version-check', '--no-auto-upgrade'].join(' ');
   const globalFolderArgs = ['--move-from-path'].join(' ');
-  const cloneMemoryArgs = ['workspace', 'global', '--force', '--dry-run', '--metacognize', '--accept-all'].join(' ');
+  const cloneMemoryArgs = ['workspace', 'global', '--force', '--dry-run', '--metacognize'].join(' ');
   const skillsetTargets = ['all', 'list', 'agents-md', 'codex', 'copilot', 'claude', 'cursor', 'gemini', 'cline', 'windsurf', 'opencode', 'open-code', 'mcp', 'slash'].join(' ');
   const agentHookTargets = ['all', 'codex', 'claude', 'gemini', 'opencode', 'cursor', 'copilot', 'cline', 'windsurf'].join(' ');
   if (shell === 'zsh') {
@@ -49,18 +49,18 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       `      _arguments "--scope[write scope]:scope:(${scopes})" "--profile[run with profile]:profile:" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "--show-rule-variants[show stored rule variant blocks in previews]" "1:memory type:(${saveTypes})"`,
       '      ;;',
       '    save-session|ss)',
-      `      _arguments "--file[read session summary file]:file:_files" "--scope[write scope]:scope:(${scopes})" "--profile[run with profile]:profile:" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "--query-level[recent chat sessions to mine]:number:" "--accept-all[accept every save-session candidate]" "1:session summary: "`,
+      `      _arguments "--file[read session summary file]:file:_files" "--scope[write scope]:scope:(${scopes})" "--profile[run with profile]:profile:" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "--query-level[recent chat sessions to mine]:number:" "--force[write every save-session candidate without final numbered approval]" "1:session summary: "`,
       '      ;;',
       '    observe|o)',
-      `      _arguments "--file[read raw note file]:file:_files" "--scope[write scope]:scope:(${scopes})" "--profile[run with profile]:profile:" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "--propose[mine inbox note through save-session]" "--accept-all[accept every proposed candidate]" "1:note: "`,
+      `      _arguments "--file[read raw note file]:file:_files" "--scope[write scope]:scope:(${scopes})" "--profile[run with profile]:profile:" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "--propose[mine inbox note through save-session]" "1:note: "`,
     '      ;;',
     '    take-control|tc)',
-      `      _arguments "--file[read one source file]:file:_files" "--dir[scan one source directory]:dir:_files -/" "--include[include matching glob]:glob:" "--exclude[exclude matching glob]:glob:" "--max-sources[maximum source count]:number:" "--max-chars[maximum chars per source]:number:" "--scope[write scope]:scope:(${scopes})" "--profile[run with profile]:profile:" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "--all[include README docs and library docs]" "--accept-all[accept every generated candidate]" "--metacognize[pause accept-all writes for related-memory restructuring]" "--dry-run[show source pack only]" "--plan[preview source plan only]"`,
+      `      _arguments "--file[read one source file]:file:_files" "--dir[scan one source directory]:dir:_files -/" "--include[include matching glob]:glob:" "--exclude[exclude matching glob]:glob:" "--max-sources[maximum source count]:number:" "--max-chars[maximum chars per source]:number:" "--scope[write scope]:scope:(${scopes})" "--profile[run with profile]:profile:" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "--all[include README docs and library docs]" "--force[write every generated candidate without final numbered approval]" "--metacognize[pause force writes for related-memory restructuring]" "--dry-run[show source pack only]" "--plan[preview source plan only]"`,
       '      ;;',
       '    metacognize|mc)',
-      '      _arguments "--workspace[restructure workspace memory]" "--global[restructure global memory]" "--all[restructure workspace and global memory]" "--accept-all[accept every generated restructure candidate when human requested]" "--dry-run[show source pack or candidate preview without writing]"',
+      '      _arguments "--workspace[restructure workspace memory]" "--global[restructure global memory]" "--all[restructure workspace and global memory]" "--force[write every generated restructure candidate when human requested]" "--dry-run[show source pack or candidate preview without writing]"',
       '      ;;',
-      '    load|l)\n      _arguments "--all" "--dry-run" "--for-agents[slim memory output for AI agents]" "1:query: "\n      ;;',
+      '    load|ld)\n      _arguments "--all" "--dry-run" "-f[load broader legacy memory output]" "--full[load broader legacy memory output]" "1:query: "\n      ;;',
       '    graph|g)\n      _arguments "--rebuild" "1:query: "\n      ;;',
       '    archive|ar)\n      _arguments "--reason[archive reason]:reason:" "1:memory: "\n      ;;',
       '    benchmark|bm)\n      _arguments "1:cases file:_files"\n      ;;',
@@ -90,7 +90,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       `      _arguments "1:mode:(${readModes})"`,
       '      ;;',
     '    resolve-conflicts|rc)',
-      '      _arguments "--dry-run[preview conflicts]" "--metacognize[run workspace metacognition after conflict handling]" "--accept-all[accept generated metacognize candidates when human requested]"',
+      '      _arguments "--dry-run[preview conflicts]" "--metacognize[run workspace metacognition after conflict handling]" "--force[write generated metacognize candidates when human requested]"',
       '      ;;',
       `      _arguments "--global" "--plan" "--force" "1:target:(${agentHookTargets})"`,
       '      ;;',
@@ -106,7 +106,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '      _arguments "--global" "--force" "1:target:(all agents-md copilot claude cursor gemini cline windsurf agent-skill antigravity opencode mcp slash)"',
     '      ;;',
     '    clone-memory|cm)',
-      '      _arguments "--force[overwrite existing destination files]" "--dry-run[preview clone or proposal plan]" "--metacognize[route clone candidates through save-session approval]" "--accept-all[accept every metacognize candidate when human requested]" "1:source:(workspace global)" "2:target:(workspace global)"',
+      '      _arguments "--force[overwrite existing destination files or write every metacognize candidate when supported]" "--dry-run[preview clone or proposal plan]" "--metacognize[route clone candidates through save-session approval]" "1:source:(workspace global)" "2:target:(workspace global)"',
       '      ;;',
       '    workspace|ws)',
       `      _arguments "1:action:(${workspaceActions})"`,
@@ -187,6 +187,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '        { $_ -in @(\'set-proof\', \'sp\') } { $engramProofModes; break }',
       '        { $_ -in @(\'set-load-limit\', \'ll\') } { $engramLoadLimits; break }',
       '        { $_ -in @(\'set-read\', \'rd\') } { $engramReadModes; break }',
+      '        { $_ -in @(\'load\', \'ld\') } { @(\'--all\', \'--dry-run\', \'-f\', \'--full\'); break }',
       '        { $_ -eq \'agent-hook\' } { @(\'--host\'); break }',
       '        { $_ -in @(\'workspace\', \'ws\') } { $engramWorkspaceActions; break }',
       '        { $_ -in @(\'config\', \'cfg\') } { $engramConfigActions; break }',
@@ -300,24 +301,24 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '      return',
       '      ;;',
     '    save-session|ss)',
-    '      COMPREPLY=( $(compgen -W "--file --scope --profile --role --roles --query-level --accept-all --show-rule-variants" -- "$cur") )',
+    '      COMPREPLY=( $(compgen -W "--file --scope --profile --role --roles --query-level --force --show-rule-variants" -- "$cur") )',
       '      return',
       '      ;;',
     '    observe|o)',
-    '      COMPREPLY=( $(compgen -W "--file --scope --profile --role --roles --propose --accept-all" -- "$cur") )',
+    '      COMPREPLY=( $(compgen -W "--file --scope --profile --role --roles --propose" -- "$cur") )',
       '      return',
       '      ;;',
     '    take-control|tc)',
-    '      COMPREPLY=( $(compgen -W "--file --dir --include --exclude --max-sources --max-chars --scope --profile --role --roles --all --accept-all --metacognize --dry-run --plan" -- "$cur") )',
+    '      COMPREPLY=( $(compgen -W "--file --dir --include --exclude --max-sources --max-chars --scope --profile --role --roles --all --force --metacognize --dry-run --plan" -- "$cur") )',
     '      return',
     '      ;;',
     '    metacognize|mc)',
     '      COMPREPLY=( $(compgen -W "$metacognize_args" -- "$cur") )',
     '      return',
     '      ;;',
-    '    load|l)',
-    '      # --all: bypass compact cap (broad context), --dry-run: preview without printing, --for-agents: slim agent output',
-    '      COMPREPLY=( $(compgen -W "--all --dry-run --for-agents" -- "$cur") )',
+    '    load|ld)',
+    '      # --all: bypass compact cap (broad context), --dry-run: preview without printing, -f/--full: broader legacy output',
+    '      COMPREPLY=( $(compgen -W "--all --dry-run -f --full" -- "$cur") )',
     '      return',
     '      ;;',
     '    graph|g)',

@@ -8,7 +8,7 @@ description: "Comience a usar Engram a través de su agente de IA. Cargue la mem
 
 ## Aprobacion en Chat con IA
 
-En el chat con un agente de IA, la aprobacion de Engram es conversacional. El agente muestra primero candidatos refinados `TYPE: ... | TEXT: ...`, incluyendo variantes Light/Balanced/Strict para las reglas. Responde `yes` para guardar exactamente esos candidatos, `audit` para revisarlos o `cancel` para detenerte. Despues de `yes`, el agente usa `engram save-session --accept-all` con los candidatos aprobados. Los guardados directos en la CLI siguen usando A/B/C salvo que se haya invocado explicitamente un comando accept-all.
+En el chat con un agente de IA, la aprobacion de Engram es conversacional. El agente muestra primero candidatos refinados `TYPE: ... | TEXT: ...`, incluyendo variantes Light/Balanced/Strict para las reglas. Responde `yes` para guardar exactamente esos candidatos, `audit` para revisarlos o `cancel` para detenerte. Despues de `yes`, el agente usa `engram save-session --force` con los candidatos aprobados. Los guardados directos en la CLI siguen usando A/B/C salvo que se haya invocado explicitamente un comando accept-all.
 
 
 Use Engram a través de su agente primero. La interfaz de línea de comandos (CLI) existe, pero la mejor experiencia es: pida al agente que cargue la memoria, realice el trabajo y luego proponga memoria duradera cuando surja algo útil.
@@ -110,18 +110,18 @@ Para incluir historial de chat reciente al que el agente realmente pueda acceder
 Atajo de aprobación total (accept-all) solo cuando realmente lo decida:
 
 ```text
-/engram ss -a
+/engram ss -f
 ```
 
-`-a` significa que el humano aprueba explícitamente cada candidato recomendado por el agente. Los agentes no deben agregarlo por sí mismos.
+`-f` significa que el humano aprueba explícitamente cada candidato recomendado por el agente. Los agentes no deben agregarlo por sí mismos.
 
 Para extraer chats recientes accesibles y aceptar todos los candidatos generados en una sola petición:
 
 ```text
-/engram ss -a last 50 sessions
+/engram ss -f last 50 sessions
 ```
 
-Esto se normaliza a `engram save-session --query-level 50 --accept-all`.
+Esto se normaliza a `engram save-session --query-level 50 --force`.
 
 ## Importar Conocimiento Existente
 
@@ -176,3 +176,4 @@ engram archive --reason "<motivo>" <id-o-archivo>
 
 
 Siguiente: [Protocolo de memoria de propiedad humana](concepts/write-path.md).
+

@@ -8,7 +8,7 @@ description: "모든 Engram CLI 명령어와 해당 기능의 매핑입니다."
 
 ## AI 채팅 승인
 
-AI 에이전트와의 채팅에서 Engram 승인은 대화형으로 진행됩니다. 에이전트는 먼저 다듬은 `TYPE: ... | TEXT: ...` 후보를 보여 주고, 규칙 메모리라면 Light/Balanced/Strict 변형도 함께 제시합니다. 정확히 그 후보를 저장하려면 `yes`, 수정하려면 `audit`, 중단하려면 `cancel` 로 답합니다. `yes` 이후 에이전트는 승인된 후보 그대로 `engram save-session --accept-all` 을 사용합니다. 직접 CLI 에서 저장할 때는 accept-all 명령을 명시적으로 호출하지 않는 한 계속 A/B/C 를 사용합니다.
+AI 에이전트와의 채팅에서 Engram 승인은 대화형으로 진행됩니다. 에이전트는 먼저 다듬은 `TYPE: ... | TEXT: ...` 후보를 보여 주고, 규칙 메모리라면 Light/Balanced/Strict 변형도 함께 제시합니다. 정확히 그 후보를 저장하려면 `yes`, 수정하려면 `audit`, 중단하려면 `cancel` 로 답합니다. `yes` 이후 에이전트는 승인된 후보 그대로 `engram save-session --force` 을 사용합니다. 직접 CLI 에서 저장할 때는 accept-all 명령을 명시적으로 호출하지 않는 한 계속 A/B/C 를 사용합니다.
 
 
 이 페이지는 README 파일을 간결하게 유지하기 위한 상세 설명서입니다.
@@ -18,19 +18,19 @@ AI 에이전트와의 채팅에서 Engram 승인은 대화형으로 진행됩니
 | 필요 작업 | 명령어 |
 | --- | --- |
 | 태스크 메모리 로드 | `engram load "<태스크>"` |
-| 에이전트용 컴팩트 메모리 로드 | `engram load --for-agents "<태스크>"` |
+| 에이전트용 컴팩트 메모리 로드 | `engram load "<태스크>"` |
 | AI 에이전트 가이드 인쇄 | `engram llm` |
 | 로드 예정 메모리 파일 미리보기 | `engram load --dry-run "<태스크>"` |
 | 메모리 검색 | `engram search "<주제>"` |
 | 단일 메모리 저장 | `engram save [rule\|workflow\|knowledge] "<텍스트>"` |
 | 여러 세션 메모리 저장 | `engram save-session` 또는 `engram ss` |
 | 최근 대화 내용 마이닝 | `engram save-session --query-level 3` |
-| 모든 세션 후보 승인 | `engram ss -a` |
-| 최근 대화 마이닝 및 승인 | `engram ss -a last 50 sessions` |
+| 모든 세션 후보 승인 | `engram ss -f` |
+| 최근 대화 마이닝 및 승인 | `engram ss -f last 50 sessions` |
 | 임시 노트 캡처 | `engram observe --file session.md` |
 | 기존 문서/지침 이식 | `engram take-control --all` |
 | 소스 이식 계획 미리보기 | `engram take-control --plan` |
-| 지침 가져오기 및 메타인지 제안 | `engram take-control --all --metacognize --accept-all` |
+| 지침 가져오기 및 메타인지 제안 | `engram take-control --all --metacognize --force` |
 | 기존 메모리 폴더 재구성 | `engram metacognize --workspace\|--global\|--all` |
 | 충돌 해결 및 재구성 제안 | `engram resolve-conflicts --metacognize` |
 | 그래프 라우팅 진단 | `engram graph "<주제>"` |
@@ -47,11 +47,11 @@ AI 에이전트와의 채팅에서 Engram 승인은 대화형으로 진행됩니
 | 메모리 복제 (워크스페이스/글로벌) | `engram clone-memory workspace global [--metacognize]` |
 
 긴 세션에서 나온 여러 메모리 제안에는 `save-session`을 사용하십시오. 단축형: `ss`.
-사용자가 현재 세션뿐만 아니라 최근 접근 가능한 n개의 인간-에이전트 대화까지 탐색하기를 원하면 `--query-level <n>`을 사용하십시오. `engram ss -a last 50 sessions`와 같은 자연스러운 표현은 `engram save-session --query-level 50 --accept-all`로 자동 변환됩니다.
+사용자가 현재 세션뿐만 아니라 최근 접근 가능한 n개의 인간-에이전트 대화까지 탐색하기를 원하면 `--query-level <n>`을 사용하십시오. `engram ss -f last 50 sessions`와 같은 자연스러운 표현은 `engram save-session --query-level 50 --force`로 자동 변환됩니다.
 
 내용을 인쇄하지 않고 어떤 메모리 파일이 라우팅되는지 확인하려면 `load --dry-run`을 사용하십시오.
-AI 에이전트용 컨텍스트에는 `load --for-agents`를 사용하십시오. 이 옵션은 frontmatter에 `id`, `type`, `tags`, `confidence`만 남기고, 선택된 규칙 변형을 하나 렌더링하며 `## Rule variants (1/3 based on current: <active>)`로 표시합니다.
-`load`는 에이전트 대상 호스트에도 기본적으로 같은 컴팩트 경로를 유지합니다. MCP `engram_load` 메서드는 기본적으로 `--for-agents`를 사용하므로 에이전트 호스트는 플래그를 반복하지 않고도 컴팩트 형식을 받습니다. SessionStart 훅은 시작 시 같은 라우팅 로드 경로를 호출하고, 라우팅 서명이 변하지 않으면 재사용하거나 건너뜁니다.
+AI 에이전트용 컨텍스트에는 `load`를 사용하십시오. 이 옵션은 frontmatter에 `id`, `type`, `tags`, `confidence`만 남기고, 선택된 규칙 변형을 하나 렌더링하며 `## Rule variants (1/3 based on current: <active>)`로 표시합니다.
+`load`는 에이전트 대상 호스트에도 기본적으로 같은 컴팩트 경로를 유지합니다. MCP `engram_load` 메서드는 기본적으로 `--full`를 사용하므로 에이전트 호스트는 플래그를 반복하지 않고도 컴팩트 형식을 받습니다. SessionStart 훅은 시작 시 같은 라우팅 로드 경로를 호출하고, 라우팅 서명이 변하지 않으면 재사용하거나 건너뜁니다.
 `load` 명령어는 먼저 의미 있는 검색어에 의존하여 라우팅을 진행하며, `rule`, `knowledge` 같은 일반적인 단어와 불용어(stopwords)는 무시합니다. 그 후 더 넓은 후보군을 정밀 정제하여 컴팩트한 컨텍스트 팩으로 만듭니다. 일반적인 로드는 선택된 개수와 연관 메모리 총수를 `loaded 8 memory files / 14 total related memories` 형태로 보고합니다. `load --dry-run`은 후보 수, 좁히기 태그 및 매칭 이유를 표시하며, `load --all`은 컴팩트 한도를 우회하여 로드 가능한 모든 매칭 결과를 반환합니다.
 `workflow` 및 `workflows`는 여전히 스킬 메모리로 라우팅되지만, 일반적인 타입 단어만으로는 광범위한 매칭을 만들지 않습니다.
 
@@ -79,7 +79,7 @@ level: advanced
 
 Engram의 SQLite 설정 DB는 워크스페이스/프로필 관리를 위한 최적화입니다. DB를 열거나 초기화할 수 없는 경우, 일반적인 읽기/쓰기 명령은 JSON 설정 스냅샷으로 폴백됩니다. DB 전용 명령은 일반적인 메모리 사용을 차단하는 대신 SQLite를 사용할 수 없음으로 보고합니다.
 `engram save` 실행 중 연관된 기존 메모리가 감지되면 승인 미리보기 창에 제안 의존성(`depends_on`)이나 중복 위험 경고가 표시됩니다. 승인하면 미리보기 상태대로 저장되므로, 의존성을 다르게 구조화하거나 중복 메모리를 아카이브하려면 먼저 거절(reject)하십시오.
-`save-session --accept-all` 실행 시 이러한 연관 메모리 힌트가 탐지되면 쓰기 전에 잠시 대기합니다. 에이전트는 이 응답을 토대로 구조화된 재요청을 준비해야 합니다. 의존 관계에는 `DEPENDS_ON: memory-id`, 선행 조건보다 깊은 메모리에는 `LEVEL: advanced`, 기존 중복 후보에 합병할 때는 `UPDATE: memory-id`를 조합해 보완하십시오.
+`save-session --force` 실행 시 이러한 연관 메모리 힌트가 탐지되면 쓰기 전에 잠시 대기합니다. 에이전트는 이 응답을 토대로 구조화된 재요청을 준비해야 합니다. 의존 관계에는 `DEPENDS_ON: memory-id`, 선행 조건보다 깊은 메모리에는 `LEVEL: advanced`, 기존 중복 후보에 합병할 때는 `UPDATE: memory-id`를 조합해 보완하십시오.
 
 ## 프로파일, 저장 대상 및 복제
 
@@ -123,10 +123,10 @@ AI 에이전트에게 기존 Engram 메모리 폴더를 감사하게 하고, `sa
 ```bash
 engram metacognize --workspace
 engram metacognize --global --dry-run
-engram metacognize --all --accept-all
+engram metacognize --all --force
 ```
 
-선택한 범위 내의 `rules/`, `skills/`, `knowledge/` 메모리를 진단하고, 후보 리스트가 주어지지 않았다면 컴팩트 소스 팩을 출력하며, 승인 후 생성된 `TYPE: ... | TEXT: ...` 지침 줄만 기록합니다. 에이전트는 중복 정리 및 문구 보완에 `UPDATE: memory-id`, 레이어 구조 형성에는 `DEPENDS_ON: memory-id`를 써야 합니다. `engram restructure workspace memory accept all`과 같은 자연스러운 문장은 내부적으로 `engram metacognize --workspace --accept-all`로 표준화됩니다.
+선택한 범위 내의 `rules/`, `skills/`, `knowledge/` 메모리를 진단하고, 후보 리스트가 주어지지 않았다면 컴팩트 소스 팩을 출력하며, 승인 후 생성된 `TYPE: ... | TEXT: ...` 지침 줄만 기록합니다. 에이전트는 중복 정리 및 문구 보완에 `UPDATE: memory-id`, 레이어 구조 형성에는 `DEPENDS_ON: memory-id`를 써야 합니다. `engram restructure workspace memory accept all`과 같은 자연스러운 문장은 내부적으로 `engram metacognize --workspace --force`로 표준화됩니다.
 
 ## 세션 저장 (Save Session)
 
@@ -140,7 +140,7 @@ TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
 
 `CONTEXT: ...` 입력은 선택 사항입니다. 메모리가 존재하는 상세 이유, 생성된 당시 상황, 의도된 활용 경계 등을 부연하고 싶을 때만 추가하십시오. 단순한 사실 중심 메모리는 생략하고 Engram 기본 승인 컨텍스트를 사용해도 좋습니다.
 
-`--accept-all` 플래그가 없으면 Engram은 승인할 후보를 사용자에게 개별 확인 요청합니다. `ss -a`를 쓰면 사용자가 사전에 이 지름길을 승인한 것으로 간주해 모든 추천 후보를 즉시 자동 저장합니다.
+`--force` 플래그가 없으면 Engram은 승인할 후보를 사용자에게 개별 확인 요청합니다. `ss -f`를 쓰면 사용자가 사전에 이 지름길을 승인한 것으로 간주해 모든 추천 후보를 즉시 자동 저장합니다.
 자동 저장 시 연관 메모리가 탐지되어 쓰기가 보류되었다면 아직 파일이 기록되지 않은 상태입니다. 에이전트는 다음과 같이 구조화된 지침 후보군을 조합하여 재실행을 요청해야 합니다.
 
 ```text
@@ -148,7 +148,7 @@ TYPE: rule | TEXT: OAuth rotation follows release foundations. | DEPENDS_ON: rel
 TYPE: knowledge | TEXT: Invoice retries use exponential backoff. | UPDATE: invoice-retry-baseline
 ```
 
-`--query-level` 파라미터는 항상 양의 정수여야 합니다. 에이전트는 실제 접근이 허용된 대화 이력만 반영해야 하며 거짓 이력을 허구로 지어내선 안 됩니다. `engram ss -a last 50 sessions`는 쿼리 레벨 `50`과 자동 저장 플래그 `-a`로 작동합니다.
+`--query-level` 파라미터는 항상 양의 정수여야 합니다. 에이전트는 실제 접근이 허용된 대화 이력만 반영해야 하며 거짓 이력을 허구로 지어내선 안 됩니다. `engram ss -f last 50 sessions`는 쿼리 레벨 `50`과 자동 저장 플래그 `-f`로 작동합니다.
 
 ## 통제권 인수 (Take Control)
 
@@ -163,7 +163,7 @@ engram take-control --file AGENTS.md
 engram take-control --dir docs
 engram take-control --include "docs/**/*.md" --exclude "docs/private/**"
 engram take-control --max-sources 5 --max-chars 900
-engram take-control --all --metacognize --accept-all
+engram take-control --all --metacognize --force
 ```
 
 저장된 이식 메모리들은 `source_files` 및 `source_hashes`를 기록해 두므로, 차후 스캔 시 변경되지 않은 원본 파일은 자동으로 검사 제외되어 효율적입니다.
@@ -244,3 +244,5 @@ engram archive --reason "Repo migrated to npm." rules/use-pnpm.md
 ```
 
 다음 단계: [비교 및 로드맵](../comparison/overview.md).
+
+

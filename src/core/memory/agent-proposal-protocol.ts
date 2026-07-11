@@ -19,8 +19,8 @@ const approvalLines = [
   '- `yes`, `approve`, `confirm`, or `save` after the exact displayed candidates means approval for those exact candidates.',
   '- `audit`, `revise`, `correct`, or edited wording means revise candidates and show them again before writing.',
   '- `cancel`, `stop`, or rejection means no write.',
-  '- After approval, run `engram save-session --accept-all` with the exact displayed candidates.',
-  '- Never use `--accept-all` for agent-generated candidates before the human approves the exact displayed candidates in chat.'
+  '- After approval, run `engram save-session --force` with the exact displayed candidates.',
+  '- Never use `--force` for agent-generated candidates before the human approves the exact displayed candidates in chat.'
 ];
 
 const proposalLines = [
@@ -28,7 +28,7 @@ const proposalLines = [
   '- At the end of a substantive response, silently apply the memory value gate.',
   '- Show a proposed Engram memory block only when the candidate passes the gate.',
   '- The human can approve, audit, or cancel the proposal in the next chat turn.',
-  '- Approval follows the same exact-candidate `engram save-session --accept-all` write path.'
+  '- Approval follows the same exact-candidate `engram save-session --force` write path.'
 ];
 
 export function agentMemoryValueGateText(): string {

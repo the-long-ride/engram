@@ -66,7 +66,7 @@ engram take-control --file AGENTS.md
 engram take-control --dir docs
 engram take-control --include "docs/**/*.md" --exclude "docs/private/**"
 engram take-control --max-sources 5 --max-chars 900
-engram take-control --all --metacognize --accept-all
+engram take-control --all --metacognize --force
 ```
 
 `take-control` 是针对现有工作区指南的 Agent 辅助接管流程。它会从 `AGENTS.md`、`CLAUDE.md`、`GEMINI.md`、Cursor 规则、内存库笔记以及顶层的 `rules/`、`skills/`、`workflows/`、`knowledge/` 或 `notes/` 文件夹（包括 `.txt` 笔记）等文件中构建一个紧凑的源包。
@@ -78,7 +78,7 @@ engram take-control --all --metacognize --accept-all
 ```bash
 engram metacognize --workspace
 engram metacognize --global --dry-run
-engram metacognize --all --accept-all
+engram metacognize --all --force
 ```
 
 当你希望 AI Agent 审查现有的 Engram 内存文件夹，并通过相同的 save-session 审批流提出更安全的结构建议时，使用 `metacognize`。Agent 应该使用 `UPDATE: memory-id` 进行巩固或词句清理，并使用 `DEPENDS_ON: memory-id` 进行分层内存。
@@ -87,3 +87,4 @@ engram metacognize --all --accept-all
 
 - [profiles / workspaces / config](profiles-workspaces-config.md)
 - [Agent 集成概述](../integrations/overview.md)
+

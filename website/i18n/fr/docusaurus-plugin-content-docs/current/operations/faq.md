@@ -12,7 +12,7 @@ Non. La recherche par défaut d'Engram est une recherche lexicale déterministe.
 
 ## Engram écrit-il la mémoire de manière automatique ?
 
-Non. Les agents proposent des candidats ; les humains les valident. L'interface CLI directe en terminal utilise A/B/C. Le chat de l'agent d'IA utilise `yes`/`audit`/`cancel`. Seules les requêtes explicites d'acceptation globale (`ss -a`) enregistrent chaque candidat, et les agents ne doivent pas ajouter le paramètre `--accept-all` sans demande expresse de l'utilisateur.
+Non. Les agents proposent des candidats ; les humains les valident. L'interface CLI directe en terminal utilise A/B/C. Le chat de l'agent d'IA utilise `yes`/`audit`/`cancel`. Seules les requêtes explicites d'acceptation globale (`ss -f`) enregistrent chaque candidat, et les agents ne doivent pas ajouter le paramètre `--force` sans demande expresse de l'utilisateur.
 
 ## Où réside la mémoire ?
 
@@ -55,3 +55,4 @@ Ajoutez `--move-from-path <ancien-chemin>` si vous souhaitez qu'Engram déplace 
 
 - [Résolution des problèmes](troubleshooting.md)
 - [Comparatif et feuille de route](../comparison/overview.md)
+

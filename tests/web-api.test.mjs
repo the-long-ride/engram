@@ -426,13 +426,13 @@ Memories graph test.
 
 ## Example
 
-engram load --for-agents graph
+engram load graph
 `;
 
     await writeFile(path.join(rules, 'base-memory.md'), memory({
       id: 'base-memory',
       title: 'Base memory',
-      content: 'Use the base memory before dependent graph memories.'
+      content: 'Use the base memory before dependent graph memories. base-only-search-phrase'
     }));
     await writeFile(path.join(rules, 'dependent-memory.md'), memory({
       id: 'dependent-memory',
@@ -470,6 +470,28 @@ engram load --for-agents graph
       limit: 50
     });
     assert.equal(workspaceOnly.nodes.every((node) => node.sourceScope === 'workspace'), true);
+
+    const directSearch = await apiMemoriesGraphData(cwd, {
+      scopes: ['workspace'],
+      semantic: true,
+      search: 'base-only-search-phrase',
+      searchMode: 'direct',
+      rebuild: false,
+      limit: 50
+    });
+    assert.deepEqual(directSearch.nodes.map((node) => node.memoryId), ['base-memory']);
+
+    const relatedSearch = await apiMemoriesGraphData(cwd, {
+      scopes: ['workspace'],
+      semantic: true,
+      search: 'base-only-search-phrase',
+      searchMode: 'related',
+      rebuild: false,
+      limit: 50
+    });
+    assert.ok(relatedSearch.nodes.some((node) => node.memoryId === 'base-memory'));
+    assert.ok(relatedSearch.nodes.some((node) => node.memoryId === 'dependent-memory'));
+    assert.ok(relatedSearch.links.every((link) => relatedSearch.nodes.some((node) => node.id === link.from) && relatedSearch.nodes.some((node) => node.id === link.to)));
   } finally {
     process.env.ENGRAM_CONFIG_DIR = oldEnv.ENGRAM_CONFIG_DIR;
     process.env.ENGRAM_GLOBAL_DIR = oldEnv.ENGRAM_GLOBAL_DIR;

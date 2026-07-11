@@ -12,14 +12,14 @@ Les commandes de lecture chargent la mémoire routée, recherchent dans le coffr
 
 ```bash
 engram load "<task>"
-engram load --for-agents "<task>"
+engram load "<task>"
 engram load --dry-run "<task>"
 engram load --all "<task>"
 ```
 
 `load` commence par ancrer le routage sur des termes de requête significatifs, en ignorant les mots de mémoire génériques comme `rule`, `knowledge` et les mots vides (stopwords) courants. Il affine ensuite le vivier de candidats plus large en un dossier de contexte compact. Une exécution normale de load signale les nombres de mémoires sélectionnées et totales associées, comme `loaded 8 memory files / 14 total related memories`.
 
-- `--for-agents` — route compacte destinée aux agents (uniquement `id`, `type`, `tags`, `confidence`, `depends_on` dans le frontmatter ; une variante de règle sélectionnée)
+- `--full` — route compacte destinée aux agents (uniquement `id`, `type`, `tags`, `confidence`, `depends_on` dans le frontmatter ; une variante de règle sélectionnée)
 - `--dry-run` — affiche le nombre de candidats, les balises de réduction et les raisons de correspondance sans imprimer le contenu
 - `--all` — renvoie toutes les correspondances routées visibles au lieu de la limite compacte
 
@@ -58,3 +58,4 @@ Utilisez le frontmatter `depends_on` lorsqu'une mémoire doit s'appuyer sur une 
 
 - [save / save-session / observe](save-session.md)
 - [Concepts : chemin de lecture et routage](../concepts/read-path.md)
+

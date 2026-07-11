@@ -24,7 +24,7 @@ description: Engram 加载工作空间和全局索引，应用忽略规则和角
 
 - `load --dry-run` 显示候选数量、收窄标签和匹配原因。
 - `load --all` 返回每个可见的路由匹配，而不是应用紧凑限制。
-- `load --for-agents` 是面向智能体的紧凑路由。
+- `load` 是面向智能体的紧凑路由。
 
 `workflow` 和 `workflows` 仍然路由到技能内存，但通用类型词本身不会产生宽泛的匹配。
 
@@ -55,3 +55,4 @@ flowchart LR
 
 - [写入路径与审批](write-path.md)
 - [CLI: load / search / graph](../cli/load-search-graph.md)
+

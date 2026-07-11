@@ -50,3 +50,5 @@ AGENTS.md
 !.github/workflows/*.yaml
 
 # engram
+docs/superpowers/
+.pnpm-store/

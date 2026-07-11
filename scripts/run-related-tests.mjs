@@ -8,6 +8,7 @@ const changed = process.argv.slice(2).map(normalizePath).filter(Boolean);
 const npmCli = process.env.npm_execpath;
 const nodeCoverageArgs = ['--experimental-test-coverage', '--test'];
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 const rules = [
   [/^src\/cli\//, ['tests/core.test.mjs', 'tests/cli/**/*.test.mjs']],
@@ -30,6 +31,7 @@ const rules = [
   [/^src\/core\/web\/.*\.(css|html|svg)$/, ['tests/web-panel-ui.test.mjs']],
   [/^media\/logo\//, ['tests/web-panel-ui.test.mjs']],
   [/^website\/src\/css\/custom\.css$/, ['tests/website-footer.test.mjs', 'tests/website-mobile-nav-cleanup.test.mjs', 'tests/website-mobile-sidebar.test.mjs']],
+  [/^website\/src\//, ['website/src/**/*.test.ts', 'website/src/**/*.test.tsx']],
   [/^website\//, ['tests/website-footer.test.mjs', 'tests/website-mobile-nav-cleanup.test.mjs', 'tests/website-mobile-sidebar.test.mjs']],
   [/^\.github\/workflows\/(docs|deploy-docs)\.yml$/, ['tests/docs-workflows.test.mjs']],
   [/^\.github\/workflows\/test\.yml$/, ['tests/core.test.mjs']],
@@ -85,7 +87,8 @@ if (isMain()) {
   } else {
     await run('Jest related tests', npmCommand, ['exec', '--', 'jest', '--config', 'jest.config.cjs', ...selected.filter(isJestTest)]);
   }
-  await run('Node related tests', process.execPath, ['--test', ...selected.filter((file) => !isJestTest(file) && !isCoverageTest(file))]);
+  await runWebsiteTests(selected.filter(isWebsiteTest));
+  await run('Node related tests', process.execPath, ['--test', ...selected.filter((file) => !isJestTest(file) && !isCoverageTest(file) && !isWebsiteTest(file))]);
   await run('Node related coverage', process.execPath, [...nodeCoverageArgs, ...selected.filter(isCoverageTest)]);
 }
 
@@ -110,6 +113,10 @@ function isJestTest(file) {
 
 function isCoverageTest(file) {
   return /^tests\/.+\.test\.mjs$/.test(file) && !/^tests\/(website|vscode|docs-workflows|web-assets-budget|web-panel-ui)/.test(file);
+}
+
+function isWebsiteTest(file) {
+  return /^website\/src\/.+\.test\.tsx?$/.test(file);
 }
 
 function needsBuild(file) {
@@ -147,11 +154,37 @@ function spawnBuild() {
   return spawn(npmCommand, ['run', 'build'], { stdio: 'inherit', shell: process.platform === 'win32' });
 }
 
+export async function websiteTestFiles() {
+  return [
+    ...await expandTestPattern('website/src/**/*.test.ts'),
+    ...await expandTestPattern('website/src/**/*.test.tsx')
+  ].map((file) => file.replace(/^website\//, '')).sort();
+}
+
+function runWebsiteTests(files) {
+  if (!files.length) return Promise.resolve();
+  console.log('\nWebsite related tests:');
+  return new Promise((resolve, reject) => {
+    const relativeFiles = files.map((file) => file.replace(/^website\//, ''));
+    const child = spawn(process.execPath, ['--experimental-test-coverage', '--import', 'tsx', '--test', '--test-isolation=none', ...relativeFiles], {
+      cwd: 'website',
+      stdio: 'inherit'
+    });
+    child.on('error', reject);
+    child.on('close', (code) => {
+      if (code === 0) resolve();
+      else reject(new Error('Website related tests failed with exit code ' + code));
+    });
+  });
+}
+
 async function allTests() {
   return [
     ...await expandTestPattern('tests/**/*.test.mjs'),
     ...await expandTestPattern('tests/app/**/*.test.ts'),
     ...await expandTestPattern('tests/app/**/*.test.tsx'),
+    ...await expandTestPattern('website/src/**/*.test.ts'),
+    ...await expandTestPattern('website/src/**/*.test.tsx'),
   ].sort();
 }
 
@@ -173,10 +206,11 @@ async function expandTestPattern(pattern) {
 
 async function walk(dir) {
   const files = [];
-  for (const entry of await readdir(dir, { withFileTypes: true })) {
-    const file = path.join(dir, entry.name).replace(/\\/g, '/');
+  const resolved = path.isAbsolute(dir) ? dir : path.join(repoRoot, dir);
+  for (const entry of await readdir(resolved, { withFileTypes: true })) {
+    const file = path.join(resolved, entry.name);
     if (entry.isDirectory()) files.push(...await walk(file));
-    else files.push(file);
+    else files.push(path.relative(repoRoot, file).replace(/\\/g, '/'));
   }
   return files;
 }

@@ -1006,7 +1006,8 @@ test('documentation contract removes old load/save flags from active docs and gu
     'website/i18n',
     'website/versioned_docs',
     'AGENTS.md',
-    '.agents/engram.md'
+    '.agents/engram.md',
+    'missing-optional-guidance.md'
   ];
   const allowLegacy = [
     'version-0.0.25/entry/',
@@ -1030,7 +1031,15 @@ test('documentation contract removes old load/save flags from active docs and gu
 
 async function walkDocs(target) {
   const resolved = path.resolve(target);
-  const stat = await import('node:fs/promises').then(({ stat }) => stat(resolved));
+  const stat = await import('node:fs/promises').then(async ({ stat }) => {
+    try {
+      return await stat(resolved);
+    } catch (error) {
+      if (error?.code === 'ENOENT') return undefined;
+      throw error;
+    }
+  });
+  if (!stat) return [];
   if (!stat.isDirectory()) return [resolved];
   const entries = await readdir(resolved, { withFileTypes: true });
   const files = [];

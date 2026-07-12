@@ -1,0 +1,213 @@
+/** Doctor: composed diagnostics command for config, integrity, and adapter health. */
+import type { EngramContext } from '../memory/context.js';
+import { verifyRoot } from '../safety/hash.js';
+import { invalidMemoryFiles } from '../memory/index.js';
+import { detectInstalledAgents } from '../integrations/agent-detect.js';
+import { exists } from '../system/fsx.js';
+import type { Scope } from '../runtime/types.js';
+import type { Diagnostic } from '../contracts/result.js';
+
+export type DoctorCheck = {
+  id: string;
+  scope: 'workspace' | 'global' | 'host' | 'policy' | 'system';
+  status: 'pass' | 'warn' | 'fail' | 'skip';
+  severity: 'info' | 'warning' | 'error';
+  message: string;
+  remediation?: string;
+  metadata?: Record<string, string | number | boolean>;
+};
+
+export type DoctorResult = {
+  checks: DoctorCheck[];
+  passed: number;
+  warned: number;
+  failed: number;
+  skipped: number;
+};
+
+/** Run all doctor checks and return structured results. */
+export async function runDoctor(ctx: EngramContext, scope: 'workspace' | 'global' | 'all' = 'all'): Promise<DoctorResult> {
+  const scopes: Scope[] = scope === 'all' ? ['workspace', 'global'] : [scope];
+  const checks: DoctorCheck[] = [];
+
+  checks.push(...checkConfig(ctx));
+  for (const s of scopes) checks.push(...await checkRoot(ctx, s));
+  for (const s of scopes) checks.push(...await checkHashes(ctx, s));
+  for (const s of scopes) checks.push(...await checkInvalidFiles(ctx, s));
+  checks.push(...checkIndexFreshness(ctx));
+  checks.push(...checkHostAdapters());
+
+  return summarize(checks);
+}
+
+function checkConfig(ctx: EngramContext): DoctorCheck[] {
+  const checks: DoctorCheck[] = [];
+  checks.push({
+    id: 'config.resolved',
+    scope: 'system',
+    status: 'pass',
+    severity: 'info',
+    message: `Config resolved (scope: ${ctx.config.scope}, read: ${ctx.config.read})`,
+    metadata: { scope: ctx.config.scope, read: ctx.config.read, graph_enabled: ctx.config.graph.enabled }
+  });
+  if (ctx.profile.active) {
+    checks.push({
+      id: 'config.profile',
+      scope: 'system',
+      status: 'pass',
+      severity: 'info',
+      message: `Active profile: ${ctx.profile.active}`,
+      metadata: { profile: ctx.profile.active }
+    });
+  } else {
+    checks.push({
+      id: 'config.profile',
+      scope: 'system',
+      status: 'warn',
+      severity: 'warning',
+      message: 'No active profile configured',
+      remediation: 'engram profile create <name> --global-path <path> --use'
+    });
+  }
+  return checks;
+}
+
+async function checkRoot(ctx: EngramContext, scope: Scope): Promise<DoctorCheck[]> {
+  const root = ctx.roots[scope];
+  if (!root) {
+    return [{
+      id: `root.${scope}`,
+      scope,
+      status: 'skip',
+      severity: 'info',
+      message: `${scope} memory root not configured`,
+      remediation: scope === 'global' ? 'engram inject --global-path <path>' : 'engram inject'
+    }];
+  }
+  if (!(await exists(root))) {
+    return [{
+      id: `root.${scope}`,
+      scope,
+      status: 'fail',
+      severity: 'error',
+      message: `${scope} memory root does not exist: ${root}`,
+      remediation: 'engram inject'
+    }];
+  }
+  const entryCount = ctx.scopeIndexes[scope]?.entries.length ?? 0;
+  return [{
+    id: `root.${scope}`,
+    scope,
+    status: 'pass',
+    severity: 'info',
+    message: `${scope} memory root configured (${entryCount} entries)`,
+    metadata: { entries: entryCount }
+  }];
+}
+
+async function checkHashes(ctx: EngramContext, scope: Scope): Promise<DoctorCheck[]> {
+  const root = ctx.roots[scope];
+  if (!root) return [];
+  const rows = await verifyRoot(root, scope);
+  const mismatches = rows.filter((row) => !row.ok);
+  if (mismatches.length) {
+    return mismatches.map((row) => ({
+      id: 'hash.mismatch',
+      scope,
+      status: 'fail' as const,
+      severity: 'error' as const,
+      message: `Hash mismatch: ${scope}:${row.file}`,
+      remediation: `engram rehash ${scope}`
+    }));
+  }
+  return [{
+    id: `hash.${scope}`,
+    scope,
+    status: 'pass',
+    severity: 'info',
+    message: `All ${rows.length} ${scope} hashes valid`,
+    metadata: { files: rows.length }
+  }];
+}
+
+async function checkInvalidFiles(ctx: EngramContext, scope: Scope): Promise<DoctorCheck[]> {
+  const root = ctx.roots[scope];
+  if (!root) return [];
+  const invalid = await invalidMemoryFiles(root, scope);
+  if (invalid.length) {
+    return invalid.map((item) => ({
+      id: 'memory.invalid',
+      scope,
+      status: 'warn' as const,
+      severity: 'warning' as const,
+      message: `Invalid memory file: ${item.scope}:${item.file} (${item.error})`,
+      remediation: 'Fix the file or run engram repair for details'
+    }));
+  }
+  return [];
+}
+
+function checkIndexFreshness(ctx: EngramContext): DoctorCheck[] {
+  const checks: DoctorCheck[] = [];
+  checks.push({
+    id: 'index.entries',
+    scope: 'system',
+    status: 'pass',
+    severity: 'info',
+    message: `Index has ${ctx.index.entries.length} entries (${ctx.hiddenCount} hidden)`,
+    metadata: { total: ctx.index.entries.length, hidden: ctx.hiddenCount }
+  });
+  checks.push({
+    id: 'index.graph',
+    scope: 'system',
+    status: ctx.graph.nodes.length ? 'pass' : 'warn',
+    severity: ctx.graph.nodes.length ? 'info' : 'warning',
+    message: ctx.graph.nodes.length ? `Graph has ${ctx.graph.nodes.length} nodes` : 'Graph is empty',
+    remediation: ctx.graph.nodes.length ? undefined : 'engram graph --rebuild'
+  });
+  return checks;
+}
+
+function checkHostAdapters(): DoctorCheck[] {
+  const agents = detectInstalledAgents();
+  if (!agents.size) {
+    return [{
+      id: 'host.adapters',
+      scope: 'host',
+      status: 'warn',
+      severity: 'warning',
+      message: 'No AI agent adapters detected',
+      remediation: 'engram link <agent>'
+    }];
+  }
+  return [{
+    id: 'host.adapters',
+    scope: 'host',
+    status: 'pass',
+    severity: 'info',
+    message: `Detected agents: ${[...agents].join(', ')}`,
+    metadata: { count: agents.size }
+  }];
+}
+
+function summarize(checks: DoctorCheck[]): DoctorResult {
+  return {
+    checks,
+    passed: checks.filter((c) => c.status === 'pass').length,
+    warned: checks.filter((c) => c.status === 'warn').length,
+    failed: checks.filter((c) => c.status === 'fail').length,
+    skipped: checks.filter((c) => c.status === 'skip').length,
+  };
+}
+
+/** Convert DoctorResult to Diagnostics for contract envelopes. */
+export function doctorDiagnostics(result: DoctorResult): Diagnostic[] {
+  return result.checks
+    .filter((c) => c.status === 'fail' || c.status === 'warn')
+    .map((c) => ({
+      id: c.id,
+      severity: c.severity,
+      message: c.message,
+      ...(c.remediation ? { remediation: c.remediation } : {})
+    }));
+}

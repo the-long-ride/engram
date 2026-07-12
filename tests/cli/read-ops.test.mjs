@@ -465,3 +465,83 @@ test('--json verify reports per-scope status distinguishing unconfigured from he
   assert.equal(workspaceScope.status, 'checked');
   await rm(cwd, { recursive: true, force: true });
 });
+
+test('load --explain reports selected IDs, sources, signals, and omissions without memory body', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-explain-');
+  await runEngram(cwd, env, ['inject']);
+  await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Release foundation checklist lives in docs/release.md'], 'A\n');
+  await runEngram(cwd, env, ['save', 'rule', '--scope', 'workspace', 'OAuth rotation must follow the release foundation checklist'], 'A\n');
+
+  const result = await runEngram(cwd, env, ['load', '--explain', '--json', 'release foundation checklist']);
+  assert.equal(result.code, 0, result.stderr);
+  const body = JSON.parse(result.stdout);
+  assert.equal(body.contract_version, '1');
+  assert.equal(body.ok, true);
+  assert.ok(body.data.selected.length >= 1);
+  assert.ok(body.data.selected.every((item) => item.id && item.rank && item.source && item.signals));
+  assert.doesNotMatch(result.stdout, /## Content|author:/);
+
+  const directResult = await runEngram(cwd, env, ['load', '--explain', '--json', '--id', 'release-foundation-checklist-lives-in-docs-release-md']);
+  assert.equal(directResult.code, 0, directResult.stderr);
+  const directBody = JSON.parse(directResult.stdout);
+  assert.equal(directBody.contract_version, '1');
+  assert.ok(directBody.data.selected.some((item) => item.source === 'direct-id'));
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('load --explain text output has readable format', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-explain-text-');
+  await runEngram(cwd, env, ['inject']);
+  await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Deploy uses Vercel and pnpm'], 'A\n');
+  const result = await runEngram(cwd, env, ['load', '--explain', 'Vercel deploy']);
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /Route explanation/);
+  assert.match(result.stdout, /Selected:/);
+  assert.doesNotMatch(result.stdout, /## Content/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('load --explain zero results has safe diagnosis', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-explain-empty-');
+  await runEngram(cwd, env, ['inject']);
+  const result = await runEngram(cwd, env, ['load', '--explain', '--json', 'nonexistent topic xyz']);
+  assert.equal(result.code, 0, result.stderr);
+  const body = JSON.parse(result.stdout);
+  assert.equal(body.ok, true);
+  assert.equal(body.data.selected.length, 0);
+  assert.ok(body.data.diagnostics.some((d) => d.id === 'route.empty'));
+  assert.match(body.data.diagnostics[0].message, /No memories matched/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('doctor --json produces structured diagnostics for healthy workspace', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-doctor-');
+  await runEngram(cwd, env, ['inject']);
+  await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Doctor test memory'], 'A\n');
+  const result = await runEngram(cwd, env, ['doctor', '--json']);
+  assert.equal(result.code, 0, result.stderr);
+  const body = JSON.parse(result.stdout);
+  assert.equal(body.contract_version, '1');
+  assert.equal(body.ok, true);
+  assert.ok(Array.isArray(body.data.checks));
+  assert.ok(body.data.passed > 0);
+  assert.ok(body.data.checks.some((c) => c.id === 'config.resolved'));
+  assert.ok(body.data.checks.some((c) => c.id === 'root.workspace'));
+  assert.doesNotMatch(result.stdout, /\x1b\[/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('doctor --strict --json fails on hash mismatch with remediation', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-doctor-fail-');
+  await runEngram(cwd, env, ['inject']);
+  await runEngram(cwd, env, ['save', 'rule', '--scope', 'workspace', '--skip-task-type-prompt', 'Doctor hash test rule'], 'A\n');
+  const file = path.join(workspaceMemoryRoot(cwd), 'rules', 'doctor-hash-test-rule.md');
+  await writeFile(file, 'tampered outside Engram\n');
+  const result = await runEngram(cwd, env, ['doctor', '--strict', '--json']);
+  assert.notEqual(result.code, 0);
+  const body = JSON.parse(result.stdout);
+  assert.equal(body.ok, false);
+  assert.ok(body.diagnostics.some((d) => d.id === 'hash.mismatch'));
+  assert.match(JSON.stringify(body), /engram rehash/);
+  await rm(cwd, { recursive: true, force: true });
+});

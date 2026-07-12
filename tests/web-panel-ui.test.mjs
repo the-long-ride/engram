@@ -15,7 +15,7 @@ async function readPanelCss() {
     'src/core/web/panel-memory.css'
   ];
   const parts = await Promise.all(files.map((file) => read(file)));
-  return parts.join('\n');
+  return parts.join('\n').replace(/\r\n/g, '\n');
 }
 
 async function exists(rel) {

@@ -5,8 +5,8 @@ import path from 'node:path';
 
 test('docs workflows use pnpm for website jobs', async () => {
   const root = path.resolve('.');
-  const deployDocs = await readFile(path.join(root, '.github', 'workflows', 'deploy-docs.yml'), 'utf8');
-  const docs = await readFile(path.join(root, '.github', 'workflows', 'docs.yml'), 'utf8');
+  const deployDocs = (await readFile(path.join(root, '.github', 'workflows', 'deploy-docs.yml'), 'utf8')).replace(/\r\n/g, '\n');
+  const docs = (await readFile(path.join(root, '.github', 'workflows', 'docs.yml'), 'utf8')).replace(/\r\n/g, '\n');
 
   for (const workflow of [deployDocs, docs]) {
     assert.match(workflow, /pnpm\/action-setup@v4/);
@@ -32,7 +32,7 @@ test('docs workflows use pnpm for website jobs', async () => {
 
 test('test workflow keeps full verification on push changes', async () => {
   const root = path.resolve('.');
-  const workflow = await readFile(path.join(root, '.github', 'workflows', 'test.yml'), 'utf8');
+  const workflow = (await readFile(path.join(root, '.github', 'workflows', 'test.yml'), 'utf8')).replace(/\r\n/g, '\n');
 
   assert.match(workflow, /pull_request:\n\s+paths:\n(?:(?!\n  push:)[\s\S])*?      - 'website\/\*\*'/);
   assert.match(workflow, /files: \|\n(?:(?!\n\n      - name:)[\s\S])*?            website\/\*\*/);

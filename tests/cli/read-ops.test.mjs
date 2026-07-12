@@ -594,3 +594,56 @@ test('doctor graph check is skip/info not warn when no dependencies declared', a
   assert.equal(graphCheck.severity, 'info');
   await rm(cwd, { recursive: true, force: true });
 });
+
+test('doctor --scope workspace only checks workspace, not global', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-doctor-scope-ws-');
+  await runEngram(cwd, env, ['inject']);
+  await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Scope test memory'], 'A\n');
+  const result = await runEngram(cwd, env, ['doctor', '--scope', 'workspace', '--json']);
+  assert.equal(result.code, 0, result.stderr);
+  const body = JSON.parse(result.stdout);
+  const wsRoot = body.data.checks.find((c) => c.id === 'root.workspace');
+  assert.ok(wsRoot, 'workspace root check present');
+  assert.equal(wsRoot.status, 'pass');
+  const globalRoot = body.data.checks.find((c) => c.id === 'root.global');
+  assert.ok(!globalRoot, 'global root check should not be present with --scope workspace');
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('doctor --scope global only checks global', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-doctor-scope-gl-');
+  await runEngram(cwd, env, ['inject']);
+  await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'global', 'Global scope doctor test'], 'A\n');
+  const result = await runEngram(cwd, env, ['doctor', '--scope', 'global', '--json']);
+  assert.equal(result.code, 0, result.stderr);
+  const body = JSON.parse(result.stdout);
+  const globalRoot = body.data.checks.find((c) => c.id === 'root.global');
+  assert.ok(globalRoot, 'global root check present');
+  const wsRoot = body.data.checks.find((c) => c.id === 'root.workspace');
+  assert.ok(!wsRoot, 'workspace root check should not be present with --scope global');
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('doctor rejects conflicting positional and --scope values', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-doctor-conflict-');
+  await runEngram(cwd, env, ['inject']);
+  const result = await runEngram(cwd, env, ['doctor', 'workspace', '--scope', 'global', '--json']);
+  assert.notEqual(result.code, 0);
+  const body = JSON.parse(result.stdout);
+  assert.equal(body.ok, false);
+  assert.equal(body.error.code, 'ENG_USAGE');
+  assert.match(body.error.message, /conflicts/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('doctor and load --explain appear in help and command surface', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-surface-');
+  await runEngram(cwd, env, ['inject']);
+  const helpOut = await runEngram(cwd, env, ['help', 'doctor']);
+  assert.equal(helpOut.code, 0, helpOut.stderr);
+  assert.match(helpOut.stdout, /doctor/);
+  assert.match(helpOut.stdout, /diagnostics/);
+  const loadHelp = await runEngram(cwd, env, ['help', 'load']);
+  assert.match(loadHelp.stdout, /explain/);
+  await rm(cwd, { recursive: true, force: true });
+});

@@ -29,7 +29,7 @@ export const HELP_DATA: HelpSection[] = [
       { command: 'engram observe [--file session.md] [--propose] [note]', alias: 'o', purpose: 'Capture sanitized raw notes in inbox, then optionally propose memories through save-session' },
       { command: 'engram take-control [--plan] [--file path] [--dir path] [--include glob] [--exclude glob] [--max-sources n] [--max-chars n] [--all] [--force] [--metacognize]', alias: 'tc', purpose: 'Explore existing workspace guidance with agent help, token-light force mode, optional metacognition, and Engram memory writes' },
       { command: 'engram metacognize --workspace|--global|--all [--force] [--dry-run]', alias: 'mc', purpose: 'Let an agent restructure an existing memory folder through save-session-style candidates and approval' },
-      { command: 'engram load [--all] [--dry-run] [--full] [query]', alias: 'ld', purpose: 'Route compact agent memory by default, or use --full to load the broader legacy output' },
+      { command: 'engram load [--all] [--dry-run] [--explain] [--full] [--json] [query]', alias: 'ld', purpose: 'Route compact agent memory by default; --explain shows ranking signals; --json emits versioned contract envelope' },
       { command: 'engram route [task]', alias: 'rt', purpose: 'Classify a task into the stable task type used by load and save tags' },
       { command: 'engram search [--semantic] <query>', alias: 'f', purpose: 'Search visible indexed memories with lexical or local semantic scoring' },
       { command: 'engram graph [--rebuild] [query]', alias: 'g', purpose: 'Inspect the derived layered JSON memory graph, dependency layers, and contradiction candidates' },
@@ -37,6 +37,7 @@ export const HELP_DATA: HelpSection[] = [
       { command: 'engram rehash [workspace|global]', alias: 'rh', purpose: 'Recompute and store hashes for all memory files' },
       { command: 'engram rebuild-index [workspace|global]', alias: 'ri', purpose: 'Explicitly rebuild memory indexes from Markdown files' },
       { command: 'engram repair [workspace|global]', alias: 'rp', purpose: 'Report invalid memory files that index rebuild would skip' },
+      { command: 'engram doctor [workspace|global|all] [--strict] [--json]', purpose: 'Run composed diagnostics for config, roots, hashes, invalid files, index, graph, and host linkage' },
       { command: 'engram audit [--author email] [--stale] [--low-confidence]', alias: 'a', purpose: 'Show audit rows for visible memories with optional filters' }
     ]
   },

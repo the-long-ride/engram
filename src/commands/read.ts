@@ -307,7 +307,12 @@ export async function cmdRehash(scope?: string): Promise<string> {
 /** Composed diagnostics command for config, integrity, and adapter health. */
 export async function cmdDoctor(args: string[], flags: Record<string, any> = {}): Promise<string> {
   const ctx = await getContext();
-  const scopeArg = typeof args[0] === 'string' && ['workspace', 'global', 'all'].includes(args[0]) ? args[0] as 'workspace' | 'global' | 'all' : 'all';
+  const positionalScope = typeof args[0] === 'string' && ['workspace', 'global', 'all'].includes(args[0]) ? args[0] as 'workspace' | 'global' | 'all' : undefined;
+  const flagScope = typeof flags.scope === 'string' && ['workspace', 'global', 'all'].includes(flags.scope) ? flags.scope as 'workspace' | 'global' | 'all' : undefined;
+  if (positionalScope && flagScope && positionalScope !== flagScope) {
+    throw new EngramError('ENG_USAGE', `doctor --scope ${flagScope} conflicts with positional ${positionalScope}`, ExitCode.UsageError);
+  }
+  const scopeArg = positionalScope ?? flagScope ?? 'all';
   const strict = flags.strict === true;
   const result = await runDoctor(ctx, scopeArg);
   if (isJsonMode(flags)) {

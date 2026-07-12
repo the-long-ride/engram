@@ -1,9 +1,14 @@
-/** Doctor: composed diagnostics command for config, integrity, and adapter health. */
+/** Doctor: composed diagnostics for config resolution, root existence, hash integrity,
+ *  invalid file detection, index/graph status, and host executable detection.
+ *  Does NOT verify index/graph/vector freshness, policy validity, or MCP/hook installation
+ *  — those checks arrive in later milestones. */
 import type { EngramContext } from '../memory/context.js';
 import { verifyRoot } from '../safety/hash.js';
 import { invalidMemoryFiles } from '../memory/index.js';
 import { detectInstalledAgents } from '../integrations/agent-detect.js';
+import { detectLinkedWorkspaceTargets } from '../integrations/skillset.js';
 import { exists } from '../system/fsx.js';
+import path from 'node:path';
 import type { Scope } from '../runtime/types.js';
 import type { Diagnostic } from '../contracts/result.js';
 
@@ -35,7 +40,7 @@ export async function runDoctor(ctx: EngramContext, scope: 'workspace' | 'global
   for (const s of scopes) checks.push(...await checkHashes(ctx, s));
   for (const s of scopes) checks.push(...await checkInvalidFiles(ctx, s));
   checks.push(...checkIndexFreshness(ctx));
-  checks.push(...checkHostAdapters());
+  checks.push(...await checkHostAdapters(ctx));
 
   return summarize(checks);
 }
@@ -168,26 +173,49 @@ function checkIndexFreshness(ctx: EngramContext): DoctorCheck[] {
   return checks;
 }
 
-function checkHostAdapters(): DoctorCheck[] {
+async function checkHostAdapters(ctx: EngramContext): Promise<DoctorCheck[]> {
+  const checks: DoctorCheck[] = [];
   const agents = detectInstalledAgents();
   if (!agents.size) {
-    return [{
+    checks.push({
       id: 'host.executables',
       scope: 'host',
       status: 'skip',
       severity: 'info',
       message: 'No AI agent executables detected on this machine',
       remediation: 'Install an agent (Codex, Claude, Cursor, etc.) then run engram link <agent>'
-    }];
+    });
+  } else {
+    checks.push({
+      id: 'host.executables',
+      scope: 'host',
+      status: 'pass',
+      severity: 'info',
+      message: `Host executables detected: ${[...agents].join(', ')}`,
+      metadata: { count: agents.size }
+    });
   }
-  return [{
-    id: 'host.executables',
-    scope: 'host',
-    status: 'pass',
-    severity: 'info',
-    message: `Host executables detected: ${[...agents].join(', ')}`,
-    metadata: { count: agents.size }
-  }];
+  const linked = await detectLinkedWorkspaceTargets(ctx.cwd);
+  if (linked.length) {
+    checks.push({
+      id: 'host.engram_linkage',
+      scope: 'host',
+      status: 'pass',
+      severity: 'info',
+      message: `Engram skillset linked for: ${linked.join(', ')}`,
+      metadata: { targets: linked.length }
+    });
+  } else {
+    checks.push({
+      id: 'host.engram_linkage',
+      scope: 'host',
+      status: 'skip',
+      severity: 'info',
+      message: 'No Engram skillset linkage detected in this workspace',
+      remediation: 'engram link <agent>'
+    });
+  }
+  return checks;
 }
 
 function summarize(checks: DoctorCheck[]): DoctorResult {

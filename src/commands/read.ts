@@ -11,11 +11,13 @@ import { formatRecords, type RecordBlock } from '../core/cli/format.js';
 import { isJsonMode, jsonOk } from '../core/cli/json-output.js';
 import { EngramError, ExitCode } from '../core/runtime/exit-codes.js';
 import { fail, serializeResult } from '../core/contracts/result.js';
+import { runDoctor, doctorDiagnostics, type DoctorResult } from '../core/diagnostics/doctor.js';
 import type { Scope, MemoryEntry } from '../core/runtime/types.js';
 import { loadHashes, updateHash, verifyRoot, sha256 } from '../core/safety/hash.js';
 import { inside, listFiles, readText, writeJson } from '../core/system/fsx.js';
 import { scopeRootsForConfig } from '../core/runtime/config.js';
 import { HASH_FILE } from '../core/runtime/constants.js';
+import { explainRoute } from '../core/memory/route-explain.js';
 
 /** Load routed memory for a query. */
 export async function cmdLoad(args: string[], flags: Record<string, any> = {}): Promise<string> {
@@ -63,6 +65,16 @@ export async function cmdLoad(args: string[], flags: Record<string, any> = {}): 
       semanticRelaxed: forAgents
     }, ctx.graph);
     entries = routed.entries;
+  }
+
+  if (flags.explain === true) {
+    const directId = targetIds.length > 0;
+    const query = directId ? `--id ${targetIds.join(',')}` : (args.join(' ') || 'current session');
+    const fallback = !directId && !args.join(' ').trim();
+    const omittedEntries = directId ? [] : visibleEntries(ctx.index.entries, ctx.config, false, ctx.ignorePatterns).filter((e) => !entries.includes(e));
+    const explanation = explainRoute(routed, entries, { query, fallback, directId, omittedEntries });
+    if (isJsonMode(flags)) return jsonOk(explanation);
+    return renderExplanation(explanation);
   }
 
   if (flags['dry-run'] === true) {
@@ -290,4 +302,65 @@ export async function cmdRehash(scope?: string): Promise<string> {
     rows.push({ title: current, fields: [['Hashed', updated], ['Changed', changed], ['Unchanged', updated - changed]] });
   }
   return formatRecords('engram: rehashed memory files', rows);
+}
+
+/** Composed diagnostics command for config, integrity, and adapter health. */
+export async function cmdDoctor(args: string[], flags: Record<string, any> = {}): Promise<string> {
+  const ctx = await getContext();
+  const scopeArg = typeof args[0] === 'string' && ['workspace', 'global', 'all'].includes(args[0]) ? args[0] as 'workspace' | 'global' | 'all' : 'all';
+  const strict = flags.strict === true;
+  const result = await runDoctor(ctx, scopeArg);
+  if (isJsonMode(flags)) {
+    if (strict && (result.failed > 0 || result.warned > 0)) {
+      throw new EngramError('ENG_DOCTOR', `doctor found ${result.failed} failure(s) and ${result.warned} warning(s)`, ExitCode.GeneralError, serializeResult(fail('ENG_DOCTOR', `doctor found ${result.failed} failure(s) and ${result.warned} warning(s)`, doctorDiagnostics(result))));
+    }
+    return jsonOk(result);
+  }
+  const text = renderDoctor(result);
+  if (strict && (result.failed > 0 || result.warned > 0)) {
+    throw new EngramError('ENG_DOCTOR', `doctor found ${result.failed} failure(s) and ${result.warned} warning(s)`, ExitCode.GeneralError, text);
+  }
+  return text;
+}
+
+function renderDoctor(result: DoctorResult): string {
+  const lines: string[] = [];
+  lines.push(`Doctor: ${result.passed} passed, ${result.warned} warned, ${result.failed} failed, ${result.skipped} skipped`);
+  lines.push('');
+  for (const check of result.checks) {
+    const icon = check.status === 'pass' ? 'OK' : check.status === 'warn' ? 'WARN' : check.status === 'fail' ? 'FAIL' : 'SKIP';
+    lines.push(`${icon} ${check.id}: ${check.message}`);
+    if (check.remediation) lines.push(`  remediation: ${check.remediation}`);
+  }
+  return lines.join('\n');
+}
+
+function renderExplanation(explanation: ReturnType<typeof explainRoute>): string {
+  const lines: string[] = [];
+  lines.push(`Route explanation for: ${explanation.query}`);
+  if (explanation.fallback) lines.push('(query was empty; fell back to "current session")');
+  lines.push('');
+  if (explanation.selected.length) {
+    lines.push('Selected:');
+    for (const item of explanation.selected) {
+      lines.push(`  ${item.rank}. ${item.scope}:${item.id} [${item.source}]`);
+      lines.push(`     type: ${item.type}, summary: ${item.summary}`);
+      if (item.signals.length) lines.push(`     signals: ${item.signals.join('; ')}`);
+    }
+  } else {
+    lines.push('Selected: (none)');
+  }
+  if (explanation.omitted.length) {
+    lines.push('');
+    lines.push('Omitted:');
+    for (const item of explanation.omitted) {
+      lines.push(`  ${item.scope}:${item.id} (${item.reason})`);
+    }
+  }
+  for (const diag of explanation.diagnostics) {
+    lines.push('');
+    lines.push(`${diag.severity.toUpperCase()}: ${diag.message}`);
+    if (diag.remediation) lines.push(`  remediation: ${diag.remediation}`);
+  }
+  return lines.join('\n');
 }

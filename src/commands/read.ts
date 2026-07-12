@@ -71,7 +71,7 @@ export async function cmdLoad(args: string[], flags: Record<string, any> = {}): 
     const directId = targetIds.length > 0;
     const query = directId ? `--id ${targetIds.join(',')}` : (args.join(' ') || 'current session');
     const fallback = !directId && !args.join(' ').trim();
-    const omittedEntries = directId ? [] : visibleEntries(ctx.index.entries, ctx.config, false, ctx.ignorePatterns).filter((e) => !entries.includes(e));
+    const omittedEntries = directId ? [] : (routed.candidateEntries ?? []).filter((e) => !entries.includes(e));
     const explanation = explainRoute(routed, entries, { query, fallback, directId, omittedEntries });
     if (isJsonMode(flags)) return jsonOk(explanation);
     return renderExplanation(explanation);

@@ -11,6 +11,7 @@ import type { TaskIntent } from './task-intent.js';
 export type RouteOptions = { all?: boolean; ignorePatterns?: string[]; vectorHits?: VectorRouteHit[]; candidatePool?: number; limit?: number; intent?: TaskIntent; semanticRelaxed?: boolean };
 export type RouteFacet = { tag: string; count: number };
 type RouteContext = { query: string; anchors: Set<string>; terms: Map<string, Set<string>> };
+type CandidateRow = { entry: MemoryEntry; score: number; contributions: Set<string> };
 export type RouteReason = {
   key: string;
   kind: 'direct' | 'dependency' | 'vector' | 'graph';
@@ -29,6 +30,7 @@ export type RouteDetail = {
   refined: boolean;
   facets: RouteFacet[];
   reasons?: RouteReason[];
+  candidateEntries?: MemoryEntry[];
 };
 
 const STOP_TAGS = new Set([
@@ -75,15 +77,18 @@ export function routeDetailed(index: MemoryIndex, query: string, config: EngramC
   const routeCtx = routeContext(query);
   if (!isCurrentSession && !routeCtx.anchors.size) return detail([], [], query, false);
   if (options.all) {
-    const selected = rankRows(entries.map((entry) => {
+    const allRows: CandidateRow[] = entries.map((entry) => {
       let score = directScore(entry, routeCtx);
       if (isCurrentSession && isStartSession(entry)) {
         score = Math.max(0.5, score);
       }
-      return { entry, score };
-    }).filter((row) => row.score > 0), routeCtx).map((row) => row.entry);
+      return { entry, score, contributions: new Set(['lexical']) };
+    }).filter((row) => row.score > 0);
+    const ranked = rankRows(allRows, routeCtx);
+    const selected = ranked.map((row) => row.entry);
     const ordered = activeGraph ? dependencyContextEntries(selected, entries, activeGraph, selected.length) : selected;
-    return detail(ordered, selected, query, false, reasonMap(ordered, routeCtx, selected, undefined));
+    const contributions = new Map<string, Set<string>>(ranked.map((row) => [entryKey(row.entry), row.contributions]));
+    return detail(ordered, selected, query, false, reasonMap(ordered, routeCtx, selected, undefined, contributions));
   }
   if (!options.all && (config.graph.enabled && graph?.nodes.length || options.vectorHits?.length)) {
     const lexical = lexicalRoute(entries, query, pool, routeCtx);
@@ -92,12 +97,12 @@ export function routeDetailed(index: MemoryIndex, query: string, config: EngramC
     const intentTerms = options.intent ? new Set(options.intent.retrievalTerms) : undefined;
     return selectDetailed(candidates, routeCtx, max, activeGraph, entries, intentTerms);
   }
-  const scored = entries.map((entry) => {
+  const scored: CandidateRow[] = entries.map((entry) => {
     let score = directScore(entry, routeCtx);
     if (isCurrentSession && isStartSession(entry)) {
       score = Math.max(0.5, score);
     }
-    return { entry, score };
+    return { entry, score, contributions: new Set(['lexical']) };
   });
   return selectDetailed(scored.filter((row) => row.score > 0), routeCtx, max, activeGraph, entries, options.intent ? new Set(options.intent.retrievalTerms) : undefined);
 }
@@ -126,14 +131,19 @@ function blendCandidateRows(
   graph: MemoryEntry[],
   vector: VectorRouteHit[],
   options: RouteOptions = {}
-): Array<{ entry: MemoryEntry; score: number }> {
+): Array<CandidateRow> {
   const allowed = new Map(visible.map((entry) => [entryKey(entry), entry]));
-  const scores = new Map<string, { entry: MemoryEntry; score: number }>();
-  const bump = (entry: MemoryEntry, score: number) => {
+  const scores = new Map<string, CandidateRow>();
+  const bump = (entry: MemoryEntry, score: number, source: string) => {
     const key = entryKey(entry);
     if (!allowed.has(key) || score <= 0) return;
-    const current = scores.get(key)?.score ?? 0;
-    scores.set(key, { entry, score: current + score });
+    const current = scores.get(key);
+    if (current) {
+      current.score += score;
+      current.contributions.add(source);
+    } else {
+      scores.set(key, { entry, score, contributions: new Set([source]) });
+    }
   };
   const intentTerms = options.intent ? new Set(options.intent.retrievalTerms) : undefined;
   const isCurrentSession = query.trim().toLowerCase() === 'current session';
@@ -142,7 +152,7 @@ function blendCandidateRows(
     if (isCurrentSession && isStartSession(entry)) {
       baseLexicalScore = Math.max(0.5, baseLexicalScore);
     }
-    bump(entry, baseLexicalScore + 0.22);
+    bump(entry, baseLexicalScore + 0.22, 'lexical');
   }
   graph
     .filter((entry) => {
@@ -150,7 +160,7 @@ function blendCandidateRows(
       if (intentTerms && intentOverlap(entry, intentTerms)) return true;
       return false;
     })
-    .forEach((entry, index) => bump(entry, 0.4 * rankScore(index, graph.length)));
+    .forEach((entry, index) => bump(entry, 0.4 * rankScore(index, graph.length), 'graph'));
   vector
     .filter((hit) => {
       if (hasAnchorOverlap(hit.entry, routeCtx)) return true;
@@ -158,11 +168,11 @@ function blendCandidateRows(
       if (intentTerms && intentOverlap(hit.entry, intentTerms, routeCtx)) return true;
       return false;
     })
-    .forEach((hit, index) => bump(hit.entry, 0.36 * Math.max(hit.score, rankScore(index, vector.length) * 0.75)));
+    .forEach((hit, index) => bump(hit.entry, 0.36 * Math.max(hit.score, rankScore(index, vector.length) * 0.75), 'vector'));
   return [...scores.values()];
 }
 
-function selectDetailed(candidates: Array<{ entry: MemoryEntry; score: number }>, routeCtx: RouteContext, max: number, graph?: MemoryGraph, visible?: MemoryEntry[], intentRetrievalTerms?: Set<string>): RouteDetail {
+function selectDetailed(candidates: CandidateRow[], routeCtx: RouteContext, max: number, graph?: MemoryGraph, visible?: MemoryEntry[], intentRetrievalTerms?: Set<string>): RouteDetail {
   const ranked = rankRows(candidates, routeCtx);
   // When there are many candidates, drop entries scoring below 40% of the top score.
   // For small pools (< 2× max), keep all entries — the floor is only for large pools.
@@ -173,10 +183,11 @@ function selectDetailed(candidates: Array<{ entry: MemoryEntry; score: number }>
   const primarySelected = selected;
   if (graph) selected = dependencyContextEntries(selected, visible ?? ranked.map((row) => row.entry), graph, max);
   const candidateEntries = withSelected(ranked.map((row) => row.entry), selected);
-  return detail(selected, candidateEntries, routeCtx.query, candidateEntries.length > max, reasonMap(selected, routeCtx, primarySelected, intentRetrievalTerms));
+  const contributions = new Map<string, Set<string>>(ranked.map((row) => [entryKey(row.entry), row.contributions]));
+  return detail(selected, candidateEntries, routeCtx.query, candidateEntries.length > max, reasonMap(selected, routeCtx, primarySelected, intentRetrievalTerms, contributions));
 }
 
-function rankRows(rows: Array<{ entry: MemoryEntry; score: number }>, routeCtx: RouteContext): Array<{ entry: MemoryEntry; score: number }> {
+function rankRows(rows: CandidateRow[], routeCtx: RouteContext): CandidateRow[] {
   return rows
     .map((row) => ({ ...row, score: row.score + refinementScore(row.entry, routeCtx) }))
     .sort((a, b) => b.score - a.score || scopePriority(a.entry) - scopePriority(b.entry) || a.entry.file.localeCompare(b.entry.file));
@@ -198,6 +209,7 @@ function detail(selected: MemoryEntry[], candidates: MemoryEntry[], query: strin
     omitted: Math.max(0, candidates.length - selected.length),
     refined,
     facets: suggestedFacets(candidates, selected, query),
+    candidateEntries: candidates,
     ...(reasons?.size ? { reasons: selected.map((entry) => reasons.get(entryKey(entry))).filter((reason): reason is RouteReason => Boolean(reason)) } : {})
   };
 }
@@ -297,19 +309,28 @@ function typeRoutingTerms(entry: MemoryEntry): string[] {
   return entry.type === 'skill' ? ['workflow', 'workflows'] : [];
 }
 
-function reasonMap(selected: MemoryEntry[], routeCtx: RouteContext, primarySelected: MemoryEntry[], intentRetrievalTerms?: Set<string>): Map<string, RouteReason> {
+function reasonMap(selected: MemoryEntry[], routeCtx: RouteContext, primarySelected: MemoryEntry[], intentRetrievalTerms?: Set<string>, contributions?: Map<string, Set<string>>): Map<string, RouteReason> {
   const primary = new Set(primarySelected.map(entryKey));
   const out = new Map<string, RouteReason>();
   for (const entry of selected) {
     const terms = [...routeCtx.anchors].filter((anchor) => candidateTerms(entry, routeCtx).has(anchor));
     const direct = primary.has(entryKey(entry));
+    const entryContributions = contributions?.get(entryKey(entry));
     const matchedBy: Array<'literal' | 'intent' | 'vector' | 'graph' | 'dependency'> = [];
-    if (direct) matchedBy.push('literal');
-    if (!direct) matchedBy.push('dependency');
+    if (direct) {
+      if (entryContributions?.has('vector')) matchedBy.push('vector');
+      if (entryContributions?.has('graph')) matchedBy.push('graph');
+      if (entryContributions?.has('lexical') || matchedBy.length === 0) matchedBy.push('literal');
+    } else {
+      matchedBy.push('dependency');
+    }
     if (intentRetrievalTerms?.size && intentOverlap(entry, intentRetrievalTerms)) matchedBy.push('intent');
+    const kind: RouteReason['kind'] = direct
+      ? (entryContributions?.has('vector') ? 'vector' : entryContributions?.has('graph') ? 'graph' : 'direct')
+      : 'dependency';
     out.set(entryKey(entry), {
       key: entryKey(entry),
-      kind: direct ? 'direct' : 'dependency',
+      kind,
       matchedBy,
       ...(terms.length ? { terms } : {}),
       score: direct ? Number(directScore(entry, routeCtx).toFixed(3)) : undefined,

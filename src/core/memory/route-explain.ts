@@ -52,9 +52,10 @@ export function explainRoute(
   });
 
   const omitted: ExplainOmitted[] = [];
-  if (options.omittedEntries) {
+  const omittedSource = options.omittedEntries ?? routed.candidateEntries ?? [];
+  if (omittedSource.length) {
     const selectedKeys = new Set(routed.entries.map((e) => `${e.scope}:${e.file}`));
-    for (const entry of options.omittedEntries) {
+    for (const entry of omittedSource) {
       if (selectedKeys.has(`${entry.scope}:${entry.file}`)) continue;
       omitted.push({
         id: entry.id,
@@ -62,9 +63,6 @@ export function explainRoute(
         reason: omitReason(entry, routed)
       });
     }
-  } else if (routed.omitted > 0 && routed.candidates > routed.selected) {
-    // When we don't have individual omitted entries, summarize count-only.
-    // The caller should pass omittedEntries for per-ID omission.
   }
 
   const diagnostics: Diagnostic[] = [];

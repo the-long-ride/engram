@@ -34,25 +34,47 @@ export function semanticDuplicatePairs(entries: MemoryEntry[]): DuplicatePair[] 
   return matchingPairs(entries, semanticDuplicateScore, 0.58);
 }
 
+/** Structured memory counts for JSON output. */
+export type StatsData = {
+  total: number;
+  by_type: Record<string, number>;
+  by_scope: Record<string, number>;
+  by_author: Record<string, number>;
+};
+
+/** Return structured memory counts without styling. */
+export function statsData(entries: MemoryEntry[]): StatsData {
+  return {
+    total: entries.length,
+    by_type: groupCount(entries, 'type'),
+    by_scope: groupCount(entries, 'scope'),
+    by_author: authorCounts(entries)
+  };
+}
+
 /** Summarize memory counts by type and scope. */
 export function stats(entries: MemoryEntry[]): string {
-  const by = (key: 'type' | 'scope') => entries.reduce<Record<string, number>>((acc, e) => {
+  const data = statsData(entries);
+  return [
+    style.heading('Memory stats'),
+    `${style.label('Total:')} ${style.number(String(data.total))}`,
+    '',
+    style.title('By type:'),
+    ...countRows(data.by_type),
+    '',
+    style.title('By scope:'),
+    ...countRows(data.by_scope),
+    '',
+    style.title('By author:'),
+    ...countRows(data.by_author)
+  ].join('\n');
+}
+
+function groupCount(entries: MemoryEntry[], key: 'type' | 'scope'): Record<string, number> {
+  return entries.reduce<Record<string, number>>((acc, e) => {
     acc[e[key]] = (acc[e[key]] ?? 0) + 1;
     return acc;
   }, {});
-  return [
-    style.heading('Memory stats'),
-    `${style.label('Total:')} ${style.number(String(entries.length))}`,
-    '',
-    style.title('By type:'),
-    ...countRows(by('type')),
-    '',
-    style.title('By scope:'),
-    ...countRows(by('scope')),
-    '',
-    style.title('By author:'),
-    ...countRows(authorCounts(entries))
-  ].join('\n');
 }
 
 function countRows(counts: Record<string, number>): string[] {

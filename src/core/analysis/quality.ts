@@ -20,18 +20,34 @@ export function scoreMemory(raw: string, limits?: MemoryLimits): { score: number
   return { score: Math.max(0, score), issues };
 }
 
-/** Summarize index health. */
-export function health(entries: MemoryEntry[]): string {
+/** Structured health summary for JSON output. */
+export type HealthData = {
+  score: number;
+  coverage: number;
+  stale: number;
+  low_confidence: number;
+  hidden_by_ignore: number;
+};
+
+/** Return structured health summary without styling.
+ *  `entries` are visible (non-ignored) entries; `ignoredCount` comes from the
+ *  full index so hidden memory is reported even after visibility filtering. */
+export function healthData(entries: MemoryEntry[], ignoredCount = 0): HealthData {
   const stale = entries.filter((e) => Date.now() - Date.parse(e.updated) > 180 * 864e5).length;
   const low = entries.filter((e) => e.confidence === 'low').length;
-  const ignored = entries.filter((e) => e.ignored).length;
   const score = Math.max(0, 100 - stale * 5 - low * 8);
+  return { score, coverage: entries.length, stale, low_confidence: low, hidden_by_ignore: ignoredCount };
+}
+
+/** Summarize index health. */
+export function health(entries: MemoryEntry[], ignoredCount = 0): string {
+  const data = healthData(entries, ignoredCount);
   return [
     style.heading('Memory health'),
-    `${style.label('Score:')} ${style.number(`${score}/100`)}`,
-    `${style.label('Coverage:')} ${style.number(String(entries.length))} files`,
-    `${style.label('Stale:')} ${style.number(String(stale))}`,
-    `${style.label('Low confidence:')} ${style.number(String(low))}`,
-    `${style.label('Hidden by ignore:')} ${style.number(String(ignored))}`
+    `${style.label('Score:')} ${style.number(`${data.score}/100`)}`,
+    `${style.label('Coverage:')} ${style.number(String(data.coverage))} files`,
+    `${style.label('Stale:')} ${style.number(String(data.stale))}`,
+    `${style.label('Low confidence:')} ${style.number(String(data.low_confidence))}`,
+    `${style.label('Hidden by ignore:')} ${style.number(String(data.hidden_by_ignore))}`
   ].join('\n');
 }

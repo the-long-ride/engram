@@ -647,3 +647,46 @@ test('doctor and load --explain appear in help and command surface', async () =>
   assert.match(loadHelp.stdout, /explain/);
   await rm(cwd, { recursive: true, force: true });
 });
+
+test('doctor rejects invalid positional scope', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-doc-bad-pos-');
+  await runEngram(cwd, env, ['inject']);
+  const result = await runEngram(cwd, env, ['doctor', 'typo', '--json']);
+  assert.notEqual(result.code, 0);
+  const body = JSON.parse(result.stdout);
+  assert.equal(body.ok, false);
+  assert.equal(body.error.code, 'ENG_USAGE');
+  assert.match(body.error.message, /invalid scope/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('doctor rejects invalid --scope flag value', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-doc-bad-flag-');
+  await runEngram(cwd, env, ['inject']);
+  const result = await runEngram(cwd, env, ['doctor', '--scope', 'typo', '--json']);
+  assert.notEqual(result.code, 0);
+  const body = JSON.parse(result.stdout);
+  assert.equal(body.ok, false);
+  assert.equal(body.error.code, 'ENG_USAGE');
+  assert.match(body.error.message, /--scope/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('load --explain reports blended scores, not raw directScore', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-explain-blend-');
+  await runEngram(cwd, env, ['inject']);
+  await runEngram(cwd, env, ['save', 'knowledge', '--tags', 'cicd', 'Blend score test memory for pipeline config'], 'A\n');
+  const result = await runEngram(cwd, env, ['load', '--explain', '--json', 'cicd pipeline']);
+  assert.equal(result.code, 0, result.stderr);
+  const body = JSON.parse(result.stdout);
+  assert.ok(body.ok, 'explain envelope ok');
+  const selected = body.data.selected;
+  assert.ok(selected.length, 'at least one selected');
+  for (const sel of selected) {
+    const scoreSig = sel.signals.find((s) => s.startsWith('score:'));
+    assert.ok(scoreSig, `entry ${sel.id} has score signal`);
+    const scoreVal = parseFloat(scoreSig.replace('score:', ''));
+    assert.ok(scoreVal > 0, `entry ${sel.id} score ${scoreVal} > 0`);
+  }
+  await rm(cwd, { recursive: true, force: true });
+});

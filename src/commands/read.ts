@@ -307,8 +307,15 @@ export async function cmdRehash(scope?: string): Promise<string> {
 /** Composed diagnostics command for config, integrity, and adapter health. */
 export async function cmdDoctor(args: string[], flags: Record<string, any> = {}): Promise<string> {
   const ctx = await getContext();
-  const positionalScope = typeof args[0] === 'string' && ['workspace', 'global', 'all'].includes(args[0]) ? args[0] as 'workspace' | 'global' | 'all' : undefined;
-  const flagScope = typeof flags.scope === 'string' && ['workspace', 'global', 'all'].includes(flags.scope) ? flags.scope as 'workspace' | 'global' | 'all' : undefined;
+  const VALID_SCOPES = ['workspace', 'global', 'all'];
+  const positionalScope = typeof args[0] === 'string' && VALID_SCOPES.includes(args[0]) ? args[0] as 'workspace' | 'global' | 'all' : undefined;
+  if (typeof args[0] === 'string' && !positionalScope) {
+    throw new EngramError('ENG_USAGE', `doctor: invalid scope '${args[0]}'. Must be workspace, global, or all.`, ExitCode.UsageError);
+  }
+  const flagScope = typeof flags.scope === 'string' && VALID_SCOPES.includes(flags.scope) ? flags.scope as 'workspace' | 'global' | 'all' : undefined;
+  if (typeof flags.scope === 'string' && !flagScope) {
+    throw new EngramError('ENG_USAGE', `doctor --scope: invalid value '${flags.scope}'. Must be workspace, global, or all.`, ExitCode.UsageError);
+  }
   if (positionalScope && flagScope && positionalScope !== flagScope) {
     throw new EngramError('ENG_USAGE', `doctor --scope ${flagScope} conflicts with positional ${positionalScope}`, ExitCode.UsageError);
   }

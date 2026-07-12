@@ -88,7 +88,8 @@ export function routeDetailed(index: MemoryIndex, query: string, config: EngramC
     const selected = ranked.map((row) => row.entry);
     const ordered = activeGraph ? dependencyContextEntries(selected, entries, activeGraph, selected.length) : selected;
     const contributions = new Map<string, Set<string>>(ranked.map((row) => [entryKey(row.entry), row.contributions]));
-    return detail(ordered, selected, query, false, reasonMap(ordered, routeCtx, selected, undefined, contributions));
+    const scores = new Map<string, number>(ranked.map((row) => [entryKey(row.entry), row.score]));
+    return detail(ordered, selected, query, false, reasonMap(ordered, routeCtx, selected, undefined, contributions, scores));
   }
   if (!options.all && (config.graph.enabled && graph?.nodes.length || options.vectorHits?.length)) {
     const lexical = lexicalRoute(entries, query, pool, routeCtx);
@@ -184,7 +185,8 @@ function selectDetailed(candidates: CandidateRow[], routeCtx: RouteContext, max:
   if (graph) selected = dependencyContextEntries(selected, visible ?? ranked.map((row) => row.entry), graph, max);
   const candidateEntries = withSelected(ranked.map((row) => row.entry), selected);
   const contributions = new Map<string, Set<string>>(ranked.map((row) => [entryKey(row.entry), row.contributions]));
-  return detail(selected, candidateEntries, routeCtx.query, candidateEntries.length > max, reasonMap(selected, routeCtx, primarySelected, intentRetrievalTerms, contributions));
+  const scores = new Map<string, number>(ranked.map((row) => [entryKey(row.entry), row.score]));
+  return detail(selected, candidateEntries, routeCtx.query, candidateEntries.length > max, reasonMap(selected, routeCtx, primarySelected, intentRetrievalTerms, contributions, scores));
 }
 
 function rankRows(rows: CandidateRow[], routeCtx: RouteContext): CandidateRow[] {
@@ -309,7 +311,7 @@ function typeRoutingTerms(entry: MemoryEntry): string[] {
   return entry.type === 'skill' ? ['workflow', 'workflows'] : [];
 }
 
-function reasonMap(selected: MemoryEntry[], routeCtx: RouteContext, primarySelected: MemoryEntry[], intentRetrievalTerms?: Set<string>, contributions?: Map<string, Set<string>>): Map<string, RouteReason> {
+function reasonMap(selected: MemoryEntry[], routeCtx: RouteContext, primarySelected: MemoryEntry[], intentRetrievalTerms?: Set<string>, contributions?: Map<string, Set<string>>, scores?: Map<string, number>): Map<string, RouteReason> {
   const primary = new Set(primarySelected.map(entryKey));
   const out = new Map<string, RouteReason>();
   for (const entry of selected) {
@@ -333,7 +335,7 @@ function reasonMap(selected: MemoryEntry[], routeCtx: RouteContext, primarySelec
       kind,
       matchedBy,
       ...(terms.length ? { terms } : {}),
-      score: direct ? Number(directScore(entry, routeCtx).toFixed(3)) : undefined,
+      score: scores?.get(entryKey(entry)) ?? (direct ? Number(directScore(entry, routeCtx).toFixed(3)) : undefined),
       ...(direct ? {} : { source: 'depends_on' })
     });
   }

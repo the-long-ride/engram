@@ -8,7 +8,6 @@ import { invalidMemoryFiles } from '../memory/index.js';
 import { detectInstalledAgents } from '../integrations/agent-detect.js';
 import { detectLinkedWorkspaceTargets } from '../integrations/skillset.js';
 import { exists } from '../system/fsx.js';
-import path from 'node:path';
 import type { Scope } from '../runtime/types.js';
 import type { Diagnostic } from '../contracts/result.js';
 

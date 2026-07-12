@@ -45,8 +45,8 @@ Every active memory file has `Context`, `Content`, and `Example` sections. Rule 
 4. Human sees a preview.
 5. Direct CLI replies use `A`, `A 1,3`, `B <note>`, or `C`.
 6. AI-agent chat replies use `yes`, `audit`, or `cancel` after the exact displayed candidates.
-7. Only approved memory is written.
-8. Index, graph, hashes, and changelog are refreshed.
+7. Only approved memory is written. In `save-session --force`, ready candidates write immediately; candidates with unresolved related-memory hints are deferred with ID-only `engram load --id ...` guidance and require rerun with `DEPENDS_ON` or `UPDATE`.
+8. Index, graph, hashes, and changelog are refreshed for written memories.
 ## Read Flow
 
 1. Engram loads workspace and optional global indexes.

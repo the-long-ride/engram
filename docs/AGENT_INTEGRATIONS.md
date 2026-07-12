@@ -297,13 +297,14 @@ removes all of these together as well.
   another A/B/C reply. If the shortcut includes a count such as
   `/engram ss -f last 50 sessions`, normalize it to
   `engram save-session --query-level 50 --force` and mine only recent
-  human-agent chats the agent can actually access. If Engram returns a
-  related-memory response before writing, no file was saved yet; the adapter
-  should use those duplicate/dependency hints to generate a restructured
-  candidate set and rerun the same force command. Use `DEPENDS_ON:
-  memory-id` when a candidate builds on existing memory, `LEVEL: advanced` for
-  deeper memory when useful, and `UPDATE: memory-id` when a candidate should
-  merge into a possible duplicate. For
+  human-agent chats the agent can actually access. If Engram defers candidates,
+  unrelated ready candidates may already be saved. Deferred rows are ID-only:
+  run the listed `engram load --id ...` command, then rerun only deferred
+  candidates. Use `DEPENDS_ON: memory-id` when a candidate builds on existing
+  memory, `LEVEL: advanced` for deeper memory when useful, and `UPDATE:
+  memory-id` when a candidate should merge into a possible duplicate. Treat
+  related IDs as inspection references, not evidence that deferred candidates
+  were saved. For
   `/engram take-control --force` or natural
   `/engram take control force`, the slash adapter should normalize the
   wording, keep the source pack token-light, generate only concise

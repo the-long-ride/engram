@@ -417,7 +417,7 @@ test('save-session preview includes related-memory hints per candidate', async (
   await rm(cwd, { recursive: true, force: true });
 });
 
-test('save-session force pauses for dependency restructuring and saves rerun structure', async () => {
+test('save-session force saves ready candidates and defers dependency restructuring by id', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
   await runEngram(cwd, env, ['inject']);
   await runEngram(cwd, env, [
@@ -425,21 +425,41 @@ test('save-session force pauses for dependency restructuring and saves rerun str
     'Release foundation checklist lives in docs/release.md'
   ], 'A\n');
 
-  const paused = await runEngram(cwd, env, [
+  const deferred = await runEngram(cwd, env, [
   'save-session', '--scope', 'workspace', '--force',
-    'TYPE: rule | TEXT: OAuth rotation must follow the release foundation checklist'
+    [
+      'TYPE: knowledge | TEXT: Smoke test dashboard URL is https://grafana.example.test',
+      'TYPE: rule | TEXT: DeferredOnlyNeedleXYZ must follow the release foundation checklist'
+    ].join('\n')
   ]);
 
-  assert.equal(paused.code, 0, paused.stderr);
-  assert.match(paused.stdout, /found related memories before writing/);
-  assert.match(paused.stdout, /No file written yet/);
-  assert.match(paused.stdout, /Suggested depends_on: \[release-foundation-checklist-lives-in-docs-release-md\]/);
-  assert.doesNotMatch(paused.stdout, /Saved ->/);
+  assert.equal(deferred.code, 0, deferred.stderr);
+  assert.match(deferred.stdout, /Forced save-session candidates/);
+  assert.match(deferred.stdout, /Saved ->/);
+  assert.match(deferred.stdout, /Deferred candidates not written/);
+  assert.match(deferred.stdout, /Candidate 2: not written/);
+  assert.match(deferred.stdout, /Type: rule/);
+  assert.match(deferred.stdout, /Scope: workspace/);
+  assert.match(deferred.stdout, /Related IDs: release-foundation-checklist-lives-in-docs-release-md/);
+  assert.match(deferred.stdout, /Inspect: engram load --id release-foundation-checklist-lives-in-docs-release-md/);
+  assert.match(deferred.stdout, /Action: rerun with DEPENDS_ON: release-foundation-checklist-lives-in-docs-release-md/);
+  assert.doesNotMatch(deferred.stdout, /knowledge\/release-foundation-checklist-lives-in-docs-release-md\.md/);
+  assert.doesNotMatch(deferred.stdout, /Release foundation checklist lives in docs\/release\.md/);
+  assert.doesNotMatch(deferred.stdout, /score/i);
+  assert.doesNotMatch(deferred.stdout, /author:/i);
+  assert.doesNotMatch(deferred.stdout, /^---$/m);
+  assert.match(await readFile(path.join(workspaceMemoryRoot(cwd), 'knowledge', 'smoke-test-dashboard-url-is-https-grafana-example-test.md'), 'utf8'), /grafana\.example\.test/);
   await assert.rejects(readFile(path.join(workspaceMemoryRoot(cwd), 'rules', 'oauth-rotation-must-follow-the-release-foundation-checklist.md'), 'utf8'));
+  const loaded = await runEngram(cwd, env, ['load', '--id', 'release-foundation-checklist-lives-in-docs-release-md']);
+  assert.equal(loaded.code, 0, loaded.stderr);
+  assert.match(loaded.stdout, /Release foundation checklist lives in docs\/release\.md/);
+  const unloadedDeferred = await runEngram(cwd, env, ['load', 'DeferredOnlyNeedleXYZ']);
+  assert.equal(unloadedDeferred.code, 0, unloadedDeferred.stderr);
+  assert.match(unloadedDeferred.stdout, /loaded 0 memory files \/ 0 total related memories/);
 
   const saved = await runEngram(cwd, env, [
   'save-session', '--scope', 'workspace', '--force',
-    'TYPE: rule | TEXT: OAuth rotation must follow the release foundation checklist | DEPENDS_ON: release-foundation-checklist-lives-in-docs-release-md | LEVEL: advanced'
+    'TYPE: rule | TEXT: DeferredOnlyNeedleXYZ must follow the release foundation checklist | DEPENDS_ON: release-foundation-checklist-lives-in-docs-release-md | LEVEL: advanced'
   ]);
 
   assert.equal(saved.code, 0, saved.stderr);
@@ -447,15 +467,15 @@ test('save-session force pauses for dependency restructuring and saves rerun str
   assert.match(saved.stdout, /Saved ->/);
   assert.doesNotMatch(saved.stdout, /id:\s*undefined/i);
   assert.doesNotMatch(saved.stdout, /undefined\.md/i);
-  assert.match(saved.stdout, /rules[\\/]+oauth-rotation-must-follow-the-release-foundation-checklist\.md/i);
-  const content = await readFile(path.join(workspaceMemoryRoot(cwd), 'rules', 'oauth-rotation-must-follow-the-release-foundation-checklist.md'), 'utf8');
-  assert.match(content, /^id: oauth-rotation-must-follow-the-release-foundation-checklist$/m);
+  assert.match(saved.stdout, /rules[\\/]+deferredonlyneedlexyz-must-follow-the-release-foundation-checklist\.md/i);
+  const content = await readFile(path.join(workspaceMemoryRoot(cwd), 'rules', 'deferredonlyneedlexyz-must-follow-the-release-foundation-checklist.md'), 'utf8');
+  assert.match(content, /^id: deferredonlyneedlexyz-must-follow-the-release-foundation-checklist$/m);
   assert.match(content, /depends_on: \[release-foundation-checklist-lives-in-docs-release-md\]/);
   assert.match(content, /level: advanced/);
   await rm(cwd, { recursive: true, force: true });
 });
 
-test('save-session force pauses on possible duplicate and supports explicit update rerun', async () => {
+test('save-session force saves ready candidates and defers duplicate updates by id', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
   await runEngram(cwd, env, ['inject']);
   const existing = path.join(workspaceMemoryRoot(cwd), 'knowledge', 'invoice-webhook-retry-baseline.md');
@@ -466,15 +486,27 @@ test('save-session force pauses on possible duplicate and supports explicit upda
   }));
   await runEngram(cwd, env, ['rebuild-index', 'workspace']);
 
-  const paused = await runEngram(cwd, env, [
+  const deferred = await runEngram(cwd, env, [
   'save-session', '--scope', 'workspace', '--force',
-    'TYPE: knowledge | TEXT: Invoice retry backoff policy for webhook failures'
+    [
+      'TYPE: knowledge | TEXT: Billing dashboards use nightly rollups.',
+      'TYPE: knowledge | TEXT: Invoice retry backoff policy for webhook failures'
+    ].join('\n')
   ]);
 
-  assert.equal(paused.code, 0, paused.stderr);
-  assert.match(paused.stdout, /found related memories before writing/);
-  assert.match(paused.stdout, /Possible duplicate: consider updating or archiving instead of adding another memory/);
-  assert.match((await runEngram(cwd, env, ['stats'])).stdout, /Total: 1/);
+  assert.equal(deferred.code, 0, deferred.stderr);
+  assert.match(deferred.stdout, /Forced save-session candidates/);
+  assert.match(deferred.stdout, /Saved ->/);
+  assert.match(deferred.stdout, /Candidate 2: not written/);
+  assert.match(deferred.stdout, /Related IDs: invoice-webhook-retry-baseline/);
+  assert.match(deferred.stdout, /Inspect: engram load --id invoice-webhook-retry-baseline/);
+  assert.match(deferred.stdout, /Action: rerun with UPDATE: invoice-webhook-retry-baseline/);
+  assert.doesNotMatch(deferred.stdout, /knowledge\/invoice-webhook-retry-baseline\.md/);
+  assert.doesNotMatch(deferred.stdout, /Invoice webhook retry baseline records retry and backoff guidance/);
+  assert.doesNotMatch(deferred.stdout, /score/i);
+  assert.match(await readFile(path.join(workspaceMemoryRoot(cwd), 'knowledge', 'billing-dashboards-use-nightly-rollups.md'), 'utf8'), /Billing dashboards/);
+  assert.doesNotMatch(await readFile(existing, 'utf8'), /Invoice retry backoff policy for webhook failures/);
+  assert.match((await runEngram(cwd, env, ['stats'])).stdout, /Total: 2/);
 
   const updated = await runEngram(cwd, env, [
   'save-session', '--scope', 'workspace', '--force',
@@ -484,8 +516,30 @@ test('save-session force pauses on possible duplicate and supports explicit upda
   assert.equal(updated.code, 0, updated.stderr);
   assert.match(updated.stdout, /Forced save-session candidates/);
   assert.match(updated.stdout, /Saved ->/);
-  assert.match((await runEngram(cwd, env, ['stats'])).stdout, /Total: 1/);
+  assert.match((await runEngram(cwd, env, ['stats'])).stdout, /Total: 2/);
   assert.match(await readFile(existing, 'utf8'), /Invoice retry backoff policy for webhook failures/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('save-session force writes nothing when every candidate is deferred', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['inject']);
+  await runEngram(cwd, env, [
+    'save', 'knowledge', '--scope', 'workspace',
+    'Release foundation checklist lives in docs/release.md'
+  ], 'A\n');
+
+  const deferred = await runEngram(cwd, env, [
+    'save-session', '--scope', 'workspace', '--force',
+    'TYPE: rule | TEXT: OAuth rotation must follow the release foundation checklist'
+  ]);
+
+  assert.equal(deferred.code, 0, deferred.stderr);
+  assert.match(deferred.stdout, /No candidates written\. All candidates require related-memory review\./);
+  assert.match(deferred.stdout, /Candidate 1: not written/);
+  assert.doesNotMatch(deferred.stdout, /Saved ->/);
+  assert.match((await runEngram(cwd, env, ['stats'])).stdout, /Total: 1/);
+  await assert.rejects(readFile(path.join(workspaceMemoryRoot(cwd), 'rules', 'oauth-rotation-must-follow-the-release-foundation-checklist.md'), 'utf8'));
   await rm(cwd, { recursive: true, force: true });
 });
 

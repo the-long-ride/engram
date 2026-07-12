@@ -17,6 +17,7 @@ Full documentation lives on the website: [@the-long-ride/engram docs-site](https
 ## Key Highlights
 
 - **Human in the Loop**: Direct CLI saves use A/B/C approval. AI-agent chat saves use an exact-candidate `yes` / `audit` / `cancel` loop before the agent writes with `save-session --force`.
+- **Partial Force Safety**: `save-session --force` saves unrelated ready candidates, but defers candidates that need dependency or duplicate review with ID-only `engram load --id ...` guidance.
 - **Context-Optimized**: Routes meaningful task matches plus prerequisites into a compact pack (default: 8 files) to avoid context bloat.
 - **Git-Native & Portable**: Plain Markdown files stored in `.agents/.engram/` synced via Git—completely vendor-agnostic and offline-first.
 - **Privacy & Security Control**: Runs 100% locally and scans for PII/secrets before writing.

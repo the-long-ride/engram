@@ -545,3 +545,52 @@ test('doctor --strict --json fails on hash mismatch with remediation', async () 
   assert.match(JSON.stringify(body), /engram rehash/);
   await rm(cwd, { recursive: true, force: true });
 });
+
+test('load --explain omits only actual routed candidates, not all visible memory', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-explain-omit-');
+  await runEngram(cwd, env, ['inject']);
+  await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Release checklist covers deploy steps'], 'A\n');
+  await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Billing dashboard uses Grafana'], 'A\n');
+  await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'OAuth rotation follows release checklist'], 'A\n');
+  const result = await runEngram(cwd, env, ['load', '--explain', '--json', 'release checklist deploy']);
+  assert.equal(result.code, 0, result.stderr);
+  const body = JSON.parse(result.stdout);
+  assert.equal(body.contract_version, '1');
+  const omitted = body.data.omitted;
+  // Omitted should only contain actual candidates that ranked but didn't make the cut.
+  // It should NOT include unrelated memories like billing-dashboard.
+  const omittedIds = omitted.map((o) => o.id);
+  assert.ok(!omittedIds.some((id) => id.includes('billing-dashboard')), 'unrelated memory should not appear in omitted');
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('doctor --strict passes on valid workspace-only install without global profile', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-doctor-strict-');
+  await runEngram(cwd, env, ['inject', '--no-global', '--no-skillset']);
+  await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Valid workspace memory'], 'A\n');
+  const result = await runEngram(cwd, env, ['doctor', '--strict', '--json']);
+  assert.equal(result.code, 0, `expected exit 0 on valid install, got ${result.code}: ${result.stdout}`);
+  const body = JSON.parse(result.stdout);
+  assert.equal(body.ok, true);
+  assert.equal(body.data.failed, 0);
+  // Profile check should be skip, not warn, for workspace-only setup
+  const profileCheck = body.data.checks.find((c) => c.id === 'config.profile');
+  assert.equal(profileCheck.status, 'skip');
+  // Host check should be host.executables, not host.adapters
+  const hostCheck = body.data.checks.find((c) => c.id === 'host.executables');
+  assert.ok(hostCheck, 'host.executables check present');
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('doctor graph check is skip/info not warn when no dependencies declared', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-doctor-graph-');
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
+  await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Standalone memory no deps'], 'A\n');
+  const result = await runEngram(cwd, env, ['doctor', '--json']);
+  assert.equal(result.code, 0, result.stderr);
+  const body = JSON.parse(result.stdout);
+  const graphCheck = body.data.checks.find((c) => c.id === 'index.graph');
+  assert.equal(graphCheck.status, 'skip');
+  assert.equal(graphCheck.severity, 'info');
+  await rm(cwd, { recursive: true, force: true });
+});

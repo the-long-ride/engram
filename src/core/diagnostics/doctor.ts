@@ -63,10 +63,9 @@ function checkConfig(ctx: EngramContext): DoctorCheck[] {
     checks.push({
       id: 'config.profile',
       scope: 'system',
-      status: 'warn',
-      severity: 'warning',
-      message: 'No active profile configured',
-      remediation: 'engram profile create <name> --global-path <path> --use'
+      status: 'skip',
+      severity: 'info',
+      message: 'No active profile (profiles are optional for workspace-only or single-global setups)'
     });
   }
   return checks;
@@ -157,13 +156,14 @@ function checkIndexFreshness(ctx: EngramContext): DoctorCheck[] {
     message: `Index has ${ctx.index.entries.length} entries (${ctx.hiddenCount} hidden)`,
     metadata: { total: ctx.index.entries.length, hidden: ctx.hiddenCount }
   });
+  const depEdges = ctx.graph.edges.filter((e) => e.kind === 'depends_on');
   checks.push({
     id: 'index.graph',
     scope: 'system',
-    status: ctx.graph.nodes.length ? 'pass' : 'warn',
-    severity: ctx.graph.nodes.length ? 'info' : 'warning',
-    message: ctx.graph.nodes.length ? `Graph has ${ctx.graph.nodes.length} nodes` : 'Graph is empty',
-    remediation: ctx.graph.nodes.length ? undefined : 'engram graph --rebuild'
+    status: depEdges.length ? 'pass' : 'skip',
+    severity: 'info',
+    message: depEdges.length ? `Graph has ${depEdges.length} dependency edges` : 'Graph has no dependency edges (no depends_on declared)',
+    remediation: depEdges.length ? undefined : 'Add depends_on frontmatter to link related memories'
   });
   return checks;
 }
@@ -172,20 +172,20 @@ function checkHostAdapters(): DoctorCheck[] {
   const agents = detectInstalledAgents();
   if (!agents.size) {
     return [{
-      id: 'host.adapters',
+      id: 'host.executables',
       scope: 'host',
-      status: 'warn',
-      severity: 'warning',
-      message: 'No AI agent adapters detected',
-      remediation: 'engram link <agent>'
+      status: 'skip',
+      severity: 'info',
+      message: 'No AI agent executables detected on this machine',
+      remediation: 'Install an agent (Codex, Claude, Cursor, etc.) then run engram link <agent>'
     }];
   }
   return [{
-    id: 'host.adapters',
+    id: 'host.executables',
     scope: 'host',
     status: 'pass',
     severity: 'info',
-    message: `Detected agents: ${[...agents].join(', ')}`,
+    message: `Host executables detected: ${[...agents].join(', ')}`,
     metadata: { count: agents.size }
   }];
 }

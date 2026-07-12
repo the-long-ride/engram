@@ -52,3 +52,7 @@ AGENTS.md
 # engram
 docs/superpowers/
 .pnpm-store/
+
+# local agent working state (goal tracking, plans)
+.opencode/
+plan-ignore-from-commit.md

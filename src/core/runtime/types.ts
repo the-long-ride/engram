@@ -4,6 +4,7 @@ export type Scope = 'workspace' | 'global';
 export type Confidence = 'high' | 'medium' | 'low';
 export type RuleVariant = 'light' | 'balanced' | 'strict';
 export type ProfileSource = 'env' | 'workspace' | 'user' | 'none';
+export type Lifecycle = 'active' | 'review_due' | 'superseded' | 'archived';
 
 export type EngramProfile = {
   global_path: string;
@@ -80,6 +81,11 @@ export type MemoryEntry = {
   dependsOn?: string[];
   dependencyDepth?: number;
   role?: string[];
+  lifecycle?: Lifecycle;
+  reviewAfter?: string;
+  lastVerified?: string;
+  supersedes?: string;
+  archivedAt?: string;
 };
 
 export type MemoryIndex = { version: string; last_updated: string; entries: MemoryEntry[] };

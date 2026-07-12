@@ -51,6 +51,7 @@ export const HELP_DATA: HelpSection[] = [
       { command: 'engram export [--format agents-md|claude-md|cursorrules]', alias: 'x', purpose: 'Export visible memory to a specific format or JSON bundle' },
       { command: 'engram import [--source agentmemory] [--max n] <bundle.json>', alias: 'im', purpose: 'Import Engram or agentmemory JSON through the approval gate' },
       { command: 'engram archive [--reason text] <memory-id|file>', alias: 'ar', purpose: 'Move wrong or superseded memory out of active routing after approval' },
+      { command: 'engram review list|inspect|dismiss|verify|supersede|archive [--json] [--kind <kind>]', purpose: 'Review derived findings: duplicates, contradictions, stale, and invalid dependencies' },
       { command: 'engram benchmark <cases.json>', alias: 'bm', purpose: 'Measure graph-aware retrieval hit rate for query/expected-memory cases' },
       { command: 'engram ignore status|check <path>|add <pattern>', alias: 'ig', purpose: 'Manage ignore rules and query file match status' },
       { command: 'engram set-role <role...>', alias: 'sr', purpose: 'Configure active developer roles for context routing and emit immediate reload guidance for Engram-aware hosts' },

@@ -1,8 +1,4 @@
-/** Doctor: composed diagnostics for config resolution, root existence, hash integrity,
- *  invalid file detection, per-scope index/graph status, and host executable detection.
- *  All checks are filtered by the selected scope — a workspace-only doctor never reports
- *  global index/graph state. Does NOT verify index/graph/vector freshness, policy validity,
- *  or MCP/hook installation — those checks arrive in later milestones. */
+/** Doctor: per-scope composed diagnostics for config, roots, hash integrity, invalid files, index/graph status, and host executables; does NOT verify freshness/policy/MCP/hooks (later milestones). */
 import type { EngramContext } from '../memory/context.js';
 import { verifyRoot } from '../safety/hash.js';
 import { invalidMemoryFiles } from '../memory/index.js';

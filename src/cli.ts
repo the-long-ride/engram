@@ -12,6 +12,7 @@ import { cmdConfig } from './commands/config-cmd.js';
 import { cmdMetacognize } from './commands/metacognize.js';
 import { cmdProfile } from './commands/profile.js';
 import { cmdWorkspace } from './commands/workspace.js';
+import { cmdReview } from './commands/review.js';
 import { cmdAgentHook, cmdIgnore, cmdInstallHooks, cmdResolveConflicts, cmdSetLoadLimit, cmdSetProof, cmdSetRead, cmdSetRole, cmdSetRuleVariant, cmdSetSaveTarget, cmdUpdateGlobalFolder, cmdUpgrade } from './commands/admin.js';
 import { cmdLink, cmdUnlink } from './commands/skillset-link.js';
 import { maybeAutoUpgrade } from './core/runtime/auto-upgrade.js';
@@ -81,6 +82,7 @@ export async function runCli(argv: string[]): Promise<string> {
       case 'clone-memory': return await cmdCloneMemory(rest, flags);
       case 'metacognize': return await cmdMetacognize(rest, flags);
       case 'sync': return await cmdSync();
+      case 'review': return await cmdReview(rest, flags);
       case 'workspace': return await cmdWorkspace(rest, flags);
       case 'config': return await cmdConfig(rest, flags);
       default: return command === 'entry' ? await cmdEntry(flags) : await cmdHelp();

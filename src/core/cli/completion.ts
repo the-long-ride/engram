@@ -63,6 +63,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '    load|ld)\n      _arguments "--all" "--dry-run" "-f[load broader legacy memory output]" "--full[load broader legacy memory output]" "1:query: "\n      ;;',
       '    graph|g)\n      _arguments "--rebuild" "1:query: "\n      ;;',
       '    archive|ar)\n      _arguments "--reason[archive reason]:reason:" "1:memory: "\n      ;;',
+      '    review)\n      _arguments "--json[versioned contract envelope]" "--kind[finding kind]:kind:(duplicate contradiction stale invalid_dependency)" "--note[dismissal note]:note:" "--reason[archive reason]:reason:" "1:action:(list inspect dismiss verify supersede archive)"\n      ;;',
       '    benchmark|bm)\n      _arguments "1:cases file:_files"\n      ;;',
       '    search|f)\n      _arguments "1:query: "\n      ;;',
       '    verify|vf|rehash|rh|rebuild-index|ri|repair|rp)',

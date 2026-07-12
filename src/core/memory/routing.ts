@@ -50,6 +50,7 @@ export function prefilter(index: MemoryIndex, config: EngramConfig, manual = fal
 export function visibleEntries(entries: MemoryEntry[], config: EngramConfig, manual = false, ignorePatterns: string[] = []): MemoryEntry[] {
   return entries.filter((entry) => {
     if (entry.ignored || isIgnored(entry.file, ignorePatterns)) return false;
+    if (entry.lifecycle === 'archived' || entry.lifecycle === 'superseded') return false;
     if (!manual && entry.confidence === 'low') return false;
     if (entry.role?.length && config.roles.length && !entry.role.some((r) => config.roles.includes(r))) return false;
     return true;

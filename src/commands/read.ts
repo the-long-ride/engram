@@ -41,6 +41,7 @@ export async function cmdLoad(args: string[], flags: Record<string, any> = {}): 
 
   if (targetIds.length > 0) {
     entries = ctx.index.entries.filter((e) => targetIds.includes(e.id));
+    const archivedHits = entries.filter((e) => e.lifecycle === 'archived');
     routed = {
       entries,
       candidates: entries.length,
@@ -50,6 +51,10 @@ export async function cmdLoad(args: string[], flags: Record<string, any> = {}): 
       facets: [],
       reasons: entries.map((e) => ({ key: `${e.scope}:${e.file}`, kind: 'direct' as const, matchedBy: ['literal' as const], terms: [e.id] }))
     };
+    if (archivedHits.length) {
+      const ids = archivedHits.map((e) => e.id).join(', ');
+      process.stderr.write(`warning: ${ids} archived via frontmatter; loaded by explicit --id only.\n`);
+    }
   } else {
     const query = args.join(' ') || 'current session';
     const all = flags.all === true;

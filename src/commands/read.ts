@@ -8,6 +8,9 @@ import { invalidMemoryFiles, rebuildIndex } from '../core/memory/index.js';
 import { loadEntries, routeDetailed, visibleEntries, type RouteDetail } from '../core/memory/routing.js';
 import { ensureVectorIndex, vectorRouteHits } from '../core/memory/vector-db.js';
 import { formatRecords, type RecordBlock } from '../core/cli/format.js';
+import { isJsonMode, jsonOk } from '../core/cli/json-output.js';
+import { EngramError, ExitCode } from '../core/runtime/exit-codes.js';
+import { fail, serializeResult } from '../core/contracts/result.js';
 import type { Scope, MemoryEntry } from '../core/runtime/types.js';
 import { loadHashes, updateHash, verifyRoot, sha256 } from '../core/safety/hash.js';
 import { inside, listFiles, readText, writeJson } from '../core/system/fsx.js';
@@ -17,7 +20,7 @@ import { HASH_FILE } from '../core/runtime/constants.js';
 /** Load routed memory for a query. */
 export async function cmdLoad(args: string[], flags: Record<string, any> = {}): Promise<string> {
   const ctx = await getContext();
-  if (!ctx.config.enabled || ctx.config.read === 'off') return '';
+  if (!ctx.config.enabled || ctx.config.read === 'off') return isJsonMode(flags) ? jsonOk({ selected: 0, total_related: 0, entries: [], disabled: true }) : '';
 
   const idFlag = flags.id;
   let targetIds: string[] = [];
@@ -63,7 +66,15 @@ export async function cmdLoad(args: string[], flags: Record<string, any> = {}): 
   }
 
   if (flags['dry-run'] === true) {
-    if (!entries.length) return 'No routed memories';
+    if (!entries.length) return isJsonMode(flags) ? jsonOk({ selected: 0, total_related: routed.candidates, entries: [] }) : 'No routed memories';
+    if (isJsonMode(flags)) {
+      return jsonOk({
+        selected: entries.length,
+        total_related: routed.candidates,
+        omitted: routed.omitted,
+        entries: entries.map((entry) => ({ id: entry.id, scope: entry.scope, type: entry.type, file: entry.file, summary: entry.summary, matched_by: matchReason(routed, entry) }))
+      });
+    }
     const rows: RecordBlock[] = [];
     if (forAgents && intent && intentIsActionable(intent)) {
       rows.push({ title: 'Task intent', fields: [
@@ -86,6 +97,14 @@ export async function cmdLoad(args: string[], flags: Record<string, any> = {}): 
     })));
     return formatRecords(`Routed memories (${entries.length} of ${routed.candidates})`, rows);
   }
+  if (isJsonMode(flags)) {
+    return jsonOk({
+      selected: entries.length,
+      total_related: routed.candidates,
+      omitted: routed.omitted,
+      entries: entries.map((entry) => ({ id: entry.id, scope: entry.scope, type: entry.type, file: entry.file, summary: entry.summary }))
+    });
+  }
   const loaded = await loadEntries(process.cwd(), entries, ctx.config, { forAgents });
   const summary = loadSummary(entries, ctx.hiddenCount, routed.candidates);
   return `${summary}${routeHint(routed)}\n\n${loaded.map((row) => {
@@ -96,14 +115,21 @@ export async function cmdLoad(args: string[], flags: Record<string, any> = {}): 
 }
 
 /** Classify a user task for `engram load` and save tags. */
-export function cmdRoute(args: string[]): string {
+export function cmdRoute(args: string[], flags: Record<string, any> = {}): string {
   const text = args.join(' ').trim();
   const classification = classifyTaskType(text);
+  const data = {
+    task_type: classification.taskType,
+    confidence: Math.round(classification.confidence * 100) / 100,
+    load_query: classification.loadQuery,
+    save_tags: classification.saveTags
+  };
+  if (isJsonMode(flags)) return jsonOk(data);
   return [
-    `Task type: ${classification.taskType}`,
-    `Confidence: ${classification.confidence.toFixed(2)}`,
-    `Load query: ${classification.loadQuery}`,
-    `Save tags: ${classification.saveTags.join(', ') || '-'}`
+    `Task type: ${data.task_type}`,
+    `Confidence: ${data.confidence.toFixed(2)}`,
+    `Load query: ${data.load_query}`,
+    `Save tags: ${data.save_tags.join(', ') || '-'}`
   ].join('\n');
 }
 
@@ -126,41 +152,75 @@ export async function cmdRebuildIndex(scope?: string): Promise<string> {
 }
 
 /** Report malformed memories that rebuild-index skips. */
-export async function cmdRepair(scope?: string): Promise<string> {
+export async function cmdRepair(scope: string | undefined, flags: Record<string, any> = {}): Promise<string> {
   const ctx = await getContext();
   const scopes = scope === 'workspace' || scope === 'global' ? [scope] : ['workspace', 'global'];
   const rows: RecordBlock[] = [];
+  const invalid: Array<{ scope: string; file: string; error: string }> = [];
+  const scopeStatus: Array<{ scope: string; status: 'checked' | 'not_configured'; invalid_count: number }> = [];
   for (const current of scopes) {
     const root = ctx.roots[current as Scope];
     if (!root) {
       rows.push({ title: current, fields: [['Status', 'not configured']] });
+      scopeStatus.push({ scope: current, status: 'not_configured', invalid_count: 0 });
       continue;
     }
+    const scopeInvalid: typeof invalid = [];
     for (const item of await invalidMemoryFiles(root, current as Scope)) {
       rows.push({ title: `${item.scope}:${item.file}`, fields: [['Error', item.error]] });
+      invalid.push({ scope: item.scope, file: item.file, error: item.error });
+      scopeInvalid.push({ scope: item.scope, file: item.file, error: item.error });
     }
+    scopeStatus.push({ scope: current, status: 'checked', invalid_count: scopeInvalid.length });
   }
-  const invalid = rows.filter((row) => row.fields?.[0]?.[1] !== 'not configured');
-  if (!invalid.length) return rows.length ? formatRecords('No invalid memory files.', rows) : 'No invalid memory files.';
+  if (isJsonMode(flags)) return jsonOk({ scopes: scopeStatus, invalid, count: invalid.length });
+  const found = rows.filter((row) => row.fields?.[0]?.[1] !== 'not configured');
+  if (!found.length) return rows.length ? formatRecords('No invalid memory files.', rows) : 'No invalid memory files.';
   return formatRecords('Invalid memory files', rows);
 }
 
-/** Verify hashes for one or both scopes. */
-export async function cmdVerify(scope?: string): Promise<string> {
+/** Verify hashes for one or both scopes. Exits non-zero when mismatches are found. */
+export async function cmdVerify(scope: string | undefined, flags: Record<string, any> = {}): Promise<string> {
   const ctx = await getContext();
   const scopes = scope === 'workspace' || scope === 'global' ? [scope] : ['workspace', 'global'];
-  const rows = (await Promise.all(scopes.map((s) => ctx.roots[s as Scope] ? verifyRoot(ctx.roots[s as Scope], s as Scope) : []))).flat();
-  if (!rows.length) return 'engram: no memory files to verify';
-  return formatRecords('Verify memory hashes', rows.map((row) => ({ title: `${row.ok ? 'OK' : 'MISMATCH'} ${row.scope}:${row.file}` })));
+  const scopeRows = await Promise.all(scopes.map(async (s) => {
+    const root = ctx.roots[s as Scope];
+    if (!root) return { scope: s, status: 'not_configured' as const, rows: [] };
+    return { scope: s, status: 'checked' as const, rows: await verifyRoot(root, s as Scope) };
+  }));
+  const rows = scopeRows.flatMap((item) => item.rows);
+  const mismatches = rows.filter((row) => !row.ok);
+  const scopeStatus = scopeRows.map((item) => ({ scope: item.scope, status: item.status, checked_files: item.rows.length, mismatches: item.rows.filter((r) => !r.ok).length }));
+  if (isJsonMode(flags)) {
+    const data = { scopes: scopeStatus, results: rows.map((row) => ({ scope: row.scope, file: row.file, ok: row.ok })), mismatches: mismatches.length };
+    if (mismatches.length) {
+      const diagnostics = mismatches.map((row) => ({ id: 'hash.mismatch', severity: 'error' as const, message: `${row.scope}:${row.file}`, remediation: `engram rehash ${row.scope}` }));
+      throw new EngramError('ENG_INTEGRITY', `${mismatches.length} hash mismatch(es) found`, ExitCode.IntegrityError, serializeResult(fail('ENG_INTEGRITY', `${mismatches.length} hash mismatch(es) found`, diagnostics)));
+    }
+    return jsonOk(data);
+  }
+  if (!rows.length && scopeStatus.every((s) => s.status === 'not_configured')) return 'engram: no memory files to verify';
+  if (!rows.length) return formatRecords('Verify memory hashes', scopeStatus.map((s) => ({ title: s.scope, fields: [['Status', s.status]] })));
+  const text = formatRecords('Verify memory hashes', rows.map((row) => ({ title: `${row.ok ? 'OK' : 'MISMATCH'} ${row.scope}:${row.file}` })));
+  if (mismatches.length) {
+    throw new EngramError('ENG_INTEGRITY', `${mismatches.length} hash mismatch(es) found`, ExitCode.IntegrityError, text);
+  }
+  return text;
 }
 
 /** Show audit rows, with simple filters. */
-export async function cmdAudit(flags: Record<string, any>): Promise<string> {
+export async function cmdAudit(flags: Record<string, any> = {}): Promise<string> {
   const ctx = await getContext();
   let entries = visibleEntries(ctx.index.entries, ctx.config, Boolean(flags['low-confidence']), ctx.ignorePatterns);
   if (flags.author) entries = entries.filter((e) => e.author === flags.author);
   if (flags['low-confidence']) entries = entries.filter((e) => e.confidence === 'low');
   if (flags.stale) entries = entries.filter((e) => Date.now() - Date.parse(e.updated) > 180 * 864e5);
+  if (isJsonMode(flags)) {
+    return jsonOk({
+      count: entries.length,
+      memories: entries.map((entry) => ({ id: entry.id, scope: entry.scope, type: entry.type, file: entry.file, updated: entry.updated, author: entry.author }))
+    });
+  }
   return entries.length ? formatRecords(`Audit memories (${entries.length})`, entries.map((entry) => ({
     title: `${entry.scope}:${entry.file}`,
     fields: [['Type', entry.type], ['Id', entry.id], ['Updated', entry.updated], ['Author', entry.author]]

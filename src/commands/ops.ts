@@ -3,7 +3,8 @@ import path from 'node:path';
 import { getContext } from '../core/memory/context.js';
 import { health, scoreMemory } from '../core/analysis/quality.js';
 import type { MemoryLimits } from '../core/memory/schema.js';
-import { duplicatePairs, searchEntries, semanticDuplicatePairs, semanticSearchEntries, stats } from '../core/analysis/search.js';
+import { duplicatePairs, searchEntries, semanticDuplicatePairs, semanticSearchEntries, stats, statsData } from '../core/analysis/search.js';
+import { healthData } from '../core/analysis/quality.js';
 import { assertFormat, exportBundle, renderFormat, writeSyncTarget } from '../core/integrations/exporter.js';
 import { readJson, readText } from '../core/system/fsx.js';
 import { resolveAuthor, syncGlobalMemoryGit, writeApprovedMemory } from '../core/memory/storage.js';
@@ -18,13 +19,16 @@ import { planMemorySave, previewSavePlans, type SavePlan } from '../core/memory/
 import { normalizeMemoryType } from '../core/memory/memory-candidate.js';
 import { parseSaveTarget, writeScopes } from '../core/runtime/config.js';
 import { normalizeLoadLimit } from '../core/runtime/load-limit.js';
+import { isJsonMode, jsonOk } from '../core/cli/json-output.js';
+import { EngramError, ExitCode } from '../core/runtime/exit-codes.js';
 import { formatRecords, type RecordBlock } from '../core/cli/format.js';
 import type { MemoryType, Scope } from '../core/runtime/types.js';
 
 /** Return memory health summary. */
-export async function cmdHealth(): Promise<string> {
+export async function cmdHealth(flags: Record<string, any> = {}): Promise<string> {
   const ctx = await getContext();
-  return health(visibleEntries(ctx.index.entries, ctx.config, false, ctx.ignorePatterns));
+  const entries = visibleEntries(ctx.index.entries, ctx.config, false, ctx.ignorePatterns);
+  return isJsonMode(flags) ? jsonOk(healthData(entries, ctx.hiddenCount)) : health(entries, ctx.hiddenCount);
 }
 
 /** Search the merged index. */
@@ -32,7 +36,16 @@ export async function cmdSearch(args: string[], flags: Record<string, any> = {})
   const ctx = await getContext();
   const entries = visibleEntries(ctx.index.entries, ctx.config, true, ctx.ignorePatterns);
   const search = flags.semantic ? semanticSearchEntries : searchEntries;
-  const hits = search(entries, args.join(' '));
+  const query = args.join(' ');
+  const hits = search(entries, query);
+  if (isJsonMode(flags)) {
+    return jsonOk({
+      query,
+      semantic: Boolean(flags.semantic),
+      count: hits.length,
+      results: hits.map((entry) => ({ id: entry.id, scope: entry.scope, type: entry.type, file: entry.file, summary: entry.summary }))
+    });
+  }
   if (!hits.length) return 'No matches';
   const title = flags.semantic ? `Semantic search results (${hits.length})` : `Search results (${hits.length})`;
   return formatRecords(title, hits.map((entry) => ({
@@ -42,21 +55,31 @@ export async function cmdSearch(args: string[], flags: Record<string, any> = {})
 }
 
 /** Score every indexed memory. */
-export async function cmdQuality(): Promise<string> {
+export async function cmdQuality(flags: Record<string, any> = {}): Promise<string> {
   const ctx = await getContext();
   const entries = visibleEntries(ctx.index.entries, ctx.config, false, ctx.ignorePatterns);
+  const scored: Array<{ file: string; scope: string; id: string; score: number; issues: string[] }> = [];
   const rows: RecordBlock[] = [];
   for (const entry of entries) {
     const row = await readGuardedMemory(process.cwd(), entry, ctx.config, { render: false });
     if (row.flagged) {
       rows.push({ title: entry.file, fields: [['Status', `skipped: ${row.flagged}`]] });
+      scored.push({ file: entry.file, scope: entry.scope, id: entry.id, score: 0, issues: [`skipped: ${row.flagged}`] });
       continue;
     }
     const { memory } = ctx.config;
     const result = scoreMemory(row.content, { ruleLineTarget: memory.rule_line_target, ruleLineHardLimit: memory.rule_line_hard_limit });
+    scored.push({ file: entry.file, scope: entry.scope, id: entry.id, score: result.score, issues: result.issues });
     rows.push({ title: entry.file, fields: [['Score', `${result.score}/100`], ['Issues', result.issues.join(', ') || '-']] });
   }
-  for (const edge of contradictionEdges(ctx.graph)) rows.push({ title: 'contradiction candidate', fields: [['From', edge.from], ['To', edge.to], ['Reason', edge.reason]] });
+  const contradictions = contradictionEdges(ctx.graph);
+  for (const edge of contradictions) rows.push({ title: 'contradiction candidate', fields: [['From', edge.from], ['To', edge.to], ['Reason', edge.reason]] });
+  if (isJsonMode(flags)) {
+    return jsonOk({
+      memories: scored,
+      contradictions: contradictions.map((edge) => ({ from: edge.from, to: edge.to, reason: edge.reason }))
+    });
+  }
   return rows.length ? formatRecords(`Quality check (${rows.length})`, rows) : 'No memories';
 }
 
@@ -67,15 +90,16 @@ export async function cmdGraph(args: string[], flags: Record<string, any> = {}):
 }
 
 /** Run a tiny retrieval benchmark over query/expected-memory cases. */
-export async function cmdBenchmark(args: string[]): Promise<string> {
+export async function cmdBenchmark(args: string[], flags: Record<string, any> = {}): Promise<string> {
   const file = args[0];
-  if (!file) throw new Error('benchmark requires cases.json');
+  if (!file) throw new EngramError('ENG_USAGE', 'benchmark requires cases.json', ExitCode.UsageError);
   const rawCases = await readJson<any>(path.resolve(file), []);
   const cases: Array<{ query: string; expect: string[] }> = Array.isArray(rawCases) ? rawCases : rawCases.cases ?? [];
   const ctx = await getContext();
   const limit = normalizeLoadLimit(ctx.config.load?.limit);
   let hits = 0;
   const rows: RecordBlock[] = [];
+  const caseResults: Array<{ query: string; hit: boolean; routed: string[] }> = [];
   for (const item of cases) {
     const expects = Array.isArray(item.expect) ? item.expect : [item.expect].filter(Boolean);
     const expected = new Set(expects.map((value) => String(value).replace(/\\/g, '/')));
@@ -87,12 +111,22 @@ export async function cmdBenchmark(args: string[]): Promise<string> {
     }, ctx.graph);
     const found = routed.some((entry) => expected.has(entry.id) || expected.has(entry.file) || expected.has(`${entry.scope}:${entry.file}`));
     if (found) hits += 1;
+    caseResults.push({ query: item.query, hit: found, routed: routed.map((entry) => entry.file) });
     rows.push({
       title: `${found ? 'HIT' : 'MISS'} ${item.query}`,
       fields: [['Routed', routed.map((entry) => entry.file).join(', ') || '-']]
     });
   }
   const total = cases.length || 1;
+  if (isJsonMode(flags)) {
+    return jsonOk({
+      limit,
+      cases: cases.length,
+      hits,
+      hit_rate: Math.round((hits / total) * 100) / 100,
+      results: caseResults
+    });
+  }
   return formatRecords(`Benchmark: ${hits}/${cases.length} hit@${limit} (${Math.round((hits / total) * 100)}%)`, rows);
 }
 
@@ -124,6 +158,13 @@ export async function cmdDeduplicate(flags: Record<string, any> = {}): Promise<s
   const ctx = await getContext();
   const finder = flags.semantic ? semanticDuplicatePairs : duplicatePairs;
   const pairs = finder(visibleEntries(ctx.index.entries, ctx.config, false, ctx.ignorePatterns));
+  if (isJsonMode(flags)) {
+    return jsonOk({
+      semantic: Boolean(flags.semantic),
+      count: pairs.length,
+      pairs: pairs.map(([a, b, score]) => ({ a: { id: a.id, scope: a.scope, file: a.file }, b: { id: b.id, scope: b.scope, file: b.file }, score: Math.round(score * 100) / 100 }))
+    });
+  }
   if (!pairs.length) return 'No duplicate candidates';
   return formatRecords(`Duplicate candidates (${pairs.length})`, pairs.map(([a, b, score]) => ({
     title: `${Math.round(score * 100)}% match`,
@@ -232,9 +273,10 @@ async function writePlans(plans: SavePlan[], edits?: string): Promise<void> {
 }
 
 /** Print index counts. */
-export async function cmdStats(): Promise<string> {
+export async function cmdStats(flags: Record<string, any> = {}): Promise<string> {
   const ctx = await getContext();
-  return stats(visibleEntries(ctx.index.entries, ctx.config, false, ctx.ignorePatterns));
+  const entries = visibleEntries(ctx.index.entries, ctx.config, false, ctx.ignorePatterns);
+  return isJsonMode(flags) ? jsonOk(statsData(entries)) : stats(entries);
 }
 
 export async function cmdEntry(flags: Record<string, any> = {}): Promise<string> {

@@ -1,7 +1,8 @@
 /** Doctor: composed diagnostics for config resolution, root existence, hash integrity,
- *  invalid file detection, index/graph status, and host executable detection.
- *  Does NOT verify index/graph/vector freshness, policy validity, or MCP/hook installation
- *  — those checks arrive in later milestones. */
+ *  invalid file detection, per-scope index/graph status, and host executable detection.
+ *  All checks are filtered by the selected scope — a workspace-only doctor never reports
+ *  global index/graph state. Does NOT verify index/graph/vector freshness, policy validity,
+ *  or MCP/hook installation — those checks arrive in later milestones. */
 import type { EngramContext } from '../memory/context.js';
 import { verifyRoot } from '../safety/hash.js';
 import { invalidMemoryFiles } from '../memory/index.js';
@@ -38,7 +39,7 @@ export async function runDoctor(ctx: EngramContext, scope: 'workspace' | 'global
   for (const s of scopes) checks.push(...await checkRoot(ctx, s));
   for (const s of scopes) checks.push(...await checkHashes(ctx, s));
   for (const s of scopes) checks.push(...await checkInvalidFiles(ctx, s));
-  checks.push(...checkIndexFreshness(ctx));
+  for (const s of scopes) checks.push(...checkIndexFreshness(ctx, s));
   checks.push(...await checkHostAdapters(ctx));
 
   return summarize(checks);
@@ -150,24 +151,33 @@ async function checkInvalidFiles(ctx: EngramContext, scope: Scope): Promise<Doct
   return [];
 }
 
-function checkIndexFreshness(ctx: EngramContext): DoctorCheck[] {
+function checkIndexFreshness(ctx: EngramContext, scope: Scope): DoctorCheck[] {
   const checks: DoctorCheck[] = [];
+  const scopeIndex = ctx.scopeIndexes[scope];
+  const scopeEntries = scopeIndex.entries.length;
+  const scopeHidden = scopeIndex.entries.filter((entry) => entry.ignored).length;
+  const hasRoot = Boolean(ctx.roots[scope]);
   checks.push({
-    id: 'index.entries',
-    scope: 'system',
-    status: 'pass',
+    id: `index.entries.${scope}`,
+    scope,
+    status: scopeEntries > 0 ? 'pass' : 'skip',
     severity: 'info',
-    message: `Index has ${ctx.index.entries.length} entries (${ctx.hiddenCount} hidden)`,
-    metadata: { total: ctx.index.entries.length, hidden: ctx.hiddenCount }
+    message: scopeEntries > 0
+      ? `${scope} index has ${scopeEntries} entries (${scopeHidden} hidden)`
+      : `${scope} index empty${hasRoot ? '' : ' (root not configured)'}`,
+    ...(scopeEntries > 0 ? { metadata: { total: scopeEntries, hidden: scopeHidden } } : {})
   });
-  const depEdges = ctx.graph.edges.filter((e) => e.kind === 'depends_on');
+  const depEdgesForScope = ctx.graph.edges.filter((e) => e.kind === 'depends_on' &&
+    (e.from.includes(`:${scope}:`) || e.to.includes(`:${scope}:`)));
   checks.push({
-    id: 'index.graph',
-    scope: 'system',
-    status: depEdges.length ? 'pass' : 'skip',
+    id: `index.graph.${scope}`,
+    scope,
+    status: depEdgesForScope.length ? 'pass' : 'skip',
     severity: 'info',
-    message: depEdges.length ? `Graph has ${depEdges.length} dependency edges` : 'Graph has no dependency edges (no depends_on declared)',
-    remediation: depEdges.length ? undefined : 'Add depends_on frontmatter to link related memories'
+    message: depEdgesForScope.length
+      ? `${scope} graph has ${depEdgesForScope.length} dependency edges`
+      : `${scope} graph has no dependency edges`,
+    remediation: depEdgesForScope.length ? undefined : 'Add depends_on frontmatter to link related memories'
   });
   return checks;
 }

@@ -589,9 +589,10 @@ test('doctor graph check is skip/info not warn when no dependencies declared', a
   const result = await runEngram(cwd, env, ['doctor', '--json']);
   assert.equal(result.code, 0, result.stderr);
   const body = JSON.parse(result.stdout);
-  const graphCheck = body.data.checks.find((c) => c.id === 'index.graph');
-  assert.equal(graphCheck.status, 'skip');
-  assert.equal(graphCheck.severity, 'info');
+  const wsGraphCheck = body.data.checks.find((c) => c.id === 'index.graph.workspace');
+  assert.ok(wsGraphCheck, 'index.graph.workspace check present');
+  assert.equal(wsGraphCheck.status, 'skip');
+  assert.equal(wsGraphCheck.severity, 'info');
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -607,6 +608,14 @@ test('doctor --scope workspace only checks workspace, not global', async () => {
   assert.equal(wsRoot.status, 'pass');
   const globalRoot = body.data.checks.find((c) => c.id === 'root.global');
   assert.ok(!globalRoot, 'global root check should not be present with --scope workspace');
+  const wsIndex = body.data.checks.find((c) => c.id === 'index.entries.workspace');
+  assert.ok(wsIndex, 'index.entries.workspace check present');
+  const globalIndex = body.data.checks.find((c) => c.id === 'index.entries.global');
+  assert.ok(!globalIndex, 'index.entries.global should not be present with --scope workspace');
+  const wsGraph = body.data.checks.find((c) => c.id === 'index.graph.workspace');
+  assert.ok(wsGraph, 'index.graph.workspace check present');
+  const globalGraph = body.data.checks.find((c) => c.id === 'index.graph.global');
+  assert.ok(!globalGraph, 'index.graph.global should not be present with --scope workspace');
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -621,6 +630,14 @@ test('doctor --scope global only checks global', async () => {
   assert.ok(globalRoot, 'global root check present');
   const wsRoot = body.data.checks.find((c) => c.id === 'root.workspace');
   assert.ok(!wsRoot, 'workspace root check should not be present with --scope global');
+  const globalIndex = body.data.checks.find((c) => c.id === 'index.entries.global');
+  assert.ok(globalIndex, 'index.entries.global check present');
+  const wsIndex = body.data.checks.find((c) => c.id === 'index.entries.workspace');
+  assert.ok(!wsIndex, 'index.entries.workspace should not be present with --scope global');
+  const globalGraph = body.data.checks.find((c) => c.id === 'index.graph.global');
+  assert.ok(globalGraph, 'index.graph.global check present');
+  const wsGraph = body.data.checks.find((c) => c.id === 'index.graph.workspace');
+  assert.ok(!wsGraph, 'index.graph.workspace should not be present with --scope global');
   await rm(cwd, { recursive: true, force: true });
 });
 

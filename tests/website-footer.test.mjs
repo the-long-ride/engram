@@ -27,3 +27,13 @@ test('website footer copyright component preserves three mobile lines', async ()
   assert.ok(css.includes('width: 100%;'));
   assert.ok(css.includes('.footer__copyright-line--npm .footer__copyright-sep {'));
 });
+
+test('website footer keeps copyright content on one desktop row', async () => {
+  const css = await read('website/src/css/custom.css');
+
+  assert.ok(css.includes('@media (min-width: 769px)'));
+  assert.ok(css.includes('flex-direction: row;'));
+  assert.ok(css.includes('flex-wrap: nowrap;'));
+  assert.ok(css.includes('white-space: nowrap;'));
+  assert.ok(css.includes('.footer__copyright-line--meta::after'));
+});

@@ -34,7 +34,7 @@ export function DocPageCopyNavbarItemView({
   locales = [],
   defaultLocale = 'en',
   currentVersionPath = 'future',
-  publishedVersionName = 'version-0.0.25',
+  publishedVersionName = 'version-0.0.26',
   hasActiveDoc = true,
   mobile = false,
 }: SharedProps): ReactNode {

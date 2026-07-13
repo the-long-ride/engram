@@ -670,6 +670,26 @@ a:hover {
   text-decoration: underline;
 }
 
+@media (min-width: 769px) {
+  .footer__copyright-shell {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+
+  .footer__copyright-shell > .footer__copyright-line {
+    flex-wrap: nowrap;
+    width: auto;
+    white-space: nowrap;
+  }
+
+  .footer__copyright-line--meta::after {
+    content: "—";
+    color: var(--geist-gray-500);
+    margin-left: 6px;
+  }
+}
+
 @media (max-width: 768px) {
   .footer__copyright-shell {
     gap: 4px;

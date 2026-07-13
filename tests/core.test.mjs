@@ -35,6 +35,7 @@ import { classifyTaskType, normalizeTaskType } from '../dist/core/memory/task-cl
 import { inferTaskIntent, taskIntentQuery, intentIsActionable } from '../dist/core/memory/task-intent.js';
 import { ensureVectorIndex } from '../dist/core/memory/vector-db.js';
 import { defaultConfig } from '../dist/core/runtime/config.js';
+import { DOCS_SITE_LATEST_VERSION, DOCS_SITE_VERSIONS } from '../dist/core/runtime/docs-site.js';
 import { VERSION } from '../dist/core/runtime/version.js';
 import path from 'node:path';
 import {
@@ -71,6 +72,12 @@ test('init wordmark can render colored or plain', () => {
 test('runtime version is generated from package manifest', async () => {
   const manifest = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
   assert.equal(VERSION, manifest.version);
+});
+
+test('docs site metadata is generated from website versions manifest', async () => {
+  const versions = JSON.parse(await readFile(new URL('../website/versions.json', import.meta.url), 'utf8'));
+  assert.deepEqual([...DOCS_SITE_VERSIONS], versions);
+  assert.equal(DOCS_SITE_LATEST_VERSION, versions.at(-1));
 });
 
 test('schema parser reads required frontmatter and sections', () => {
@@ -1010,12 +1017,12 @@ test('documentation contract removes old load/save flags from active docs and gu
     'missing-optional-guidance.md'
   ];
   const allowLegacy = [
-    'version-0.0.25/entry/',
-    'version-0.0.25/install.md',
-    'version-0.0.25/operations/',
-    'version-0.0.25/cli/sync-archive.md',
-    'version-0.0.25/cli/profiles-workspaces-config.md',
-    'version-0.0.25/entry/'
+    'version-0.0.26/entry/',
+    'version-0.0.26/install.md',
+    'version-0.0.26/operations/',
+    'version-0.0.26/cli/sync-archive.md',
+    'version-0.0.26/cli/profiles-workspaces-config.md',
+    'version-0.0.26/entry/'
   ];
   const offenders = [];
   for (const root of roots) {

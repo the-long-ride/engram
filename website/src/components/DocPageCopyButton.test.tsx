@@ -28,7 +28,7 @@ describe('DocPageCopyButton', () => {
         locales={['en', 'es']}
         defaultLocale="en"
         currentVersionPath="future"
-        publishedVersionName="version-0.0.25"
+        publishedVersionName="version-0.0.26"
       />,
     );
 

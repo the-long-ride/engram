@@ -5,8 +5,9 @@ import type * as Preset from '@docusaurus/preset-classic';
 const baseUrl = '/engram/';
 const docsCopy = {
   currentVersionPath: 'future',
-  publishedVersionLabel: '0.0.25',
-  publishedVersionName: 'version-0.0.25',
+  publishedVersions: ['0.0.25', '0.0.26'],
+  publishedVersionLabel: '0.0.26',
+  publishedVersionName: 'version-0.0.26',
 } as const;
 
 const config: Config = {
@@ -76,13 +77,19 @@ const config: Config = {
           sidebarPath: './sidebars.ts',
           lastVersion: docsCopy.publishedVersionLabel,
           includeCurrentVersion: true,
-          onlyIncludeVersions: ['current', docsCopy.publishedVersionLabel],
+          onlyIncludeVersions: ['current', ...docsCopy.publishedVersions],
           versions: {
             current: {
               label: 'Future',
               path: docsCopy.currentVersionPath,
               banner: 'unreleased',
               badge: true,
+            },
+            '0.0.25': {
+              label: '0.0.25',
+              path: 'version-0.0.25',
+              banner: 'none',
+              badge: false,
             },
             [docsCopy.publishedVersionLabel]: {
               label: docsCopy.publishedVersionLabel,

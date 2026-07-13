@@ -2,10 +2,18 @@
 
 ## Unreleased
 
-- Added deny-by-default policy automation with quota enforcement, ID-only audit receipts, and archive rollback (`policy audit`, `policy rollback`, `autosave --policy`).
-- Added opt-in, sanitized transcript ingestion that remains inbox-only and capability-gated.
-- Added versioned retrieval benchmarks with recall/precision, forbidden/dependency/isolation checks, baselines, body-free reports, and CI failure gates.
-- Added stable MCP/Entry contract metadata, host capability conformance tests, task-oriented Recall/Review/Maintain/Connect UI, memory diff/dependency previews, and local GitHub Action validation.
+## 0.0.26
+
+- Added the Docusaurus docs site, release-versioned docs, and full i18n coverage for 7 locales, plus homepage, footer, mobile navigation, and copy-to-Markdown actions.
+- Added docs and release automation for GitHub Actions, including docs deploy workflows, an `engram-check` action, and related-test CI support.
+- Simplified `engram load`/`save` flows, added graph search modes, improved save-session `--force` handling to write ready candidates first, and deferred duplicate-memory review to explicit follow-up.
+- Added stable JSON result envelopes, typed exit codes, and `--json` output across read-only commands.
+- Added `engram load --explain` with direct-ID diagnosis, signal attribution, omitted-candidate reporting, and safer body-redacted explanations.
+- Added `engram doctor` with composed diagnostics, strict/JSON modes, scope-aware checks, and host/linkage validation.
+- Added lifecycle review flows with review frontmatter, derived findings, inbox/review records, and review CLI support.
+- Added deny-by-default policy automation with quota enforcement, ID-only audit receipts, archive rollback, and contract/policy evaluation flows.
+- Added opt-in sanitized transcript ingestion, retrieval benchmarks with CI gates, and host capability conformance coverage.
+- Upgraded Entry/Web UI with task-oriented Recall/Review/Maintain/Connect flows, help links, dependency picker, memory diff previews, search improvements, and split panel assets.
 
 ## 0.0.25
 

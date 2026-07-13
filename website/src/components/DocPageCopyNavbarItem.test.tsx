@@ -11,7 +11,7 @@ describe('DocPageCopyNavbarItemView', () => {
     locales: ['en', 'es'],
     defaultLocale: 'en',
     currentVersionPath: 'future',
-    publishedVersionName: 'version-0.0.25',
+    publishedVersionName: 'version-0.0.26',
   };
 
   it('does not render outside docs routes', () => {

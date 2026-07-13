@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
 
 import { ConfigTab } from '../../src/core/web/app/tabs/ConfigTab.js';
 import { RuntimeTab } from '../../src/core/web/app/tabs/RuntimeTab.js';
@@ -8,6 +8,7 @@ import { MemoriesTab } from '../../src/core/web/app/tabs/MemoriesTab.js';
 import { ProfilesTab } from '../../src/core/web/app/tabs/ProfilesTab.js';
 import { WorkspacesTab } from '../../src/core/web/app/tabs/WorkspacesTab.js';
 import { ConnectionsTab } from '../../src/core/web/app/tabs/ConnectionsTab.js';
+import { ReviewTab } from '../../src/core/web/app/tabs/ReviewTab.js';
 
 import * as api from '../../src/core/web/app/api-client.js';
 
@@ -18,7 +19,109 @@ jest.mock('../../src/core/web/app/api-client.js', () => {
     validateConfigPatch: jest.fn(),
     getJson: jest.fn(),
     postJson: jest.fn(),
+    reviewQueue: jest.fn(),
+    reviewInspect: jest.fn(),
   };
+});
+
+describe('ReviewTab', () => {
+  beforeEach(() => jest.resetAllMocks());
+
+  test('keeps the latest selected finding when inspect responses resolve out of order', async () => {
+    let resolveFirst!: (value: unknown) => void;
+    const firstInspect = new Promise((resolve) => { resolveFirst = resolve; });
+    (api.reviewQueue as jest.Mock).mockResolvedValue({
+      data: {
+        findings: [
+          { id: 'finding-a', kind: 'duplicate', safe_summary: 'Finding A', memory_ids: ['a'] },
+          { id: 'finding-b', kind: 'stale', safe_summary: 'Finding B', memory_ids: ['b'] }
+        ],
+        receipts: []
+      }
+    });
+    (api.reviewInspect as jest.Mock).mockImplementation((id: string) => id === 'finding-a'
+      ? firstInspect
+      : Promise.resolve({ data: { finding: { id: 'finding-b', kind: 'stale', safe_summary: 'Finding B detail', memory_ids: ['b'] } } }));
+
+    render(<ReviewTab active={true} toast={jest.fn()} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'stale: finding-b' }));
+    expect((await screen.findAllByText('Finding B detail')).length).toBeGreaterThan(0);
+    await act(async () => resolveFirst({ data: { finding: { id: 'finding-a', kind: 'duplicate', safe_summary: 'Finding A late detail', memory_ids: ['a'] } } }));
+    expect(screen.queryByText('Finding A late detail')).not.toBeInTheDocument();
+    expect(screen.getAllByText('Finding B detail').length).toBeGreaterThan(0);
+  });
+
+  test('normalizes inbox receipts, builds preview text, and clears relation selections', async () => {
+    const toast = jest.fn();
+    (api.reviewQueue as jest.Mock).mockResolvedValue({
+      data: {
+        findings: [],
+        receipts: [
+          {
+            id: 'receipt-a',
+            source: 'autosave',
+            related_ids: ['dep-1', 'existing-memory'],
+            candidate: {
+              type: 'workflow',
+              text: 'Rotate release signer after build',
+              context: 'release runbook',
+              triggers: ['release', 'signing'],
+              dependsOn: ['dep-1'],
+              updateId: 'existing-memory'
+            }
+          }
+        ]
+      }
+    });
+    (api.reviewInspect as jest.Mock).mockResolvedValue({
+      data: {
+        receipt: {
+          id: 'receipt-a',
+          source: 'autosave',
+          related_ids: ['dep-1', 'existing-memory'],
+          candidate: {
+            type: 'workflow',
+            text: 'Rotate release signer after build',
+            context: 'release runbook',
+            triggers: ['release', 'signing'],
+            dependsOn: ['dep-1'],
+            updateId: 'existing-memory'
+          }
+        }
+      }
+    });
+
+    render(<ReviewTab active={true} toast={toast} />);
+
+    expect(await screen.findByRole('button', { name: 'inbox: receipt-a' })).toBeInTheDocument();
+    expect((await screen.findAllByText('autosave: workflow candidate awaiting relation review')).length).toBeGreaterThan(0);
+    expect(screen.getByDisplayValue('TYPE: workflow | TEXT: Rotate release signer after build | ORIGIN: release runbook | TRIGGERS: release, signing | DEPENDS_ON: dep-1 | UPDATE: existing-memory')).toBeInTheDocument();
+    expect(screen.getByText('Memory IDs: dep-1, existing-memory')).toBeInTheDocument();
+    expect(screen.getByText('Selected: none')).toBeInTheDocument();
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Depends on' })[0]);
+    expect(screen.getByText('Selected: DEPENDS_ON:dep-1')).toBeInTheDocument();
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Update' })[0]);
+    expect(screen.getByText('Selected: UPDATE:dep-1')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Clear preview' }));
+    expect(toast).toHaveBeenCalledWith('Review preview cleared');
+    expect(screen.getByDisplayValue('')).toBeInTheDocument();
+    expect(screen.getByText('Selected: none')).toBeInTheDocument();
+  });
+
+  test('shows safe empty states when queue is empty', async () => {
+    (api.reviewQueue as jest.Mock).mockResolvedValue({ data: { findings: [], receipts: [] } });
+
+    render(<ReviewTab active={true} toast={jest.fn()} />);
+
+    expect(await screen.findByText('No pending findings.')).toBeInTheDocument();
+    expect(screen.getByText('Select a finding to inspect it.')).toBeInTheDocument();
+    expect(screen.getByText('(new memory)')).toBeInTheDocument();
+    expect(screen.getByText('(empty proposal)')).toBeInTheDocument();
+    expect(screen.getByText('No related memory IDs.')).toBeInTheDocument();
+  });
 });
 
 describe('ConfigTab', () => {

@@ -5,6 +5,30 @@ export type Confidence = 'high' | 'medium' | 'low';
 export type RuleVariant = 'light' | 'balanced' | 'strict';
 export type ProfileSource = 'env' | 'workspace' | 'user' | 'none';
 export type Lifecycle = 'active' | 'review_due' | 'superseded' | 'archived';
+export type InboxReceiptSource = 'save' | 'save-session';
+
+export type InboxCandidate = {
+  type: MemoryType;
+  text: string;
+  scope: Scope;
+  role?: string[];
+  context?: string;
+  triggers?: string[];
+  dependsOn?: string[];
+  level?: string;
+  updateId?: string;
+};
+
+export type InboxReceipt = {
+  id: string;
+  scope: Scope;
+  source: InboxReceiptSource;
+  candidate: InboxCandidate;
+  candidate_hash: string;
+  related_ids: string[];
+  created_at: string;
+  expires_at: string;
+};
 
 export type EngramProfile = {
   global_path: string;

@@ -31,6 +31,7 @@ test('mcp protocol handshake lists tools and wraps tool call content', async () 
   const loadTool = tools.result.tools.find((tool) => tool.name === 'engram_load');
   assert.equal(loadTool.inputSchema.type, 'object');
   assert.ok(loadTool.inputSchema.properties.query);
+  assert.equal(loadTool.inputSchema.properties.explain.type, 'boolean');
 
   const status = await handleMcp({
     id: 3,
@@ -39,6 +40,8 @@ test('mcp protocol handshake lists tools and wraps tool call content', async () 
   });
   assert.equal(status.result.content[0].type, 'text');
   assert.match(status.result.content[0].text, /Memory health|Workspace:/);
+  assert.equal(status.result.contract_version, '1');
+  assert.equal(status.result.structuredContent.ok, true);
 });
 
 test('mcp status and save proposal do not write silently', async () => {
@@ -135,6 +138,19 @@ test('mcp status and save proposal do not write silently', async () => {
     });
     assert.match(mcpLoad.result.content[0].text, /loaded 1 memory files/);
     assert.match(mcpLoad.result.content[0].text, /release-foundation-checklist/);
+
+    const explained = await handleMcp({
+      id: 7.1,
+      method: 'tools/call',
+      params: {
+        name: 'engram_load',
+        arguments: { query: 'release foundation checklist', explain: true }
+      }
+    });
+    assert.equal(explained.result.structuredContent.ok, true);
+    assert.ok(Array.isArray(explained.result.structuredContent.data.selected));
+    assert.equal(explained.result.structuredContent.data.selected[0].id, 'release-foundation-checklist');
+    assert.equal(Object.hasOwn(explained.result.structuredContent.data, 'text'), false);
 
     const setRole = await handleMcp({
       id: 8,

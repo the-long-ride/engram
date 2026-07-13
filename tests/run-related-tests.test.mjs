@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { relatedTestsForChangedFiles } from '../scripts/run-related-tests.mjs';
+import { relatedTestsForChangedFiles, spawnOptionsForCommand } from '../scripts/run-related-tests.mjs';
 
 test('related test selection covers current workflow and website changes', async () => {
   const selected = await relatedTestsForChangedFiles([
@@ -36,4 +36,10 @@ test('unmapped source or script changes fall back to the full suite', async () =
   assert.ok(selected.includes('tests/core.test.mjs'));
   assert.ok(selected.includes('tests/cli/admin.test.mjs'));
   assert.ok(selected.includes('tests/app/App.test.tsx'));
+});
+
+test('windows npm child processes use shell spawning', () => {
+  assert.deepEqual(spawnOptionsForCommand('npm.cmd', 'win32'), { stdio: 'inherit', shell: true });
+  assert.deepEqual(spawnOptionsForCommand(process.execPath, 'win32'), { stdio: 'inherit' });
+  assert.deepEqual(spawnOptionsForCommand('npm', 'linux'), { stdio: 'inherit' });
 });

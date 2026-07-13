@@ -1,0 +1,75 @@
+name: Engram memory checks
+description: Validate local Engram memory and policy without uploading memory content.
+inputs:
+  benchmark:
+    description: Optional benchmark case file
+    required: false
+    default: ''
+  policy:
+    description: Optional path to a team policy; strict validation runs when provided or checked in
+    required: false
+    default: ''
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: echo "## Engram checks" >> "$GITHUB_STEP_SUMMARY"
+    - shell: bash
+      working-directory: ${{ github.action_path }}/../..
+      run: npm ci
+    - shell: bash
+      working-directory: ${{ github.action_path }}/../..
+      run: npm run build
+    - shell: bash
+      env:
+        ENGRAM_POLICY_INPUT: ${{ inputs.policy }}
+      run: |
+        if [ -n "$ENGRAM_POLICY_INPUT" ]; then
+          node "${{ github.action_path }}/../../dist/bin/engram.js" policy validate --policy "$ENGRAM_POLICY_INPUT" --strict --json > "$RUNNER_TEMP/engram-policy.json"
+          echo "- policy validation: passed (explicit policy)" >> "$GITHUB_STEP_SUMMARY"
+        elif [ -f ".agents/engram.policy.json" ]; then
+          node "${{ github.action_path }}/../../dist/bin/engram.js" policy validate --strict --json > "$RUNNER_TEMP/engram-policy.json"
+          echo "- policy validation: passed (repository policy)" >> "$GITHUB_STEP_SUMMARY"
+        else
+          echo '{"contract_version":"1","ok":true,"data":{"valid":false,"exists":false},"diagnostics":[]}' > "$RUNNER_TEMP/engram-policy.json"
+          echo "- policy validation: skipped (no policy configured)" >> "$GITHUB_STEP_SUMMARY"
+        fi
+    - shell: bash
+      run: |
+        if [ -d ".agents/.engram" ]; then
+          node "${{ github.action_path }}/../../dist/bin/engram.js" doctor --strict --json > "$RUNNER_TEMP/engram-doctor.json"
+          echo "- doctor strict: passed" >> "$GITHUB_STEP_SUMMARY"
+        else
+          echo '{"contract_version":"1","ok":true,"data":{"skipped":true,"reason":"no memory root configured"},"diagnostics":[]}' > "$RUNNER_TEMP/engram-doctor.json"
+          echo "- doctor strict: skipped (no memory root configured)" >> "$GITHUB_STEP_SUMMARY"
+        fi
+    - shell: bash
+      run: |
+        if [ -d ".agents/.engram" ]; then
+          node "${{ github.action_path }}/../../dist/bin/engram.js" verify --json > "$RUNNER_TEMP/engram-verify.json"
+        else
+          echo '{"contract_version":"1","ok":true,"data":{"skipped":true,"reason":"no memory root configured"},"diagnostics":[]}' > "$RUNNER_TEMP/engram-verify.json"
+        fi
+        echo "- memory verify: passed" >> "$GITHUB_STEP_SUMMARY"
+    - if: inputs.benchmark != ''
+      shell: bash
+      env:
+        ENGRAM_BENCHMARK_INPUT: ${{ inputs.benchmark }}
+        ENGRAM_POLICY_INPUT: ${{ inputs.policy }}
+      run: |
+        if [ -n "$ENGRAM_POLICY_INPUT" ]; then
+          node "${{ github.action_path }}/../../dist/bin/engram.js" benchmark "$ENGRAM_BENCHMARK_INPUT" --policy "$ENGRAM_POLICY_INPUT" --json > "$RUNNER_TEMP/engram-benchmark.json"
+        else
+          node "${{ github.action_path }}/../../dist/bin/engram.js" benchmark "$ENGRAM_BENCHMARK_INPUT" --policy --json > "$RUNNER_TEMP/engram-benchmark.json"
+        fi
+        echo "- benchmark: passed (fixture: $ENGRAM_BENCHMARK_INPUT)" >> "$GITHUB_STEP_SUMMARY"
+    - if: failure()
+      shell: bash
+      run: |
+        echo "- status: failed (details intentionally kept local to the job)" >> "$GITHUB_STEP_SUMMARY"
+        echo "::error title=Engram checks::A local Engram validation check failed; inspect the job summary."
+    - if: always()
+      shell: bash
+      run: |
+        echo "Engram emitted only local status files; memory bodies and transcript content are not uploaded." >> "$GITHUB_STEP_SUMMARY"
+        echo "::notice title=Engram::Local memory checks finished; see the job summary."

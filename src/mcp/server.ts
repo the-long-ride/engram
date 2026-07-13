@@ -12,6 +12,7 @@ import { normalizeTaskType } from '../core/memory/task-classifier.js';
 import { parseSaveTarget, writeScopes } from '../core/runtime/config.js';
 import { VERSION } from '../core/runtime/version.js';
 import type { Scope } from '../core/runtime/types.js';
+import { CONTRACT_VERSION } from '../core/contracts/result.js';
 
 /** Handle one MCP-like request object. */
 export async function handleMcp(request: any): Promise<any> {
@@ -31,8 +32,8 @@ export async function handleMcp(request: any): Promise<any> {
   }
 }
 
-async function callTool(method: string | undefined, args: any): Promise<string | undefined> {
-  if (method === 'engram_load') return await cmdLoad([args.query ?? 'current session'], args.full === true ? { full: true } : {});
+async function callTool(method: string | undefined, args: any): Promise<unknown> {
+  if (method === 'engram_load') return await cmdLoad([args.query ?? 'current session'], { ...(args.full === true ? { full: true } : {}), ...(args.explain === true ? { explain: true, json: true } : {}) });
   if (method === 'engram_route') return cmdRoute([String(args.query ?? args.task ?? '')]);
   if (method === 'engram_search') return await cmdSearch([args.query ?? '']);
   if (method === 'engram_verify') return await cmdVerify(args.scope);
@@ -53,10 +54,25 @@ function initializeResult(request: any): any {
 }
 
 function toolResult(text: unknown, isError = false): any {
+  const rendered = typeof text === 'string' ? text : JSON.stringify(text ?? '');
+  const contract = !isError ? parseContractResult(rendered) : undefined;
   return {
-    content: [{ type: 'text', text: String(text ?? '') }],
+    content: [{ type: 'text', text: rendered }],
+    contract_version: CONTRACT_VERSION,
+    structuredContent: isError
+      ? { contract_version: CONTRACT_VERSION, ok: false, error: { code: 'ENG_TOOL_ERROR', message: String(text ?? '') }, diagnostics: [] }
+      : contract ?? { contract_version: CONTRACT_VERSION, ok: true, data: { text: rendered }, diagnostics: [] },
     ...(isError ? { isError: true } : {})
   };
+}
+
+function parseContractResult(text: string): any | undefined {
+  try {
+    const value = JSON.parse(text);
+    return value && value.contract_version === CONTRACT_VERSION && typeof value.ok === 'boolean' ? value : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function toolDefinitions(): any[] {
@@ -69,7 +85,8 @@ function toolDefinitions(): any[] {
         type: 'object',
         properties: {
           query: stringProperty('Task or search query for routed memory.'),
-          full: { type: 'boolean', description: 'Load full memory output instead of compact routed context.' }
+          full: { type: 'boolean', description: 'Load full memory output instead of compact routed context.' },
+          explain: { type: 'boolean', description: 'Include safe route ranking and omission explanations.' }
         }
       }
     },

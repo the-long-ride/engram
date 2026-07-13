@@ -58,12 +58,13 @@ export async function ensureVectorIndex(
   scope: Scope,
   entries: MemoryEntry[],
   config: EngramConfig,
-  options: { force?: boolean } = {}
+  options: { force?: boolean; readOnly?: boolean } = {}
 ): Promise<VectorIndexStatus> {
   const file = vectorDbPath(root);
   const eligible = entries.filter((entry) => !entry.ignored);
   if (!config.vector.enabled) return skipped(scope, file, eligible.length, 'vector routing disabled');
   if (eligible.length < config.vector.auto_threshold) return skipped(scope, file, eligible.length, `below threshold ${config.vector.auto_threshold}`);
+  if (options.readOnly && !(await exists(file))) return skipped(scope, file, eligible.length, 'vector index missing');
   const runtime = await openVectorDb(file);
   if (!runtime) return skipped(scope, file, eligible.length, 'sqlite-vec runtime unavailable');
   const fingerprint = indexFingerprint(scope, eligible, config.vector.dimensions);
@@ -76,9 +77,12 @@ export async function ensureVectorIndex(
     if (!options.force && schemaMatches && dimensionsMatch && fingerprintMatches) {
       return { scope, file, action: 'ready', entries: eligible.length };
     }
+    if (options.readOnly) return skipped(scope, file, eligible.length, 'vector index stale');
   } catch {
     closeDb(runtime.db);
+    if (options.readOnly) return skipped(scope, file, eligible.length, 'vector index unreadable');
   }
+  if (options.readOnly) return skipped(scope, file, eligible.length, 'vector index missing');
   await fs.rm(file, { force: true });
   const rebuilt = await openVectorDb(file);
   if (!rebuilt) return skipped(scope, file, eligible.length, 'sqlite-vec runtime unavailable');

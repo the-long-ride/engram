@@ -11,6 +11,10 @@ jest.mock('../../src/core/web/app/api-client.js', () => {
     initializeWorkspace: jest.fn(),
     shutdownServer: jest.fn(),
     saveConfigPatch: jest.fn(),
+    getJson: jest.fn(),
+    postJson: jest.fn(),
+    reviewQueue: jest.fn(),
+    reviewInspect: jest.fn(),
   };
 });
 
@@ -41,6 +45,8 @@ describe('App Component', () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
+    (api.getJson as jest.Mock).mockResolvedValue({ stats: { total: 0 }, nodes: [], links: [] });
+    (api.reviewQueue as jest.Mock).mockResolvedValue({ data: { findings: [], receipts: [] } });
   });
 
   test('renders loading screen initially then loads and renders Sidebar and tabs', async () => {
@@ -57,9 +63,16 @@ describe('App Component', () => {
     });
 
     // Verify sidebar is rendered
-    expect(screen.getAllByText('Construct')[0]).toBeInTheDocument();
-    expect(screen.getAllByText('Runtime')[0]).toBeInTheDocument();
-    expect(screen.getAllByText('Core')[0]).toBeInTheDocument();
+    expect(screen.getByText('Recall')).toBeInTheDocument();
+    expect(screen.getAllByText('Review')[0]).toBeInTheDocument();
+    expect(screen.getByText('Maintain')).toBeInTheDocument();
+    expect(screen.getAllByRole('heading', { name: 'Memories' })).toHaveLength(1);
+    expect(api.reviewQueue).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getAllByText('Review')[0]);
+    await waitFor(() => expect(api.reviewQueue).toHaveBeenCalledTimes(1));
+    expect(screen.queryByRole('heading', { name: 'Memories' })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Review queue' })).toBeInTheDocument();
   });
 
   test('renders error state on fetch failure', async () => {

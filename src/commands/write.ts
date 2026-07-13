@@ -10,6 +10,9 @@ import type { SaveRelatedHint } from '../core/memory/save-plan.js';
 import { parseMemory } from '../core/memory/schema.js';
 import { classifyTaskType, normalizeTaskType, TASK_TYPES, type TaskType } from '../core/memory/task-classifier.js';
 import { resolveAuthor, writeApprovedMemory } from '../core/memory/storage.js';
+import type { EngramContext } from '../core/memory/context.js';
+import type { InboxCandidate } from '../core/runtime/types.js';
+import { buildReceipt, writeReceipt } from '../core/review/inbox.js';
 import { discoverTakeControlSources, planTakeControlSources, renderTakeControlPlan, takeControlGuidance } from '../core/memory/take-control.js';
 import { parseSaveTarget, writeScopes } from '../core/runtime/config.js';
 import type { MemoryType, Scope } from '../core/runtime/types.js';
@@ -58,7 +61,8 @@ export async function cmdSave(args: string[], flags: Record<string, any>): Promi
     type = candidate.type;
     text = candidate.text;
     plans = await planMemorySave({ ctx, text, type, scopes, author, role, context: candidate.context, triggers: candidate.triggers, dependsOn: candidate.dependsOn, level: candidate.level, updateId: candidate.updateId, taskType, variants: candidate.variants });
-    approval = await requestApproval(previewSavePlans(plans, previewOptions));
+    const force = flags.force === true || flags.f === true;
+    approval = force ? { accepted: true } : await requestApproval(previewSavePlans(plans, previewOptions));
   }
   if (!approval.accepted) return 'Discarded. No file written.';
   return writeSavePlans(plans, approval.edits);
@@ -102,7 +106,8 @@ export async function cmdSaveSession(args: string[], flags: Record<string, any> 
   if (approval.selected?.length) plans = plans.filter((plan) => plan.candidateIndex === undefined || approval.selected?.includes(plan.candidateIndex));
   if (!plans.length) return 'Discarded. No selected candidates written.';
   if (force) {
-    return writeForcedSaveSessionPlans(plans, approval.edits, 'Forced save-session candidates (--force).');
+    const inboxOptions = flags.inbox === true && text ? { ctx, text, role } : undefined;
+    return writeForcedSaveSessionPlans(plans, approval.edits, 'Forced save-session candidates (--force).', inboxOptions);
   }
   const saved = await writeSavePlans(plans, approval.edits);
   return saved;
@@ -241,13 +246,56 @@ export function forceRestructureResponse(plans: SavePlan[], rerunCommand = 'engr
   ].join('\n');
 }
 
-async function writeForcedSaveSessionPlans(plans: SavePlan[], edits: string | undefined, label: string): Promise<string> {
+async function writeForcedSaveSessionPlans(
+  plans: SavePlan[],
+  edits: string | undefined,
+  label: string,
+  inboxOptions?: { ctx: EngramContext; text: string }
+): Promise<string> {
   const { ready, deferred } = splitForcedSaveSessionPlans(plans);
   const lines = [label];
   if (ready.length) lines.push(await writeSavePlans(ready, edits));
   else lines.push('No candidates written. All candidates require related-memory review.');
-  if (deferred.length) lines.push('', renderDeferredSaveSessionPlans(deferred));
+  const deferredWithReceipts = inboxOptions ? await attachReceipts(deferred, inboxOptions) : deferred.map((item) => ({ item, receiptId: undefined }));
+  if (deferredWithReceipts.length) lines.push('', renderDeferredSaveSessionPlans(deferredWithReceipts));
   return lines.join('\n');
+}
+
+async function attachReceipts(
+  deferred: Array<{ plan: SavePlan; hints: SaveRelatedHint[] }>,
+  inboxOptions: { ctx: EngramContext; text: string; role?: string[] }
+): Promise<Array<{ item: { plan: SavePlan; hints: SaveRelatedHint[] }; receiptId?: string }>> {
+  const candidates = parseMemoryCandidates(inboxOptions.text);
+  const out: Array<{ item: { plan: SavePlan; hints: SaveRelatedHint[] }; receiptId?: string }> = [];
+  for (const item of deferred) {
+    const idx = (item.plan.candidateIndex ?? 1) - 1;
+    const candidate = candidates[idx];
+    let receiptId: string | undefined;
+    if (candidate) {
+      const inboxCandidate: InboxCandidate = {
+        type: candidate.type,
+        text: candidate.text,
+        scope: item.plan.scope,
+        ...(inboxOptions.role?.length ? { role: inboxOptions.role } : {}),
+        ...(candidate.role?.length ? { role: candidate.role } : {}),
+        ...(candidate.context ? { context: candidate.context } : {}),
+        ...(candidate.triggers?.length ? { triggers: candidate.triggers } : {}),
+        ...(candidate.dependsOn?.length ? { dependsOn: candidate.dependsOn } : {}),
+        ...(candidate.level ? { level: candidate.level } : {}),
+        ...(candidate.updateId ? { updateId: candidate.updateId } : {})
+      };
+      const receipt = buildReceipt({
+        scope: item.plan.scope,
+        source: 'save-session',
+        candidate: inboxCandidate,
+        related_ids: uniqueHintIds(item.hints)
+      });
+      const root = inboxOptions.ctx.roots[item.plan.scope];
+      if (root) receiptId = await writeReceipt(root, receipt);
+    }
+    out.push({ item, receiptId });
+  }
+  return out;
 }
 
 function splitForcedSaveSessionPlans(plans: SavePlan[]): { ready: SavePlan[]; deferred: Array<{ plan: SavePlan; hints: SaveRelatedHint[] }> } {
@@ -261,12 +309,13 @@ function splitForcedSaveSessionPlans(plans: SavePlan[]): { ready: SavePlan[]; de
   return { ready, deferred };
 }
 
-function renderDeferredSaveSessionPlans(deferred: Array<{ plan: SavePlan; hints: SaveRelatedHint[] }>): string {
+function renderDeferredSaveSessionPlans(deferred: Array<{ item: { plan: SavePlan; hints: SaveRelatedHint[] }; receiptId?: string }>): string {
   const lines = [
     'Deferred candidates not written.',
     'Load related memory IDs, then rerun only deferred candidates with DEPENDS_ON or UPDATE.'
   ];
-  for (const item of deferred) {
+  for (const entry of deferred) {
+    const item = entry.item;
     const candidate = item.plan.candidateIndex ?? 1;
     const type = kindFromPlan(item.plan);
     const dependencyIds = uniqueHintIds(item.hints.filter((hint) => hint.action === 'suggested-dependency'));
@@ -279,6 +328,7 @@ function renderDeferredSaveSessionPlans(deferred: Array<{ plan: SavePlan; hints:
       `Related IDs: ${relatedIds.join(', ')}`,
       `Inspect: engram load --id ${relatedIds.join(',')}`
     );
+    if (entry.receiptId) lines.push(`Receipt: engram review inspect ${entry.receiptId}`, `Apply:   engram review apply ${entry.receiptId}`);
     if (dependencyIds.length) lines.push(`Action: rerun with DEPENDS_ON: ${dependencyIds.join(', ')}`);
     if (updateIds.length) lines.push(`Action: rerun with UPDATE: ${updateIds.join(', ')}`);
   }

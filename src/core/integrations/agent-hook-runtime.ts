@@ -2,10 +2,13 @@
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { cmdLoad } from '../../commands/read.js';
-import { readJson, writeJson } from '../system/fsx.js';
-import { loadConfig, workspaceRoot } from '../runtime/config.js';
+import { exists, readJson, writeJson } from '../system/fsx.js';
+import { loadConfig, workspaceRoot, scopeRootsForConfig } from '../runtime/config.js';
+import { ingestTranscript } from '../transcripts/ingest.js';
+import type { TranscriptIngestOptions } from '../transcripts/types.js';
 import type { EngramConfig } from '../runtime/types.js';
 import type { AgentHookHost } from './agent-hooks.js';
+import { adapterCapabilities } from './capabilities.js';
 
 type HookPayload = Record<string, any>;
 type HookCache = {
@@ -58,11 +61,33 @@ export async function runAgentHook(host: AgentHookHost, rawInput: string): Promi
   try {
     const payload = JSON.parse(rawInput || '{}') as HookPayload;
     const cwd = payloadCwd(payload);
+    try {
+      await maybeIngestTranscript(host, payload, cwd);
+    } catch {
+      // Transcript capture is optional; a persistence failure must not suppress retrieval context.
+    }
     const output = await computeHookOutput(host, payload, cwd);
     return JSON.stringify(output);
   } catch {
     return '{}';
   }
+}
+
+/** Opt-in hook bridge: transcript capture is disabled unless an explicit local file enables it. */
+async function maybeIngestTranscript(host: AgentHookHost, payload: HookPayload, cwd: string): Promise<void> {
+  const configFile = path.join(cwd, '.agents', 'engram.transcripts.json');
+  if (!(await exists(configFile))) return;
+  const options = await readJson<TranscriptIngestOptions & { scope?: 'workspace' | 'global'; hosts?: string[] }>(configFile, { enabled: false });
+  if (options.enabled !== true || (Array.isArray(options.hosts) && !options.hosts.includes(host))) return;
+  if (!adapterCapabilities(host)[0]?.transcript_events) return;
+  const config = await loadConfig(cwd);
+  const roots = scopeRootsForConfig(cwd, config);
+  const root = options.scope === 'global' ? roots.global : roots.workspace;
+  if (!root) return;
+  const event = eventName(payload);
+  const text = queryText(payload, event);
+  if (!text || text === 'current task' || isSessionStart(event)) return;
+  await ingestTranscript(root, { text, host, session_id: sessionId(payload) }, options);
 }
 
 function isSessionStart(event: string): boolean {

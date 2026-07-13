@@ -28,6 +28,11 @@ import {
   apiResolveMemoryFile,
   apiArchiveMemory,
 } from './api.js';
+import { CONTRACT_VERSION } from '../contracts/result.js';
+import { cmdCapabilities } from '../../commands/capabilities.js';
+import { cmdPolicy } from '../../commands/policy.js';
+import { cmdReview } from '../../commands/review.js';
+import { cmdDoctor, cmdLoad } from '../../commands/read.js';
 
 // ── Infrastructure ──────────────────────────────────────────────────────────
 
@@ -106,7 +111,14 @@ async function handleRequest(req: any, res: any, cwd: string): Promise<void> {
   const method = (req.method as string) || 'GET';
 
   const json = (status: number, body: any) => {
-    const s = JSON.stringify(body);
+    const normalized = body && typeof body === 'object'
+      ? body.error
+        ? { contract_version: CONTRACT_VERSION, ok: false, error: typeof body.error === 'object' ? body.error : { code: 'ENG_HTTP_ERROR', message: String(body.error) }, diagnostics: body.diagnostics ?? [] }
+        : body.ok === true
+          ? { contract_version: CONTRACT_VERSION, ok: true, data: body.data ?? body, diagnostics: body.diagnostics ?? [], ...body }
+          : { contract_version: CONTRACT_VERSION, ok: true, data: body, diagnostics: [], ...body }
+      : { contract_version: CONTRACT_VERSION, ok: true, data: body, diagnostics: [] };
+    const s = JSON.stringify(normalized);
     res.writeHead(status, { ...SECURITY_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
     res.end(s);
   };
@@ -208,6 +220,53 @@ async function handleRequest(req: any, res: any, cwd: string): Promise<void> {
     try {
       const data = await apiAgentsScan(cwd);
       json(200, { ok: true, data });
+    } catch (e: any) { json(500, { error: e.message }); }
+    return;
+  }
+
+  if (url === '/api/capabilities' && method === 'GET') {
+    try { json(200, JSON.parse(await cmdCapabilities([], { json: true }))); }
+    catch (e: any) { json(500, { error: e.message }); }
+    return;
+  }
+
+  if (url === '/api/policy' && method === 'GET') {
+    try { json(200, JSON.parse(await cmdPolicy(['show'], { json: true, cwd }))); }
+    catch (e: any) { json(500, { error: e.message }); }
+    return;
+  }
+
+  if (url === '/api/review' && method === 'GET') {
+    try {
+      const findings = JSON.parse(await cmdReview(['list'], { json: true, cwd })).data;
+      const inbox = JSON.parse(await cmdReview(['inbox'], { json: true, cwd })).data;
+      json(200, { ok: true, data: { ...findings, ...inbox } });
+    }
+    catch (e: any) { json(500, { error: e.message }); }
+    return;
+  }
+
+  if (url === '/api/review/inspect' && method === 'GET') {
+    try {
+      const parsed = new URL(req.url, 'http://localhost');
+      const id = parsed.searchParams.get('id') || '';
+      json(200, JSON.parse(await cmdReview(['inspect', id], { json: true, cwd })));
+    } catch (e: any) { json(404, { error: e.message }); }
+    return;
+  }
+
+  if (url === '/api/doctor' && method === 'GET') {
+    try { json(200, JSON.parse(await cmdDoctor([], { json: true, cwd }))); }
+    catch (e: any) { json(500, { error: e.message }); }
+    return;
+  }
+
+  if (url === '/api/recall' && method === 'GET') {
+    try {
+      const parsed = new URL(req.url, 'http://localhost');
+      const query = parsed.searchParams.get('query') || 'current session';
+      const explain = parsed.searchParams.get('explain') === 'true';
+      json(200, JSON.parse(await cmdLoad([query], { json: true, cwd, ...(explain ? { explain: true } : {}) })));
     } catch (e: any) { json(500, { error: e.message }); }
     return;
   }

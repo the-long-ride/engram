@@ -2,3 +2,9 @@
 @import "./panel-data.css";
 @import "./panel-graph.css";
 @import "./panel-memory.css";
+.memory-diff-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.memory-diff-grid pre { max-height: 260px; overflow: auto; white-space: pre-wrap; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); }
+.dependency-picker { display: grid; gap: 10px; margin: 16px 0; padding: 14px; border: 1px solid var(--border); border-radius: 8px; }
+.dependency-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.dependency-row code { flex: 1; min-width: 240px; }
+@media (max-width: 720px) { .memory-diff-grid { grid-template-columns: 1fr; } }

@@ -68,10 +68,10 @@ describe('Sidebar', () => {
     // Verify upgrade notice
     expect(screen.getByText('New version available · v0.0.21')).toBeInTheDocument();
 
-    // Click on nav item
-    const runtimeTab = screen.getByText('Runtime');
-    fireEvent.click(runtimeTab);
-    expect(setActiveMock).toHaveBeenCalledWith('runtime');
+    // Click on current task-oriented nav item
+    const maintainTab = screen.getByText('Maintain');
+    fireEvent.click(maintainTab);
+    expect(setActiveMock).toHaveBeenCalledWith('maintain');
 
     // Click close server
     const closeBtn = screen.getByRole('button', { name: 'Close Server' });

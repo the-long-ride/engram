@@ -182,6 +182,19 @@ because the official contract documents only user-level MCP config.
 `engram link all` installs the public target set and reports deterministic `SKIPPED` reasons for partial hosts across skillset instruction files, MCP config, slash adapters, and agent hooks in one unified install. `engram unlink`
 removes all of these together as well.
 
+The machine-readable version of this matrix is available with:
+
+```bash
+engram capabilities --json
+```
+
+Only hosts declaring `transcript_events: true` may forward prompt events. Transcript
+capture is disabled by default. To opt in for a local workspace, create
+`.agents/engram.transcripts.json` with `enabled: true` (optionally `hosts`,
+`scope`, `max_chars`, and `max_files`). Hook capture is sanitized before it is
+written to the non-indexed `inbox/`; it never creates active memory or uploads
+transcript content.
+
 ## Recommended Flow
 
 1. Inject memory:

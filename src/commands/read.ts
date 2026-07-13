@@ -21,7 +21,7 @@ import { explainRoute } from '../core/memory/route-explain.js';
 
 /** Load routed memory for a query. */
 export async function cmdLoad(args: string[], flags: Record<string, any> = {}): Promise<string> {
-  const ctx = await getContext();
+  const ctx = await getContext(typeof flags.cwd === 'string' ? flags.cwd : process.cwd());
   if (!ctx.config.enabled || ctx.config.read === 'off') return isJsonMode(flags) ? jsonOk({ selected: 0, total_related: 0, entries: [], disabled: true }) : '';
 
   const idFlag = flags.id;
@@ -311,7 +311,7 @@ export async function cmdRehash(scope?: string): Promise<string> {
 
 /** Composed diagnostics command for config, integrity, and adapter health. */
 export async function cmdDoctor(args: string[], flags: Record<string, any> = {}): Promise<string> {
-  const ctx = await getContext();
+  const ctx = await getContext(typeof flags.cwd === 'string' ? flags.cwd : process.cwd());
   const VALID_SCOPES = ['workspace', 'global', 'all'];
   const positionalScope = typeof args[0] === 'string' && VALID_SCOPES.includes(args[0]) ? args[0] as 'workspace' | 'global' | 'all' : undefined;
   if (typeof args[0] === 'string' && !positionalScope) {

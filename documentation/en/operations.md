@@ -298,3 +298,12 @@ engram archive --reason "Repo migrated to npm." rules/use-pnpm.md
 ```
 
 Next: [Comparison and roadmap](comparison.md).
+# Safe automation and team validation
+
+Use `engram doctor --strict --json` and `engram policy validate --strict --json`
+as local/CI gates. `engram benchmark <cases.json> --json --fail-on forbidden,recall`
+supports versioned retrieval cases and body-free reports. Autonomous writes stay
+disabled unless `.agents/engram.policy.json` explicitly enables them; inspect
+receipts with `engram policy audit --json` and use `engram policy rollback <id>`
+for an archive-based rollback. Transcript capture is opt-in, sanitized, and
+inbox-only.

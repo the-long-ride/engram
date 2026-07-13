@@ -83,6 +83,7 @@ export async function supersedeAction(ctx: EngramContext, oldId: string, newId: 
   const newEntry = await findEntry(ctx, newId);
   if (!oldEntry) return { ok: false, message: `old memory not found: ${oldId}` };
   if (!newEntry) return { ok: false, message: `new memory not found: ${newId}` };
+  if (oldEntry.scope !== newEntry.scope) return { ok: false, message: 'cross-scope supersede is not supported: old and new memory must share the same scope; use engram review supersede for same-scope pairs only' };
   const root = ctx.roots[oldEntry.scope];
   if (!root) return { ok: false, message: `${oldEntry.scope} root not configured` };
   const oldPath = entryPath(ctx, oldEntry.scope, oldEntry.file);
@@ -90,13 +91,11 @@ export async function supersedeAction(ctx: EngramContext, oldId: string, newId: 
   const oldUpdated = setFrontmatterField(oldRaw, 'lifecycle', 'superseded');
   await writeText(oldPath, oldUpdated);
   await updateHash(root, oldEntry.file, oldUpdated);
-  if (newEntry.scope === oldEntry.scope) {
-    const newPath = entryPath(ctx, newEntry.scope, newEntry.file);
-    const newRaw = await readText(newPath);
-    const newUpdated = setFrontmatterField(newRaw, 'supersedes', oldId);
-    await writeText(newPath, newUpdated);
-    await updateHash(root, newEntry.file, newUpdated);
-  }
+  const newPath = entryPath(ctx, newEntry.scope, newEntry.file);
+  const newRaw = await readText(newPath);
+  const newUpdated = setFrontmatterField(newRaw, 'supersedes', oldId);
+  await writeText(newPath, newUpdated);
+  await updateHash(root, newEntry.file, newUpdated);
   const index = await rebuildIndex(root, oldEntry.scope);
   await rebuildGraph(root, oldEntry.scope, index, ctx.config);
   await ensureVectorIndex(root, oldEntry.scope, index.entries, ctx.config);

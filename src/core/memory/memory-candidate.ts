@@ -1,11 +1,13 @@
 /** Memory type detection helpers for agent-brainstormed save candidates. */
-import type { MemoryType, RuleVariant } from '../runtime/types.js';
+import type { Confidence, MemoryType, RuleVariant } from '../runtime/types.js';
 import { resolveMemoryLimits, type MemoryLimits } from './schema.js';
 import { agentMemoryChatApprovalText, agentMemoryValueGateText } from './agent-proposal-protocol.js';
 
 export type MemoryCandidate = {
   type: MemoryType;
   text: string;
+  confidence?: Confidence;
+  role?: string[];
   context?: string;
   triggers?: string[];
   dependsOn?: string[];
@@ -30,12 +32,14 @@ export function parseMemoryCandidate(raw: string, options: CandidateOptions = {}
   const compact = parsePipeFields(raw);
   if (compact) return candidateFromFields(compact, options);
   let declaredType: MemoryType | undefined;
+  let role: string[] = [];
   let context: string | undefined;
   let dependsOn: string[] = [];
   let level: string | undefined;
   let updateId: string | undefined;
   let triggers: string[] = [];
   let variants: Partial<Record<RuleVariant, string>> = {};
+  let confidence: Confidence | undefined;
   const content: string[] = [];
   for (const line of raw.split(/\r?\n/).map((part) => part.trim()).filter(Boolean)) {
     const typeMatch = line.match(/^(?:type|kind|memory type)\s*:\s*([a-z-]+)\b\s*(.*)$/i);
@@ -60,6 +64,11 @@ export function parseMemoryCandidate(raw: string, options: CandidateOptions = {}
       context = contextMatch[1].trim();
       continue;
     }
+    const roleMatch = line.match(/^roles?\s*:\s*(.+)$/i);
+    if (roleMatch) {
+      role = uniqueStrings([...role, ...parseList(roleMatch[1])]);
+      continue;
+    }
     const dependsMatch = line.match(/^(?:depends_on|depends on|depends|dependency|dependencies|prerequisites?)\s*:\s*(.+)$/i);
     if (dependsMatch) {
       dependsOn = uniqueStrings([...dependsOn, ...parseList(dependsMatch[1])]);
@@ -73,6 +82,11 @@ export function parseMemoryCandidate(raw: string, options: CandidateOptions = {}
     const updateMatch = line.match(/^(?:update|update_id|merge_with|merge with|existing)\s*:\s*(.+)$/i);
     if (updateMatch) {
       updateId = updateMatch[1].trim();
+      continue;
+    }
+    const confidenceMatch = line.match(/^confidence\s*:\s*(.+)$/i);
+    if (confidenceMatch) {
+      confidence = parseConfidence(confidenceMatch[1]);
       continue;
     }
     const variantMatch = line.match(/^(light|balanced|strict)\s*:\s*(.+)$/i);
@@ -93,11 +107,13 @@ export function parseMemoryCandidate(raw: string, options: CandidateOptions = {}
   return compactCandidate({
     type: options.explicitType ?? declaredType ?? inferMemoryType(text),
     text,
+    role,
     context,
     ...(triggers.length ? { triggers } : {}),
     dependsOn,
     level,
     updateId,
+    confidence,
     variants
   });
 }
@@ -114,7 +130,7 @@ export function parseMemoryCandidates(raw: string): MemoryCandidate[] {
     const variantKey = candidate.variants
       ? `${candidate.variants.light ?? ''}:${candidate.variants.balanced ?? ''}:${candidate.variants.strict ?? ''}`
       : '';
-    unique.set(`${candidate.type}:${candidate.text.toLowerCase()}:${candidate.context ?? ''}:${(candidate.triggers ?? []).join(',')}:${(candidate.dependsOn ?? []).join(',')}:${candidate.level ?? ''}:${candidate.updateId ?? ''}:${variantKey}`, candidate);
+    unique.set(`${candidate.type}:${candidate.text.toLowerCase()}:${candidate.context ?? ''}:${(candidate.triggers ?? []).join(',')}:${(candidate.dependsOn ?? []).join(',')}:${candidate.level ?? ''}:${candidate.updateId ?? ''}:${candidate.confidence ?? ''}:${variantKey}`, candidate);
   }
   return [...unique.values()].slice(0, 8);
 }
@@ -218,19 +234,23 @@ function candidateFromFields(fields: Record<string, string>, options: CandidateO
   const text = fields.text ?? fields.memory ?? fields.summary ?? fields.content;
   if (!text?.trim()) throw new Error('save requires memory text');
   const context = fields.context ?? fields.why ?? fields.rationale ?? fields.origin;
+  const role = parseList(fields.role ?? fields.roles ?? '');
   const triggers = parseList(fields.triggers ?? fields.retrieve_when ?? fields.use_for ?? fields.retrieval_hints ?? '');
   const dependsOn = parseList(fields.depends_on ?? fields.depends ?? fields.dependencies ?? fields.dependency ?? fields.prerequisites ?? '');
   const level = fields.level ?? fields.depth ?? fields.dependency_depth;
   const updateId = fields.update ?? fields.update_id ?? fields.merge_with ?? fields.existing;
+  const confidence = fields.confidence === undefined ? undefined : parseConfidence(fields.confidence);
   const variants = variantFields(fields);
   return compactCandidate({
     type: options.explicitType ?? normalizeMemoryType(rawType) ?? inferMemoryType(text),
     text: text.trim(),
+    role,
     context,
     ...(triggers.length ? { triggers } : {}),
     dependsOn,
     level,
     updateId,
+    confidence,
     variants
   });
 }
@@ -240,11 +260,13 @@ function compactCandidate(candidate: MemoryCandidate): MemoryCandidate {
   return {
     type: candidate.type,
     text: candidate.text,
+    ...(candidate.role?.length ? { role: uniqueStrings(candidate.role) } : {}),
     ...(candidate.context?.trim() ? { context: candidate.context.trim() } : {}),
     ...(candidate.triggers?.length ? { triggers: uniqueStrings(candidate.triggers) } : {}),
     ...(candidate.dependsOn?.length ? { dependsOn: uniqueStrings(candidate.dependsOn) } : {}),
     ...(candidate.level?.trim() ? { level: candidate.level.trim() } : {}),
     ...(candidate.updateId?.trim() ? { updateId: candidate.updateId.trim() } : {}),
+    ...(candidate.confidence ? { confidence: candidate.confidence } : {}),
     ...(Object.keys(variants).length ? { variants } : {})
   };
 }
@@ -263,6 +285,12 @@ function normalizeField(field: string): string {
 
 function uniqueStrings(values: string[]): string[] {
   return [...new Set(values.map((value) => value.trim()).filter(Boolean))];
+}
+
+function parseConfidence(value: string): Confidence {
+  const normalized = value.trim().toLowerCase();
+  if (normalized === 'high' || normalized === 'medium' || normalized === 'low') return normalized;
+  throw new Error(`confidence must be high, medium, or low; got: ${value.trim() || '(empty)'}`);
 }
 
 function variantFields(fields: Record<string, string>): Partial<Record<RuleVariant, string>> {

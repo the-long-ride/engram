@@ -1,4 +1,4 @@
-/** Doctor: per-scope composed diagnostics for config, roots, hash integrity, invalid files, index/graph status, and host executables; does NOT verify freshness/policy/MCP/hooks (later milestones). */
+/** Doctor: per-scope composed diagnostics for config, roots, hash integrity, invalid files, index/graph status, policy, and host executables. */
 import type { EngramContext } from '../memory/context.js';
 import { verifyRoot } from '../safety/hash.js';
 import { invalidMemoryFiles } from '../memory/index.js';
@@ -7,6 +7,8 @@ import { detectLinkedWorkspaceTargets } from '../integrations/skillset.js';
 import { exists } from '../system/fsx.js';
 import type { Scope } from '../runtime/types.js';
 import type { Diagnostic } from '../contracts/result.js';
+import { loadPolicy } from '../policy/load.js';
+import { ensureVectorIndex } from '../memory/vector-db.js';
 
 export type DoctorCheck = {
   id: string;
@@ -32,13 +34,22 @@ export async function runDoctor(ctx: EngramContext, scope: 'workspace' | 'global
   const checks: DoctorCheck[] = [];
 
   checks.push(...checkConfig(ctx));
+  checks.push(await checkPolicy());
   for (const s of scopes) checks.push(...await checkRoot(ctx, s));
   for (const s of scopes) checks.push(...await checkHashes(ctx, s));
   for (const s of scopes) checks.push(...await checkInvalidFiles(ctx, s));
   for (const s of scopes) checks.push(...checkIndexFreshness(ctx, s));
+  for (const s of scopes) checks.push(await checkVectorFreshness(ctx, s));
   checks.push(...await checkHostAdapters(ctx));
 
   return summarize(checks);
+}
+
+async function checkPolicy(): Promise<DoctorCheck> {
+  const loaded = await loadPolicy();
+  if (!loaded.exists) return { id: 'policy.configured', scope: 'policy', status: 'skip', severity: 'info', message: 'No policy configured; autonomous writes remain disabled', remediation: 'engram policy init' };
+  if (loaded.diagnostics.length) return { id: 'policy.invalid', scope: 'policy', status: 'warn', severity: 'warning', message: `Policy invalid (${loaded.diagnostics.length} diagnostic${loaded.diagnostics.length === 1 ? '' : 's'})`, remediation: 'engram policy validate --json' };
+  return { id: 'policy.valid', scope: 'policy', status: 'pass', severity: 'info', message: 'Local policy is valid' };
 }
 
 function checkConfig(ctx: EngramContext): DoctorCheck[] {
@@ -176,6 +187,16 @@ function checkIndexFreshness(ctx: EngramContext, scope: Scope): DoctorCheck[] {
     remediation: depEdgesForScope.length ? undefined : 'Add depends_on frontmatter to link related memories'
   });
   return checks;
+}
+
+async function checkVectorFreshness(ctx: EngramContext, scope: Scope): Promise<DoctorCheck> {
+  const root = ctx.roots[scope];
+  if (!root) return { id: `vector.${scope}`, scope, status: 'skip', severity: 'info', message: `${scope} vector index skipped (root not configured)` };
+  const entries = ctx.scopeIndexes[scope].entries.filter((entry) => !entry.ignored);
+  const status = await ensureVectorIndex(root, scope, entries, ctx.config, { readOnly: true });
+  if (status.action === 'ready' || status.action === 'rebuilt') return { id: `vector.${scope}`, scope, status: 'pass', severity: 'info', message: `${scope} vector index ${status.action} (${status.entries} entries)`, metadata: { entries: status.entries } };
+  const unavailable = status.reason?.includes('runtime unavailable') === true;
+  return { id: `vector.${scope}`, scope, status: unavailable ? 'warn' : 'skip', severity: unavailable ? 'warning' : 'info', message: `${scope} vector index skipped: ${status.reason ?? 'not required'}`, remediation: unavailable ? 'Install optional sqlite-vec runtime or use lexical routing.' : undefined };
 }
 
 async function checkHostAdapters(ctx: EngramContext): Promise<DoctorCheck[]> {

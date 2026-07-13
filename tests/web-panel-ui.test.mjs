@@ -57,11 +57,15 @@ test('React TypeScript web app is split by responsibility', async () => {
   }
 });
 
-test('React app preserves key entry UI tabs and actions in source', async () => {
+test('React app exposes task-oriented entry tabs and actions in source', async () => {
   const sidebar = await read('src/core/web/app/layout/Sidebar.tsx');
-  for (const label of ['Construct', 'Runtime', 'Core', 'Memories', 'Profiles', 'Workspaces', 'Connections']) {
+  for (const label of ['Recall', 'Review', 'Maintain', 'Connect', 'Config']) {
     assert.ok(sidebar.includes(label), label);
   }
+  const app = await read('src/core/web/app/App.tsx');
+  assert.ok(app.includes("active === 'review'"));
+  assert.ok(app.includes("active === 'maintain'"));
+  assert.equal(app.includes('Object.keys(panes)'), false);
   assert.ok(sidebar.includes('engram upgrade --latest'));
   assert.ok(sidebar.includes('{upgrade}'));
   assert.ok(sidebar.includes('latestVersion'));

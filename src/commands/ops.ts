@@ -10,19 +10,22 @@ import { readJson, readText } from '../core/system/fsx.js';
 import { resolveAuthor, syncGlobalMemoryGit, writeApprovedMemory } from '../core/memory/storage.js';
 import { applyApprovalEdit, requestApproval } from '../core/safety/approval.js';
 import { launchEntryUi } from '../core/web/entry-server.js';
-import { route, visibleEntries } from '../core/memory/routing.js';
-import { vectorRouteHits } from '../core/memory/vector-db.js';
+import { visibleEntries } from '../core/memory/routing.js';
 import { readGuardedMemory } from '../core/safety/safe-read.js';
 import { contradictionEdges, renderGraphReport } from '../core/memory/graph.js';
 import { archiveMemory, planArchiveSet } from '../core/memory/archive.js';
 import { planMemorySave, previewSavePlans, type SavePlan } from '../core/memory/save-plan.js';
 import { normalizeMemoryType } from '../core/memory/memory-candidate.js';
 import { parseSaveTarget, writeScopes } from '../core/runtime/config.js';
-import { normalizeLoadLimit } from '../core/runtime/load-limit.js';
 import { isJsonMode, jsonOk } from '../core/cli/json-output.js';
 import { EngramError, ExitCode } from '../core/runtime/exit-codes.js';
 import { formatRecords, type RecordBlock } from '../core/cli/format.js';
 import type { MemoryType, Scope } from '../core/runtime/types.js';
+import { parseBenchmarkDocument } from '../core/benchmark/schema.js';
+import { runBenchmark } from '../core/benchmark/run.js';
+import { serializeResult, fail } from '../core/contracts/result.js';
+import { writeJson } from '../core/system/fsx.js';
+import { loadPolicy } from '../core/policy/load.js';
 
 /** Return memory health summary. */
 export async function cmdHealth(flags: Record<string, any> = {}): Promise<string> {
@@ -89,45 +92,46 @@ export async function cmdGraph(args: string[], flags: Record<string, any> = {}):
   return renderGraphReport(ctx.graph, args.join(' '));
 }
 
-/** Run a tiny retrieval benchmark over query/expected-memory cases. */
+/** Run a versioned retrieval regression benchmark. */
 export async function cmdBenchmark(args: string[], flags: Record<string, any> = {}): Promise<string> {
   const file = args[0];
   if (!file) throw new EngramError('ENG_USAGE', 'benchmark requires cases.json', ExitCode.UsageError);
-  const rawCases = await readJson<any>(path.resolve(file), []);
-  const cases: Array<{ query: string; expect: string[] }> = Array.isArray(rawCases) ? rawCases : rawCases.cases ?? [];
+  const parsed = parseBenchmarkDocument(await readJson<any>(path.resolve(file), undefined));
+  if (!parsed.document) {
+    const message = parsed.diagnostics.map((item) => `${item.path}: ${item.message}`).join('; ') || 'invalid benchmark document';
+    const output = isJsonMode(flags) ? serializeResult(fail('ENG_USAGE', message, parsed.diagnostics.map((item) => ({ id: `benchmark.${item.path || 'document'}`, severity: 'error' as const, message: item.message })))) : undefined;
+    throw new EngramError('ENG_USAGE', message, ExitCode.UsageError, output);
+  }
   const ctx = await getContext();
-  const limit = normalizeLoadLimit(ctx.config.load?.limit);
-  let hits = 0;
-  const rows: RecordBlock[] = [];
-  const caseResults: Array<{ query: string; hit: boolean; routed: string[] }> = [];
-  for (const item of cases) {
-    const expects = Array.isArray(item.expect) ? item.expect : [item.expect].filter(Boolean);
-    const expected = new Set(expects.map((value) => String(value).replace(/\\/g, '/')));
-    const vectorHits = await vectorRouteHits(ctx.roots, ctx.scopeIndexes, ctx.config, item.query, ctx.ignorePatterns);
-    const routed = route(ctx.index, item.query, ctx.config, false, {
-      ignorePatterns: ctx.ignorePatterns,
-      vectorHits,
-      candidatePool: ctx.config.vector.candidate_pool
-    }, ctx.graph);
-    const found = routed.some((entry) => expected.has(entry.id) || expected.has(entry.file) || expected.has(`${entry.scope}:${entry.file}`));
-    if (found) hits += 1;
-    caseResults.push({ query: item.query, hit: found, routed: routed.map((entry) => entry.file) });
-    rows.push({
-      title: `${found ? 'HIT' : 'MISS'} ${item.query}`,
-      fields: [['Routed', routed.map((entry) => entry.file).join(', ') || '-']]
-    });
+  const report = await runBenchmark(ctx, parsed.document.cases);
+  const hits = report.cases.filter((item) => item.missing.length === 0).length;
+  const rows: RecordBlock[] = report.cases.map((item) => ({
+    title: `${item.missing.length ? 'MISS' : 'HIT'} ${item.query}`,
+    fields: [['Routed', item.routed.join(', ') || '-'] as [string, string], ...(item.forbidden_hits.length ? [['Forbidden', item.forbidden_hits.join(', ')] as [string, string]] : [])]
+  }));
+  const failOn = typeof flags['fail-on'] === 'string' ? flags['fail-on'].split(',').map((value: string) => value.trim().toLowerCase()).filter(Boolean) : [];
+  let regression = false;
+  const baselineFile = typeof flags.baseline === 'string' ? flags.baseline : '';
+  if (baselineFile) {
+    const baseline = await readJson<any>(path.resolve(baselineFile), {});
+    const baselineRecall = Number(baseline?.metrics?.recall_at_k ?? baseline?.data?.metrics?.recall_at_k ?? 0);
+    regression = report.metrics.recall_at_k < baselineRecall;
   }
-  const total = cases.length || 1;
-  if (isJsonMode(flags)) {
-    return jsonOk({
-      limit,
-      cases: cases.length,
-      hits,
-      hit_rate: Math.round((hits / total) * 100) / 100,
-      results: caseResults
-    });
+  const failed = failOn.some((kind: string) => (kind === 'forbidden' && report.metrics.forbidden_hits > 0) || (kind === 'dependency' && report.metrics.dependency_failures > 0) || (kind === 'isolation' && report.metrics.isolation_failures > 0) || (kind === 'zero-result' && report.metrics.zero_result_correctness < 1) || (kind === 'recall' && report.metrics.recall_at_k < Number(flags['min-recall'] ?? 1)));
+  const policyRequested = typeof flags.policy === 'string' ? flags.policy : undefined;
+  const policyThreshold = (flags.policy === true || policyRequested !== undefined)
+    ? (await loadPolicy(process.cwd(), policyRequested)).policy?.review.benchmark_min_recall_at_k
+    : undefined;
+  const policyRegression = policyThreshold !== undefined && report.metrics.recall_at_k < policyThreshold;
+  if (failed || (failOn.includes('regression') && regression) || policyRegression) {
+    const message = `benchmark regression: recall=${report.metrics.recall_at_k}, forbidden=${report.metrics.forbidden_hits}, dependencies=${report.metrics.dependency_failures}`;
+    const output = isJsonMode(flags) ? serializeResult(fail('ENG_REGRESSION', message)) : undefined;
+    throw new EngramError('ENG_REGRESSION', message, ExitCode.RegressionError, output);
   }
-  return formatRecords(`Benchmark: ${hits}/${cases.length} hit@${limit} (${Math.round((hits / total) * 100)}%)`, rows);
+  const outputReport = { version: 1, ...report, ...(baselineFile ? { baseline: baselineFile, regression } : {}), ...(policyThreshold !== undefined ? { policy_min_recall: policyThreshold } : {}) };
+  if (typeof flags['write-report'] === 'string') await writeJson(path.resolve(flags['write-report']), outputReport);
+  if (isJsonMode(flags)) return jsonOk({ ...outputReport, cases: parsed.document.cases.length, hits, hit_rate: Math.round((hits / (parsed.document.cases.length || 1)) * 100) / 100 });
+  return formatRecords(`Benchmark: ${hits}/${parsed.document.cases.length} hit@${report.limit} (${Math.round((hits / (parsed.document.cases.length || 1)) * 100)}%)`, rows);
 }
 
 /** Archive one wrong or superseded memory after approval. */

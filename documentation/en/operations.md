@@ -112,11 +112,13 @@ When `engram save` finds related active memories, the approval preview reports
 them with a suggested `depends_on` or possible-duplicate warning. Accepting saves
 the preview as-is; reject first if you want to restructure dependencies or
 archive duplicates before saving.
-For `save-session --force`, Engram pauses before writing when those related
-memory hints appear. The agent should use the response to brainstorm a structured
-rerun: add `DEPENDS_ON: memory-id` for dependencies, `LEVEL: advanced` when a
-memory is deeper than its prerequisite, or `UPDATE: memory-id` when a candidate
-should merge into a possible duplicate.
+For `save-session --force`, Engram writes candidates without unresolved related
+memory hints and defers only conflicted candidates. Deferred output is compact and
+ID-only: run the listed `engram load --id ...` command, then rerun only deferred
+candidates with `DEPENDS_ON: memory-id` for dependencies, `LEVEL: advanced` when
+a memory is deeper than its prerequisite, or `UPDATE: memory-id` when a candidate
+should merge into a possible duplicate. Listed IDs are inspection references, not
+evidence that deferred candidates were saved.
 
 ## Profiles, Save Targets, And Clone
 
@@ -188,9 +190,7 @@ TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
 the source situation, intended use, or boundary. Simple factual memories can omit
 it and use Engram's default approval context.
 
-Without `--force`, Engram asks which candidates to save. With `ss -f`, every generated candidate is saved because the human explicitly approved that shortcut.
-When a force run reports related memories before writing, no file was
-saved yet. The agent should rerun with structured candidates such as:
+Without `--force`, Engram asks which candidates to save. With `ss -f`, ready candidates are saved because the human explicitly approved that shortcut. Candidates with unresolved related-memory hints are deferred and reported with related IDs plus an `engram load --id ...` inspection command. The agent should load those IDs and rerun only deferred candidates with structured fields such as:
 
 ```text
 TYPE: rule | TEXT: OAuth rotation follows release foundations. | DEPENDS_ON: release-foundation | LEVEL: advanced
@@ -298,3 +298,12 @@ engram archive --reason "Repo migrated to npm." rules/use-pnpm.md
 ```
 
 Next: [Comparison and roadmap](comparison.md).
+# Safe automation and team validation
+
+Use `engram doctor --strict --json` and `engram policy validate --strict --json`
+as local/CI gates. `engram benchmark <cases.json> --json --fail-on forbidden,recall`
+supports versioned retrieval cases and body-free reports. Autonomous writes stay
+disabled unless `.agents/engram.policy.json` explicitly enables them; inspect
+receipts with `engram policy audit --json` and use `engram policy rollback <id>`
+for an archive-based rollback. Transcript capture is opt-in, sanitized, and
+inbox-only.

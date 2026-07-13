@@ -63,10 +63,11 @@ Hosts that support custom slash commands can also load generated `/engram` adapt
 - When save previews report related existing memories, treat those rows as
   advisory restructure hints. They may suggest `depends_on` or duplicate cleanup,
   but agents must not auto-archive or silently rewrite memory to apply them.
-  `save-session --force` is the exception for agent restructuring: if the
-  CLI reports related memories before writing, no file was saved yet, and the
-  agent should brainstorm a better candidate set and rerun with `DEPENDS_ON:
-  memory-id` for dependencies or `UPDATE: memory-id` for duplicates.
+  `save-session --force` writes candidates without unresolved related-memory
+  hints and defers only conflicted candidates. Deferred output is ID-only: load
+  the listed refs with `engram load --id ...`, then rerun only deferred
+  candidates with `DEPENDS_ON: memory-id` for dependencies or `UPDATE:
+  memory-id` for duplicates.
 - Treat `engram save-session` (`engram ss`) as the explicit long-session proposal flow. It may
   propose multiple rule, knowledge, and workflow/skill candidates, but it must
   still require human approval before writing. Numbered approvals such as
@@ -85,10 +86,11 @@ Hosts that support custom slash commands can also load generated `/engram` adapt
   when restructuring related memories.
 - Treat `engram save-session --force` as explicit human approval for every
   agent-recommended save-session candidate. Agents must not add this flag unless the
-  human requested it. When the CLI returns the related-memory no-write response,
-  the agent should use that response as routing context, generate a restructured
-  candidate set, and rerun the same force command instead of reporting a
-  saved result.
+  human requested it. When the CLI reports deferred candidates, some unrelated
+  candidates may already be saved. The listed IDs are inspection references, not
+  proof that deferred candidates were written; load them, choose `DEPENDS_ON` or
+  `UPDATE`, and rerun only those deferred candidates instead of reporting them as
+  saved.
 - Treat `engram metacognize --workspace|--global|--all` as an agent-assisted
   memory-folder restructuring flow. The CLI verifies active memories in the
   selected scope, gives the agent a compact source pack, and writes only

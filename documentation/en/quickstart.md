@@ -110,6 +110,7 @@ Force shortcut only when you truly mean it:
 ```
 
 `-f` means the human explicitly approves every agent-recommended candidate. Agents must not add it by themselves.
+Ready candidates are saved immediately. If Engram defers a candidate because related memory needs review, load the listed IDs with `engram load --id ...`, then rerun only that candidate with `DEPENDS_ON: memory-id` or `UPDATE: memory-id`. Listed IDs are inspection refs, not proof the deferred candidate was saved.
 
 To mine recent accessible chats and force-save generated candidates in one request:
 

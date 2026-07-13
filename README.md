@@ -17,6 +17,7 @@ Full documentation lives on the website: [@the-long-ride/engram docs-site](https
 ## Key Highlights
 
 - **Human in the Loop**: Direct CLI saves use A/B/C approval. AI-agent chat saves use an exact-candidate `yes` / `audit` / `cancel` loop before the agent writes with `save-session --force`.
+- **Partial Force Safety**: `save-session --force` saves unrelated ready candidates, but defers candidates that need dependency or duplicate review with ID-only `engram load --id ...` guidance.
 - **Context-Optimized**: Routes meaningful task matches plus prerequisites into a compact pack (default: 8 files) to avoid context bloat.
 - **Git-Native & Portable**: Plain Markdown files stored in `.agents/.engram/` synced via Git—completely vendor-agnostic and offline-first.
 - **Privacy & Security Control**: Runs 100% locally and scans for PII/secrets before writing.
@@ -397,6 +398,25 @@ When an AI agent proposes `TYPE: ... | TEXT: ...` memory candidates, it may add 
 | **Verify & Repair** | `engram verify` / `engram repair` | `/engram verify` / `/engram repair` |
 | **Scan Contradictions** | `engram quality-check` | `/engram quality-check` |
 | **Sync Memories** | `engram sync` | `/engram sync` |
+
+### Safe automation and team checks
+
+`engram policy init` creates a deny-by-default `.agents/engram.policy.json`. Use
+`engram policy validate --json` in CI, `engram autosave --policy --dry-run` to
+preview an allowed candidate, `engram policy audit --json` to inspect ID-only
+receipts, and `engram policy rollback <audit-id>` to archive a policy-approved
+write immediately. Autonomous writes remain disabled until a
+reviewed policy explicitly enables them; quota and local JSONL audit receipts
+apply per memory scope.
+
+Transcript ingestion is opt-in and inbox-only. Sanitized events must be passed
+through a host integration; they never become active memories automatically.
+`engram capabilities --json` reports host-specific support without claiming
+prompt injection where a host cannot provide it.
+
+The Entry UI groups work by task: Recall, Review, Maintain, and Connect. Review
+previews show a memory diff and ID-only dependency choices before any approval
+flow can write.
 
 When `engram set-role ...` or `engram set-rule-variant ...` succeeds, Engram now returns an `Agent action:` line. Engram-aware adapters and MCP hosts should immediately rerun `engram load "<current task/request>"` and replace earlier Engram-derived context in the same conversation. This happens after the command completes, not in the middle of a response, and installed skillset files still control future or reloaded chats.
 

@@ -4,7 +4,7 @@ import { VERSION } from './core/runtime/constants.js';
 import { canonicalCommand } from './core/cli/command-registry.js';
 import { cmdCompletion, cmdHelp, cmdInject, cmdLlm } from './commands/core.js';
 import { cmdObserve } from './commands/observe.js';
-import { cmdAudit, cmdLoad, cmdRebuildIndex, cmdRehash, cmdRepair, cmdRoute, cmdVerify } from './commands/read.js';
+import { cmdAudit, cmdDoctor, cmdLoad, cmdRebuildIndex, cmdRehash, cmdRepair, cmdRoute, cmdVerify } from './commands/read.js';
 import { cmdSave, cmdSaveSession, cmdTakeControl } from './commands/write.js';
 import { cmdArchive, cmdBenchmark, cmdDeduplicate, cmdEntry, cmdExport, cmdGraph, cmdHealth, cmdImport, cmdQuality, cmdSearch, cmdStats, cmdSync } from './commands/ops.js';
 import { cmdCloneMemory } from './commands/clone.js';
@@ -12,9 +12,15 @@ import { cmdConfig } from './commands/config-cmd.js';
 import { cmdMetacognize } from './commands/metacognize.js';
 import { cmdProfile } from './commands/profile.js';
 import { cmdWorkspace } from './commands/workspace.js';
+import { cmdReview } from './commands/review.js';
+import { cmdPolicy } from './commands/policy.js';
+import { cmdAutosave } from './commands/autosave.js';
+import { cmdCapabilities } from './commands/capabilities.js';
 import { cmdAgentHook, cmdIgnore, cmdInstallHooks, cmdResolveConflicts, cmdSetLoadLimit, cmdSetProof, cmdSetRead, cmdSetRole, cmdSetRuleVariant, cmdSetSaveTarget, cmdUpdateGlobalFolder, cmdUpgrade } from './commands/admin.js';
 import { cmdLink, cmdUnlink } from './commands/skillset-link.js';
 import { maybeAutoUpgrade } from './core/runtime/auto-upgrade.js';
+import { EngramError, errorCodeFor, exitCodeFor } from './core/runtime/exit-codes.js';
+import { fail, serializeResult } from './core/contracts/result.js';
 
 /** Execute a CLI invocation and return printable output. */
 export async function runCli(argv: string[]): Promise<string> {
@@ -41,23 +47,24 @@ export async function runCli(argv: string[]): Promise<string> {
       case 'observe': return await cmdObserve(rest, flags);
       case 'take-control': return await cmdTakeControl(rest, flags);
       case 'load': return await cmdLoad(rest, flags);
-      case 'verify': return await cmdVerify(rest[0]);
+      case 'verify': return await cmdVerify(rest[0], flags);
       case 'rehash': return await cmdRehash(rest[0]);
-      case 'route': return cmdRoute(rest);
+      case 'route': return cmdRoute(rest, flags);
       case 'rebuild-index': return await cmdRebuildIndex(rest[0]);
-      case 'repair': return await cmdRepair(rest[0]);
+      case 'repair': return await cmdRepair(rest[0], flags);
+      case 'doctor': return await cmdDoctor(rest, flags);
       case 'audit': return await cmdAudit(flags);
       case 'archive': return await cmdArchive(rest, flags);
-      case 'benchmark': return await cmdBenchmark(rest);
-      case 'health': return await cmdHealth();
+      case 'benchmark': return await cmdBenchmark(rest, flags);
+      case 'health': return await cmdHealth(flags);
       case 'graph': return await cmdGraph(rest, flags);
       case 'entry': return await cmdEntry(flags);
-      case 'quality-check': return await cmdQuality();
+      case 'quality-check': return await cmdQuality(flags);
       case 'deduplicate': return await cmdDeduplicate(flags);
       case 'export': return await cmdExport(flags);
       case 'import': return await cmdImport(rest, flags);
       case 'search': return await cmdSearch(rest, flags);
-      case 'stats': return await cmdStats();
+      case 'stats': return await cmdStats(flags);
       case 'ignore': return await cmdIgnore(rest);
       case 'set-role': return await cmdSetRole(rest);
       case 'set-save-target': return await cmdSetSaveTarget(rest);
@@ -78,6 +85,10 @@ export async function runCli(argv: string[]): Promise<string> {
       case 'clone-memory': return await cmdCloneMemory(rest, flags);
       case 'metacognize': return await cmdMetacognize(rest, flags);
       case 'sync': return await cmdSync();
+      case 'review': return await cmdReview(rest, flags);
+      case 'policy': return await cmdPolicy(rest, flags);
+      case 'autosave': return await cmdAutosave(rest, flags);
+      case 'capabilities': return await cmdCapabilities(rest, flags);
       case 'workspace': return await cmdWorkspace(rest, flags);
       case 'config': return await cmdConfig(rest, flags);
       default: return command === 'entry' ? await cmdEntry(flags) : await cmdHelp();
@@ -101,11 +112,18 @@ function readStdin(): Promise<string> {
 
 /** Main process entrypoint with clear errors. */
 export async function main(argv = process.argv.slice(2)): Promise<void> {
+  const jsonMode = argv.includes('--json');
   try {
     const output = await runCli(argv);
     if (output) console.log(output);
   } catch (error: any) {
-    console.error(`engram: ${error.message}`);
-    process.exit(1);
+    if (error instanceof EngramError && error.output) {
+      console.log(error.output);
+    } else if (jsonMode) {
+      console.log(serializeResult(fail(errorCodeFor(error), error?.message ?? String(error))));
+    } else {
+      console.error(`engram: ${error?.message ?? String(error)}`);
+    }
+    process.exit(exitCodeFor(error));
   }
 }

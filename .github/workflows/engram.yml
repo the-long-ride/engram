@@ -1,0 +1,30 @@
+name: Engram memory validation
+
+on:
+  pull_request:
+    paths:
+      - '.agents/**'
+      - '.github/actions/engram-check/**'
+      - '.github/workflows/engram.yml'
+      - 'tests/fixtures/benchmark/**'
+      - 'package.json'
+      - 'package-lock.json'
+  push:
+    branches: [main]
+    paths:
+      - '.agents/**'
+      - '.github/actions/engram-check/**'
+      - '.github/workflows/engram.yml'
+      - 'tests/fixtures/benchmark/**'
+      - 'package.json'
+      - 'package-lock.json'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/engram-check

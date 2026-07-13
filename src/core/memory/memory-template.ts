@@ -1,5 +1,5 @@
 /** Deterministic memory drafting for manual saves. */
-import type { MemoryType, Scope } from '../runtime/types.js';
+import type { Confidence, MemoryType, Scope } from '../runtime/types.js';
 import { frontmatter, parseMemory } from './schema.js';
 import { defaultRuleVariants, extractRuleVariants, ruleVariantsAreCustomized } from './rule-variants.js';
 import { slugify, tagsFrom, today } from '../system/text.js';
@@ -22,6 +22,7 @@ export function draftMemory(input: {
   taskType?: TaskType;
   triggers?: string[];
   variants?: Partial<Record<'light' | 'balanced' | 'strict', string>>;
+  confidence?: Confidence;
 }, options: MemoryDraftOptions = {}): { file: string; id: string; content: string; tags: string[] } {
   const title = titleFor(input.text, input.type);
   const id = slugify(title);
@@ -44,6 +45,7 @@ export function updateMemory(raw: string, input: {
   taskType?: TaskType;
   triggers?: string[];
   variants?: Partial<Record<'light' | 'balanced' | 'strict', string>>;
+  confidence?: Confidence;
 }, options: MemoryDraftOptions = {}): string {
   const doc = parseMemory(raw);
   const tags = unique([...(doc.frontmatter.tags ?? []), ...taskTypeTags(input.taskType), ...tagsFrom(input.text)]);
@@ -65,7 +67,8 @@ export function updateMemory(raw: string, input: {
     source: mergeSourceMeta(doc.frontmatter, input.source),
     bodyText: bullets.join('\n'),
     variantText: text,
-    variants
+    variants,
+    confidence: input.confidence ?? doc.frontmatter.confidence as Confidence | undefined
   }, options);
 }
 
@@ -78,13 +81,13 @@ function titleFor(text: string, type: MemoryType): string {
 function renderMemory(input: {
   text: string; type: MemoryType; scope: Scope; author: string; id: string; title: string;
   tags: string[]; created: string; role?: string[]; context?: string; dependsOn?: string[]; level?: string; source?: MemorySourceMeta; bodyText?: string; variantText?: string; variants?: Partial<Record<'light' | 'balanced' | 'strict', string>>;
-  triggers?: string[];
+  triggers?: string[]; confidence?: Confidence;
 }, options: MemoryDraftOptions): string {
   const now = today();
   const metadata: Record<string, any> = {
     id: input.id, type: input.type, scope: input.scope, tags: input.tags,
     created: input.created, updated: now, author: input.author,
-    source: input.source?.source ?? 'manual', confidence: 'high'
+    source: input.source?.source ?? 'manual', confidence: input.confidence ?? 'high'
   };
   if (input.role?.length) metadata.role = input.role;
   if (input.dependsOn?.length) metadata.depends_on = unique(input.dependsOn);

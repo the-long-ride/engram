@@ -140,7 +140,7 @@ function run(label, command, args) {
   return new Promise((resolve, reject) => {
     const child = command === 'npm run build'
       ? spawnBuild()
-      : spawn(command, testArgs, { stdio: 'inherit' });
+      : spawn(command, testArgs, spawnOptionsForCommand(command));
     child.on('error', reject);
     child.on('close', (code) => {
       if (code === 0) resolve();
@@ -151,7 +151,13 @@ function run(label, command, args) {
 
 function spawnBuild() {
   if (npmCli) return spawn(process.execPath, [npmCli, 'run', 'build'], { stdio: 'inherit' });
-  return spawn(npmCommand, ['run', 'build'], { stdio: 'inherit', shell: process.platform === 'win32' });
+  return spawn(npmCommand, ['run', 'build'], spawnOptionsForCommand(npmCommand));
+}
+
+export function spawnOptionsForCommand(command, platform = process.platform) {
+  return command === 'npm.cmd' && platform === 'win32'
+    ? { stdio: 'inherit', shell: true }
+    : { stdio: 'inherit' };
 }
 
 export async function websiteTestFiles() {

@@ -1,7 +1,7 @@
 // Shared frontend types for the Engram React control panel.
 import type { ReactNode } from 'react';
 
-export type TabName = 'config' | 'runtime' | 'core' | 'memories' | 'profiles' | 'workspaces' | 'connection';
+export type TabName = 'recall' | 'review' | 'maintain' | 'connect' | 'config';
 
 export interface ConfigField {
   key: string;

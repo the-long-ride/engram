@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "release-workflow",
+      "query": "release workflow",
+      "expect": ["knowledge/release-workflow.md"],
+      "forbid": ["knowledge/unrelated.md"],
+      "depends_on": ["knowledge/release-foundation.md"],
+      "scope": "workspace",
+      "limit": 5
+    },
+    {
+      "id": "empty-query",
+      "query": "unknown-no-match",
+      "expect": [],
+      "forbid": ["knowledge/release-workflow.md"]
+    }
+  ]
+}

@@ -16,7 +16,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
   const ignoreActions = ['status', 'check', 'add'].join(' ');
   const workspaceActions = ['list', 'info', 'set', 'unregister', 'link', 'unlink'].join(' ');
   const configActions = ['view', 'set'].join(' ');
-  const saveSessionArgs = ['--file', '--scope', '--profile', '--role', '--roles', '--query-level', '--force', '--show-rule-variants'].join(' ');
+  const saveSessionArgs = ['--file', '--scope', '--profile', '--role', '--roles', '--query-level', '--force', '--inbox', '--show-rule-variants'].join(' ');
   const observeArgs = ['--file', '--scope', '--profile', '--role', '--roles', '--propose'].join(' ');
   const takeControlArgs = ['--file', '--dir', '--include', '--exclude', '--max-sources', '--max-chars', '--scope', '--profile', '--role', '--roles', '--all', '--force', '--metacognize', '--dry-run', '--plan'].join(' ');
   const metacognizeArgs = ['--workspace', '--global', '--all', '--force', '--dry-run'].join(' ');
@@ -49,7 +49,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       `      _arguments "--scope[write scope]:scope:(${scopes})" "--profile[run with profile]:profile:" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "--show-rule-variants[show stored rule variant blocks in previews]" "1:memory type:(${saveTypes})"`,
       '      ;;',
       '    save-session|ss)',
-      `      _arguments "--file[read session summary file]:file:_files" "--scope[write scope]:scope:(${scopes})" "--profile[run with profile]:profile:" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "--query-level[recent chat sessions to mine]:number:" "--force[write every save-session candidate without final numbered approval]" "1:session summary: "`,
+      `      _arguments "--file[read session summary file]:file:_files" "--scope[write scope]:scope:(${scopes})" "--profile[run with profile]:profile:" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "--query-level[recent chat sessions to mine]:number:" "--force[write every save-session candidate without final numbered approval]" "--inbox[write resumable receipt files under .agents/.engram/inbox for deferred candidates]" "1:session summary: "`,
       '      ;;',
       '    observe|o)',
       `      _arguments "--file[read raw note file]:file:_files" "--scope[write scope]:scope:(${scopes})" "--profile[run with profile]:profile:" "--role[role tag]:role:" "--roles[comma-separated roles]:roles:" "--propose[mine inbox note through save-session]" "1:note: "`,
@@ -63,6 +63,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '    load|ld)\n      _arguments "--all" "--dry-run" "-f[load broader legacy memory output]" "--full[load broader legacy memory output]" "1:query: "\n      ;;',
       '    graph|g)\n      _arguments "--rebuild" "1:query: "\n      ;;',
       '    archive|ar)\n      _arguments "--reason[archive reason]:reason:" "1:memory: "\n      ;;',
+      '    review)\n      _arguments "--json[versioned contract envelope]" "--kind[finding kind]:kind:(duplicate contradiction stale invalid_dependency)" "--note[dismissal note]:note:" "--reason[archive reason]:reason:" "--depends-on[related memory ID]:id:" "--update[existing memory ID]:id:" "--force[apply receipt through save flow without second approval]" "1:action:(list inbox inspect dismiss verify supersede archive apply cleanup)"\n      ;;',
       '    benchmark|bm)\n      _arguments "1:cases file:_files"\n      ;;',
       '    search|f)\n      _arguments "1:query: "\n      ;;',
       '    verify|vf|rehash|rh|rebuild-index|ri|repair|rp)',

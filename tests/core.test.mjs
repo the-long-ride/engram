@@ -1330,5 +1330,111 @@ test('saveSessionGuidance mentions value gate, chat approval, and 100-line hard 
   assert.ok(guidance.includes('cancel'), 'guidance should mention cancel');
 });
 
+test('explain reason score uses blended CandidateRow.score for vector-only entry', () => {
+  const vectorEntry = routingEntry('semantic-match', 'workspace', ['semantic'], 'Completely unrelated semantic memory about animals.');
+  const directEntry = routingEntry('deploy-runbook', 'workspace', ['deploy'], 'Standard deployment runbook for production releases.');
+  const index = { version: 'test', last_updated: 'now', entries: [vectorEntry, directEntry] };
+  const config = { ...defaultConfig(), vector: { ...defaultConfig().vector, enabled: false }, graph: { ...defaultConfig().graph, enabled: false } };
+  const detail = routeDetailed(index, 'deploy production release', config, false, {
+    vectorHits: [{ entry: vectorEntry, score: 0.85 }]
+  });
+  assert.ok(detail.reasons, 'reasons present');
+  const vectorReason = detail.reasons.find((r) => r.key === 'workspace:knowledge/semantic-match.md');
+  assert.ok(vectorReason, 'vector entry has reason');
+  assert.equal(vectorReason.kind, 'vector');
+  assert.ok(vectorReason.matchedBy.includes('vector'));
+  assert.ok(typeof vectorReason.score === 'number', 'score is number');
+  assert.ok(vectorReason.score > 0, `vector-only score ${vectorReason.score} > 0 (blended, not raw directScore=0)`);
+  const directReason = detail.reasons.find((r) => r.key === 'workspace:knowledge/deploy-runbook.md');
+  assert.ok(directReason);
+  assert.ok(typeof directReason.score === 'number');
+  assert.ok(directReason.score > 0);
+});
+
+test('explain reason score uses blended CandidateRow.score for graph-contributed entry', () => {
+  const parent = routingEntry('release-foundation', 'workspace', ['release', 'foundation'], 'Canonical baseline policy for release readiness.');
+  const dependent = routingEntry('oauth-rotation', 'workspace', ['oauth', 'rotation'], 'OAuth rotation runbook for retrying credentials after secret rollover.', {
+    dependsOn: ['release-foundation']
+  });
+  const index = { version: 'test', last_updated: 'now', entries: [parent, dependent] };
+  const config = { ...defaultConfig(), graph: { ...defaultConfig().graph, enabled: true } };
+  const graph = {
+    version: 'test',
+    last_updated: 'now',
+    nodes: [
+      {
+        id: 'memory:workspace:release-foundation',
+        kind: 'memory',
+        level: 3,
+        label: 'release-foundation',
+        scope: 'workspace',
+        memoryId: 'release-foundation',
+        memoryType: 'knowledge',
+        file: 'knowledge/release-foundation.md',
+        tags: parent.tags,
+        summary: parent.summary,
+        dependsOn: [],
+        dependencyDepth: 0
+      },
+      {
+        id: 'memory:workspace:oauth-rotation',
+        kind: 'memory',
+        level: 4,
+        label: 'oauth-rotation',
+        scope: 'workspace',
+        memoryId: 'oauth-rotation',
+        memoryType: 'knowledge',
+        file: 'knowledge/oauth-rotation.md',
+        tags: dependent.tags,
+        summary: dependent.summary,
+        dependsOn: dependent.dependsOn,
+        dependencyDepth: 1
+      },
+      {
+        id: 'memory:topic:release',
+        kind: 'topic',
+        label: 'release',
+        tags: ['release']
+      }
+    ],
+    edges: [
+      {
+        id: 'depends_on:memory:workspace:oauth-rotation->memory:workspace:release-foundation',
+        kind: 'depends_on',
+        from: 'memory:workspace:oauth-rotation',
+        to: 'memory:workspace:release-foundation',
+        weight: 1,
+        reason: 'memory declares prerequisite dependency'
+      },
+      {
+        id: 'has_topic:memory:workspace:oauth-rotation->memory:topic:release',
+        kind: 'has_topic',
+        from: 'memory:workspace:oauth-rotation',
+        to: 'memory:topic:release',
+        weight: 1
+      },
+      {
+        id: 'has_topic:memory:workspace:release-foundation->memory:topic:release',
+        kind: 'has_topic',
+        from: 'memory:workspace:release-foundation',
+        to: 'memory:topic:release',
+        weight: 1
+      }
+    ]
+  };
+  const detail = routeDetailed(index, 'oauth rotation retry credentials', config, false, {}, graph);
+  assert.ok(detail.reasons, 'reasons present');
+  const depReason = detail.reasons.find((r) => r.key === 'workspace:knowledge/release-foundation.md');
+  assert.ok(depReason, 'dependency entry has reason');
+  assert.equal(depReason.kind, 'dependency');
+  assert.equal(depReason.source, 'depends_on');
+  assert.equal(depReason.score, undefined, 'dependency entries carry no score');
+  const directReason = detail.reasons.find((r) => r.key === 'workspace:knowledge/oauth-rotation.md');
+  assert.ok(directReason, 'direct entry has reason');
+  assert.ok(directReason.matchedBy.includes('graph'), 'graph contribution tracked');
+  assert.ok(typeof directReason.score === 'number');
+  assert.ok(directReason.score > 0, `graph-contributed score ${directReason.score} > 0`);
+});
+
 
 

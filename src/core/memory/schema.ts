@@ -1,11 +1,12 @@
 /** Memory Markdown frontmatter parser and validator. */
-import type { MemoryDoc, MemoryEntry, MemoryType, Scope, Confidence } from '../runtime/types.js';
+import type { MemoryDoc, MemoryEntry, MemoryType, Scope, Confidence, Lifecycle } from '../runtime/types.js';
 import { meaningfulWordList, summarize, tagsFrom, today } from '../system/text.js';
 import { canonicalRuleMemory } from './rule-variants.js';
 
 const memoryTypes = new Set(['rule', 'skill', 'knowledge']);
 const scopes = new Set(['workspace', 'global']);
 const confidences = new Set(['high', 'medium', 'low']);
+const lifecycles = new Set<Lifecycle>(['active', 'review_due', 'superseded', 'archived']);
 export const RULE_EFFECTIVE_LINE_TARGET = 70;
 export const RULE_EFFECTIVE_LINE_HARD_LIMIT = 100;
 export const RULE_LINE_MIN = 50;
@@ -46,6 +47,8 @@ export function entryFromMemory(raw: string, file: string, fallbackScope: Scope)
   const dependsOn = frontmatterStrings(doc.frontmatter.depends_on);
   const dependencyDepth = frontmatterDepth(doc.frontmatter.dependency_depth ?? doc.frontmatter.level ?? doc.frontmatter.depth);
   const summaryBody = doc.frontmatter.type === 'rule' ? parseMemory(canonicalRuleMemory(raw)).body : doc.body;
+  const lifecycle = normalizeLifecycle(doc.frontmatter.lifecycle);
+  const supersedes = frontmatterStrings(doc.frontmatter.supersedes);
   return {
     id: String(doc.frontmatter.id),
     type: doc.frontmatter.type,
@@ -64,7 +67,12 @@ export function entryFromMemory(raw: string, file: string, fallbackScope: Scope)
     updated: String(doc.frontmatter.updated ?? doc.frontmatter.created ?? today()),
     ...(dependsOn.length ? { dependsOn } : {}),
     ...(dependencyDepth !== undefined ? { dependencyDepth } : {}),
-    role: doc.frontmatter.role
+    role: doc.frontmatter.role,
+    ...(lifecycle ? { lifecycle } : {}),
+    ...(typeof doc.frontmatter.review_after === 'string' && doc.frontmatter.review_after ? { reviewAfter: doc.frontmatter.review_after } : {}),
+    ...(typeof doc.frontmatter.last_verified === 'string' && doc.frontmatter.last_verified ? { lastVerified: doc.frontmatter.last_verified } : {}),
+    ...(supersedes.length ? { supersedes: supersedes[0] } : {}),
+    ...(typeof doc.frontmatter.archived_at === 'string' && doc.frontmatter.archived_at ? { archivedAt: doc.frontmatter.archived_at } : {})
   };
 }
 
@@ -139,6 +147,12 @@ function frontmatterDepth(value: unknown): number | undefined {
   return Number.isInteger(parsed) && parsed >= 0 ? parsed : undefined;
 }
 
+function normalizeLifecycle(value: unknown): Lifecycle | undefined {
+  if (value === undefined || value === null || value === '') return undefined;
+  const text = String(value).trim().toLowerCase();
+  return lifecycles.has(text as Lifecycle) ? text as Lifecycle : undefined;
+}
+
 function requireText(value: unknown, field: string): void {
   if (!value || typeof value !== 'string') throw new Error(`Missing ${field}`);
 }
@@ -193,4 +207,4 @@ export function effectiveMemoryLines(raw: string): number {
   return body.split(/\r?\n/).filter((line) => line.trim()).length;
 }
 
-export type { MemoryType, Scope, Confidence };
+export type { MemoryType, Scope, Confidence, Lifecycle };

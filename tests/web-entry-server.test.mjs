@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { rm } from 'node:fs/promises';
-import { tempWorkspace } from './helpers.mjs';
+import { runEngram, tempWorkspace } from './helpers.mjs';
 import { servePanel, stopServer, launchEntryUi } from '../dist/core/web/entry-server.js';
 
 async function requestJson(url, options = {}) {
@@ -43,6 +43,26 @@ test('entry server exposes safe config metadata and validated config updates', a
     assert.equal(coreData.body.ok, true);
     assert.ok(Array.isArray(coreData.body.data.duplicates));
     assert.ok(coreData.body.data.prompts.resolveDuplicates.includes('UPDATE:'));
+
+    const recall = await requestJson(baseUrl + '/api/recall?query=release%20workflow&explain=true');
+    assert.equal(recall.response.status, 200);
+    assert.equal(recall.body.contract_version, '1');
+    assert.equal(recall.body.ok, true);
+    assert.ok(Array.isArray(recall.body.data.selected));
+
+    const review = await requestJson(baseUrl + '/api/review');
+    assert.equal(review.response.status, 200);
+    assert.equal(review.body.contract_version, '1');
+    assert.ok(Array.isArray(review.body.data.findings));
+    assert.ok(Array.isArray(review.body.data.receipts));
+
+    const missingFinding = await requestJson(baseUrl + '/api/review/inspect?id=missing-finding');
+    assert.equal(missingFinding.response.status, 404);
+    assert.equal(missingFinding.body.ok, false);
+
+    const capabilities = await requestJson(baseUrl + '/api/capabilities');
+    assert.equal(capabilities.response.status, 200);
+    assert.ok(Array.isArray(capabilities.body.data.capabilities));
 
     const refreshedCore = await requestJson(baseUrl + '/api/core', {
       method: 'POST',
@@ -99,6 +119,7 @@ test('entry server exposes safe config metadata and validated config updates', a
       body: JSON.stringify({ patch: { scope: 'workspace' } })
     });
     assert.equal(valid.body.ok, true);
+    assert.ok(valid.body.data);
     assert.deepEqual(valid.body.riskyKeys, ['scope']);
 
     const saved = await requestJson(baseUrl + '/api/config', {
@@ -161,12 +182,15 @@ test('entry server exposes safe config metadata and validated config updates', a
 
     const errMem = await requestJson(baseUrl + '/api/memory?profile=default&scope=workspace&file=nonexistent.md');
     assert.equal(errMem.response.status, 500);
-    assert.equal(errMem.body.ok, undefined);
+    assert.equal(errMem.body.ok, false);
+    assert.equal(errMem.body.contract_version, '1');
+    assert.deepEqual(errMem.body.diagnostics, []);
     assert.ok(errMem.body.error);
 
     const errFile = await requestJson(baseUrl + '/api/memory/file?profile=default&scope=workspace&file=nonexistent.md');
     assert.equal(errFile.response.status, 500);
     assert.ok(errFile.body.error);
+
 
     const faviconRes = await fetch(baseUrl + '/favicon.svg');
     assert.equal(faviconRes.status, 200);
@@ -189,6 +213,29 @@ test('entry server exposes safe config metadata and validated config updates', a
     process.env.ENGRAM_CONFIG_DIR = oldEnv.ENGRAM_CONFIG_DIR;
     process.env.ENGRAM_GLOBAL_DIR = oldEnv.ENGRAM_GLOBAL_DIR;
     process.env.NODE_ENV = oldEnv.NODE_ENV;
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('entry recall resolves memory from the served cwd', async () => {
+  const { cwd, env } = await tempWorkspace('engram-entry-recall-cwd-');
+  const previous = {
+    ENGRAM_CONFIG_DIR: process.env.ENGRAM_CONFIG_DIR,
+    ENGRAM_GLOBAL_DIR: process.env.ENGRAM_GLOBAL_DIR
+  };
+  process.env.ENGRAM_CONFIG_DIR = env.ENGRAM_CONFIG_DIR;
+  process.env.ENGRAM_GLOBAL_DIR = env.ENGRAM_GLOBAL_DIR;
+  try {
+    await runEngram(cwd, env, ['inject', '--no-skillset']);
+    await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', '--skip-task-type-prompt', 'Entry server cwd isolation marker'], 'A\n');
+    const baseUrl = await servePanel(cwd);
+    const recall = await requestJson(baseUrl + '/api/recall?query=entry%20server%20cwd%20isolation%20marker&explain=true');
+    assert.equal(recall.response.status, 200);
+    assert.equal(recall.body.data.selected[0].id, 'entry-server-cwd-isolation-marker');
+  } finally {
+    stopServer();
+    process.env.ENGRAM_CONFIG_DIR = previous.ENGRAM_CONFIG_DIR;
+    process.env.ENGRAM_GLOBAL_DIR = previous.ENGRAM_GLOBAL_DIR;
     await rm(cwd, { recursive: true, force: true });
   }
 });

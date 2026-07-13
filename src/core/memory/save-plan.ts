@@ -3,7 +3,7 @@ import type { EngramContext } from './context.js';
 import { entryPath } from './context.js';
 import { exists, readText } from '../system/fsx.js';
 import { draftMemory, updateMemory, type MemorySourceMeta } from './memory-template.js';
-import type { MemoryEntry, MemoryType, Scope } from '../runtime/types.js';
+import type { Confidence, MemoryEntry, MemoryType, Scope } from '../runtime/types.js';
 import { lexicalScore, slugify, words } from '../system/text.js';
 import { sha256 } from '../safety/hash.js';
 import { routeDetailed } from './routing.js';
@@ -34,6 +34,7 @@ export type SavePlan = {
   matchScore?: number;
   candidateIndex?: number;
   related?: SaveRelatedHint[];
+  previousContent?: string;
 };
 
 export type SavePreviewOptions = {
@@ -42,18 +43,22 @@ export type SavePreviewOptions = {
 
 /** Choose whether each scope should add a new memory or update an existing one. */
 export async function planMemorySave(input: {
-  ctx: EngramContext; text: string; type: MemoryType; scopes: Scope[]; author: string; role?: string[]; context?: string; triggers?: string[]; dependsOn?: string[]; level?: string; updateId?: string; source?: MemorySourceMeta; taskType?: TaskType; variants?: Partial<Record<'light' | 'balanced' | 'strict', string>>;
+  ctx: EngramContext; text: string; type: MemoryType; scopes: Scope[]; author: string; role?: string[]; context?: string; triggers?: string[]; dependsOn?: string[]; level?: string; updateId?: string; source?: MemorySourceMeta; taskType?: TaskType; variants?: Partial<Record<'light' | 'balanced' | 'strict', string>>; confidence?: Confidence;
 }): Promise<SavePlan[]> {
   const plans: SavePlan[] = [];
   const options = { ruleVariants: true };
   for (const scope of input.scopes) {
-    const match = await explicitMatch(input.ctx, input.updateId, input.type, scope) ?? await bestMatch(input.ctx, input.text, input.type, scope);
+    const explicitUpdate = Boolean(input.updateId?.trim());
+    const match = explicitUpdate
+      ? await explicitMatch(input.ctx, input.updateId, input.type, scope)
+      : await bestMatch(input.ctx, input.text, input.type, scope);
+    if (explicitUpdate && !match) throw new Error(`UPDATE target not found for ${input.type} in ${scope}: ${input.updateId}`);
     const related = relatedMemoryHints(input.ctx, input.text, input.type, scope, match?.entry);
     if (match) {
-      const content = updateMemory(match.raw, { text: input.text, type: input.type, scope, author: input.author, role: input.role, context: input.context, triggers: input.triggers, dependsOn: input.dependsOn, level: input.level, source: input.source, taskType: input.taskType, variants: input.variants }, options);
-      plans.push({ action: 'update', scope, file: match.entry.file, id: match.entry.id, content, matchScore: match.score, related, message: `update ${input.type}: ${match.entry.id}` });
+      const content = updateMemory(match.raw, { text: input.text, type: input.type, scope, author: input.author, role: input.role, context: input.context, triggers: input.triggers, dependsOn: input.dependsOn, level: input.level, source: input.source, taskType: input.taskType, variants: input.variants, confidence: input.confidence }, options);
+      plans.push({ action: 'update', scope, file: match.entry.file, id: match.entry.id, content, previousContent: match.raw, matchScore: match.score, related, message: `update ${input.type}: ${match.entry.id}` });
     } else {
-      const draft = draftMemory({ text: input.text, type: input.type, scope, author: input.author, role: input.role, context: input.context, triggers: input.triggers, dependsOn: input.dependsOn, level: input.level, source: input.source, taskType: input.taskType, variants: input.variants }, options);
+      const draft = draftMemory({ text: input.text, type: input.type, scope, author: input.author, role: input.role, context: input.context, triggers: input.triggers, dependsOn: input.dependsOn, level: input.level, source: input.source, taskType: input.taskType, variants: input.variants, confidence: input.confidence }, options);
       const unique = await avoidCollision(input.ctx, scope, draft, input.text);
       plans.push({ action: 'add', scope, file: unique.file, id: unique.id, content: unique.content, related, message: `add ${input.type}: ${unique.id}` });
     }

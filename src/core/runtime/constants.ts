@@ -13,6 +13,9 @@ export const HASH_FILE = 'memory.hashes.json';
 export const CHANGELOG_FILE = 'changelog.md';
 export const HELP_FILE = 'HELP.md';
 export const README_FILE = 'README.md';
+export const REVIEW_DIR = 'review';
+export const INBOX_DIR = 'inbox';
+export const INBOX_DEFAULT_TTL_DAYS = 14;
 
 export const MEMORY_DIRS = ['rules', 'skills', 'knowledge', 'archive', 'quarantine', 'proposals', 'inbox'];
 

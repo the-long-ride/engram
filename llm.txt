@@ -108,6 +108,20 @@ Meaning:
 - `manual`: disable automatic hook reads but keep manual `engram load`
 - `off`: suppress automatic read surfaces
 
+Diagnostics, review, and safe automation
+
+- `engram doctor --strict --json`: run deterministic CI diagnostics; strict mode fails on warnings or failures.
+- `engram load --explain --json "<task>"`: expose selected IDs, ranking evidence, dependencies, and omissions without memory bodies.
+- `engram review list|inspect|dismiss|verify|supersede|archive`: inspect and approve lifecycle findings; actions remain human-controlled.
+- `engram benchmark <cases.json> --json --fail-on forbidden,recall`: run versioned retrieval regression cases; reports contain IDs and metrics only.
+- `engram policy init|show|validate|rollback`: manage the local deny-by-default team policy and audit rollback receipts.
+- `engram autosave --policy --dry-run "TYPE: knowledge | TEXT: ..."`: preview policy-gated automation. Autonomous writes require an explicit reviewed policy and quota.
+- `engram capabilities --json`: inspect host-specific instruction, MCP, hook, proof, and transcript capabilities.
+
+Transcript capture is disabled by default. An explicit `.agents/engram.transcripts.json`
+with `enabled: true` may allow supported hooks to create sanitized, non-indexed
+inbox observations; transcript events never become active memories automatically.
+
 Proof visibility is separate:
 
 - `engram set-proof off`

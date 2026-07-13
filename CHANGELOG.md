@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Added deny-by-default policy automation with quota enforcement, ID-only audit receipts, and archive rollback (`policy audit`, `policy rollback`, `autosave --policy`).
+- Added opt-in, sanitized transcript ingestion that remains inbox-only and capability-gated.
+- Added versioned retrieval benchmarks with recall/precision, forbidden/dependency/isolation checks, baselines, body-free reports, and CI failure gates.
+- Added stable MCP/Entry contract metadata, host capability conformance tests, task-oriented Recall/Review/Maintain/Connect UI, memory diff/dependency previews, and local GitHub Action validation.
+
 ## 0.0.25
 
 - Corrected global OpenCode integration to always use `~/.config/opencode/` for rules, skills, plugin, and MCP configuration.

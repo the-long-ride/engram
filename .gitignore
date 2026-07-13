@@ -44,11 +44,20 @@ TODO.md
 # agents
 AGENTS.md
 .agents/**/*
+!.agents/
+!.agents/engram.policy.json
 .github/**/*
 !.github/workflows/
 !.github/workflows/*.yml
 !.github/workflows/*.yaml
+!.github/actions/
+!.github/actions/engram-check/
+!.github/actions/engram-check/action.yml
 
 # engram
 docs/superpowers/
 .pnpm-store/
+
+# local agent working state (goal tracking, plans)
+.opencode/
+plan-ignore-from-commit.md

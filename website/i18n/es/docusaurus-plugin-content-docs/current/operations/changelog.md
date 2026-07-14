@@ -12,7 +12,7 @@ Para conocer la versión actual del paquete, consulte [`package.json`](https://g
 
 ## Versión actual
 
-La versión actual de Engram publicada es `0.0.26`.
+La versión actual de Engram publicada es `0.0.27`.
 
 ## Actualizar
 

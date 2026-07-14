@@ -258,7 +258,7 @@ function processFile(locale, srcFile) {
 // Main execution
 function main() {
   const currentVersion = 'current';
-  const oldVersion = 'version-0.0.26';
+  const oldVersion = 'version-0.0.27';
   
   for (const locale of locales) {
     console.log(`Processing locale: ${locale}`);

@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-## 0.0.26
+## 0.0.27
 
 - Added the Docusaurus docs site, release-versioned docs, and full i18n coverage for 7 locales, plus homepage, footer, mobile navigation, and copy-to-Markdown actions.
 - Added docs and release automation for GitHub Actions, including docs deploy workflows, an `engram-check` action, and related-test CI support.

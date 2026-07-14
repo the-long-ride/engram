@@ -12,7 +12,7 @@ For the current package version, see [`package.json`](https://github.com/the-lon
 
 ## Current version
 
-The current released Engram version is `0.0.26`.
+The current released Engram version is `0.0.27`.
 
 ## Upgrade
 

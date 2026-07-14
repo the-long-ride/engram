@@ -130,19 +130,19 @@ describe('html utils', () => {
 
 describe('docs utils', () => {
   test('resolves exact published version when available', () => {
-    expect(resolveDocsVersion('0.0.25', ['0.0.25', '0.0.26'])).toBe('0.0.25');
-    expect(entryDoc('core', undefined, '0.0.25', ['0.0.25', '0.0.26'])).toBe('https://the-long-ride.github.io/engram/docs/version-0.0.25/entry/core');
+    expect(resolveDocsVersion('0.0.25', ['0.0.25', '0.0.27'])).toBe('0.0.25');
+    expect(entryDoc('core', undefined, '0.0.25', ['0.0.25', '0.0.27'])).toBe('https://the-long-ride.github.io/engram/docs/version-0.0.25/entry/core');
   });
 
   test('falls back to latest published docs version when current version is unpublished', () => {
-    expect(latestDocsVersion(['0.0.25', '0.0.26', '0.0.24'])).toBe('0.0.26');
-    expect(resolveDocsVersion('0.0.27', ['0.0.25', '0.0.26'])).toBe('0.0.26');
-    expect(entryDoc('construct', undefined, '0.0.27', ['0.0.25', '0.0.26'])).toBe('https://the-long-ride.github.io/engram/docs/entry/construct');
+    expect(latestDocsVersion(['0.0.25', '0.0.27', '0.0.24'])).toBe('0.0.27');
+    expect(resolveDocsVersion('0.0.27', ['0.0.25', '0.0.27'])).toBe('0.0.27');
+    expect(entryDoc('construct', undefined, '0.0.27', ['0.0.25', '0.0.27'])).toBe('https://the-long-ride.github.io/engram/docs/entry/construct');
   });
 
   test('normalizes leading v prefixes and anchors field docs to matching version', () => {
-    expect(resolveDocsVersion('v0.0.25', ['0.0.25', '0.0.26'])).toBe('0.0.25');
-    expect(entryDoc('runtime', 'runtime-report-groups', 'v0.0.25', ['0.0.25', '0.0.26'])).toBe('https://the-long-ride.github.io/engram/docs/version-0.0.25/entry/runtime#runtime-report-groups');
-    expect(entryFieldGroupDoc('Global Git', 'v0.0.25', ['0.0.25', '0.0.26'])).toBe('https://the-long-ride.github.io/engram/docs/version-0.0.25/entry/field-reference#global-git');
+    expect(resolveDocsVersion('v0.0.25', ['0.0.25', '0.0.27'])).toBe('0.0.25');
+    expect(entryDoc('runtime', 'runtime-report-groups', 'v0.0.25', ['0.0.25', '0.0.27'])).toBe('https://the-long-ride.github.io/engram/docs/version-0.0.25/entry/runtime#runtime-report-groups');
+    expect(entryFieldGroupDoc('Global Git', 'v0.0.25', ['0.0.25', '0.0.27'])).toBe('https://the-long-ride.github.io/engram/docs/version-0.0.25/entry/field-reference#global-git');
   });
 });

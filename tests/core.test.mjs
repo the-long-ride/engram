@@ -1056,12 +1056,12 @@ test('documentation contract removes old load/save flags from active docs and gu
     'missing-optional-guidance.md'
   ];
   const allowLegacy = [
-    'version-0.0.26/entry/',
-    'version-0.0.26/install.md',
-    'version-0.0.26/operations/',
-    'version-0.0.26/cli/sync-archive.md',
-    'version-0.0.26/cli/profiles-workspaces-config.md',
-    'version-0.0.26/entry/'
+    'version-0.0.27/entry/',
+    'version-0.0.27/install.md',
+    'version-0.0.27/operations/',
+    'version-0.0.27/cli/sync-archive.md',
+    'version-0.0.27/cli/profiles-workspaces-config.md',
+    'version-0.0.27/entry/'
   ];
   const offenders = [];
   for (const root of roots) {

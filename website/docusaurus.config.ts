@@ -5,9 +5,9 @@ import type * as Preset from '@docusaurus/preset-classic';
 const baseUrl = '/engram/';
 const docsCopy = {
   currentVersionPath: 'future',
-  publishedVersions: ['0.0.25', '0.0.26'],
-  publishedVersionLabel: '0.0.26',
-  publishedVersionName: 'version-0.0.26',
+  publishedVersions: ['0.0.25', '0.0.27'],
+  publishedVersionLabel: '0.0.27',
+  publishedVersionName: 'version-0.0.27',
 } as const;
 
 const config: Config = {

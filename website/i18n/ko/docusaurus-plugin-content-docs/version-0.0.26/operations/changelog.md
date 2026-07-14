@@ -12,7 +12,7 @@ Engram 릴리스 히스토리는 [`CHANGELOG.md`](https://github.com/the-long-ri
 
 ## 현재 버전
 
-현재 릴리스된 Engram 버전은 `0.0.26`입니다.
+현재 릴리스된 Engram 버전은 `0.0.27`입니다.
 
 ## 업그레이드
 

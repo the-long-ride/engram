@@ -12,7 +12,7 @@ Engram 发布历史保存在代码仓库的 [`CHANGELOG.md`](https://github.com/
 
 ## 当前版本
 
-当前发布的 Engram 版本为 `0.0.26`。
+当前发布的 Engram 版本为 `0.0.27`。
 
 ## 升级
 

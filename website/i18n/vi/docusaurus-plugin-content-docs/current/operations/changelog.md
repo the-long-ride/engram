@@ -12,7 +12,7 @@ Lịch sử phát hành Engram nằm trong kho lưu trữ [`CHANGELOG.md`](https
 
 ## Phiên bản hiện tại
 
-Phiên bản Engram đã được phát hành hiện tại là `0.0.26`.
+Phiên bản Engram đã được phát hành hiện tại là `0.0.27`.
 
 ## Nâng cấp
 

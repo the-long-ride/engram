@@ -8,7 +8,7 @@ const __dirname = path.dirname(__filename);
 // Ensure paths are always relative to the website directory
 const websiteDir = path.resolve(__dirname, '..');
 const docsDir = path.join(websiteDir, 'docs');
-const versionedDir = path.join(websiteDir, 'versioned_docs', 'version-0.0.26');
+const versionedDir = path.join(websiteDir, 'versioned_docs', 'version-0.0.27');
 
 const locales = ['vi', 'es', 'fr', 'zh', 'ko', 'ja', 'ru'];
 
@@ -33,7 +33,7 @@ function getFilesRecursively(dir) {
 
 function syncDocs() {
   const currentVersion = 'current';
-  const oldVersion = 'version-0.0.26';
+  const oldVersion = 'version-0.0.27';
 
   // Sync docs/ (current version)
   const docFiles = getFilesRecursively(docsDir);
@@ -59,7 +59,7 @@ function syncDocs() {
     }
   }
 
-  // Sync versioned_docs/version-0.0.26/
+  // Sync versioned_docs/version-0.0.27/
   if (fs.existsSync(versionedDir)) {
     const versionedFiles = getFilesRecursively(versionedDir);
 

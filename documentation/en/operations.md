@@ -266,6 +266,8 @@ To view and manage runtime settings, use the `config` commands:
 | `memory.rule_line_target` | Recommended line count target for rule memories | `70` | `50` to `200` |
 | `memory.rule_line_hard_limit` | Maximum allowed line count for rule memories | `100` | `50` to `200` |
 | `load.limit` | Max memories returned by normal load | `8` | `1` to `32` |
+| `update` | Quiet one-time package upgrade check | `auto` | `auto`, `manual`, `off` |
+| `ignore.global_patterns` | Global glob patterns synchronized into each workspace `.engramignore` managed block on `engram inject` | empty | One glob per line |
 | `rule_variants.enabled` | Enable or disable rule variants generation | `true` | `true`, `false` |
 | `rule_variants.active` | Active rule variant mode | `balanced` | `light`, `balanced`, `strict` |
 | `graph.enabled` | Enable or disable graph-aware routing | `true` | `true`, `false` |
@@ -273,11 +275,20 @@ To view and manage runtime settings, use the `config` commands:
 | `graph.min_related_score` | Min similarity score to add graph edges | `0.3` | `0.0` to `1.0` |
 | `vector.enabled` | Enable or disable vector search fallback | `true` | `true`, `false` |
 | `live_sync.enabled` | Sync generated agent context files on save | `true` | `true`, `false` |
+| `live_sync.targets` | Generated agent context targets refreshed by live sync | `agents-md`, `claude-md`, `cursorrules` | Comma-separated target names |
 | `global_git.enabled` | Enable global Git repo sync automation | `false` | `true`, `false` |
 | `global_git.remote` | Git remote name for global sync | `origin` | String |
 | `global_git.branch` | Git branch name for global sync | `main` | String |
+| `pr_workflow.provider` | Experimental memory PR workflow provider | empty | String |
+| `pr_workflow.repo` | Experimental memory PR workflow repository | empty | String |
 
 These settings are also manageable visually under the **Construct** tab in `engram entry`.
+
+The Construct tab also edits `.agents/engram.policy.json`, including autonomous-write enablement, review-only/autonomous mode, allowed type/scope/source, confidence threshold, write limits, rollback retention, and required metadata. Normal saves remain approval-based unless the policy explicitly permits an eligible autonomous write.
+
+## Entry review queue
+
+The Entry **Review** tab is a manual, confirmation-gated workflow for findings and deferred candidates. It previews linked memory, copies a prompt for an AI agent, and offers a pasted-response fallback. The fallback shows a read-only diff and requires explicit confirmation before it writes a sanitized, validated proposal. It does not invoke an AI provider or bypass the autonomous-write policy.
 
 ## Repair And Review
 

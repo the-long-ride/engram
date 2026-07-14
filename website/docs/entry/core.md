@@ -1,12 +1,12 @@
 ---
-title: Core tab
+title: Maintain tab
 sidebar_position: 7
 description: Review duplicate and conflicting memories with scope and type filters.
 ---
 
-# Core tab
+# Maintain tab
 
-The Core tab reviews duplicate and conflicting memories. It is the metacognition workspace inside the Entry panel.
+The Maintain tab reviews duplicate and conflicting memories. It is the metacognition workspace inside the Entry panel.
 
 ## Scope chips: profile / global / workspace {#scope-chips-profile-global-workspace}
 
@@ -38,5 +38,5 @@ engram metacognize --workspace --force
 
 ## Next steps
 
-- [Memories tab](memories.md)
+- [Recall tab](memories.md)
 - [CLI: verify / repair / quality-check](../cli/verify-repair-quality.md)

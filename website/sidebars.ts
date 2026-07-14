@@ -31,6 +31,7 @@ const sidebars: SidebarsConfig = {
         'entry/launch',
         'entry/connections',
         'entry/construct',
+        'entry/review',
         'entry/profiles',
         'entry/workspaces',
         'entry/core',

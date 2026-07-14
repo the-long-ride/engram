@@ -4,7 +4,7 @@ import { existsSync, accessSync, constants as fsConstants } from 'node:fs';
 import path from 'node:path';
 import { isValidGitRemoteUrl } from '../vcs/git.js';
 
-export type ConfigInputType = 'toggle' | 'select' | 'number' | 'text' | 'roles';
+export type ConfigInputType = 'toggle' | 'select' | 'number' | 'text' | 'textarea' | 'roles' | 'list';
 export type ConfigRisk = 'normal' | 'risky';
 
 export type ConfigFieldDef = {
@@ -37,12 +37,20 @@ export type ConfigPatchValidation = {
 export const CONFIG_FIELDS: ConfigFieldDef[] = [
   { key: 'enabled', group: 'Core', label: 'Enabled', input: 'toggle', description: 'Enable or disable Engram entirely', risk: 'risky' },
   { key: 'scope', group: 'Core', label: 'Save Target', input: 'select', options: ['workspace', 'global', 'both'], description: 'Default scope for save commands', risk: 'risky' },
+  { key: 'update', group: 'Core', label: 'Update Mode', input: 'select', options: ['auto', 'manual', 'off'], description: 'Whether normal commands run the quiet one-time package upgrade check' },
   { key: 'read', group: 'Core', label: 'Read Mode', input: 'select', options: ['auto', 'startup', 'always', 'manual', 'off'], description: 'When agent hooks inject memory context' },
   { key: 'proof', group: 'Core', label: 'Proof Mode', input: 'select', options: ['off', 'compact'], description: 'Whether hooks append an Engram proof line' },
   { key: 'global_path', group: 'Core', label: 'Global Memory Path', input: 'text', description: 'Filesystem path to the global memory folder', risk: 'risky' },
   { key: 'default_profile', group: 'Core', label: 'Default Profile', input: 'select', description: 'Profile name used when none is explicitly set', risk: 'risky' },
   { key: 'roles', group: 'Core', label: 'Active Roles', input: 'roles', description: 'Comma-separated role names for memory context routing' },
   { key: 'theme', group: 'Core', label: 'Theme', input: 'select', options: ['dark', 'light'], hidden: true },
+
+  { key: 'ignore.source', group: 'Ignore Rules', label: 'Ignore Source', input: 'select', options: ['engramignore', 'gitignore', 'both', 'off'], description: 'Which ignore file sources are applied during scans' },
+  { key: 'ignore.gitignore_path', group: 'Ignore Rules', label: 'Gitignore Path', input: 'text' },
+  { key: 'ignore.engramignore_path', group: 'Ignore Rules', label: 'Engramignore Path', input: 'text' },
+  { key: 'ignore.global_engramignore', group: 'Ignore Rules', label: 'Global Engramignore', input: 'toggle', description: 'Apply the global ignore file when one is configured' },
+  { key: 'ignore.also_ignore', group: 'Ignore Rules', label: 'Additional Patterns', input: 'list', description: 'Comma-separated glob patterns to ignore' },
+  { key: 'ignore.global_patterns', group: 'Ignore Rules', label: 'Global Ignore Patterns', input: 'textarea', description: 'One glob pattern per line. Synced into each workspace .engramignore during inject.' },
 
   { key: 'load.limit', group: 'Load Routing', label: 'Load Limit', input: 'number', min: 1, max: 32, description: 'Max memories returned by normal load' },
 
@@ -54,6 +62,7 @@ export const CONFIG_FIELDS: ConfigFieldDef[] = [
   { key: 'graph.min_related_score', group: 'Graph', label: 'Min Score', input: 'number', min: 0, max: 1, step: 0.01, description: 'Minimum similarity score for graph edges' },
 
   { key: 'vector.enabled', group: 'Vector Search', label: 'Enabled', input: 'toggle' },
+  { key: 'vector.provider', group: 'Vector Search', label: 'Provider', input: 'select', options: ['sqlite-vec'] },
   { key: 'vector.auto_threshold', group: 'Vector Search', label: 'Auto Threshold', input: 'number', min: 10, max: 1000, description: 'Memory count at which vector search activates' },
   { key: 'vector.candidate_pool', group: 'Vector Search', label: 'Candidate Pool', input: 'number', min: 8, max: 100 },
   { key: 'vector.dimensions', group: 'Vector Search', label: 'Dimensions', input: 'number', min: 16, max: 512 },
@@ -62,6 +71,7 @@ export const CONFIG_FIELDS: ConfigFieldDef[] = [
   { key: 'rule_variants.active', group: 'Rule Variants', label: 'Active Variant', input: 'select', options: ['light', 'balanced', 'strict'] },
 
   { key: 'live_sync.enabled', group: 'Live Sync', label: 'Enabled', input: 'toggle', description: 'Sync generated agent context files on save' },
+  { key: 'live_sync.targets', group: 'Live Sync', label: 'Targets', input: 'list', description: 'Comma-separated generated context targets' },
 
   { key: 'global_git.enabled', group: 'Global Git', label: 'Enabled', input: 'toggle', risk: 'risky' },
   { key: 'global_git.remote', group: 'Global Git', label: 'Remote', input: 'text', risk: 'risky' },
@@ -75,6 +85,8 @@ export const CONFIG_FIELDS: ConfigFieldDef[] = [
   { key: 'pattern_mining.lookback_sessions', group: 'Pattern Mining', label: 'Lookback Sessions', input: 'number', min: 1, max: 100 },
 
   { key: 'pr_workflow.enabled', group: 'PR Workflow', label: 'Enabled', input: 'toggle', risk: 'risky' },
+  { key: 'pr_workflow.provider', group: 'PR Workflow', label: 'Provider', input: 'text', risk: 'risky' },
+  { key: 'pr_workflow.repo', group: 'PR Workflow', label: 'Repository', input: 'text', risk: 'risky' },
   { key: 'pr_workflow.target_branch', group: 'PR Workflow', label: 'Target Branch', input: 'text', risk: 'risky' },
 
   { key: 'encryption.enabled', group: 'Encryption', label: 'Enabled', input: 'toggle', risk: 'risky' },
@@ -156,8 +168,16 @@ function normalizeConfigValue(field: ConfigFieldDef, rawValue: unknown): { ok: t
 
   if (field.input === 'roles') return normalizeRoles(rawValue);
 
+  if (field.input === 'list') return normalizeList(rawValue);
+
   const value = stringifyValue(rawValue).trim();
   return validateTextField(field.key, value);
+}
+
+function normalizeList(rawValue: unknown): { ok: true; value: string } | { ok: false; message: string } {
+  const values = Array.isArray(rawValue) ? rawValue.map((item) => stringifyValue(item)) : stringifyValue(rawValue).split(',');
+  const normalized = values.map((value) => value.trim()).filter(Boolean);
+  return { ok: true, value: JSON.stringify(normalized) };
 }
 
 function normalizeRoles(rawValue: unknown): { ok: true; value: string } | { ok: false; message: string } {

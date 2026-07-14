@@ -21,11 +21,17 @@ jest.mock('../../src/core/web/app/api-client.js', () => {
     postJson: jest.fn(),
     reviewQueue: jest.fn(),
     reviewInspect: jest.fn(),
+    reviewPreview: jest.fn(),
+    reviewWrite: jest.fn(),
   };
 });
 
 describe('ReviewTab', () => {
-  beforeEach(() => jest.resetAllMocks());
+  beforeEach(() => {
+    jest.resetAllMocks();
+    (api.reviewPreview as jest.Mock).mockResolvedValue({ data: { previews: [] } });
+    (api.reviewWrite as jest.Mock).mockResolvedValue({ data: { written: [{ id: 'saved-memory' }], message: 'Memory written' } });
+  });
 
   test('keeps the latest selected finding when inspect responses resolve out of order', async () => {
     let resolveFirst!: (value: unknown) => void;
@@ -44,7 +50,7 @@ describe('ReviewTab', () => {
       : Promise.resolve({ data: { finding: { id: 'finding-b', kind: 'stale', safe_summary: 'Finding B detail', memory_ids: ['b'] } } }));
 
     render(<ReviewTab active={true} toast={jest.fn()} />);
-    fireEvent.click(await screen.findByRole('button', { name: 'stale: finding-b' }));
+    fireEvent.click(await screen.findByRole('button', { name: /finding-b/ }));
     expect((await screen.findAllByText('Finding B detail')).length).toBeGreaterThan(0);
     await act(async () => resolveFirst({ data: { finding: { id: 'finding-a', kind: 'duplicate', safe_summary: 'Finding A late detail', memory_ids: ['a'] } } }));
     expect(screen.queryByText('Finding A late detail')).not.toBeInTheDocument();
@@ -93,22 +99,82 @@ describe('ReviewTab', () => {
 
     render(<ReviewTab active={true} toast={toast} />);
 
-    expect(await screen.findByRole('button', { name: 'inbox: receipt-a' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /receipt-a/ })).toBeInTheDocument();
     expect((await screen.findAllByText('autosave: workflow candidate awaiting relation review')).length).toBeGreaterThan(0);
-    expect(screen.getByDisplayValue('TYPE: workflow | TEXT: Rotate release signer after build | ORIGIN: release runbook | TRIGGERS: release, signing | DEPENDS_ON: dep-1 | UPDATE: existing-memory')).toBeInTheDocument();
-    expect(screen.getByText('Memory IDs: dep-1, existing-memory')).toBeInTheDocument();
-    expect(screen.getByText('Selected: none')).toBeInTheDocument();
+    expect(screen.getByText('TYPE: workflow | TEXT: Rotate release signer after build | ORIGIN: release runbook | TRIGGERS: release, signing | DEPENDS_ON: dep-1 | UPDATE: existing-memory')).toBeInTheDocument();
+    expect(screen.getByText('2 related memories')).toBeInTheDocument();
+    expect(screen.getByText('No dependency or replacement selected.')).toBeInTheDocument();
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Depends on' })[0]);
-    expect(screen.getByText('Selected: DEPENDS_ON:dep-1')).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole('button', { name: 'Mark dependency' })[0]);
+    expect(screen.getByText('Depends on')).toBeInTheDocument();
+    expect(screen.getAllByText('dep-1').length).toBeGreaterThan(1);
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Update' })[0]);
-    expect(screen.getByText('Selected: UPDATE:dep-1')).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole('button', { name: 'Mark replacement' })[0]);
+    expect(screen.getByText('Replaces')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Paste AI response'));
+    fireEvent.change(screen.getByLabelText('Paste AI response'), { target: { value: 'Draft proposal' } });
 
     fireEvent.click(screen.getByRole('button', { name: 'Clear preview' }));
     expect(toast).toHaveBeenCalledWith('Review preview cleared');
     expect(screen.getByDisplayValue('')).toBeInTheDocument();
-    expect(screen.getByText('Selected: none')).toBeInTheDocument();
+    expect(screen.getByText('No dependency or replacement selected.')).toBeInTheDocument();
+  });
+
+  test('copies an AI review prompt and accepts a pasted response', async () => {
+    (api.reviewQueue as jest.Mock).mockResolvedValue({ data: { findings: [{ id: 'finding-a', kind: 'stale', safe_summary: 'Stale memory', memory_ids: ['memory-a'], candidate: { type: 'knowledge', text: 'Generated candidate' } }], receipts: [] } });
+    (api.reviewInspect as jest.Mock).mockResolvedValue({ data: { finding: { id: 'finding-a', kind: 'stale', safe_summary: 'Stale memory', memory_ids: ['memory-a'], candidate: { type: 'knowledge', text: 'Generated candidate' } } } });
+    (api.reviewPreview as jest.Mock).mockResolvedValue({ data: { previews: [{ id: 'memory-a', kind: 'memory', type: 'knowledge', scope: 'workspace', properties: [], content: 'Current memory' }] } });
+    const writeText = jest.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+
+    render(<ReviewTab active={true} toast={jest.fn()} />);
+
+    expect(await screen.findByText('TYPE: knowledge | TEXT: Generated candidate')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Copy AI review prompt' }));
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining('Generated candidate'));
+
+    fireEvent.click(screen.getByText('Paste AI response'));
+    fireEvent.change(screen.getByLabelText('Paste AI response'), { target: { value: 'Approved response' } });
+    expect(screen.getByText('+ Approved response')).toBeInTheDocument();
+  });
+
+  test('requires confirmation before writing the pasted proposal', async () => {
+    (api.reviewQueue as jest.Mock).mockResolvedValue({ data: { findings: [{ id: 'finding-a', kind: 'stale', safe_summary: 'Stale memory', memory_ids: ['memory-a'], candidate: { type: 'knowledge', text: 'Generated candidate' } }], receipts: [] } });
+    (api.reviewInspect as jest.Mock).mockResolvedValue({ data: { finding: { id: 'finding-a', kind: 'stale', safe_summary: 'Stale memory', memory_ids: ['memory-a'], candidate: { type: 'knowledge', text: 'Generated candidate' } } } });
+    (api.reviewPreview as jest.Mock).mockResolvedValue({ data: { previews: [{ id: 'memory-a', kind: 'memory', type: 'knowledge', scope: 'workspace', properties: [], content: 'Current memory' }] } });
+    const modal = { open: jest.fn(), close: jest.fn() };
+
+    render(<ReviewTab active={true} toast={jest.fn()} modal={modal} />);
+    fireEvent.click(await screen.findByText('Paste AI response'));
+    fireEvent.change(screen.getByLabelText('Paste AI response'), { target: { value: 'TYPE: knowledge | TEXT: Approved memory' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Approve & write' }));
+
+    expect(modal.open).toHaveBeenCalledWith(expect.objectContaining({ title: 'Write memory?' }));
+    const confirmation = modal.open.mock.calls[0][0];
+    render(confirmation.actions);
+    fireEvent.click(screen.getByRole('button', { name: 'Write memory' }));
+    await waitFor(() => expect(api.reviewWrite).toHaveBeenCalledWith(expect.objectContaining({
+      proposal: 'TYPE: knowledge | TEXT: Approved memory',
+      scope: 'workspace',
+      confirmed: true
+    })));
+  });
+
+  test('loads a memory preview with properties separated from content', async () => {
+    (api.reviewQueue as jest.Mock).mockResolvedValue({ data: { findings: [{ id: 'finding-a', kind: 'stale', safe_summary: 'Stale memory', memory_ids: ['memory-a'] }], receipts: [] } });
+    (api.reviewInspect as jest.Mock).mockResolvedValue({ data: { finding: { id: 'finding-a', kind: 'stale', safe_summary: 'Stale memory', memory_ids: ['memory-a'] } } });
+    (api.reviewPreview as jest.Mock).mockResolvedValue({ data: { previews: [{ id: 'memory-a', kind: 'memory', type: 'knowledge', scope: 'workspace', file: 'knowledge/memory-a.md', properties: [['type', 'knowledge'], ['updated', '2026-07-14']], content: '## Content\n\nReadable memory body.' }] } });
+
+    render(<ReviewTab active={true} toast={jest.fn()} />);
+
+    expect((await screen.findAllByText(/Readable memory body\./)).length).toBeGreaterThan(0);
+    expect(screen.getByText('updated')).toBeInTheDocument();
+    expect(screen.getByText('2026-07-14')).toBeInTheDocument();
+    expect(screen.getByText('Content')).toBeInTheDocument();
+    expect(api.reviewPreview).toHaveBeenCalledWith('finding-a', ['memory-a']);
+    expect(api.reviewPreview).toHaveBeenCalledTimes(1);
+    expect(screen.getAllByText(/Readable memory body\./).length).toBeGreaterThan(0);
   });
 
   test('shows safe empty states when queue is empty', async () => {
@@ -116,11 +182,10 @@ describe('ReviewTab', () => {
 
     render(<ReviewTab active={true} toast={jest.fn()} />);
 
-    expect(await screen.findByText('No pending findings.')).toBeInTheDocument();
-    expect(screen.getByText('Select a finding to inspect it.')).toBeInTheDocument();
-    expect(screen.getByText('(new memory)')).toBeInTheDocument();
-    expect(screen.getByText('(empty proposal)')).toBeInTheDocument();
-    expect(screen.getByText('No related memory IDs.')).toBeInTheDocument();
+    expect(await screen.findByText('No pending findings')).toBeInTheDocument();
+    expect(screen.getByText('Select an item')).toBeInTheDocument();
+    expect(screen.queryByText('(new memory)')).not.toBeInTheDocument();
+    expect(screen.queryByText('(empty proposal)')).not.toBeInTheDocument();
   });
 });
 
@@ -148,7 +213,7 @@ describe('ConfigTab', () => {
     const { container } = render(<ConfigTab data={mockData} reload={reloadMock} toast={toastMock} />);
 
     // Check input displays default value
-    const input = container.querySelector('input') as HTMLInputElement;
+    const input = container.querySelector('[data-key="global_git.branch"] input') as HTMLInputElement;
     expect(input.value).toBe('main');
     expect(screen.getByRole('link', { name: 'Open Construct documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/construct');
     expect(screen.getByRole('link', { name: 'Open Branch documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/field-reference#global-git');
@@ -187,7 +252,7 @@ describe('ConfigTab', () => {
   test('allows resetting a dirty field', () => {
     const { container } = render(<ConfigTab data={mockData} reload={jest.fn()} toast={jest.fn()} />);
 
-    const input = container.querySelector('input') as HTMLInputElement;
+    const input = container.querySelector('[data-key="global_git.branch"] input') as HTMLInputElement;
     fireEvent.change(input, { target: { value: 'dev' } });
     fireEvent.blur(input);
     expect(input.value).toBe('dev');
@@ -321,6 +386,25 @@ describe('CoreTab', () => {
       title: 'Resolve duplicate memories'
     }));
   });
+
+  test('opens memory modal with properties separated from content', async () => {
+    (api.getJson as jest.Mock)
+      .mockResolvedValueOnce(mockCoreData)
+      .mockResolvedValueOnce({ content: 'Readable body', properties: [['type', 'knowledge'], ['updated', '2026-07-14']] });
+    const modalMock = { open: jest.fn(), close: jest.fn() };
+    render(<CoreTab active={true} toast={jest.fn()} modal={modalMock} />);
+
+    await waitFor(() => expect(screen.getByText('Summary A')).toBeInTheDocument());
+    fireEvent.click(screen.getAllByRole('button', { name: /mem-a/i })[0]);
+
+    await waitFor(() => expect(modalMock.open).toHaveBeenCalledWith(expect.objectContaining({
+      className: 'modal-panel memory-preview-modal'
+    })));
+    const modal = modalMock.open.mock.calls[0][0];
+    render(modal.content);
+    expect(screen.getByText('type')).toBeInTheDocument();
+    expect(screen.getByText('Readable body')).toBeInTheDocument();
+  });
 });
 
 describe('MemoriesTab', () => {
@@ -400,6 +484,21 @@ describe('MemoriesTab', () => {
     }, { timeout: 1000 });
     expect(screen.getByRole('option', { name: 'Text matches only' })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'Text matches + related memories' })).toBeInTheDocument();
+  });
+
+  test('opens memory modal with properties separated from content', async () => {
+    (api.getJson as jest.Mock)
+      .mockResolvedValueOnce(mockMemoriesData)
+      .mockResolvedValue({ content: 'Readable body', properties: [['type', 'knowledge'], ['updated', '2026-07-14']] });
+    const modalMock = { open: jest.fn(), close: jest.fn() };
+    render(<MemoriesTab active={true} toast={jest.fn()} modal={modalMock} />);
+
+    await waitFor(() => expect(screen.getByText('Summary 1')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
+
+    await waitFor(() => expect(modalMock.open).toHaveBeenCalledWith(expect.objectContaining({
+      className: 'modal-panel memory-preview-modal'
+    })));
   });
 });
 
@@ -566,4 +665,36 @@ describe('ConnectionsTab', () => {
       expect(toastMock).toHaveBeenCalledWith('Disconnected');
     });
   });
+});
+
+test('renders global ignore patterns as textarea and policy fields as dropdowns', () => {
+  const data = {
+    config: { ignore: { global_patterns: ['*.private.md', 'vendor/**'] } },
+    configFields: [{ key: 'ignore.global_patterns', group: 'Ignore Rules', label: 'Global Ignore Patterns', input: 'textarea' }],
+    policy: {
+      exists: true,
+      policy: {
+        version: 1,
+        autonomous_writes: {
+          enabled: false,
+          mode: 'review_only',
+          allowed_types: ['knowledge'],
+          allowed_scopes: ['workspace'],
+          allowed_sources: ['autosave'],
+          confidence_threshold: 'high',
+          daily_limit: 5,
+          rollback_retention_days: 30
+        },
+        review: { max_rule_lines: 100, benchmark_min_recall_at_k: 0.9, mandatory_metadata: { context: false, triggers: false, role: false } }
+      }
+    }
+  } as any;
+
+  render(<ConfigTab data={data} reload={jest.fn()} toast={jest.fn()} />);
+
+  expect(screen.getByRole('textbox')).toHaveValue('*.private.md\nvendor/**');
+  expect(screen.getAllByRole('combobox')).toHaveLength(5);
+  expect(screen.getByLabelText('allowed types')).toHaveValue('knowledge');
+  expect(screen.getByLabelText('allowed scopes')).toHaveValue('workspace');
+  expect(screen.getByLabelText('allowed sources')).toHaveValue('autosave');
 });

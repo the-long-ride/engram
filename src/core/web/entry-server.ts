@@ -12,6 +12,9 @@ import {
   apiConfigSet,
   apiConfigValidate,
   apiConfigUpdate,
+  apiPolicyUpdate,
+  apiReviewPreview,
+  apiReviewWrite,
   apiWorkspaceAdd,
   apiWorkspaceRemove,
   apiWorkspaceLink,
@@ -23,6 +26,7 @@ import {
   apiAgentUnlink,
   apiCoreData,
   apiGetMemoryContent,
+  apiGetMemoryPreview,
   apiBrowseDirectories,
   apiMemoriesGraphData,
   apiResolveMemoryFile,
@@ -198,8 +202,8 @@ async function handleRequest(req: any, res: any, cwd: string): Promise<void> {
       const profile = parsed.searchParams.get('profile') || '';
       const scope = parsed.searchParams.get('scope') as Scope || 'global';
       const file = parsed.searchParams.get('file') || '';
-      const content = await apiGetMemoryContent(cwd, profile, scope, file);
-      json(200, { ok: true, content });
+      const data = await apiGetMemoryPreview(cwd, profile, scope, file);
+      json(200, { ok: true, ...data });
     } catch (e: any) { json(500, { error: e.message }); }
     return;
   }
@@ -251,6 +255,16 @@ async function handleRequest(req: any, res: any, cwd: string): Promise<void> {
       const parsed = new URL(req.url, 'http://localhost');
       const id = parsed.searchParams.get('id') || '';
       json(200, JSON.parse(await cmdReview(['inspect', id], { json: true, cwd })));
+    } catch (e: any) { json(404, { error: e.message }); }
+    return;
+  }
+
+  if (url === '/api/review/preview' && method === 'GET') {
+    try {
+      const parsed = new URL(req.url, 'http://localhost');
+      const id = parsed.searchParams.get('id') || '';
+      const memoryIds = (parsed.searchParams.get('memory_ids') || '').split(',').filter(Boolean);
+      json(200, { ok: true, data: await apiReviewPreview(cwd, id, memoryIds) });
     } catch (e: any) { json(404, { error: e.message }); }
     return;
   }
@@ -316,6 +330,16 @@ async function handleRequest(req: any, res: any, cwd: string): Promise<void> {
       }
       if (url === '/api/config/validate') {
         json(200, apiConfigValidate(body.patch ?? body));
+        return;
+      }
+      if (url === '/api/review/write') {
+        const data = await apiReviewWrite(cwd, body);
+        json(200, { ok: true, data });
+        return;
+      }
+      if (url === '/api/policy') {
+        const message = await apiPolicyUpdate(body.patch ?? body.policy ?? body, cwd);
+        json(200, { ok: true, message });
         return;
       }
       if (url === '/api/browse') {

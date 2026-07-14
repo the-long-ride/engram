@@ -10,6 +10,7 @@ import { readJson, readText } from '../core/system/fsx.js';
 import { resolveAuthor, syncGlobalMemoryGit, writeApprovedMemory } from '../core/memory/storage.js';
 import { applyApprovalEdit, requestApproval } from '../core/safety/approval.js';
 import { launchEntryUi } from '../core/web/entry-server.js';
+import { renderInitWordmark } from '../core/cli/banner.js';
 import { visibleEntries } from '../core/memory/routing.js';
 import { readGuardedMemory } from '../core/safety/safe-read.js';
 import { contradictionEdges, renderGraphReport } from '../core/memory/graph.js';
@@ -284,12 +285,15 @@ export async function cmdStats(flags: Record<string, any> = {}): Promise<string>
 }
 
 export async function cmdEntry(flags: Record<string, any> = {}): Promise<string> {
+  const wordmark = renderInitWordmark(Boolean(process.stdout.isTTY)).replace(/^(?:\r?\n)+/u, '');
   if (process.env.NODE_ENV === 'test') {
     const { renderEntry } = await import('../core/runtime/entry.js');
-    return renderEntry(process.cwd());
+    const entryOutput = await renderEntry(process.cwd());
+    return `${wordmark}\n\n${entryOutput}`;
   }
   const hostOnly = flags.hostOnly === true || flags['host-only'] === true;
-  return launchEntryUi(process.cwd(), { hostOnly });
+  const launchOutput = await launchEntryUi(process.cwd(), { hostOnly });
+  return `${wordmark}\n\n${launchOutput}`;
 }
 
 /** Render live-sync targets once. */

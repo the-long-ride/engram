@@ -2,7 +2,7 @@ export type EntryFieldDoc = {
   key: string;
   label: string;
   group: string;
-  control: 'toggle' | 'select' | 'number' | 'text' | 'roles' | 'scope-chips' | 'type-chips' | 'action-toggle';
+  control: 'toggle' | 'select' | 'number' | 'text' | 'textarea' | 'list' | 'roles' | 'scope-chips' | 'type-chips' | 'action-toggle';
   defaultValue?: string;
   allowedValues?: string[];
   min?: number;
@@ -39,6 +39,14 @@ export const ENTRY_FIELDS: EntryFieldDoc[] = [
     guidelines: ['Use workspace for repo-specific memory.', 'Use global for personal/team memory.', 'Use both for new installations.'],
     cliEquivalent: ['engram set-save-target workspace|global|both'],
     troubleshooting: ['engram set-save-target status to see the current target.'],
+  },
+  {
+    key: 'update', label: 'Update Mode', group: 'Core', control: 'select',
+    defaultValue: 'auto', allowedValues: ['auto', 'manual', 'off'], risk: 'normal',
+    shortDescription: 'Controls Engram’s quiet one-time package upgrade check during normal commands.',
+    useCases: ['auto: receive compatibility updates automatically.', 'manual: upgrade only when you choose.', 'off: disable automatic checks in controlled environments.'],
+    guidelines: ['Keep auto for normal installations.', 'Use manual or off only when release management is handled externally.'],
+    cliEquivalent: ['engram config set update auto|manual|off'],
   },
   {
     key: 'read', label: 'Read Mode', group: 'Core', control: 'select',
@@ -86,6 +94,49 @@ export const ENTRY_FIELDS: EntryFieldDoc[] = [
     guidelines: ['Role names must match ^[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$.', 'Clear roles with engram set-role.'],
     cliEquivalent: ['engram set-role frontend', 'engram set-role backend security', 'engram set-role'],
     troubleshooting: ['Empty roles = no role filtering.'],
+  },
+  {
+    key: 'ignore.source', label: 'Ignore Source', group: 'Ignore Rules', control: 'select',
+    defaultValue: 'engramignore', allowedValues: ['engramignore', 'gitignore', 'both', 'off'], risk: 'normal',
+    shortDescription: 'Selects which ignore-file sources are applied while Engram scans files.',
+    useCases: ['engramignore: use Engram-specific rules.', 'both: honor project Git and Engram patterns.', 'off: scan without ignore-file rules.'],
+    guidelines: ['Use both when project and memory privacy rules should apply together.'],
+  },
+  {
+    key: 'ignore.gitignore_path', label: 'Gitignore Path', group: 'Ignore Rules', control: 'text',
+    defaultValue: '.gitignore', risk: 'normal',
+    shortDescription: 'Path to the Git ignore file read when Git ignore rules are enabled.',
+    useCases: ['Use a custom path in a nested workspace.'],
+    guidelines: ['Keep the default unless the workspace uses a nonstandard layout.'],
+  },
+  {
+    key: 'ignore.engramignore_path', label: 'Engramignore Path', group: 'Ignore Rules', control: 'text',
+    defaultValue: '.engramignore', risk: 'normal',
+    shortDescription: 'Path to the Engram-specific ignore file.',
+    useCases: ['Use a workspace-local privacy and exclusion policy.'],
+    guidelines: ['Keep the default path for portable workspace configuration.'],
+  },
+  {
+    key: 'ignore.global_engramignore', label: 'Global Engramignore', group: 'Ignore Rules', control: 'toggle',
+    defaultValue: 'true', risk: 'normal',
+    shortDescription: 'Applies global ignore rules when global memory is configured.',
+    useCases: ['Share a personal exclusion baseline across workspaces.'],
+    guidelines: ['Keep enabled unless a workspace must be isolated from global rules.'],
+  },
+  {
+    key: 'ignore.also_ignore', label: 'Additional Patterns', group: 'Ignore Rules', control: 'list',
+    defaultValue: '*.secret, private/**', risk: 'normal',
+    shortDescription: 'Additional glob patterns excluded from scans.',
+    useCases: ['Exclude secrets, private folders, or generated artifacts.'],
+    guidelines: ['Add only patterns you intend to hide from Engram operations.', 'Use comma-separated glob patterns in the panel.'],
+  },
+  {
+    key: 'ignore.global_patterns', label: 'Global Ignore Patterns', group: 'Ignore Rules', control: 'textarea',
+    defaultValue: undefined, risk: 'normal',
+    shortDescription: 'Global glob patterns synchronized into a managed block in each workspace .engramignore during inject.',
+    useCases: ['Apply personal privacy exclusions to every workspace.'],
+    guidelines: ['Enter one glob per line.', 'Human-authored lines outside the managed block are preserved.'],
+    sideEffects: ['Each engram inject updates only the managed global-pattern block.'],
   },
   {
     key: 'load.limit', label: 'Load Limit', group: 'Load Routing', control: 'number',
@@ -144,6 +195,13 @@ export const ENTRY_FIELDS: EntryFieldDoc[] = [
     cliEquivalent: ['engram config set vector.enabled true|false'],
   },
   {
+    key: 'vector.provider', label: 'Provider', group: 'Vector Search', control: 'select',
+    defaultValue: 'sqlite-vec', allowedValues: ['sqlite-vec'], risk: 'normal',
+    shortDescription: 'Local vector-search provider used by the optional vector sidecar.',
+    useCases: ['Keep the supported local provider selected for vector routing.'],
+    guidelines: ['sqlite-vec is the only currently supported provider.', 'Disable vector search instead of entering an unsupported provider.'],
+  },
+  {
     key: 'vector.auto_threshold', label: 'Auto Threshold', group: 'Vector Search', control: 'number',
     defaultValue: '100', min: 10, max: 1000, risk: 'normal',
     shortDescription: 'Memory count at which vector search activates.',
@@ -186,6 +244,13 @@ export const ENTRY_FIELDS: EntryFieldDoc[] = [
     shortDescription: 'Sync generated agent context files on save.',
     useCases: ['Keep linked instruction files up to date.'],
     guidelines: ['Enable for automatic sync.', 'Disable for manual control.'],
+  },
+  {
+    key: 'live_sync.targets', label: 'Targets', group: 'Live Sync', control: 'list',
+    defaultValue: 'agents-md, claude-md, cursorrules', risk: 'normal',
+    shortDescription: 'Generated agent-context targets refreshed when live sync runs.',
+    useCases: ['Sync instruction files for selected agent hosts.'],
+    guidelines: ['Use the supported target names required by linked agents.', 'Use comma-separated values in the panel.'],
   },
   {
     key: 'global_git.enabled', label: 'global_git.enabled', group: 'Global Git', control: 'toggle',
@@ -264,6 +329,22 @@ export const ENTRY_FIELDS: EntryFieldDoc[] = [
     useCases: ['Document as experimental unless complete.'],
     guidelines: ['Disabled by default.', 'Enable only when the PR workflow is complete.'],
     troubleshooting: ['PR workflows are experimental; disable if you experience unintended branching or merge halts.'],
+  },
+  {
+    key: 'pr_workflow.provider', label: 'Provider', group: 'PR Workflow', control: 'text',
+    defaultValue: undefined, risk: 'risky',
+    shortDescription: 'Provider identifier for the experimental memory pull-request workflow.',
+    useCases: ['Configure the team provider used by an existing PR workflow.'],
+    guidelines: ['Leave empty unless the workflow integration is configured for your team.'],
+    troubleshooting: ['Disable PR workflow if provider configuration is incomplete.'],
+  },
+  {
+    key: 'pr_workflow.repo', label: 'Repository', group: 'PR Workflow', control: 'text',
+    defaultValue: undefined, risk: 'risky',
+    shortDescription: 'Repository identifier used by the experimental memory pull-request workflow.',
+    useCases: ['Target the repository that receives memory review changes.'],
+    guidelines: ['Leave empty unless the team workflow requires it.'],
+    troubleshooting: ['Verify repository access and provider configuration before enabling workflow.'],
   },
   {
     key: 'pr_workflow.target_branch', label: 'Target Branch', group: 'PR Workflow', control: 'text',

@@ -69,3 +69,29 @@ test('all registered commands appear in engram -h output', async () => {
     }
   }
 });
+
+test('engram, engram e, and engram entry commands render the banner in terminal', async () => {
+  const { cwd, env } = await tempWorkspace('engram-banner-');
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
+
+  // Test "engram" (no command)
+  const noCmdResult = await runEngram(cwd, env, []);
+  assert.equal(noCmdResult.code, 0, noCmdResult.stderr);
+  assert.match(noCmdResult.stdout, /SYNTHETIC MEMORY/);
+  assert.match(noCmdResult.stdout, /## Runtime/);
+
+  // Test "engram e"
+  const eResult = await runEngram(cwd, env, ['e']);
+  assert.equal(eResult.code, 0, eResult.stderr);
+  assert.match(eResult.stdout, /SYNTHETIC MEMORY/);
+  assert.match(eResult.stdout, /## Runtime/);
+
+  // Test "engram entry"
+  const entryResult = await runEngram(cwd, env, ['entry']);
+  assert.equal(entryResult.code, 0, entryResult.stderr);
+  assert.match(entryResult.stdout, /SYNTHETIC MEMORY/);
+  assert.match(entryResult.stdout, /## Runtime/);
+
+  await rm(cwd, { recursive: true, force: true });
+});
+

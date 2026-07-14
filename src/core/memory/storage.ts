@@ -48,7 +48,7 @@ export async function initWorkspace(cwd: string, force = false, branch = 'main',
     ? { global_path: '' }
     : {};
   const workspace = await createScope(root, config, 'workspace', force, workspaceConfigOverrides);
-  const ignoreUpdated = await reconcileIgnoreFile(cwd, force);
+  const ignoreUpdated = await reconcileIgnoreFile(cwd, force, config.ignore.global_patterns);
   if (workspaceExisted || force) lines.push(...scopeRepairLines('workspace', workspace, ignoreUpdated));
   if (roots.global) {
     const global = await createScope(roots.global, config, 'global', force);
@@ -207,17 +207,30 @@ async function writeJsonIfChanged(file: string, value: unknown): Promise<boolean
   return true;
 }
 
-async function reconcileIgnoreFile(cwd: string, force: boolean): Promise<boolean> {
+const GLOBAL_IGNORE_BEGIN = '# BEGIN ENGRAM GLOBAL PATTERNS';
+const GLOBAL_IGNORE_END = '# END ENGRAM GLOBAL PATTERNS';
+
+async function reconcileIgnoreFile(cwd: string, force: boolean, globalPatterns: string[] = []): Promise<boolean> {
   const file = path.join(cwd, '.engramignore');
   if (force || !(await exists(file))) {
     await writeText(file, DEFAULT_IGNORE);
-    return true;
   }
   const current = await readText(file);
   const existing = new Set(current.split(/\r?\n/u).map((line) => line.trim()).filter(Boolean));
   const missing = DEFAULT_IGNORE.split(/\r?\n/u).map((line) => line.trim()).filter(Boolean).filter((line) => !existing.has(line));
-  if (!missing.length) return false;
-  await writeText(file, `${current.trimEnd()}\n${missing.join('\n')}\n`);
+  const withDefaults = missing.length ? `${current.trimEnd()}\n${missing.join('\n')}\n` : current;
+  const lines = withDefaults.split(/\r?\n/u);
+  const begin = lines.indexOf(GLOBAL_IGNORE_BEGIN);
+  const end = lines.indexOf(GLOBAL_IGNORE_END, begin + 1);
+  const withoutManaged = begin >= 0 && end >= begin
+    ? [...lines.slice(0, begin), ...lines.slice(end + 1)]
+    : lines;
+  const patterns = [...new Set(globalPatterns.map((pattern) => pattern.trim()).filter(Boolean))];
+  const managed = patterns.length ? [GLOBAL_IGNORE_BEGIN, ...patterns, GLOBAL_IGNORE_END] : [];
+  const nextLines = withoutManaged.join('\n').trimEnd();
+  const next = managed.length ? `${nextLines}\n${managed.join('\n')}\n` : `${nextLines}\n`;
+  if (next === current) return false;
+  await writeText(file, next);
   return true;
 }
 

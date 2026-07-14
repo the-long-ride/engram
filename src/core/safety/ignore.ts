@@ -8,7 +8,7 @@ export type IgnoreSet = { patterns: string[]; hiddenCount: number };
 
 /** Load active ignore patterns for a workspace. */
 export async function loadIgnore(cwd: string, config: EngramConfig): Promise<IgnoreSet> {
-  const patterns = [...config.ignore.also_ignore];
+  const patterns = [...config.ignore.also_ignore, ...config.ignore.global_patterns];
   const source = config.ignore.source;
   if (source === 'engramignore' || source === 'both') {
     patterns.push(...parseIgnore(await readText(path.join(cwd, config.ignore.engramignore_path))));

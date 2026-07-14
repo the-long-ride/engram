@@ -49,29 +49,24 @@ describe('App Component', () => {
     (api.reviewQueue as jest.Mock).mockResolvedValue({ data: { findings: [], receipts: [] } });
   });
 
-  test('renders loading screen initially then loads and renders Sidebar and tabs', async () => {
+  test('opens Construct first in sidebar navigation', async () => {
     (api.loadPanelData as jest.Mock).mockResolvedValue(mockPanelData);
 
     render(<App />);
 
-    // Verify loading indicator is present initially
-    expect(screen.getByText('Loading...')).toBeInTheDocument();
-
-    // Wait for the panel data to load
     await waitFor(() => {
       expect(screen.getAllByText('/path/to/cwd')[0]).toBeInTheDocument();
     });
 
-    // Verify sidebar is rendered
-    expect(screen.getByText('Recall')).toBeInTheDocument();
-    expect(screen.getAllByText('Review')[0]).toBeInTheDocument();
-    expect(screen.getByText('Maintain')).toBeInTheDocument();
-    expect(screen.getAllByRole('heading', { name: 'Memories' })).toHaveLength(1);
+    expect(screen.getByRole('heading', { name: 'Construct' })).toBeInTheDocument();
+    const items = Array.from(document.querySelectorAll('#sb-nav .nav-item'));
+    expect(items[0]).toHaveAttribute('data-tab', 'config');
+    expect(items[0]).toHaveTextContent('Construct');
     expect(api.reviewQueue).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getAllByText('Review')[0]);
     await waitFor(() => expect(api.reviewQueue).toHaveBeenCalledTimes(1));
-    expect(screen.queryByRole('heading', { name: 'Memories' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Construct' })).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Review queue' })).toBeInTheDocument();
   });
 

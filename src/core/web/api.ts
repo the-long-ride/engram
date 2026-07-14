@@ -10,8 +10,15 @@ import { visibleEntries } from '../memory/routing.js';
 import { duplicatePairs, semanticDuplicatePairs, type DuplicatePair } from '../analysis/search.js';
 import type { MemoryEntry, MemoryGraphEdge, MemoryGraphNode, Scope } from '../runtime/types.js';
 import { loadIndex, rebuildIndex } from '../memory/index.js';
+import { parseMemory } from '../memory/schema.js';
+import { parseMemoryCandidate } from '../memory/memory-candidate.js';
+import { planMemorySave } from '../memory/save-plan.js';
+import { resolveAuthor, writeApprovedMemory } from '../memory/storage.js';
 import { archiveMemory, planArchiveSet } from '../memory/archive.js';
 import { filterMemoryGraph, type MemoriesSearchMode } from './memories-search.js';
+import { loadPolicy, writePolicy } from '../policy/load.js';
+import { DEFAULT_POLICY } from '../policy/schema.js';
+import { isReceiptId, loadReceipt } from '../review/inbox.js';
 
 import {
   configFieldsForPanel,
@@ -41,10 +48,12 @@ export interface PanelData {
   latestVersion?: string;
   isInitialized: boolean;
   configFields: ReturnType<typeof configFieldsForPanel>;
+  policy: Awaited<ReturnType<typeof loadPolicy>>;
 }
 
 export async function loadPanelData(cwd: string, entryText: string): Promise<PanelData> {
   const config = await loadConfig(cwd);
+  const policy = await loadPolicy(cwd);
   const roots = scopeRootsForConfig(cwd, config);
   let remoteUrl = '';
   if (roots.global) {
@@ -61,15 +70,16 @@ export async function loadPanelData(cwd: string, entryText: string): Promise<Pan
   const latestVersion = await latestPackageVersion(version);
   const dbh = await openConfigDb();
   if (!dbh) {
-    return { config, workspaces: [], profiles: [], entry, sqliteAvailable: false, cwd, version, isInitialized, latestVersion, configFields: configFieldsForPanel() };
+    return { config, policy, workspaces: [], profiles: [], entry, sqliteAvailable: false, cwd, version, isInitialized, latestVersion, configFields: configFieldsForPanel() };
   }
   try {
     if (!isConfigDbUsable(dbh.db)) {
-      return { config, workspaces: [], profiles: [], entry, sqliteAvailable: false, cwd, version, isInitialized, latestVersion, configFields: configFieldsForPanel() };
+      return { config, policy, workspaces: [], profiles: [], entry, sqliteAvailable: false, cwd, version, isInitialized, latestVersion, configFields: configFieldsForPanel() };
     }
     const q = await importQueries();
     return {
       config,
+      policy,
       workspaces: q.listWorkspaces(dbh.db),
       profiles: q.listProfiles(dbh.db),
       entry,
@@ -87,6 +97,134 @@ export async function loadPanelData(cwd: string, entryText: string): Promise<Pan
 
 export function apiConfigValidate(patch: unknown): ConfigPatchValidation {
   return validateConfigPatch(patch);
+}
+
+export async function apiPolicyUpdate(rawPatch: any, cwd: string): Promise<string> {
+  const loaded = await loadPolicy(cwd);
+  const current = loaded.policy ?? DEFAULT_POLICY;
+  const next = {
+    ...current,
+    ...(rawPatch && typeof rawPatch === 'object' ? rawPatch : {}),
+    autonomous_writes: { ...current.autonomous_writes, ...(rawPatch?.autonomous_writes ?? {}) },
+    review: { ...current.review, ...(rawPatch?.review ?? {}) }
+  };
+  const file = await writePolicy(cwd, next);
+  return 'Saved autonomous-write policy -> ' + file;
+}
+
+export type ReviewMemoryPreview = {
+  id: string;
+  kind: 'memory' | 'candidate';
+  type: string;
+  scope: string;
+  file?: string;
+  properties: Array<[string, string]>;
+  content: string;
+};
+
+export type ReviewWriteRequest = {
+  proposal: string;
+  scope: Scope;
+  relations?: Array<{ id: string; reason: 'DEPENDS_ON' | 'UPDATE' }>;
+  confirmed?: boolean;
+};
+
+export async function apiReviewPreview(cwd: string, id: string, requestedMemoryIds: string[] = []): Promise<{ previews: ReviewMemoryPreview[] }> {
+  if (!id.trim()) throw new Error('Review item id is required');
+  const ctx = await getContext(cwd);
+  if (isReceiptId(id)) {
+    const receipt = (ctx.roots.workspace ? await loadReceipt(ctx.roots.workspace, id) : undefined)
+      || (ctx.roots.global ? await loadReceipt(ctx.roots.global, id) : undefined);
+    if (!receipt) throw new Error(`receipt not found or expired: ${id}`);
+    const candidate = receipt.candidate;
+    return { previews: [{
+      id: receipt.id,
+      kind: 'candidate',
+      type: candidate.type,
+      scope: candidate.scope,
+      properties: [
+        ['Source', receipt.source],
+        ['Created', receipt.created_at],
+        ['Expires', receipt.expires_at],
+        ['Candidate hash', receipt.candidate_hash.slice(0, 12) + '…'],
+        ['Related IDs', receipt.related_ids.join(', ') || '(none)']
+      ],
+      content: candidate.text
+    }] };
+  }
+
+  let memoryIds = requestedMemoryIds.filter(Boolean);
+  if (!memoryIds.length) {
+    const finding = (await import('../../commands/review.js')).cmdReview;
+    const result = JSON.parse(await finding(['inspect', id], { json: true, cwd }));
+    memoryIds = result.data?.finding?.memory_ids ?? [];
+  }
+  const previews: ReviewMemoryPreview[] = [];
+  for (const memoryId of memoryIds) {
+    const entry = ctx.index.entries.find((item) => item.id === memoryId);
+    if (!entry) continue;
+    const root = entry.scope === 'workspace' ? ctx.roots.workspace : ctx.roots.global;
+    if (!root) continue;
+    try {
+      const raw = await readText(resolveUnderRoot(root, entry.file));
+      const doc = parseMemory(raw);
+      const properties = Object.entries(doc.frontmatter)
+        .filter(([key]) => key !== 'author')
+        .map(([key, value]) => [key, formatPreviewValue(value)] as [string, string]);
+      previews.push({ id: entry.id, kind: 'memory', type: entry.type, scope: entry.scope, file: entry.file, properties, content: doc.body.trim() });
+    } catch {
+      // An indexed memory can disappear between the queue build and preview request.
+    }
+  }
+  return { previews };
+}
+
+/** Explicitly confirmed UI write. The caller must supply an AI-reviewed candidate; this never invokes an AI provider. */
+export async function apiReviewWrite(cwd: string, request: ReviewWriteRequest): Promise<{ written: Array<{ id: string; file: string; action: string }>; message: string }> {
+  if (request.confirmed !== true) throw new Error('Writing memory requires explicit confirmation');
+  if (request.scope !== 'workspace' && request.scope !== 'global') throw new Error('A valid memory scope is required');
+  if (!request.proposal?.trim()) throw new Error('Paste an AI-reviewed proposal before writing');
+
+  const candidate = parseMemoryCandidate(request.proposal.trim());
+  const relations = request.relations ?? [];
+  const dependsOn = [...new Set([...(candidate.dependsOn ?? []), ...relations.filter((relation) => relation.reason === 'DEPENDS_ON').map((relation) => relation.id)])];
+  const updates = relations.filter((relation) => relation.reason === 'UPDATE').map((relation) => relation.id);
+  if (updates.length > 1) throw new Error('Choose only one replacement memory');
+  const updateId = updates[0] ?? candidate.updateId;
+  const ctx = await getContext(cwd);
+  const author = await resolveAuthor();
+  const plans = await planMemorySave({
+    ctx,
+    text: candidate.text,
+    type: candidate.type,
+    scopes: [request.scope],
+    author,
+    role: candidate.role,
+    context: candidate.context,
+    triggers: candidate.triggers,
+    dependsOn,
+    level: candidate.level,
+    updateId,
+    variants: candidate.variants,
+    confidence: candidate.confidence
+  });
+  const missingRelations = plans.flatMap((plan) => (plan.related ?? []).flatMap((hint) => {
+    if (hint.action === 'possible-duplicate' && !updateId) return [`Mark replacement for ${hint.id} before writing.`];
+    if (hint.action === 'suggested-dependency' && !dependsOn.includes(hint.id)) return [`Mark dependency for ${hint.id} before writing.`];
+    return [];
+  }));
+  if (missingRelations.length) throw new Error(['Review write blocked: relation instructions are incomplete.', ...missingRelations].join(' '));
+
+  const written = [];
+  for (const plan of plans) {
+    const file = await writeApprovedMemory({ cwd, scope: plan.scope, file: plan.file, content: plan.content, message: `review write ${plan.message}` });
+    written.push({ id: plan.id, file, action: plan.action });
+  }
+  return { written, message: `Wrote ${written.length} memor${written.length === 1 ? 'y' : 'ies'} from the reviewed proposal.` };
+}
+
+function formatPreviewValue(value: unknown): string {
+  return Array.isArray(value) ? value.join(', ') : String(value ?? '');
 }
 
 let latestVersionCache: { at: number; value: string } | null = null;
@@ -290,7 +428,7 @@ function applyDotted(obj: Record<string, any>, key: string, value: string): void
 }
 
 function parsePersistedValue(key: string, value: string): any {
-  if (key === 'roles') {
+  if (key === 'roles' || key === 'ignore.also_ignore' || key === 'ignore.global_patterns' || key === 'live_sync.targets') {
     try {
       const parsed = JSON.parse(value);
       return Array.isArray(parsed) ? parsed.map((item) => String(item)) : [];
@@ -1188,6 +1326,17 @@ export async function apiGetMemoryContent(cwd: string, profileName: string, scop
   }
 
   return readText(absPath);
+}
+
+export async function apiGetMemoryPreview(cwd: string, profileName: string, scope: Scope, file: string): Promise<{ content: string; properties: Array<[string, string]> }> {
+  const raw = await apiGetMemoryContent(cwd, profileName, scope, file);
+  const doc = parseMemory(raw);
+  return {
+    content: doc.body.trim(),
+    properties: Object.entries(doc.frontmatter)
+      .filter(([key]) => key !== 'author')
+      .map(([key, value]) => [key, formatPreviewValue(value)] as [string, string])
+  };
 }
 
 async function listWindowsDrives(): Promise<string[]> {

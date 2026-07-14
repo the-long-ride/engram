@@ -16,7 +16,7 @@ import { ReviewTab } from './tabs/ReviewTab.js';
 
 export function App() {
   const [data, setData] = useState<PanelData | null>(null);
-  const [active, setActiveState] = useState<TabName>('recall');
+  const [active, setActiveState] = useState<TabName>('config');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [toastState, setToastState] = useState<ToastState | null>(null);
   const [modal, setModal] = useState<ModalState | null>(null);

@@ -73,6 +73,7 @@ export function MemoryDetail({
       <div className="memory-detail-footer">
         <div className="mono memory-file">{node.file}</div>
         <div className="memory-detail-actions">
+          <Button data-action="view-memory-preview" onClick={() => view(node)}>Preview</Button>
           <Button data-action="view-memory" onClick={() => copyText(content || node.summary || '', toast, 'Copied memory')}>Copy</Button>
           <Button data-action="edit-memory" disabled={!node.canEdit} onClick={() => editMemoryFromGraph(node)}>Edit</Button>
           <Button variant="danger" data-action="delete-memory" disabled={!node.canDelete} onClick={() => archiveMemoryFromGraph(node)}>Delete</Button>

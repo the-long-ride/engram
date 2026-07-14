@@ -123,16 +123,17 @@ export function getActiveProfile(db: any): ProfileRow | undefined {
 
 /** Dotted keys that consumers are allowed to read/write through the generic set/get interface. */
 const ALLOWED_KEYS = new Set([
-  'scope', 'read', 'proof', 'enabled',
+  'scope', 'update', 'read', 'proof', 'enabled',
   'roles', 'version', 'default_profile',
   'theme',
+  'ignore.source', 'ignore.gitignore_path', 'ignore.engramignore_path', 'ignore.global_engramignore', 'ignore.also_ignore', 'ignore.global_patterns',
   'load.limit',
   'graph.enabled', 'graph.max_related', 'graph.min_related_score',
   'vector.enabled', 'vector.provider', 'vector.auto_threshold', 'vector.candidate_pool', 'vector.dimensions',
   'rule_variants.enabled', 'rule_variants.active',
-  'live_sync.enabled',
+  'live_sync.enabled', 'live_sync.targets',
   'pattern_mining.enabled', 'pattern_mining.threshold', 'pattern_mining.lookback_sessions',
-  'pr_workflow.enabled', 'pr_workflow.target_branch',
+  'pr_workflow.enabled', 'pr_workflow.provider', 'pr_workflow.repo', 'pr_workflow.target_branch',
   'encryption.enabled', 'encryption.scope', 'encryption.key_source',
   'global_path',
   'global_git.enabled', 'global_git.remote', 'global_git.remote_url', 'global_git.branch', 'global_git.auto_sync', 'global_git.auto_resolve',
@@ -148,6 +149,7 @@ export function configKeyToColumn(key: string): string | undefined {
 export function flattenConfig(config: EngramConfig): Record<string, string> {
   const out: Record<string, string> = {};
   out['scope'] = config.scope;
+  out['update'] = config.update;
   out['read'] = config.read;
   out['proof'] = config.proof;
   out['enabled'] = String(config.enabled);
@@ -156,6 +158,13 @@ export function flattenConfig(config: EngramConfig): Record<string, string> {
   out['roles'] = JSON.stringify(config.roles);
   out['global_path'] = config.global_path;
   out['theme'] = config.theme ?? 'dark';
+  out['ignore.source'] = config.ignore.source;
+  out['ignore.gitignore_path'] = config.ignore.gitignore_path;
+  out['ignore.engramignore_path'] = config.ignore.engramignore_path;
+  out['ignore.global_engramignore'] = String(config.ignore.global_engramignore);
+  out['ignore.also_ignore'] = JSON.stringify(config.ignore.also_ignore);
+  out['ignore.global_patterns'] = JSON.stringify(config.ignore.global_patterns);
+  out['live_sync.targets'] = JSON.stringify(config.live_sync.targets);
   out['load.limit'] = String(config.load.limit);
   out['graph.enabled'] = String(config.graph.enabled);
   out['graph.max_related'] = String(config.graph.max_related);
@@ -172,6 +181,8 @@ export function flattenConfig(config: EngramConfig): Record<string, string> {
   out['pattern_mining.threshold'] = String(config.pattern_mining.threshold);
   out['pattern_mining.lookback_sessions'] = String(config.pattern_mining.lookback_sessions);
   out['pr_workflow.enabled'] = String(config.pr_workflow.enabled);
+  out['pr_workflow.provider'] = config.pr_workflow.provider ?? '';
+  out['pr_workflow.repo'] = config.pr_workflow.repo ?? '';
   out['pr_workflow.target_branch'] = config.pr_workflow.target_branch;
   out['encryption.enabled'] = String(config.encryption.enabled);
   out['encryption.scope'] = config.encryption.scope;
@@ -195,6 +206,7 @@ export function unflattenConfig(kv: Record<string, string>): Partial<EngramConfi
     if (value === undefined || value === null) continue;
     switch (key) {
       case 'scope': out.scope = ['both', 'workspace', 'global'].includes(value) ? value as any : d.scope; break;
+      case 'update': out.update = ['auto', 'manual', 'off'].includes(value) ? value as any : d.update; break;
       case 'read': out.read = ['startup', 'auto', 'manual', 'off', 'always'].includes(value) ? value as any : d.read; break;
       case 'proof': out.proof = ['off', 'compact'].includes(value) ? value as any : d.proof; break;
       case 'enabled': out.enabled = value === 'true'; break;
@@ -203,6 +215,12 @@ export function unflattenConfig(kv: Record<string, string>): Partial<EngramConfi
       case 'roles': try { out.roles = JSON.parse(value); } catch { out.roles = d.roles; } break;
       case 'global_path': out.global_path = value; break;
       case 'theme': out.theme = ['light', 'dark'].includes(value) ? value as any : d.theme; break;
+      case 'ignore.source': out.ignore = { ...(out.ignore ?? {}), source: ['engramignore', 'gitignore', 'both', 'off'].includes(value) ? value : d.ignore.source }; break;
+      case 'ignore.gitignore_path': out.ignore = { ...(out.ignore ?? {}), gitignore_path: value }; break;
+      case 'ignore.engramignore_path': out.ignore = { ...(out.ignore ?? {}), engramignore_path: value }; break;
+      case 'ignore.global_engramignore': out.ignore = { ...(out.ignore ?? {}), global_engramignore: value === 'true' }; break;
+      case 'ignore.also_ignore': out.ignore = { ...(out.ignore ?? {}), also_ignore: parseArray(value, d.ignore.also_ignore) }; break;
+      case 'ignore.global_patterns': out.ignore = { ...(out.ignore ?? {}), global_patterns: parseArray(value, d.ignore.global_patterns) }; break;
       case 'load.limit': out.load = { ...(out.load ?? {}), limit: intOr(value, d.load.limit) }; break;
       case 'graph.enabled': out.graph = { ...(out.graph ?? {}), enabled: value === 'true' }; break;
       case 'graph.max_related': out.graph = { ...(out.graph ?? {}), max_related: intOr(value, d.graph.max_related) }; break;
@@ -215,10 +233,13 @@ export function unflattenConfig(kv: Record<string, string>): Partial<EngramConfi
       case 'rule_variants.enabled': out.rule_variants = { ...(out.rule_variants ?? {}), enabled: value === 'true' }; break;
       case 'rule_variants.active': out.rule_variants = { ...(out.rule_variants ?? {}), active: value as any }; break;
       case 'live_sync.enabled': out.live_sync = { ...(out.live_sync ?? {}), enabled: value === 'true' }; break;
+      case 'live_sync.targets': out.live_sync = { ...(out.live_sync ?? {}), targets: parseArray(value, d.live_sync.targets) }; break;
       case 'pattern_mining.enabled': out.pattern_mining = { ...(out.pattern_mining ?? {}), enabled: value === 'true' }; break;
       case 'pattern_mining.threshold': out.pattern_mining = { ...(out.pattern_mining ?? {}), threshold: intOr(value, d.pattern_mining.threshold) }; break;
       case 'pattern_mining.lookback_sessions': out.pattern_mining = { ...(out.pattern_mining ?? {}), lookback_sessions: intOr(value, d.pattern_mining.lookback_sessions) }; break;
       case 'pr_workflow.enabled': out.pr_workflow = { ...(out.pr_workflow ?? {}), enabled: value === 'true' }; break;
+      case 'pr_workflow.provider': out.pr_workflow = { ...(out.pr_workflow ?? {}), provider: value }; break;
+      case 'pr_workflow.repo': out.pr_workflow = { ...(out.pr_workflow ?? {}), repo: value }; break;
       case 'pr_workflow.target_branch': out.pr_workflow = { ...(out.pr_workflow ?? {}), target_branch: value }; break;
       case 'encryption.enabled': out.encryption = { ...(out.encryption ?? {}), enabled: value === 'true' }; break;
       case 'encryption.scope': out.encryption = { ...(out.encryption ?? {}), scope: value as any }; break;
@@ -234,6 +255,15 @@ export function unflattenConfig(kv: Record<string, string>): Partial<EngramConfi
     }
   }
   return out;
+}
+
+function parseArray(value: string, fallback: string[]): string[] {
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed.map((item) => String(item)) : fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 function intOr(value: string, fallback: number): number {

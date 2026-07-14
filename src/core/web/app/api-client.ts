@@ -30,6 +30,13 @@ export function browseDirectories(path: string): Promise<ApiResult> { return pos
 export function recall(query: string, explain = false): Promise<ApiResult> { return getJson(`/api/recall?query=${encodeURIComponent(query)}&explain=${String(explain)}`); }
 export function reviewQueue(): Promise<ApiResult> { return getJson('/api/review'); }
 export function reviewInspect(id: string): Promise<ApiResult> { return getJson(`/api/review/inspect?id=${encodeURIComponent(id)}`); }
+export function reviewPreview(id: string, memoryIds: string[] = []): Promise<ApiResult> {
+  const params = new URLSearchParams({ id });
+  if (memoryIds.length) params.set('memory_ids', memoryIds.join(','));
+  return getJson(`/api/review/preview?${params.toString()}`);
+}
+export function reviewWrite(body: { proposal: string; scope: 'workspace' | 'global'; relations: Array<{ id: string; reason: 'DEPENDS_ON' | 'UPDATE' }>; confirmed: true }): Promise<ApiResult> { return postJson('/api/review/write', body); }
 export function policyStatus(): Promise<ApiResult> { return getJson('/api/policy'); }
+export function savePolicyPatch(patch: Record<string, unknown>): Promise<ApiResult> { return postJson('/api/policy', { patch }); }
 export function capabilities(): Promise<ApiResult> { return getJson('/api/capabilities'); }
 export function doctorStatus(): Promise<ApiResult> { return getJson('/api/doctor'); }

@@ -88,6 +88,7 @@ export type IgnoreConfig = {
   engramignore_path: string;
   global_engramignore: boolean;
   also_ignore: string[];
+  global_patterns: string[];
 };
 
 export type MemoryEntry = {

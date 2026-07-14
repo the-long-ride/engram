@@ -1,5 +1,4 @@
 /** Runtime entry report for resolved Engram flags and paths. */
-import { renderInitWordmark } from '../cli/banner.js';
 import { VERSION } from './constants.js';
 import { loadConfig, profileResolutionForConfig, scopeRootsForConfig } from './config.js';
 import { globalGitInfo } from '../vcs/git.js';
@@ -30,7 +29,7 @@ export async function renderEntry(cwd = process.cwd()): Promise<string> {
     }
   }).filter(([key]) => !hiddenConfigRow(key));
 
-  const outputLines: string[] = [renderInitWordmark(Boolean(process.stdout.isTTY)).replace(/^(?:\r?\n)+/u, ''), ''];
+  const outputLines: string[] = [];
   let currentGroup = '';
   for (const [key, value] of rows) {
     const group = entryGroup(key);

@@ -8,3 +8,12 @@ export async function loadPolicy(cwd = process.cwd(), requested?: string): Promi
   const result = validatePolicy(await readJson<unknown>(file, undefined)); return { path: file, exists: true, policy: result.policy, diagnostics: result.diagnostics };
 }
 export async function writeDefaultPolicy(cwd = process.cwd(), requested?: string): Promise<string> { const file = policyPath(cwd, requested); await writeJson(file, DEFAULT_POLICY); return file; }
+
+/** Validate and persist a complete autonomous-write policy for the control panel. */
+export async function writePolicy(cwd: string, value: unknown, requested?: string): Promise<string> {
+  const result = validatePolicy(value);
+  if (!result.policy) throw new Error(result.diagnostics.map((item) => `${item.path}: ${item.message}`).join('; '));
+  const file = policyPath(cwd, requested);
+  await writeJson(file, result.policy);
+  return file;
+}

@@ -35,16 +35,18 @@ Every visible control maps to a CLI command or config key. Where a CLI equivalen
 
 | Tab | Job |
 | --- | --- |
-| [Connections](connections.md) | Detect and link supported AI agents |
 | [Construct](construct.md) | Configure every Engram runtime field |
+| [Recall](memories.md) | Search, inspect, and archive active memory |
+| [Review](review.md) | Resolve findings and confirm reviewed memory writes |
 | [Profiles](profiles.md) | Manage isolated global memory profiles |
 | [Workspaces](workspaces.md) | Register and link project repos |
 | [Core](core.md) | Review duplicate and conflicting memories |
-| [Memories](memories.md) | Inspect the memory graph and archive memories |
+| [Connections](connections.md) | Detect and link supported AI agents |
 | [Runtime](runtime.md) | Read-only resolved config and paths |
 
 ## Next steps
 
 - [Launching the control panel](launch.md)
 - [Construct tab](construct.md)
+- [Review tab](review.md)
 - [Complete field reference](field-reference.md)

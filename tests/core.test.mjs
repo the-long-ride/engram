@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile, readdir, rm } from 'node:fs/promises';
+import { readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import {
   effectiveMemoryLines,
   entryFromMemory,
@@ -35,6 +35,9 @@ import { classifyTaskType, normalizeTaskType } from '../dist/core/memory/task-cl
 import { inferTaskIntent, taskIntentQuery, intentIsActionable } from '../dist/core/memory/task-intent.js';
 import { ensureVectorIndex } from '../dist/core/memory/vector-db.js';
 import { defaultConfig } from '../dist/core/runtime/config.js';
+import { flattenConfig, unflattenConfig } from '../dist/core/config-db/queries.js';
+import { initWorkspace } from '../dist/core/memory/storage.js';
+import { loadIgnore } from '../dist/core/safety/ignore.js';
 import { DOCS_SITE_LATEST_VERSION, DOCS_SITE_VERSIONS } from '../dist/core/runtime/docs-site.js';
 import { VERSION } from '../dist/core/runtime/version.js';
 import path from 'node:path';
@@ -60,6 +63,42 @@ test('agent paths honor Engram home and config-home overrides', () => {
 });
 
 import { tempWorkspace } from './helpers.mjs';
+
+test('global ignore patterns persist and participate in reads', async () => {
+  const config = defaultConfig();
+  config.ignore.global_patterns = ['**/*.private.md', 'vendor/**'];
+  const restored = unflattenConfig(flattenConfig(config));
+  assert.deepEqual(restored.ignore.global_patterns, config.ignore.global_patterns);
+
+  const { cwd, env } = await tempWorkspace('engram-global-ignore-');
+  process.env.ENGRAM_GLOBAL_DIR = env.ENGRAM_GLOBAL_DIR;
+  const ignore = await loadIgnore(cwd, { ...config, global_path: env.ENGRAM_GLOBAL_DIR });
+  assert.ok(ignore.patterns.includes('**/*.private.md'));
+  assert.ok(ignore.patterns.includes('vendor/**'));
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('inject syncs global ignore patterns into a managed block', async () => {
+  const { cwd, env } = await tempWorkspace('engram-ignore-sync-');
+  process.env.ENGRAM_GLOBAL_DIR = env.ENGRAM_GLOBAL_DIR;
+  await initWorkspace(cwd, true);
+  const configFile = path.join(cwd, '.agents', '.engram', 'engram.config.json');
+  const config = JSON.parse(await readFile(configFile, 'utf8'));
+  config.ignore.global_patterns = ['**/*.private.md', 'vendor/**'];
+  await writeFile(configFile, `${JSON.stringify(config, null, 2)}\n`);
+  await writeFile(path.join(cwd, '.engramignore'), '# human pattern\nold/**\n');
+
+  await initWorkspace(cwd, false);
+  const first = await readFile(path.join(cwd, '.engramignore'), 'utf8');
+  assert.match(first, /# human pattern/);
+  assert.match(first, /# BEGIN ENGRAM GLOBAL PATTERNS/);
+  assert.match(first, /\*\*\/\*\.private\.md/);
+  assert.match(first, /vendor\/\*\*/);
+
+  await initWorkspace(cwd, false);
+  assert.equal(await readFile(path.join(cwd, '.engramignore'), 'utf8'), first);
+  await rm(cwd, { recursive: true, force: true });
+});
 
 test('init wordmark can render colored or plain', () => {
   assert.equal(renderInitWordmark(false), INIT_WORDMARK);

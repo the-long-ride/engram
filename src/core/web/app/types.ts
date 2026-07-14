@@ -8,7 +8,7 @@ export interface ConfigField {
   label: string;
   group: string;
   description?: string;
-  input?: 'toggle' | 'select' | 'number' | 'roles' | 'text' | string;
+  input?: 'toggle' | 'select' | 'number' | 'roles' | 'text' | 'textarea' | string;
   options?: string[];
   min?: number;
   max?: number;
@@ -24,6 +24,25 @@ export interface PanelData {
   isInitialized?: boolean;
   config?: Record<string, any>;
   configFields?: ConfigField[];
+  policy?: {
+    path: string;
+    exists: boolean;
+    policy?: {
+      version: 1;
+      autonomous_writes: {
+        enabled: boolean;
+        mode: 'review_only' | 'autonomous';
+        allowed_types: string[];
+        allowed_scopes: string[];
+        allowed_sources: string[];
+        confidence_threshold: 'low' | 'medium' | 'high';
+        daily_limit: number;
+        rollback_retention_days: number;
+      };
+      review: { max_rule_lines: number; benchmark_min_recall_at_k: number; mandatory_metadata?: Record<string, boolean> };
+    };
+    diagnostics: Array<{ path: string; message: string }>;
+  };
   runtime?: Array<{ group: string; rows: Array<[string, any]> }>;
   profiles?: any[];
   workspaces?: any[];

@@ -24,12 +24,24 @@ Each field lists:
 | --- | --- | --- | --- | --- |
 | `enabled` | toggle | `true` | risky | Master switch. Disabling stops Engram behavior. |
 | `scope` | select | `both` | risky | Save target: `workspace`, `global`, `both`. |
+| `update` | select | `auto` | normal | Quiet package upgrade check: `auto`, `manual`, `off`. |
 | `read` | select | `auto` | normal | When hooks inject memory: `auto`, `startup`, `always`, `manual`, `off`. |
 | `proof` | select | `off` | normal | Hook proof line: `off`, `compact`. |
 | `global_path` | text | empty | risky | Filesystem path for global memory. |
 | `default_profile` | select | empty | risky | Profile used when none is explicitly set. |
 | `roles` | roles | empty | normal | Comma-separated role names for routing. |
 | `theme` | select | `dark` | hidden | Internal/hidden. Not user-facing. |
+
+## Ignore Rules {#ignore-rules}
+
+| Config key | Control | Default | Risk | Notes |
+| --- | --- | --- | --- | --- |
+| `ignore.source` | select | `engramignore` | normal | Scan-rule sources: `engramignore`, `gitignore`, `both`, `off`. |
+| `ignore.gitignore_path` | text | `.gitignore` | normal | Git ignore file path. |
+| `ignore.engramignore_path` | text | `.engramignore` | normal | Engram ignore file path. |
+| `ignore.global_engramignore` | toggle | `true` | normal | Applies global ignore rules when configured. |
+| `ignore.also_ignore` | list | `*.secret`, `private/**` | normal | Extra comma-separated glob patterns. |
+| `ignore.global_patterns` | textarea | empty | normal | One global glob per line; inject syncs a managed workspace block. |
 
 ## Load Routing {#load-routing}
 
@@ -57,6 +69,7 @@ Each field lists:
 | Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
 | `vector.enabled` | toggle | `true` | normal | Enables optional local vector routing. |
+| `vector.provider` | select | `sqlite-vec` | normal | The only supported local vector provider. |
 | `vector.auto_threshold` | number 10–1000 | `100` | normal | Memory count where vector search activates. |
 | `vector.candidate_pool` | number 8–100 | `24` | normal | Candidates considered before reranking. |
 | `vector.dimensions` | number 16–512 | `64` | normal | Embedding dimensions; rebuild after change. |
@@ -73,6 +86,7 @@ Each field lists:
 | Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
 | `live_sync.enabled` | toggle | `false` | normal | Sync generated agent context files on save. |
+| `live_sync.targets` | list | `agents-md`, `claude-md`, `cursorrules` | normal | Generated context targets refreshed by live sync. |
 
 ## Global Git {#global-git}
 
@@ -98,6 +112,8 @@ Each field lists:
 | Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
 | `pr_workflow.enabled` | toggle | `false` | risky | Experimental team PR workflow. |
+| `pr_workflow.provider` | text | empty | risky | Provider identifier for configured team workflow. |
+| `pr_workflow.repo` | text | empty | risky | Repository identifier for configured team workflow. |
 | `pr_workflow.target_branch` | text | `main` | risky | Branch receiving memory PRs. |
 
 ## Encryption {#encryption}
@@ -115,8 +131,9 @@ See the per-tab pages for non-config controls:
 - [Connections tab](connections.md)
 - [Profiles tab](profiles.md)
 - [Workspaces tab](workspaces.md)
-- [Core tab](core.md)
-- [Memories tab](memories.md)
+- [Maintain tab](core.md)
+- [Recall tab](memories.md)
+- [Review tab](review.md)
 - [Runtime tab](runtime.md)
 
 ## Next steps

@@ -36,7 +36,11 @@ test('entry server exposes safe config metadata and validated config updates', a
     const data = await requestJson(baseUrl + '/api/data');
     assert.equal(data.response.status, 200);
     assert.ok(data.body.configFields.some((field) => field.key === 'scope'));
+    for (const key of ['update', 'ignore.source', 'ignore.also_ignore', 'live_sync.targets', 'vector.provider', 'pr_workflow.provider', 'pr_workflow.repo']) {
+      assert.ok(data.body.configFields.some((field) => field.key === key), key + ' should be exposed');
+    }
     assert.equal(data.body.configFields.some((field) => field.key === 'theme'), false);
+    assert.equal(data.body.policy.exists, false);
 
     const coreData = await requestJson(baseUrl + '/api/core');
     assert.equal(coreData.response.status, 200);
@@ -59,6 +63,13 @@ test('entry server exposes safe config metadata and validated config updates', a
     const missingFinding = await requestJson(baseUrl + '/api/review/inspect?id=missing-finding');
     assert.equal(missingFinding.response.status, 404);
     assert.equal(missingFinding.body.ok, false);
+
+    const unconfirmedWrite = await requestJson(baseUrl + '/api/review/write', {
+      method: 'POST',
+      body: JSON.stringify({ proposal: 'TYPE: knowledge | TEXT: Reviewed memory', scope: 'workspace', confirmed: false })
+    });
+    assert.equal(unconfirmedWrite.response.status, 400);
+    assert.match(unconfirmedWrite.body.error.message, /explicit confirmation/i);
 
     const capabilities = await requestJson(baseUrl + '/api/capabilities');
     assert.equal(capabilities.response.status, 200);
@@ -122,6 +133,16 @@ test('entry server exposes safe config metadata and validated config updates', a
     assert.ok(valid.body.data);
     assert.deepEqual(valid.body.riskyKeys, ['scope']);
 
+    const policySaved = await requestJson(baseUrl + '/api/policy', {
+      method: 'POST',
+      body: JSON.stringify({ patch: { autonomous_writes: { enabled: true, mode: 'autonomous' } } })
+    });
+    assert.equal(policySaved.response.status, 200);
+    assert.equal(policySaved.body.ok, true);
+    const policyAfter = await requestJson(baseUrl + '/api/policy');
+    assert.equal(policyAfter.body.data.policy.autonomous_writes.enabled, true);
+    assert.equal(policyAfter.body.data.policy.autonomous_writes.mode, 'autonomous');
+
     const saved = await requestJson(baseUrl + '/api/config', {
       method: 'POST',
       body: JSON.stringify({ patch: { scope: 'workspace', read: 'manual' } })
@@ -133,6 +154,25 @@ test('entry server exposes safe config metadata and validated config updates', a
     const after = await requestJson(baseUrl + '/api/data');
     assert.equal(after.body.config.scope, 'workspace');
     assert.equal(after.body.config.read, 'manual');
+
+    const expanded = await requestJson(baseUrl + '/api/config', {
+      method: 'POST',
+      body: JSON.stringify({ patch: {
+        update: 'manual',
+        'ignore.also_ignore': ['*.tmp', 'private/**'],
+        'live_sync.targets': ['agents-md'],
+        'pr_workflow.provider': 'github',
+        'pr_workflow.repo': 'owner/repo'
+      } })
+    });
+    assert.equal(expanded.response.status, 200);
+    assert.equal(expanded.body.ok, true);
+    const expandedData = await requestJson(baseUrl + '/api/data');
+    assert.equal(expandedData.body.config.update, 'manual');
+    assert.deepEqual(expandedData.body.config.ignore.also_ignore, ['*.tmp', 'private/**']);
+    assert.deepEqual(expandedData.body.config.live_sync.targets, ['agents-md']);
+    assert.equal(expandedData.body.config.pr_workflow.provider, 'github');
+    assert.equal(expandedData.body.config.pr_workflow.repo, 'owner/repo');
 
     // HTTP test for agent scanning and linking endpoints
     const scanRes = await requestJson(baseUrl + '/api/agents/scan');

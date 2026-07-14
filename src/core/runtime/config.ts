@@ -125,7 +125,8 @@ export function defaultConfig(): EngramConfig {
       gitignore_path: '.gitignore',
       engramignore_path: '.engramignore',
       global_engramignore: true,
-      also_ignore: ['*.secret', 'private/**']
+      also_ignore: ['*.secret', 'private/**'],
+      global_patterns: []
     },
     roles: [],
     live_sync: { enabled: false, targets: ['agents-md', 'claude-md', 'cursorrules'] },

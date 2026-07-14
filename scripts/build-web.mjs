@@ -10,6 +10,8 @@ await build({
   entryPoints: [path.join(root, 'src/core/web/app/main.tsx')],
   outfile: path.join(root, 'dist/core/web/panel.js'),
   bundle: true,
+  charset: 'utf8',
+  drop: ['console', 'debugger'],
   format: 'esm',
   platform: 'browser',
   target: ['es2022'],

@@ -34,6 +34,15 @@ Master switch. Disabling it stops Engram behavior entirely. Use only for tempora
 
 Controls where new approved memories are saved. Use `workspace` for repo-specific memory, `global` for personal/team memory, `both` for fresh installs that want both.
 
+### Update Mode
+
+**Config key:** `update`  
+**Control:** select — `auto`, `manual`, `off`  
+**Default:** `auto`  
+**Risk:** normal
+
+Controls the quiet one-time package upgrade check run by normal commands. Use `manual` or `off` only when upgrades are managed outside Engram.
+
 ### Read Mode
 
 **Config key:** `read`  
@@ -89,6 +98,31 @@ Profile used when none is explicitly set. See [Profiles and scope resolution](..
 **Risk:** normal
 
 Restricts and reranks memories by role. Use safe names matching `^[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$`.
+
+## Ignore Rules group
+
+| Field | Control | Default | Notes |
+| --- | --- | --- | --- |
+| `ignore.source` | select | `engramignore` | Choose `engramignore`, `gitignore`, `both`, or `off` as scan-rule sources. |
+| `ignore.gitignore_path` | text | `.gitignore` | Git ignore file to use when enabled. |
+| `ignore.engramignore_path` | text | `.engramignore` | Engram ignore file to use when enabled. |
+| `ignore.global_engramignore` | toggle | `true` | Apply global ignore rules when global memory is configured. |
+| `ignore.also_ignore` | list | `*.secret`, `private/**` | Additional comma-separated glob patterns. |
+
+### Global Ignore Patterns
+
+**Config key:** `ignore.global_patterns`  
+**Control:** textarea, one glob pattern per line  
+**Default:** empty list  
+**Risk:** normal
+
+Patterns apply to global memory reads. Every `engram inject` synchronizes them into a managed block in the workspace `.engramignore`; human-authored lines outside that block are preserved.
+
+### Auto-save policy
+
+The **Auto-save policy** editor writes `.agents/engram.policy.json`. It controls whether policy-approved candidates can save without an interactive prompt; normal saves remain approval-based.
+
+Configure enablement, `review_only` or `autonomous` mode, allowed type/scope/source, confidence threshold, daily limit, rollback retention, review rule limit, recall benchmark, and required metadata. The editor currently selects one allowed value per type, scope, and source; save a JSON policy directly if you need multiple values.
 
 ## Load Routing group
 
@@ -153,6 +187,14 @@ Minimum similarity score for related edges. Raise for precision, lower for recal
 
 ## Vector Search group
 
+### vector.provider
+
+**Control:** select — `sqlite-vec`  
+**Default:** `sqlite-vec`  
+**Risk:** normal
+
+Selects the local vector provider. `sqlite-vec` is the only supported provider.
+
 ### vector.enabled
 
 **Control:** toggle  
@@ -213,6 +255,13 @@ Controls strictness of loaded rules. `strict` helps lower-tier models; `light`/`
 
 Syncs generated agent context files on save.
 
+### live_sync.targets
+
+**Control:** list  
+**Default:** `agents-md`, `claude-md`, `cursorrules`
+
+Comma-separated generated context targets refreshed when live sync runs.
+
 ## Global Git group
 
 <RiskCallout level="risky">
@@ -241,6 +290,8 @@ All Global Git fields are risky. They control audit history and team sync behavi
 | Field | Control | Default | Notes |
 | --- | --- | --- | --- |
 | `pr_workflow.enabled` | toggle | `false` | Experimental team PR workflow for memory changes |
+| `pr_workflow.provider` | text | empty | Provider identifier for an already configured team workflow |
+| `pr_workflow.repo` | text | empty | Repository identifier for an already configured team workflow |
 | `pr_workflow.target_branch` | text | `main` | Branch receiving memory PRs |
 
 ## Encryption group

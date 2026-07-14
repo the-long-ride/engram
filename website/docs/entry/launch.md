@@ -9,10 +9,10 @@ description: Run engram entry to launch the local-only Entry control panel.
 Launch the panel:
 
 ```bash
-engram entry
+engram construct
 ```
 
-The command starts a local server and opens your default browser at the panel URL.
+`engram construct` starts a local server and opens your default browser at the panel URL. The command prints the Engram wordmark before the launch details. `engram entry` remains the low-level server command used by the panel runtime.
 
 ## Browser behavior
 
@@ -30,7 +30,7 @@ Close the server from the **Runtime** tab using the **Close server** action, or 
 
 - **Port already in use** — another process is using the panel port. Stop it or follow the printed fallback instructions.
 - **Browser did not open** — copy the printed URL into a browser manually.
-- **No workspace initialized** — run `engram inject` first, or use `engram entry` from a project root.
+- **No workspace initialized** — run `engram inject` first, or use `engram construct` from a project root.
 
 ## Next steps
 

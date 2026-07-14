@@ -7,6 +7,8 @@ export function gv(obj: any, key: string): any {
 
 export function uiValue(field: ConfigField, value: unknown): string {
   if (field.input === 'roles') return Array.isArray(value) ? value.join(', ') : String(value || '');
+  if (field.input === 'list') return Array.isArray(value) ? value.join(', ') : String(value || '');
+  if (field.input === 'textarea') return Array.isArray(value) ? value.join('\n') : String(value || '');
   if (field.input === 'toggle') return String(value === true || value === 'true');
   return value == null ? '' : String(value);
 }
@@ -15,6 +17,8 @@ export function parseFieldValue(field: ConfigField, value: string): unknown {
   if (field.input === 'toggle') return value === 'true';
   if (field.input === 'number') return Number(value);
   if (field.input === 'roles') return value.trim() ? value.split(',').map((role) => role.trim()).filter(Boolean) : [];
+  if (field.input === 'list') return value.split(',').map((item) => item.trim()).filter(Boolean);
+  if (field.input === 'textarea') return value.split(/\r?\n/u).map((item) => item.trim()).filter(Boolean);
   return value;
 }
 

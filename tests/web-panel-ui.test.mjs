@@ -59,7 +59,7 @@ test('React TypeScript web app is split by responsibility', async () => {
 
 test('React app exposes task-oriented entry tabs and actions in source', async () => {
   const sidebar = await read('src/core/web/app/layout/Sidebar.tsx');
-  for (const label of ['Recall', 'Review', 'Maintain', 'Connect', 'Config']) {
+  for (const label of ['Memories', 'Review', 'Maintain', 'Connect', 'Construct']) {
     assert.ok(sidebar.includes(label), label);
   }
   const app = await read('src/core/web/app/App.tsx');

@@ -23,7 +23,7 @@ describe('dependency lockfile security overrides', () => {
   it('keeps typecheck-only dependencies explicit', () => {
     assert.equal(manifest.dependencies?.['@docusaurus/plugin-content-docs'], '3.10.1');
     assert.equal(manifest.devDependencies?.['@types/react-dom'], '^19.0.0');
-    assert.match(lockfile, /'@docusaurus\/plugin-content-docs':\n\s+specifier: 3\.10\.1/);
-    assert.match(lockfile, /'@types\/react-dom':\n\s+specifier: \^19\.0\.0/);
+    assert.match(lockfile, /'@docusaurus\/plugin-content-docs':\r?\n\s+specifier: 3\.10\.1/);
+    assert.match(lockfile, /'@types\/react-dom':\r?\n\s+specifier: \^19\.0\.0/);
   });
 });

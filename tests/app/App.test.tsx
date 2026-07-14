@@ -67,7 +67,7 @@ describe('App Component', () => {
     fireEvent.click(screen.getAllByText('Review')[0]);
     await waitFor(() => expect(api.reviewQueue).toHaveBeenCalledTimes(1));
     expect(screen.queryByRole('heading', { name: 'Construct' })).not.toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Review queue' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Review' })).toBeInTheDocument();
   });
 
   test('renders error state on fetch failure', async () => {

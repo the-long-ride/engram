@@ -73,7 +73,7 @@ describe('Card', () => {
         <p>Card Body</p>
       </Card>
     );
-    const link = screen.getByRole('link', { name: 'Open Card Title documentation' });
+    const link = screen.getByRole('link', { name: 'Open Card Title docs' });
     expect(link).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/core');
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', 'noopener noreferrer');
@@ -82,8 +82,8 @@ describe('Card', () => {
 
 describe('HelpLink', () => {
   test('renders accessible external docs link', () => {
-    render(<HelpLink href={entryDoc('construct')} label="Open Construct documentation" />);
-    const link = screen.getByRole('link', { name: 'Open Construct documentation' });
+    render(<HelpLink href={entryDoc('construct')} label="Open Construct docs" />);
+    const link = screen.getByRole('link', { name: 'Open Construct docs' });
     expect(link).toHaveTextContent('i');
     expect(link).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/construct');
     expect(link).toHaveAttribute('target', '_blank');
@@ -94,11 +94,11 @@ describe('HelpLink', () => {
     const parentClick = jest.fn();
     render(
       <div onClick={parentClick}>
-        <HelpLink href={entryDoc('core', 'include-semantic-candidates')} label="Open semantic candidates documentation" />
+        <HelpLink href={entryDoc('core', 'include-semantic-candidates')} label="Open semantic candidate docs" />
       </div>
     );
 
-    fireEvent.click(screen.getByRole('link', { name: 'Open semantic candidates documentation' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Open semantic candidate docs' }));
     expect(parentClick).not.toHaveBeenCalled();
   });
 });
@@ -162,7 +162,7 @@ describe('SectionHeader', () => {
 
   test('renders section help link when provided', () => {
     render(<SectionHeader title="Construct" helpHref={entryDoc('construct')} />);
-    expect(screen.getByRole('link', { name: 'Open Construct documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/construct');
+    expect(screen.getByRole('link', { name: 'Open Construct docs' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/construct');
   });
 });
 

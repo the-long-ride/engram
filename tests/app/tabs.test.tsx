@@ -103,7 +103,7 @@ describe('ReviewTab', () => {
     expect((await screen.findAllByText('autosave: workflow candidate awaiting relation review')).length).toBeGreaterThan(0);
     expect(screen.getByText('TYPE: workflow | TEXT: Rotate release signer after build | ORIGIN: release runbook | TRIGGERS: release, signing | DEPENDS_ON: dep-1 | UPDATE: existing-memory')).toBeInTheDocument();
     expect(screen.getByText('2 related memories')).toBeInTheDocument();
-    expect(screen.getByText('No dependency or replacement selected.')).toBeInTheDocument();
+    expect(screen.getByText('No relation selected.')).toBeInTheDocument();
 
     fireEvent.click(screen.getAllByRole('button', { name: 'Mark dependency' })[0]);
     expect(screen.getByText('Depends on')).toBeInTheDocument();
@@ -112,13 +112,13 @@ describe('ReviewTab', () => {
     fireEvent.click(screen.getAllByRole('button', { name: 'Mark replacement' })[0]);
     expect(screen.getByText('Replaces')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText('Paste AI response'));
-    fireEvent.change(screen.getByLabelText('Paste AI response'), { target: { value: 'Draft proposal' } });
+    fireEvent.click(screen.getByText('Paste AI output'));
+    fireEvent.change(screen.getByLabelText('Paste AI output'), { target: { value: 'Draft proposal' } });
 
     fireEvent.click(screen.getByRole('button', { name: 'Clear preview' }));
     expect(toast).toHaveBeenCalledWith('Review preview cleared');
     expect(screen.getByDisplayValue('')).toBeInTheDocument();
-    expect(screen.getByText('No dependency or replacement selected.')).toBeInTheDocument();
+    expect(screen.getByText('No relation selected.')).toBeInTheDocument();
   });
 
   test('copies an AI review prompt and accepts a pasted response', async () => {
@@ -131,11 +131,11 @@ describe('ReviewTab', () => {
     render(<ReviewTab active={true} toast={jest.fn()} />);
 
     expect(await screen.findByText('TYPE: knowledge | TEXT: Generated candidate')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Copy AI review prompt' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Copy review prompt' }));
     expect(writeText).toHaveBeenCalledWith(expect.stringContaining('Generated candidate'));
 
-    fireEvent.click(screen.getByText('Paste AI response'));
-    fireEvent.change(screen.getByLabelText('Paste AI response'), { target: { value: 'Approved response' } });
+    fireEvent.click(screen.getByText('Paste AI output'));
+    fireEvent.change(screen.getByLabelText('Paste AI output'), { target: { value: 'Approved response' } });
     expect(screen.getByText('+ Approved response')).toBeInTheDocument();
   });
 
@@ -146,9 +146,9 @@ describe('ReviewTab', () => {
     const modal = { open: jest.fn(), close: jest.fn() };
 
     render(<ReviewTab active={true} toast={jest.fn()} modal={modal} />);
-    fireEvent.click(await screen.findByText('Paste AI response'));
-    fireEvent.change(screen.getByLabelText('Paste AI response'), { target: { value: 'TYPE: knowledge | TEXT: Approved memory' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Approve & write' }));
+    fireEvent.click(await screen.findByText('Paste AI output'));
+    fireEvent.change(screen.getByLabelText('Paste AI output'), { target: { value: 'TYPE: knowledge | TEXT: Approved memory' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Write' }));
 
     expect(modal.open).toHaveBeenCalledWith(expect.objectContaining({ title: 'Write memory?' }));
     const confirmation = modal.open.mock.calls[0][0];
@@ -182,7 +182,7 @@ describe('ReviewTab', () => {
 
     render(<ReviewTab active={true} toast={jest.fn()} />);
 
-    expect(await screen.findByText('No pending findings')).toBeInTheDocument();
+    expect(await screen.findByText('No findings')).toBeInTheDocument();
     expect(screen.getByText('Select an item')).toBeInTheDocument();
     expect(screen.queryByText('(new memory)')).not.toBeInTheDocument();
     expect(screen.queryByText('(empty proposal)')).not.toBeInTheDocument();
@@ -215,9 +215,9 @@ describe('ConfigTab', () => {
     // Check input displays default value
     const input = container.querySelector('[data-key="global_git.branch"] input') as HTMLInputElement;
     expect(input.value).toBe('main');
-    expect(screen.getByRole('link', { name: 'Open Construct documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/construct');
-    expect(screen.getByRole('link', { name: 'Open Branch documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/field-reference#global-git');
-    expect(screen.getByRole('link', { name: 'Open Future Flag documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/field-reference#pattern-mining');
+    expect(screen.getByRole('link', { name: 'Open Construct docs' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/construct');
+    expect(screen.getByRole('link', { name: 'Open Branch docs' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/field-reference#global-git');
+    expect(screen.getByRole('link', { name: 'Open Future Flag docs' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/field-reference#pattern-mining');
 
     // Change input value and blur to trigger dirty state change
     fireEvent.change(input, { target: { value: 'dev' } });
@@ -285,9 +285,9 @@ describe('RuntimeTab', () => {
 
     render(<RuntimeTab data={mockData} toast={toastMock} />);
     expect(screen.getByText('12')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Open Runtime documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/runtime');
-    expect(screen.getByRole('link', { name: 'Open Runtime report groups documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/runtime#runtime-report-groups');
-    expect(screen.getByRole('link', { name: 'Open runtime report groups documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/runtime#runtime-report-groups');
+    expect(screen.getByRole('link', { name: 'Open Runtime docs' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/runtime');
+    expect(screen.getByRole('link', { name: 'Open Runtime group docs' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/runtime#runtime-report-groups');
+    expect(screen.getByRole('link', { name: 'Open runtime group docs' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/runtime#runtime-report-groups');
 
     const valBtn = screen.getByRole('button', { name: '12' });
     fireEvent.click(valBtn);
@@ -341,10 +341,10 @@ describe('CoreTab', () => {
     });
 
     expect(screen.getByRole('heading', { level: 1, name: 'Core' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Open Core documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/core');
-    expect(screen.getByRole('link', { name: 'Open Core scope filter documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/core#scope-chips-profile-global-workspace');
-    expect(screen.getByRole('link', { name: 'Open Core type filter documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/core#type-chips-rule-skill-workflow-knowledge');
-    expect(screen.getByRole('link', { name: 'Open semantic candidates documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/core#include-semantic-candidates');
+    expect(screen.getByRole('link', { name: 'Open Core docs' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/core');
+    expect(screen.getByRole('link', { name: 'Open Core scope docs' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/core#scope-chips-profile-global-workspace');
+    expect(screen.getByRole('link', { name: 'Open Core type docs' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/core#type-chips-rule-skill-workflow-knowledge');
+    expect(screen.getByRole('link', { name: 'Open semantic candidate docs' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/core#include-semantic-candidates');
     expect(screen.getByText('Active profile: my-profile')).toBeInTheDocument();
     expect(screen.getByText('95%')).toBeInTheDocument();
 
@@ -367,7 +367,7 @@ describe('CoreTab', () => {
     });
 
     const requestCount = (api.postJson as jest.Mock).mock.calls.length;
-    fireEvent.click(screen.getByRole('link', { name: 'Open semantic candidates documentation' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Open semantic candidate docs' }));
     expect((api.postJson as jest.Mock).mock.calls.length).toBe(requestCount);
 
     // Refresh button
@@ -438,10 +438,10 @@ describe('MemoriesTab', () => {
     });
 
     expect(screen.getByRole('heading', { level: 1, name: 'Memories' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Open Memories documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/memories');
-    expect(screen.getByRole('link', { name: 'Open Memories scope filter documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/memories#scope-chips');
-    expect(screen.getByRole('link', { name: 'Open Memories type filter documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/memories#type-chips');
-    expect(screen.getByRole('link', { name: 'Open semantic links documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/memories#semantic-links-toggle');
+    expect(screen.getByRole('link', { name: 'Open Memories docs' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/memories');
+    expect(screen.getByRole('link', { name: 'Open Memories scope docs' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/memories#scope-chips');
+    expect(screen.getByRole('link', { name: 'Open Memories type docs' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/memories#type-chips');
+    expect(screen.getByRole('link', { name: 'Open semantic link docs' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/memories#semantic-links-toggle');
 
     // Toggle semantic links check div
     const semanticDiv = container.querySelector('.core-check') as HTMLDivElement;
@@ -453,7 +453,7 @@ describe('MemoriesTab', () => {
     });
 
     const memoryRequestCount = (api.postJson as jest.Mock).mock.calls.length;
-    fireEvent.click(screen.getByRole('link', { name: 'Open semantic links documentation' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Open semantic link docs' }));
     expect((api.postJson as jest.Mock).mock.calls.length).toBe(memoryRequestCount);
 
     // Refresh
@@ -522,9 +522,9 @@ describe('ProfilesTab', () => {
     const { container } = render(<ProfilesTab data={mockData} reload={reloadMock} toast={toastMock} />);
     expect(screen.getByText('personal')).toBeInTheDocument();
     expect(screen.getByText('work')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Open Profiles documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/profiles');
-    expect(screen.getByRole('link', { name: 'Open profile name documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/profiles#profile-name');
-    expect(screen.getByRole('link', { name: 'Open profile global path documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/profiles#global-path');
+    expect(screen.getByRole('link', { name: 'Open Profiles docs' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/profiles');
+    expect(screen.getByRole('link', { name: 'Open profile name docs' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/profiles#profile-name');
+    expect(screen.getByRole('link', { name: 'Open profile path docs' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/profiles#global-path');
 
     // Toggle add form
     const addBtn = screen.getByRole('button', { name: 'Add Profile' });
@@ -581,9 +581,9 @@ describe('WorkspacesTab', () => {
 
     const { container } = render(<WorkspacesTab data={mockData} reload={reloadMock} toast={toastMock} />);
     expect(screen.getByText('/path/cwd')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Open Workspaces documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/workspaces');
-    expect(screen.getByRole('link', { name: 'Open workspace name documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/workspaces#workspace-name');
-    expect(screen.getByRole('link', { name: 'Open workspace path documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/workspaces#workspace-path');
+    expect(screen.getByRole('link', { name: 'Open Workspaces docs' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/workspaces');
+    expect(screen.getByRole('link', { name: 'Open workspace name docs' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/workspaces#workspace-name');
+    expect(screen.getByRole('link', { name: 'Open workspace path docs' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/workspaces#workspace-path');
 
     // Toggle add form
     const addBtn = screen.getByRole('button', { name: 'Add Workspace' });
@@ -640,7 +640,7 @@ describe('ConnectionsTab', () => {
     await waitFor(() => {
       expect(screen.getByText('Agent One')).toBeInTheDocument();
     });
-    expect(screen.getByRole('link', { name: 'Open Connections documentation' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/connections');
+    expect(screen.getByRole('link', { name: 'Open Connections docs' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/connections');
     expect(screen.queryByRole('link', { name: 'Open workspace connection documentation' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Open global connection documentation' })).not.toBeInTheDocument();
     

@@ -21,11 +21,11 @@ The tab shows a card per supported agent. Each card reports a detected or missin
 Missing does not always mean unsupported. It can mean the app or config path is not present on this machine yet.
 </RiskCallout>
 
-## Workspace link toggle
+## Workspace link toggle {#workspace-link-toggle}
 
 Links Engram to the current repo/workspace for that agent. Use when memory should follow the repository: per-project rules, repo-specific memory, team-shared instructions.
 
-## Global link toggle
+## Global link toggle {#global-link-toggle}
 
 Links Engram globally for that agent. Use for personal memory, cross-project workflows, and reusable style/rules.
 
@@ -47,7 +47,7 @@ Use global links carefully on shared machines. Engram writes managed blocks into
 | `windsurf` | `.windsurf/rules/engram.md`; global: `~/.codeium/windsurf/memories/global_rules.md` |
 | `opencode` | `AGENTS.md`, `.opencode/engram.md`, `.opencode/skills/engram/SKILL.md`, `opencode.json` |
 | `mcp` | `.mcp.json`; global: host MCP config files |
-| `slash` | `.claude/commands/engram.md`, `.cursor/commands/engram.md`, `.gemini/commands/engram.toml`, `.opencode/commands/engram.md` |
+| `slash` | `.claude/commands/engram.md`, `.claude/skills/engram/SKILL.md`, `.cursor/commands/engram.md`, `.gemini/commands/engram.toml`, `.opencode/commands/engram.md` |
 
 ## When to unlink
 

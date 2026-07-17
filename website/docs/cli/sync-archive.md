@@ -39,7 +39,7 @@ engram save-session --file .agents/.engram/inbox/<note>.md
 
 ## Global Git sync
 
-Global Git sync is controlled by the `global_git.*` config fields. See [Entry Web UI: Construct tab](../entry/construct.md) for every field. Use `engram entry` Runtime tab to inspect resolved Git detection.
+Global Git sync is controlled by the `global_git.*` config fields. See [Entry Web UI: Construct tab](../entry/construct.md) for every field. Use `engram entry` and the Construct tab, or `engram config view`, to inspect resolved Git detection.
 
 ## Next steps
 

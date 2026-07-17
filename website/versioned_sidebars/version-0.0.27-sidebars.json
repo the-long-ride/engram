@@ -32,13 +32,11 @@
       "items": [
         "entry/index",
         "entry/launch",
-        "entry/connections",
         "entry/construct",
-        "entry/profiles",
-        "entry/workspaces",
-        "entry/core",
         "entry/memories",
-        "entry/runtime",
+        "entry/review",
+        "entry/core",
+        "entry/connections",
         "entry/field-reference",
         "entry/field-authoring-guidelines"
       ]

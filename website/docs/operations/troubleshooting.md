@@ -62,7 +62,7 @@ Normal read/write commands fall back to JSON config snapshots. DB-specific comma
 - Confirm `global_git.enabled` is `true`.
 - Check `global_git.remote_url` is a valid Git remote URL.
 - Review `global_git.auto_resolve` — auto conflict handling can mask memory diffs.
-- Run `engram entry` Runtime tab to inspect `global_git_detected`.
+- Run `engram entry` and open the Construct tab, or run `engram config view`, to inspect resolved Git detection.
 
 ## Next steps
 

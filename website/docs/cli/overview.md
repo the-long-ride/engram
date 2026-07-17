@@ -37,7 +37,7 @@ Run `engram -h` for the compact command surface. Run `engram help <topic>` or `e
 | Set automatic hook reads | `engram set-read startup\|auto\|always\|manual\|off\|status` |
 | Set hook proof visibility | `engram set-proof off\|compact\|status` |
 | Install agent hooks | `engram link codex\|claude\|gemini\|opencode\|cursor\|windsurf` |
-| Manage global profiles | `engram profile status\|create\|use\|merge` |
+| Manage global profiles | `engram profile status\|list\|create\|use\|merge` |
 | Clone workspace/global memory | `engram clone-memory workspace global [--metacognize]` |
 
 ## Command discovery

@@ -18,12 +18,13 @@ Each field lists:
 - **Risk** — `normal`, `caution`, or `risky`
 - **Notes** — what the field does and when to change it
 
-## Core
+## Core {#core}
 
 | Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
 | `enabled` | toggle | `true` | risky | Master switch. Disabling stops Engram behavior. |
 | `scope` | select | `both` | risky | Save target: `workspace`, `global`, `both`. |
+| `update` | select | `auto` | normal | Quiet package upgrade check: `auto`, `manual`, `off`. |
 | `read` | select | `auto` | normal | When hooks inject memory: `auto`, `startup`, `always`, `manual`, `off`. |
 | `proof` | select | `off` | normal | Hook proof line: `off`, `compact`. |
 | `global_path` | text | empty | risky | Filesystem path for global memory. |
@@ -31,20 +32,31 @@ Each field lists:
 | `roles` | roles | empty | normal | Comma-separated role names for routing. |
 | `theme` | select | `dark` | hidden | Internal/hidden. Not user-facing. |
 
-## Load Routing
+## Ignore Rules {#ignore-rules}
+
+| Config key | Control | Default | Risk | Notes |
+| --- | --- | --- | --- | --- |
+| `ignore.source` | select | `engramignore` | normal | Scan-rule sources: `engramignore`, `gitignore`, `both`, `off`. |
+| `ignore.gitignore_path` | text | `.gitignore` | normal | Git ignore file path. |
+| `ignore.engramignore_path` | text | `.engramignore` | normal | Engram ignore file path. |
+| `ignore.global_engramignore` | toggle | `true` | normal | Applies global ignore rules when configured. |
+| `ignore.also_ignore` | list | `*.secret`, `private/**` | normal | Extra comma-separated glob patterns. |
+| `ignore.global_patterns` | textarea | empty | normal | One global glob per line; inject syncs a managed workspace block. |
+
+## Load Routing {#load-routing}
 
 | Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
 | `load.limit` | number 1–32 | `8` | normal | Max memories returned by normal load. |
 
-## Memory Limits
+## Memory Limits {#memory-limits}
 
 | Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
 | `memory.rule_line_target` | number 50–200, step 10 | `70` | normal | Recommended line count for rules. |
 | `memory.rule_line_hard_limit` | number 50–200, step 10 | `100` | risky | Hard max line count for rules. |
 
-## Graph
+## Graph {#graph}
 
 | Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
@@ -52,29 +64,31 @@ Each field lists:
 | `graph.max_related` | number 1–20 | `4` | normal | Limits related memories from graph edges. |
 | `graph.min_related_score` | number 0–1, step 0.01 | `0.22` | normal | Min similarity score for related edges. |
 
-## Vector Search
+## Vector Search {#vector-search}
 
 | Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
 | `vector.enabled` | toggle | `true` | normal | Enables optional local vector routing. |
+| `vector.provider` | select | `sqlite-vec` | normal | The only supported local vector provider. |
 | `vector.auto_threshold` | number 10–1000 | `100` | normal | Memory count where vector search activates. |
 | `vector.candidate_pool` | number 8–100 | `24` | normal | Candidates considered before reranking. |
 | `vector.dimensions` | number 16–512 | `64` | normal | Embedding dimensions; rebuild after change. |
 
-## Rule Variants
+## Rule Variants {#rule-variants}
 
 | Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
 | `rule_variants.enabled` | toggle | `false` | normal | Enables role/strictness variants. |
 | `rule_variants.active` | select | `balanced` | normal | Active variant: `light`, `balanced`, `strict`. |
 
-## Live Sync
+## Live Sync {#live-sync}
 
 | Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
 | `live_sync.enabled` | toggle | `false` | normal | Sync generated agent context files on save. |
+| `live_sync.targets` | list | `agents-md`, `claude-md`, `cursorrules` | normal | Generated context targets refreshed by live sync. |
 
-## Global Git
+## Global Git {#global-git}
 
 | Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
@@ -85,7 +99,7 @@ Each field lists:
 | `global_git.auto_sync` | toggle | `true` | risky | Auto pull/push behavior. |
 | `global_git.auto_resolve` | toggle | `true` | risky | Auto conflict handling; review diffs. |
 
-## Pattern Mining
+## Pattern Mining {#pattern-mining}
 
 | Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
@@ -93,14 +107,16 @@ Each field lists:
 | `pattern_mining.threshold` | number 1–20 | `3` | normal | Repetitions before a pattern matters. |
 | `pattern_mining.lookback_sessions` | number 1–100 | `20` | normal | Recent sessions to inspect. |
 
-## PR Workflow
+## PR Workflow {#pr-workflow}
 
 | Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
 | `pr_workflow.enabled` | toggle | `false` | risky | Experimental team PR workflow. |
+| `pr_workflow.provider` | text | empty | risky | Provider identifier for configured team workflow. |
+| `pr_workflow.repo` | text | empty | risky | Repository identifier for configured team workflow. |
 | `pr_workflow.target_branch` | text | `main` | risky | Branch receiving memory PRs. |
 
-## Encryption
+## Encryption {#encryption}
 
 | Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
@@ -112,12 +128,13 @@ Each field lists:
 
 See the per-tab pages for non-config controls:
 
-- [Connections tab](connections.md)
-- [Profiles tab](profiles.md)
-- [Workspaces tab](workspaces.md)
-- [Core tab](core.md)
+- [Construct tab](construct.md)
 - [Memories tab](memories.md)
-- [Runtime tab](runtime.md)
+- [Review tab](review.md)
+- [Maintain tab](core.md)
+- [Connections tab](connections.md)
+
+Profile and workspace management are available in the Construct tab and through `engram profile` and `engram workspace`. See [Profiles and scope resolution](../concepts/profiles.md).
 
 ## Next steps
 

@@ -309,5 +309,5 @@ Encryption config exists, but encrypted storage is not implemented yet. Document
 ## Next steps
 
 - [Complete field reference](field-reference.md)
-- [Profiles tab](profiles.md)
-- [Runtime tab](runtime.md)
+- [Memories tab](memories.md)
+- [Maintain tab](core.md)

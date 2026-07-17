@@ -1,14 +1,14 @@
 ---
-title: Recall tab
-sidebar_position: 8
+title: Memories tab
+sidebar_position: 6
 description: Inspect the memory graph, preview memories, edit, and archive.
 ---
 
 import RiskCallout from '@site/src/components/RiskCallout';
 
-# Recall tab
+# Memories tab
 
-The Recall tab inspects active memory, explores its graph, and performs maintenance actions.
+The Memories tab inspects active memory, explores its graph, and performs maintenance actions.
 
 ## Search
 
@@ -68,4 +68,4 @@ engram archive --reason "<why>" <id-or-file>
 ## Next steps
 
 - [Maintain tab](core.md)
-- [Runtime tab](runtime.md)
+- [CLI: verify / repair / quality-check](../cli/verify-repair-quality.md)

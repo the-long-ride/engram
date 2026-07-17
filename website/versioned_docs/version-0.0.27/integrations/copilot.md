@@ -30,7 +30,7 @@ Appends a managed block to `~/.copilot/copilot-instructions.md`.
 
 ## Compact/manual fallback target
 
-Copilot is a compact/manual fallback target. It receives the full compact protocol because current hooks expose session-start context but no reliable prompt-time context injection in v1. Hook install is skipped; no hook config is written.
+Copilot is a compact/manual fallback target. It receives the full compact protocol. Hook install is skipped in v1; use the Engram skillset or a manual `engram load` for context.
 
 ## Next steps
 

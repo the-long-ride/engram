@@ -22,6 +22,7 @@ engram link opencode
 | `.opencode/engram.md` | Full guide |
 | `.opencode/skills/engram/SKILL.md` | Agent Skill |
 | `.opencode/commands/engram.md` | `/engram` slash adapter |
+| `.opencode/plugins/engram.js` | Local plugin for hook context injection |
 | `opencode.json` / `opencode.jsonc` | MCP registration (`mcp.engram`) |
 
 ## Global install

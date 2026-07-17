@@ -46,7 +46,7 @@ TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
 - `--force` / `-f` — every generated candidate is saved because the human explicitly approved that shortcut
 - `--file <path>` — for transcripts or long summaries already on disk
 
-For `/engram take-control --force` or natural `/engram take control accept all`, the slash adapter normalizes the wording, generates only concise `TYPE: ... | TEXT: ...` candidates, and lets Engram save them without a second approval prompt.
+For `/engram take-control --force` or natural `/engram take control force`, the slash adapter normalizes the wording, generates only concise `TYPE: ... | TEXT: ...` candidates, and lets Engram save them without a second approval prompt.
 
 ## observe
 
@@ -59,7 +59,7 @@ engram save-session --file .agents/.engram/inbox/<note>.md
 
 ## Related-memory hints
 
-When an accept-all run reports related memories before writing, no file was saved yet. The agent should rerun with structured candidates:
+When a force run reports related memories before writing, no file was saved yet. The agent should rerun with structured candidates:
 
 ```text
 TYPE: rule | TEXT: OAuth rotation follows release foundations. | DEPENDS_ON: release-foundation | LEVEL: advanced
@@ -70,4 +70,3 @@ TYPE: knowledge | TEXT: Invoice retries use exponential backoff. | UPDATE: invoi
 
 - [inject / link / upgrade](inject-link-upgrade.md)
 - [Concepts: write path and approval](../concepts/write-path.md)
-

@@ -38,5 +38,5 @@ engram metacognize --workspace --force
 
 ## Next steps
 
-- [Recall tab](memories.md)
+- [Memories tab](memories.md)
 - [CLI: verify / repair / quality-check](../cli/verify-repair-quality.md)

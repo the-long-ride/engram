@@ -27,9 +27,9 @@ Windsurf workspace MCP is skipped because the official contract documents only u
 
 ## Tools
 
-MCP hosts should treat `engram_save` and `engram_autosave` as **proposal-only** tools; they must still route final writes through the human-visible CLI approval flow. `engram_load` defaults to `--full` (opt-out via `full: true`).
+MCP hosts should treat `engram_save` and `engram_autosave` as **proposal-only** tools; they must still route final writes through the human-visible CLI approval flow. `engram_load` defaults to compact output; pass `full: true` for broader legacy output.
 
-## Accept-all rule
+## Force rule
 
 Explicit `/engram save-session --force` requests, including the shortcut `/engram ss -f`, should use the CLI write path because MCP autosave remains proposal-only. The counted shortcut `/engram ss -f last 50 sessions` should use `engram save-session --query-level 50 --force`.
 
@@ -50,4 +50,3 @@ The MCP server implements the standard JSON-RPC handshake (`initialize`, `notifi
 
 - [Agent Integrations overview](overview.md)
 - [Hooks and proof lines](hooks.md)
-

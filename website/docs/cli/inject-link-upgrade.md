@@ -12,12 +12,15 @@ Setup and adapter commands initialize workspaces, link agents, and reconcile aft
 
 ```bash
 engram inject
+engram inject --scope workspace|global|both
 engram inject --global-only --global-path <path>
 engram inject --submodule
 engram inject --submodule-remote <git-url>
 engram inject --global-remote <git-url>
+engram inject --global-branch <branch>
 engram inject --no-skillset
 engram inject --skillset all
+engram inject --no-global
 ```
 
 `engram inject` creates `.agents/.engram/` and installs the compact Codex target by default. Existing human-authored files are skipped.
@@ -36,6 +39,8 @@ engram link cursor
 engram link windsurf
 engram link --global opencode
 engram link all
+engram link list
+engram link --all-supported
 engram unlink
 ```
 
@@ -47,6 +52,10 @@ engram unlink
 engram upgrade
 engram upgrade --plan
 engram upgrade --latest
+engram upgrade --self
+engram upgrade --memory-only
+engram upgrade --global-skillsets-only
+engram upgrade --target codex
 ```
 
 Use `engram upgrade` after installing a newer Engram package. The command compares initialized memory roots from v0.0.8 onward to the current release schema and refreshes generated `HELP.md`, memory indexes, graph files, eligible vector sidecars, generated workspace skillsets, global memory scaffolding, and registered global agent skillsets while preserving human-authored files.

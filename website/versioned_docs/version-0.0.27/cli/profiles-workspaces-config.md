@@ -63,7 +63,7 @@ When `engram set-role ...` or `engram set-rule-variant ...` succeeds, the CLI re
 ## set-rule-variant
 
 ```bash
-engram set-rule-variant strict|balanced|light|off
+engram set-rule-variant strict|balanced|light|off|status
 ```
 
 ## config
@@ -80,14 +80,14 @@ engram config set <key> <value>
 | `memory.rule_line_target` | Recommended line count target for rule memories | `70` | `50` to `200` |
 | `memory.rule_line_hard_limit` | Maximum allowed line count for rule memories | `100` | `50` to `200` |
 | `load.limit` | Max memories returned by normal load | `8` | `1` to `32` |
-| `rule_variants.enabled` | Enable or disable rule variants generation | `true` | `true`, `false` |
+| `rule_variants.enabled` | Enable or disable rule variants generation | `false` | `true`, `false` |
 | `rule_variants.active` | Active rule variant mode | `balanced` | `light`, `balanced`, `strict` |
 | `graph.enabled` | Enable or disable graph-aware routing | `true` | `true`, `false` |
-| `graph.max_related` | Max related memories to fetch from graph edges | `8` | `1` to `20` |
-| `graph.min_related_score` | Min similarity score to add graph edges | `0.3` | `0.0` to `1.0` |
+| `graph.max_related` | Max related memories to fetch from graph edges | `4` | `1` to `20` |
+| `graph.min_related_score` | Min similarity score to add graph edges | `0.22` | `0.0` to `1.0` |
 | `vector.enabled` | Enable or disable vector search fallback | `true` | `true`, `false` |
-| `live_sync.enabled` | Sync generated agent context files on save | `true` | `true`, `false` |
-| `global_git.enabled` | Enable global Git repo sync automation | `false` | `true`, `false` |
+| `live_sync.enabled` | Sync generated agent context files on save | `false` | `true`, `false` |
+| `global_git.enabled` | Enable global Git repo sync automation | `true` | `true`, `false` |
 | `global_git.remote` | Git remote name for global sync | `origin` | String |
 | `global_git.branch` | Git branch name for global sync | `main` | String |
 

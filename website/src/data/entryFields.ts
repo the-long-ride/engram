@@ -74,7 +74,7 @@ export const ENTRY_FIELDS: EntryFieldDoc[] = [
     avoidWhen: ['Cloud-synced public folders can leak private memory.'],
     cliEquivalent: ['engram update-global-folder <path>', 'engram ugf <path>'],
     examples: ['~/Documents/engram', '/home/user/engram-global'],
-    troubleshooting: ['Ensure write permission on the path.', 'Validate the folder exists or can be created.', 'engram entry Runtime tab shows resolved global path.'],
+    troubleshooting: ['Ensure write permission on the path.', 'Validate the folder exists or can be created.', 'Run engram entry and open the Construct tab, or run engram config view, to see the resolved global path.'],
   },
   {
     key: 'default_profile', label: 'Default Profile', group: 'Core', control: 'select',

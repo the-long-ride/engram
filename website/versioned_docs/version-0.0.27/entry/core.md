@@ -1,22 +1,22 @@
 ---
-title: Core tab
+title: Maintain tab
 sidebar_position: 7
 description: Review duplicate and conflicting memories with scope and type filters.
 ---
 
-# Core tab
+# Maintain tab
 
-The Core tab reviews duplicate and conflicting memories. It is the metacognition workspace inside the Entry panel.
+The Maintain tab reviews duplicate and conflicting memories. It is the metacognition workspace inside the Entry panel.
 
-## Scope chips: profile / global / workspace
+## Scope chips: profile / global / workspace {#scope-chips-profile-global-workspace}
 
 Filter duplicate/conflict analysis by memory source. Audit one scope or compare cross-scope duplicates. Keep at least one scope selected.
 
-## Type chips: rule / skill / workflow / knowledge
+## Type chips: rule / skill / workflow / knowledge {#type-chips-rule-skill-workflow-knowledge}
 
 Filter duplicate candidates by memory type. Focus cleanup on rules first or knowledge facts first. Document type meanings inline so users understand when duplicates are harmless.
 
-## Include semantic candidates
+## Include semantic candidates {#include-semantic-candidates}
 
 Adds semantic duplicate search, not just exact/lexical matches. Use when cleaning mature memory stores; expect more false positives.
 
@@ -40,4 +40,3 @@ engram metacognize --workspace --force
 
 - [Memories tab](memories.md)
 - [CLI: verify / repair / quality-check](../cli/verify-repair-quality.md)
-

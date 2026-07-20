@@ -2,20 +2,42 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { rm } from 'node:fs/promises';
 import { runEngram, tempWorkspace } from './helpers.mjs';
-import { servePanel, stopServer, launchEntryUi } from '../dist/core/web/entry-server.js';
+import { servePanel, stopServer, launchEntryUi, getActiveServerToken } from '../dist/core/web/entry-server.js';
+
+let csrfToken = '';
+
+function extractCsrfTokenFromHtml(html) {
+  const match = html.match(/<meta name="engram-csrf-token" content="([0-9a-f]+)">/);
+  return match ? match[1] : '';
+}
+
+async function fetchCsrfToken(baseUrl) {
+  const response = await fetch(baseUrl + '/', { signal: AbortSignal.timeout(3000) });
+  const text = await response.text();
+  return extractCsrfTokenFromHtml(text);
+}
 
 async function requestJson(url, options = {}) {
+  const method = options.method || 'GET';
+  const headers = { ...(options.headers ?? {}) };
+  if (method !== 'GET' && !headers['Content-Type'] && !url.endsWith('/shutdown')) {
+    headers['Content-Type'] = 'application/json';
+  }
+  if (method !== 'GET' && !headers['X-Engram-CSRF']) {
+    headers['X-Engram-CSRF'] = csrfToken;
+  }
   const response = await fetch(url, {
     ...options,
     signal: AbortSignal.timeout(3000),
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers ?? {})
-    }
+    headers
   });
   const text = await response.text();
   const body = text ? JSON.parse(text) : {};
   return { response, body };
+}
+
+async function rawRequest(url, options = {}) {
+  return fetch(url, { ...options, signal: AbortSignal.timeout(3000) });
 }
 
 test('entry server exposes safe config metadata and validated config updates', async () => {
@@ -32,6 +54,9 @@ test('entry server exposes safe config metadata and validated config updates', a
 
   try {
     const baseUrl = await servePanel(cwd);
+    csrfToken = await fetchCsrfToken(baseUrl);
+    assert.ok(csrfToken, 'panel HTML must publish a CSRF token');
+    assert.equal(csrfToken, getActiveServerToken());
 
     const data = await requestJson(baseUrl + '/api/data');
     assert.equal(data.response.status, 200);
@@ -269,6 +294,7 @@ test('entry recall resolves memory from the served cwd', async () => {
     await runEngram(cwd, env, ['inject', '--no-skillset']);
     await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', '--skip-task-type-prompt', 'Entry server cwd isolation marker'], 'A\n');
     const baseUrl = await servePanel(cwd);
+    csrfToken = await fetchCsrfToken(baseUrl);
     const recall = await requestJson(baseUrl + '/api/recall?query=entry%20server%20cwd%20isolation%20marker&explain=true');
     assert.equal(recall.response.status, 200);
     assert.equal(recall.body.data.selected[0].id, 'entry-server-cwd-isolation-marker');
@@ -294,6 +320,196 @@ test('launchEntryUi respects hostOnly option', async () => {
   try {
     const output = await launchEntryUi(cwd, { hostOnly: true });
     assert.match(output, /Control panel at/);
+  } finally {
+    stopServer();
+    process.env.ENGRAM_CONFIG_DIR = oldEnv.ENGRAM_CONFIG_DIR;
+    process.env.ENGRAM_GLOBAL_DIR = oldEnv.ENGRAM_GLOBAL_DIR;
+    process.env.NODE_ENV = oldEnv.NODE_ENV;
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+// ── Security regressions ─────────────────────────────────────────────────────
+// These tests lock down the protections documented in the repository's
+// `engram-repo-review.md` P0 finding: every mutating request needs a same-origin
+// context (Origin/Host) plus the per-session CSRF token, and every known route
+// returns a precise status code (403/405/415) instead of falling through to 404.
+
+import http from 'node:http';
+
+function lowLevelRequest(baseUrl, { path, method, headers = {}, body } = {}) {
+  const u = new URL(baseUrl);
+  return new Promise((resolve, reject) => {
+    const req = http.request({
+      hostname: u.hostname,
+      port: u.port,
+      path,
+      method,
+      headers
+    }, (res) => {
+      let data = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => resolve({ status: res.statusCode || 0, headers: res.headers, body: data }));
+    });
+    req.on('error', reject);
+    if (body) req.write(body);
+    req.end();
+  });
+}
+
+function parseEnvelope(response) {
+  if (!response.body) return null;
+  try { return JSON.parse(response.body); } catch { return null; }
+}
+
+async function withSecurityWorkspace(label) {
+  const { cwd, env } = await tempWorkspace(label);
+  const oldEnv = {
+    ENGRAM_CONFIG_DIR: process.env.ENGRAM_CONFIG_DIR,
+    ENGRAM_GLOBAL_DIR: process.env.ENGRAM_GLOBAL_DIR,
+    NODE_ENV: process.env.NODE_ENV
+  };
+  process.env.ENGRAM_CONFIG_DIR = env.ENGRAM_CONFIG_DIR;
+  process.env.ENGRAM_GLOBAL_DIR = env.ENGRAM_GLOBAL_DIR;
+  process.env.NODE_ENV = 'test';
+  return { cwd, env, oldEnv };
+}
+
+test('entry server rejects GET /shutdown with 405 and documents the allowed method', async () => {
+  const { cwd, oldEnv } = await withSecurityWorkspace('engram-entry-shutdown-get-');
+  try {
+    const baseUrl = await servePanel(cwd);
+    csrfToken = await fetchCsrfToken(baseUrl);
+
+    const getShutdown = await rawRequest(baseUrl + '/shutdown');
+    assert.equal(getShutdown.status, 405);
+    assert.equal(getShutdown.headers.get('allow'), 'POST');
+    const parsed = JSON.parse(await getShutdown.text());
+    assert.equal(parsed.ok, false);
+    assert.equal(parsed.error.code, 'ENG_HTTP_METHOD_NOT_ALLOWED');
+  } finally {
+    stopServer();
+    process.env.ENGRAM_CONFIG_DIR = oldEnv.ENGRAM_CONFIG_DIR;
+    process.env.ENGRAM_GLOBAL_DIR = oldEnv.ENGRAM_GLOBAL_DIR;
+    process.env.NODE_ENV = oldEnv.NODE_ENV;
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('entry server rejects /shutdown POST without or with wrong CSRF token and accepts the valid token', async () => {
+  const { cwd, oldEnv } = await withSecurityWorkspace('engram-entry-shutdown-post-');
+  try {
+    const baseUrl = await servePanel(cwd);
+    csrfToken = await fetchCsrfToken(baseUrl);
+
+    const noToken = await lowLevelRequest(baseUrl, { path: '/shutdown', method: 'POST' });
+    assert.equal(noToken.status, 403);
+    assert.equal(parseEnvelope(noToken)?.error?.code, 'ENG_HTTP_CSRF');
+
+    const wrongToken = await lowLevelRequest(baseUrl, {
+      path: '/shutdown', method: 'POST',
+      headers: { 'x-engram-csrf': 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef' }
+    });
+    assert.equal(wrongToken.status, 403);
+    assert.equal(parseEnvelope(wrongToken)?.error?.code, 'ENG_HTTP_CSRF');
+
+    const valid = await lowLevelRequest(baseUrl, {
+      path: '/shutdown', method: 'POST',
+      headers: { 'x-engram-csrf': csrfToken }
+    });
+    assert.equal(valid.status, 204);
+
+    // After the shutdown timer elapses the server must stop accepting connections.
+    await new Promise((r) => setTimeout(r, 260));
+    const afterShutdown = await rawRequest(baseUrl + '/api/data').catch(() => 'connection-refused');
+    assert.equal(afterShutdown, 'connection-refused', 'server should be closed after a valid shutdown');
+  } finally {
+    stopServer();
+    process.env.ENGRAM_CONFIG_DIR = oldEnv.ENGRAM_CONFIG_DIR;
+    process.env.ENGRAM_GLOBAL_DIR = oldEnv.ENGRAM_GLOBAL_DIR;
+    process.env.NODE_ENV = oldEnv.NODE_ENV;
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('entry server rejects foreign Origin, foreign Host, and tokenless /api/* mutations', async () => {
+  const { cwd, oldEnv } = await withSecurityWorkspace('engram-entry-csrf-');
+  try {
+    const baseUrl = await servePanel(cwd);
+    csrfToken = await fetchCsrfToken(baseUrl);
+
+    // Same-origin GET works (no Origin header from Node fetch).
+    const sameOrigin = await rawRequest(baseUrl + '/api/data');
+    assert.equal(sameOrigin.status, 200);
+
+    // Foreign Origin on GET /api/data -> 403.
+    const foreignOrigin = await lowLevelRequest(baseUrl, {
+      path: '/api/data', method: 'GET',
+      headers: { origin: 'http://evil.example' }
+    });
+    assert.equal(foreignOrigin.status, 403);
+    assert.equal(parseEnvelope(foreignOrigin)?.error?.code, 'ENG_HTTP_FORBIDDEN_ORIGIN');
+
+    // Foreign Host on GET /api/data -> 403.
+    const foreignHost = await lowLevelRequest(baseUrl, {
+      path: '/api/data', method: 'GET',
+      headers: { host: 'evil.example:1234' }
+    });
+    assert.equal(foreignHost.status, 403);
+    assert.equal(parseEnvelope(foreignHost)?.error?.code, 'ENG_HTTP_FORBIDDEN_HOST');
+
+    // POST /api/config without CSRF token -> 403.
+    const postNoToken = await lowLevelRequest(baseUrl, {
+      path: '/api/config', method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ patch: { read: 'manual' } })
+    });
+    assert.equal(postNoToken.status, 403);
+    assert.equal(parseEnvelope(postNoToken)?.error?.code, 'ENG_HTTP_CSRF');
+
+    // POST /api/config with CSRF token but wrong content type -> 415.
+    const postWrongCT = await lowLevelRequest(baseUrl, {
+      path: '/api/config', method: 'POST',
+      headers: { 'x-engram-csrf': csrfToken, 'content-type': 'text/plain' },
+      body: JSON.stringify({ patch: { read: 'manual' } })
+    });
+    assert.equal(postWrongCT.status, 415);
+    assert.equal(parseEnvelope(postWrongCT)?.error?.code, 'ENG_HTTP_CONTENT_TYPE');
+
+    // POST /api/config with valid token + JSON content type -> 200.
+    const postOk = await lowLevelRequest(baseUrl, {
+      path: '/api/config', method: 'POST',
+      headers: { 'x-engram-csrf': csrfToken, 'content-type': 'application/json' },
+      body: JSON.stringify({ patch: { read: 'manual' } })
+    });
+    assert.equal(postOk.status, 200);
+    const postOkBody = JSON.parse(postOk.body);
+    assert.equal(postOkBody.ok, true);
+
+    // PUT /api/data is not one of the allowed methods -> 405 with Allow header.
+    const putMethod = await lowLevelRequest(baseUrl, {
+      path: '/api/data', method: 'PUT',
+      headers: { 'x-engram-csrf': csrfToken }
+    });
+    assert.equal(putMethod.status, 405);
+    assert.equal(putMethod.headers.allow, 'GET, POST');
+
+    // POST /static asset -> 405 (only GET allowed).
+    const postRoot = await lowLevelRequest(baseUrl, {
+      path: '/panel.js', method: 'POST',
+      headers: { 'x-engram-csrf': csrfToken }
+    });
+    assert.equal(postRoot.status, 405);
+    assert.equal(postRoot.headers.allow, 'GET');
+
+    // POST with malformed JSON body -> 400 (already covered by existing test, but ensure shape is stable here).
+    const postBadJson = await lowLevelRequest(baseUrl, {
+      path: '/api/config', method: 'POST',
+      headers: { 'x-engram-csrf': csrfToken, 'content-type': 'application/json' },
+      body: 'not-json'
+    });
+    assert.equal(postBadJson.status, 400);
   } finally {
     stopServer();
     process.env.ENGRAM_CONFIG_DIR = oldEnv.ENGRAM_CONFIG_DIR;

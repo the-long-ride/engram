@@ -1,7 +1,5 @@
 # Changelog
 
-## Unreleased
-
 ## 0.0.27
 
 - Added the Docusaurus docs site, release-versioned docs, and full i18n coverage for 7 locales, plus homepage, footer, mobile navigation, and copy-to-Markdown actions.

@@ -53,6 +53,7 @@ AGENTS.md
 !.github/actions/
 !.github/actions/engram-check/
 !.github/actions/engram-check/action.yml
+!.github/dependabot.yml
 
 # engram
 docs/superpowers/

@@ -21,6 +21,9 @@ on:
       - '.github/workflows/docs.yml'
       - '.github/workflows/deploy-docs.yml'
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest

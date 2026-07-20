@@ -30,15 +30,23 @@ test('docs workflows use pnpm for website jobs', async () => {
   assert.doesNotMatch(docs, /run: npm run check:entry-fields/);
 });
 
-test('test workflow keeps full verification on push changes', async () => {
+test('test workflow runs the full suite on pull_request/push and exposes node + os matrix', async () => {
   const root = path.resolve('.');
   const workflow = (await readFile(path.join(root, '.github', 'workflows', 'test.yml'), 'utf8')).replace(/\r\n/g, '\n');
 
+  // paths filter still scopes to relevant changes
   assert.match(workflow, /pull_request:\n\s+paths:\n(?:(?!\n  push:)[\s\S])*?      - 'website\/\*\*'/);
-  assert.match(workflow, /files: \|\n(?:(?!\n\n      - name:)[\s\S])*?            website\/\*\*/);
-  assert.match(workflow, /name: Typecheck\n\s+if: steps\.scope\.outputs\.force == 'true' \|\| steps\.changed\.outputs\.any_changed == 'true'\n\s+run: npm run typecheck/);
-  assert.match(workflow, /name: Line check\n\s+if: steps\.scope\.outputs\.force == 'true' \|\| steps\.changed\.outputs\.any_changed == 'true'\n\s+run: npm run lint:lines/);
-  assert.match(workflow, /name: Run coverage\n\s+if: steps\.scope\.outputs\.force == 'true' \|\| steps\.changed\.outputs\.any_changed == 'true'\n\s+run: npm run coverage/);
-  assert.match(workflow, /name: Run related tests\n\s+if: steps\.scope\.outputs\.force != 'true' && steps\.changed\.outputs\.any_changed == 'true'\n\s+run: npm run test:related -- \$\{\{ steps\.changed\.outputs\.all_changed_files \}\}/);
-  assert.match(workflow, /name: Run website tests\n\s+if: steps\.scope\.outputs\.force == 'true' \|\| steps\.changed\.outputs\.any_changed == 'true'\n\s+working-directory: website\n\s+run: pnpm test/);
+  // The full suite runs unconditionally; the conditional recent-files force/changed gate is gone.
+  assert.equal(workflow.includes('steps.scope.outputs.force'), false, 'workflow must drop the force/changed-files gate');
+  assert.equal(workflow.includes('steps.changed.outputs.any_changed'), false);
+  assert.equal(workflow.includes('Run related tests'), false);
+  assert.match(workflow, /name: Run full test suite\n\s+run: npm test/);
+  // Node matrix covers declared minimum (>=20) plus the latest CI runtime.
+  assert.match(workflow, /node: \[20, 24\]/);
+  // Cross-platform smoke matrix
+  assert.match(workflow, /os: \[windows-latest, macos-latest\]/);
+  // Explicit least permissions at the workflow level
+  assert.match(workflow, /^permissions:\n\s+contents: read/m);
+  // Schedule full-suite safety net
+  assert.match(workflow, /cron: '17 6 \* \* \*'/);
 });

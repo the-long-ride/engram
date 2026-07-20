@@ -1,6 +1,15 @@
 // Fetch helpers for the Engram React control panel API.
 import type { ApiResult, PanelData } from './types.js';
 
+const CSRF_TOKEN_HEADER = 'X-Engram-CSRF';
+
+/** Read the per-server-start CSRF token published by the Entry server via `<meta name="engram-csrf-token">`. Falls back to an empty string when the meta tag is missing (e.g. tests outside the panel HTML). */
+function readCsrfToken(): string {
+  if (typeof document === 'undefined') return '';
+  const meta = document.querySelector('meta[name="engram-csrf-token"]');
+  return meta ? (meta.getAttribute('content') || '') : '';
+}
+
 export async function getJson<T>(url: string): Promise<T> {
   const response = await fetch(url);
   const text = await response.text();
@@ -12,7 +21,10 @@ export async function getJson<T>(url: string): Promise<T> {
 export async function postJson<T = ApiResult>(url: string, body: unknown): Promise<T> {
   const response = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      [CSRF_TOKEN_HEADER]: readCsrfToken()
+    },
     body: JSON.stringify(body ?? {})
   });
   const text = await response.text();
@@ -25,10 +37,15 @@ export function loadPanelData(): Promise<PanelData> { return getJson<PanelData>(
 export function saveConfigPatch(patch: Record<string, unknown>): Promise<ApiResult> { return postJson('/api/config', { patch }); }
 export function validateConfigPatch(patch: Record<string, unknown>): Promise<ApiResult> { return postJson('/api/config/validate', { patch }); }
 export function initializeWorkspace(): Promise<ApiResult> { return postJson('/api/init', {}); }
-export function shutdownServer(): Promise<void> { return fetch('/shutdown', { method: 'GET' }).then(() => undefined); }
+export function shutdownServer(): Promise<void> {
+  return fetch('/shutdown', {
+    method: 'POST',
+    headers: { [CSRF_TOKEN_HEADER]: readCsrfToken() }
+  }).then(() => undefined);
+}
 export function browseDirectories(path: string): Promise<ApiResult> { return postJson('/api/browse', { path }); }
 export function recall(query: string, explain = false): Promise<ApiResult> { return getJson(`/api/recall?query=${encodeURIComponent(query)}&explain=${String(explain)}`); }
-export function reviewQueue(): Promise<ApiResult> { return getJson('/api/review'); }
+export function reviewQueue(): Promise<ApiResult> { return getJson(`/api/review`); }
 export function reviewInspect(id: string): Promise<ApiResult> { return getJson(`/api/review/inspect?id=${encodeURIComponent(id)}`); }
 export function reviewPreview(id: string, memoryIds: string[] = []): Promise<ApiResult> {
   const params = new URLSearchParams({ id });

@@ -64,7 +64,7 @@ describe('api-client', () => {
     expect(res).toEqual({ ok: true });
     expect(mockFetch).toHaveBeenCalledWith('/post-test', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-Engram-CSRF': '' },
       body: JSON.stringify({ data: 123 }),
     });
   });
@@ -99,7 +99,7 @@ describe('api-client', () => {
     await saveConfigPatch({ key: 'val' });
     expect(mockFetch).toHaveBeenCalledWith('/api/config', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-Engram-CSRF': '' },
       body: JSON.stringify({ patch: { key: 'val' } }),
     });
   });
@@ -113,7 +113,7 @@ describe('api-client', () => {
     await validateConfigPatch({ key: 'val' });
     expect(mockFetch).toHaveBeenCalledWith('/api/config/validate', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-Engram-CSRF': '' },
       body: JSON.stringify({ patch: { key: 'val' } }),
     });
   });
@@ -128,7 +128,7 @@ describe('api-client', () => {
     expect(res).toEqual({ ok: true, message: 'Done' });
     expect(mockFetch).toHaveBeenCalledWith('/api/init', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-Engram-CSRF': '' },
       body: JSON.stringify({}),
     });
   });
@@ -140,7 +140,10 @@ describe('api-client', () => {
       text: () => Promise.resolve(''),
     });
     await shutdownServer();
-    expect(mockFetch).toHaveBeenCalledWith('/shutdown', { method: 'GET' });
+    expect(mockFetch).toHaveBeenCalledWith('/shutdown', {
+      method: 'POST',
+      headers: { 'X-Engram-CSRF': '' }
+    });
   });
 
   test('browseDirectories calls correct endpoint', async () => {
@@ -152,7 +155,7 @@ describe('api-client', () => {
     await browseDirectories('/some/path');
     expect(mockFetch).toHaveBeenCalledWith('/api/browse', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-Engram-CSRF': '' },
       body: JSON.stringify({ path: '/some/path' }),
     });
   });

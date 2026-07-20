@@ -245,16 +245,16 @@ npm install -g @the-long-ride/engram
 ```
 
 ### 2. Configure & Link (Recommended First Step)
-To configure your settings, manage profiles, and connect AI agents in a premium web interface, run:
+To configure your settings, manage profiles, and connect AI agents in a local web interface, run:
 ```bash
 engram entry
 ```
-- **Connections Tab**: Scan and link Engram to your local AI agents (installs skillsets and hooks automatically).
-  ![Engram Connections](media/demo/demo-engram-entry-connections.png)
+- **Connect Tab**: Scan and link Engram to your local AI agents (installs skillsets and hooks automatically).
+  ![Engram Connect](media/demo/demo-engram-entry-connections.png)
 - **Construct Tab**: Configure core settings, load limits, rule variant preferences, global Git settings, and rule memory line limits.
   ![Engram Construct Tab](media/demo/engram-entry-Constuct-tab.png)
-- **Core Tab**: Review and resolve duplicate memory candidates across workspace, global, and profile scopes, or run metacognitive analysis.
-  ![Engram Core Settings](media/demo/engram-entry-Core-tab.png)
+- **Maintain Tab**: Review and resolve duplicate memory candidates across workspace, global, and profile scopes, or run metacognitive analysis.
+  ![Engram Maintain Settings](media/demo/engram-entry-Core-tab.png)
 - **Memories Tab**: Visualize active memories, search full Markdown content, include related matches, and inspect dependency edges using the interactive memory graph.
   ![Engram Memories Graph View](media/demo/Memories-graph-view.png)
 
@@ -414,7 +414,7 @@ through a host integration; they never become active memories automatically.
 `engram capabilities --json` reports host-specific support without claiming
 prompt injection where a host cannot provide it.
 
-The Entry UI groups work by task: Recall, Review, Maintain, and Connect. Review
+The Entry UI groups work by task: Construct, Memories, Review, Maintain, and Connect. Review
 previews show a memory diff and ID-only dependency choices before any approval
 flow can write.
 

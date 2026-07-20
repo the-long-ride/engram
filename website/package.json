@@ -44,7 +44,7 @@
     "@docusaurus/module-type-aliases": "3.10.1",
     "@docusaurus/theme-common": "3.10.1",
     "@docusaurus/tsconfig": "3.10.1",
-    "@docusaurus/types": "3.10.1",
+    "@docusaurus/types": "3.10.2",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "tsx": "^4.21.0",

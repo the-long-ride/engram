@@ -7,6 +7,7 @@ export interface ConfigField {
   key: string;
   label: string;
   group: string;
+  docsAnchor: string;
   description?: string;
   input?: 'toggle' | 'select' | 'number' | 'roles' | 'text' | 'textarea' | string;
   options?: string[];

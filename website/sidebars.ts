@@ -30,6 +30,7 @@ const sidebars: SidebarsConfig = {
         'entry/index',
         'entry/launch',
         'entry/construct',
+        'entry/policy',
         'entry/memories',
         'entry/review',
         'entry/core',

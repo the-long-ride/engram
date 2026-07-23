@@ -165,7 +165,9 @@ function checkCsrf(req: any, ctx: RequestContext): boolean {
   const a = Buffer.from(tokenRaw);
   const b = Buffer.from(ctx.token);
   if (a.length !== b.length) return false;
-  return crypto.timingSafeEqual(a, b);
+  let result = 0;
+  for (let i = 0; i < a.length; i++) result |= a[i] ^ b[i];
+  return result === 0;
 }
 
 // ── Request handler ─────────────────────────────────────────────────────────

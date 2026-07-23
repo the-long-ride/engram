@@ -16,10 +16,13 @@ import {
   renderMinimalInstructionBlock,
   renderSkillsetFile,
   renderWindsurfGlobalRulesBlock,
+  renderGeminiHookConfig,
   renderWindsurfRule,
   upsertWorkspaceManagedBlock,
   mergeMcpJson,
-  unmergeMcpJson
+  unmergeMcpJson,
+  mergeGeminiHookConfig,
+  unmergeGeminiHookConfig
 } from './skillset-render.js';
 import type { InstructionProfile } from './skillset-render.js';
 import { globalAgentHome, globalAgentConfigHome, globalOpenCodeConfigHome } from './agent-paths.js';
@@ -35,7 +38,7 @@ export type UnlinkResult = { target: string; file: string; action: 'removed' | '
 export type GlobalInstallMode = 'block' | 'file';
 
 type ResolvedTarget = { name: SkillsetTarget; label: string };
-type GlobalInstallPlan = ResolvedTarget & { file: string; mode?: GlobalInstallMode; renderTarget?: SkillsetTarget; reason?: string };
+type GlobalInstallPlan = ResolvedTarget & { file: string; mode?: GlobalInstallMode; renderTarget?: SkillsetTarget | 'gemini-hook'; reason?: string };
 type GlobalSkillsetRegistry = { version: 1; updated: string; engram_version: string; installs: Record<string, { target: string; updated: string; engram_version: string; files: Array<{ path: string; mode: GlobalInstallMode; hash: string }> }> };
 
 const GLOBAL_BEGIN = '<!-- BEGIN ENGRAM GLOBAL SKILLSET -->';
@@ -540,7 +543,8 @@ export async function installGlobalSkillset(target = 'all', options: { force?: b
       results.push({ target: plan.label, file: plan.file, action: 'skipped', reason: plan.reason ?? 'global install is not supported for this target yet' });
       continue;
     }
-    const profile = instructionProfileForTarget(plan.renderTarget ?? plan.name, plan.label);
+    const rt = plan.renderTarget === 'gemini-hook' ? plan.name : (plan.renderTarget ?? plan.name);
+    const profile = instructionProfileForTarget(rt, plan.label);
     let content = renderGlobalInstallContent(plan, config.read, profile);
     const isWindsurfGlobalRules = plan.file.endsWith('global_rules.md');
     if (plan.mode === 'block') {
@@ -573,6 +577,16 @@ export async function installGlobalSkillset(target = 'all', options: { force?: b
         results.push({ target: plan.label, file: plan.file, action: 'skipped', mode: plan.mode, reason: 'engram MCP entry already present' });
         continue;
       }
+      if (plan.renderTarget === 'gemini-hook' && plan.file.endsWith('hooks.json')) {
+        const merged = mergeGeminiHookConfig(existing, content);
+        if (merged) {
+          await writeText(plan.file, merged);
+          results.push({ target: plan.label, file: plan.file, action: 'updated', mode: plan.mode, hash: sha256(merged) });
+          continue;
+        }
+        results.push({ target: plan.label, file: plan.file, action: 'skipped', mode: plan.mode, reason: 'engram hook entry already present' });
+        continue;
+      }
       if (isWindsurfGlobalRules) {
         const { text, action } = upsertWorkspaceManagedBlock(existing, content);
         await writeText(plan.file, text);
@@ -600,6 +614,16 @@ export async function installGlobalSkillset(target = 'all', options: { force?: b
         continue;
       }
       results.push({ target: plan.label, file: plan.file, action: 'skipped', mode: plan.mode, reason: 'could not merge existing MCP config' });
+      continue;
+    }
+    if (plan.mode === 'file' && existing && plan.renderTarget === 'gemini-hook' && plan.file.endsWith('hooks.json')) {
+      const merged = mergeGeminiHookConfig(existing, content, { replaceExisting: true });
+      if (merged) {
+        await writeText(plan.file, merged);
+        results.push({ target: plan.label, file: plan.file, action: 'updated', mode: plan.mode, hash: sha256(merged) });
+        continue;
+      }
+      results.push({ target: plan.label, file: plan.file, action: 'skipped', mode: plan.mode, reason: 'could not merge existing gemini hooks config' });
       continue;
     }
     const next = plan.mode === 'block' || isWindsurfGlobalRules
@@ -678,7 +702,7 @@ export function globalInstallPlans(target: string, home = globalAgentHome()): Gl
   const resolvedTargets = resolveLinkTargets(target);
   return resolvedTargets.flatMap((item) => [
     ...globalFilesForTarget(item, home),
-    ...(target === 'all' || target === 'all-supported' ? [] : globalMcpFilesForTarget(item, home))
+    ...(target === 'all' || target === 'all-supported' ? [] : globalConfigFilesForTarget(item, home))
   ]);
 }
 
@@ -731,10 +755,8 @@ function globalFilesForTarget(target: ResolvedTarget, home: string): GlobalInsta
       return [plan(path.join(home, '.agents', 'skills', 'engram', 'SKILL.md'), 'file')];
     case 'antigravity':
       return [
-        plan(path.join(home, '.antigravity', 'skills', 'engram', 'SKILL.md'), 'file'),
-        plan(path.join(home, '.antigravity-cli', 'skills', 'engram', 'SKILL.md'), 'file'),
-        plan(path.join(home, '.antigravity-ide', 'skills', 'engram', 'SKILL.md'), 'file'),
-        plan(path.join(home, '.gemini', 'skills', 'engram', 'SKILL.md'), 'file')
+        plan(path.join(home, '.gemini', 'antigravity', 'skills', 'engram', 'SKILL.md'), 'file'),
+        plan(path.join(home, '.gemini', 'skills', 'engram', 'SKILL.md'), 'file', 'agent-skill')
       ];
     case 'opencode':
       return [
@@ -772,18 +794,22 @@ function renderTargetForFile(target: SkillsetTarget, relativeFile: string): Skil
 
 function isCursorMcpFile(relativeFile: string): boolean { return relativeFile.replace(/\\/g, '/') === '.cursor/mcp.json'; }
 
-function globalMcpFilesForTarget(target: ResolvedTarget, home: string): GlobalInstallPlan[] {
+function globalConfigFilesForTarget(target: ResolvedTarget, home: string): GlobalInstallPlan[] {
   const configHome = globalAgentConfigHome(home);
   const opencodeHome = globalOpenCodeConfigHome(home);
-  const plan = (file: string): GlobalInstallPlan => ({ ...target, file, mode: 'file', renderTarget: 'mcp' });
+  const mcpPlan = (file: string): GlobalInstallPlan => ({ ...target, file, mode: 'file', renderTarget: 'mcp' });
+  const hookPlan = (file: string): GlobalInstallPlan => ({ ...target, file, mode: 'file', renderTarget: 'gemini-hook' });
   switch (target.name) {
     case 'claude':
-      return [plan(path.join(home, '.claude', 'mcp.json'))];
+      return [mcpPlan(path.join(home, '.claude', 'mcp.json'))];
     case 'cursor':
       return [];
     case 'gemini':
     case 'antigravity':
-      return [plan(path.join(configHome, 'gemini', 'mcp.json'))];
+      return [
+        mcpPlan(path.join(home, '.gemini', 'config', 'mcp_config.json')),
+        hookPlan(path.join(home, '.gemini', 'config', 'hooks.json'))
+      ];
     case 'opencode':
       return [{ ...target, file: path.join(opencodeHome, OPENCODE_JSONC), mode: 'file', renderTarget: 'opencode' }];
     case 'windsurf':
@@ -797,6 +823,7 @@ function renderGlobalInstallContent(plan: GlobalInstallPlan, readMode = 'auto', 
   const normFile = plan.file.replace(/\\/g, '/');
   if (plan.name === 'slash' || plan.renderTarget === 'slash') return renderSkillsetFile('slash', plan.file, readMode);
   if (plan.renderTarget === 'mcp') return renderSkillsetFile('mcp', plan.file, readMode);
+  if (plan.renderTarget === 'gemini-hook') return renderGeminiHookConfig();
   if (plan.renderTarget === 'opencode' && /opencode\.jsonc?$/u.test(normFile)) return renderSkillsetFile('opencode', plan.file, readMode);
   if (normFile.endsWith('SKILL.md')) return renderSkillsetFile(plan.renderTarget ?? 'agent-skill', plan.file, readMode);
   if (normFile.endsWith('plugin.json')) return renderCursorPluginJson();
@@ -1008,11 +1035,22 @@ export async function unlinkGlobalSkillset(target = 'all', options: { force?: bo
               } else {
                 results.push({ target: current, file, action: 'skipped', reason: 'no Engram-managed hook entries found' });
               }
-            } else if (isGenerated(existing, file) || options.force) {
-              await fs.rm(file, { force: true });
-              results.push({ target: current, file, action: 'removed' });
             } else {
-              results.push({ target: current, file, action: 'skipped', reason: 'human-authored file; use --force to remove' });
+              const unmerged = unmergeGeminiHookConfig(existing);
+              if (unmerged !== null) {
+                if (unmerged === '') {
+                  await fs.rm(file, { force: true });
+                  results.push({ target: current, file, action: 'removed' });
+                } else {
+                  await writeText(file, unmerged);
+                  results.push({ target: current, file, action: 'cleaned' });
+                }
+              } else if (isGenerated(existing, file) || options.force) {
+                await fs.rm(file, { force: true });
+                results.push({ target: current, file, action: 'removed' });
+              } else {
+                results.push({ target: current, file, action: 'skipped', reason: 'human-authored file; use --force to remove' });
+              }
             }
           } catch {
             results.push({ target: current, file, action: 'skipped', reason: 'could not parse hooks.json' });

@@ -256,21 +256,22 @@
   right: 24px;
   background: var(--bg);
   border: 1px solid var(--g300);
+  border-left: 3px solid var(--g500);
   border-radius: var(--r8);
   padding: 10px 16px;
   font-size: 13px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 200ms, border-color 200ms;
+  transition: opacity 200ms, border-left-color 200ms;
   z-index: 9999;
   max-width: 320px;
 }
 #toast.ok {
-  border-color: var(--green);
+  border-left-color: var(--green);
 }
 #toast.err {
-  border-color: var(--red);
+  border-left-color: var(--red);
 }
 #toast.show {
   opacity: 1;

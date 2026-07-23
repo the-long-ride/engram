@@ -263,14 +263,15 @@ test('global antigravity install writes 2.0, CLI, and IDE skill folders', async 
   const globalEnv = { ...env, ENGRAM_AGENT_HOME: agentHome, ENGRAM_AGENT_CONFIG_HOME: configHome };
   const result = await runEngram(cwd, globalEnv, ['link', '--global', 'antigravity']);
   assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /WRITTEN antigravity: .*\.antigravity[\\\/]skills[\\\/]engram[\\\/]SKILL\.md/);
-  assert.match(result.stdout, /WRITTEN antigravity: .*\.antigravity-cli[\\\/]skills[\\\/]engram[\\\/]SKILL\.md/);
-  assert.match(result.stdout, /WRITTEN antigravity: .*\.antigravity-ide[\\\/]skills[\\\/]engram[\\\/]SKILL\.md/);
-  assert.match(result.stdout, /WRITTEN antigravity: .*gemini[\\\/]mcp\.json/);
-  assert.match(await readFile(path.join(agentHome, '.antigravity', 'skills', 'engram', 'SKILL.md'), 'utf8'), /name: engram/);
-  assert.match(await readFile(path.join(agentHome, '.antigravity-cli', 'skills', 'engram', 'SKILL.md'), 'utf8'), /Default agent mode: compact/);
-assert.match(await readFile(path.join(agentHome, '.antigravity-ide', 'skills', 'engram', 'SKILL.md'), 'utf8'), /save-session --force/);
-  assert.equal(JSON.parse(await readFile(path.join(configHome, 'gemini', 'mcp.json'), 'utf8')).mcpServers.engram.command, 'npx');
+  assert.match(result.stdout, /WRITTEN antigravity: .*\.gemini[\\\/]antigravity[\\\/]skills[\\\/]engram[\\\/]SKILL\.md/);
+  assert.match(result.stdout, /WRITTEN antigravity: .*\.gemini[\\\/]skills[\\\/]engram[\\\/]SKILL\.md/);
+  assert.match(result.stdout, /WRITTEN antigravity: .*\.gemini[\\\/]config[\\\/]mcp_config\.json/);
+  assert.match(result.stdout, /WRITTEN antigravity: .*\.gemini[\\\/]config[\\\/]hooks\.json/);
+  assert.match(await readFile(path.join(agentHome, '.gemini', 'antigravity', 'skills', 'engram', 'SKILL.md'), 'utf8'), /name: engram/);
+  assert.match(await readFile(path.join(agentHome, '.gemini', 'skills', 'engram', 'SKILL.md'), 'utf8'), /Default agent mode: compact/);
+  assert.match(await readFile(path.join(agentHome, '.gemini', 'skills', 'engram', 'SKILL.md'), 'utf8'), /save-session --force/);
+  assert.equal(JSON.parse(await readFile(path.join(agentHome, '.gemini', 'config', 'mcp_config.json'), 'utf8')).mcpServers.engram.command, 'npx');
+  assert.match(await readFile(path.join(agentHome, '.gemini', 'config', 'hooks.json'), 'utf8'), /engram-auto-load/);
   const registry = JSON.parse(await readFile(path.join(globalEnv.ENGRAM_CONFIG_DIR, 'global-skillsets.json'), 'utf8'));
   assert.equal(registry.installs.antigravity.files.length, 4);
   await rm(cwd, { recursive: true, force: true });
@@ -286,10 +287,11 @@ test('global skill-capable targets write host skill folders', async () => {
   assert.equal(gemini.code, 0, gemini.stderr);
   assert.match(gemini.stdout, /WRITTEN gemini: .*\.gemini[\\\/]GEMINI\.md/);
   assert.match(gemini.stdout, /WRITTEN gemini: .*\.gemini[\\\/]skills[\\\/]engram[\\\/]SKILL\.md/);
-  assert.match(gemini.stdout, /WRITTEN gemini: .*gemini[\\\/]mcp\.json/);
+  assert.match(gemini.stdout, /WRITTEN gemini: .*\.gemini[\\\/]config[\\\/]mcp_config\.json/);
+  assert.match(gemini.stdout, /WRITTEN gemini: .*\.gemini[\\\/]config[\\\/]hooks\.json/);
   assert.match(gemini.stdout, /gemini also covers current Antigravity 2\.0, Antigravity CLI, and Antigravity IDE/);
   assert.match(await readFile(path.join(agentHome, '.gemini', 'skills', 'engram', 'SKILL.md'), 'utf8'), /Engram Memory Management Skill/);
-  assert.equal(JSON.parse(await readFile(path.join(configHome, 'gemini', 'mcp.json'), 'utf8')).mcpServers.engram.command, 'npx');
+  assert.equal(JSON.parse(await readFile(path.join(agentHome, '.gemini', 'config', 'mcp_config.json'), 'utf8')).mcpServers.engram.command, 'npx');
 
   const opencode = await runEngram(cwd, globalEnv, ['link', '--global', 'open-code']);
   assert.equal(opencode.code, 0, opencode.stderr);

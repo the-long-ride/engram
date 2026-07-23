@@ -2,7 +2,7 @@ import { fmtDate, relTime } from '../../src/core/web/app/utils/format.js';
 import { gv, uiValue, parseFieldValue, clientValidationError, groupFields } from '../../src/core/web/app/utils/config.js';
 import { copyText } from '../../src/core/web/app/utils/clipboard.js';
 import { safeText } from '../../src/core/web/app/utils/html.js';
-import { entryDoc, entryFieldGroupDoc, latestDocsVersion, resolveDocsVersion } from '../../src/core/web/app/utils/docs.js';
+import { entryConfigFieldDoc, entryDoc, entryFieldGroupDoc, latestDocsVersion, resolveDocsVersion } from '../../src/core/web/app/utils/docs.js';
 import type { ConfigField } from '../../src/core/web/app/types.js';
 
 describe('format utils', () => {
@@ -37,9 +37,9 @@ describe('config utils', () => {
   });
 
   test('uiValue outputs correct values', () => {
-    const rolesField: ConfigField = { key: 'load.roles', group: 'Load', label: 'Roles', input: 'roles' };
-    const toggleField: ConfigField = { key: 'load.enabled', group: 'Load', label: 'Enabled', input: 'toggle' };
-    const textField: ConfigField = { key: 'load.path', group: 'Load', label: 'Path', input: 'text' };
+    const rolesField: ConfigField = { key: 'load.roles', group: 'Load', label: 'Roles', docsAnchor: 'load-roles', input: 'roles' };
+    const toggleField: ConfigField = { key: 'load.enabled', group: 'Load', label: 'Enabled', docsAnchor: 'load-enabled', input: 'toggle' };
+    const textField: ConfigField = { key: 'load.path', group: 'Load', label: 'Path', docsAnchor: 'load-path', input: 'text' };
 
     expect(uiValue(rolesField, ['admin', 'user'])).toBe('admin, user');
     expect(uiValue(rolesField, null)).toBe('');
@@ -50,10 +50,10 @@ describe('config utils', () => {
   });
 
   test('parseFieldValue parses fields correctly', () => {
-    const rolesField: ConfigField = { key: 'load.roles', group: 'Load', label: 'Roles', input: 'roles' };
-    const toggleField: ConfigField = { key: 'load.enabled', group: 'Load', label: 'Enabled', input: 'toggle' };
-    const numberField: ConfigField = { key: 'load.limit', group: 'Load', label: 'Limit', input: 'number' };
-    const textField: ConfigField = { key: 'load.path', group: 'Load', label: 'Path', input: 'text' };
+    const rolesField: ConfigField = { key: 'load.roles', group: 'Load', label: 'Roles', docsAnchor: 'load-roles', input: 'roles' };
+    const toggleField: ConfigField = { key: 'load.enabled', group: 'Load', label: 'Enabled', docsAnchor: 'load-enabled', input: 'toggle' };
+    const numberField: ConfigField = { key: 'load.limit', group: 'Load', label: 'Limit', docsAnchor: 'load-limit', input: 'number' };
+    const textField: ConfigField = { key: 'load.path', group: 'Load', label: 'Path', docsAnchor: 'load-path', input: 'text' };
 
     expect(parseFieldValue(toggleField, 'true')).toBe(true);
     expect(parseFieldValue(toggleField, 'false')).toBe(false);
@@ -64,10 +64,10 @@ describe('config utils', () => {
   });
 
   test('clientValidationError validates inputs correctly', () => {
-    const numberField: ConfigField = { key: 'load.limit', group: 'Load', label: 'Limit', input: 'number', min: 1, max: 100, step: 1 };
-    const floatField: ConfigField = { key: 'load.score', group: 'Load', label: 'Score', input: 'number', min: 0.1, step: 0.1 };
-    const rolesField: ConfigField = { key: 'load.roles', group: 'Load', label: 'Roles', input: 'roles' };
-    const gitBranchField: ConfigField = { key: 'global_git.branch', group: 'Git', label: 'Branch', input: 'text' };
+    const numberField: ConfigField = { key: 'load.limit', group: 'Load', label: 'Limit', docsAnchor: 'load-limit', input: 'number', min: 1, max: 100, step: 1 };
+    const floatField: ConfigField = { key: 'load.score', group: 'Load', label: 'Score', docsAnchor: 'load-score', input: 'number', min: 0.1, step: 0.1 };
+    const rolesField: ConfigField = { key: 'load.roles', group: 'Load', label: 'Roles', docsAnchor: 'load-roles', input: 'roles' };
+    const gitBranchField: ConfigField = { key: 'global_git.branch', group: 'Git', label: 'Branch', docsAnchor: 'global_git-branch', input: 'text' };
 
     expect(clientValidationError(numberField, 'not-a-number')).toBe('Limit must be a number');
     expect(clientValidationError(numberField, '1.5')).toBe('Limit must be an integer');
@@ -87,9 +87,9 @@ describe('config utils', () => {
 
   test('groupFields groups fields correctly by group name', () => {
     const fields: ConfigField[] = [
-      { key: 'a', group: 'G1', label: 'A', input: 'text' },
-      { key: 'b', group: 'G2', label: 'B', input: 'text' },
-      { key: 'c', group: 'G1', label: 'C', input: 'text' },
+      { key: 'a', group: 'G1', label: 'A', docsAnchor: 'a', input: 'text' },
+      { key: 'b', group: 'G2', label: 'B', docsAnchor: 'b', input: 'text' },
+      { key: 'c', group: 'G1', label: 'C', docsAnchor: 'c', input: 'text' },
     ];
     const grouped = groupFields(fields);
     expect(grouped['G1']).toHaveLength(2);
@@ -135,9 +135,10 @@ describe('docs utils', () => {
   });
 
   test('falls back to latest published docs version when current version is unpublished', () => {
-    expect(latestDocsVersion(['0.0.25', '0.0.27', '0.0.24'])).toBe('0.0.27');
-    expect(resolveDocsVersion('0.0.27', ['0.0.25', '0.0.27'])).toBe('0.0.27');
-    expect(entryDoc('construct', undefined, '0.0.27', ['0.0.25', '0.0.27'])).toBe('https://the-long-ride.github.io/engram/docs/entry/construct');
+    expect(latestDocsVersion(['0.0.25', '0.0.27', '0.0.28', '0.0.24'])).toBe('0.0.28');
+    expect(resolveDocsVersion('0.0.28', ['0.0.25', '0.0.27', '0.0.28'])).toBe('0.0.28');
+    expect(entryDoc('construct', undefined, '0.0.28', ['0.0.25', '0.0.27', '0.0.28'])).toBe('https://the-long-ride.github.io/engram/docs/entry/construct');
+    expect(entryDoc('construct', undefined, '0.0.27', ['0.0.25', '0.0.27', '0.0.28'])).toBe('https://the-long-ride.github.io/engram/docs/version-0.0.27/entry/construct');
   });
 
   test('normalizes leading v prefixes and anchors field docs to matching version', () => {
@@ -145,4 +146,12 @@ describe('docs utils', () => {
     expect(entryDoc('runtime', 'runtime-report-groups', 'v0.0.25', ['0.0.25', '0.0.27'])).toBe('https://the-long-ride.github.io/engram/docs/version-0.0.25/entry/runtime#runtime-report-groups');
     expect(entryFieldGroupDoc('Global Git', 'v0.0.25', ['0.0.25', '0.0.27'])).toBe('https://the-long-ride.github.io/engram/docs/version-0.0.25/entry/field-reference#global-git');
   });
+
+  test('builds exact config field anchors for current and historical docs', () => {
+    expect(entryConfigFieldDoc('global-git-branch', '0.0.28', ['0.0.25', '0.0.27', '0.0.28']))
+      .toBe('https://the-long-ride.github.io/engram/docs/entry/field-reference#global-git-branch');
+    expect(entryConfigFieldDoc('global-git-branch', '0.0.27', ['0.0.25', '0.0.27', '0.0.28']))
+      .toBe('https://the-long-ride.github.io/engram/docs/version-0.0.27/entry/field-reference#global-git-branch');
+  });
+
 });

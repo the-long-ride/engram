@@ -1,5 +1,4 @@
 module.exports = {
-  preset: 'ts-jest',
   testEnvironment: 'jsdom',
   setupFilesAfterEnv: ['@testing-library/jest-dom'],
   testMatch: [
@@ -9,14 +8,6 @@ module.exports = {
     '^(\\.{1,2}/.*)\\.js$': '$1',
   },
   transform: {
-    '^.+\\.tsx?$': [
-      'ts-jest',
-      {
-        isolatedModules: true,
-        tsconfig: {
-          module: 'commonjs',
-        },
-      },
-    ],
+    '^.+\\.tsx?$': '<rootDir>/tests/jest-esbuild-transform.cjs',
   },
 };

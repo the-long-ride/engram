@@ -10,7 +10,8 @@ import { MultiChoice } from '../components/MultiChoice.js';
 import { SectionHeader } from '../components/SectionHeader.js';
 import { HelpLink } from '../components/HelpLink.js';
 import { clientValidationError, groupFields, gv, parseFieldValue, uiValue } from '../utils/config.js';
-import { entryDoc, entryFieldGroupDoc } from '../utils/docs.js';
+import { entryConfigFieldDoc, entryDoc, entryFieldGroupDoc } from '../utils/docs.js';
+import { policyFieldMeta, type PolicyFieldPath } from '../data/policy-fields.js';
 
 const DEFAULT_POLICY_DRAFT = {
   version: 1 as const,
@@ -178,7 +179,25 @@ export function ConfigTab({ data, reload, toast }: { data: PanelData; reload: ()
   }
 
   function fieldLabel(field: ConfigField) {
-  return <><span className="cfg-label-title"><span>{field.label}</span><HelpLink href={entryFieldGroupDoc(field.group)} label={`Open ${field.label} docs`} /></span>{field.description ? <span className="cfg-desc">{field.description}</span> : null}{errors[field.key] ? <span className="cfg-error">{errors[field.key]}</span> : null}</>;
+    return <>
+      <span className="cfg-label-title">
+        <span>{field.label}</span>
+        <HelpLink href={entryConfigFieldDoc(field.docsAnchor)} label={`Open ${field.label} docs`} />
+      </span>
+      {field.description ? <span className="cfg-desc">{field.description}</span> : null}
+      {errors[field.key] ? <span className="cfg-error">{errors[field.key]}</span> : null}
+    </>;
+  }
+
+  function policyLabel(path: PolicyFieldPath) {
+    const field = policyFieldMeta(path);
+    return <>
+      <span className="cfg-label-title">
+        <span>{field.label}</span>
+        <HelpLink href={entryDoc(field.docsPage, field.docsAnchor)} label={`Open ${field.label} docs`} />
+      </span>
+      {field.description ? <span className="cfg-desc">{field.description}</span> : null}
+    </>;
   }
 
   return <>
@@ -189,17 +208,29 @@ export function ConfigTab({ data, reload, toast }: { data: PanelData; reload: ()
       <div className="config-policy-intro"><div><strong>Policy-gated autonomous writes</strong><p>Controls <span className="mono">engram autosave --policy</span>. Normal saves remain approval-based.</p></div><Button variant="primary" disabled={!isPolicyDirty || policySaving} onClick={savePolicy}>{policySaving ? 'Saving…' : 'Save policy'}</Button></div>
       {data.policy?.exists === false ? <div className="banner banner-info config-policy-banner">No policy file exists yet. Saving this component creates <span className="mono">.agents/engram.policy.json</span>.</div> : null}
       {policyError ? <div className="banner banner-warn config-policy-banner">{policyError}</div> : null}
-      <div className="cfg-row"><div className="cfg-lbl"><span className="cfg-label-title"><span>Allow auto-save</span><HelpLink href={entryFieldGroupDoc('policy')} label="Open auto-save policy docs" /></span><span className="cfg-desc">Permit policy-approved candidates to write without an interactive prompt.</span></div><div className="cfg-ctl"><Toggle on={policyDraft.autonomous_writes.enabled} title="Allow auto-save" onClick={() => changePolicyAuto('enabled', !policyDraft.autonomous_writes.enabled)} /></div></div>
-      <div className="cfg-row"><div className="cfg-lbl"><span className="cfg-label-title"><span>Write mode</span></span><span className="cfg-desc">Review-only defers candidates; autonomous permits eligible writes.</span></div><div className="cfg-ctl"><select className="cfg-select" value={policyDraft.autonomous_writes.mode} onChange={(event) => changePolicyAuto('mode', event.target.value)}><option value="review_only">Review only</option><option value="autonomous">Autonomous</option></select></div></div>
-      <div className="cfg-row"><div className="cfg-lbl"><span className="cfg-label-title"><span>Allowed type</span></span><span className="cfg-desc">Choose one or more memory types.</span></div><div className="cfg-ctl">{renderPolicyChoices('allowed_types', POLICY_TYPE_OPTIONS)}</div></div>
-      <div className="cfg-row"><div className="cfg-lbl"><span className="cfg-label-title"><span>Allowed scope</span></span><span className="cfg-desc">Choose one or more save scopes.</span></div><div className="cfg-ctl">{renderPolicyChoices('allowed_scopes', POLICY_SCOPE_OPTIONS)}</div></div>
-      <div className="cfg-row"><div className="cfg-lbl"><span className="cfg-label-title"><span>Allowed source</span></span><span className="cfg-desc">Choose one or more automation sources.</span></div><div className="cfg-ctl">{renderPolicyChoices('allowed_sources', POLICY_SOURCE_OPTIONS)}</div></div>
-      <div className="cfg-row"><div className="cfg-lbl"><span className="cfg-label-title"><span>Confidence threshold</span></span></div><div className="cfg-ctl"><select className="cfg-select" value={policyDraft.autonomous_writes.confidence_threshold} onChange={(event) => changePolicyAuto('confidence_threshold', event.target.value)}><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></div></div>
-      <div className="cfg-row"><div className="cfg-lbl"><span className="cfg-label-title"><span>Daily write limit</span></span></div><div className="cfg-ctl"><input className="cfg-input" type="number" min="0" value={policyDraft.autonomous_writes.daily_limit} onChange={(event) => changePolicyAuto('daily_limit', Number(event.target.value))} /></div></div>
-      <div className="cfg-row"><div className="cfg-lbl"><span className="cfg-label-title"><span>Rollback retention days</span></span></div><div className="cfg-ctl"><input className="cfg-input" type="number" min="0" value={policyDraft.autonomous_writes.rollback_retention_days} onChange={(event) => changePolicyAuto('rollback_retention_days', Number(event.target.value))} /></div></div>
-      <div className="cfg-row"><div className="cfg-lbl"><span className="cfg-label-title"><span>Review rule line limit</span></span></div><div className="cfg-ctl"><input className="cfg-input" type="number" min="1" value={policyDraft.review.max_rule_lines} onChange={(event) => changePolicyReview('max_rule_lines', Number(event.target.value))} /></div></div>
-      <div className="cfg-row"><div className="cfg-lbl"><span className="cfg-label-title"><span>Minimum recall benchmark</span></span></div><div className="cfg-ctl"><input className="cfg-input" type="number" min="0" max="1" step="0.01" value={policyDraft.review.benchmark_min_recall_at_k} onChange={(event) => changePolicyReview('benchmark_min_recall_at_k', Number(event.target.value))} /></div></div>
-      {(['context', 'triggers', 'role'] as const).map((key) => <div className="cfg-row" key={key}><div className="cfg-lbl"><span className="cfg-label-title"><span>Require {key} metadata</span></span><span className="cfg-desc">Require this field before a policy candidate can be written.</span></div><div className="cfg-ctl"><Toggle on={Boolean(policyDraft.review.mandatory_metadata?.[key])} title={`Require ${key} metadata`} onClick={() => changePolicyMetadata(key, !policyDraft.review.mandatory_metadata?.[key])} /></div></div>)}
+      <div className="cfg-row"><div className="cfg-lbl">{policyLabel('autonomous_writes.enabled')}</div><div className="cfg-ctl"><Toggle on={policyDraft.autonomous_writes.enabled} title="Allow auto-save" onClick={() => changePolicyAuto('enabled', !policyDraft.autonomous_writes.enabled)} /></div></div>
+      <div className="cfg-row"><div className="cfg-lbl">{policyLabel('autonomous_writes.mode')}</div><div className="cfg-ctl"><select className="cfg-select" value={policyDraft.autonomous_writes.mode} onChange={(event) => changePolicyAuto('mode', event.target.value)}><option value="review_only">Review only</option><option value="autonomous">Autonomous</option></select></div></div>
+      <div className="cfg-row"><div className="cfg-lbl">{policyLabel('autonomous_writes.allowed_types')}</div><div className="cfg-ctl">{renderPolicyChoices('allowed_types', POLICY_TYPE_OPTIONS)}</div></div>
+      <div className="cfg-row"><div className="cfg-lbl">{policyLabel('autonomous_writes.allowed_scopes')}</div><div className="cfg-ctl">{renderPolicyChoices('allowed_scopes', POLICY_SCOPE_OPTIONS)}</div></div>
+      <div className="cfg-row"><div className="cfg-lbl">{policyLabel('autonomous_writes.allowed_sources')}</div><div className="cfg-ctl">{renderPolicyChoices('allowed_sources', POLICY_SOURCE_OPTIONS)}</div></div>
+      <div className="cfg-row"><div className="cfg-lbl">{policyLabel('autonomous_writes.confidence_threshold')}</div><div className="cfg-ctl"><select className="cfg-select" value={policyDraft.autonomous_writes.confidence_threshold} onChange={(event) => changePolicyAuto('confidence_threshold', event.target.value)}><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></div></div>
+      <div className="cfg-row"><div className="cfg-lbl">{policyLabel('autonomous_writes.daily_limit')}</div><div className="cfg-ctl"><input className="cfg-input" type="number" min="0" value={policyDraft.autonomous_writes.daily_limit} onChange={(event) => changePolicyAuto('daily_limit', Number(event.target.value))} /></div></div>
+      <div className="cfg-row"><div className="cfg-lbl">{policyLabel('autonomous_writes.rollback_retention_days')}</div><div className="cfg-ctl"><input className="cfg-input" type="number" min="0" value={policyDraft.autonomous_writes.rollback_retention_days} onChange={(event) => changePolicyAuto('rollback_retention_days', Number(event.target.value))} /></div></div>
+      <div className="cfg-row"><div className="cfg-lbl">{policyLabel('review.max_rule_lines')}</div><div className="cfg-ctl"><input className="cfg-input" type="number" min="1" value={policyDraft.review.max_rule_lines} onChange={(event) => changePolicyReview('max_rule_lines', Number(event.target.value))} /></div></div>
+      <div className="cfg-row"><div className="cfg-lbl">{policyLabel('review.benchmark_min_recall_at_k')}</div><div className="cfg-ctl"><input className="cfg-input" type="number" min="0" max="1" step="0.01" value={policyDraft.review.benchmark_min_recall_at_k} onChange={(event) => changePolicyReview('benchmark_min_recall_at_k', Number(event.target.value))} /></div></div>
+      {(['context', 'triggers', 'role'] as const).map((key) => {
+        const path = `review.mandatory_metadata.${key}` as PolicyFieldPath;
+        return <div className="cfg-row" key={key}>
+          <div className="cfg-lbl">{policyLabel(path)}</div>
+          <div className="cfg-ctl">
+            <Toggle
+              on={Boolean(policyDraft.review.mandatory_metadata?.[key])}
+              title={policyFieldMeta(path).label}
+              onClick={() => changePolicyMetadata(key, !policyDraft.review.mandatory_metadata?.[key])}
+            />
+          </div>
+        </div>;
+      })}
     </Card>
     <div className="grid-2">{Object.entries(grouped).reduce<any[][]>((cols, [group, groupFields], idx) => { cols[idx % 2].push(<Card key={group} title={group} helpHref={entryFieldGroupDoc(group)}>{groupFields.map((field) => <div key={field.key} className={'cfg-row' + (dirty[field.key] ? ' dirty' : '')} data-key={field.key}><div className="cfg-lbl">{fieldLabel(field)}</div><div className="cfg-ctl">{renderControl(field)}{dirty[field.key] ? <button className="cfg-reset" onClick={() => resetField(field)}>Reset</button> : null}</div></div>)}</Card>); return cols; }, [[], []]).map((col, idx) => <div key={idx} className="grid-col">{col}</div>)}</div>
     {reviewOpen ? <div className="modal-backdrop"><div className="modal-panel"><div className="modal-hdr"><h2>Review config changes</h2><button onClick={() => setReviewOpen(false)}>&times;</button></div><div className="modal-body"><table className="review-table"><thead><tr><th>Key</th><th>Value</th></tr></thead><tbody>{Object.entries(patch).map(([key, value]) => <tr key={key}><td className="mono">{key}</td><td>{Array.isArray(value) ? value.join(', ') : String(value)}</td></tr>)}</tbody></table>{serverRiskyKeys.length ? <label className="confirm-line"><input type="checkbox" checked={riskyConfirmed} onChange={(event) => setRiskyConfirmed(event.target.checked)} /> I reviewed risky changes: {serverRiskyKeys.join(', ')}</label> : null}</div><div className="modal-actions"><Button onClick={() => setReviewOpen(false)}>Cancel</Button><Button variant="primary" disabled={!riskyConfirmed} onClick={confirmCfgSave}>Save changes</Button></div></div></div> : null}

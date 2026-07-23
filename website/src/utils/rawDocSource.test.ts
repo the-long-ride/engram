@@ -104,8 +104,8 @@ describe('resolveDocPathnameAssetCandidates', () => {
         baseUrl: '/engram/',
       }).slice(0, 2),
       [
-        '/engram/version-0.0.27/entry/core.md',
-        '/engram/version-0.0.27/entry/core/index.md',
+        '/engram/version-0.0.28/entry/core.md',
+        '/engram/version-0.0.28/entry/core/index.md',
       ],
     );
   });
@@ -132,8 +132,8 @@ describe('resolveDocPathnameAssetCandidates', () => {
         defaultLocale: 'en',
       }).slice(0, 2),
       [
-        '/engram/es/version-0.0.27/entry/core.md',
-        '/engram/es/version-0.0.27/entry/core/index.md',
+        '/engram/es/version-0.0.28/entry/core.md',
+        '/engram/es/version-0.0.28/entry/core/index.md',
       ],
     );
   });
@@ -161,7 +161,7 @@ describe('copyDocPathnameContent', () => {
 
     assert.equal(result, 'copied');
     assert.equal(copied, '# Core page\n');
-    assert.equal(seen[0], '/engram/version-0.0.27/entry/core.md');
+    assert.equal(seen[0], '/engram/version-0.0.28/entry/core.md');
   });
 
   it('throws when no pathname candidate exists on built site', async () => {

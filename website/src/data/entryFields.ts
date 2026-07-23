@@ -1,5 +1,6 @@
 export type EntryFieldDoc = {
   key: string;
+  docsAnchor: string;
   label: string;
   group: string;
   control: 'toggle' | 'select' | 'number' | 'text' | 'textarea' | 'list' | 'roles' | 'scope-chips' | 'type-chips' | 'action-toggle';
@@ -22,7 +23,7 @@ export type EntryFieldDoc = {
 
 export const ENTRY_FIELDS: EntryFieldDoc[] = [
   {
-    key: 'enabled', label: 'Enabled', group: 'Core', control: 'toggle',
+    key: 'enabled', docsAnchor: 'enabled', label: 'Enabled', group: 'Core', control: 'toggle',
     defaultValue: 'true', risk: 'risky',
     shortDescription: 'Master switch. Disabling stops Engram behavior entirely.',
     useCases: ['Temporary shutdown during testing.', 'Debugging agent behavior without Engram context.'],
@@ -32,7 +33,7 @@ export const ENTRY_FIELDS: EntryFieldDoc[] = [
     troubleshooting: ['Re-enable: engram config set enabled true.', 'Check engram config view if memory still does not load.'],
   },
   {
-    key: 'scope', label: 'Save Target', group: 'Core', control: 'select',
+    key: 'scope', docsAnchor: 'scope', label: 'Save Target', group: 'Core', control: 'select',
     defaultValue: 'both', allowedValues: ['workspace', 'global', 'both'], risk: 'risky',
     shortDescription: 'Default scope for save commands. Controls where new approved memories are saved.',
     useCases: ['workspace: repo-specific rules and decisions.', 'global: personal preferences that follow you across repos.', 'both: fresh installs that want both scopes.'],
@@ -41,7 +42,7 @@ export const ENTRY_FIELDS: EntryFieldDoc[] = [
     troubleshooting: ['engram set-save-target status to see the current target.'],
   },
   {
-    key: 'update', label: 'Update Mode', group: 'Core', control: 'select',
+    key: 'update', docsAnchor: 'update', label: 'Update Mode', group: 'Core', control: 'select',
     defaultValue: 'auto', allowedValues: ['auto', 'manual', 'off'], risk: 'normal',
     shortDescription: 'Controls Engram’s quiet one-time package upgrade check during normal commands.',
     useCases: ['auto: receive compatibility updates automatically.', 'manual: upgrade only when you choose.', 'off: disable automatic checks in controlled environments.'],
@@ -49,7 +50,7 @@ export const ENTRY_FIELDS: EntryFieldDoc[] = [
     cliEquivalent: ['engram config set update auto|manual|off'],
   },
   {
-    key: 'read', label: 'Read Mode', group: 'Core', control: 'select',
+    key: 'read', docsAnchor: 'read', label: 'Read Mode', group: 'Core', control: 'select',
     defaultValue: 'auto', allowedValues: ['auto', 'startup', 'always', 'manual', 'off'], risk: 'normal',
     shortDescription: 'Controls when agent hooks inject memory context.',
     useCases: ['auto: session start + reinject on context change.', 'startup: load only at session start.', 'manual: human controls when memory loads.', 'off: no automatic injection.'],
@@ -58,7 +59,7 @@ export const ENTRY_FIELDS: EntryFieldDoc[] = [
     troubleshooting: ['If hooks are not injecting, check that read is not off or manual.'],
   },
   {
-    key: 'proof', label: 'Proof Mode', group: 'Core', control: 'select',
+    key: 'proof', docsAnchor: 'proof', label: 'Proof Mode', group: 'Core', control: 'select',
     defaultValue: 'off', allowedValues: ['off', 'compact'], risk: 'normal',
     shortDescription: 'Whether hooks append an Engram proof line on eligible turns.',
     useCases: ['compact: debug hook injection behavior.', 'off: clean agent context without proof lines.'],
@@ -66,7 +67,7 @@ export const ENTRY_FIELDS: EntryFieldDoc[] = [
     cliEquivalent: ['engram set-proof off|compact'],
   },
   {
-    key: 'global_path', label: 'Global Memory Path', group: 'Core', control: 'text',
+    key: 'global_path', docsAnchor: 'global-path', label: 'Global Memory Path', group: 'Core', control: 'text',
     defaultValue: undefined, risk: 'risky',
     shortDescription: 'Filesystem path to the global memory folder.',
     useCases: ['Keep personal memory outside a single repo.', 'Share global memory across multiple agent tools.', 'Point a profile to a client-specific memory folder.'],
@@ -77,7 +78,7 @@ export const ENTRY_FIELDS: EntryFieldDoc[] = [
     troubleshooting: ['Ensure write permission on the path.', 'Validate the folder exists or can be created.', 'Run engram entry and open the Construct tab, or run engram config view, to see the resolved global path.'],
   },
   {
-    key: 'default_profile', label: 'Default Profile', group: 'Core', control: 'select',
+    key: 'default_profile', docsAnchor: 'default-profile', label: 'Default Profile', group: 'Core', control: 'select',
     defaultValue: undefined, risk: 'risky',
     shortDescription: 'Profile used when none is explicitly set.',
     useCases: ['Set a user default for all workspaces.', 'Leave empty when workspace defaults handle it.'],
@@ -87,7 +88,7 @@ export const ENTRY_FIELDS: EntryFieldDoc[] = [
     troubleshooting: ['Check currently loaded profile with: engram profile status.', 'Switch profile with: engram profile use <name>.'],
   },
   {
-    key: 'roles', label: 'Active Roles', group: 'Core', control: 'roles',
+    key: 'roles', docsAnchor: 'roles', label: 'Active Roles', group: 'Core', control: 'roles',
     defaultValue: undefined, risk: 'normal',
     shortDescription: 'Comma-separated role names for memory context routing.',
     useCases: ['frontend: route frontend rules.', 'backend security: route backend + security rules.'],
@@ -96,42 +97,42 @@ export const ENTRY_FIELDS: EntryFieldDoc[] = [
     troubleshooting: ['Empty roles = no role filtering.'],
   },
   {
-    key: 'ignore.source', label: 'Ignore Source', group: 'Ignore Rules', control: 'select',
+    key: 'ignore.source', docsAnchor: 'ignore-source', label: 'Ignore Source', group: 'Ignore Rules', control: 'select',
     defaultValue: 'engramignore', allowedValues: ['engramignore', 'gitignore', 'both', 'off'], risk: 'normal',
     shortDescription: 'Selects which ignore-file sources are applied while Engram scans files.',
     useCases: ['engramignore: use Engram-specific rules.', 'both: honor project Git and Engram patterns.', 'off: scan without ignore-file rules.'],
     guidelines: ['Use both when project and memory privacy rules should apply together.'],
   },
   {
-    key: 'ignore.gitignore_path', label: 'Gitignore Path', group: 'Ignore Rules', control: 'text',
+    key: 'ignore.gitignore_path', docsAnchor: 'ignore-gitignore-path', label: 'Gitignore Path', group: 'Ignore Rules', control: 'text',
     defaultValue: '.gitignore', risk: 'normal',
     shortDescription: 'Path to the Git ignore file read when Git ignore rules are enabled.',
     useCases: ['Use a custom path in a nested workspace.'],
     guidelines: ['Keep the default unless the workspace uses a nonstandard layout.'],
   },
   {
-    key: 'ignore.engramignore_path', label: 'Engramignore Path', group: 'Ignore Rules', control: 'text',
+    key: 'ignore.engramignore_path', docsAnchor: 'ignore-engramignore-path', label: 'Engramignore Path', group: 'Ignore Rules', control: 'text',
     defaultValue: '.engramignore', risk: 'normal',
     shortDescription: 'Path to the Engram-specific ignore file.',
     useCases: ['Use a workspace-local privacy and exclusion policy.'],
     guidelines: ['Keep the default path for portable workspace configuration.'],
   },
   {
-    key: 'ignore.global_engramignore', label: 'Global Engramignore', group: 'Ignore Rules', control: 'toggle',
+    key: 'ignore.global_engramignore', docsAnchor: 'ignore-global-engramignore', label: 'Global Engramignore', group: 'Ignore Rules', control: 'toggle',
     defaultValue: 'true', risk: 'normal',
     shortDescription: 'Applies global ignore rules when global memory is configured.',
     useCases: ['Share a personal exclusion baseline across workspaces.'],
     guidelines: ['Keep enabled unless a workspace must be isolated from global rules.'],
   },
   {
-    key: 'ignore.also_ignore', label: 'Additional Patterns', group: 'Ignore Rules', control: 'list',
+    key: 'ignore.also_ignore', docsAnchor: 'ignore-also-ignore', label: 'Additional Patterns', group: 'Ignore Rules', control: 'list',
     defaultValue: '*.secret, private/**', risk: 'normal',
     shortDescription: 'Additional glob patterns excluded from scans.',
     useCases: ['Exclude secrets, private folders, or generated artifacts.'],
     guidelines: ['Add only patterns you intend to hide from Engram operations.', 'Use comma-separated glob patterns in the panel.'],
   },
   {
-    key: 'ignore.global_patterns', label: 'Global Ignore Patterns', group: 'Ignore Rules', control: 'textarea',
+    key: 'ignore.global_patterns', docsAnchor: 'ignore-global-patterns', label: 'Global Ignore Patterns', group: 'Ignore Rules', control: 'textarea',
     defaultValue: undefined, risk: 'normal',
     shortDescription: 'Global glob patterns synchronized into a managed block in each workspace .engramignore during inject.',
     useCases: ['Apply personal privacy exclusions to every workspace.'],
@@ -139,7 +140,7 @@ export const ENTRY_FIELDS: EntryFieldDoc[] = [
     sideEffects: ['Each engram inject updates only the managed global-pattern block.'],
   },
   {
-    key: 'load.limit', label: 'Load Limit', group: 'Load Routing', control: 'number',
+    key: 'load.limit', docsAnchor: 'load-limit', label: 'Load Limit', group: 'Load Routing', control: 'number',
     defaultValue: '8', min: 1, max: 32, risk: 'normal',
     shortDescription: 'Max memories returned by normal load.',
     useCases: ['Smaller values for low-context models.', 'Higher values for deep architecture tasks.'],
@@ -147,7 +148,7 @@ export const ENTRY_FIELDS: EntryFieldDoc[] = [
     cliEquivalent: ['engram set-load-limit <n>', 'engram set-load-limit reset'],
   },
   {
-    key: 'memory.rule_line_target', label: 'Rule Line Target', group: 'Memory Limits', control: 'number',
+    key: 'memory.rule_line_target', docsAnchor: 'memory-rule-line-target', label: 'Rule Line Target', group: 'Memory Limits', control: 'number',
     defaultValue: '70', min: 50, max: 200, step: 10, risk: 'normal',
     shortDescription: 'Recommended line count target for rule memories.',
     useCases: ['Keep rules concise for better routing.'],
@@ -155,7 +156,7 @@ export const ENTRY_FIELDS: EntryFieldDoc[] = [
     cliEquivalent: ['engram config set memory.rule_line_target <n>'],
   },
   {
-    key: 'memory.rule_line_hard_limit', label: 'Rule Line Hard Limit', group: 'Memory Limits', control: 'number',
+    key: 'memory.rule_line_hard_limit', docsAnchor: 'memory-rule-line-hard-limit', label: 'Rule Line Hard Limit', group: 'Memory Limits', control: 'number',
     defaultValue: '100', min: 50, max: 200, step: 10, risk: 'risky',
     shortDescription: 'Maximum allowed line count for rule memories.',
     useCases: ['Cap rule memory size to prevent context bloat.'],
@@ -163,7 +164,7 @@ export const ENTRY_FIELDS: EntryFieldDoc[] = [
     troubleshooting: ['Raising this can increase context bloat and reduce routing quality. Keep rules concise.'],
   },
   {
-    key: 'graph.enabled', label: 'graph.enabled', group: 'Graph', control: 'toggle',
+    key: 'graph.enabled', docsAnchor: 'graph-enabled', label: 'graph.enabled', group: 'Graph', control: 'toggle',
     defaultValue: 'true', risk: 'normal',
     shortDescription: 'Enables dependency/relationship routing.',
     useCases: ['Enable depends_on prerequisites.', 'Enable graph view in Memories tab.'],
@@ -171,7 +172,7 @@ export const ENTRY_FIELDS: EntryFieldDoc[] = [
     cliEquivalent: ['engram config set graph.enabled true|false'],
   },
   {
-    key: 'graph.max_related', label: 'Max Related', group: 'Graph', control: 'number',
+    key: 'graph.max_related', docsAnchor: 'graph-max-related', label: 'Max Related', group: 'Graph', control: 'number',
     defaultValue: '4', min: 1, max: 20, risk: 'normal',
     shortDescription: 'Limits related memories pulled through graph signals.',
     useCases: ['Lower for cleaner context.', 'Higher for deeper cross-referencing.'],
@@ -179,7 +180,7 @@ export const ENTRY_FIELDS: EntryFieldDoc[] = [
     cliEquivalent: ['engram config set graph.max_related <n>'],
   },
   {
-    key: 'graph.min_related_score', label: 'Min Score', group: 'Graph', control: 'number',
+    key: 'graph.min_related_score', docsAnchor: 'graph-min-related-score', label: 'Min Score', group: 'Graph', control: 'number',
     defaultValue: '0.22', min: 0, max: 1, step: 0.01, risk: 'normal',
     shortDescription: 'Minimum similarity score for graph edges.',
     useCases: ['Raise for precision.', 'Lower for recall.'],
@@ -187,7 +188,7 @@ export const ENTRY_FIELDS: EntryFieldDoc[] = [
     cliEquivalent: ['engram config set graph.min_related_score <n>'],
   },
   {
-    key: 'vector.enabled', label: 'vector.enabled', group: 'Vector Search', control: 'toggle',
+    key: 'vector.enabled', docsAnchor: 'vector-enabled', label: 'vector.enabled', group: 'Vector Search', control: 'toggle',
     defaultValue: 'true', risk: 'normal',
     shortDescription: 'Enables optional local vector routing.',
     useCases: ['Enable for local vector search fallback.', 'Disable if vector latency is unwanted.'],
@@ -195,14 +196,14 @@ export const ENTRY_FIELDS: EntryFieldDoc[] = [
     cliEquivalent: ['engram config set vector.enabled true|false'],
   },
   {
-    key: 'vector.provider', label: 'Provider', group: 'Vector Search', control: 'select',
+    key: 'vector.provider', docsAnchor: 'vector-provider', label: 'Provider', group: 'Vector Search', control: 'select',
     defaultValue: 'sqlite-vec', allowedValues: ['sqlite-vec'], risk: 'normal',
     shortDescription: 'Local vector-search provider used by the optional vector sidecar.',
     useCases: ['Keep the supported local provider selected for vector routing.'],
     guidelines: ['sqlite-vec is the only currently supported provider.', 'Disable vector search instead of entering an unsupported provider.'],
   },
   {
-    key: 'vector.auto_threshold', label: 'Auto Threshold', group: 'Vector Search', control: 'number',
+    key: 'vector.auto_threshold', docsAnchor: 'vector-auto-threshold', label: 'Auto Threshold', group: 'Vector Search', control: 'number',
     defaultValue: '100', min: 10, max: 1000, risk: 'normal',
     shortDescription: 'Memory count at which vector search activates.',
     useCases: ['Small vaults may not need vector search.'],
@@ -210,28 +211,28 @@ export const ENTRY_FIELDS: EntryFieldDoc[] = [
     cliEquivalent: ['engram config set vector.auto_threshold <n>'],
   },
   {
-    key: 'vector.candidate_pool', label: 'Candidate Pool', group: 'Vector Search', control: 'number',
+    key: 'vector.candidate_pool', docsAnchor: 'vector-candidate-pool', label: 'Candidate Pool', group: 'Vector Search', control: 'number',
     defaultValue: '24', min: 8, max: 100, risk: 'normal',
     shortDescription: 'How many candidates vector search considers before reranking.',
     useCases: ['Higher improves recall.', 'Lower reduces latency.'],
     guidelines: ['24 balances recall and latency.'],
   },
   {
-    key: 'vector.dimensions', label: 'Dimensions', group: 'Vector Search', control: 'number',
+    key: 'vector.dimensions', docsAnchor: 'vector-dimensions', label: 'Dimensions', group: 'Vector Search', control: 'number',
     defaultValue: '64', min: 16, max: 512, risk: 'normal',
     shortDescription: 'Embedding dimensions for the local vector sidecar.',
     useCases: ['Higher may improve precision.', 'Changing requires a rebuild.'],
     guidelines: ['64 is a reasonable default.', 'Requires rebuild after change.'],
   },
   {
-    key: 'rule_variants.enabled', label: 'rule_variants.enabled', group: 'Rule Variants', control: 'toggle',
+    key: 'rule_variants.enabled', docsAnchor: 'rule-variants-enabled', label: 'rule_variants.enabled', group: 'Rule Variants', control: 'toggle',
     defaultValue: 'false', risk: 'normal',
     shortDescription: 'Enables role/strictness variants.',
     useCases: ['Enable when teams need light/balanced/strict routing.'],
     guidelines: ['Keep disabled unless variants are needed.'],
   },
   {
-    key: 'rule_variants.active', label: 'Active Variant', group: 'Rule Variants', control: 'select',
+    key: 'rule_variants.active', docsAnchor: 'rule-variants-active', label: 'Active Variant', group: 'Rule Variants', control: 'select',
     defaultValue: 'balanced', allowedValues: ['light', 'balanced', 'strict'], risk: 'normal',
     shortDescription: 'Controls strictness of loaded rules.',
     useCases: ['strict: lower-tier models.', 'light/balanced: stronger models.'],
@@ -239,21 +240,21 @@ export const ENTRY_FIELDS: EntryFieldDoc[] = [
     cliEquivalent: ['engram set-rule-variant strict|balanced|light'],
   },
   {
-    key: 'live_sync.enabled', label: 'live_sync.enabled', group: 'Live Sync', control: 'toggle',
+    key: 'live_sync.enabled', docsAnchor: 'live-sync-enabled', label: 'live_sync.enabled', group: 'Live Sync', control: 'toggle',
     defaultValue: 'false', risk: 'normal',
     shortDescription: 'Sync generated agent context files on save.',
     useCases: ['Keep linked instruction files up to date.'],
     guidelines: ['Enable for automatic sync.', 'Disable for manual control.'],
   },
   {
-    key: 'live_sync.targets', label: 'Targets', group: 'Live Sync', control: 'list',
+    key: 'live_sync.targets', docsAnchor: 'live-sync-targets', label: 'Targets', group: 'Live Sync', control: 'list',
     defaultValue: 'agents-md, claude-md, cursorrules', risk: 'normal',
     shortDescription: 'Generated agent-context targets refreshed when live sync runs.',
     useCases: ['Sync instruction files for selected agent hosts.'],
     guidelines: ['Use the supported target names required by linked agents.', 'Use comma-separated values in the panel.'],
   },
   {
-    key: 'global_git.enabled', label: 'global_git.enabled', group: 'Global Git', control: 'toggle',
+    key: 'global_git.enabled', docsAnchor: 'global-git-enabled', label: 'global_git.enabled', group: 'Global Git', control: 'toggle',
     defaultValue: 'true', risk: 'risky',
     shortDescription: 'Enables Git behavior for global memory.',
     useCases: ['Enable for audit history and team sync.', 'Disable for solo use without Git.'],
@@ -261,7 +262,7 @@ export const ENTRY_FIELDS: EntryFieldDoc[] = [
     troubleshooting: ['Disable if you do not want Git tracking global memory.'],
   },
   {
-    key: 'global_git.remote', label: 'Remote', group: 'Global Git', control: 'text',
+    key: 'global_git.remote', docsAnchor: 'global-git-remote', label: 'Remote', group: 'Global Git', control: 'text',
     defaultValue: 'origin', risk: 'risky',
     shortDescription: 'Git remote name.',
     useCases: ['origin is standard.', 'Use a different name for a separate remote.'],
@@ -269,7 +270,7 @@ export const ENTRY_FIELDS: EntryFieldDoc[] = [
     troubleshooting: ['Check whitespace; remotes cannot contain spaces.'],
   },
   {
-    key: 'global_git.remote_url', label: 'Remote URL', group: 'Global Git', control: 'text',
+    key: 'global_git.remote_url', docsAnchor: 'global-git-remote-url', label: 'Remote URL', group: 'Global Git', control: 'text',
     defaultValue: undefined, risk: 'risky',
     shortDescription: 'Git remote URL for shared global memory.',
     useCases: ['Share global memory with a team.', 'Back up global memory to a private repo.'],
@@ -278,7 +279,7 @@ export const ENTRY_FIELDS: EntryFieldDoc[] = [
     troubleshooting: ['Must be a valid Git remote URL.'],
   },
   {
-    key: 'global_git.branch', label: 'Branch', group: 'Global Git', control: 'text',
+    key: 'global_git.branch', docsAnchor: 'global-git-branch', label: 'Branch', group: 'Global Git', control: 'text',
     defaultValue: 'main', risk: 'risky',
     shortDescription: 'Target branch for sync.',
     useCases: ['main for standard workflow.', 'Custom branch for team naming conventions.'],
@@ -286,7 +287,7 @@ export const ENTRY_FIELDS: EntryFieldDoc[] = [
     troubleshooting: ['Check your repository branch name if git actions fail.', 'Verify branch exists in your remote.'],
   },
   {
-    key: 'global_git.auto_sync', label: 'Auto Sync', group: 'Global Git', control: 'toggle',
+    key: 'global_git.auto_sync', docsAnchor: 'global-git-auto-sync', label: 'Auto Sync', group: 'Global Git', control: 'toggle',
     defaultValue: 'true', risk: 'risky',
     shortDescription: 'Auto pull/push behavior.',
     useCases: ['Enable for solo use.', 'Disable for manual team sync review.'],
@@ -294,7 +295,7 @@ export const ENTRY_FIELDS: EntryFieldDoc[] = [
     troubleshooting: ['Check git output logs in CLI if sync hangs.', 'Verify remote ssh key or https auth.'],
   },
   {
-    key: 'global_git.auto_resolve', label: 'Auto Resolve', group: 'Global Git', control: 'toggle',
+    key: 'global_git.auto_resolve', docsAnchor: 'global-git-auto-resolve', label: 'Auto Resolve', group: 'Global Git', control: 'toggle',
     defaultValue: 'true', risk: 'risky',
     shortDescription: 'Auto conflict handling.',
     useCases: ['Enable for solo use.', 'Disable for team use where manual review is needed.'],
@@ -302,28 +303,28 @@ export const ENTRY_FIELDS: EntryFieldDoc[] = [
     troubleshooting: ['Disable if conflicts are being resolved incorrectly.'],
   },
   {
-    key: 'pattern_mining.enabled', label: 'pattern_mining.enabled', group: 'Pattern Mining', control: 'toggle',
+    key: 'pattern_mining.enabled', docsAnchor: 'pattern-mining-enabled', label: 'pattern_mining.enabled', group: 'Pattern Mining', control: 'toggle',
     defaultValue: 'false', risk: 'normal',
     shortDescription: 'Experimental recurring-pattern extraction.',
     useCases: ['Experimental feature.', 'Disable for stable workflows.'],
     guidelines: ['Disabled by default.', 'Enable only when experimenting with pattern mining.'],
   },
   {
-    key: 'pattern_mining.threshold', label: 'Threshold', group: 'Pattern Mining', control: 'number',
+    key: 'pattern_mining.threshold', docsAnchor: 'pattern-mining-threshold', label: 'Threshold', group: 'Pattern Mining', control: 'number',
     defaultValue: '3', min: 1, max: 20, risk: 'normal',
     shortDescription: 'Number of repetitions before a pattern candidate matters.',
     useCases: ['Lower for aggressive pattern detection.', 'Higher for conservative detection.'],
     guidelines: ['3 is a reasonable default.'],
   },
   {
-    key: 'pattern_mining.lookback_sessions', label: 'Lookback Sessions', group: 'Pattern Mining', control: 'number',
+    key: 'pattern_mining.lookback_sessions', docsAnchor: 'pattern-mining-lookback-sessions', label: 'Lookback Sessions', group: 'Pattern Mining', control: 'number',
     defaultValue: '20', min: 1, max: 100, risk: 'normal',
     shortDescription: 'How many recent sessions to inspect.',
     useCases: ['Higher for broader pattern detection.', 'Lower for faster detection.'],
     guidelines: ['20 sessions balances breadth and latency.'],
   },
   {
-    key: 'pr_workflow.enabled', label: 'pr_workflow.enabled', group: 'PR Workflow', control: 'toggle',
+    key: 'pr_workflow.enabled', docsAnchor: 'pr-workflow-enabled', label: 'pr_workflow.enabled', group: 'PR Workflow', control: 'toggle',
     defaultValue: 'false', risk: 'risky',
     shortDescription: 'Experimental team PR workflow for memory changes.',
     useCases: ['Document as experimental unless complete.'],
@@ -331,7 +332,7 @@ export const ENTRY_FIELDS: EntryFieldDoc[] = [
     troubleshooting: ['PR workflows are experimental; disable if you experience unintended branching or merge halts.'],
   },
   {
-    key: 'pr_workflow.provider', label: 'Provider', group: 'PR Workflow', control: 'text',
+    key: 'pr_workflow.provider', docsAnchor: 'pr-workflow-provider', label: 'Provider', group: 'PR Workflow', control: 'text',
     defaultValue: undefined, risk: 'risky',
     shortDescription: 'Provider identifier for the experimental memory pull-request workflow.',
     useCases: ['Configure the team provider used by an existing PR workflow.'],
@@ -339,7 +340,7 @@ export const ENTRY_FIELDS: EntryFieldDoc[] = [
     troubleshooting: ['Disable PR workflow if provider configuration is incomplete.'],
   },
   {
-    key: 'pr_workflow.repo', label: 'Repository', group: 'PR Workflow', control: 'text',
+    key: 'pr_workflow.repo', docsAnchor: 'pr-workflow-repo', label: 'Repository', group: 'PR Workflow', control: 'text',
     defaultValue: undefined, risk: 'risky',
     shortDescription: 'Repository identifier used by the experimental memory pull-request workflow.',
     useCases: ['Target the repository that receives memory review changes.'],
@@ -347,7 +348,7 @@ export const ENTRY_FIELDS: EntryFieldDoc[] = [
     troubleshooting: ['Verify repository access and provider configuration before enabling workflow.'],
   },
   {
-    key: 'pr_workflow.target_branch', label: 'Target Branch', group: 'PR Workflow', control: 'text',
+    key: 'pr_workflow.target_branch', docsAnchor: 'pr-workflow-target-branch', label: 'Target Branch', group: 'PR Workflow', control: 'text',
     defaultValue: 'main', risk: 'risky',
     shortDescription: 'Branch receiving memory PRs.',
     useCases: ['main for standard workflow.'],
@@ -355,7 +356,7 @@ export const ENTRY_FIELDS: EntryFieldDoc[] = [
     troubleshooting: ['Ensure the target branch exists on the remote repository.'],
   },
   {
-    key: 'encryption.enabled', label: 'encryption.enabled', group: 'Encryption', control: 'toggle',
+    key: 'encryption.enabled', docsAnchor: 'encryption-enabled', label: 'encryption.enabled', group: 'Encryption', control: 'toggle',
     defaultValue: 'false', risk: 'risky',
     shortDescription: 'Future or advanced encryption mode.',
     useCases: ['Document current limitations clearly.'],
@@ -363,7 +364,7 @@ export const ENTRY_FIELDS: EntryFieldDoc[] = [
     troubleshooting: ['Encryption config exists, but encrypted storage is not implemented yet.'],
   },
   {
-    key: 'encryption.scope', label: 'Scope', group: 'Encryption', control: 'select',
+    key: 'encryption.scope', docsAnchor: 'encryption-scope', label: 'Scope', group: 'Encryption', control: 'select',
     defaultValue: 'global', allowedValues: ['workspace', 'global'], risk: 'risky',
     shortDescription: 'Which scope encryption applies to.',
     useCases: ['global: encrypt global memory.', 'workspace: encrypt workspace memory.'],
@@ -371,7 +372,7 @@ export const ENTRY_FIELDS: EntryFieldDoc[] = [
     troubleshooting: ['Encryption scope defines the target, but encrypted storage is not implemented yet.'],
   },
   {
-    key: 'encryption.key_source', label: 'Key Source', group: 'Encryption', control: 'select',
+    key: 'encryption.key_source', docsAnchor: 'encryption-key-source', label: 'Key Source', group: 'Encryption', control: 'select',
     defaultValue: 'portable-file', allowedValues: ['portable-file'], risk: 'risky',
     shortDescription: 'Key source strategy.',
     useCases: ['portable-file: key stored in a portable file.'],

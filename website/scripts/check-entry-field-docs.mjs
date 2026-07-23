@@ -26,6 +26,7 @@ const REQUIRED_DOCS_PAGES = [
   'website/docs/entry/launch.md',
   'website/docs/entry/connections.md',
   'website/docs/entry/construct.md',
+  'website/docs/entry/policy.md',
   'website/docs/entry/core.md',
   'website/docs/entry/memories.md',
   'website/docs/entry/review.md',
@@ -95,7 +96,9 @@ for (const line of lines) {
     const key = keyMatch[1];
     const isHidden = line.includes("hidden: true");
     const isRisky = line.includes("risk: 'risky'");
-    configFields.push({ key, isHidden, isRisky });
+    const anchorMatch = line.match(/docsAnchor:\s*'([^']+)'/);
+    const docsAnchor = anchorMatch?.[1] ?? key.replace(/\./g, '-').replace(/_/g, '-');
+    configFields.push({ key, isHidden, isRisky, docsAnchor });
   }
 }
 
@@ -132,7 +135,62 @@ for (const key of extraInDocs) {
   errors++;
 }
 
-// 5. Validate field metadata details
+
+
+// 5. Validate exact config anchors against schema, website metadata, and canonical docs.
+const visibleFields = configFields.filter((field) => !field.isHidden);
+const configAnchors = visibleFields.map((field) => field.docsAnchor);
+const entryAnchors = ENTRY_FIELDS.map((field) => field.docsAnchor);
+const fieldReference = readFileSync(path.join(repoRoot, 'website/docs/entry/field-reference.md'), 'utf8');
+
+for (const field of visibleFields) {
+  if (!field.docsAnchor) {
+    console.error(`FIELD ERROR: Visible config field '${field.key}' is missing docsAnchor.`);
+    errors++;
+  } else if (!fieldReference.includes(`id="${field.docsAnchor}"`)) {
+    console.error(`FIELD ERROR: Anchor '${field.docsAnchor}' for '${field.key}' is missing from field-reference.md.`);
+    errors++;
+  }
+}
+
+if (new Set(configAnchors).size !== configAnchors.length) {
+  console.error('FIELD ERROR: CONFIG_FIELDS docsAnchor values must be unique.');
+  errors++;
+}
+if (new Set(entryAnchors).size !== entryAnchors.length) {
+  console.error('FIELD ERROR: ENTRY_FIELDS docsAnchor values must be unique.');
+  errors++;
+}
+for (const field of ENTRY_FIELDS) {
+  const schemaField = visibleFields.find((candidate) => candidate.key === field.key);
+  if (schemaField?.docsAnchor !== field.docsAnchor) {
+    console.error(`FIELD ERROR: Anchor mismatch for '${field.key}': schema='${schemaField?.docsAnchor}', docs='${field.docsAnchor}'.`);
+    errors++;
+  }
+}
+
+// 6. Validate typed Auto-save Policy metadata against the canonical page.
+const policySource = readFileSync(path.join(repoRoot, 'src/core/web/app/data/policy-fields.ts'), 'utf8');
+const policyPage = readFileSync(path.join(repoRoot, 'website/docs/entry/policy.md'), 'utf8');
+const policyPaths = [...policySource.matchAll(/path:\s*'([^']+)'/g)].map((match) => match[1]);
+const policyAnchors = [...policySource.matchAll(/docsAnchor:\s*'([^']+)'/g)].map((match) => match[1]);
+
+if (policyPaths.length !== 13 || new Set(policyPaths).size !== 13) {
+  console.error(`POLICY ERROR: Expected 13 unique policy paths, found ${new Set(policyPaths).size}.`);
+  errors++;
+}
+if (policyAnchors.length !== 13 || new Set(policyAnchors).size !== 13) {
+  console.error(`POLICY ERROR: Expected 13 unique policy anchors, found ${new Set(policyAnchors).size}.`);
+  errors++;
+}
+for (const anchor of policyAnchors) {
+  if (!policyPage.includes(`{#${anchor}}`)) {
+    console.error(`POLICY ERROR: Anchor '${anchor}' is missing from policy.md.`);
+    errors++;
+  }
+}
+
+// 7. Validate field metadata details
 for (const field of ENTRY_FIELDS) {
   const { key, shortDescription, useCases, guidelines, risk, troubleshooting, control, min, max } = field;
   
@@ -168,7 +226,7 @@ for (const field of ENTRY_FIELDS) {
   }
 }
 
-console.log(`Smoke check: ${entryKeys.length} config keys tracked, ${REQUIRED_DOCS_PAGES.length} docs pages verified.`);
+console.log(`Smoke check: ${entryKeys.length} config keys and ${policyAnchors.length} policy controls tracked, ${REQUIRED_DOCS_PAGES.length} docs pages verified.`);
 
 if (errors > 0) {
   console.error(`${errors} metadata or docs errors found.`);

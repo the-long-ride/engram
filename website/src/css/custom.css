@@ -137,6 +137,7 @@
   --ifm-code-font-size: 90%;
   --ifm-code-background: var(--geist-gray-100);
   --docusaurus-highlighted-code-line-bg: rgba(169, 114, 0, 0.08);
+  --ifm-pre-padding: 16px;
 
   /* Backgrounds */
   --ifm-background-color: var(--geist-bg-100);
@@ -760,6 +761,18 @@ a:hover {
 /* ──────────────────────────────────────────────
    Code blocks
    ────────────────────────────────────────────── */
+.theme-code-block {
+  --ifm-pre-padding: 16px;
+  overflow: hidden;
+}
+
+.theme-code-block [class*='codeBlockLines'] {
+  padding: 16px !important;
+}
+
+.theme-code-block [class*='codeBlockLines'][class*='WithNumbering'] {
+  padding: 16px 0 !important;
+}
 .markdown code {
   border-radius: var(--geist-radius-sm);
   font-size: 0.85em;
@@ -783,10 +796,6 @@ pre code {
   background: transparent;
   border: none;
   padding: 0;
-}
-
-.theme-code-block {
-  overflow: hidden;
 }
 
 .theme-code-block > div[class*='codeBlockContent'] {
@@ -892,8 +901,6 @@ pre code {
    ────────────────────────────────────────────── */
 table {
   border-collapse: collapse;
-  border-radius: var(--geist-radius-md);
-  overflow: hidden;
 }
 
 th {

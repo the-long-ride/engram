@@ -11,6 +11,7 @@ export type ConfigFieldDef = {
   key: string;
   group: string;
   label: string;
+  docsAnchor?: string;
   input: ConfigInputType;
   description?: string;
   options?: string[];
@@ -20,6 +21,10 @@ export type ConfigFieldDef = {
   risk?: ConfigRisk;
   hidden?: boolean;
 };
+
+export function deriveDocsAnchor(key: string): string {
+  return key.replace(/\./g, '-').replace(/_/g, '-');
+}
 
 export type ConfigValidationIssue = {
   key: string;
@@ -97,8 +102,12 @@ export const CONFIG_FIELDS: ConfigFieldDef[] = [
 const FIELD_BY_KEY = new Map(CONFIG_FIELDS.map((field) => [field.key, field]));
 
 export function configFieldsForPanel(): ConfigFieldDef[] {
-  return CONFIG_FIELDS.filter((field) => !field.hidden).map((field) => ({ ...field }));
+  return CONFIG_FIELDS.filter((field) => !field.hidden).map((field) => ({
+    ...field,
+    docsAnchor: field.docsAnchor ?? deriveDocsAnchor(field.key),
+  }));
 }
+
 
 export function isKnownConfigKey(key: string): boolean {
   return FIELD_BY_KEY.has(cleanKey(key));

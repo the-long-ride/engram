@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.0.28
+
+- Released the enhancement-branch behavior and documentation as version `0.0.28`.
+- Added exact version-aware reference links for every visible Construct config field and every Auto-save Policy control.
+- Added a canonical Auto-save Policy reference and automated config/policy anchor drift checks.
+- Documented compact default loads, broader `--full` loads, explicit force-save terminology, and dependency ordering updates.
+- Upgraded TypeScript to `7.0.2`, Docusaurus to `3.10.2`, `tsx` to `4.23.1`, Geist to `5.3.0`, and the requested GitHub Actions majors.
+
 ## 0.0.27
 
 - Added the Docusaurus docs site, release-versioned docs, and full i18n coverage for 7 locales, plus homepage, footer, mobile navigation, and copy-to-Markdown actions.

@@ -2,6 +2,7 @@ import React from 'react';
 import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
 
 import { ConfigTab } from '../../src/core/web/app/tabs/ConfigTab.js';
+import { POLICY_FIELD_META } from '../../src/core/web/app/data/policy-fields.js';
 import { RuntimeTab } from '../../src/core/web/app/tabs/RuntimeTab.js';
 import { CoreTab } from '../../src/core/web/app/tabs/CoreTab.js';
 import { MemoriesTab } from '../../src/core/web/app/tabs/MemoriesTab.js';
@@ -222,8 +223,8 @@ describe('ConfigTab', () => {
       global_git: { branch: 'main' },
     },
     configFields: [
-      { key: 'global_git.branch', group: 'Global Git', label: 'Branch', input: 'text', risk: 'risky' },
-      { key: 'future.flag', group: 'Pattern Mining', label: 'Future Flag', input: 'toggle', risk: 'normal' },
+      { key: 'global_git.branch', group: 'Global Git', label: 'Branch', docsAnchor: 'global-git-branch', input: 'text', risk: 'risky' },
+      { key: 'future.flag', group: 'Pattern Mining', label: 'Future Flag', docsAnchor: 'future-flag', input: 'toggle', risk: 'normal' },
     ],
   } as any;
 
@@ -243,8 +244,8 @@ describe('ConfigTab', () => {
     const input = container.querySelector('[data-key="global_git.branch"] input') as HTMLInputElement;
     expect(input.value).toBe('main');
     expect(screen.getByRole('link', { name: 'Open Construct docs' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/construct');
-    expect(screen.getByRole('link', { name: 'Open Branch docs' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/field-reference#global-git');
-    expect(screen.getByRole('link', { name: 'Open Future Flag docs' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/field-reference#pattern-mining');
+    expect(screen.getByRole('link', { name: 'Open Branch docs' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/field-reference#global-git-branch');
+    expect(screen.getByRole('link', { name: 'Open Future Flag docs' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/field-reference#future-flag');
 
     // Change input value and blur to trigger dirty state change
     fireEvent.change(input, { target: { value: 'dev' } });
@@ -288,6 +289,29 @@ describe('ConfigTab', () => {
     fireEvent.click(resetBtn);
     expect(input.value).toBe('main');
   });
+});
+
+
+
+test('renders a field-specific documentation link for each config field', () => {
+  const data = {
+    config: { global_git: { branch: 'main' } },
+    configFields: [{
+      key: 'global_git.branch',
+      group: 'Global Git',
+      label: 'Branch',
+      docsAnchor: 'global-git-branch',
+      input: 'text',
+      risk: 'risky',
+    }],
+  } as any;
+
+  render(<ConfigTab data={data} reload={jest.fn()} toast={jest.fn()} />);
+
+  expect(screen.getByRole('link', { name: 'Open Branch docs' })).toHaveAttribute(
+    'href',
+    expect.stringContaining('/entry/field-reference#global-git-branch'),
+  );
 });
 
 describe('RuntimeTab', () => {
@@ -729,6 +753,26 @@ describe('ConnectionsTab', () => {
     fireEvent.click(expandBtn);
     expect(screen.queryByText('/home/user/.antigravity/skills/engram/SKILL.md')).not.toBeInTheDocument();
   });
+});
+
+
+
+test('policy metadata covers every rendered control with unique anchors', () => {
+  const entries = Object.values(POLICY_FIELD_META);
+  expect(entries).toHaveLength(13);
+  expect(new Set(entries.map((entry) => entry.path)).size).toBe(13);
+  expect(new Set(entries.map((entry) => entry.docsAnchor)).size).toBe(13);
+});
+
+test('renders exact documentation links for all Auto-save Policy controls', () => {
+  render(<ConfigTab data={{ policy: { exists: false } } as any} reload={jest.fn()} toast={jest.fn()} />);
+
+  for (const field of Object.values(POLICY_FIELD_META)) {
+    expect(screen.getByRole('link', { name: `Open ${field.label} docs` })).toHaveAttribute(
+      'href',
+      expect.stringContaining(`/entry/policy#${field.docsAnchor}`),
+    );
+  }
 });
 
 test('renders global ignore patterns and policy allowlists as multi-choice controls', () => {

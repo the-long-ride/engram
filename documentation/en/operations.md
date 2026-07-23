@@ -13,6 +13,7 @@ This page holds detailed usage so the README can stay short.
 | --- | --- |
 | Load task memory | `engram load "<task>"` |
 | Load compact task memory | `engram load "<task>"` |
+| Load with a compact token budget | `engram load --budget-tokens 800 "<task>"` |
 | Load broader legacy output | `engram load --full "<task>"` |
 | Print AI-agent usage guide | `engram llm` |
 | Preview routed memory files | `engram load --dry-run "<task>"` |

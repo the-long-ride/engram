@@ -370,6 +370,7 @@ When an AI agent proposes `TYPE: ... | TEXT: ...` memory candidates, it may add 
 | **Open Slash Menu** | `engram help` | `/engram` |
 | **Load Memory** | `engram load "<task>"` | `/engram load "<task>"` |
 | **Compact Load** | `engram load "<task>"` | `/engram load "<task>"` |
+| **Budgeted Load** | `engram load --budget-tokens 800 "<task>"` | `/engram load --budget-tokens 800 "<task>"` |
 | **Full Load** | `engram load --full "<task>"` | `/engram load --full "<task>"` |
 | **Dry Run Load** | `engram load --dry-run "<task>"` | `/engram load --dry-run "<task>"` |
 | **Save Single Memory** | `engram save <type> "<text>"` | `/engram save <type> "<text>"` |

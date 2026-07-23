@@ -1,7 +1,6 @@
 /** Execute safe retrieval benchmark cases and calculate regression metrics. */
 import type { EngramContext } from '../memory/context.js';
-import { route } from '../memory/routing.js';
-import { vectorRouteHits } from '../memory/vector-db.js';
+import { planLoad } from '../memory/load-plan.js';
 import type { MemoryEntry } from '../runtime/types.js';
 import type { BenchmarkCase } from './schema.js';
 
@@ -15,9 +14,15 @@ export type BenchmarkRun = { limit: number; cases: BenchmarkCaseResult[]; metric
 export async function runBenchmark(ctx: EngramContext, cases: BenchmarkCase[]): Promise<BenchmarkRun> {
   const results: BenchmarkCaseResult[] = [];
   for (const item of cases) {
-    const vectorHits = await vectorRouteHits(ctx.roots, ctx.scopeIndexes, ctx.config, item.query, ctx.ignorePatterns);
-    const routed = route(ctx.index, item.query, ctx.config, false, { ignorePatterns: ctx.ignorePatterns, vectorHits, candidatePool: ctx.config.vector.candidate_pool, ...(item.limit ? { limit: item.limit } : {}) }, ctx.graph);
-    const visible = item.scope && item.scope !== 'both' ? routed.filter((entry) => entry.scope === item.scope) : routed;
+    const plan = await planLoad(ctx, item.query, {
+      ignorePatterns: ctx.ignorePatterns,
+      candidatePool: ctx.config.vector.candidate_pool,
+      budgetTokens: item.max_tokens,
+      ...(item.limit ? { limit: item.limit } : {})
+    }, ctx.graph);
+    const routed = plan.routeDetail?.entries ?? [];
+    const selected = plan.payload_rows.map((row) => row.entry);
+    const visible = item.scope && item.scope !== 'both' ? selected.filter((entry) => entry.scope === item.scope) : selected;
     const keys = visible.map(key);
     const matched = item.expect.filter((expected) => keys.includes(expectedKey(expected, visible)) || visible.some((entry) => matches(expected, entry)));
     const missing = item.expect.filter((expected) => !visible.some((entry) => matches(expected, entry)));

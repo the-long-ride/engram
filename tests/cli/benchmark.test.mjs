@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { runEngram, tempWorkspace } from '../helpers.mjs';
+import { runEngram, tempWorkspace, workspaceMemoryRoot } from '../helpers.mjs';
+import { testMemory } from './fixtures.mjs';
 
 test('benchmark emits versioned metrics and writes a safe report', async () => {
   const { cwd, env } = await tempWorkspace('engram-benchmark-contract-');
@@ -31,6 +32,58 @@ test('benchmark fail-on forbidden returns stable regression error', async () => 
   const result = await runEngram(cwd, env, ['benchmark', cases, '--json', '--fail-on', 'forbidden']);
   assert.equal(result.code, 0);
   assert.equal(JSON.parse(result.stdout).data.metrics.forbidden_hits, 0);
+});
+
+test('benchmark max_tokens constrains routed payloads', async () => {
+  const { cwd, env } = await tempWorkspace('engram-benchmark-budget-');
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
+  const memory = path.join(workspaceMemoryRoot(cwd), 'knowledge', 'budget-benchmark.md');
+  await mkdir(path.dirname(memory), { recursive: true });
+  await writeFile(memory, testMemory({
+    id: 'budget-benchmark',
+    tags: ['budgetbenchmark'],
+    content: `BENCHMARK_BUDGET_SENTINEL ${'payload '.repeat(300)}`
+  }));
+  await runEngram(cwd, env, ['rebuild-index']);
+  await runEngram(cwd, env, ['rehash', 'workspace']);
+  const cases = path.join(cwd, 'cases.json');
+  const report = path.join(cwd, 'report.json');
+  await writeFile(cases, JSON.stringify({
+    version: 2,
+    cases: [{ id: 'budget', query: 'budgetbenchmark', expect: ['budget-benchmark'], forbid: [], depends_on: [], max_tokens: 200 }]
+  }));
+
+  const result = await runEngram(cwd, env, ['benchmark', cases, '--json', '--write-report', report]);
+  assert.equal(result.code, 0, result.stderr);
+  assert.deepEqual(JSON.parse(await readFile(report, 'utf8')).cases[0].routed, []);
+});
+
+test('benchmark uses the same budget overhead as compact CLI rendering', async () => {
+  const { cwd, env } = await tempWorkspace('engram-benchmark-render-parity-');
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
+  const memory = path.join(workspaceMemoryRoot(cwd), 'knowledge', 'render-parity.md');
+  await mkdir(path.dirname(memory), { recursive: true });
+  await writeFile(memory, testMemory({
+    id: 'render-parity',
+    tags: ['renderparity'],
+    content: `RENDER_PARITY_SENTINEL ${'payload '.repeat(70)}`
+  }));
+  await runEngram(cwd, env, ['rebuild-index']);
+  await runEngram(cwd, env, ['rehash', 'workspace']);
+  const cases = path.join(cwd, 'cases.json');
+  const report = path.join(cwd, 'report.json');
+  await writeFile(cases, JSON.stringify({
+    version: 2,
+    cases: [{ id: 'render-parity', query: 'renderparity', expect: ['render-parity'], forbid: [], depends_on: [], max_tokens: 200 }]
+  }));
+
+  const compact = await runEngram(cwd, env, ['load', '--budget-tokens', '200', 'renderparity']);
+  assert.equal(compact.code, 0, compact.stderr);
+  assert.doesNotMatch(compact.stdout, /RENDER_PARITY_SENTINEL/);
+
+  const benchmark = await runEngram(cwd, env, ['benchmark', cases, '--json', '--write-report', report]);
+  assert.equal(benchmark.code, 0, benchmark.stderr);
+  assert.deepEqual(JSON.parse(await readFile(report, 'utf8')).cases[0].routed, []);
 });
 
 test('benchmark loads recall threshold from an explicit policy path', async () => {

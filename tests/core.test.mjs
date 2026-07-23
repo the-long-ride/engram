@@ -31,6 +31,8 @@ import {
 import { parseMemoryCandidate, generatedMemoryGuidance, saveSessionGuidance } from '../dist/core/memory/memory-candidate.js';
 import { canonicalRuleText, renderMemoryForAgent, ruleVariantsAreCustomized, stripRuleVariantSection } from '../dist/core/memory/rule-variants.js';
 import { route, routeDetailed } from '../dist/core/memory/routing.js';
+import { planLoad } from '../dist/core/memory/load-plan.js';
+import { packPayload } from '../dist/core/memory/payload-plan.js';
 import { classifyTaskType, normalizeTaskType } from '../dist/core/memory/task-classifier.js';
 import { inferTaskIntent, taskIntentQuery, intentIsActionable } from '../dist/core/memory/task-intent.js';
 import { ensureVectorIndex } from '../dist/core/memory/vector-db.js';
@@ -1482,5 +1484,40 @@ test('explain reason score uses blended CandidateRow.score for graph-contributed
   assert.ok(directReason.score > 0, `graph-contributed score ${directReason.score} > 0`);
 });
 
+test('planLoad returns structured LoadPlan contract with token measurements', async () => {
+  const config = defaultConfig('1.0.0');
+  config.scope = 'workspace';
+  const index = {
+    entries: [
+      { id: 'auth-flow', scope: 'workspace', type: 'rule', file: 'rules/auth-flow.md', tags: ['auth', 'flow'], summary: 'Enforce OAuth2 PKCE flow.' },
+      { id: 'token-refresh', scope: 'workspace', type: 'knowledge', file: 'knowledge/token-refresh.md', tags: ['auth', 'token'], summary: 'Refresh tokens before expiration.' }
+    ]
+  };
+  const mockCtx = {
+    config,
+    index,
+    roots: { workspace: '.', global: '.' },
+    scopeIndexes: { workspace: index, global: { entries: [] } },
+    ignorePatterns: [],
+    profile: { active: 'default' }
+  };
+  const plan = await planLoad(mockCtx, 'auth flow PKCE');
+  assert.equal(plan.contract_version, 1);
+  assert.equal(plan.query.original, 'auth flow PKCE');
+  assert.ok(Array.isArray(plan.selected_ids));
+  assert.ok(Array.isArray(plan.projected_payload));
+  assert.ok(plan.token_budget.max > 0);
+  assert.equal(plan.token_budget.used, 0);
+  assert.equal(plan.projected_payload.length, 0);
+  assert.equal(plan.profile_scope.scope, 'workspace');
+});
 
-
+test('packPayload caps rendered content and reports budget omissions', () => {
+  const packed = packPayload([
+    { entry: { scope: 'workspace', file: 'a.md' }, content: 'a'.repeat(400) },
+    { entry: { scope: 'workspace', file: 'b.md' }, content: 'b'.repeat(400) }
+  ], 150);
+  assert.equal(packed.rows.length, 1);
+  assert.equal(packed.used, 100);
+  assert.deepEqual(packed.omitted, ['workspace:b.md']);
+});

@@ -97,6 +97,7 @@ test('load dry-run reports broad-match refinement and --all loads every visible 
     }));
   }
   await runEngram(cwd, env, ['rebuild-index']);
+  await runEngram(cwd, env, ['rehash', 'workspace']);
 
   const dry = await runEngram(cwd, env, ['load', '--dry-run', 'deploy']);
   assert.equal(dry.code, 0, dry.stderr);
@@ -134,6 +135,108 @@ test('load dry-run reports broad-match refinement and --all loads every visible 
   assert.equal(all.code, 0, all.stderr);
   assert.match(all.stdout, /Routed memories \(10 of 10\)/);
   assert.doesNotMatch(all.stdout, /8 of 10/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('load enforces string token budgets for compact output and preserves full bypass', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
+  const file = path.join(workspaceMemoryRoot(cwd), 'knowledge', 'budgeted.md');
+  await mkdir(path.dirname(file), { recursive: true });
+  await writeFile(file, testMemory({
+    id: 'budgeted-memory',
+    tags: ['budgetenforcement'],
+    content: `BUDGET_SENTINEL ${'payload '.repeat(300)}`
+  }));
+  await runEngram(cwd, env, ['rebuild-index']);
+  await runEngram(cwd, env, ['rehash', 'workspace']);
+
+  const compact = await runEngram(cwd, env, ['load', '--budget-tokens', '200', 'budgetenforcement']);
+  assert.equal(compact.code, 0, compact.stderr);
+  assert.doesNotMatch(compact.stdout, /BUDGET_SENTINEL/);
+
+  const full = await runEngram(cwd, env, ['load', '--full', '--budget-tokens', '200', 'budgetenforcement']);
+  assert.equal(full.code, 0, full.stderr);
+  assert.match(full.stdout, /BUDGET_SENTINEL/);
+
+  const invalid = await runEngram(cwd, env, ['load', '--budget-tokens', '199', 'budgetenforcement']);
+  assert.equal(invalid.code, 1);
+  assert.match(invalid.stderr, /integer from 200 to 16000/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('budgeted JSON reports the same payload selection as compact text output', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
+  const file = path.join(workspaceMemoryRoot(cwd), 'knowledge', 'json-budgeted.md');
+  await mkdir(path.dirname(file), { recursive: true });
+  await writeFile(file, testMemory({
+    id: 'json-budgeted-memory',
+    tags: ['jsonbudget'],
+    content: `JSON_BUDGET_SENTINEL ${'payload '.repeat(70)}`
+  }));
+  await runEngram(cwd, env, ['rebuild-index']);
+  await runEngram(cwd, env, ['rehash', 'workspace']);
+
+  const compact = await runEngram(cwd, env, ['load', '--budget-tokens', '200', 'jsonbudget']);
+  assert.equal(compact.code, 0, compact.stderr);
+  assert.doesNotMatch(compact.stdout, /JSON_BUDGET_SENTINEL/);
+
+  const json = await runEngram(cwd, env, ['load', '--json', '--budget-tokens', '200', 'jsonbudget']);
+  assert.equal(json.code, 0, json.stderr);
+  assert.equal(JSON.parse(json.stdout).data.selected, 0);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('compact load budget covers summary, separators, and memory bodies', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
+  const dir = path.join(workspaceMemoryRoot(cwd), 'knowledge');
+  await mkdir(dir, { recursive: true });
+  for (const id of ['budget-frame-one', 'budget-frame-two']) {
+    await writeFile(path.join(dir, `${id}.md`), testMemory({
+      id,
+      tags: ['budgetframe'],
+      content: `${id} ${'body '.repeat(100)}`
+    }));
+  }
+  await runEngram(cwd, env, ['rebuild-index']);
+  await runEngram(cwd, env, ['rehash', 'workspace']);
+
+  const compact = await runEngram(cwd, env, ['load', '--budget-tokens', '200', 'budgetframe']);
+  assert.equal(compact.code, 0, compact.stderr);
+  assert.ok(Math.ceil(compact.stdout.trim().length / 4) <= 200, compact.stdout);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('benchmark does not count hash-flagged memory as retrieved', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
+  const file = path.join(workspaceMemoryRoot(cwd), 'knowledge', 'flagged-benchmark.md');
+  await mkdir(path.dirname(file), { recursive: true });
+  await writeFile(file, testMemory({
+    id: 'flagged-benchmark',
+    tags: ['flaggedbenchmark'],
+    content: 'Initial verified benchmark memory.'
+  }));
+  await runEngram(cwd, env, ['rebuild-index']);
+  await runEngram(cwd, env, ['rehash', 'workspace']);
+  await writeFile(file, testMemory({
+    id: 'flagged-benchmark',
+    tags: ['flaggedbenchmark'],
+    content: 'Mutated after hash verification.'
+  }));
+  const fixture = path.join(cwd, 'flagged-benchmark.json');
+  await writeFile(fixture, JSON.stringify([{ query: 'flaggedbenchmark', expect: 'knowledge/flagged-benchmark.md' }]));
+
+  const benchmark = await runEngram(cwd, env, ['benchmark', fixture]);
+  assert.equal(benchmark.code, 0, benchmark.stderr);
+  assert.match(benchmark.stdout, /MISS flaggedbenchmark/);
+
+  const load = await runEngram(cwd, env, ['load', 'flaggedbenchmark']);
+  assert.equal(load.code, 0, load.stderr);
+  assert.match(load.stdout, /loaded 0 memory files/);
+  assert.match(load.stdout, /SKIPPED knowledge\/flagged-benchmark\.md/);
   await rm(cwd, { recursive: true, force: true });
 });
 

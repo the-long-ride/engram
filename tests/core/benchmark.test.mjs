@@ -18,3 +18,12 @@ test('legacy benchmark arrays remain accepted as version one', () => {
   assert.equal(parsed.document?.version, 1);
   assert.deepEqual(parsed.document?.cases[0].expect, ['knowledge/legacy.md']);
 });
+
+test('benchmark schema rejects invalid token budgets and categories', () => {
+  const parsed = parseBenchmarkDocument({
+    version: 2,
+    cases: [{ id: 'invalid', query: 'budget', max_tokens: 1, category: 'unknown' }]
+  });
+  assert.ok(parsed.diagnostics.some((item) => item.path === 'cases[0].max_tokens'));
+  assert.ok(parsed.diagnostics.some((item) => item.path === 'cases[0].category'));
+});

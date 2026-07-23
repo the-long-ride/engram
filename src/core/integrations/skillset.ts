@@ -70,9 +70,10 @@ const targets: Record<SkillsetTarget, string[]> = {
   'agent-skill': ['.agents/skills/engram/SKILL.md'],
   antigravity: [
     '.antigravity/skills/engram/SKILL.md',
-      '.antigravity-cli/skills/engram/SKILL.md',
-      '.antigravity-ide/skills/engram/SKILL.md',
-      '.antigravityrules'
+    '.antigravity-cli/skills/engram/SKILL.md',
+    '.antigravity-ide/skills/engram/SKILL.md',
+    '.gemini/skills/engram/SKILL.md',
+    '.antigravityrules'
   ],
   opencode: ['AGENTS.md', '.opencode/skills/engram/SKILL.md', 'opencode.json'],
   mcp: ['.mcp.json'],
@@ -673,7 +674,7 @@ function groupedResults(results: InstallResult[]): Map<string, InstallResult[]> 
   return grouped;
 }
 
-function globalInstallPlans(target: string, home = globalAgentHome()): GlobalInstallPlan[] {
+export function globalInstallPlans(target: string, home = globalAgentHome()): GlobalInstallPlan[] {
   const resolvedTargets = resolveLinkTargets(target);
   return resolvedTargets.flatMap((item) => [
     ...globalFilesForTarget(item, home),
@@ -732,7 +733,8 @@ function globalFilesForTarget(target: ResolvedTarget, home: string): GlobalInsta
       return [
         plan(path.join(home, '.antigravity', 'skills', 'engram', 'SKILL.md'), 'file'),
         plan(path.join(home, '.antigravity-cli', 'skills', 'engram', 'SKILL.md'), 'file'),
-        plan(path.join(home, '.antigravity-ide', 'skills', 'engram', 'SKILL.md'), 'file')
+        plan(path.join(home, '.antigravity-ide', 'skills', 'engram', 'SKILL.md'), 'file'),
+        plan(path.join(home, '.gemini', 'skills', 'engram', 'SKILL.md'), 'file')
       ];
     case 'opencode':
       return [

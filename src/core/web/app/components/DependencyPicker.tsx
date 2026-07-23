@@ -11,16 +11,31 @@ export function DependencyPicker({ ids, value, onChange }: DependencyPickerProps
     if (reason === 'UPDATE') return [...current.filter((item) => item.reason !== 'UPDATE' && item.id !== id), { id, reason }];
     return [...current.filter((item) => item.id !== id), { id, reason }];
   });
-  return <fieldset className="dependency-picker">
-    <legend>Relation instructions</legend>
-    <p className="dependency-picker-note">Prompt will include the selected relation and memory IDs.</p>
-    {!ids.length ? <p className="muted">No related memory IDs.</p> : ids.map((id) => {
-      const selected = value.find((item) => item.id === id);
-      return <div className="dependency-row" key={id}>
-        <code>{id}</code>
-        <button className={selected?.reason === 'DEPENDS_ON' ? 'btn btn-primary' : 'btn btn-outline'} onClick={() => toggle(id, 'DEPENDS_ON')}>Mark dependency</button>
-        <button className={selected?.reason === 'UPDATE' ? 'btn btn-primary' : 'btn btn-outline'} onClick={() => toggle(id, 'UPDATE')}>Mark replacement</button>
-      </div>;
-    })}
-  </fieldset>;
+  return (
+    <div className="card dependency-picker">
+      <div className="review-section-heading">
+        <div>
+          <span className="card-title">Relation instructions</span>
+          <p className="review-section-note">Prompt will include the selected relation and memory IDs.</p>
+        </div>
+        <span className="review-step">03</span>
+      </div>
+      <div className="dependency-picker-body">
+        {!ids.length ? (
+          <p className="muted">No related memory IDs.</p>
+        ) : (
+          ids.map((id) => {
+            const selected = value.find((item) => item.id === id);
+            return (
+              <div className="dependency-row" key={id}>
+                <code>{id}</code>
+                <button className={selected?.reason === 'DEPENDS_ON' ? 'btn btn-primary' : 'btn btn-outline'} onClick={() => toggle(id, 'DEPENDS_ON')}>Mark dependency</button>
+                <button className={selected?.reason === 'UPDATE' ? 'btn btn-primary' : 'btn btn-outline'} onClick={() => toggle(id, 'UPDATE')}>Mark replacement</button>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
 }

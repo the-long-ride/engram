@@ -6,6 +6,7 @@ import { Button } from '../components/Button.js';
 import { Badge } from '../components/Badge.js';
 import { Card } from '../components/Card.js';
 import { Toggle } from '../components/Toggle.js';
+import { MultiChoice } from '../components/MultiChoice.js';
 import { SectionHeader } from '../components/SectionHeader.js';
 import { HelpLink } from '../components/HelpLink.js';
 import { clientValidationError, groupFields, gv, parseFieldValue, uiValue } from '../utils/config.js';
@@ -41,7 +42,6 @@ export function ConfigTab({ data, reload, toast }: { data: PanelData; reload: ()
   const [serverRiskyKeys, setServerRiskyKeys] = useState<string[]>([]);
   const [saveHeaderPulse, setSaveHeaderPulse] = useState(false);
   const [policyDraft, setPolicyDraft] = useState<PolicyDraft>(DEFAULT_POLICY_DRAFT);
-  const [policyDirty, setPolicyDirty] = useState(false);
   const [policySaving, setPolicySaving] = useState(false);
   const [policyError, setPolicyError] = useState('');
   const validationSeq = useRef(0);
@@ -52,8 +52,17 @@ export function ConfigTab({ data, reload, toast }: { data: PanelData; reload: ()
     setDraft(next); setDirty({}); setErrors({}); setReviewOpen(false); setRiskyConfirmed(false); setServerRiskyKeys([]);
     const loadedPolicy = data.policy?.policy;
     setPolicyDraft(loadedPolicy ? JSON.parse(JSON.stringify(loadedPolicy)) as PolicyDraft : JSON.parse(JSON.stringify(DEFAULT_POLICY_DRAFT)) as PolicyDraft);
-    setPolicyDirty(false); setPolicyError('');
+    setPolicyError('');
   }, [data]);
+
+  const initialPolicy = useMemo(() => {
+    const loadedPolicy = data.policy?.policy;
+    return loadedPolicy ? JSON.parse(JSON.stringify(loadedPolicy)) : JSON.parse(JSON.stringify(DEFAULT_POLICY_DRAFT));
+  }, [data.policy?.policy]);
+
+  const isPolicyDirty = useMemo(() => {
+    return JSON.stringify(policyDraft) !== JSON.stringify(initialPolicy);
+  }, [policyDraft, initialPolicy]);
 
   const grouped = useMemo(() => groupFields(fields), [fields]);
   const dirtyKeys = Object.keys(dirty).filter((key) => dirty[key]);
@@ -113,7 +122,12 @@ export function ConfigTab({ data, reload, toast }: { data: PanelData; reload: ()
 
   function changePolicyAuto(key: keyof PolicyDraft['autonomous_writes'], value: unknown) {
     setPolicyDraft((prev) => ({ ...prev, autonomous_writes: { ...prev.autonomous_writes, [key]: value } }));
-    setPolicyDirty(true); setPolicyError('');
+    setPolicyError('');
+  }
+
+  function renderPolicyChoices(key: 'allowed_types' | 'allowed_scopes' | 'allowed_sources', options: string[]) {
+    const value = policyDraft.autonomous_writes[key];
+    return <MultiChoice label={key.replaceAll('_', ' ')} options={options} value={Array.isArray(value) && value.length ? value : [options[0]]} onChange={(next: string[]) => changePolicyAuto(key, next)} />;
   }
 
   function changePolicyList(key: 'allowed_types' | 'allowed_scopes' | 'allowed_sources', value: string) {
@@ -129,12 +143,12 @@ export function ConfigTab({ data, reload, toast }: { data: PanelData; reload: ()
 
   function changePolicyReview(key: keyof PolicyDraft['review'], value: unknown) {
     setPolicyDraft((prev) => ({ ...prev, review: { ...prev.review, [key]: value } }));
-    setPolicyDirty(true); setPolicyError('');
+    setPolicyError('');
   }
 
   function changePolicyMetadata(key: 'context' | 'triggers' | 'role', value: boolean) {
     setPolicyDraft((prev) => ({ ...prev, review: { ...prev.review, mandatory_metadata: { ...(prev.review.mandatory_metadata ?? {}), [key]: value } } }));
-    setPolicyDirty(true); setPolicyError('');
+    setPolicyError('');
   }
 
   async function savePolicy() {
@@ -142,7 +156,6 @@ export function ConfigTab({ data, reload, toast }: { data: PanelData; reload: ()
     try {
       const res = await savePolicyPatch(policyDraft);
       toast(res.message || 'Auto-save policy saved');
-      setPolicyDirty(false);
       await reload();
     } catch (e: any) { setPolicyError(e.message); toast(e.message, false); }
     finally { setPolicySaving(false); }
@@ -173,14 +186,14 @@ export function ConfigTab({ data, reload, toast }: { data: PanelData; reload: ()
     {!data.sqliteAvailable ? <div className="banner banner-info">Running in JSON mode. Profiles/workspaces require SQLite.</div> : null}
     {dirtyKeys.length ? <div className={'config-actions' + (saveHeaderPulse ? ' enter' : '')}><span><strong>{dirtyKeys.length}</strong> unsaved {dirtyKeys.length === 1 ? 'change' : 'changes'}</span><div className="config-actions-btns"><Button onClick={() => { validationSeq.current += 1; const reset: Record<string, string> = {}; fields.forEach((field) => { reset[field.key] = uiValue(field, gv(data.config, field.key)); }); setDraft(reset); setDirty({}); setErrors({}); }}>Reset</Button><Button variant="primary" onClick={openCfgReview}>Save changes</Button></div></div> : null}
     <Card title="Auto-save policy" helpHref={entryDoc('policy')} badge={<Badge tone={policyDraft.autonomous_writes.enabled ? 'pos' : 'neutral'}>{policyDraft.autonomous_writes.enabled ? 'Enabled' : 'Off'}</Badge>}>
-      <div className="config-policy-intro"><div><strong>Policy-gated autonomous writes</strong><p>Controls <span className="mono">engram autosave --policy</span>. Normal saves remain approval-based.</p></div><Button variant="primary" disabled={!policyDirty || policySaving} onClick={savePolicy}>{policySaving ? 'Saving…' : 'Save policy'}</Button></div>
+      <div className="config-policy-intro"><div><strong>Policy-gated autonomous writes</strong><p>Controls <span className="mono">engram autosave --policy</span>. Normal saves remain approval-based.</p></div><Button variant="primary" disabled={!isPolicyDirty || policySaving} onClick={savePolicy}>{policySaving ? 'Saving…' : 'Save policy'}</Button></div>
       {data.policy?.exists === false ? <div className="banner banner-info config-policy-banner">No policy file exists yet. Saving this component creates <span className="mono">.agents/engram.policy.json</span>.</div> : null}
       {policyError ? <div className="banner banner-warn config-policy-banner">{policyError}</div> : null}
       <div className="cfg-row"><div className="cfg-lbl"><span className="cfg-label-title"><span>Allow auto-save</span><HelpLink href={entryFieldGroupDoc('policy')} label="Open auto-save policy docs" /></span><span className="cfg-desc">Permit policy-approved candidates to write without an interactive prompt.</span></div><div className="cfg-ctl"><Toggle on={policyDraft.autonomous_writes.enabled} title="Allow auto-save" onClick={() => changePolicyAuto('enabled', !policyDraft.autonomous_writes.enabled)} /></div></div>
       <div className="cfg-row"><div className="cfg-lbl"><span className="cfg-label-title"><span>Write mode</span></span><span className="cfg-desc">Review-only defers candidates; autonomous permits eligible writes.</span></div><div className="cfg-ctl"><select className="cfg-select" value={policyDraft.autonomous_writes.mode} onChange={(event) => changePolicyAuto('mode', event.target.value)}><option value="review_only">Review only</option><option value="autonomous">Autonomous</option></select></div></div>
-      <div className="cfg-row"><div className="cfg-lbl"><span className="cfg-label-title"><span>Allowed type</span></span><span className="cfg-desc">Choose the memory type.</span></div><div className="cfg-ctl">{renderPolicyList('allowed_types', POLICY_TYPE_OPTIONS)}</div></div>
-      <div className="cfg-row"><div className="cfg-lbl"><span className="cfg-label-title"><span>Allowed scope</span></span><span className="cfg-desc">Choose the save scope.</span></div><div className="cfg-ctl">{renderPolicyList('allowed_scopes', POLICY_SCOPE_OPTIONS)}</div></div>
-      <div className="cfg-row"><div className="cfg-lbl"><span className="cfg-label-title"><span>Allowed source</span></span><span className="cfg-desc">Choose the automation source.</span></div><div className="cfg-ctl">{renderPolicyList('allowed_sources', POLICY_SOURCE_OPTIONS)}</div></div>
+      <div className="cfg-row"><div className="cfg-lbl"><span className="cfg-label-title"><span>Allowed type</span></span><span className="cfg-desc">Choose one or more memory types.</span></div><div className="cfg-ctl">{renderPolicyChoices('allowed_types', POLICY_TYPE_OPTIONS)}</div></div>
+      <div className="cfg-row"><div className="cfg-lbl"><span className="cfg-label-title"><span>Allowed scope</span></span><span className="cfg-desc">Choose one or more save scopes.</span></div><div className="cfg-ctl">{renderPolicyChoices('allowed_scopes', POLICY_SCOPE_OPTIONS)}</div></div>
+      <div className="cfg-row"><div className="cfg-lbl"><span className="cfg-label-title"><span>Allowed source</span></span><span className="cfg-desc">Choose one or more automation sources.</span></div><div className="cfg-ctl">{renderPolicyChoices('allowed_sources', POLICY_SOURCE_OPTIONS)}</div></div>
       <div className="cfg-row"><div className="cfg-lbl"><span className="cfg-label-title"><span>Confidence threshold</span></span></div><div className="cfg-ctl"><select className="cfg-select" value={policyDraft.autonomous_writes.confidence_threshold} onChange={(event) => changePolicyAuto('confidence_threshold', event.target.value)}><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></div></div>
       <div className="cfg-row"><div className="cfg-lbl"><span className="cfg-label-title"><span>Daily write limit</span></span></div><div className="cfg-ctl"><input className="cfg-input" type="number" min="0" value={policyDraft.autonomous_writes.daily_limit} onChange={(event) => changePolicyAuto('daily_limit', Number(event.target.value))} /></div></div>
       <div className="cfg-row"><div className="cfg-lbl"><span className="cfg-label-title"><span>Rollback retention days</span></span></div><div className="cfg-ctl"><input className="cfg-input" type="number" min="0" value={policyDraft.autonomous_writes.rollback_retention_days} onChange={(event) => changePolicyAuto('rollback_retention_days', Number(event.target.value))} /></div></div>

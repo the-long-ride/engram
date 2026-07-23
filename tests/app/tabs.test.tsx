@@ -161,20 +161,24 @@ describe('ReviewTab', () => {
     })));
   });
 
-  test('loads a memory preview with properties separated from content', async () => {
+  test('loads a memory preview and opens detail modal on Open click', async () => {
+    const modalMock = { open: jest.fn(), close: jest.fn() };
     (api.reviewQueue as jest.Mock).mockResolvedValue({ data: { findings: [{ id: 'finding-a', kind: 'stale', safe_summary: 'Stale memory', memory_ids: ['memory-a'] }], receipts: [] } });
     (api.reviewInspect as jest.Mock).mockResolvedValue({ data: { finding: { id: 'finding-a', kind: 'stale', safe_summary: 'Stale memory', memory_ids: ['memory-a'] } } });
     (api.reviewPreview as jest.Mock).mockResolvedValue({ data: { previews: [{ id: 'memory-a', kind: 'memory', type: 'knowledge', scope: 'workspace', file: 'knowledge/memory-a.md', properties: [['type', 'knowledge'], ['updated', '2026-07-14']], content: '## Content\n\nReadable memory body.' }] } });
 
-    render(<ReviewTab active={true} toast={jest.fn()} />);
+    render(<ReviewTab active={true} toast={jest.fn()} modal={modalMock} />);
 
-    expect((await screen.findAllByText(/Readable memory body\./)).length).toBeGreaterThan(0);
-    expect(screen.getByText('updated')).toBeInTheDocument();
-    expect(screen.getByText('2026-07-14')).toBeInTheDocument();
-    expect(screen.getByText('Content')).toBeInTheDocument();
-    expect(api.reviewPreview).toHaveBeenCalledWith('finding-a', ['memory-a']);
-    expect(api.reviewPreview).toHaveBeenCalledTimes(1);
-    expect(screen.getAllByText(/Readable memory body\./).length).toBeGreaterThan(0);
+    const openBtn = await screen.findByRole('button', { name: 'Open' });
+    expect(openBtn).toBeInTheDocument();
+    expect(screen.getAllByText('memory-a').length).toBeGreaterThan(0);
+
+    fireEvent.click(openBtn);
+    expect(modalMock.open).toHaveBeenCalledTimes(1);
+    expect(modalMock.open).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'memory-a',
+      copyContent: expect.stringContaining('Readable memory body.')
+    }));
   });
 
   test('shows safe empty states when queue is empty', async () => {
@@ -186,6 +190,29 @@ describe('ReviewTab', () => {
     expect(screen.getByText('Select an item')).toBeInTheDocument();
     expect(screen.queryByText('(new memory)')).not.toBeInTheDocument();
     expect(screen.queryByText('(empty proposal)')).not.toBeInTheDocument();
+  });
+
+  test('renders Compare button when >= 2 memory previews exist and opens CompareModal', async () => {
+    (api.reviewQueue as jest.Mock).mockResolvedValue({ data: { findings: [{ id: 'finding-a', kind: 'stale', safe_summary: 'Stale memory', memory_ids: ['mem-1', 'mem-2'] }], receipts: [] } });
+    (api.reviewInspect as jest.Mock).mockResolvedValue({ data: { finding: { id: 'finding-a', kind: 'stale', safe_summary: 'Stale memory', memory_ids: ['mem-1', 'mem-2'] } } });
+    (api.reviewPreview as jest.Mock).mockResolvedValue({
+      data: {
+        previews: [
+          { id: 'mem-1', kind: 'memory', type: 'rule', scope: 'workspace', file: 'rule-1.md', properties: [['type', 'rule']], content: 'First memory content' },
+          { id: 'mem-2', kind: 'memory', type: 'rule', scope: 'global', file: 'rule-2.md', properties: [['type', 'rule']], content: 'Second memory content' }
+        ]
+      }
+    });
+
+    render(<ReviewTab active={true} toast={jest.fn()} />);
+
+    const compareBtn = await screen.findByRole('button', { name: 'Compare' });
+    expect(compareBtn).toBeInTheDocument();
+
+    fireEvent.click(compareBtn);
+    expect(screen.getByRole('dialog', { name: 'Compare memories' })).toBeInTheDocument();
+    expect(screen.getByText('First memory content')).toBeInTheDocument();
+    expect(screen.getByText('Second memory content')).toBeInTheDocument();
   });
 });
 
@@ -665,9 +692,46 @@ describe('ConnectionsTab', () => {
       expect(toastMock).toHaveBeenCalledWith('Disconnected');
     });
   });
+
+  test('expands and displays global target file paths when toggle arrow is clicked', async () => {
+    (api.getJson as jest.Mock).mockResolvedValue({
+      data: [
+        {
+          id: 'antigravity',
+          name: 'Antigravity',
+          path: '/home/user/.antigravity',
+          detected: true,
+          workspaceLinked: false,
+          globalLinked: true,
+          globalTargets: [
+            '/home/user/.antigravity/skills/engram/SKILL.md',
+            '/home/user/.antigravity-cli/skills/engram/SKILL.md'
+          ]
+        }
+      ]
+    });
+    const toastMock = jest.fn();
+    const { container } = render(<ConnectionsTab active={true} toast={toastMock} />);
+    await waitFor(() => {
+      expect(screen.getByText('Antigravity')).toBeInTheDocument();
+    });
+
+    const expandBtn = container.querySelector('.conn-expand-btn')!;
+    expect(expandBtn).toBeInTheDocument();
+    expect(screen.queryByText('/home/user/.antigravity/skills/engram/SKILL.md')).not.toBeInTheDocument();
+
+    // Click down arrow to expand
+    fireEvent.click(expandBtn);
+    expect(screen.getByText('/home/user/.antigravity/skills/engram/SKILL.md')).toBeInTheDocument();
+    expect(screen.getByText('/home/user/.antigravity-cli/skills/engram/SKILL.md')).toBeInTheDocument();
+
+    // Click again to collapse
+    fireEvent.click(expandBtn);
+    expect(screen.queryByText('/home/user/.antigravity/skills/engram/SKILL.md')).not.toBeInTheDocument();
+  });
 });
 
-test('renders global ignore patterns as textarea and policy fields as dropdowns', () => {
+test('renders global ignore patterns and policy allowlists as multi-choice controls', () => {
   const data = {
     config: { ignore: { global_patterns: ['*.private.md', 'vendor/**'] } },
     configFields: [{ key: 'ignore.global_patterns', group: 'Ignore Rules', label: 'Global Ignore Patterns', input: 'textarea' }],
@@ -693,8 +757,44 @@ test('renders global ignore patterns as textarea and policy fields as dropdowns'
   render(<ConfigTab data={data} reload={jest.fn()} toast={jest.fn()} />);
 
   expect(screen.getByRole('textbox')).toHaveValue('*.private.md\nvendor/**');
-  expect(screen.getAllByRole('combobox')).toHaveLength(5);
-  expect(screen.getByLabelText('allowed types')).toHaveValue('knowledge');
-  expect(screen.getByLabelText('allowed scopes')).toHaveValue('workspace');
-  expect(screen.getByLabelText('allowed sources')).toHaveValue('autosave');
+  expect(screen.getByRole('group', { name: 'allowed types' })).toBeInTheDocument();
+  expect(screen.getByRole('group', { name: 'allowed scopes' })).toBeInTheDocument();
+  expect(screen.getByRole('group', { name: 'allowed sources' })).toBeInTheDocument();
+});
+
+test('disables Save policy button when policy matches original and enables when changed', () => {
+  const data = {
+    policy: {
+      exists: true,
+      policy: {
+        version: 1,
+        autonomous_writes: {
+          enabled: false,
+          mode: 'review_only',
+          allowed_types: ['knowledge'],
+          allowed_scopes: ['workspace'],
+          allowed_sources: ['autosave'],
+          confidence_threshold: 'high',
+          daily_limit: 5,
+          rollback_retention_days: 30
+        },
+        review: { max_rule_lines: 100, benchmark_min_recall_at_k: 0.9, mandatory_metadata: { context: false, triggers: false, role: false } }
+      }
+    }
+  } as any;
+
+  render(<ConfigTab data={data} reload={jest.fn()} toast={jest.fn()} />);
+
+  const saveBtn = screen.getByRole('button', { name: 'Save policy' });
+  expect(saveBtn).toBeDisabled();
+
+  const toggleBtn = screen.getByRole('button', { name: 'Allow auto-save' });
+  
+  // Enable auto-save -> modified from original
+  fireEvent.click(toggleBtn);
+  expect(saveBtn).toBeEnabled();
+
+  // Toggle back to original
+  fireEvent.click(toggleBtn);
+  expect(saveBtn).toBeDisabled();
 });

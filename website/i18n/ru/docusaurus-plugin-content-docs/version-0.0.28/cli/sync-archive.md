@@ -1,12 +1,12 @@
 ---
 title: sync / clone-memory / archive
 sidebar_position: 7
-description: Sync, clone, and archive commands for moving memory between scopes.
+description: Команды синхронизации, клонирования и архивирования для перемещения памяти между областями видимости.
 ---
 
 # sync / clone-memory / archive
 
-Move memory between scopes and retire wrong memory safely.
+Перемещайте память между областями видимости и безопасно отправляйте неверную память в архив.
 
 ## clone-memory
 
@@ -16,9 +16,9 @@ engram clone-memory global workspace --force
 engram clone-memory workspace global --metacognize
 ```
 
-Copy active `rules/`, `skills/`, and `knowledge/` Markdown between workspace and global scopes. Add `--metacognize` when you want cloned memories proposed through the save-session approval flow instead of copied verbatim.
+Копируйте активный Markdown `rules/`, `skills/` и `knowledge/` между областями видимости рабочего пространства и глобальной области. Добавьте `--metacognize`, если хотите, чтобы клонированные воспоминания предлагались через поток одобрения save-session вместо копирования без изменений.
 
-Agents may normalize natural clone requests into `engram clone-memory`, for example "clone workspace memory to global" -> `engram clone-memory workspace global`. Reverse the scopes to copy global memory into a workspace; use `--force` only when the human explicitly asks to overwrite destination copies.
+Агенты могут преобразовывать обычные запросы клонирования в `engram clone-memory`, например, "clone workspace memory to global" -> `engram clone-memory workspace global`. Измените области видимости на противоположные, чтобы скопировать глобальную память в рабочее пространство; используйте `--force` только тогда, когда человек явно просит перезаписать целевые копии.
 
 ## archive
 
@@ -26,7 +26,7 @@ Agents may normalize natural clone requests into `engram clone-memory`, for exam
 engram archive --reason "<why>" <id-or-file>
 ```
 
-Archive wrong or superseded memory. The file leaves active routing only after approval and remains preserved under `archive/`. Use archive, not delete, for auditability.
+Архивируйте неверную или устаревшую память. Файл покидает активную маршрутизацию только после одобрения и остается сохраненным в папке `archive/`. Используйте архив, а не удаление, для обеспечения возможности аудита.
 
 ## observe (inbox)
 
@@ -35,13 +35,13 @@ engram observe --file session.md
 engram save-session --file .agents/.engram/inbox/<note>.md
 ```
 
-`observe` stores sanitized raw notes in `inbox/`. Inbox notes are not active memory.
+`observe` сохраняет очищенные необработанные заметки в папке `inbox/`. Заметки inbox не являются активной памятью.
 
-## Global Git sync
+## Глобальная синхронизация Git
 
-Global Git sync is controlled by the `global_git.*` config fields. See [Entry Web UI: Construct tab](../entry/construct.md) for every field. Use `engram entry` and the Construct tab, or `engram config view`, to inspect resolved Git detection.
+Глобальная синхронизация Git контролируется полями конфигурации `global_git.*`. См. [Entry Web UI: Вкладка Construct](../entry/construct.md) для получения подробной информации о каждом поле. Используйте вкладку Runtime в `engram entry` для проверки разрешенного обнаружения Git.
 
-## Next steps
+## Следующие шаги
 
 - [profiles / workspaces / config](profiles-workspaces-config.md)
-- [Operations: team Git workflow](../operations/team-git-workflow.md)
+- [Операции: командный рабочий процесс Git](../operations/team-git-workflow.md)

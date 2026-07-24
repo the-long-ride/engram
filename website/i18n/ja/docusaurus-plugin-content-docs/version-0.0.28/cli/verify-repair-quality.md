@@ -1,12 +1,12 @@
 ---
 title: verify / repair / quality-check
 sidebar_position: 6
-description: Maintenance commands — verify hashes, repair invalid files, check quality, and resolve conflicts.
+description: メンテナンスコマンド — ハッシュの検証、無効なファイルの修復、品質チェック、および競合の解決。
 ---
 
 # verify / repair / quality-check
 
-Maintenance commands keep memory healthy.
+メンテナンスコマンドはメモリを健全に保ちます。
 
 ## verify
 
@@ -14,7 +14,7 @@ Maintenance commands keep memory healthy.
 engram verify
 ```
 
-Checks hashes for integrity. Run after manual edits or imports.
+整合性のハッシュをチェックします。手動での編集やインポートの後に実行します。
 
 ## repair
 
@@ -23,7 +23,7 @@ engram repair
 engram rebuild-index
 ```
 
-Use `repair` after manual edits or imports to find malformed memory files skipped by index rebuild.
+手動での編集やインポートの後に `repair` を使用して、インデックス再構築でスキップされた不正なメモリファイルを見つけます。
 
 ## quality-check
 
@@ -31,7 +31,7 @@ Use `repair` after manual edits or imports to find malformed memory files skippe
 engram quality-check
 ```
 
-Reports contradiction candidates compactly. Contradiction detection is heuristic and advisory.
+競合する候補をコンパクトに報告します。競合検出はヒューリスティックであり、アドバイザリです。
 
 ## graph
 
@@ -40,7 +40,7 @@ engram graph "package manager"
 engram graph --rebuild
 ```
 
-Inspect graph routing before archiving. Run `engram graph --rebuild` after manual edits.
+アーカイブする前にグラフのルーティングを検査します。手動編集後に `engram graph --rebuild` を実行します。
 
 ## archive
 
@@ -48,7 +48,7 @@ Inspect graph routing before archiving. Run `engram graph --rebuild` after manua
 engram archive --reason "Repo migrated to npm." rules/use-pnpm.md
 ```
 
-Archive wrong or superseded memory. Use archive, not delete, for auditability. The file leaves active routing only after approval and remains preserved under `archive/`.
+誤ったメモリや代替されたメモリをアーカイブします。監査性の観点から、削除ではなくアーカイブを使用します。ファイルは承認後にのみアクティブなルーティングから外れ、`archive/` の下に保存されます。
 
 ## resolve-conflicts
 
@@ -57,7 +57,7 @@ engram resolve-conflicts --dry-run --metacognize
 engram resolve-conflicts --metacognize
 ```
 
-Preview or resolve only Engram-owned workspace memory conflicts. Add `--metacognize` when an agent should review the memory folder after conflict handling. The command keeps deterministic conflict handling scoped to `.agents/.engram/`, then appends the workspace metacognize source pack for concise `TYPE/TEXT` candidates.
+Engram が所有するワークスペースメモリの競合のみをプレビューまたは解決します。競合処理の後にエージェントがメモリフォルダをレビューする必要がある場合は、`--metacognize` を追加します。このコマンドは、決定論的な競合処理を `.agents/.engram/` に限定し、簡潔な `TYPE/TEXT` 候補のためにワークスペースのメタ認知ソースパックを追加します。
 
 ## benchmark
 
@@ -65,9 +65,9 @@ Preview or resolve only Engram-owned workspace memory conflicts. Add `--metacogn
 engram benchmark
 ```
 
-Retrieval regression checks.
+検索の回帰チェック。
 
-## Next steps
+## 次のステップ
 
 - [sync / archive](sync-archive.md)
-- [Operations troubleshooting](../operations/troubleshooting.md)
+- [運用のトラブルシューティング](../operations/troubleshooting.md)

@@ -1,18 +1,18 @@
 ---
-title: リリースおよびアップグレードプロセス
+title: Release and upgrade process
 sidebar_position: 2
-description: Engram パッケージをアップグレードし、メモリのルートを安全に調整します。
+description: Upgrade Engram packages and reconcile memory roots safely.
 ---
 
-# リリースおよびアップグレードプロセス
+# Release and upgrade process
 
-## npm パッケージの更新後
+## After an npm package update
 
-次に通常の Engram コマンドを実行した際、新しいバージョン用に初期化済みのワークスペース/グローバルのルートがバックグラウンドで自動的に一度調整されます。これにより、古いメタデータが検出された場合に、生成されたヘルプ、メモリインデックス、グラフファイル、および対象となるベクトルサイドカーを更新することで、v0.0.8 以降のリリース間のメモリスキーマの変更がカバーされます。
+The next normal Engram command quietly reconciles already-initialized workspace/global roots once for the new version. This covers release-to-release memory schema changes from v0.0.8 onward by refreshing generated help, memory indexes, graph files, and eligible vector sidecars when older metadata is detected.
 
-起動時のチェックは、初回の実行後は意図的に低コストに抑えられています。現在のバージョンがすでに記録されている場合は、小さな構成マーカーのみを読み取ります。npm postinstall から実行されたり、新しいメモリのルートを作成したり、人間が作成したファイルを置き換えたりすることはありません。コマンドでこれをスキップするには、`--no-auto-upgrade` または `ENGRAM_NO_AUTO_UPGRADE=1` を使用します。
+The startup check is intentionally cheap after the first run: it only reads small config markers when the current version is already recorded. It does not run from npm postinstall, create new memory roots, or replace human-authored files. Use `--no-auto-upgrade` or `ENGRAM_NO_AUTO_UPGRADE=1` to skip it for a command.
 
-## 明示的なアップグレード
+## Explicit upgrade
 
 ```bash
 engram upgrade
@@ -20,21 +20,21 @@ engram upgrade --plan
 engram upgrade --latest
 ```
 
-`engram upgrade` は、人間が作成したファイルを保持したまま、生成されたワークスペースのヘルプ、メモリインデックス、グラフファイル、対象となるベクトルサイドカー、既存の Engram 生成ワークスペーススキルセットファイル、および登録されたグローバルスキルセットを更新します。
+`engram upgrade` refreshes generated workspace help, memory indexes, graph files, eligible vector sidecars, existing Engram-generated workspace skillset files, and registered global skillsets while preserving human-authored files.
 
-`engram upgrade --latest` はより強力です。すでにリンクされているワークスペースエージェントおよび登録されたグローバルインストールに対して、現在 Engram が管理するリンク済みエージェントの成果物（指示ファイル、ルール、MCP/プラグイン構成、および管理対象フックを含む）を上書きし、リンクされたホストが新しいパッケージの出力をすぐに受け取れるようにします。
+`engram upgrade --latest` is stronger: it overwrites current Engram-managed linked agent artifacts for already-linked workspace agents and registered global installs, including instruction files, rules, MCP/plugin config, and managed hooks, so linked hosts pick up the new package output immediately.
 
-生成された Engram アダプターファイルを意図的に置き換える場合にのみ `--force` を使用してください。
+Use `--force` only when replacing generated Engram adapter files intentionally.
 
-## スキルセットレンダリングプロファイル
+## Skillset render profiles
 
-ランタイム対応ホストの場合、Engram は完全なプロトコルの代わりに小さなブートストラップ手順をインストールします。フックはルーティングされたタスクコンテキストを提供し、MCP ツールはロード/検索/提案の動作を提供し、スラッシュアダプターまたは Agent Skills は詳細なコマンドワークフローを伝達します。信頼性の高いランタイムコンテキストの注入がないフォールバックターゲットは、引き続きコンパクトな手動指示を受け取ります。
+For runtime-capable hosts, Engram installs small bootstrap instructions instead of the full protocol. Hooks provide routed task context, MCP tools provide load/search/proposal behavior, and slash adapters or Agent Skills carry detailed command workflows. Fallback targets without reliable runtime context injection still receive compact manual instructions.
 
-## SQLite 設定 DB へのフォールバック
+## SQLite config DB fallback
 
-Engram の SQLite 設定 DB は、ワークスペース/プロファイル管理のための最適化です。DB をオープンまたは初期化できない場合、通常の読み取り/書き込みコマンドは JSON 設定のスナップショットにフォールバックします。DB 固有のコマンドは、通常のメモリ使用をブロックする代わりに SQLite が利用不可であることを報告します。
+Engram's SQLite config DB is an optimization for workspace/profile management. If the DB cannot be opened or initialized, normal read/write commands fall back to JSON config snapshots. DB-specific commands report SQLite as unavailable instead of blocking normal memory use.
 
-## 次のステップ
+## Next steps
 
-- [トラブルシューティング](troubleshooting.md)
+- [Troubleshooting](troubleshooting.md)
 - [CLI: inject / link / upgrade](../cli/inject-link-upgrade.md)

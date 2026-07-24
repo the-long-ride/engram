@@ -1,12 +1,12 @@
 ---
 title: verify / repair / quality-check
 sidebar_position: 6
-description: Maintenance commands — verify hashes, repair invalid files, check quality, and resolve conflicts.
+description: Команды обслуживания — проверка хэшей, восстановление неверных файлов, проверка качества и разрешение конфликтов.
 ---
 
 # verify / repair / quality-check
 
-Maintenance commands keep memory healthy.
+Команды обслуживания поддерживают здоровье памяти.
 
 ## verify
 
@@ -14,7 +14,7 @@ Maintenance commands keep memory healthy.
 engram verify
 ```
 
-Checks hashes for integrity. Run after manual edits or imports.
+Проверяет целостность хэшей. Запускайте после ручного редактирования или импорта.
 
 ## repair
 
@@ -23,7 +23,7 @@ engram repair
 engram rebuild-index
 ```
 
-Use `repair` after manual edits or imports to find malformed memory files skipped by index rebuild.
+Используйте `repair` после ручного редактирования или импорта, чтобы найти некорректные файлы памяти, пропущенные при перестроении индекса.
 
 ## quality-check
 
@@ -31,7 +31,7 @@ Use `repair` after manual edits or imports to find malformed memory files skippe
 engram quality-check
 ```
 
-Reports contradiction candidates compactly. Contradiction detection is heuristic and advisory.
+Компактно сообщает о потенциальных противоречиях. Обнаружение противоречий является эвристическим и рекомендательным.
 
 ## graph
 
@@ -40,7 +40,7 @@ engram graph "package manager"
 engram graph --rebuild
 ```
 
-Inspect graph routing before archiving. Run `engram graph --rebuild` after manual edits.
+Проверьте маршрутизацию графа перед архивированием. Запустите `engram graph --rebuild` после ручного редактирования.
 
 ## archive
 
@@ -48,7 +48,7 @@ Inspect graph routing before archiving. Run `engram graph --rebuild` after manua
 engram archive --reason "Repo migrated to npm." rules/use-pnpm.md
 ```
 
-Archive wrong or superseded memory. Use archive, not delete, for auditability. The file leaves active routing only after approval and remains preserved under `archive/`.
+Архивируйте неверную или устаревшую память. Используйте архив, а не удаление, для обеспечения возможности аудита. Файл покидает активную маршрутизацию только после одобрения и остается сохраненным в папке `archive/`.
 
 ## resolve-conflicts
 
@@ -57,7 +57,7 @@ engram resolve-conflicts --dry-run --metacognize
 engram resolve-conflicts --metacognize
 ```
 
-Preview or resolve only Engram-owned workspace memory conflicts. Add `--metacognize` when an agent should review the memory folder after conflict handling. The command keeps deterministic conflict handling scoped to `.agents/.engram/`, then appends the workspace metacognize source pack for concise `TYPE/TEXT` candidates.
+Просматривайте или разрешайте только конфликты памяти рабочего пространства, принадлежащие Engram. Добавьте `--metacognize`, когда агент должен проверить папку памяти после обработки конфликтов. Команда сохраняет детерминированную обработку конфликтов в области `.agents/.engram/`, а затем добавляет пакет исходников самоанализа рабочего пространства для кратких кандидатов `TYPE/TEXT`.
 
 ## benchmark
 
@@ -65,9 +65,9 @@ Preview or resolve only Engram-owned workspace memory conflicts. Add `--metacogn
 engram benchmark
 ```
 
-Retrieval regression checks.
+Проверки регрессии извлечения.
 
-## Next steps
+## Следующие шаги
 
 - [sync / archive](sync-archive.md)
-- [Operations troubleshooting](../operations/troubleshooting.md)
+- [Устранение неполадок при эксплуатации](../operations/troubleshooting.md)

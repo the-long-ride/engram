@@ -1,45 +1,45 @@
 ---
 title: Cursor
 sidebar_position: 5
-description: Tích hợp Engram với Cursor thông qua quy tắc, MCP, plugin cục bộ, lệnh slash, và hook bắt đầu phiên.
+description: Engram integration with Cursor via rules, MCP, local plugin, slash commands, and session-start hooks.
 ---
 
 # Cursor
 
-Cursor đọc các quy tắc dự án từ các tệp `.cursor/rules/*.mdc`. Engram ghi tệp `.cursor/rules/engram.mdc` với frontmatter hợp lệ (`alwaysApply: true`) và một khối hướng dẫn khởi động.
+Cursor reads project rules from `.cursor/rules/*.mdc` files. Engram writes `.cursor/rules/engram.mdc` with valid frontmatter (`alwaysApply: true`) and a bootstrap instruction block.
 
-## Cài đặt
+## Install
 
 ```bash
 engram link cursor
 ```
 
-## Các tệp được ghi
+## Files written
 
-| Tệp | Mục đích |
+| File | Purpose |
 | --- | --- |
-| `.cursor/rules/engram.mdc` | Quy tắc dự án với `alwaysApply: true` |
-| `.cursor/mcp.json` | Đăng ký MCP (`type: "stdio"`) |
-| `.cursor/hooks.json` | Hook `sessionStart` |
-| `.cursor/commands/engram.md` | Bộ điều hợp slash `/engram` |
+| `.cursor/rules/engram.mdc` | Project rules with `alwaysApply: true` |
+| `.cursor/mcp.json` | MCP registration (`type: "stdio"`) |
+| `.cursor/hooks.json` | `sessionStart` hook |
+| `.cursor/commands/engram.md` | `/engram` slash adapter |
 
-## Cài đặt toàn cục
+## Global install
 
 ```bash
 engram link --global cursor
 ```
 
-Engram tạo một plugin cục bộ tại `~/.cursor/plugins/local/engram/` chứa plugin manifest, các quy tắc, skill, lệnh, cấu hình MCP, và các hook.
+Engram creates a local plugin at `~/.cursor/plugins/local/engram/` containing the plugin manifest, rules, skills, commands, MCP config, and hooks.
 
-## Mục tiêu ưu tiên runtime
+## Runtime-first target
 
-Cursor là một mục tiêu ưu tiên runtime. Các quy tắc dự án chứa hướng dẫn khởi tạo ngắn gọn dựa vào các công cụ MCP và hook để thực hiện giao thức chi tiết; tệp Agent Skill đảm nhận toàn bộ luồng ghi/phê duyệt.
+Cursor is a runtime-first target. Project rules contain short bootstrap instructions that rely on MCP tools and hooks for detailed protocol; the Agent Skill file carries the full write/approval workflow.
 
-## Hành vi hook
+## Hook behavior
 
-Hook `sessionStart` chèn ngữ cảnh khởi động của Engram thông qua trường đầu ra `additional_context`. Hook `beforeSubmitPrompt` chỉ có quyền cho phép/chặn và không được dùng để chèn ngữ cảnh.
+The `sessionStart` hook injects Engram startup context through the `additional_context` output field. `beforeSubmitPrompt` is allow/block-only and is not used for context injection.
 
-## Các bước tiếp theo
+## Next steps
 
-- [Tổng quan về tích hợp Agent](overview.md)
-- [Hook và dòng kiểm chứng](hooks.md)
+- [Agent Integrations overview](overview.md)
+- [Hooks and proof lines](hooks.md)

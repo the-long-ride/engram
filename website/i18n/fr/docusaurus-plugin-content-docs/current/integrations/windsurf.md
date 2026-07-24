@@ -1,41 +1,41 @@
 ---
 title: Windsurf / Cascade
 sidebar_position: 6
-description: Intégration d'Engram avec Windsurf Cascade via des règles, MCP, des hooks et des mémoires globales.
+description: Engram integration with Windsurf Cascade via rules, MCP, hooks, and global memories.
 ---
 
 # Windsurf / Cascade
 
-Windsurf lit les règles de l'espace de travail depuis `.windsurf/rules/*.md`. Engram écrit `.windsurf/rules/engram.md` avec le frontmatter `trigger: always_on`. `cascade` est un alias pour `windsurf`.
+Windsurf reads workspace rules from `.windsurf/rules/*.md`. Engram writes `.windsurf/rules/engram.md` with `trigger: always_on` frontmatter. `cascade` is an alias for `windsurf`.
 
-## Installation
+## Install
 
 ```bash
 engram link windsurf
 ```
 
-Le MCP d'espace de travail n'est pas généré car les documents officiels ne décrivent que la configuration MCP au niveau de l'utilisateur. `engram link windsurf` le signale explicitement et suggère `engram link --global windsurf` pour le MCP.
+Workspace MCP is not generated because the official contract documents only user-level MCP config. `engram link windsurf` reports this explicitly and suggests `engram link --global windsurf` for MCP.
 
-## Fichiers écrits
+## Files written
 
-| Fichier | Objectif |
+| File | Purpose |
 | --- | --- |
-| `.windsurf/rules/engram.md` | Règles du projet avec `trigger: always_on` |
-| `.windsurf/hooks.json` | Hook `pre_user_prompt` |
+| `.windsurf/rules/engram.md` | Project rules with `trigger: always_on` |
+| `.windsurf/hooks.json` | `pre_user_prompt` hook |
 
-## Installation globale
+## Global install
 
 ```bash
 engram link --global windsurf
 ```
 
-Engram écrit un bloc géré dans `~/.codeium/windsurf/memories/global_rules.md` (en préservant le texte de l'utilisateur et en restant sous la limite de caractères), fusionne MCP dans `~/.codeium/windsurf/mcp_config.json` et fusionne les hooks dans `~/.codeium/windsurf/hooks.json`.
+Engram writes a managed block into `~/.codeium/windsurf/memories/global_rules.md` (preserving user text and staying below the character budget), merges MCP into `~/.codeium/windsurf/mcp_config.json`, and merges hooks into `~/.codeium/windsurf/hooks.json`.
 
-## Comportement des hooks
+## Hook behavior
 
-Le hook `pre_user_prompt` peut auditer/précharger/bloquer mais ne peut pas injecter directement le contexte du modèle. Les règles et le MCP fournissent des canaux de contexte d'IA fiables.
+The `pre_user_prompt` hook can audit/preload/block but cannot inject model context directly. Rules and MCP provide the reliable AI context channels.
 
-## Étapes suivantes
+## Next steps
 
-- [Présentation des intégrations d'agents](overview.md)
-- [Hooks et lignes de preuve](hooks.md)
+- [Agent Integrations overview](overview.md)
+- [Hooks and proof lines](hooks.md)

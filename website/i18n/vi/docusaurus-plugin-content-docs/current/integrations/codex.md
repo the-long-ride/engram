@@ -1,45 +1,45 @@
 ---
 title: Codex
 sidebar_position: 2
-description: Tích hợp Engram với OpenAI Codex thông qua AGENTS.md và Agent Skills.
+description: Engram integration with OpenAI Codex via AGENTS.md and Agent Skills.
 ---
 
 # Codex
 
-OpenAI Codex và các agent khác tương thích với AGENTS.md sử dụng `AGENTS.md` làm tệp hướng dẫn dự án. Bí danh `codex` cũng ghi vào `.agents/skills/engram/SKILL.md` để các agent khi phát hiện Agent Skills có thể định tuyến Engram như một skill có thể gọi được.
+OpenAI Codex and other AGENTS.md-compatible agents use `AGENTS.md` as a project instruction file. The `codex` alias also writes `.agents/skills/engram/SKILL.md` so agents that discover Agent Skills can route Engram as an invokable skill.
 
-## Cài đặt
+## Install
 
 ```bash
 engram link codex
 ```
 
-## Các tệp được ghi
+## Files written
 
-| Tệp | Mục đích |
+| File | Purpose |
 | --- | --- |
-| `AGENTS.md` | Khởi tạo hướng dẫn dự án |
-| `.agents/skills/engram/SKILL.md` | Agent Skill với luồng ghi/phê duyệt đầy đủ |
-| `.codex/hooks.json` | Các hook `SessionStart` và `UserPromptSubmit` |
-| `.mcp.json` | Đăng ký MCP |
+| `AGENTS.md` | Project instructions bootstrap |
+| `.agents/skills/engram/SKILL.md` | Agent Skill with full write/approval workflow |
+| `.codex/hooks.json` | `SessionStart` and `UserPromptSubmit` hooks |
+| `.mcp.json` | MCP registration |
 
-## Cài đặt toàn cục
+## Global install
 
 ```bash
 engram link --global codex
 ```
 
-Ghi skill Codex vào `~/.codex/skills/engram/SKILL.md` và thêm một khối được quản lý vào các tệp hướng dẫn Codex dùng chung.
+Writes the Codex skill to `~/.codex/skills/engram/SKILL.md` and appends a managed block to shared Codex instruction files.
 
-## Hành vi hook
+## Hook behavior
 
-Codex hỗ trợ khởi động và đưa thêm ngữ cảnh tại thời điểm prompt. `SessionStart` tải bộ nhớ được định tuyến lúc khởi động; `UserPromptSubmit` chỉ đưa lại ngữ cảnh khi ngữ cảnh Engram được định tuyến thay đổi.
+Codex supports startup and prompt-time additional context injection. `SessionStart` loads routed memory at startup; `UserPromptSubmit` reinjects only when routed Engram context changes.
 
-## Mục tiêu ưu tiên runtime
+## Runtime-first target
 
-Codex là một mục tiêu ưu tiên runtime. `AGENTS.md` chứa các hướng dẫn khởi tạo ngắn gọn dựa vào các công cụ MCP và hook để thực hiện giao thức chi tiết; tệp Agent Skill đảm nhận toàn bộ luồng ghi/phê duyệt.
+Codex is a runtime-first target. `AGENTS.md` contains short bootstrap instructions that rely on MCP tools and hooks for detailed protocol; the Agent Skill file carries the full write/approval workflow.
 
-## Các bước tiếp theo
+## Next steps
 
-- [Tổng quan về tích hợp Agent](overview.md)
-- [Hook và dòng kiểm chứng](hooks.md)
+- [Agent Integrations overview](overview.md)
+- [Hooks and proof lines](hooks.md)

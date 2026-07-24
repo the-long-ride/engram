@@ -1,42 +1,43 @@
 ---
 title: OpenCode
 sidebar_position: 7
-description: Integración de Engram con OpenCode a través de AGENTS.md, Agent Skills, MCP, comandos personalizados y un plugin local.
+description: Engram integration with OpenCode via AGENTS.md, Agent Skills, MCP, custom commands, and a local plugin.
 ---
 
 # OpenCode
 
-OpenCode lee `AGENTS.md` del proyecto y el archivo global `~/.config/opencode/AGENTS.md` para buscar reglas. Engram escribe un bloque gestionado allí, escribe la guía completa en `.opencode/engram.md` o `~/.config/opencode/engram.md`, escribe la skill completa en `.opencode/skills/engram/SKILL.md` o `~/.config/opencode/skills/engram/SKILL.md`, y reserva el archivo `opencode.json` del proyecto (o un archivo `opencode.jsonc` existente) y el archivo global `~/.config/opencode/opencode.jsonc` para el registro de MCP.
+OpenCode reads project `AGENTS.md` and global `~/.config/opencode/AGENTS.md` for rules. Engram writes a managed block there, writes the full guide to `.opencode/engram.md` or `~/.config/opencode/engram.md`, writes the full skill to `.opencode/skills/engram/SKILL.md` or `~/.config/opencode/skills/engram/SKILL.md`, and reserves project `opencode.json` (or an existing `opencode.jsonc`) and global `~/.config/opencode/opencode.jsonc` for MCP registration.
 
-## Instalación
+## Install
 
 ```bash
 engram link opencode
 ```
 
-## Archivos escritos
+## Files written
 
-| Archivo | Propósito |
+| File | Purpose |
 | --- | --- |
-| `AGENTS.md` | Reglas del proyecto con bloque gestionado |
-| `.opencode/engram.md` | Guía completa |
+| `AGENTS.md` | Project rules with managed block |
+| `.opencode/engram.md` | Full guide |
 | `.opencode/skills/engram/SKILL.md` | Agent Skill |
-| `.opencode/commands/engram.md` | Adaptador slash `/engram` |
-| `opencode.json` / `opencode.jsonc` | Registro de MCP (`mcp.engram`) |
+| `.opencode/commands/engram.md` | `/engram` slash adapter |
+| `.opencode/plugins/engram.js` | Local plugin for hook context injection |
+| `opencode.json` / `opencode.jsonc` | MCP registration (`mcp.engram`) |
 
-## Instalación global
+## Global install
 
 ```bash
 engram link --global opencode
 ```
 
-También instala un plugin de JavaScript local gestionado en `~/.config/opencode/plugins/engram.js`. El plugin utiliza `chat.message` para enrutar el prompt del usuario actual y `experimental.chat.system.transform` para inyectar la memoria enrutada antes de cada solicitud de LLM.
+Also installs a managed local JavaScript plugin at `~/.config/opencode/plugins/engram.js`. The plugin uses `chat.message` to route the current user prompt and `experimental.chat.system.transform` to inject routed memory before each LLM request.
 
 :::warning
-OpenCode debe reiniciarse o recargarse después de `link`/`unlink` porque los archivos de plugins locales se cargan al inicio.
+OpenCode must be restarted or reloaded after `link`/`unlink` because local plugin files are loaded at startup.
 :::
 
-## Registro de MCP
+## MCP registration
 
 ```json
 "engram": {
@@ -47,14 +48,14 @@ OpenCode debe reiniciarse o recargarse después de `link`/`unlink` porque los ar
 }
 ```
 
-El servidor MCP implementa el protocolo de enlace JSON-RPC estándar (`initialize`, `notifications/initialized`, `tools/list` y `tools/call`) para que OpenCode pueda descubrir y llamar a las herramientas de Engram.
+The MCP server implements the standard JSON-RPC handshake (`initialize`, `notifications/initialized`, `tools/list`, and `tools/call`) so OpenCode can discover and call Engram tools.
 
-## Comportamiento del plugin
+## Plugin behavior
 
-El plugin falla de forma abierta (fails open) y mantiene la memoria enrutada sin procesar solo en el proceso de OpenCode en ejecución. La caché de hooks de disco de Engram sigue conteniendo únicamente hashes, IDs de sesión, host, cwd y firmas enrutadas. `engram unlink --global opencode` elimina solo el plugin generado por Engram; un plugin `engram.js` escrito por un humano se conserva a menos que `--force` sea explícito.
+The plugin fails open and keeps raw routed memory only in the running OpenCode process. Engram's disk hook cache remains hashes, session IDs, host, cwd, and routed signatures only. `engram unlink --global opencode` removes only the Engram-generated plugin; a human-authored `engram.js` is preserved unless `--force` is explicit.
 
-## Siguientes pasos
+## Next steps
 
-- [Descripción general de las integraciones de agentes](overview.md)
-- [Herramientas MCP](mcp.md)
-- [Hooks y líneas de verificación](hooks.md)
+- [Agent Integrations overview](overview.md)
+- [MCP tools](mcp.md)
+- [Hooks and proof lines](hooks.md)

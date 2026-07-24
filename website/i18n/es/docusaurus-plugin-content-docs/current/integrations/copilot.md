@@ -1,38 +1,38 @@
 ---
 title: Copilot
 sidebar_position: 8
-description: Integración de Engram con GitHub Copilot a través de instrucciones personalizadas del repositorio y del usuario.
+description: Engram integration with GitHub Copilot via repository and user custom instructions.
 ---
 
 # Copilot
 
-GitHub Copilot lee las instrucciones personalizadas del repositorio desde `.github/copilot-instructions.md`. Para instalaciones globales de Copilot, Engram añade su bloque gestionado a `~/.copilot/copilot-instructions.md`.
+GitHub Copilot reads repository custom instructions from `.github/copilot-instructions.md`. For global Copilot installs, Engram appends its managed block to `~/.copilot/copilot-instructions.md`.
 
-## Instalación
+## Install
 
 ```bash
 engram link copilot
 ```
 
-## Archivos escritos
+## Files written
 
-| Archivo | Propósito |
+| File | Purpose |
 | --- | --- |
-| `.github/copilot-instructions.md` | Instrucciones personalizadas del repositorio |
+| `.github/copilot-instructions.md` | Repository custom instructions |
 
-## Instalación global
+## Global install
 
 ```bash
 engram link --global copilot
 ```
 
-Añade un bloque gestionado a `~/.copilot/copilot-instructions.md`.
+Appends a managed block to `~/.copilot/copilot-instructions.md`.
 
-## Objetivo de respaldo compacto/manual
+## Compact/manual fallback target
 
-Copilot es un objetivo de respaldo compacto/manual. Recibe el protocolo compacto completo porque los hooks actuales exponen el contexto de inicio de sesión pero no una inyección de contexto confiable en el momento del prompt en v1. Se omite la instalación del hook; no se escribe la configuración del hook.
+Copilot is a compact/manual fallback target. It receives the full compact protocol. Hook install is skipped in v1; use the Engram skillset or a manual `engram load` for context.
 
-## Siguientes pasos
+## Next steps
 
-- [Descripción general de las integraciones de agentes](overview.md)
-- [Hooks y líneas de verificación](hooks.md)
+- [Agent Integrations overview](overview.md)
+- [Hooks and proof lines](hooks.md)

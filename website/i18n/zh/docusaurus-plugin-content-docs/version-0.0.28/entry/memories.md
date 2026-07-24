@@ -1,63 +1,52 @@
 ---
-title: Memories tab
-sidebar_position: 6
-description: Inspect the memory graph, preview memories, edit, and archive.
+title: Memories 标签页 (内存)
+sidebar_position: 8
+description: 检查内存图谱、预览内存、编辑和归档。
 ---
 
 import RiskCallout from '@site/src/components/RiskCallout';
 
-# Memories tab
+# Memories 标签页
 
-The Memories tab inspects active memory, explores its graph, and performs maintenance actions.
+Memories 标签页用于检查内存图谱并执行内存维护操作。
 
-## Search
+## 范围标签 (Scope chips)
 
-Use the search field to match text anywhere in each Markdown memory file. The search is case-insensitive and works together with the scope and type filters.
+按内存来源过滤图谱。比较工作区与全局内存。当图谱显得嘈杂时，可以先仅关注当前工作区。
 
-The search mode menu has two options:
+## 类型标签 (Type chips)
 
-- **Text matches only** shows memories whose file content or metadata directly matches the query.
-- **Text matches + related memories** also shows connected dependency, duplicate, and semantic memories.
+按内存类型过滤图谱。分别检查规则、技能或知识。
 
-Clear the field to restore the full graph for the selected filters.
+## 语义链接开关
 
-## Scope chips {#scope-chips}
+显示语义图边缘。当图谱在视觉上很嘈杂时请将其关闭。
 
-Filter the graph by memory source. Compare workspace vs global memory. Start with the current workspace only when the graph feels noisy.
+## 刷新 / 重建 (Refresh / rebuild)
 
-## Type chips {#type-chips}
+重新加载或重建图数据。在编辑、导入、归档操作或配置更改后使用。
 
-Filter the graph by memory type. Inspect rules, skills, or knowledge separately.
+## 内存预览
 
-## Semantic links toggle {#semantic-links-toggle}
-
-Shows semantic graph edges. Turn off when the graph is visually noisy.
-
-## Refresh / rebuild
-
-Reloads or rebuilds graph data. Use after edits, imports, archive actions, or config changes.
-
-## Memory preview
-
-Reads selected memory content. Useful to audit what the agent will receive.
+读取所选内存的内容。有助于审计智能体将收到的内容。
 
 <RiskCallout level="caution">
-Sensitive local content may be visible in the browser. Treat the panel as open while previewing.
+敏感的本地内容可能会在浏览器中可见。在预览时将面板视为公开状态。
 </RiskCallout>
 
-## Edit memory
+## 编辑内存
 
-Opens the file in an editor and copies the path. Use for manual correction or review. The source of truth is the Markdown file.
+在编辑器中打开文件并复制路径。用于手动纠正或审查。事实来源是 Markdown 文件。
 
-## Archive memory
+## 归档内存
 
-Removes memory from active routing while preserving it under `archive/`. Use archive, not delete, for auditability.
+从活动路由中删除内存，同时将其保存在 `archive/` 下。使用归档而不是删除以保证可审计性。
 
 <RiskCallout level="caution">
-Archiving changes routing immediately. Use archive, not manual deletion, so history is preserved.
+归档会立即更改路由。使用归档，而不是手动删除，以便保留历史记录。
 </RiskCallout>
 
-## CLI equivalent
+## CLI 等效命令
 
 ```bash
 engram graph "<topic>"
@@ -65,7 +54,7 @@ engram quality-check
 engram archive --reason "<why>" <id-or-file>
 ```
 
-## Next steps
+## 后续步骤
 
-- [Maintain tab](core.md)
-- [CLI: verify / repair / quality-check](../cli/verify-repair-quality.md)
+- [Core 标签页](core.md)
+- [Runtime 标签页](runtime.md)

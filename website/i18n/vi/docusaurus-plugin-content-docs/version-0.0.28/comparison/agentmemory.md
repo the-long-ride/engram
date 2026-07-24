@@ -1,27 +1,27 @@
 ---
 title: agentmemory
 sidebar_position: 3
-description: Engram vs rohitg00/agentmemory — file protocol vs automatic memory engine.
+description: Engram so với rohitg00/agentmemory — giao thức tệp so với công cụ bộ nhớ tự động.
 ---
 
 # agentmemory
 
-[rohitg00/agentmemory](https://github.com/rohitg00/agentmemory) is a powerful automatic memory engine for coding agents. Its README presents server-based memory, MCP/hooks/REST integration, many agent adapters, benchmark claims, a viewer, replay, hybrid retrieval, and Hermes integration.
+[rohitg00/agentmemory](https://github.com/rohitg00/agentmemory) là một công cụ bộ nhớ tự động mạnh mẽ dành cho các tác nhân lập trình. Tài liệu giới thiệu (README) của nó trình bày bộ nhớ dựa trên máy chủ, tích hợp MCP/hooks/REST, nhiều bộ chuyển đổi tác nhân, các công bố về benchmark, giao diện xem, phát lại (replay), truy xuất hỗn hợp và tích hợp Hermes.
 
-Use agentmemory when you want automatic capture, live viewer/replay, vector retrieval, many MCP tools, and server-style shared memory.
+Sử dụng agentmemory khi bạn muốn thu thập tự động, giao diện xem/phát lại trực tiếp, truy xuất vector, nhiều công cụ MCP và bộ nhớ chia sẻ dạng máy chủ.
 
-Use Engram when you want memory to be a repo-readable protocol: Markdown first, human approved, Git reviewed, portable across agents even without a running server.
+Sử dụng Engram khi bạn muốn bộ nhớ là một giao thức mà kho lưu trữ có thể đọc được: Markdown trước tiên, con người phê duyệt, Git đánh giá, và có thể mang đi giữa các tác nhân ngay cả khi không có máy chủ đang chạy.
 
-| Dimension | Engram | agentmemory |
+| Chiều hướng | Engram | agentmemory |
 | --- | --- | --- |
-| Source of truth | Approved Markdown files | Memory server/store |
-| Trust boundary | Human A/B/C approval | Automatic capture plus tool governance |
-| Default mode | File protocol, no daemon required | Running service recommended |
-| Review | Git diff and Markdown review | Viewer/API and stored sessions |
-| Best fit | teams that need ownership and auditability | users who want automatic recall and replay |
-| Risk | more manual discipline | more invisible state unless governed carefully |
+| Nguồn sự thật | Các tệp Markdown được phê duyệt | Máy chủ/kho lưu trữ bộ nhớ |
+| Ranh giới tin cậy | Cổng phê duyệt A/B/C của con người | Thu thập tự động cộng với quản trị công cụ |
+| Chế độ mặc định | Giao thức tệp, không yêu cầu daemon | Khuyến nghị dịch vụ đang chạy |
+| Đánh giá | Git diff và đánh giá Markdown | Trình xem/API và các phiên được lưu trữ |
+| Phù hợp nhất | Các nhóm cần quyền sở hữu và tính kiểm toán | Người dùng muốn tự động hồi tưởng và phát lại |
+| Rủi ro | Đòi hỏi tính kỷ luật thủ công nhiều hơn | Trạng thái vô hình nhiều hơn trừ khi được quản lý cẩn thiện |
 
-## Next steps
+## Các bước tiếp theo
 
 - [Hermes Agent](hermes-agent.md)
-- [Comparison overview](overview.md)
+- [Tổng quan so sánh](overview.md)

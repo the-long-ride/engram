@@ -1,7 +1,7 @@
 ---
 title: Hermes Agent
 sidebar_position: 6
-description: Engram vs Hermes Agent — human-owned file protocol vs autonomous always-active memory.
+description: Engram vs Hermes Agent — protocole de fichiers appartenant à l'humain vs mémoire autonome toujours active.
 ---
 
 # Hermes Agent
@@ -10,45 +10,45 @@ description: Engram vs Hermes Agent — human-owned file protocol vs autonomous 
 
 | | Engram | Hermes Agent |
 |---|---|---|
-| **Philosophy** | Human-owned, file-first protocol (automation optional) | Autonomous, always-active memory |
-| **Storage** | Typed Markdown files in `.agents/.engram/` | `MEMORY.md` + `USER.md` (hard char caps) |
-| **Write model** | Human-approved by default (A/B/C gate; automatable via rules) | Agent writes autonomously |
-| **Recall** | On-demand: `engram load "<task>"` injects relevant files | Always-on: core files frozen into system prompt each session |
-| **Vector search** | Optional local sqlite-vec (deterministic, not embedding-backed) | Via external provider (e.g. agentmemory — BM25 + vector) |
-| **Cross-agent** | Any file-reading agent can consume Engram memory | Hermes core is single-agent; cross-agent via agentmemory plugin |
-| **Portability** | Git-native, offline-first, plain Markdown | Local files; external providers may add cloud lock-in |
-| **Overhead** | No daemon, requires save discipline (unless automated) | Server process + viewer UI, REST API, MCP server |
+| **Philosophie** | Protocole axé sur les fichiers, appartenant à l'humain (automatisation facultative) | Mémoire autonome toujours active |
+| **Stockage** | Fichiers Markdown typés dans `.agents/.engram/` | `MEMORY.md` + `USER.md` (limites strictes de caractères) |
+| **Modèle d'écriture** | Approuvé par l'humain par défaut (validation A/B/C ; automatisable via des règles) | L'agent écrit de manière autonome |
+| **Rappel** | À la demande : `engram load "<task>"` injecte les fichiers pertinents | Toujours actif : fichiers essentiels figés dans le system prompt à chaque session |
+| **Recherche vectorielle** | Sqlite-vec local facultatif (déterministe, non basé sur les embeddings) | Via fournisseur externe (par exemple, agentmemory — BM25 + vector) |
+| **Multi-agent** | Tout agent lisant les fichiers peut consommer la mémoire Engram | Le noyau de Hermes est mono-agent ; multi-agent via le plugin agentmemory |
+| **Portabilité** | Natif de Git, hors ligne d'abord, Markdown brut | Fichiers locaux ; les fournisseurs externes peuvent imposer un verrouillage cloud |
+| **Surcharge** | Pas de démon, nécessite une discipline d'enregistrement (sauf si automatisé) | Processus serveur + visualiseur UI, API REST, serveur MCP |
 
-## Storage formats
+## Formats de stockage
 
-**Engram** stores each memory as a typed Markdown file with YAML frontmatter, hash integrity checks, and an optional dependency graph (`depends_on`). A JSON index, graph, and sqlite-vec sidecar act as acceleration layers — Markdown is the source of truth.
+**Engram** stocke chaque mémoire sous forme de fichier Markdown typé avec un frontmatter YAML, des vérifications d'intégrité de hash et un graphe de dépendance facultatif (`depends_on`). Un index JSON, un graphe et un sidecar sqlite-vec agissent comme des couches d'accélération — Markdown est la source de vérité.
 
-**Hermes** compresses all persistent memory into two bounded files:
+**Hermes** compresse toute la mémoire persistante dans deux fichiers limités :
 
-- `~/.hermes/memories/MEMORY.md` — agent notes, capped at 2,200 characters
-- `~/.hermes/memories/USER.md` — user profile, capped at 1,375 characters
+- `~/.hermes/memories/MEMORY.md` — notes de l'agent, limitées à 2 200 caractères
+- `~/.hermes/memories/USER.md` — profil utilisateur, limité à 1 375 caractères
 
-Hard character limits force the agent to curate rather than accumulate. Session history is searchable via SQLite FTS5.
+Les limites strictes de caractères obligent l'agent à organiser plutôt qu'à accumuler. L'historique des sessions est interrogeable via SQLite FTS5.
 
-## Write model
+## Modèle d'écriture
 
-**Engram** — explicit human gate by default. Agents propose candidates; a human must approve before anything lands on disk. Secret and prompt-injection scanning happen at save time. Users can opt to automate this process by saving a rule to automatically save new proposed memories when a response completes.
+**Engram** — validation humaine explicite par défaut. Les agents proposent des candidats ; un humain doit approuver avant que quoi que ce soit ne soit écrit sur le disque. L'analyse des secrets et des injections de prompt a lieu au moment de l'enregistrement. Les utilisateurs peuvent choisir d'automatiser ce processus en enregistrant une règle pour enregistrer automatiquement les nouvelles mémoires proposées lorsqu'une réponse est terminée.
 
-**Hermes** — autonomous. The agent decides what to write and when, constrained only by the character caps. No human approval in the core loop.
+**Hermes** — autonome. L'agent décide quoi écrire et quand, contraint uniquement par les limites de caractères. Pas d'approbation humaine dans la boucle principale.
 
-## Recall model
+## Modèle de rappel
 
-**Engram** — on-demand routing. `engram load "<task>"` reranks candidates by tags, type, recency, graph, and optional vector signals, then injects a compact pack (default: 8 files) into context.
+**Engram** — routage à la demande. `engram load "<task>"` reclasse les candidats par balises, type, récence, graphe et signaux vectoriels facultatifs, puis injecte un package compact (par défaut : 8 fichiers) dans le contexte.
 
-**Hermes** — always-active injection. Core files are frozen into the system prompt at session start. An optional external provider (e.g. agentmemory) runs a prefetch before each LLM turn and syncs after.
+**Hermes** — injection toujours active. Les fichiers essentiels sont figés dans le system prompt au début de la session. Un fournisseur externe facultatif (par exemple, agentmemory) exécute une pré-lecture (prefetch) avant chaque tour de LLM et se synchronise après.
 
-## When to use which
+## Quand utiliser lequel
 
-**Use Engram** when you need auditable, human-reviewed memory; team sharing via Git; privacy guarantees; or agent-agnostic portability across tools (with the option to automate saves via custom rules).
+**Utilisez Engram** lorsque vous avez besoin d'une mémoire auditable et révisée par des humains ; partage d'équipe via Git ; garanties de confidentialité ; ou portabilité indépendante de l'agent à travers les outils (avec l'option d'automatiser les enregistrements via des règles personnalisées).
 
-**Use Hermes** when you want memory that accumulates automatically without save discipline, always-on context injection, or a richer runtime with viewers, REST API, and pluggable vector backends.
+**Utilisez Hermes** lorsque vous souhaitez une mémoire qui s'accumule automatiquement sans discipline d'enregistrement, une injection de contexte toujours active, ou un environnement d'écriture/visualisation plus riche avec des visualiseurs, une API REST et des backends vectoriels connectables.
 
-## Next steps
+## Étapes suivantes
 
 - [agentmemory](agentmemory.md)
-- [Comparison overview](overview.md)
+- [Présentation des comparaisons](overview.md)

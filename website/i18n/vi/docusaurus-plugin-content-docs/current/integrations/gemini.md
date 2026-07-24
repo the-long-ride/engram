@@ -1,51 +1,51 @@
 ---
 title: Gemini
 sidebar_position: 4
-description: Tích hợp Engram với Gemini CLI và các bề mặt tương thích với Gemini của Antigravity.
+description: Engram integration with Gemini CLI and Antigravity Gemini-compatible surfaces.
 ---
 
 # Gemini
 
-Gemini CLI tìm kiếm các tệp `GEMINI.md` làm ngữ cảnh. Mục tiêu `slash` ghi `.gemini/commands/engram.toml` để `/engram <args>` trở thành một lệnh tùy chỉnh dự án trong Gemini CLI.
+Gemini CLI searches for `GEMINI.md` files as context. The `slash` target writes `.gemini/commands/engram.toml` so `/engram <args>` becomes a project custom command in Gemini CLI.
 
-Engram cũng xử lý `gemini` như mục tiêu được công bố cho Antigravity 2.0, Antigravity CLI và Antigravity IDE bởi vì các tài liệu hiện tại của Google vẫn gắn ngữ cảnh và skill của Antigravity với các vị trí tương thích với Gemini. Các tên mục tiêu ẩn như `antigravity` và `antigravity-cli` vẫn là các đường dẫn tương thích rõ ràng, nhưng chúng không được hiển thị trong `engram link list`, trợ giúp, hoàn thành lệnh, hoặc `all`.
+Engram also treats `gemini` as the advertised target for Antigravity 2.0, Antigravity CLI, and Antigravity IDE because current Google docs still tie Antigravity context and skills to Gemini-compatible locations. The hidden `antigravity` and `antigravity-cli` target names remain explicit compatibility paths, but they are not shown in `engram link list`, help, completion, or `all`.
 
-## Cài đặt
+## Install
 
 ```bash
 engram link gemini
 ```
 
-## Các tệp được ghi
+## Files written
 
-| Tệp | Mục đích |
+| File | Purpose |
 | --- | --- |
-| `GEMINI.md` | Khởi tạo ngữ cảnh dự án |
-| `.gemini/commands/engram.toml` | Bộ điều hợp slash `/engram` |
-| `.gemini/settings.json` | Các hook `SessionStart` và `BeforeAgent` |
-| Gemini MCP config | Đăng ký MCP |
+| `GEMINI.md` | Project context bootstrap |
+| `.gemini/commands/engram.toml` | `/engram` slash adapter |
+| `.gemini/settings.json` | `SessionStart` and `BeforeAgent` hooks |
+| Gemini MCP config | MCP registration |
 
-## Cài đặt toàn cục
+## Global install
 
 ```bash
 engram link --global gemini
 ```
 
-Ghi `~/.gemini/GEMINI.md`, `~/.gemini/skills/engram/SKILL.md`, và tệp cấu hình Gemini MCP.
+Writes `~/.gemini/GEMINI.md`, `~/.gemini/skills/engram/SKILL.md`, and the Gemini MCP config file.
 
-## Mục tiêu ưu tiên runtime
+## Runtime-first target
 
-Gemini là một mục tiêu ưu tiên runtime. `GEMINI.md` chứa hướng dẫn khởi tạo ngắn gọn dựa vào các công cụ MCP và hook để thực hiện giao thức chi tiết; tệp Agent Skill đảm nhận toàn bộ luồng ghi/phê duyệt.
+Gemini is a runtime-first target. `GEMINI.md` contains short bootstrap instructions that rely on MCP tools and hooks for detailed protocol; the Agent Skill file carries the full write/approval workflow.
 
-## Hành vi hook
+## Hook behavior
 
-Gemini hỗ trợ khởi động và chèn `hookSpecificOutput.additionalContext` tại thời điểm prompt thông qua các sự kiện `SessionStart` và `BeforeAgent`.
+Gemini supports startup and prompt-time `hookSpecificOutput.additionalContext` injection via `SessionStart` and `BeforeAgent` events.
 
-## Khả năng tương thích với Antigravity
+## Antigravity compatibility
 
-Đối với các hook, `gemini` cũng là phương án dự phòng Antigravity công khai. Các mục tiêu hook bị ẩn như `antigravity` và `antigravity-cli` được chuẩn hóa theo hành vi và đường dẫn hook của Gemini cho đến khi Google công bố tài liệu chính thức và ổn định về cấu hình/hook của Antigravity.
+For hooks, `gemini` is also the public Antigravity fallback. The hidden `antigravity` and `antigravity-cli` hook targets normalize to Gemini hook behavior and paths until Google publishes stable primary Antigravity hook/config documentation.
 
-## Các bước tiếp theo
+## Next steps
 
-- [Tổng quan về tích hợp Agent](overview.md)
-- [Hook và dòng kiểm chứng](hooks.md)
+- [Agent Integrations overview](overview.md)
+- [Hooks and proof lines](hooks.md)

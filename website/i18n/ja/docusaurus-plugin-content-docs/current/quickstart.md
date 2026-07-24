@@ -1,175 +1,181 @@
 ---
-title: "AIエージェント クイックスタート"
+title: AI-Agent Quickstart
 sidebar_position: 2
-description: "AIエージェントを介してEngramを使い始めましょう。メモリをロードし、作業を行い、有用な情報が現れたときに永続メモリを提案します。"
+description: Start using Engram through your AI agent. Load memory, do the work, then propose durable memory when something useful emerges.
 ---
 
-# AI エージェントクイックスタート
+# AI-Agent Quickstart
 
-## AIチャットでの承認
+Use Engram through your agent first. The CLI exists, but the best experience is: ask the agent to load memory, do the work, then propose durable memory when something useful emerges.
 
-AIエージェントとのチャットでは、Engram の承認は会話型です。エージェントはまず洗練した `TYPE: ... | TEXT: ...` 候補を表示し、ルールでは Light/Balanced/Strict の各バリアントも示します。正確にその候補を保存するには `yes`、修正するには `audit`、中止するには `cancel` と返信します。`yes` の後、エージェントは承認された候補そのままで `engram save-session --force` を使います。直接の CLI 保存は、accept-all コマンドが明示的に呼ばれていない限り、引き続き A/B/C を使います。
+## AI-agent chat approval
 
+In AI-agent chat, Engram approval is conversational. The agent shows refined `TYPE: ... | TEXT: ...` candidates first, including Light/Balanced/Strict variants for rules. Reply `yes` to save the exact candidates, `audit` to revise them, or `cancel` to stop. After `yes`, the agent uses `engram save-session --force` with the exact approved candidates. Direct terminal CLI saves still use A/B/C unless a force command was explicitly invoked.
 
-まずはエージェントを通じて Engram を使用してください。CLI も存在しますが、最も良い体験は、エージェントにメモリを読み込ませ、作業を行い、何か有用なものが得られたらエージェントに永続メモリを提案させることです。
+## First message in a new session
 
-## 新しいセッションでの最初のメッセージ
-
-以下のように尋ねます：
-
-```text
-このタスクには Engram を使用してください。次のメモリをロードしてください: <行っていること>
-```
-
-スラッシュアダプターがインストールされている場合：
+Ask:
 
 ```text
-/engram load "<現在のタスク>"
+Use Engram for this task. Load memory for: <what we are doing>.
 ```
 
-エージェントは各ファイルの内容をすべて貼り付けるのではなく、関連するメモリ識別子（ID）とルールのみを要約する必要があります。
+If slash adapters are installed:
 
-エージェントが自己完結型の Engram 使用ガイドを必要とするときは、以下を実行します。
+```text
+/engram load "<current task>"
+```
+
+The agent should reply with a compact count line by default, such as `Engram loaded: 8 memories / 24 total related memories.` With slash adapters, `load` is the agent-facing route.
+
+When an agent needs a self-contained Engram usage guide, run:
 
 ```bash
 engram llm
 ```
 
-これにより、パッケージ化された `llm.txt` ガイドが印刷され、`engram inject` は不要です。
+This prints the packaged `llm.txt` guide and does not require `engram inject`.
 
-## 推奨されるセットアップ時の会話
+## Recommended setup conversation
 
-エージェントに以下のように依頼します：
+Ask the agent:
 
 ```text
-このワークスペース用に Engram を初期化し、このエージェントに適したスキルセット（skillset）をインストールして、次にどのコマンドを使用すべきか教えてください。
+Inject Engram memory routing for this workspace, configure it, and connect this agent.
 ```
 
-エージェントは以下を実行できます。
+The agent will suggest running:
+
+```bash
+engram entry
+```
+
+To configure memory and link AI agents in a clean web UI. Under the hood, to initialize the workspace:
 
 ```bash
 engram inject
-engram help link
-engram link <エージェント名>
 ```
 
-同じエージェントにグローバルで教え込み、新しいワークスペースが最初に `engram inject` を実行しなくても Engram グローバルメモリをロードできるようにするには、以下を実行します。
+To link the same agent globally, so new workspaces can load Engram global memory without running `engram inject` first:
 
 ```bash
-engram link --global <エージェント名>
+engram link --global <agent-name>
 ```
 
-チャットで直接使う場合は、以下のように尋ねます：
+For chat-native use, ask:
 
 ```text
-このエージェントから直接 /engram を使用できるように、スラッシュコマンドのサポートをインストールしてください。
+Install slash support so I can use /engram directly from this agent.
 ```
 
-## 日常のルーティン
+## Daily loop
 
-開始時：
+Start:
 
 ```text
-/engram load "現在のタスク"
+/engram load "current task"
 ```
 
-作業中：
+During work:
 
 ```text
-/engram search "見落としているかもしれないトピック"
+/engram search "topic I might be missing"
 ```
 
-エージェントが永続的な事実を学んだとき：
+When the agent learns one durable fact:
 
 ```text
 /engram save knowledge
 ```
 
-セッションから役立つルール、事実、またはワークフローがいくつか生まれたとき：
+When the session produced several useful rules, facts, or workflows:
 
 ```text
 /engram save-session
 ```
 
-短縮形：
+Short form:
 
 ```text
 /engram ss
 ```
 
-エージェントが実際にアクセスできる直近のチャット履歴を含めたい場合：
+To include recent chat history the agent can actually access:
 
 ```text
 /engram save-session --query-level 3
 ```
 
-`--query-level` は正の整数でなければなりません。エージェントは現在のセッションを含め、その数までの直近の人間-エージェントチャットのみを使用でき、アクセスできない履歴を作り出してはいけません。
+`--query-level` must be a positive integer. The agent may use up to that many recent human-agent chat sessions, including the current one, and must not invent unavailable history.
 
-本当にすべての候補を保存したい場合のみ、一括承認（accept-all）のショートカットを使用します：
+Force shortcut only when you truly mean it:
 
 ```text
 /engram ss -f
 ```
 
-`-f` は、人間がエージェントの推奨するすべての候補を明示的に承認することを意味します。エージェントが自らこれを追加してはなりません。
+`-f` means the human explicitly approves every agent-recommended candidate. Agents must not add it by themselves.
 
-アクセス可能な直近チャットを抽出し、生成されたすべての候補を 1 つの依頼で承認する場合：
+To mine recent accessible chats and force-save generated candidates in one request:
 
 ```text
 /engram ss -f last 50 sessions
 ```
 
-これは `engram save-session --query-level 50 --force` に正規化されます。
+That normalizes to `engram save-session --query-level 50 --force`.
 
-## 既存の知識のインポート
+## Import existing knowledge
 
-すでに `AGENTS.md`、`CLAUDE.md`、Cursor のルール、メモ、またはドキュメントが存在するリポジトリの場合：
+For a repo that already has `AGENTS.md`, `CLAUDE.md`, Cursor rules, notes, or docs:
 
 ```text
 /engram take-control --plan
 /engram take-control --all
 ```
 
-選択されたファイル、スキップされたファイル、トークン見積もり、および想定されるメモリタイプを確認したい場合は、最初に `--plan` を使用します。
+Use `--plan` first when you want to see selected files, skipped files, token estimates, and likely memory types.
 
-## グローバルメモリ
+## Global memory
 
-リポジトリをまたいで適用したい設定には、グローバルメモリを使用します：
+Use global memory for preferences that should follow you across repos:
 
 ```text
-グローバルな Engram メモリを <path> にセットアップし、この設定をグローバルに保存してください:
+Set up global Engram memory at <path>, then save this preference globally:
 Use pnpm for package management.
 ```
 
-エージェントは以下を使用できます。
+The agent may use:
 
 ```bash
-engram inject --global-only --global-path <パス>
-engram save --scope global "パッケージ管理に pnpm を使用します。"
-engram link --global <エージェント名>
+engram inject --global-only --global-path <path>
+engram save --scope global "Use pnpm for package management."
+engram link --global <agent-name>
 ```
 
-inject が設定済みのグローバルメモリを検出すると、将来のワークスペースが再利用できるように、そのグローバルルートのユーザーデフォルトプロファイルを作成または選択します。
+When inject sees configured global memory, it creates or selects a user default profile for that global root so future workspaces can reuse it.
 
-## メモリの健康維持
+## Keep it healthy
 
-意味のある作業の最後に、エージェントに以下のように尋ねます：
+Ask the agent at the end of meaningful work:
 
 ```text
-Engram のヘルスチェックを行い、無効なメモリを報告し、このセッションから保存する価値のあるものを提案してください。
+Check Engram health, report invalid memories, and propose anything worth saving from this session.
 ```
 
-便利なコマンド：
+Useful commands:
 
 ```bash
 engram upgrade
 engram upgrade --plan
 engram verify
 engram repair
-engram graph "<トピック>"
+engram graph "<topic>"
 engram quality-check
-engram archive --reason "<理由>" <id またはファイル>
+engram archive --reason "<why>" <id-or-file>
 ```
 
-次へ：[人間が所有するプロトコル](concepts/write-path.md)。
+## Next steps
 
+- [Daily workflow](daily-workflow.md)
+- [Install and configure](install.md)
+- [Human-owned protocol](concepts/protocol.md)

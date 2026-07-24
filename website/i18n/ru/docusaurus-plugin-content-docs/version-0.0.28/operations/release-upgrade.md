@@ -1,18 +1,18 @@
 ---
-title: Release and upgrade process
+title: Процесс релиза и обновления
 sidebar_position: 2
-description: Upgrade Engram packages and reconcile memory roots safely.
+description: Обновление пакетов Engram и безопасная сверка корней памяти.
 ---
 
-# Release and upgrade process
+# Процесс релиза и обновления
 
-## After an npm package update
+## После обновления npm-пакета
 
-The next normal Engram command quietly reconciles already-initialized workspace/global roots once for the new version. This covers release-to-release memory schema changes from v0.0.8 onward by refreshing generated help, memory indexes, graph files, and eligible vector sidecars when older metadata is detected.
+Следующая стандартная команда Engram без лишнего шума один раз сверяет уже инициализированные корни рабочего пространства и глобальные корни для новой версии. Это охватывает изменения схемы памяти от релиза к релизу, начиная с версии v0.0.8, путем обновления сгенерированной справки, индексов памяти, файлов графов и подходящих векторных сайдкаров при обнаружении устаревших метаданных.
 
-The startup check is intentionally cheap after the first run: it only reads small config markers when the current version is already recorded. It does not run from npm postinstall, create new memory roots, or replace human-authored files. Use `--no-auto-upgrade` or `ENGRAM_NO_AUTO_UPGRADE=1` to skip it for a command.
+Проверка при запуске намеренно сделана дешевой после первого запуска: она считывает только небольшие маркеры конфигурации, если текущая версия уже записана. Она не запускается из npm postinstall, не создает новых корней памяти и не заменяет файлы, созданные человеком. Используйте `--no-auto-upgrade` или `ENGRAM_NO_AUTO_UPGRADE=1`, чтобы пропустить её для конкретной команды.
 
-## Explicit upgrade
+## Явное обновление
 
 ```bash
 engram upgrade
@@ -20,21 +20,21 @@ engram upgrade --plan
 engram upgrade --latest
 ```
 
-`engram upgrade` refreshes generated workspace help, memory indexes, graph files, eligible vector sidecars, existing Engram-generated workspace skillset files, and registered global skillsets while preserving human-authored files.
+`engram upgrade` обновляет сгенерированную справку рабочего пространства, индексы памяти, файлы графов, подходящие векторные сайдкары, существующие файлы наборов навыков рабочего пространства, созданные Engram, и зарегистрированные глобальные наборы навыков, сохраняя при этом файлы, созданные вручную.
 
-`engram upgrade --latest` is stronger: it overwrites current Engram-managed linked agent artifacts for already-linked workspace agents and registered global installs, including instruction files, rules, MCP/plugin config, and managed hooks, so linked hosts pick up the new package output immediately.
+`engram upgrade --latest` действует сильнее: перезаписывает текущие связанные артефакты агентов под управлением Engram для уже связанных агентов рабочего пространства и зарегистрированных глобальных установок, включая файлы инструкций, правила, конфигурацию MCP/плагинов и управляемые хуки, чтобы связанные хосты немедленно получали новые выходные данные пакета.
 
-Use `--force` only when replacing generated Engram adapter files intentionally.
+Используйте `--force` только при намеренной замене сгенерированных файлов адаптеров Engram.
 
-## Skillset render profiles
+## Профили рендеринга наборов навыков (Skillset)
 
-For runtime-capable hosts, Engram installs small bootstrap instructions instead of the full protocol. Hooks provide routed task context, MCP tools provide load/search/proposal behavior, and slash adapters or Agent Skills carry detailed command workflows. Fallback targets without reliable runtime context injection still receive compact manual instructions.
+Для хостов с возможностью выполнения в рантайме Engram устанавливает небольшие инструкции загрузчика (bootstrap) вместо полного протокола. Хуки обеспечивают маршрутизацию контекста задач, инструменты MCP предоставляют функции загрузки, поиска и предложений, а слэш-адаптеры или Agent Skills выполняют подробные рабочие процессы команд. Резервные цели без надежного внедрения контекста выполнения рантайма по-прежнему получают компактные инструкции вручную.
 
-## SQLite config DB fallback
+## Резервный вариант с БД конфигурации SQLite
 
-Engram's SQLite config DB is an optimization for workspace/profile management. If the DB cannot be opened or initialized, normal read/write commands fall back to JSON config snapshots. DB-specific commands report SQLite as unavailable instead of blocking normal memory use.
+Конфигурационная БД SQLite в Engram — это оптимизация для управления рабочими пространствами и профилями. Если базу данных невозможно открыть или инициализировать, обычные команды чтения/записи переходят на использование снимков конфигурации JSON. Команды, зависящие от БД, сообщают о недоступности SQLite вместо блокирования стандартного использования памяти.
 
-## Next steps
+## Следующие шаги
 
-- [Troubleshooting](troubleshooting.md)
+- [Устранение неполадок](troubleshooting.md)
 - [CLI: inject / link / upgrade](../cli/inject-link-upgrade.md)

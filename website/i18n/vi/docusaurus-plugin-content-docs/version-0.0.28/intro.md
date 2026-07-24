@@ -1,69 +1,68 @@
 ---
-title: What is Engram?
+title: "Engram là gì?"
 sidebar_position: 1
-description: Engram is a human-owned memory protocol for AI agents. Memory lives as approved Markdown files humans can inspect, review, and sync.
+description: "Engram là một giao thức bộ nhớ do con người sở hữu dành cho các tác nhân AI (AI agents). Giao thức này lưu giữ kiến thức bền vững dưới dạng các tệp tin mà con người có thể kiểm tra và xem xét."
 ---
 
-# What is Engram?
+# Engram
 
-Engram is a **human-owned memory protocol for AI agents**. It keeps durable project, team, and personal knowledge in files that humans can inspect, review, sync, and repair.
+Engram là một giao thức bộ nhớ do con người sở hữu dành cho các tác nhân AI (AI agents). Giao thức này lưu giữ kiến thức bền vững về dự án, nhóm và cá nhân dưới dạng các tệp tin mà con người có thể kiểm tra, xem xét, đồng bộ hóa và sửa chữa.
 
-Engram is not a hidden agent brain. The agent may propose memory, but the source of truth is approved Markdown under `.agents/.engram/` or an optional global memory folder.
+Engram không phải là một bộ não ẩn của tác nhân AI. Tác nhân AI có thể đề xuất bộ nhớ, nhưng nguồn sự thật (source of truth) duy nhất luôn là các tệp Markdown đã được phê duyệt nằm trong thư mục `.agents/.engram/` hoặc một thư mục bộ nhớ toàn cục (global) tùy chọn.
 
-## What problem it solves
+## Vấn Đề Engram Giải Quyết
 
-AI agents forget project decisions, repeat setup questions, and mix old context with new instructions. Built-in memory is often private to one vendor, one app, or one machine.
+Các tác nhân AI thường quên các quyết định của dự án, lặp lại các câu hỏi thiết lập và trộn lẫn ngữ cảnh cũ với các hướng dẫn mới. Bộ nhớ tích hợp sẵn thường thuộc quyền sở hữu riêng của một nhà cung cấp, một ứng dụng hoặc một máy tính cụ thể.
 
-Engram gives memory a stable contract:
+Engram mang lại cho bộ nhớ một hợp đồng ổn định:
 
-- approved facts, rules, and workflows live as Markdown
-- indexes and graphs make routing fast
-- writes require human approval
-- hashes reveal unsafe edits
-- ignore rules protect private context
-- profiles isolate company, client, and personal memory so external APIs or company-provided agents do not leak context across projects
-- Git gives history, portability, and team review
+- Các sự thật (facts), quy tắc (rules) và quy trình làm việc (workflows) đã được phê duyệt sẽ sống dưới dạng Markdown.
+- Các chỉ mục (indexes) và đồ thị (graphs) giúp tăng tốc độ định tuyến (routing).
+- Mọi thao tác ghi bộ nhớ đều yêu cầu sự phê duyệt của con người.
+- Các mã băm (hashes) giúp phát hiện những sửa đổi không an toàn.
+- Các quy tắc bỏ qua (ignore rules) bảo vệ các ngữ cảnh riêng tư.
+- Profile tách biệt bộ nhớ công ty, khách hàng và cá nhân để API bên ngoài hoặc tác nhân do công ty cấp không làm rò rỉ ngữ cảnh giữa các dự án.
+- Git cung cấp lịch sử thay đổi, tính di động và khả năng xem xét trong nội bộ nhóm.
 
-## Mental model
+## Mô Hình Nhận Thức
 
-Think of Engram as a knowledge memory center:
+Hãy nghĩ về Engram như một trung tâm lưu trữ kiến thức:
 
-| Layer | Job |
+| Lớp | Vai trò |
 | --- | --- |
-| Markdown | durable source of truth |
-| JSON index | fast lookup layer |
-| JSON graph | topic and relationship routing layer |
-| Approval gate | trust boundary before writes |
-| Hashes | integrity checks before reads |
-| Ignore rules | privacy controls |
-| Git | audit history and sync |
-| Agent adapters | convenience, not authority |
+| Markdown | Nguồn sự thật bền vững |
+| JSON index | Lớp tra cứu nhanh |
+| JSON graph | Lớp định tuyến chủ đề và mối quan hệ |
+| Approval gate | Ranh giới tin cậy trước khi ghi bộ nhớ |
+| Hashes | Kiểm tra tính toàn vẹn trước khi đọc |
+| Ignore rules | Kiểm soát quyền riêng tư |
+| Git | Lịch sử kiểm toán và đồng bộ hóa |
+| Agent adapters | Tiện ích kết nối, không có quyền quyết định |
 
-## Scope priority
+## Thứ Tự Ưu Tiên Phạm Vi
 
-Engram resolves memory in this order:
+Engram phân giải bộ nhớ theo thứ tự sau:
 
-1. Workspace memory: `<project>/.agents/.engram/`
-2. Global memory: `$ENGRAM_GLOBAL_DIR` or `engram inject --global-path <path>`
+1. Bộ nhớ không gian làm việc (workspace): `<project>/.agents/.engram/`
+2. Bộ nhớ toàn cục (global): `$ENGRAM_GLOBAL_DIR` hoặc `engram inject --global-path <đường_dẫn>`
 
-Workspace memory wins. Global memory is fallback for reusable preferences and team context across projects.
+Bộ nhớ workspace luôn giành chiến thắng. Bộ nhớ global đóng vai trò là phương án dự phòng (fallback) cho các thiết lập có thể tái sử dụng và ngữ cảnh chung của nhóm trên nhiều dự án.
 
-## Current shape
+## Trạng Thái Hiện Tại
 
-Engram includes:
+Engram bao gồm:
 
-- `save` for one approved memory
-- `save-session` / `ss` for several memories from a session
-- `observe` for raw notes that are not active memory yet
-- `take-control` for importing existing agent guidance and docs
-- `graph` and `quality-check` for review signals
-- `archive` for wrong or superseded memory
-- `repair` for invalid memory files skipped by index rebuild
-- `benchmark` for retrieval regression checks
-- agent skillsets, slash adapters, and MCP-style proposal tools
+- `save` để lưu trữ một bộ nhớ đã phê duyệt.
+- `save-session` / `ss` để lưu nhiều bộ nhớ rút ra từ một phiên làm việc, với `--query-level <n>` tùy chọn để khai thác tối đa n phiên chat gần đây mà tác nhân có thể truy cập; `/engram ss -f last 50 sessions` được chuẩn hóa thành `engram save-session --query-level 50 --force`.
+- `observe` để ghi lại các ghi chú thô chưa được đưa vào bộ nhớ hoạt động.
+- `take-control` để nhập (import) các hướng dẫn và tài liệu hiện có của tác nhân AI.
+- `graph` và `quality-check` để cung cấp các tín hiệu xem xét cấu trúc bộ nhớ.
+- `archive` để đưa các bộ nhớ sai hoặc đã bị thay thế ra khỏi định tuyến hoạt động.
+- `repair` để phát hiện các tệp bộ nhớ bị lỗi cấu trúc bị bỏ qua khi xây dựng lại chỉ mục.
+- `benchmark` để kiểm tra độ suy giảm hiệu suất truy xuất (retrieval regression).
+- Các bộ kỹ năng tác nhân (skillsets), bộ điều hợp lệnh slash, và các công cụ đề xuất kiểu MCP.
 
-## Next steps
+Trước khi sử dụng các lệnh, vui lòng đọc trang khái niệm: [Hiểu Về Engram](concepts/protocol.md).
 
-- [AI-agent quickstart](quickstart.md)
-- [Install and configure](install.md)
-- [Human-owned protocol](concepts/protocol.md)
+Tiếp theo: [Bắt đầu nhanh với tác nhân AI](quickstart.md).
+

@@ -1,59 +1,60 @@
 ---
-title: Memory types
+title: Types de mémoire
 sidebar_position: 2
-description: Engram memory is typed — Rule, Skill, and Knowledge — so routing and review stay focused.
+description: La mémoire Engram est typée — Rule, Skill et Knowledge — afin que le routage et la révision restent ciblés.
 ---
 
-# Memory types
+# Types de mémoire
 
-Every active Engram memory has a type. The type controls routing, review, and how the memory is rendered to agents.
+Chaque mémoire Engram active a un type. Le type contrôle le routage, la révision et la façon dont la mémoire est présentée aux agents.
 
-| Type | Use |
+| Type | Utilisation |
 | --- | --- |
-| Rule | user preference, correction, constraint, always/never guidance |
-| Skill | repeatable workflow, checklist, procedure, runbook |
-| Knowledge | objective project fact, decision, implementation detail |
+| Rule | préférence de l'utilisateur, correction, contrainte, directive toujours/jamais |
+| Skill | flux de travail reproductible, liste de contrôle, procédure, guide pratique (runbook) |
+| Knowledge | fait objectif du projet, décision, détail d'implémentation |
 
-Every active memory file has `Context`, `Content`, and `Example` sections. Rule memories also target concise line limits so loaded guidance stays useful.
+Chaque fichier de mémoire actif comporte des sections `Context`, `Content` et `Example`. Les mémoires de type Rule visent également des limites de lignes concises afin que les directives chargées restent utiles.
 
-## Good memory
+## Bonne mémoire
 
-Good Engram memory is:
+Une bonne mémoire Engram est :
 
-- stable enough to matter next week
-- specific enough to route later
-- short enough to load into an agent context
-- safe enough to share with the intended scope
-- written as a rule, workflow, or knowledge item
+- assez stable pour être utile la semaine prochaine
+- assez spécifique pour être routée plus tard
+- assez courte pour être chargée dans le contexte d'un agent
+- assez sûre pour être partagée avec la portée prévue
+- rédigée sous forme de règle, de flux de travail ou d'élément de connaissance
 
-Bad memory is temporary chat noise, secrets, credentials, one-off speculation, or facts that nobody has approved.
+Une mauvaise mémoire correspond au bruit temporaire des discussions, aux secrets, aux identifiants, aux spéculations ponctuelles ou aux faits que personne n'a approuvés.
 
-## Rule variants
+## Variantes de règles
 
-Engram always saves rule memories with light, balanced, and strict versions. Rule variant mode is a render lens for agent-facing memory:
+Engram sauvegarde toujours les mémoires de règles en versions légères (light), équilibrées (balanced) et strictes (strict). Le mode variante de règle est un filtre de rendu pour la mémoire destinée à l'agent :
 
-- **Strict** helps lower-tier models stay controlled.
-- **Light** or **balanced** wording usually helps stronger models so rules do not limit their reasoning.
+- **Strict** aide les modèles de niveau inférieur à rester contrôlés.
+- **Light** ou **balanced** aide généralement les modèles plus puissants afin que les règles ne limitent pas leur raisonnement.
 
-When variants are off, Engram renders balanced rule wording by default. Tune with:
+Lorsque les variantes sont désactivées, Engram affiche par défaut la formulation équilibrée de la règle. Ajustez avec :
 
 ```bash
 engram set-rule-variant strict|balanced|light|off
 ```
 
-## Compact output by default
+## Sortie destinée aux agents (`--full`)
 
-When `engram load "<task>"` runs, the output is slimmed for AI agents by default:
+Lorsque `engram load "<task>"` est exécuté, la sortie est allégée pour les agents d'IA :
 
-| Aspect | Default (`engram load`) | Full (`engram load --full`) |
+| Aspect | Humain (`engram load`) | Agent (`--full`) |
 | --- | --- | --- |
-| Frontmatter | Only `id`, `type`, `tags`, `confidence`, `depends_on` | All fields (id, type, tags, confidence, scope, author, created, updated, depends_on, etc.) |
-| Rule body | One selected variant under `## Rule variants (1/3 based on current: <active>)` | Full `## Rule Variants` section with all three variants |
-| Non-rule content | Same content, unchanged heading | Same content, unchanged heading |
+| Frontmatter | Tous les champs (id, type, tags, confidence, scope, author, created, updated, depends_on, etc.) | Uniquement `id`, `type`, `tags`, `confidence`, `depends_on` |
+| Corps de la règle | Section complète `## Rule Variants` avec les trois variantes | Une variante sélectionnée sous `## Rule variants (1/3 based on current: <active>)` |
+| Contenu hors règle | Section complète `## Content` | Même contenu, titre inchangé |
 
-MCP `engram_load` and SessionStart hooks use compact output by default. Pass `full: true` on the MCP tool or `engram load --full "<task>"` when broader legacy output is needed.
+L'outil MCP `engram_load` et les hooks SessionStart utilisent par défaut `--full` (désactivation via `full: true` sur l'outil MCP). Les adaptateurs de skillset codent en dur `--full` dans leurs instructions générées.
 
-## Next steps
+## Étapes suivantes
 
-- [Workspace vs global memory](scopes.md)
-- [Read path and routing](read-path.md)
+- [Mémoire de l'espace de travail vs mémoire globale](scopes.md)
+- [Chemin de lecture et routage](read-path.md)
+

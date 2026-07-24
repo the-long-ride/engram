@@ -1,29 +1,30 @@
 ---
 title: load / search / graph
 sidebar_position: 2
-description: Các lệnh đọc — tải bộ nhớ được định tuyến, tìm kiếm hầm chứa và kiểm tra định tuyến đồ thị.
+description: Read commands — load routed memory, search the vault, and inspect graph routing.
 ---
 
 # load / search / graph
 
-Các lệnh đọc giúp tải bộ nhớ được định tuyến, tìm kiếm hầm chứa và kiểm tra định tuyến đồ thị.
+Read commands load routed memory, search the vault, and inspect graph routing.
 
 ## load
 
 ```bash
 engram load "<task>"
-engram load "<task>"
+engram load --full "<task>"
 engram load --dry-run "<task>"
 engram load --all "<task>"
 ```
 
-`load` trước tiên sẽ neo định tuyến vào các từ khóa truy vấn có ý nghĩa, bỏ qua các từ nhớ chung chung như `rule`, `knowledge` và các từ dừng phổ biến. Sau đó, nó tinh chỉnh tập hợp ứng viên rộng hơn thành một gói ngữ cảnh nhỏ gọn. Lượt tải thông thường sẽ báo cáo số lượng đã chọn và tổng số liên quan, ví dụ `loaded 8 memory files / 14 total related memories`.
+`load` first anchors routing on meaningful query terms, ignoring generic memory words such as `rule`, `knowledge`, and common stopwords. It then refines the wider candidate pool into a compact context pack. Normal load reports selected and total related counts, like `loaded 8 memory files / 14 total related memories`.
 
-- `--full` — đường dẫn thu gọn dành cho tác nhân (chỉ có `id`, `type`, `tags`, `confidence`, `depends_on` trong frontmatter; một biến thể quy tắc được chọn)
-- `--dry-run` — hiển thị số lượng ứng viên, thẻ thu hẹp và lý do khớp mà không in nội dung
-- `--all` — trả về tất cả các kết quả khớp định tuyến hiển thị thay vì giới hạn thu gọn
+- default `load` — compact agent-facing route (only `id`, `type`, `tags`, `confidence`, `depends_on` in frontmatter; one selected rule variant)
+- `--full` — broader legacy output with full frontmatter and full rule variants
+- `--dry-run` — show candidate counts, narrowing tags, and match reasons without printing content
+- `--all` — return every visible routed match instead of the compact limit
 
-`workflow` và `workflows` vẫn định tuyến đến các bộ nhớ kỹ năng, nhưng các từ loại chung chung tự bản thân chúng không tạo nên kết quả khớp rộng.
+`workflow` and `workflows` still route to skill memories, but generic type words do not make a broad match by themselves.
 
 ## search
 
@@ -32,7 +33,7 @@ engram search "<topic>"
 engram search --semantic "<topic>"
 ```
 
-Tìm kiếm mặc định là tìm kiếm từ vựng mang tính quyết định. `search --semantic` bổ sung độ tương đồng cục bộ mang tính quyết định, không phải tìm kiếm ngữ nghĩa được hỗ trợ bởi embedding.
+Default search is deterministic lexical search. `search --semantic` adds deterministic local similarity, not embedding-backed semantic search.
 
 ## graph
 
@@ -41,21 +42,20 @@ engram graph "<topic>"
 engram graph --rebuild
 ```
 
-Kiểm tra định tuyến đồ thị. Chạy `engram graph --rebuild` sau khi chỉnh sửa thủ công. Đồ thị báo cáo các lớp phụ thuộc, và `engram load` kéo các điều kiện tiên quyết được định tuyến vào cùng một gói ngữ cảnh nhỏ gọn trước các bộ nhớ sâu hơn.
+Inspect graph routing. Run `engram graph --rebuild` after manual edits. The graph reports dependency layers, and `engram load` pulls routed prerequisites into the same compact context pack before deeper memories.
 
-Các cạnh liên quan trong đồ thị và kết quả khớp vector không tự động tải các bộ nhớ không liên quan; chúng chỉ giúp xếp hạng lại hoặc mở rộng các bộ nhớ đã trùng khớp với các từ khóa truy vấn có ý nghĩa. Các điều kiện tiên quyết `depends_on` rõ ràng vẫn có thể tải mà không cần từ khóa trùng khớp riêng của chúng.
+Graph related edges and vector hits cannot load unrelated memories by themselves; they only help rerank or expand memories that already overlap meaningful query terms. Explicit `depends_on` prerequisites may still load without their own keyword overlap.
 
-## Các lớp phụ thuộc (Dependency layers)
+## Dependency layers
 
 ```yaml
 depends_on: [release-foundation]
 level: advanced
 ```
 
-Sử dụng frontmatter `depends_on` khi một bộ nhớ nên được xây dựng trên một bộ nhớ khác thay vì lặp lại nó.
+Use `depends_on` frontmatter when a memory should build on another memory instead of repeating it.
 
-## Các bước tiếp theo
+## Next steps
 
 - [save / save-session / observe](save-session.md)
-- [Khái niệm: đường dẫn đọc và định tuyến](../concepts/read-path.md)
-
+- [Concepts: read path and routing](../concepts/read-path.md)

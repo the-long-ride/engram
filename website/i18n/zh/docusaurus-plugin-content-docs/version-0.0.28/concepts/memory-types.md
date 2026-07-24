@@ -1,59 +1,60 @@
 ---
-title: Memory types
+title: 内存类型
 sidebar_position: 2
-description: Engram memory is typed — Rule, Skill, and Knowledge — so routing and review stay focused.
+description: Engram 内存是有类型的 — Rule（规则）、Skill（技能）和 Knowledge（知识）— 从而使路由和审查保持专注。
 ---
 
-# Memory types
+# 内存类型
 
-Every active Engram memory has a type. The type controls routing, review, and how the memory is rendered to agents.
+每个活跃的 Engram 内存都有一个类型。该类型控制路由、审查以及内存如何呈现给智能体。
 
-| Type | Use |
+| 类型 | 用途 |
 | --- | --- |
-| Rule | user preference, correction, constraint, always/never guidance |
-| Skill | repeatable workflow, checklist, procedure, runbook |
-| Knowledge | objective project fact, decision, implementation detail |
+| Rule | 用户偏好、修正、约束、始终/绝不指导意见 |
+| Skill | 可重复的工作流、清单、步骤、操作手册 |
+| Knowledge | 客观的项目事实、决策、实现细节 |
 
-Every active memory file has `Context`, `Content`, and `Example` sections. Rule memories also target concise line limits so loaded guidance stays useful.
+每个活跃的内存文件都有 `Context`、`Content` 和 `Example` 部分。规则内存还以简洁的行数限制为目标，以便加载的指导意见保持实用性。
 
-## Good memory
+## 好的内存
 
-Good Engram memory is:
+好的 Engram 内存是：
 
-- stable enough to matter next week
-- specific enough to route later
-- short enough to load into an agent context
-- safe enough to share with the intended scope
-- written as a rule, workflow, or knowledge item
+- 足够稳定，下周依然有用
+- 足够具体，以后可以进行路由
+- 足够简短，可以加载到智能体上下文中
+- 足够安全，可以与预期的范围共享
+- 写成规则、工作流或知识项
 
-Bad memory is temporary chat noise, secrets, credentials, one-off speculation, or facts that nobody has approved.
+差的内存是临时的聊天噪音、秘密、凭据、一次性推测或未经任何人批准的事实。
 
-## Rule variants
+## 规则变体
 
-Engram always saves rule memories with light, balanced, and strict versions. Rule variant mode is a render lens for agent-facing memory:
+Engram 总是保存轻量版（light）、平衡版（balanced）和严格版（strict）的规则内存。规则变体模式是面向智能体内存的渲染滤镜：
 
-- **Strict** helps lower-tier models stay controlled.
-- **Light** or **balanced** wording usually helps stronger models so rules do not limit their reasoning.
+- **Strict** 帮助低阶模型保持受控。
+- **Light** 或 **balanced** 措辞通常对更强大的模型有帮助，使规则不会限制其推理能力。
 
-When variants are off, Engram renders balanced rule wording by default. Tune with:
+当关闭变体时，Engram 默认渲染平衡版的规则措辞。使用以下命令进行调整：
 
 ```bash
 engram set-rule-variant strict|balanced|light|off
 ```
 
-## Compact output by default
+## 面向智能体的输出 (`--full`)
 
-When `engram load "<task>"` runs, the output is slimmed for AI agents by default:
+当运行 `engram load "<task>"` 时，输出会针对 AI 智能体进行精简：
 
-| Aspect | Default (`engram load`) | Full (`engram load --full`) |
+| 方面 | 人类 (`engram load`) | 智能体 (`--full`) |
 | --- | --- | --- |
-| Frontmatter | Only `id`, `type`, `tags`, `confidence`, `depends_on` | All fields (id, type, tags, confidence, scope, author, created, updated, depends_on, etc.) |
-| Rule body | One selected variant under `## Rule variants (1/3 based on current: <active>)` | Full `## Rule Variants` section with all three variants |
-| Non-rule content | Same content, unchanged heading | Same content, unchanged heading |
+| Frontmatter | 所有字段 (id, type, tags, confidence, scope, author, created, updated, depends_on 等) | 仅 `id`, `type`, `tags`, `confidence`, `depends_on` |
+| 规则正文 | 包含所有三个变体的完整 `## Rule Variants` 部分 | 在 `## Rule variants (1/3 based on current: <active>)` 下选择的一个变体 |
+| 非规则内容 | 完整的 `## Content` 部分 | 相同内容，标题未更改 |
 
-MCP `engram_load` and SessionStart hooks use compact output by default. Pass `full: true` on the MCP tool or `engram load --full "<task>"` when broader legacy output is needed.
+MCP `engram_load` 和 SessionStart 钩子默认使用 `--full`（可在 MCP 工具上通过 `full: true` 选择退出）。技能集适配器在其生成的指令中硬编码了 `--full`。
 
-## Next steps
+## 下一步
 
-- [Workspace vs global memory](scopes.md)
-- [Read path and routing](read-path.md)
+- [工作空间内存 vs 全局内存](scopes.md)
+- [读取路径与路由](read-path.md)
+

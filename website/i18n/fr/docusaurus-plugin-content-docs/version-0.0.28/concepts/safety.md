@@ -1,45 +1,45 @@
 ---
-title: Privacy, ignore rules, and safety
+title: Confidentialité, règles d'exclusion et sécurité
 sidebar_position: 7
-description: Ignore rules, approval gates, hashes, and profiles protect private context from accidental capture.
+description: Les règles d'exclusion, les validations d'approbation, les hachages et les profils protègent le contexte privé contre la capture accidentelle.
 ---
 
-# Privacy, ignore rules, and safety
+# Confidentialité, règles d'exclusion et sécurité
 
-Engram is private by default. Several layers keep private context from leaking into durable memory or across profile boundaries.
+Engram est privé par défaut. Plusieurs couches empêchent le contexte privé de fuir dans la mémoire durable ou de franchir les limites des profils.
 
-## Approval gate
+## Validation d'approbation (Approval gate)
 
-Writes require human approval. Agents propose candidates; humans approve, reject, edit, or archive. Direct terminal CLI uses A/B/C. AI-agent chat uses `yes` / `audit` / `cancel`.
+Les écritures nécessitent une approbation humaine. Les agents proposent des candidats ; les humains les approuvent, les rejettent, les modifient ou les archivent. L'interface CLI directe en terminal utilise le système A/B/C. Le chat de l'agent d'IA utilise `yes` / `audit` / `cancel`.
 
-## Ignore rules
+## Regles d'exclusion (Ignore rules)
 
-Ignore rules are privacy controls. They hide irrelevant or sensitive entries from routing. Configure them in `.engramignore` and workspace memory config so private paths and patterns never enter the index.
+Les règles d'exclusion constituent des contrôles de confidentialité. Elles masquent les entrées non pertinentes ou sensibles lors du routage. Configurez-les dans le fichier `.engramignore` et dans la configuration de mémoire de l'espace de travail pour que les chemins et motifs privés ne soient jamais intégrés à l'index.
 
-## Hashes
+## Hachages (Hashes)
 
-Hashes are integrity checks. They run before content is printed and reveal unsafe edits that bypassed the normal write flow.
+Les hachages sont des contrôles d'intégrité. Ils sont exécutés avant l'affichage du contenu et révèlent les modifications non sécurisées ayant contourné le flux d'écriture normal.
 
-## Profiles
+## Profils
 
-Profiles isolate company, client, and personal memory so external APIs or company-provided agents do not leak context across projects. See [Profiles and scope resolution](profiles.md).
+Les profils isolent la mémoire de l'entreprise, des clients et personnelle afin que les API externes ou les agents d'entreprise ne fassent pas fuir le contexte d'un projet à l'autre. Voir [Profils et résolution de portée](profiles.md).
 
-## Secrets and injection scanning
+## Détection de secrets et d'injections
 
-At save time Engram checks:
+Au moment de la sauvegarde, Engram vérifie :
 
-- schema validation
-- secret scan
-- prompt-injection patterns
-- path safety
+- la validation du schéma
+- la détection de secrets (secrets scan)
+- les motifs d'injection de requêtes (prompt injection)
+- la sécurité des chemins
 
-## Limits to know
+## Limites à connaître
 
-Default Engram search is deterministic lexical search. `engram search --semantic` adds deterministic local similarity, not embedding-backed semantic search. Graph vectors are local hashed word vectors, not semantic embeddings. Contradiction detection is advisory. Encryption config exists, but encrypted storage is not implemented yet.
+La recherche par défaut d'Engram est une recherche lexicale déterministe. `engram search --semantic` ajoute une similarité locale déterministe, et non une recherche sémantique basée sur des plongements (embeddings). Les vecteurs du graphe sont des vecteurs de mots hachés locaux, pas des plongements sémantiques. La détection de contradictions est purement indicative. La configuration du chiffrement existe, mais le stockage chiffré n'est pas encore implémenté.
 
-These limits are intentional to state clearly. Engram should tell users what is real today and what is future work.
+Ces limites sont affichées de manière intentionnelle. Engram doit informer clairement les utilisateurs sur ce qui est disponible aujourd'hui et sur les travaux futurs.
 
-## Next steps
+## Étapes suivantes
 
-- [Write path and approval](./write-path.md)
-- [Operations troubleshooting](../operations/troubleshooting.md)
+- [Chemin d'écriture et approbation](./write-path.md)
+- [Résolution des problèmes d'exploitation](../operations/troubleshooting.md)

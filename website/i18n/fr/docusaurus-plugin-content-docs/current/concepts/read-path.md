@@ -1,58 +1,57 @@
 ---
-title: Chemin de lecture et routage
+title: Read path and routing
 sidebar_position: 5
-description: Engram charge les index locaux et globaux, applique des règles d'exclusion et des filtres de rôles, puis achemine un pack de contexte compact.
+description: Engram loads workspace and global indexes, applies ignore rules and role filters, then routes a compact context pack.
 ---
 
-# Chemin de lecture et routage
+# Read path and routing
 
-Le flux de lecture détermine quelle mémoire un agent voit pour une tâche donnée.
+The read flow decides which memory an agent sees for a given task.
 
-## Flux de lecture
+## Read flow
 
-1. Engram charge l'espace de travail et les index globaux optionnels.
-2. Les entrées de l'espace de travail l'emportent sur les doublons globaux.
-3. Les règles d'exclusion (ignore rules) et les filtres de rôle masquent les entrées non pertinentes.
-4. Un routage prenant en compte le graphe de dépendance sélectionne un pack de contexte compact.
-5. Des contrôles de hachage et de sécurité sont exécutés avant l'affichage du contenu.
+1. Engram loads workspace and optional global indexes.
+2. Workspace entries win over global duplicates.
+3. Ignore rules and role filters hide irrelevant entries.
+4. Graph-aware routing selects a compact context pack.
+5. Hash and safety checks run before content is printed.
 
-## Ancrer et affiner
+## Anchor and refine
 
-`load` ancre d'abord le routage sur des termes de requête significatifs, en ignorant les mots génériques relatifs à la mémoire comme `rule`, `knowledge`, ainsi que les mots vides (stopwords) courants. Il affine ensuite l'ensemble des candidats potentiels pour former un pack de contexte compact.
+`load` first anchors routing on meaningful query terms, ignoring generic memory words such as `rule`, `knowledge`, and common stopwords. It then refines the wider candidate pool into a compact context pack.
 
-Un chargement normal signale le nombre d'éléments sélectionnés et le total d'éléments liés, sous la forme : `loaded 8 memory files / 14 total related memories`.
+Normal load reports selected and total related counts, like `loaded 8 memory files / 14 total related memories`.
 
-- `load --dry-run` affiche le nombre de candidats, les étiquettes de restriction et les raisons des correspondances.
-- `load --all` renvoie toutes les correspondances routées visibles au lieu d'appliquer la limite du pack compact.
-- `load` représente la route compacte destinée aux agents.
+- `load --dry-run` shows candidate counts, narrowing tags, and match reasons.
+- `load --all` returns every visible routed match instead of applying the compact limit.
+- Default `load` is the agent-facing compact route. Use `load --full` for broader legacy output.
 
-`workflow` et `workflows` ciblent toujours les mémoires de compétences (skill memories), mais les termes de types génériques ne suffisent pas à eux seuls à établir une correspondance large.
+`workflow` and `workflows` still route to skill memories, but generic type words do not make a broad match by themselves.
 
-## Couches de dépendances
+## Dependency layers
 
-Utilisez la propriété `depends_on` du frontmatter lorsqu'une mémoire doit s'appuyer sur une autre mémoire plutôt que de la répéter :
+Use `depends_on` frontmatter when a memory should build on another memory instead of repeating it:
 
 ```yaml
 depends_on: [release-foundation]
 level: advanced
 ```
 
-Exécutez `engram graph --rebuild` après toute modification manuelle. Le graphe indique les couches de dépendance, et `engram load` intègre les prérequis routés dans le même pack de contexte compact avant les mémoires plus approfondies. Les liaisons du graphe et les correspondances vectorielles ne peuvent pas charger des mémoires non liées de manière autonome ; elles aident uniquement à reclasser ou à étendre les mémoires qui chevauchent déjà des termes de requête significatifs. Les prérequis explicitement définis via `depends_on` peuvent toujours être chargés même sans chevauchement de leurs propres mots-clés.
+Run `engram graph --rebuild` after manual edits. The graph reports dependency layers, and `engram load` pulls routed prerequisites into the same compact context pack before deeper memories. Graph related edges and vector hits cannot load unrelated memories by themselves; they only help rerank or expand memories that already overlap meaningful query terms. Explicit `depends_on` prerequisites may still load without their own keyword overlap.
 
-## Schéma de routage
+## Routing diagram
 
 ```mermaid
 flowchart LR
-  A[Requête de l'agent] --> B[Chargement index espace de travail + global]
-  B --> C[L'espace de travail l'emporte sur les doublons globaux]
-  C --> D[Règles d'exclusion + filtres de rôle]
-  D --> E[Routage prenant en compte le graphe]
-  E --> F[Contrôles de hachage + sécurité]
-  F --> G[Pack de contexte compact]
+  A[Agent request] --> B[Load workspace + global indexes]
+  B --> C[Workspace wins over global duplicates]
+  C --> D[Ignore rules + role filters]
+  D --> E[Graph-aware routing]
+  E --> F[Hash + safety checks]
+  F --> G[Compact context pack]
 ```
 
-## Étapes suivantes
+## Next steps
 
-- [Chemin d'écriture et approbation](write-path.md)
-- [CLI : load / search / graph](../cli/load-search-graph.md)
-
+- [Write path and approval](write-path.md)
+- [CLI: load / search / graph](../cli/load-search-graph.md)

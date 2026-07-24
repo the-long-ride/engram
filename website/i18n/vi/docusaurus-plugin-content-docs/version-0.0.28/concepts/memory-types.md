@@ -1,59 +1,60 @@
 ---
-title: Memory types
+title: Các loại bộ nhớ
 sidebar_position: 2
-description: Engram memory is typed — Rule, Skill, and Knowledge — so routing and review stay focused.
+description: Bộ nhớ Engram được phân loại — Rule (Quy tắc), Skill (Kỹ năng), và Knowledge (Kiến thức) — để quá trình định tuyến và đánh giá luôn tập trung.
 ---
 
-# Memory types
+# Các loại bộ nhớ
 
-Every active Engram memory has a type. The type controls routing, review, and how the memory is rendered to agents.
+Mỗi bộ nhớ Engram đang hoạt động đều có một loại cụ thể. Loại bộ nhớ sẽ kiểm soát việc định tuyến, đánh giá và cách bộ nhớ được hiển thị cho các agent.
 
-| Type | Use |
+| Loại | Cách dùng |
 | --- | --- |
-| Rule | user preference, correction, constraint, always/never guidance |
-| Skill | repeatable workflow, checklist, procedure, runbook |
-| Knowledge | objective project fact, decision, implementation detail |
+| Rule | Tùy chọn của người dùng, sửa lỗi, ràng buộc, hướng dẫn luôn/không bao giờ thực hiện |
+| Skill | Quy trình làm việc có thể lặp lại, danh sách kiểm tra, thủ tục, tài liệu hướng dẫn |
+| Knowledge | Sự thật khách quan của dự án, quyết định, chi tiết triển khai |
 
-Every active memory file has `Context`, `Content`, and `Example` sections. Rule memories also target concise line limits so loaded guidance stays useful.
+Mỗi tệp bộ nhớ đang hoạt động đều có các phần `Context` (Ngữ cảnh), `Content` (Nội dung) và `Example` (Ví dụ). Bộ nhớ dạng Rule cũng hướng tới giới hạn dòng ngắn gọn để các hướng dẫn được tải lên luôn hữu ích.
 
-## Good memory
+## Bộ nhớ tốt
 
-Good Engram memory is:
+Bộ nhớ Engram tốt là bộ nhớ:
 
-- stable enough to matter next week
-- specific enough to route later
-- short enough to load into an agent context
-- safe enough to share with the intended scope
-- written as a rule, workflow, or knowledge item
+- Đủ ổn định để vẫn còn giá trị trong tuần tới
+- Đủ cụ thể để định tuyến sau này
+- Đủ ngắn để tải vào ngữ cảnh của agent
+- Đủ an toàn để chia sẻ trong phạm vi dự kiến
+- Được viết dưới dạng một quy tắc (rule), quy trình làm việc (workflow) hoặc thông tin kiến thức (knowledge)
 
-Bad memory is temporary chat noise, secrets, credentials, one-off speculation, or facts that nobody has approved.
+Bộ nhớ xấu là những tạp âm trò chuyện tạm thời, thông tin bí mật, thông tin xác thực, suy đoán một lần hoặc các sự thật chưa được ai phê duyệt.
 
-## Rule variants
+## Các biến thể quy tắc (Rule variants)
 
-Engram always saves rule memories with light, balanced, and strict versions. Rule variant mode is a render lens for agent-facing memory:
+Engram luôn lưu trữ bộ nhớ quy tắc với các phiên bản nhẹ (light), cân bằng (balanced) và nghiêm ngặt (strict). Chế độ biến thể quy tắc là một thấu kính hiển thị cho bộ nhớ hướng tới agent:
 
-- **Strict** helps lower-tier models stay controlled.
-- **Light** or **balanced** wording usually helps stronger models so rules do not limit their reasoning.
+- **Strict** giúp các mô hình cấp thấp hơn được kiểm soát tốt hơn.
+- **Light** hoặc **balanced** thường giúp ích cho các mô hình mạnh hơn để các quy tắc không giới hạn khả năng suy luận của chúng.
 
-When variants are off, Engram renders balanced rule wording by default. Tune with:
+Khi các biến thể bị tắt, Engram sẽ hiển thị từ ngữ quy tắc cân bằng theo mặc định. Điều chỉnh bằng:
 
 ```bash
 engram set-rule-variant strict|balanced|light|off
 ```
 
-## Compact output by default
+## Đầu ra hướng tới Agent (`--full`)
 
-When `engram load "<task>"` runs, the output is slimmed for AI agents by default:
+Khi `engram load "<task>"` chạy, đầu ra sẽ được tinh giản cho các AI agent:
 
-| Aspect | Default (`engram load`) | Full (`engram load --full`) |
+| Khía cạnh | Con người (`engram load`) | Agent (`--full`) |
 | --- | --- | --- |
-| Frontmatter | Only `id`, `type`, `tags`, `confidence`, `depends_on` | All fields (id, type, tags, confidence, scope, author, created, updated, depends_on, etc.) |
-| Rule body | One selected variant under `## Rule variants (1/3 based on current: <active>)` | Full `## Rule Variants` section with all three variants |
-| Non-rule content | Same content, unchanged heading | Same content, unchanged heading |
+| Frontmatter | Tất cả các trường (id, type, tags, confidence, scope, author, created, updated, depends_on, v.v.) | Chỉ `id`, `type`, `tags`, `confidence`, `depends_on` |
+| Thân quy tắc | Toàn bộ phần `## Rule Variants` với cả ba biến thể | Một biến thể được chọn dưới phần `## Rule variants (1/3 based on current: <active>)` |
+| Nội dung không phải quy tắc | Toàn bộ phần `## Content` | Cùng nội dung, tiêu đề không đổi |
 
-MCP `engram_load` and SessionStart hooks use compact output by default. Pass `full: true` on the MCP tool or `engram load --full "<task>"` when broader legacy output is needed.
+MCP `engram_load` và hook SessionStart mặc định sử dụng `--full` (tắt thông qua `full: true` trên công cụ MCP). Các bộ điều hợp skillset mã hóa cứng `--full` trong các hướng dẫn được tạo của chúng.
 
-## Next steps
+## Bước tiếp theo
 
-- [Workspace vs global memory](scopes.md)
-- [Read path and routing](read-path.md)
+- [Bộ nhớ Workspace so với bộ nhớ Global](scopes.md)
+- [Đường dẫn đọc và định tuyến](read-path.md)
+

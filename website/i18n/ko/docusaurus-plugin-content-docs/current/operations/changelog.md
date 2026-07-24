@@ -1,24 +1,24 @@
 ---
-title: 변경 이력
+title: Changelog
 sidebar_position: 5
-description: Engram 릴리스 히스토리.
+description: Engram release history.
 ---
 
-# 변경 이력 (Changelog)
+# Changelog
 
-Engram 릴리스 히스토리는 [`CHANGELOG.md`](https://github.com/the-long-ride/engram/blob/main/CHANGELOG.md) 리포지토리에서 관리됩니다.
+Engram release history lives in the repository [`CHANGELOG.md`](https://github.com/the-long-ride/engram/blob/main/CHANGELOG.md).
 
-현재 패키지 버전은 [`package.json`](https://github.com/the-long-ride/engram/blob/main/package.json)을 참조하십시오.
+For the current package version, see [`package.json`](https://github.com/the-long-ride/engram/blob/main/package.json).
 
-## 현재 버전
+## Current version
 
-현재 릴리스된 Engram 버전은 `0.0.27`입니다.
+The current released Engram version is `0.0.28`.
 
-## 업그레이드
+## Upgrade
 
 ```bash
 npm install -g @the-long-ride/engram@latest
 engram upgrade
 ```
 
-자세한 내용은 [릴리스 및 업그레이드 프로세스](release-upgrade.md)를 참조하십시오.
+See [Release and upgrade process](release-upgrade.md) for details.

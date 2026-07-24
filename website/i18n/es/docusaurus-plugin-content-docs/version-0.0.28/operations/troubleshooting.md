@@ -1,40 +1,40 @@
 ---
-title: Troubleshooting
+title: Resolución de problemas
 sidebar_position: 3
-description: Common Engram problems and how to recover.
+description: Problemas comunes de Engram y cómo recuperarse.
 ---
 
-# Troubleshooting
+# Resolución de problemas
 
-First step: open `engram entry` and read the **Runtime** tab. It shows the resolved profile, memory roots, core config, routing, graph, and Git detection.
+Primer paso: abra `engram entry` y lea la pestaña **Runtime**. Muestra el perfil resuelto, raíces de memoria, configuración principal, enrutamiento, grafo y detección de Git.
 
-## Memory did not load
+## La memoria no se cargó
 
-- Run `engram load --dry-run "<task>"` to inspect candidate counts and narrowing tags.
-- Check `engram config view` for `enabled`, `read`, and `load.limit`.
-- Confirm workspace memory exists under `.agents/.engram/`.
-- Run `engram verify` to check hashes.
+- Ejecute `engram load --dry-run "<tarea>"` para inspeccionar recuentos de candidatos y etiquetas de limitación.
+- Verifique `engram config view` para `enabled`, `read` y `load.limit`.
+- Confirme que la memoria del espacio de trabajo existe en `.agents/.engram/`.
+- Ejecute `engram verify` para verificar los hashes.
 
-## Hooks not injecting
+## Hooks no inyectan
 
-- Confirm `engram set-read status` is not `off` or `manual`.
-- Confirm the host is linked: `engram link <target>`.
-- Restart or reload the host after `link`/`unlink` (especially OpenCode).
-- Check `engram set-proof status` for proof line visibility.
+- Confirme que `engram set-read status` no esté en `off` o `manual`.
+- Confirme que el host esté vinculado: `engram link <destino>`.
+- Reinicie o recargue el host después de `link`/`unlink` (especialmente OpenCode).
+- Verifique `engram set-proof status` para la visibilidad de la línea de prueba.
 
-## Save failed
+## Falló el guardado
 
-- Read the approval preview for related-memory hints.
-- If accept-all reported related memories, no file was saved. Rerun with `DEPENDS_ON` or `UPDATE` candidates.
-- Check schema, secret, and injection scan errors in the CLI output.
+- Lea la vista previa de aprobación para obtener pistas de memoria relacionada.
+- Si aceptar todo informó memorias relacionadas, no se guardó ningún archivo. Vuelva a ejecutar con candidatos `DEPENDS_ON` o `UPDATE`.
+- Verifique errores de esquema, secretos y escaneo de inyección en la salida de la CLI.
 
-## Profile confusion
+## Confusión de perfiles
 
-- Run `engram profile status`.
-- Confirm the workspace `default_profile` and active user profile.
-- Remember: an explicit profile different from the workspace default disables workspace memory for that command.
+- Ejecute `engram profile status`.
+- Confirme el `default_profile` del espacio de trabajo y el perfil de usuario activo.
+- Recuerde: un perfil explícito diferente del predeterminado del espacio de trabajo deshabilita la memoria del espacio de trabajo para ese comando.
 
-## Invalid memory files
+## Archivos de memoria no válidos
 
 ```bash
 engram verify
@@ -43,7 +43,7 @@ engram rebuild-index
 engram graph --rebuild
 ```
 
-## Stale adapters after package update
+## Adaptadores obsoletos después de la actualización del paquete
 
 ```bash
 engram upgrade
@@ -51,20 +51,20 @@ engram upgrade --latest
 engram link all
 ```
 
-Use `--force` only when replacing generated Engram adapter files intentionally.
+Use `--force` solo cuando reemplace intencionadamente archivos de adaptadores Engram generados.
 
-## SQLite config DB unavailable
+## Base de datos de configuración SQLite no disponible
 
-Normal read/write commands fall back to JSON config snapshots. DB-specific commands report SQLite as unavailable instead of blocking normal memory use.
+Los comandos normales de lectura/escritura recurren a instantáneas de configuración JSON. Los comandos específicos de la base de datos informan que SQLite no está disponible en lugar de bloquear el uso normal de la memoria.
 
-## Global Git sync issues
+## Problemas de sincronización global de Git
 
-- Confirm `global_git.enabled` is `true`.
-- Check `global_git.remote_url` is a valid Git remote URL.
-- Review `global_git.auto_resolve` — auto conflict handling can mask memory diffs.
-- Run `engram entry` and open the Construct tab, or run `engram config view`, to inspect resolved Git detection.
+- Confirme que `global_git.enabled` sea `true`.
+- Verifique que `global_git.remote_url` sea una URL remota de Git válida.
+- Revise `global_git.auto_resolve`: el manejo automático de conflictos puede ocultar los diffs de memoria.
+- Ejecute la pestaña Runtime de `engram entry` para inspeccionar `global_git_detected`.
 
-## Next steps
+## Siguientes pasos
 
-- [FAQ](faq.md)
+- [Preguntas frecuentes](faq.md)
 - [CLI: verify / repair / quality-check](../cli/verify-repair-quality.md)

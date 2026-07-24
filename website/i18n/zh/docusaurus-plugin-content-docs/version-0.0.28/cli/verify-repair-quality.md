@@ -1,12 +1,12 @@
 ---
 title: verify / repair / quality-check
 sidebar_position: 6
-description: Maintenance commands — verify hashes, repair invalid files, check quality, and resolve conflicts.
+description: 维护命令 — 验证哈希、修复无效文件、检查质量并解决冲突。
 ---
 
 # verify / repair / quality-check
 
-Maintenance commands keep memory healthy.
+维护命令可以保持内存健康。
 
 ## verify
 
@@ -14,7 +14,7 @@ Maintenance commands keep memory healthy.
 engram verify
 ```
 
-Checks hashes for integrity. Run after manual edits or imports.
+检查哈希的完整性。手动编辑或导入后运行。
 
 ## repair
 
@@ -23,7 +23,7 @@ engram repair
 engram rebuild-index
 ```
 
-Use `repair` after manual edits or imports to find malformed memory files skipped by index rebuild.
+在手动编辑或导入后使用 `repair`，以查找在索引重建中被跳过的畸形内存文件。
 
 ## quality-check
 
@@ -31,7 +31,7 @@ Use `repair` after manual edits or imports to find malformed memory files skippe
 engram quality-check
 ```
 
-Reports contradiction candidates compactly. Contradiction detection is heuristic and advisory.
+以紧凑的形式报告矛盾候选。矛盾检测是启发式和咨询性的。
 
 ## graph
 
@@ -40,7 +40,7 @@ engram graph "package manager"
 engram graph --rebuild
 ```
 
-Inspect graph routing before archiving. Run `engram graph --rebuild` after manual edits.
+在归档之前检查图路由。手动编辑后运行 `engram graph --rebuild`。
 
 ## archive
 
@@ -48,7 +48,7 @@ Inspect graph routing before archiving. Run `engram graph --rebuild` after manua
 engram archive --reason "Repo migrated to npm." rules/use-pnpm.md
 ```
 
-Archive wrong or superseded memory. Use archive, not delete, for auditability. The file leaves active routing only after approval and remains preserved under `archive/`.
+归档错误或被取代的内存。出于可审计性原因，使用归档而不是删除。该文件仅在批准后才离开活动路由，并保留在 `archive/` 下。
 
 ## resolve-conflicts
 
@@ -57,7 +57,7 @@ engram resolve-conflicts --dry-run --metacognize
 engram resolve-conflicts --metacognize
 ```
 
-Preview or resolve only Engram-owned workspace memory conflicts. Add `--metacognize` when an agent should review the memory folder after conflict handling. The command keeps deterministic conflict handling scoped to `.agents/.engram/`, then appends the workspace metacognize source pack for concise `TYPE/TEXT` candidates.
+仅预览或解决由 Engram 拥有的工作区内存冲突。当 Agent 在冲突处理后需要审查内存文件夹时，添加 `--metacognize`。该命令将确定性冲突处理限制在 `.agents/.engram/`，然后附加工作区自我审视源包以获取简明的 `TYPE/TEXT` 候选。
 
 ## benchmark
 
@@ -65,9 +65,9 @@ Preview or resolve only Engram-owned workspace memory conflicts. Add `--metacogn
 engram benchmark
 ```
 
-Retrieval regression checks.
+检索回归检查。
 
-## Next steps
+## 下一步
 
 - [sync / archive](sync-archive.md)
-- [Operations troubleshooting](../operations/troubleshooting.md)
+- [运行故障排除](../operations/troubleshooting.md)

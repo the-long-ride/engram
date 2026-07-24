@@ -1,63 +1,63 @@
 ---
-title: Connections tab
+title: Connections 标签页
 sidebar_position: 3
-description: Detect and link supported AI agents from the Entry Web UI.
+description: 从 Entry Web UI 检测并链接受支持的 AI 智能体（Agent）。
 ---
 
 import RiskCallout from '@site/src/components/RiskCallout';
 
-# Connections tab
+# Connections 标签页
 
-The Connections tab scans your machine for supported AI agent surfaces and lets you link Engram to each one at the workspace or global level.
+Connections 标签页会扫描您的机器以查找受支持的 AI 智能体界面，并允许您在工作区（workspace）或全局（global）级别将 Engram 链接到每个智能体。
 
-## Agent scan
+## 智能体扫描 (Agent scan)
 
-The tab shows a card per supported agent. Each card reports a detected or missing status.
+该标签页为每个受支持的智能体显示卡片。每个卡片报告已检测到（detected）或缺失（missing）状态。
 
-- **Detected** — Engram found a supported local agent surface (config path or app present).
-- **Missing** — Engram did not find the agent surface. Missing does not always mean unsupported; it can mean the app or config path is not present yet.
+- **Detected** — Engram 找到了受支持的本地智能体界面（配置文件路径或应用存在）。
+- **Missing** — Engram 未找到该智能体界面。缺失并不总是意味着不受支持；它可能意味着应用程序或配置文件路径尚未存在。
 
 <RiskCallout level="caution">
-Missing does not always mean unsupported. It can mean the app or config path is not present on this machine yet.
+缺失并不总是意味着不受支持。它可能意味着该机器上尚未存在该应用程序或配置文件路径。
 </RiskCallout>
 
-## Workspace link toggle {#workspace-link-toggle}
+## 工作区链接开关 (Workspace link toggle)
 
-Links Engram to the current repo/workspace for that agent. Use when memory should follow the repository: per-project rules, repo-specific memory, team-shared instructions.
+将 Engram 链接到该智能体的当前仓库/工作区。当内存应当跟随仓库时使用：每个项目的规则、特定仓库的内存、团队共享的指令。
 
-## Global link toggle {#global-link-toggle}
+## 全局链接开关 (Global link toggle)
 
-Links Engram globally for that agent. Use for personal memory, cross-project workflows, and reusable style/rules.
+为该智能体全局链接 Engram。用于个人内存、跨项目工作流以及可重用的样式/规则。
 
 <RiskCallout level="risky">
-Use global links carefully on shared machines. Engram writes managed blocks into shared instruction files. Review what files Engram writes per agent before linking globally.
+在共享机器上请谨慎使用全局链接。Engram 会将托管块写入共享指令文件中。在全局链接之前，请检查 Engram 为每个智能体写入了哪些文件。
 </RiskCallout>
 
-## What files Engram writes per agent
+## Engram 为每个智能体写入哪些文件
 
-| Target | File |
+| 目标 | 文件 |
 | --- | --- |
 | `codex` | `AGENTS.md`, `.agents/skills/engram/SKILL.md` |
 | `agents-md` | `AGENTS.md` |
-| `copilot` | `.github/copilot-instructions.md`; global: `~/.copilot/copilot-instructions.md` |
+| `copilot` | `.github/copilot-instructions.md`; 全局: `~/.copilot/copilot-instructions.md` |
 | `claude` | `CLAUDE.md` |
-| `cursor` | `.cursor/rules/engram.mdc`; global: `~/.cursor/plugins/local/engram/` |
-| `gemini` | `GEMINI.md`; global: `~/.gemini/GEMINI.md`, `~/.gemini/skills/engram/SKILL.md` |
+| `cursor` | `.cursor/rules/engram.mdc`; 全局: `~/.cursor/plugins/local/engram/` |
+| `gemini` | `GEMINI.md`; 全局: `~/.gemini/GEMINI.md`, `~/.gemini/skills/engram/SKILL.md` |
 | `cline` | `.clinerules` |
-| `windsurf` | `.windsurf/rules/engram.md`; global: `~/.codeium/windsurf/memories/global_rules.md` |
+| `windsurf` | `.windsurf/rules/engram.md`; 全局: `~/.codeium/windsurf/memories/global_rules.md` |
 | `opencode` | `AGENTS.md`, `.opencode/engram.md`, `.opencode/skills/engram/SKILL.md`, `opencode.json` |
-| `mcp` | `.mcp.json`; global: host MCP config files |
-| `slash` | `.claude/commands/engram.md`, `.claude/skills/engram/SKILL.md`, `.cursor/commands/engram.md`, `.gemini/commands/engram.toml`, `.opencode/commands/engram.md` |
+| `mcp` | `.mcp.json`; 全局: 主机 MCP 配置文件 |
+| `slash` | `.claude/commands/engram.md`, `.cursor/commands/engram.md`, `.gemini/commands/engram.toml`, `.opencode/commands/engram.md` |
 
-## When to unlink
+## 何时取消链接
 
-- Archiving a repo or test workspace
-- Switching an agent away from Engram
-- Cleaning stale managed blocks before a fresh `engram upgrade --latest`
+- 归档仓库或测试工作区
+- 将智能体切离 Engram
+- 在全新运行 `engram upgrade --latest` 之前清理过期的托管块
 
-`engram unlink` removes only Engram-managed hook entries and adapter files. Human-authored files are preserved unless `--force` is explicit.
+`engram unlink` 仅删除 Engram 托管的 hook 条目和适配器文件。除非显式指定 `--force`，否则保留人类编写的文件。
 
-## CLI equivalent
+## CLI 等效命令
 
 ```bash
 engram link codex
@@ -66,7 +66,7 @@ engram link --global opencode
 engram unlink
 ```
 
-## Next steps
+## 后续步骤
 
-- [Construct tab](construct.md)
-- [Agent Integrations overview](../integrations/overview.md)
+- [Construct 标签页](construct.md)
+- [智能体集成概述](../integrations/overview.md)

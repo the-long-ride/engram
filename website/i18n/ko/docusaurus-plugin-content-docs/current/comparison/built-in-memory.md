@@ -1,23 +1,23 @@
 ---
-title: 내장 에이전트 메모리
+title: Built-in agent memory
 sidebar_position: 2
-description: Engram은 내장 에이전트 메모리를 권한이 아닌 편의 레이어로 취급합니다.
+description: Engram treats built-in agent memory as a convenience layer, not the authority.
 ---
 
-# 내장 에이전트 메모
+# Built-in agent memory
 
-내장 에이전트 메모리는 편리하지만 종종 하나의 호스트에 종속됩니다. 다른 에이전트와 비교(diff), 내보내기, 검토 또는 공유하기가 어려울 수 있습니다.
+Built-in agent memory is convenient, but often tied to one host. It can be hard to diff, export, review, or share with another agent.
 
-Engram은 내장 메모리를 권한이 아닌 편의 레이어로 취급합니다. 최종 권한은 인간이 소유한 파일에 있습니다.
+Engram treats built-in memory as a convenience layer, not the authority. The authority remains files the human owns.
 
-| 차원 | Engram | 내장 에이전트 메모리 |
+| Dimension | Engram | Built-in agent memory |
 | --- | --- | --- |
-| 신뢰할 수 있는 소스 | 승인된 Markdown 파일 | 공급업체 소유의 숨겨진 상태 |
-| 이식성 | Git 네이티브, 에이전트 독립적 | 단일 앱 또는 계정에 종속됨 |
-| 검토 | Git diff 및 Markdown 검토 | 검사 또는 내보내기가 어려움 |
-| 가장 적합한 대상 | 소유권과 감사 가능성이 필요한 팀 | 단일 호스트 내의 빠른 개인 재현 |
+| Source of truth | Approved Markdown files | Vendor-owned hidden state |
+| Portability | Git-native, agent-agnostic | Tied to one app or account |
+| Review | Git diff and Markdown review | Hard to inspect or export |
+| Best fit | teams that need ownership and auditability | quick personal recall within one host |
 
-## 다음 단계
+## Next steps
 
 - [agentmemory](agentmemory.md)
-- [비교 개요](overview.md)
+- [Comparison overview](overview.md)

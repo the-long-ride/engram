@@ -1,39 +1,39 @@
 ---
-title: MCP 도구
+title: MCP tools
 sidebar_position: 11
-description: Engram MCP 서버는 로드, 검색 및 제안 전용 도구를 MCP 지원 호스트에 노출합니다.
+description: Engram MCP server exposes load, search, and proposal-only tools to MCP-capable hosts.
 ---
 
-# MCP 도구
+# MCP tools
 
-Engram은 MCP 지원 호스트에 도구를 노출하는 MCP 서버 바이너리 `engram-mcp`를 제공합니다.
+Engram ships an MCP server binary `engram-mcp` that exposes tools to MCP-capable hosts.
 
-## 등록
+## Registration
 
-`engram link <target>`은 기본적으로 해당 대상에 대해 알려진 MCP 등록도 설치합니다.
+`engram link <target>` also installs the known MCP registration for that target by default.
 
-| 범위 | 경로 |
+| Scope | Path |
 | --- | --- |
-| 워크스페이스 (대부분의 호스트) | `.mcp.json` |
-| Cursor 워크스페이스 | `.cursor/mcp.json` |
-| OpenCode 워크스페이스 | `opencode.json` / `opencode.jsonc` 의 `mcp` 필드 |
-| 글로벌 Claude | `~/.claude/mcp.json` |
-| 글로벌 Gemini / Antigravity | Gemini MCP 구성 파일 |
-| 글로벌 OpenCode | `~/.config/opencode/opencode.jsonc` / `opencode.json` 의 `mcp` 필드 |
-| 글로벌 Cursor | 로컬 플러그인에 번들됨 |
-| 글로벌 Windsurf | `~/.codeium/windsurf/mcp_config.json` |
+| Workspace (most hosts) | `.mcp.json` |
+| Cursor workspace | `.cursor/mcp.json` |
+| OpenCode workspace | `mcp` field in `opencode.json` / `opencode.jsonc` |
+| Global Claude | `~/.claude/mcp.json` |
+| Global Gemini / Antigravity | Gemini MCP config file |
+| Global OpenCode | `mcp` field in `~/.config/opencode/opencode.jsonc` / `opencode.json` |
+| Global Cursor | Bundled in the local plugin |
+| Global Windsurf | `~/.codeium/windsurf/mcp_config.json` |
 
-공식 문서에서 사용자 수준 MCP 구성만 다루고 있으므로 Windsurf 워크스페이스 MCP는 건너뜁니다.
+Windsurf workspace MCP is skipped because the official contract documents only user-level MCP config.
 
-## 도구
+## Tools
 
-MCP 호스트는 `engram_save` 및 `engram_autosave`를 **제안 전용** 도구로 취급해야 합니다. 최종 작성은 사람이 볼 수 있는 CLI 승인 워크플로우를 통해 라우팅해야 합니다. `engram_load`는 기본적으로 `--full`로 설정됩니다(`full: true`를 통해 선택 해제 가능).
+MCP hosts should treat `engram_save` and `engram_autosave` as **proposal-only** tools; they must still route final writes through the human-visible CLI approval flow. `engram_load` defaults to compact output; pass `full: true` for broader legacy output.
 
-## 모두 허용 규칙
+## Force rule
 
-단축키 `/engram ss -f`를 포함한 명시적인 `/engram save-session --force` 요청은 MCP 자동 저장이 제안 전용으로 유지되므로 CLI 쓰기 경로를 사용해야 합니다. 카운트된 단축키 `/engram ss -f last 50 sessions`는 `engram save-session --query-level 50 --force`을 사용해야 합니다.
+Explicit `/engram save-session --force` requests, including the shortcut `/engram ss -f`, should use the CLI write path because MCP autosave remains proposal-only. The counted shortcut `/engram ss -f last 50 sessions` should use `engram save-session --query-level 50 --force`.
 
-## OpenCode MCP 엔트리
+## OpenCode MCP entry
 
 ```json
 "engram": {
@@ -44,10 +44,9 @@ MCP 호스트는 `engram_save` 및 `engram_autosave`를 **제안 전용** 도구
 }
 ```
 
-MCP 서버는 표준 JSON-RPC 핸드셰이크(`initialize`, `notifications/initialized`, `tools/list` 및 `tools/call`)를 구현합니다.
+The MCP server implements the standard JSON-RPC handshake (`initialize`, `notifications/initialized`, `tools/list`, and `tools/call`).
 
-## 다음 단계
+## Next steps
 
-- [에이전트 통합 개요](overview.md)
-- [훅 및 검증 라인](hooks.md)
-
+- [Agent Integrations overview](overview.md)
+- [Hooks and proof lines](hooks.md)

@@ -1,24 +1,24 @@
 ---
-title: Slash adapters
+title: 슬래시 어댑터
 sidebar_position: 10
-description: Engram slash adapters expose /engram commands across Claude, Cursor, Gemini, and OpenCode.
+description: Engram 슬래시 어댑터는 Claude, Cursor, Gemini 및 OpenCode에 걸쳐 /engram 명령어를 노출합니다.
 ---
 
-# Slash adapters
+# 슬래시 어댑터
 
-The `slash` target writes native `/engram` slash adapters for hosts that support project slash commands or Agent Skills.
+`slash` 대상은 프로젝트 슬래시 명령어 또는 Agent Skills를 지원하는 호스트용 네이티브 `/engram` 슬래시 어댑터를 작성합니다.
 
-## Files written
+## 작성된 파일
 
-| File | Host |
+| 파일 | 호스트 |
 | --- | --- |
 | `.claude/commands/engram.md` | Claude Code |
-| `.claude/skills/engram/SKILL.md` | Claude Code (skill form) |
+| `.claude/skills/engram/SKILL.md` | Claude Code (스킬 형태) |
 | `.cursor/commands/engram.md` | Cursor |
 | `.gemini/commands/engram.toml` | Gemini CLI |
 | `.opencode/commands/engram.md` | OpenCode |
 
-## Common commands
+## 공통 명령어
 
 ```text
 /engram
@@ -32,8 +32,8 @@ The `slash` target writes native `/engram` slash adapters for hosts that support
 /engram ss -f
 /engram ss -f last 50 sessions
 /engram take-control
-/engram take control force
-/engram restructure workspace memory force
+/engram take control accept all
+/engram restructure workspace memory accept all
 /engram resolve conflicts and metacognize
 /engram graph release workflow
 /engram archive --reason "Superseded" knowledge/old-fact.md
@@ -41,24 +41,25 @@ The `slash` target writes native `/engram` slash adapters for hosts that support
 /engram verify
 ```
 
-## Behavior
+## 동작
 
-If the host exposes only one visible `/engram` command, bare `/engram` should return a compact menu of `load`, `search`, `save`, `propose`, `entry`, and `help` instead of running the CLI. `/engram propose` is a slash-level alias: normalize it to `engram save-session` over the current chat/session.
+호스트가 가시적인 하나의 `/engram` 명령어만 노출하는 경우, 매개변수가 없는 `/engram`은 CLI를 실행하는 대신 `load`, `search`, `save`, `propose`, `entry` 및 `help`가 포함된 컴팩트 메뉴를 반환해야 합니다. `/engram propose`는 슬래시 수준의 별칭입니다. 현재 채팅/세션에 대한 `engram save-session`으로 정규화합니다.
 
-`/engram ss -f` is the force shortcut. Agents must not add `--force` unless the human requested it.
+`/engram ss -f`는 모두 허용 단축키입니다. 에이전트는 사람이 요청하지 않는 한 `--force`을 추가해서는 안 됩니다.
 
-## Natural wording normalization
+## 자연어 정규화
 
-| Natural wording | Normalizes to |
+| 자연어 표현 | 정규화 형태 |
 | --- | --- |
 | `/engram auto save` | `engram save-session` |
-| `/engram take control force` | `engram take-control --force` |
-| `/engram restructure workspace memory force` | `engram metacognize --workspace --force` |
-| `/engram take control force metacognize` | `engram take-control --force --metacognize` |
+| `/engram take control accept all` | `engram take-control --force` |
+| `/engram restructure workspace memory accept all` | `engram metacognize --workspace --force` |
+| `/engram take control accept all metacognize` | `engram take-control --force --metacognize` |
 | `/engram resolve conflicts and metacognize` | `engram resolve-conflicts --metacognize` |
 | `/engram ss -f last 50 sessions` | `engram save-session --query-level 50 --force` |
 
-## Next steps
+## 다음 단계
 
-- [MCP tools](mcp.md)
-- [Hooks and proof lines](hooks.md)
+- [MCP 도구](mcp.md)
+- [훅 및 검증 라인](hooks.md)
+

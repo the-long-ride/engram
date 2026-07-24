@@ -1,250 +1,65 @@
 ---
-title: "Обзор команд"
+title: Command overview
 sidebar_position: 1
-description: "Карта каждой команды CLI Engram и того, что она делает."
+description: Map of every Engram CLI command and what it does.
 ---
 
-# Руководство по Эксплуатации
+# Command overview
 
-## Одобрение в чате с ИИ
+Run `engram -h` for the compact command surface. Run `engram help <topic>` or `engram -h <topic>` for command-specific examples and use cases.
 
-В чате с ИИ-агентом одобрение Engram является разговорным. Сначала агент показывает уточненные кандидаты `TYPE: ... | TEXT: ...`, а для правил также варианты Light/Balanced/Strict. Ответьте `yes`, чтобы сохранить именно эти кандидаты, `audit`, чтобы их исправить, или `cancel`, чтобы остановить процесс. После `yes` агент использует `engram save-session --force` с точно одобренными кандидатами. Прямые сохранения через CLI по-прежнему используют A/B/C, если только команда accept-all не была вызвана явно.
+## Command map
 
-
-Эта страница содержит подробную информацию по использованию, чтобы файл README оставался коротким.
-
-## Список Поддерживаемых Команд
-
-| Задача | Команда |
+| Need | Command |
 | --- | --- |
-| Загрузка памяти задачи | `engram load "<задача>"` |
-| Загрузка компактной памяти для агента | `engram load "<задача>"` |
-| Печать руководства ИИ-агента | `engram llm` |
-| Просмотр файлов маршрутизации | `engram load --dry-run "<задача>"` |
-| Поиск в памяти | `engram search "<тема>"` |
-| Сохранение одной записи | `engram save [rule\|workflow\|knowledge] "<текст>"` |
-| Сохранение памяти сессии | `engram save-session` или `engram ss` |
-| Сбор последних доступных чатов | `engram save-session --query-level 3` |
-| Одобрение всех кандидатов | `engram ss -f` |
-| Сбор и одобрение последних чатов | `engram ss -f last 50 sessions` |
-| Запись черновой заметки | `engram observe --file session.md` |
-| Импорт существующих документов | `engram take-control --all` |
-| Предварительный просмотр импорта | `engram take-control --plan` |
-| Импорт и самоанализ инструкций | `engram take-control --all --metacognize --force` |
-| Реструктуризация каталога памяти | `engram metacognize --workspace\|--global\|--all` |
-| Разрешение конфликтов и самоанализ | `engram resolve-conflicts --metacognize` |
-| Проверка маршрутизации графа | `engram graph "<тема>"` |
-| Проверка контрольных сумм | `engram verify` |
-| Поиск поврежденных файлов памяти | `engram repair` |
-| Архивация неверной записи | `engram archive --reason "<причина>" <id-или-файл>` |
-| Настройка строгости правил | `engram set-rule-variant strict\|balanced\|light\|off` |
-| Настройка места сохранения | `engram set-save-target workspace\|global\|both\|status` |
-| Настройка лимита загрузки | `engram set-load-limit 1..32\|status\|reset` |
-| Настройка авточтения хуков | `engram set-read startup\|auto\|always\|manual\|off\|status` |
-| Настройка доказательства хуков | `engram set-proof off\|compact\|status` |
-| Установка хуков агента | `engram link codex\|claude\|gemini\|opencode\|cursor\|windsurf` |
-| Управление глобальными профилями | `engram profile status\|create\|use\|merge` |
-| Клонирование памяти workspace/global | `engram clone-memory workspace global [--metacognize]` |
+| Load task memory | `engram load "<task>"` |
+| Load compact task memory | `engram load "<task>"` |
+| Print AI-agent usage guide | `engram llm` |
+| Preview routed memory files | `engram load --dry-run "<task>"` |
+| Search memory | `engram search "<topic>"` |
+| Save one memory | `engram save [rule\|workflow\|knowledge] "<text>"` |
+| Save several session memories | `engram save-session` or `engram ss` |
+| Mine recent accessible chats | `engram save-session --query-level 3` |
+| Force-save session candidates | `engram ss -f` |
+| Mine and force-save recent chats | `engram ss -f last 50 sessions` |
+| Capture raw note | `engram observe --file session.md` |
+| Convert existing docs/guidance | `engram take-control --all` |
+| Preview source takeover | `engram take-control --plan` |
+| Restructure existing memory folder | `engram metacognize --workspace\|--global\|--all` |
+| Resolve conflicts and metacognize | `engram resolve-conflicts --metacognize` |
+| Inspect graph routing | `engram graph "<topic>"` |
+| Check hashes | `engram verify` |
+| Find malformed memory files | `engram repair` |
+| Archive wrong memory | `engram archive --reason "<why>" <id-or-file>` |
+| Tune rule strength | `engram set-rule-variant strict\|balanced\|light\|off` |
+| Set default save target | `engram set-save-target workspace\|global\|both\|status` |
+| Set compact load limit | `engram set-load-limit 1..32\|status\|reset` |
+| Set automatic hook reads | `engram set-read startup\|auto\|always\|manual\|off\|status` |
+| Set hook proof visibility | `engram set-proof off\|compact\|status` |
+| Install agent hooks | `engram link codex\|claude\|gemini\|opencode\|cursor\|windsurf` |
+| Manage global profiles | `engram profile status\|list\|create\|use\|merge` |
+| Clone workspace/global memory | `engram clone-memory workspace global [--metacognize]` |
 
-Используйте `save-session` для предложений памяти в длинных сессиях. Краткая форма: `ss`.
-Используйте `--query-level <n>`, когда человек хочет, чтобы агент собрал до n последних доступных чатов человек-агент вместо только текущей сессии. Естественная формулировка, такая как `engram ss -f last 50 sessions`, преобразуется в `engram save-session --query-level 50 --force`.
-
-Используйте `load --dry-run`, когда вы хотите проверить, какие файлы памяти будут маршрутизироваться, без вывода их содержимого.
-Для контекста ИИ-агента используйте `load`: сохраняет только `id`, `type`, `tags` и `confidence` во frontmatter, рендерит один выбранный вариант правила и помечает как `## Rule variants (1/3 based on current: <active>)`.
-`load` по умолчанию сохраняет тот же компактный маршрут для хостов, ориентированных на агентов. Метод MCP `engram_load` по умолчанию использует `--full`, поэтому хосты агентов получают компактную форму без повторения флага. SessionStart хуки вызывают тот же маршрутизированный путь загрузки при запуске, затем повторно используют или пропускают при неизменной маршрутной сигнатуре.
-`load` сначала привязывает маршрутизацию к значимым поисковым терминам, игнорируя общие слова памяти, такие как `rule`, `knowledge`, и распространенные стоп-слова (stopwords). Затем он сужает более широкий пул кандидатов до компактного пакета контекста. Обычная загрузка сообщает о выбранном количестве и общем количестве связанных записей, например `loaded 8 memory files / 14 total related memories`. `load --dry-run` показывает количество кандидатов, теги сужения и причины совпадения; `load --all` возвращает каждое видимое сопоставленное воспоминание вместо применения лимита компактности.
-`workflow` и `workflows` по-прежнему маршрутизируются к воспоминаниям о навыках, но общие слова типов сами по себе не создают широкого соответствия.
-
-## Слои Зависимостей (Dependency Layers)
-
-Используйте frontmatter `depends_on`, когда одна запись должна строиться на основе другой вместо её повторения:
-
-```yaml
-depends_on: [release-foundation]
-level: advanced
-```
-
-Выполните `engram graph --rebuild` после ручного редактирования. Граф сообщает о слоях зависимостей, и `engram load` загружает маршрутизируемые предварительные требования в тот же компактный пакет контекста перед более глубокими воспоминаниями. Связанные ребра графа и векторные совпадения не могут сами по себе загрузить несвязанные воспоминания; они лишь помогают переранжировать или расширить воспоминания, которые уже перекрываются со значимыми терминами запроса. Явные предварительные требования `depends_on` все еще могут загружаться без собственного перекрытия ключевых слов.
-
-## Согласование Обновлений (Upgrade Reconciliation)
-
-Используйте `engram upgrade` после установки более нового пакета Engram. Команда сравнивает инициализированные каталоги памяти, начиная с версии v0.0.8, с текущей схемой выпуска и обновляет сгенерированные файлы HELP.md, индексы памяти, файлы графов, подходящие векторные сайдкары, созданные наборы навыков рабочей области, глобальную структуру памяти и зарегистрированные глобальные наборы навыков агентов, сохраняя файлы, созданные человеком. Обычные команды также бесшумно запускают то же согласование каталогов один раз для каждой версии пакета, если только не установлено `--no-auto-upgrade` или `ENGRAM_NO_AUTO_UPGRADE=1`.
-Используйте `engram upgrade --latest`, когда вывод нового пакета должен перезаписать текущие связанные артефакты агента, управляемые Engram. Этот путь повторно применяет связанные файлы инструкций воркспейса, правила, конфигурацию MCP/плагинов и управляемые хуки, а также обновляет зарегистрированные глобальные установки агентов последними сгенерированными файлами.
-
-### Профили рендеринга наборов навыков (Skillset Render Profiles)
-
-Для хостов с поддержкой среды выполнения Engram теперь устанавливает небольшие инструкции автозагрузки (bootstrap) вместо полного протокола. Хуки предоставляют контекст маршрутизируемой задачи, инструменты MCP обеспечивают поведение загрузки/поиска/предложения, а адаптеры косой черты (slash) или навыки агента (Agent Skills) выполняют подробные рабочие процессы команд. Резервные цели без надежного внедрения контекста выполнения по-прежнему получают компактные инструкции по ручной настройке.
-
-### Резервный вариант с БД конфигурации SQLite (SQLite Config DB Fallback)
-
-БД конфигурации SQLite в Engram — это оптимизация для управления воркспейсами и профилями. Если базу данных невозможно открыть или инициализировать, обычные команды чтения/записи откатываются к JSON-снимкам конфигурации. Специализированные команды для БД сообщают о недоступности SQLite вместо блокировки обычного использования памяти.
-Когда `engram save` находит связанные активные воспоминания, предварительный просмотр одобрения сообщает о них с предложенным `depends_on` или предупреждением о возможном дубликате. Принятие сохраняет предварительный просмотр как есть; сначала отклоните, если хотите изменить структуру зависимостей или архивировать дубликаты перед сохранением.
-Для `save-session --force` Engram приостанавливает работу перед записью, когда появляются эти подсказки о связанных воспоминаниях. Агент должен использовать ответ для планирования структурированного перезапуска: добавить `DEPENDS_ON: memory-id` для зависимостей, `LEVEL: advanced`, когда воспоминание глубже его предварительного требования, или `UPDATE: memory-id`, когда кандидат должен быть объединен с возможным дубликатом.
-
-## Профили, Места Сохранения и Клонирование
-
-Используйте `set-save-target`, чтобы выбрать, куда направляются обычные сохранения:
+## Command discovery
 
 ```bash
-engram set-save-target status
-engram set-save-target workspace
-engram set-save-target global
-engram set-save-target both
+engram help save-session
+engram help set-role
+engram -h set-rule-variant
 ```
 
-Используйте `profile`, когда личная, корпоративная или глобальная память команды должна оставаться изолированной:
+All commands listed in help include short aliases. Aliases route to the same CLI behavior and approval gates as their canonical commands.
+
+## Shell completion
 
 ```bash
-engram profile create personal --global-path ~/Documents/engram-personal --use
-engram profile use company --workspace
-engram profile merge personal company --dry-run
+engram completion bash
+engram completion zsh
+engram completion powershell
 ```
 
-Порядок разрешения профиля: явный `--profile` или `ENGRAM_PROFILE`, затем
-`default_profile` воркспейса, затем активный профиль пользователя. Если
-воркспейс `W` закреплен за профилем `B`, а пользовательский профиль по
-умолчанию остается `A`, каждая обычная загрузка, MCP-загрузка и инъекция
-агентского хука для `W` читает глобальную память профиля `B` и никогда не
-читает профиль `A`. Явный профиль, отличный от профиля воркспейса по
-умолчанию, использует глобальную память этого профиля и отключает память
-воркспейса для этой команды.
+## Next steps
 
-Используйте `clone-memory` для копирования активных Markdown-файлов `rules/`, `skills/` и `knowledge/` между пространствами workspace и global:
-
-```bash
-engram clone-memory workspace global
-engram clone-memory global workspace --force
-```
-
-Добавьте `--metacognize`, если вы хотите, чтобы клонированные воспоминания предлагались через процесс одобрения save-session вместо копирования один в один.
-
-## Самоанализ Памяти (Metacognize Memory)
-
-Используйте `metacognize`, когда вы хотите, чтобы ИИ-агент проанализировал существующую папку памяти Engram и предложил более безопасную структуру через тот же процесс одобрения save-session:
-
-```bash
-engram metacognize --workspace
-engram metacognize --global --dry-run
-engram metacognize --all --force
-```
-
-Команда проверяет активные воспоминания `rules/`, `skills/` и `knowledge/` в выбранной области, возвращает компактный пакет источников, когда кандидаты не предоставлены, а затем записывает только сгенерированные строки `TYPE: ... | TEXT: ...` после одобрения. Агенты должны использовать `UPDATE: memory-id` для объединения или исправления формулировок и `DEPENDS_ON: memory-id` для многоуровневых воспоминаний. Естественная формулировка, такая как `engram restructure workspace memory accept all`, преобразуется в `engram metacognize --workspace --force`.
-
-## Сохранение Сессии (Save Session)
-
-Используйте `save-session`, когда долгое взаимодействие привело к созданию нескольких кандидатов:
-
-```text
-TYPE: rule | TEXT: Always run tests before release. | CONTEXT: Created from release planning so future agents preserve the test gate.
-TYPE: knowledge | TEXT: Release notes live in CHANGELOG.md.
-TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
-```
-
-`CONTEXT: ...` является необязательным. Добавляйте его только тогда, когда он объясняет, почему существует память, исходную ситуацию, предполагаемое использование или границу. Простые факты могут опускать его и использовать стандартный контекст утверждения Engram.
-
-Без `--force` Engram спрашивает, каких кандидатов сохранить. С `ss -f` сохраняется каждый созданный кандидат, так как человек явно одобрил этот шорткат.
-Когда запуск accept-all сообщает о связанных воспоминаниях перед записью, файлы еще не сохранены. Агент должен перезапустить команду со структурированными кандидатами, такими как:
-
-```text
-TYPE: rule | TEXT: OAuth rotation follows release foundations. | DEPENDS_ON: release-foundation | LEVEL: advanced
-TYPE: knowledge | TEXT: Invoice retries use exponential backoff. | UPDATE: invoice-retry-baseline
-```
-
-`--query-level` должен быть положительным целым числом. Агенты должны включать только те чаты, к которым они действительно имеют доступ, и не должны выдумывать недоступную историю. `engram ss -f last 50 sessions` использует `50` в качестве уровня запроса и `-f` для автоматического одобрения пользователем.
-
-## Взять под Контроль (Take Control)
-
-`take-control` помогает внедрить Engram в существующие репозитории. Он сканирует инструкции агента, заметки, документы и выбранные файлы, а затем запрашивает у агента кратких кандидатов.
-
-Полезные фильтры:
-
-```bash
-engram take-control --plan
-engram take-control --all
-engram take-control --file AGENTS.md
-engram take-control --dir docs
-engram take-control --include "docs/**/*.md" --exclude "docs/private/**"
-engram take-control --max-sources 5 --max-chars 900
-engram take-control --all --metacognize --force
-```
-
-Сохраненные воспоминания take-control записывают `source_files` и `source_hashes`, поэтому неизмененные источники в будущем пропускаются.
-Используйте `--metacognize` с запрошенным человеком accept-all, когда подсказки о связанной памяти должны приостановить запись и позволить агенту перезапустить процесс с `UPDATE` или `DEPENDS_ON`.
-
-## Разрешение Конфликтов с Самоанализом (Resolve Conflicts With Metacognition)
-
-Используйте `resolve-conflicts` для предварительного просмотра или разрешения конфликтов памяти workspace, принадлежащих только Engram. Добавьте `--metacognize`, когда агент должен проанализировать папку памяти после разрешения конфликтов:
-
-```bash
-engram resolve-conflicts --dry-run --metacognize
-engram resolve-conflicts --metacognize
-engram resolve conflicts and metacognize
-```
-
-Команда удерживает детерминированное разрешение конфликтов в пределах `.agents/.engram/`, а затем добавляет пакет исходников самоанализа рабочей области для получения кратких кандидатов `TYPE/TEXT`.
-
-## Запись (Observe)
-
-`observe` сохраняет очищенные необработанные заметки в папке `inbox/`. Заметки во входящих не являются активной памятью.
-
-```bash
-engram observe --file session.md
-engram save-session --file .agents/.engram/inbox/<название_заметки>.md
-```
-
-Используйте это, когда хотите сохранить черновые заметки, прежде чем решить, что из этого должно стать долговечной памятью.
-
-## Конфигурация (Configuration)
-
-Для просмотра и управления настройками среды выполнения используйте команды `config`:
-
-- **Просмотр активной конфигурации**:
-  ```bash
-  engram config view
-  ```
-- **Установка значения конфигурации**:
-  ```bash
-  engram config set <key> <value>
-  ```
-
-### Справочник ключевых настроек (Key Settings Reference)
-
-| Ключ | Описание | По умолчанию | Диапазон / Опции |
-| --- | --- | --- | --- |
-| `memory.rule_line_target` | Рекомендуемое целевое количество строк для памяти правил | `70` | от `50` до `200` |
-| `memory.rule_line_hard_limit` | Максимально допустимое количество строк для памяти правил | `100` | от `50` до `200` |
-| `load.limit` | Максимальное количество воспоминаний, возвращаемых при обычной загрузке | `8` | от `1` до `32` |
-| `rule_variants.enabled` | Включение или выключение генерации вариантов правил | `true` | `true`, `false` |
-| `rule_variants.active` | Режим активного варианта правила | `balanced` | `light`, `balanced`, `strict` |
-| `graph.enabled` | Включение или выключение маршрутизации с учетом графа | `true` | `true`, `false` |
-| `graph.max_related` | Макс. связанных воспоминаний для извлечения из ребер графа | `8` | от `1` до `20` |
-| `graph.min_related_score` | Минимальный балл сходства для добавления ребер графа | `0.3` | от `0.0` до `1.0` |
-| `vector.enabled` | Включение или выключение резервного векторного поиска | `true` | `true`, `false` |
-| `live_sync.enabled` | Синхронизация сгенерированных файлов контекста агента при сохранении | `true` | `true`, `false` |
-| `global_git.enabled` | Включение автоматизации синхронизации глобального Git-репозитория | `false` | `true`, `false` |
-| `global_git.remote` | Имя удаленного Git-репозитория для глобальной синхронизации | `origin` | Строка |
-| `global_git.branch` | Имя ветки Git для глобальной синхронизации | `main` | Строка |
-
-Эти настройки также можно настраивать визуально на вкладке **Construct** в `engram entry`.
-
-## Восстановление и Обзор
-
-Используйте `repair` после ручного редактирования или импорта:
-
-```bash
-engram repair
-engram rebuild-index
-engram verify
-```
-
-Используйте граф и проверки качества перед архивацией:
-
-```bash
-engram graph "package manager"
-engram quality-check
-engram archive --reason "Repo migrated to npm." rules/use-pnpm.md
-```
-
-Далее: [Сравнение и дорожная карта](../comparison/overview.md).
-
-
+- [load / search / graph](load-search-graph.md)
+- [save / save-session / observe](save-session.md)
+- [inject / link / upgrade](inject-link-upgrade.md)

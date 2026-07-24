@@ -1,63 +1,52 @@
 ---
-title: Memories tab
-sidebar_position: 6
-description: Inspect the memory graph, preview memories, edit, and archive.
+title: Pestaña Memories (Memorias)
+sidebar_position: 8
+description: Inspeccione el gráfico de memoria, obtenga una vista previa de las memorias, edítelas y archívelas.
 ---
 
 import RiskCallout from '@site/src/components/RiskCallout';
 
-# Memories tab
+# Pestaña Memories
 
-The Memories tab inspects active memory, explores its graph, and performs maintenance actions.
+La pestaña Memories inspecciona el grafo de memoria y realiza acciones de mantenimiento de memoria.
 
-## Search
+## Fichas de alcance (Scope chips)
 
-Use the search field to match text anywhere in each Markdown memory file. The search is case-insensitive and works together with the scope and type filters.
+Filtre el grafo por origen de la memoria. Compare la memoria del espacio de trabajo con la global. Comience solo con el espacio de trabajo actual si el grafo resulta ruidoso visualmente.
 
-The search mode menu has two options:
+## Fichas de tipo (Type chips)
 
-- **Text matches only** shows memories whose file content or metadata directly matches the query.
-- **Text matches + related memories** also shows connected dependency, duplicate, and semantic memories.
+Filtre el grafo por tipo de memoria. Inspeccione las reglas, habilidades o conocimientos por separado.
 
-Clear the field to restore the full graph for the selected filters.
+## Alternancia de enlaces semánticos
 
-## Scope chips {#scope-chips}
+Muestra las aristas semánticas del grafo. Desactívelo si el grafo resulta visualmente ruidoso.
 
-Filter the graph by memory source. Compare workspace vs global memory. Start with the current workspace only when the graph feels noisy.
+## Actualizar / reconstruir (Refresh / rebuild)
 
-## Type chips {#type-chips}
+Recarga o reconstruye los datos del grafo. Úselo después de ediciones, importaciones, archivados o cambios de configuración.
 
-Filter the graph by memory type. Inspect rules, skills, or knowledge separately.
+## Vista previa de la memoria
 
-## Semantic links toggle {#semantic-links-toggle}
-
-Shows semantic graph edges. Turn off when the graph is visually noisy.
-
-## Refresh / rebuild
-
-Reloads or rebuilds graph data. Use after edits, imports, archive actions, or config changes.
-
-## Memory preview
-
-Reads selected memory content. Useful to audit what the agent will receive.
+Muestra el contenido de la memoria seleccionada. Útil para auditar lo que recibirá el agente.
 
 <RiskCallout level="caution">
-Sensitive local content may be visible in the browser. Treat the panel as open while previewing.
+El contenido sensible local puede ser visible en el navegador. Trate el panel como abierto mientras realiza la vista previa.
 </RiskCallout>
 
-## Edit memory
+## Editar memoria
 
-Opens the file in an editor and copies the path. Use for manual correction or review. The source of truth is the Markdown file.
+Abre el archivo en un editor y copia la ruta. Úselo para correcciones manuales o revisiones. La fuente de verdad es el archivo Markdown.
 
-## Archive memory
+## Archivar memoria
 
-Removes memory from active routing while preserving it under `archive/`. Use archive, not delete, for auditability.
+Elimina la memoria del enrutamiento activo mientras la conserva en `archive/`. Utilice archivar, no eliminar, para facilitar la auditoría.
 
 <RiskCallout level="caution">
-Archiving changes routing immediately. Use archive, not manual deletion, so history is preserved.
+El archivo de memorias cambia el enrutamiento de forma inmediata. Utilice archivar en lugar de eliminación manual para conservar el historial.
 </RiskCallout>
 
-## CLI equivalent
+## Equivalente en CLI
 
 ```bash
 engram graph "<topic>"
@@ -65,7 +54,7 @@ engram quality-check
 engram archive --reason "<why>" <id-or-file>
 ```
 
-## Next steps
+## Siguientes pasos
 
-- [Maintain tab](core.md)
-- [CLI: verify / repair / quality-check](../cli/verify-repair-quality.md)
+- [Pestaña Core](core.md)
+- [Pestaña Runtime](runtime.md)

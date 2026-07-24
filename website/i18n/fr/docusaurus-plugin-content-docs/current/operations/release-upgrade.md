@@ -1,18 +1,18 @@
 ---
-title: Processus de publication et de mise à niveau
+title: Release and upgrade process
 sidebar_position: 2
-description: Mettez à niveau les packages d'Engram et réconciliez les racines de mémoire en toute sécurité.
+description: Upgrade Engram packages and reconcile memory roots safely.
 ---
 
-# Processus de publication et de mise à niveau
+# Release and upgrade process
 
-## Après une mise à jour de package npm
+## After an npm package update
 
-La commande normale Engram suivante réconcilie silencieusement les racines de l'espace de travail et globales déjà initialisées une fois pour la nouvelle version. Cela prend en charge les modifications de schéma de mémoire d'une version à l'autre à partir de la version v0.0.8, en rafraîchissant l'aide générée, les index de mémoire, les fichiers de graphes et les sidecars vectoriels éligibles lorsqu'une métadonnée plus ancienne est détectée.
+The next normal Engram command quietly reconciles already-initialized workspace/global roots once for the new version. This covers release-to-release memory schema changes from v0.0.8 onward by refreshing generated help, memory indexes, graph files, and eligible vector sidecars when older metadata is detected.
 
-Le contrôle au démarrage est volontairement peu coûteux après la première exécution : il se contente de lire de petits marqueurs de configuration lorsque la version actuelle est déjà enregistrée. Il ne s'exécute pas lors du postinstall npm, ne crée pas de nouvelles racines de mémoire et ne remplace pas les fichiers rédigés par l'utilisateur. Utilisez `--no-auto-upgrade` ou `ENGRAM_NO_AUTO_UPGRADE=1` pour l'ignorer pour une commande.
+The startup check is intentionally cheap after the first run: it only reads small config markers when the current version is already recorded. It does not run from npm postinstall, create new memory roots, or replace human-authored files. Use `--no-auto-upgrade` or `ENGRAM_NO_AUTO_UPGRADE=1` to skip it for a command.
 
-## Mise à niveau explicite
+## Explicit upgrade
 
 ```bash
 engram upgrade
@@ -20,21 +20,21 @@ engram upgrade --plan
 engram upgrade --latest
 ```
 
-`engram upgrade` actualise l'aide de l'espace de travail générée, les index de mémoire, les fichiers de graphes, les sidecars vectoriels éligibles, les fichiers de skillset de l'espace de travail existants générés par Engram et les skillsets globaux enregistrés, tout en préservant les fichiers rédigés par l'utilisateur.
+`engram upgrade` refreshes generated workspace help, memory indexes, graph files, eligible vector sidecars, existing Engram-generated workspace skillset files, and registered global skillsets while preserving human-authored files.
 
-`engram upgrade --latest` est plus forte : elle écrase les artefacts d'agents liés gérés par Engram pour les agents de l'espace de travail déjà liés et les installations globales enregistrées, y compris les fichiers d'instructions, les règles, la configuration MCP/plugin et les hooks gérés, afin que les hôtes liés récupèrent immédiatement le nouveau package.
+`engram upgrade --latest` is stronger: it overwrites current Engram-managed linked agent artifacts for already-linked workspace agents and registered global installs, including instruction files, rules, MCP/plugin config, and managed hooks, so linked hosts pick up the new package output immediately.
 
-N'utilisez `--force` que pour remplacer intentionnellement des fichiers d'adaptateur Engram générés.
+Use `--force` only when replacing generated Engram adapter files intentionally.
 
-## Profils de rendu des skillsets
+## Skillset render profiles
 
-Pour les hôtes capables d'exécuter un runtime, Engram installe de petites instructions d'amorçage (bootstrap) au lieu du protocole complet. Les hooks fournissent un contexte de tâche routé, les outils MCP fournissent le comportement de chargement/recherche/proposition, et les adaptateurs de type slash ou les Agent Skills exécutent des flux de travail de commandes détaillés. Les cibles de repli sans injection fiable de contexte d'exécution reçoivent toujours des instructions manuelles compactes.
+For runtime-capable hosts, Engram installs small bootstrap instructions instead of the full protocol. Hooks provide routed task context, MCP tools provide load/search/proposal behavior, and slash adapters or Agent Skills carry detailed command workflows. Fallback targets without reliable runtime context injection still receive compact manual instructions.
 
-## Solution de repli sur la base SQLite de configuration
+## SQLite config DB fallback
 
-La base de données de configuration SQLite d'Engram est une optimisation pour la gestion des espaces de travail et des profils. Si la base de données ne peut pas être ouverte ou initialisée, les commandes normales de lecture/écriture se replient sur des instantanés de configuration JSON. Les commandes spécifiques à la base de données signalent que SQLite est indisponible au lieu de bloquer l'utilisation normale de la mémoire.
+Engram's SQLite config DB is an optimization for workspace/profile management. If the DB cannot be opened or initialized, normal read/write commands fall back to JSON config snapshots. DB-specific commands report SQLite as unavailable instead of blocking normal memory use.
 
-## Étapes suivantes
+## Next steps
 
-- [Résolution des problèmes](troubleshooting.md)
-- [CLI : inject / link / upgrade](../cli/inject-link-upgrade.md)
+- [Troubleshooting](troubleshooting.md)
+- [CLI: inject / link / upgrade](../cli/inject-link-upgrade.md)

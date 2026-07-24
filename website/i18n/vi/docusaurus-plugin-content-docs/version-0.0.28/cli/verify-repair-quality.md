@@ -1,12 +1,12 @@
 ---
 title: verify / repair / quality-check
 sidebar_position: 6
-description: Maintenance commands — verify hashes, repair invalid files, check quality, and resolve conflicts.
+description: Các lệnh bảo trì — xác minh mã băm, sửa chữa tệp lỗi, kiểm tra chất lượng và giải quyết xung đột.
 ---
 
 # verify / repair / quality-check
 
-Maintenance commands keep memory healthy.
+Các lệnh bảo trì giúp giữ cho bộ nhớ khỏe mạnh.
 
 ## verify
 
@@ -14,7 +14,7 @@ Maintenance commands keep memory healthy.
 engram verify
 ```
 
-Checks hashes for integrity. Run after manual edits or imports.
+Kiểm tra mã băm để đảm bảo tính toàn vẹn. Chạy sau khi chỉnh sửa thủ công hoặc nhập dữ liệu.
 
 ## repair
 
@@ -23,7 +23,7 @@ engram repair
 engram rebuild-index
 ```
 
-Use `repair` after manual edits or imports to find malformed memory files skipped by index rebuild.
+Sử dụng `repair` sau khi chỉnh sửa thủ công hoặc nhập dữ liệu để tìm các tệp bộ nhớ bị lỗi cấu trúc bị bỏ qua bởi việc xây dựng lại chỉ mục.
 
 ## quality-check
 
@@ -31,7 +31,7 @@ Use `repair` after manual edits or imports to find malformed memory files skippe
 engram quality-check
 ```
 
-Reports contradiction candidates compactly. Contradiction detection is heuristic and advisory.
+Báo cáo các ứng viên mâu thuẫn một cách ngắn gọn. Phát hiện mâu thuẫn là mang tính heuristic và tham khảo.
 
 ## graph
 
@@ -40,7 +40,7 @@ engram graph "package manager"
 engram graph --rebuild
 ```
 
-Inspect graph routing before archiving. Run `engram graph --rebuild` after manual edits.
+Kiểm tra định tuyến đồ thị trước khi lưu trữ. Chạy `engram graph --rebuild` sau khi chỉnh sửa thủ công.
 
 ## archive
 
@@ -48,7 +48,7 @@ Inspect graph routing before archiving. Run `engram graph --rebuild` after manua
 engram archive --reason "Repo migrated to npm." rules/use-pnpm.md
 ```
 
-Archive wrong or superseded memory. Use archive, not delete, for auditability. The file leaves active routing only after approval and remains preserved under `archive/`.
+Lưu trữ bộ nhớ sai hoặc bị thay thế. Sử dụng archive, không dùng delete, để phục vụ mục đích kiểm toán. Tệp rời khỏi định tuyến hoạt động chỉ sau khi phê duyệt và vẫn được bảo tồn dưới thư mục `archive/`.
 
 ## resolve-conflicts
 
@@ -57,7 +57,7 @@ engram resolve-conflicts --dry-run --metacognize
 engram resolve-conflicts --metacognize
 ```
 
-Preview or resolve only Engram-owned workspace memory conflicts. Add `--metacognize` when an agent should review the memory folder after conflict handling. The command keeps deterministic conflict handling scoped to `.agents/.engram/`, then appends the workspace metacognize source pack for concise `TYPE/TEXT` candidates.
+Xem trước hoặc chỉ giải quyết các xung đột bộ nhớ không gian làm việc do Engram sở hữu. Thêm `--metacognize` khi tác nhân nên xem xét thư mục bộ nhớ sau khi xử lý xung đột. Lệnh này giữ cho việc xử lý xung đột mang tính quyết định trong phạm vi `.agents/.engram/`, sau đó thêm gói nguồn tự đánh giá không gian làm việc cho các ứng viên `TYPE/TEXT` ngắn gọn.
 
 ## benchmark
 
@@ -65,9 +65,9 @@ Preview or resolve only Engram-owned workspace memory conflicts. Add `--metacogn
 engram benchmark
 ```
 
-Retrieval regression checks.
+Kiểm tra suy thoái truy xuất.
 
-## Next steps
+## Các bước tiếp theo
 
 - [sync / archive](sync-archive.md)
-- [Operations troubleshooting](../operations/troubleshooting.md)
+- [Khắc phục sự cố vận hành](../operations/troubleshooting.md)

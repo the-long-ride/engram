@@ -1,43 +1,43 @@
 ---
-title: ワークスペースメモリとグローバルメモリ
+title: Workspace vs global memory
 sidebar_position: 3
-description: ワークスペースメモリが優先されます。グローバルメモリは、プロジェクト間で再利用可能な設定やチームのコンテキストのフォールバックです。
+description: Workspace memory wins. Global memory is fallback for reusable preferences and team context across projects.
 ---
 
-# ワークスペースメモリとグローバルメモリ
+# Workspace vs global memory
 
-Engram は2つのスコープでメモリを解決します。
+Engram resolves memory in two scopes.
 
-## ワークスペースメモリ
+## Workspace memory
 
-ワークスペースメモリは以下に保存されます：
+Workspace memory lives in:
 
 ```text
 <project>/.agents/.engram/
 ```
 
-ここには、プロジェクト固有のルール、決定、およびワークフローが保持されます。ワークスペースメモリ is は、グローバルの重複エントリよりも優先されます。
+It holds project-specific rules, decisions, and workflows. Workspace memory wins over global duplicates.
 
-## グローバルメモリ
+## Global memory
 
-グローバルメモリはオプションであり、ユーザーが構成した場所に保存されます。リポジトリをまたいで引き継がれるべき設定やチームのコンテキストが保持されます。
+Global memory is optional and lives wherever the user configures it. It holds preferences and team context that should follow you across repos.
 
 ```bash
 engram inject --global-only --global-path ~/Documents/engram
 ```
 
-グローバルメモリは、再利用可能な設定、個人の習慣、またはチーム全体のデフォルト設定のフォールバックです。
+Global memory is fallback for reusable preferences, personal habits, or team-wide defaults.
 
-## スコープの優先順位
+## Scope priority
 
-1. ワークスペースメモリ：`<project>/.agents/.engram/`
-2. グローバルメモリ：`$ENGRAM_GLOBAL_DIR` または `engram inject --global-path <path>`
+1. Workspace memory: `<project>/.agents/.engram/`
+2. Global memory: `$ENGRAM_GLOBAL_DIR` or `engram inject --global-path <path>`
 
-ワークスペースメモリが優先されます。グローバルメモリは、プロジェクト間で再利用可能な設定やチームのコンテキストのフォールバックです。
+Workspace memory wins. Global memory is fallback for reusable preferences and team context across projects.
 
-## 保存ターゲットの選択
+## Choose a save target
 
-通常の保存先を選択するには `set-save-target` を使用します：
+Use `set-save-target` to choose where normal saves go:
 
 ```bash
 engram set-save-target status
@@ -46,11 +46,11 @@ engram set-save-target global
 engram set-save-target both
 ```
 
-グローバルメモリが構成されている場合、新規ワークスペースのインストール時のデフォルトの通常保存先は、ワークスペースとグローバルの両方に設定されます。エージェントは、`--scope workspace|global|both` を使用して、1回の書き込みをオーバーライドできます。
+Fresh workspace installs default normal saves to both workspace and global when global memory is configured. Agents can override one write with `--scope workspace|global|both`.
 
-有効な構成スコープが `global` に設定されている場合（`scope: "global"`), 実行中のフォルダーへのファイルの書き込みを防ぐため、ワークスペースレベルのスキルセットリンクは無効化され、スキップされます。グローバルスコープの設定でエージェントをリンクするには、`engram link --global` を使用します。
+If the active configuration scope is set to `global` (`scope: "global"`), workspace-level skillset linking is disabled and skipped to prevent writing files to the running folder. To link agents in a global-scope setup, use `engram link --global`.
 
-## 次のステップ
+## Next steps
 
-- [プロファイルとスコープの解決](profiles.md)
-- [読み取りパスとルーティング](read-path.md)
+- [Profiles and scope resolution](profiles.md)
+- [Read path and routing](read-path.md)

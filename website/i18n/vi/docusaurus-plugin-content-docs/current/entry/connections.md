@@ -1,63 +1,63 @@
 ---
-title: Tab Connections (Kết nối)
+title: Connections tab
 sidebar_position: 3
-description: Phát hiện và liên kết các tác nhân AI (AI agent) được hỗ trợ từ Entry Web UI.
+description: Detect and link supported AI agents from the Entry Web UI.
 ---
 
 import RiskCallout from '@site/src/components/RiskCallout';
 
-# Tab Connections
+# Connections tab
 
-Tab Connections quét máy của bạn để tìm các bề mặt tác nhân AI được hỗ trợ và cho phép bạn liên kết Engram với từng tác nhân ở cấp độ không gian làm việc (workspace) hoặc toàn cục (global).
+The Connections tab scans your machine for supported AI agent surfaces and lets you link Engram to each one at the workspace or global level.
 
-## Quét tác nhân (Agent scan)
+## Agent scan
 
-Tab này hiển thị một thẻ cho mỗi tác nhân được hỗ trợ. Mỗi thẻ báo cáo trạng thái phát hiện được (detected) hoặc bị thiếu (missing).
+The tab shows a card per supported agent. Each card reports a detected or missing status.
 
-- **Detected** — Engram đã tìm thấy bề mặt tác nhân cục bộ được hỗ trợ (đường dẫn cấu hình hoặc ứng dụng hiện diện).
-- **Missing** — Engram không tìm thấy bề mặt tác nhân. Trạng thái bị thiếu không phải lúc nào cũng có nghĩa là không được hỗ trợ; nó có thể có nghĩa là ứng dụng hoặc đường dẫn cấu hình chưa hiện diện.
+- **Detected** — Engram found a supported local agent surface (config path or app present).
+- **Missing** — Engram did not find the agent surface. Missing does not always mean unsupported; it can mean the app or config path is not present yet.
 
 <RiskCallout level="caution">
-Bị thiếu không có nghĩa là không được hỗ trợ. Nó có thể có nghĩa là ứng dụng hoặc đường dẫn cấu hình chưa có trên máy này.
+Missing does not always mean unsupported. It can mean the app or config path is not present on this machine yet.
 </RiskCallout>
 
-## Nút bật tắt liên kết không gian làm việc (Workspace link toggle)
+## Workspace link toggle {#workspace-link-toggle}
 
-Liên kết Engram với kho lưu trữ (repo)/không gian làm việc hiện tại cho tác nhân đó. Sử dụng khi bộ nhớ nên đi theo kho lưu trữ: quy tắc riêng cho từng dự án, bộ nhớ riêng cho kho lưu trữ, hướng dẫn chia sẻ trong nhóm.
+Links Engram to the current repo/workspace for that agent. Use when memory should follow the repository: per-project rules, repo-specific memory, team-shared instructions.
 
-## Nút bật tắt liên kết toàn cục (Global link toggle)
+## Global link toggle {#global-link-toggle}
 
-Liên kết Engram trên toàn cục cho tác nhân đó. Sử dụng cho bộ nhớ cá nhân, quy trình làm việc trên nhiều dự án, và các kiểu dáng/quy tắc có thể tái sử dụng.
+Links Engram globally for that agent. Use for personal memory, cross-project workflows, and reusable style/rules.
 
 <RiskCallout level="risky">
-Sử dụng liên kết toàn cục cẩn thận trên các máy tính dùng chung. Engram viết các khối được quản lý vào các tệp hướng dẫn dùng chung. Hãy xem xét các tệp Engram viết cho từng tác nhân trước khi liên kết toàn cục.
+Use global links carefully on shared machines. Engram writes managed blocks into shared instruction files. Review what files Engram writes per agent before linking globally.
 </RiskCallout>
 
-## Các tệp Engram viết cho mỗi tác nhân
+## What files Engram writes per agent
 
-| Mục tiêu | Tệp |
+| Target | File |
 | --- | --- |
 | `codex` | `AGENTS.md`, `.agents/skills/engram/SKILL.md` |
 | `agents-md` | `AGENTS.md` |
-| `copilot` | `.github/copilot-instructions.md`; toàn cục: `~/.copilot/copilot-instructions.md` |
+| `copilot` | `.github/copilot-instructions.md`; global: `~/.copilot/copilot-instructions.md` |
 | `claude` | `CLAUDE.md` |
-| `cursor` | `.cursor/rules/engram.mdc`; toàn cục: `~/.cursor/plugins/local/engram/` |
-| `gemini` | `GEMINI.md`; toàn cục: `~/.gemini/GEMINI.md`, `~/.gemini/skills/engram/SKILL.md` |
+| `cursor` | `.cursor/rules/engram.mdc`; global: `~/.cursor/plugins/local/engram/` |
+| `gemini` | `GEMINI.md`; global: `~/.gemini/GEMINI.md`, `~/.gemini/skills/engram/SKILL.md` |
 | `cline` | `.clinerules` |
-| `windsurf` | `.windsurf/rules/engram.md`; toàn cục: `~/.codeium/windsurf/memories/global_rules.md` |
+| `windsurf` | `.windsurf/rules/engram.md`; global: `~/.codeium/windsurf/memories/global_rules.md` |
 | `opencode` | `AGENTS.md`, `.opencode/engram.md`, `.opencode/skills/engram/SKILL.md`, `opencode.json` |
-| `mcp` | `.mcp.json`; toàn cục: các tệp cấu hình MCP của máy chủ |
-| `slash` | `.claude/commands/engram.md`, `.cursor/commands/engram.md`, `.gemini/commands/engram.toml`, `.opencode/commands/engram.md` |
+| `mcp` | `.mcp.json`; global: host MCP config files |
+| `slash` | `.claude/commands/engram.md`, `.claude/skills/engram/SKILL.md`, `.cursor/commands/engram.md`, `.gemini/commands/engram.toml`, `.opencode/commands/engram.md` |
 
-## Khi nào cần hủy liên kết
+## When to unlink
 
-- Lưu trữ một kho lưu trữ hoặc không gian làm việc thử nghiệm
-- Chuyển một tác nhân rời khỏi Engram
-- Dọn dẹp các khối được quản lý cũ trước khi chạy `engram upgrade --latest` mới
+- Archiving a repo or test workspace
+- Switching an agent away from Engram
+- Cleaning stale managed blocks before a fresh `engram upgrade --latest`
 
-`engram unlink` chỉ xóa các mục nhập hook và tệp bộ tiếp hợp (adapter) do Engram quản lý. Các tệp do con người viết được bảo tồn trừ khi có tùy chọn `--force` rõ ràng.
+`engram unlink` removes only Engram-managed hook entries and adapter files. Human-authored files are preserved unless `--force` is explicit.
 
-## Tương đương CLI
+## CLI equivalent
 
 ```bash
 engram link codex
@@ -66,7 +66,7 @@ engram link --global opencode
 engram unlink
 ```
 
-## Các bước tiếp theo
+## Next steps
 
-- [Tab Construct](construct.md)
-- [Tổng quan về Tích hợp Tác nhân](../integrations/overview.md)
+- [Construct tab](construct.md)
+- [Agent Integrations overview](../integrations/overview.md)

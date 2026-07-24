@@ -1,75 +1,75 @@
 ---
-title: Cài đặt và cấu hình
+title: Install and configure
 sidebar_position: 3
-description: Cài đặt Engram CLI, khởi tạo không gian làm việc, cấu hình bộ nhớ toàn cục và liên kết các tác nhân AI.
+description: Install the Engram CLI, initialize a workspace, configure global memory, and link AI agents.
 ---
 
-# Cài đặt và cấu hình
+# Install and configure
 
-## Yêu cầu
+## Requirements
 
 - Node.js `>=20`
-- Tác nhân AI được hỗ trợ (Codex, Claude, Gemini, Cursor, Windsurf, OpenCode, Copilot, Cline, hoặc bất kỳ host nào tương thích với AGENTS.md)
+- A supported AI agent (Codex, Claude, Gemini, Cursor, Windsurf, OpenCode, Copilot, Cline, or any AGENTS.md-compatible host)
 
-## Cài đặt CLI
+## Install the CLI
 
 ```bash
 npm install -g @the-long-ride/engram
 ```
 
-Xác minh:
+Verify:
 
 ```bash
 engram --version
 ```
 
-Hai tệp nhị phân được cài đặt:
+Two binaries are installed:
 
-- `engram` — CLI chính
-- `engram-mcp` — tệp nhị phân máy chủ MCP cho các host đăng ký tiến trình công cụ bên ngoài
+- `engram` — main CLI
+- `engram-mcp` — MCP server binary for hosts that register external tool processes
 
-## Khởi tạo không gian làm việc (workspace)
+## Initialize a workspace
 
-Từ thư mục gốc của dự án:
+From the project root:
 
 ```bash
 engram inject
 ```
 
-Lệnh này tạo `.agents/.engram/` và cài đặt mục tiêu Codex thu gọn theo mặc định: `AGENTS.md` cộng với `.agents/skills/engram/SKILL.md`.
+This creates `.agents/.engram/` and installs the compact Codex target by default: `AGENTS.md` plus `.agents/skills/engram/SKILL.md`.
 
-Sử dụng `engram inject --no-skillset` để bỏ qua các tệp tác nhân, hoặc `engram inject --skillset all` để cài đặt mọi adapter được hỗ trợ trong khi inject. Các tệp hiện có do con người viết sẽ được bỏ qua.
+Use `engram inject --no-skillset` to skip agent files, or `engram inject --skillset all` to install every supported adapter during inject. Existing human-authored files are skipped.
 
-## Cấu hình bằng Giao diện Web Entry
+## Configure with the Entry Web UI
 
-Cách thiết lập thân thiện nhất:
+The friendliest setup path:
 
 ```bash
 engram entry
 ```
 
-Lệnh này khởi chạy một bảng điều khiển chỉ chạy cục bộ. Cấu hình các thư mục gốc bộ nhớ, liên kết các tác nhân và điều chỉnh định tuyến mà không cần chỉnh sửa JSON thủ công. Xem [Giao diện Web Entry](entry/index.md) để biết chi tiết về từng tab và trường.
+This launches a local-only control panel. Configure memory roots, link agents, and tune routing without editing JSON by hand. See [Entry Web UI](entry/index.md) for every tab and field.
 
-## Cấu hình bộ nhớ toàn cục (global)
+## Configure global memory
 
-Bộ nhớ toàn cục là tùy chọn và nằm ở bất kỳ đâu bạn cấu hình nó. Nó lưu trữ các tùy chọn và ngữ cảnh nhóm để đi theo bạn qua các kho lưu trữ khác nhau.
+Global memory is optional and lives wherever you configure it. It holds preferences and team context that should follow you across repos.
 
 ```bash
 engram inject --global-only --global-path ~/Documents/engram
 ```
 
-Hoặc cập nhật thư mục toàn cục sau đó:
+Or update the global folder later:
 
 ```bash
 engram update-global-folder ~/Documents/engram
 engram ugf ~/Documents/engram
 ```
 
-Các dạng câu lệnh chat như `engram set global memory path to <new-path>` và `engram move global folder from <old-path> to <new-path>` được chuẩn hóa về cùng một câu lệnh. Thêm `--move-from-path <old-path>` khi người dùng muốn Engram chuyển toàn bộ thư mục gốc toàn cục cũ sang vị trí mới.
+Chat-style forms such as `engram set global memory path to <new-path>` and `engram move global folder from <old-path> to <new-path>` normalize to the same command. Add `--move-from-path <old-path>` when they also want Engram to move the whole old global root into the new location.
 
-## Liên kết tác nhân AI
+## Link AI agents
 
-Cài đặt hook tác nhân và đăng ký MCP cho một host:
+Install agent hooks and MCP registration for a host:
 
 ```bash
 engram link codex
@@ -81,29 +81,29 @@ engram link --global opencode
 engram set-proof compact
 ```
 
-`engram link all` cài đặt tập hợp mục tiêu công khai và báo cáo lý do `SKIPPED` mang tính quyết định cho các host chưa hoàn thiện trên các tệp hướng dẫn bộ kỹ năng, cấu hình MCP, bộ chuyển đổi slash và hook tác nhân trong một lần cài đặt thống nhất. `engram unlink` gỡ bỏ tất cả chúng cùng lúc.
+`engram link all` installs the public target set and reports deterministic `SKIPPED` reasons for partial hosts across skillset instruction files, MCP config, slash adapters, and agent hooks in one unified install. `engram unlink` removes all of these together.
 
-Xem [Tích hợp Tác nhân](integrations/overview.md) để biết ma trận mục tiêu đầy đủ.
+See [Agent Integrations](integrations/overview.md) for the full target matrix.
 
-## Quy trình làm việc với Submodule
+## Submodule workflow
 
-Nếu con người muốn `.agents/.engram` được theo dõi như một kho lưu trữ riêng biệt:
+If the human wants `.agents/.engram` tracked as a separate repository:
 
 ```bash
 engram inject --submodule
 ```
 
-Chỉ thêm `--submodule-remote <git-url>` sau khi con người cung cấp URL. Engram xác thực URL, khởi tạo submodule trên nhánh `main`, và tạo commit submodule đầu tiên với nội dung `Initialize engram`.
+Add `--submodule-remote <git-url>` only after the human provides a URL. Engram validates the URL, initializes the submodule on `main`, and creates the first submodule commit as `Initialize engram`.
 
-## Nguồn Git toàn cục dùng chung
+## Shared global Git origin
 
-Nếu `engram entry` hiển thị không phát hiện được `global_git_detected.remote_url`, hãy hỏi con người xem bộ nhớ toàn cục có nên được chia sẻ qua Git không. Khi họ cung cấp URL:
+If `engram entry` shows no `global_git_detected.remote_url`, ask the human whether global memory should be shared through Git. When they provide a URL:
 
 ```bash
 engram inject --global-remote <git-url>
 ```
 
-## Xác minh cài đặt
+## Verify the install
 
 ```bash
 engram verify
@@ -111,10 +111,10 @@ engram load --dry-run "setup"
 engram llm
 ```
 
-`engram llm` in ra tài liệu hướng dẫn sử dụng tác nhân AI đi kèm và không yêu cầu không gian làm việc đã được inject.
+`engram llm` prints the packaged AI-agent usage guide and does not require an injected workspace.
 
-## Các bước tiếp theo
+## Next steps
 
-- [Quy trình làm việc hàng ngày](daily-workflow.md)
-- [Giao diện Web Entry](entry/index.md)
-- [Tích hợp Tác nhân](integrations/overview.md)
+- [Daily workflow](daily-workflow.md)
+- [Entry Web UI](entry/index.md)
+- [Agent Integrations](integrations/overview.md)

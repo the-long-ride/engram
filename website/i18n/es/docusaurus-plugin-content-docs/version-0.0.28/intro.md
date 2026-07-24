@@ -1,69 +1,68 @@
 ---
-title: What is Engram?
+title: "¿Qué es Engram?"
 sidebar_position: 1
-description: Engram is a human-owned memory protocol for AI agents. Memory lives as approved Markdown files humans can inspect, review, and sync.
+description: "Engram es un protocolo de memoria de propiedad humana para agentes de IA. Conserva el conocimiento duradero del proyecto, del equipo y de las preferencias personales."
 ---
 
-# What is Engram?
+# Engram
 
-Engram is a **human-owned memory protocol for AI agents**. It keeps durable project, team, and personal knowledge in files that humans can inspect, review, sync, and repair.
+Engram es un protocolo de memoria de propiedad humana para agentes de IA. Conserva el conocimiento duradero del proyecto, del equipo y de las preferencias personales en archivos que los humanos pueden inspeccionar, revisar, sincronizar y reparar.
 
-Engram is not a hidden agent brain. The agent may propose memory, but the source of truth is approved Markdown under `.agents/.engram/` or an optional global memory folder.
+Engram no es un cerebro de agente oculto. El agente puede proponer memoria, pero la fuente de verdad es un Markdown aprobado bajo `.agents/.engram/` o una carpeta de memoria global opcional.
 
-## What problem it solves
+## Qué Problema Resuelve
 
-AI agents forget project decisions, repeat setup questions, and mix old context with new instructions. Built-in memory is often private to one vendor, one app, or one machine.
+Los agentes de IA olvidan las decisiones del proyecto, repiten las preguntas de configuración y mezclan el contexto antiguo con las nuevas instrucciones. La memoria integrada suele ser privada de un proveedor, una aplicación o una máquina.
 
-Engram gives memory a stable contract:
+Engram le da a la memoria un contrato estable:
 
-- approved facts, rules, and workflows live as Markdown
-- indexes and graphs make routing fast
-- writes require human approval
-- hashes reveal unsafe edits
-- ignore rules protect private context
-- profiles isolate company, client, and personal memory so external APIs or company-provided agents do not leak context across projects
-- Git gives history, portability, and team review
+- Los hechos, reglas y flujos de trabajo aprobados viven como Markdown.
+- Los índices y los grafos aceleran el enrutamiento.
+- Las escrituras requieren aprobación humana.
+- Los hashes revelan modificaciones inseguras.
+- Las reglas de omisión (ignore rules) protegen el contexto privado.
+- Los perfiles aíslan la memoria de empresa, cliente y personal para que las API externas o los agentes de la empresa no filtren contexto entre proyectos.
+- Git proporciona historial, portabilidad y revisión por parte del equipo.
 
-## Mental model
+## Modelo Mental
 
-Think of Engram as a knowledge memory center:
+Piense en Engram como un centro de memoria de conocimiento:
 
-| Layer | Job |
+| Capa | Trabajo |
 | --- | --- |
-| Markdown | durable source of truth |
-| JSON index | fast lookup layer |
-| JSON graph | topic and relationship routing layer |
-| Approval gate | trust boundary before writes |
-| Hashes | integrity checks before reads |
-| Ignore rules | privacy controls |
-| Git | audit history and sync |
-| Agent adapters | convenience, not authority |
+| Markdown | Fuente de verdad duradera |
+| JSON index | Capa de búsqueda rápida |
+| JSON graph | Capa de enrutamiento de temas y relaciones |
+| Approval gate | Límite de confianza antes de las escrituras |
+| Hashes | Comprobaciones de integridad antes de las lecturas |
+| Ignore rules | Controles de privacidad |
+| Git | Historial de auditoría y sincronización |
+| Agent adapters | Conveniencia, no autoridad |
 
-## Scope priority
+## Prioridad de Alcance
 
-Engram resolves memory in this order:
+Engram resuelve la memoria en este orden:
 
-1. Workspace memory: `<project>/.agents/.engram/`
-2. Global memory: `$ENGRAM_GLOBAL_DIR` or `engram inject --global-path <path>`
+1. Memoria del espacio de trabajo (workspace): `<proyecto>/.agents/.engram/`
+2. Memoria global: `$ENGRAM_GLOBAL_DIR` o `engram inject --global-path <ruta>`
 
-Workspace memory wins. Global memory is fallback for reusable preferences and team context across projects.
+La memoria del espacio de trabajo gana. La memoria global es el respaldo para preferencias reutilizables y contexto del equipo en diferentes proyectos.
 
-## Current shape
+## Estado Actual
 
-Engram includes:
+Engram incluye:
 
-- `save` for one approved memory
-- `save-session` / `ss` for several memories from a session
-- `observe` for raw notes that are not active memory yet
-- `take-control` for importing existing agent guidance and docs
-- `graph` and `quality-check` for review signals
-- `archive` for wrong or superseded memory
-- `repair` for invalid memory files skipped by index rebuild
-- `benchmark` for retrieval regression checks
-- agent skillsets, slash adapters, and MCP-style proposal tools
+- `save` para una memoria aprobada.
+- `save-session` / `ss` para varias memorias de una sesión, con `--query-level <n>` opcional para extraer hasta n chats recientes accesibles; `/engram ss -f last 50 sessions` se normaliza a `engram save-session --query-level 50 --force`.
+- `observe` para notas en borrador que aún no son memoria activa.
+- `take-control` para importar guías y documentos existentes del agente.
+- `graph` y `quality-check` para señales de revisión.
+- `archive` para memoria incorrecta o reemplazada.
+- `repair` para archivos de memoria mal formados que el proceso de reconstrucción del índice omite.
+- `benchmark` para comprobaciones de regresión de recuperación.
+- Conjuntos de habilidades del agente (skillsets), adaptadores de comando slash y herramientas de propuesta de estilo MCP.
 
-## Next steps
+Antes de usar comandos, lea la página de conceptos: [Entender Engram](concepts/protocol.md).
 
-- [AI-agent quickstart](quickstart.md)
-- [Install and configure](install.md)
-- [Human-owned protocol](concepts/protocol.md)
+Siguiente: [Inicio rápido para agentes de IA](quickstart.md).
+

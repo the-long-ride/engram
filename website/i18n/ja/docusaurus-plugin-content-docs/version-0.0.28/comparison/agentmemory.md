@@ -1,27 +1,27 @@
 ---
 title: agentmemory
 sidebar_position: 3
-description: Engram vs rohitg00/agentmemory — file protocol vs automatic memory engine.
+description: Engram 対 rohitg00/agentmemory — ファイルプロトコル対自動メモリエンジン。
 ---
 
 # agentmemory
 
-[rohitg00/agentmemory](https://github.com/rohitg00/agentmemory) is a powerful automatic memory engine for coding agents. Its README presents server-based memory, MCP/hooks/REST integration, many agent adapters, benchmark claims, a viewer, replay, hybrid retrieval, and Hermes integration.
+[rohitg00/agentmemory](https://github.com/rohitg00/agentmemory) は、コーディングエージェント向けの強力な自動メモリエンジンです。その README では、サーバーベースのメモリ、MCP/hooks/REST 統合、多くのエージェントアダプター、ベンチマークの主張、ビューア、リプレイ、ハイブリッド検索、Hermes 統合が紹介されています。
 
-Use agentmemory when you want automatic capture, live viewer/replay, vector retrieval, many MCP tools, and server-style shared memory.
+自動キャプチャ、ライブビューア/リプレイ、ベクトル検索、多くの MCP ツール、およびサーバー形式の共有メモリが必要な場合は、agentmemory を使用します。
 
-Use Engram when you want memory to be a repo-readable protocol: Markdown first, human approved, Git reviewed, portable across agents even without a running server.
+メモリをリポジトリから読み取り可能なプロトコルにしたい場合は、Engram を使用します。Markdown ファースト、人間の承認、Git によるレビュー、実行中のサーバーがなくてもエージェント間で移植可能です。
 
-| Dimension | Engram | agentmemory |
+| 次元 | Engram | agentmemory |
 | --- | --- | --- |
-| Source of truth | Approved Markdown files | Memory server/store |
-| Trust boundary | Human A/B/C approval | Automatic capture plus tool governance |
-| Default mode | File protocol, no daemon required | Running service recommended |
-| Review | Git diff and Markdown review | Viewer/API and stored sessions |
-| Best fit | teams that need ownership and auditability | users who want automatic recall and replay |
-| Risk | more manual discipline | more invisible state unless governed carefully |
+| 信頼できるソース | 承認された Markdown ファイル | メモリサーバー/ストア |
+| 信頼境界 | 人間による A/B/C 承認 | 自動キャプチャとツールガバナンス |
+| デフォルトモード | ファイルプロトコル、デーモン不要 | 実行中のサービスを推奨 |
+| レビュー | Git diff と Markdown のレビュー | ビューア/API と保存されたセッション |
+| 最適な用途 | 所有権と監査性を必要とするチーム | 自動想起とリプレイを求めるユーザー |
+| リスク | より多くの手動規律が必要 | 注意深く管理しない限り、目に見えない状態が増える |
 
-## Next steps
+## 次のステップ
 
 - [Hermes Agent](hermes-agent.md)
-- [Comparison overview](overview.md)
+- [比較の概要](overview.md)

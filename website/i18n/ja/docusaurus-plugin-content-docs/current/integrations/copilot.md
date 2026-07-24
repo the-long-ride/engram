@@ -1,38 +1,38 @@
 ---
 title: Copilot
 sidebar_position: 8
-description: リポジトリおよびユーザーのカスタム指示を介した GitHub Copilot と Engram の統合。
+description: Engram integration with GitHub Copilot via repository and user custom instructions.
 ---
 
 # Copilot
 
-GitHub Copilot は、`.github/copilot-instructions.md` からリポジトリのカスタム指示を読み込みます。グローバルな Copilot インストールの場合、Engram は `~/.copilot/copilot-instructions.md` に管理ブロックを追加します。
+GitHub Copilot reads repository custom instructions from `.github/copilot-instructions.md`. For global Copilot installs, Engram appends its managed block to `~/.copilot/copilot-instructions.md`.
 
-## インストール
+## Install
 
 ```bash
 engram link copilot
 ```
 
-## 書き込まれるファイル
+## Files written
 
-| ファイル | 用途 |
+| File | Purpose |
 | --- | --- |
-| `.github/copilot-instructions.md` | リポジトリのカスタム指示 |
+| `.github/copilot-instructions.md` | Repository custom instructions |
 
-## グローバルインストール
+## Global install
 
 ```bash
 engram link --global copilot
 ```
 
-`~/.copilot/copilot-instructions.md` に管理ブロックを追加します。
+Appends a managed block to `~/.copilot/copilot-instructions.md`.
 
-## コンパクト/手動フォールバックターゲット
+## Compact/manual fallback target
 
-Copilot はコンパクト/手動フォールバックターゲットです。現在のフックはセッション開始時のコンテキストは公開しますが、v1ではプロンプト送信時の信頼性の高いコンテキスト注入がないため、完全なコンパクトプロトコルが適用されます。フックのインストールはスキップされ、フック構成は書き込まれません。
+Copilot is a compact/manual fallback target. It receives the full compact protocol. Hook install is skipped in v1; use the Engram skillset or a manual `engram load` for context.
 
-## 次のステップ
+## Next steps
 
-- [エージェント統合の概要](overview.md)
-- [フックと検証行](hooks.md)
+- [Agent Integrations overview](overview.md)
+- [Hooks and proof lines](hooks.md)

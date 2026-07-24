@@ -1,30 +1,29 @@
 ---
 title: load / search / graph
 sidebar_position: 2
-description: Read commands — load routed memory, search the vault, and inspect graph routing.
+description: Commandes de lecture — charger la mémoire routée, rechercher dans le coffre-fort et inspecter le routage du graphe.
 ---
 
 # load / search / graph
 
-Read commands load routed memory, search the vault, and inspect graph routing.
+Les commandes de lecture chargent la mémoire routée, recherchent dans le coffre-fort et inspectent le routage du graphe.
 
 ## load
 
 ```bash
 engram load "<task>"
-engram load --full "<task>"
+engram load "<task>"
 engram load --dry-run "<task>"
 engram load --all "<task>"
 ```
 
-`load` first anchors routing on meaningful query terms, ignoring generic memory words such as `rule`, `knowledge`, and common stopwords. It then refines the wider candidate pool into a compact context pack. Normal load reports selected and total related counts, like `loaded 8 memory files / 14 total related memories`.
+`load` commence par ancrer le routage sur des termes de requête significatifs, en ignorant les mots de mémoire génériques comme `rule`, `knowledge` et les mots vides (stopwords) courants. Il affine ensuite le vivier de candidats plus large en un dossier de contexte compact. Une exécution normale de load signale les nombres de mémoires sélectionnées et totales associées, comme `loaded 8 memory files / 14 total related memories`.
 
-- default `load` — compact agent-facing route (only `id`, `type`, `tags`, `confidence`, `depends_on` in frontmatter; one selected rule variant)
-- `--full` — broader legacy output with full frontmatter and full rule variants
-- `--dry-run` — show candidate counts, narrowing tags, and match reasons without printing content
-- `--all` — return every visible routed match instead of the compact limit
+- `--full` — route compacte destinée aux agents (uniquement `id`, `type`, `tags`, `confidence`, `depends_on` dans le frontmatter ; une variante de règle sélectionnée)
+- `--dry-run` — affiche le nombre de candidats, les balises de réduction et les raisons de correspondance sans imprimer le contenu
+- `--all` — renvoie toutes les correspondances routées visibles au lieu de la limite compacte
 
-`workflow` and `workflows` still route to skill memories, but generic type words do not make a broad match by themselves.
+`workflow` et `workflows` pointent toujours vers des mémoires de compétences, mais les mots de type générique ne créent pas une correspondance large à eux seuls.
 
 ## search
 
@@ -33,7 +32,7 @@ engram search "<topic>"
 engram search --semantic "<topic>"
 ```
 
-Default search is deterministic lexical search. `search --semantic` adds deterministic local similarity, not embedding-backed semantic search.
+La recherche par défaut est la recherche lexicale déterministe. `search --semantic` ajoute une similarité locale déterministe, et non une recherche sémantique basée sur les embeddings.
 
 ## graph
 
@@ -42,20 +41,21 @@ engram graph "<topic>"
 engram graph --rebuild
 ```
 
-Inspect graph routing. Run `engram graph --rebuild` after manual edits. The graph reports dependency layers, and `engram load` pulls routed prerequisites into the same compact context pack before deeper memories.
+Inspecter le routage du graphe. Exécutez `engram graph --rebuild` après des modifications manuelles. Le graphe signale les couches de dépendance, et `engram load` extrait les prérequis routés dans le même dossier de contexte compact avant les mémoires plus profondes.
 
-Graph related edges and vector hits cannot load unrelated memories by themselves; they only help rerank or expand memories that already overlap meaningful query terms. Explicit `depends_on` prerequisites may still load without their own keyword overlap.
+Les arêtes associées du graphe et les résultats vectoriels ne peuvent pas charger de mémoires non liées à eux seuls ; ils aident seulement à reclasser ou à étendre les mémoires qui chevauchent déjà des termes de requête significatifs. Les prérequis explicites de `depends_on` peuvent toujours être chargés sans leur propre chevauchement de mots-clés.
 
-## Dependency layers
+## Couches de dépendance (Dependency layers)
 
 ```yaml
 depends_on: [release-foundation]
 level: advanced
 ```
 
-Use `depends_on` frontmatter when a memory should build on another memory instead of repeating it.
+Utilisez le frontmatter `depends_on` lorsqu'une mémoire doit s'appuyer sur une autre mémoire au lieu de la répéter.
 
-## Next steps
+## Étapes suivantes
 
 - [save / save-session / observe](save-session.md)
-- [Concepts: read path and routing](../concepts/read-path.md)
+- [Concepts : chemin de lecture et routage](../concepts/read-path.md)
+

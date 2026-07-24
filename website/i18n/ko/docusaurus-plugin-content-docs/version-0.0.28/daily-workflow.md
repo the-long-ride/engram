@@ -1,63 +1,63 @@
 ---
-title: Daily workflow
+title: 일일 워크플로우
 sidebar_position: 4
-description: The everyday Engram loop — load, work, search, save, and keep memory healthy.
+description: Engram 일일 루프 — 로드, 작업, 검색, 저장 및 메모리 건강 유지.
 ---
 
-# Daily workflow
+# 일일 워크플로우
 
-The Engram daily loop is intentionally boring: load memory at the start, search when you need more, save when something durable emerges, and audit at the end.
+Engram 일일 루프는 의도적으로 간단하게 디자인되었습니다: 시작할 때 메모리를 로드하고, 필요할 때 검색하고, 내구성이 있는 것이 나타나면 저장하고, 마지막에 검사합니다.
 
-## Start of session
-
-```text
-/engram load "current task"
-```
-
-Or from the terminal:
-
-```bash
-engram load "<task>"
-```
-
-The agent should reply with a compact count line such as `Engram loaded: 8 memories / 24 total related memories.` unless the human asks for IDs, rules, or raw output.
-
-## During work
-
-Search when the task changes or you suspect project knowledge is missing:
+## 세션 시작
 
 ```text
-/engram search "topic I might be missing"
+/engram load "현재 작업"
 ```
 
-Preview which memory files would route without printing their contents:
+또는 터미널에서 실행:
 
 ```bash
-engram load --dry-run "<query>"
+engram load "<작업>"
 ```
 
-Return every visible routed match instead of the compact limit:
+에이전트는 인간이 ID, 규칙 또는 원시 출력을 요청하지 않는 한 `Engram loaded: 8 memories / 24 total related memories.`와 같이 요약된 개수 라인으로 응답해야 합니다.
+
+## 작업 중
+
+작업이 변경되거나 프로젝트 지식이 부족하다고 의심되는 경우 검색합니다:
+
+```text
+/engram search "누락되었을 수 있는 주제"
+```
+
+콘텐츠를 인쇄하지 않고 어떤 메모리 파일이 라우팅되는지 미리 봅니다:
 
 ```bash
-engram load --all "<query>"
+engram load --dry-run "<쿼리>"
 ```
 
-## Save one durable fact
+요약 제한 대신 표시되는 모든 라우팅 일치를 반환합니다:
+
+```bash
+engram load --all "<쿼리>"
+```
+
+## 내구성 있는 사실 하나 저장
 
 ```text
 /engram save knowledge
 ```
 
-`engram save` captures the best single memory candidate, automatically updates a matching memory or creates a new one, and always shows the A/B/C approval gate before writing.
+`engram save`는 가장 적합한 단일 메모리 후보를 캡처하고, 일치하는 메모리를 자동으로 업데이트하거나 새 메모리를 생성하며, 쓰기 전에 항상 A/B/C 승인 게이트를 표시합니다.
 
-## Save several memories from a session
+## 세션에서 여러 메모리 저장
 
 ```text
 /engram save-session
 /engram ss
 ```
 
-Provide candidates in this shape:
+다음과 같은 형태로 후보를 제공합니다:
 
 ```text
 TYPE: rule | TEXT: Always run tests before release. | CONTEXT: Created from release planning so future agents preserve the test gate.
@@ -65,42 +65,42 @@ TYPE: knowledge | TEXT: Release notes live in CHANGELOG.md.
 TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
 ```
 
-`CONTEXT: ...` is optional. Add it only when it explains why the memory exists.
+`CONTEXT: ...`는 선택 사항입니다. 메모리가 존재하는 이유를 설명하는 경우에만 추가합니다.
 
-## Mine recent chats
+## 최근 대화 분석
 
 ```text
 /engram save-session --query-level 3
 /engram ss -f last 50 sessions
 ```
 
-`--query-level` must be a positive integer. The agent may use up to that many recent human-agent chat sessions, including the current one, and must not invent unavailable history.
+`--query-level`은 양의 정수여야 합니다. 에이전트는 현재 세션을 포함하여 액세스 가능한 최근 인간-에이전트 대화 세션을 최대 해당 개수까지 사용할 수 있으며, 사용할 수 없는 기록을 꾸며내서는 안 됩니다.
 
-## Accept-all shortcut
+## 모두 수락 바로 가기
 
 ```text
 /engram ss -f
 ```
 
-`-f` means the human explicitly approves every agent-recommended candidate. Agents must not add `--force` unless the human requested it.
+`-f`는 인간이 에이전트가 추천한 모든 후보를 명시적으로 승인함을 의미합니다. 에이전트는 인간이 요청하지 않는 한 `--force`을 추가해서는 안 됩니다.
 
-When an accept-all run reports related memories before writing, no file was saved yet. The agent should rerun with structured candidates:
+모두 수락 실행이 쓰기 전에 관련 메모리를 보고하는 경우, 아직 파일이 저장되지 않은 것입니다. 에이전트는 구조화된 후보를 사용하여 다시 실행해야 합니다:
 
 ```text
 TYPE: rule | TEXT: OAuth rotation follows release foundations. | DEPENDS_ON: release-foundation | LEVEL: advanced
 TYPE: knowledge | TEXT: Invoice retries use exponential backoff. | UPDATE: invoice-retry-baseline
 ```
 
-## Role routing
+## 역할 라우팅 (Role routing)
 
-Save role-specific memory:
+역할별 메모리 저장:
 
 ```bash
 engram save --role frontend ...
 engram save-session --role backend ...
 ```
 
-Tune role routing:
+역할 라우팅 조정:
 
 ```bash
 engram set-role frontend
@@ -108,27 +108,28 @@ engram set-role backend security
 engram set-role
 ```
 
-When `engram set-role ...` or `engram set-rule-variant ...` succeeds, the CLI returns an `Agent action:` line. Engram-aware slash adapters and MCP hosts should immediately rerun `engram load "<current task/request>"` and treat that result as replacing prior Engram-loaded context.
+`engram set-role ...` 또는 `engram set-rule-variant ...`가 성공하면 CLI는 `Agent action:` 라인을 반환합니다. Engram을 인식하는 슬래시 어댑터와 MCP 호스트는 즉시 `engram load "<현재 작업/요청>"`을 다시 실행하고 해당 결과를 이전에 로드된 Engram 컨텍스트를 대체하는 것으로 처리해야 합니다.
 
-## End of meaningful work
+## 의미 있는 작업 종료
 
 ```text
 Check Engram health, report invalid memories, and propose anything worth saving from this session.
 ```
 
-Useful commands:
+유용한 명령:
 
 ```bash
 engram upgrade
 engram verify
 engram repair
-engram graph "<topic>"
+engram graph "<주제>"
 engram quality-check
-engram archive --reason "<why>" <id-or-file>
+engram archive --reason "<이유>" <id-또는-파일>
 ```
 
-## Next steps
+## 다음 단계
 
-- [CLI Reference](cli/overview.md)
-- [Operations troubleshooting](operations/troubleshooting.md)
+- [CLI 참조](cli/overview.md)
+- [작업 문제 해결](operations/troubleshooting.md)
 - [Entry Web UI](entry/index.md)
+

@@ -26,7 +26,9 @@ function getFilesRecursively(dir) {
   return files;
 }
 
-function copyMissing(sourceDir, destinationVersion, message) {
+const overwrite = process.argv.includes('--overwrite') || process.argv.includes('-f') || process.argv.includes('--force');
+
+function copyFiles(sourceDir, destinationVersion, message) {
   for (const file of getFilesRecursively(sourceDir)) {
     const relativePath = path.relative(sourceDir, file);
     for (const locale of locales) {
@@ -38,7 +40,7 @@ function copyMissing(sourceDir, destinationVersion, message) {
         destinationVersion,
         relativePath,
       );
-      if (!fs.existsSync(destPath)) {
+      if (overwrite || !fs.existsSync(destPath)) {
         fs.mkdirSync(path.dirname(destPath), { recursive: true });
         fs.copyFileSync(file, destPath);
         console.log(`${message}: ${destPath}`);
@@ -47,8 +49,9 @@ function copyMissing(sourceDir, destinationVersion, message) {
   }
 }
 
-copyMissing(docsDir, 'current', 'Synced default to current locale');
+copyFiles(docsDir, 'current', 'Synced default to current locale');
 
 if (versionedDir && fs.existsSync(versionedDir)) {
-  copyMissing(versionedDir, versionName, 'Synced default to versioned locale');
+  copyFiles(versionedDir, versionName, 'Synced default to versioned locale');
 }
+

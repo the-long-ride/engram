@@ -1,49 +1,49 @@
 ---
 title: Claude
 sidebar_position: 3
-description: Engram integration with Claude Code via CLAUDE.md, slash commands, Agent Skills, MCP, and hooks.
+description: 通过 CLAUDE.md、斜杠命令、Agent Skills、MCP 和 hook 实现 Engram 与 Claude Code 的集成。
 ---
 
 # Claude
 
-Claude Code reads `CLAUDE.md` for project guidance and supports external tool configuration through `.mcp.json`.
+Claude Code 读取 `CLAUDE.md` 以获取项目指导，并通过 `.mcp.json` 支持外部工具配置。
 
-## Install
+## 安装
 
 ```bash
 engram link claude
 ```
 
-## Files written
+## 写入的文件
 
-| File | Purpose |
+| 文件 | 用途 |
 | --- | --- |
-| `CLAUDE.md` | Project guidance bootstrap |
-| `.claude/commands/engram.md` | Classic `/engram` slash command |
-| `.claude/skills/engram/SKILL.md` | Agent Skill for slash invocation |
-| `.claude/settings.json` | `SessionStart` and `UserPromptSubmit` hooks |
-| `.mcp.json` | MCP registration |
+| `CLAUDE.md` | 项目引导启动程序 |
+| `.claude/commands/engram.md` | 经典 `/engram` 斜杠命令 |
+| `.claude/skills/engram/SKILL.md` | 用于斜杠调用的 Agent Skill |
+| `.claude/settings.json` | `SessionStart` 和 `UserPromptSubmit` hook |
+| `.mcp.json` | MCP 注册 |
 
-Claude receives both `.claude/commands/engram.md` and `.claude/skills/engram/SKILL.md` so `/engram` appears in older command menus and newer skill-aware Claude Code sessions.
+Claude 会同时接收 `.claude/commands/engram.md` 和 `.claude/skills/engram/SKILL.md`，因此 `/engram` 会出现在较旧的命令菜单和较新的支持 Skill 的 Claude Code 会话中。
 
-## Global install
+## 全局安装
 
 ```bash
 engram link --global claude
 ```
 
-Engram appends a managed block to `~/.claude/CLAUDE.md` (preserving user text) and writes the Claude skill to `~/.claude/skills/engram/SKILL.md`. Global MCP writes to `~/.claude/mcp.json`.
+Engram 会向 `~/.claude/CLAUDE.md` 追加一个托管块（保留用户文本），并将 Claude skill 写入 `~/.claude/skills/engram/SKILL.md`。全局 MCP 会写入 `~/.claude/mcp.json`。
 
-## Runtime-first target
+## 运行时优先目标
 
-Claude is a runtime-first target. `CLAUDE.md` contains short bootstrap instructions that rely on MCP tools and hooks for detailed protocol; the Agent Skill file carries the full write/approval workflow.
+Claude 是一个运行时优先的目标。`CLAUDE.md` 包含简短的引导指令，这些指令依赖 MCP 工具和 hook 来执行详细协议；Agent Skill 文件承载了完整的写入/审批工作流。
 
-## Hook behavior
+## Hook 行为
 
-Claude supports startup and prompt-time additional context injection. `SessionStart` loads routed memory at startup; `UserPromptSubmit` reinjects only when routed Engram context changes.
+Claude 支持启动时和提示词（prompt）时的附加上下文注入。`SessionStart` 在启动时加载路由内存；`UserPromptSubmit` 仅在路由的 Engram 上下文发生变化时重新注入。
 
-## Next steps
+## 后续步骤
 
-- [Agent Integrations overview](overview.md)
-- [Slash adapters](slash.md)
-- [MCP tools](mcp.md)
+- [Agent 集成概述](overview.md)
+- [斜杠适配器](slash.md)
+- [MCP 工具](mcp.md)

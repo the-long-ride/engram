@@ -38,7 +38,7 @@ export async function readText(file: string): Promise<string> {
 /** Read text from standard input until EOF. */
 export async function readTextFromStdin(): Promise<string> {
   try {
-    const chunks: Buffer[] = [];
+    const chunks: (typeof Buffer)[] = [];
     for await (const chunk of process.stdin) {
       chunks.push(Buffer.from(chunk));
     }

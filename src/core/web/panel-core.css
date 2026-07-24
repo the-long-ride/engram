@@ -54,8 +54,10 @@
   --font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   --logo-url: url("/favicon.svg");
+  --cfg-row-alt: rgba(255, 255, 255, 0.025);
 }
 :root.light {
+  --cfg-row-alt: rgba(0, 0, 0, 0.025);
   --bg: #fff;
   --bg2: #fafafa;
   --g100: #f2f2f2;
@@ -346,6 +348,38 @@ button {
   align-items: center;
   justify-content: space-between;
 }
+.card-hdr-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.card-collapse-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 4px;
+  color: var(--g700);
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 120ms, color 120ms, border-color 120ms;
+}
+.card-collapse-btn:hover {
+  background: var(--g100);
+  color: var(--g1000);
+}
+.card-collapse-icon {
+  transition: transform 180ms ease;
+}
+.card-collapse-icon.expanded {
+  transform: rotate(180deg);
+}
+.card.collapsed .card-hdr {
+  border-bottom: none;
+}
 .card-title {
   font-size: 12px;
   font-weight: 600;
@@ -381,6 +415,9 @@ button {
 .cfg-row:last-child {
   border-bottom: none;
 }
+.cfg-row:nth-child(even) {
+  background: var(--cfg-row-alt);
+}
 .cfg-lbl {
   flex: 1;
   font-size: 13px;
@@ -393,6 +430,51 @@ button {
   display: flex;
   justify-content: flex-end;
   align-items: center;
+}
+.cfg-ctl:has(.multi-choice) {
+  flex: 1;
+  min-width: 0;
+}
+/* ── MultiChoice Chips ── */
+.multi-choice {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.multi-choice-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 2px 10px;
+  border: 1px solid var(--g300);
+  border-radius: var(--r6);
+  background: var(--bg);
+  color: var(--g700);
+  cursor: pointer;
+  font-size: 12px;
+  user-select: none;
+  transition: background 100ms, border-color 100ms, color 100ms;
+}
+.multi-choice-option:hover {
+  border-color: var(--g500);
+  color: var(--g1000);
+}
+.multi-choice-option.selected {
+  border-color: var(--g700);
+  background: var(--g100);
+  color: var(--g1000);
+  font-weight: 500;
+}
+.multi-choice-option input[type="checkbox"] {
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--g1000);
+}
+.multi-choice-option:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 /* ── Toggle ── */
@@ -493,6 +575,12 @@ button {
     opacity 100ms;
   cursor: pointer;
   border: 1px solid transparent;
+}
+.btn:disabled,
+.btn[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 .btn-primary {
   background: var(--g1000);

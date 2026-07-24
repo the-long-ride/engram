@@ -24,6 +24,17 @@ test('panel metadata hides internal theme field from config editor', () => {
   assert.equal(fields.some((field) => field.key === 'theme'), false);
 });
 
+
+
+test('every visible config field has a unique explicit docs anchor', () => {
+  const visible = configFieldsForPanel();
+  const anchors = visible.map((field) => field.docsAnchor);
+  assert.ok(anchors.every((anchor) => typeof anchor === 'string' && anchor.length > 0));
+  assert.equal(new Set(anchors).size, anchors.length);
+  assert.equal(visible.find((field) => field.key === 'global_git.branch')?.docsAnchor, 'global-git-branch');
+  assert.equal(CONFIG_FIELDS.find((field) => field.key === 'theme')?.docsAnchor, undefined);
+});
+
 test('validateConfigPatch normalizes valid values', () => {
   const result = validateConfigPatch({
     scope: 'global',

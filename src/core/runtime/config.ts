@@ -3,7 +3,7 @@ import path from 'node:path';
 import { homedir } from 'node:os';
 import { ENGRAM_DIR, LEGACY_ENGRAM_DIR, VERSION } from './constants.js';
 import type { EngramConfig, EngramProfile, ProfileResolution, ProfileStore, ProfileSource, Scope } from './types.js';
-import { DEFAULT_LOAD_LIMIT } from './load-limit.js';
+import { DEFAULT_LOAD_LIMIT, DEFAULT_MAX_TOKENS } from './load-limit.js';
 import { exists, readJson, writeJson } from '../system/fsx.js';
 import { openConfigDb, isConfigDbUsable } from '../config-db/schema.js';
 
@@ -132,7 +132,7 @@ export function defaultConfig(): EngramConfig {
     live_sync: { enabled: false, targets: ['agents-md', 'claude-md', 'cursorrules'] },
     global_git: { enabled: true, remote: 'origin', remote_url: '', branch: 'main', auto_sync: true, auto_resolve: true },
     rule_variants: { enabled: false, active: 'balanced' },
-    load: { limit: DEFAULT_LOAD_LIMIT },
+    load: { limit: DEFAULT_LOAD_LIMIT, max_tokens: DEFAULT_MAX_TOKENS, dependency_reserve_ratio: 0.20, projection: 'adaptive' },
     graph: { enabled: true, max_related: 4, min_related_score: 0.22 },
     vector: { enabled: true, provider: 'sqlite-vec', auto_threshold: 100, candidate_pool: 24, dimensions: 64 },
     pattern_mining: { enabled: false, threshold: 3, lookback_sessions: 20 },

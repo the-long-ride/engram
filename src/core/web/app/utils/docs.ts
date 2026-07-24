@@ -63,3 +63,12 @@ export function entryFieldGroupDoc(
 ): string {
   return entryDoc('field-reference', docSlug(group), version, versions);
 }
+
+
+export function entryConfigFieldDoc(
+  anchor: string,
+  version: string = VERSION,
+  versions: readonly string[] = DOCS_SITE_VERSIONS
+): string {
+  return entryDoc('field-reference', anchor, version, versions);
+}

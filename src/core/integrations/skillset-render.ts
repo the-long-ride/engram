@@ -404,6 +404,89 @@ Keep replies compact. Never add --force unless the human included it. Never bypa
 `;
 }
 
+const ENGRAM_HOOK_NAME = 'engram-auto-load';
+
+/** Render a gemini hooks.json config with managed Engram hook entries. */
+export function renderGeminiHookConfig(): string {
+  const hook = {
+    name: ENGRAM_HOOK_NAME,
+    type: 'command',
+    command: 'engram agent-hook --host gemini',
+    timeout: 10000,
+    description: 'Load routed Engram memory context for this session or turn.'
+  };
+  const entry = { hooks: [hook] };
+  const config = {
+    hooks: {
+      SessionStart: [entry],
+      BeforeAgent: [{ ...entry }]
+    }
+  };
+  return JSON.stringify(config, null, 2) + '\n';
+}
+
+function hasEngramHook(entry: unknown): boolean {
+  if (!entry || typeof entry !== 'object') return false;
+  const hooks = (entry as Record<string, unknown>).hooks;
+  if (!Array.isArray(hooks)) return false;
+  return hooks.some((hook: unknown) =>
+    typeof hook === 'object' && hook !== null && (hook as Record<string, unknown>).name === ENGRAM_HOOK_NAME
+  );
+}
+
+function removeEngramHookEntries(entries: unknown[]): unknown[] {
+  return entries.filter((entry) => !hasEngramHook(entry));
+}
+
+/** Merge generated gemini hook config into existing hooks.json, preserving user hooks. */
+export function mergeGeminiHookConfig(existing: string, incoming: string, options: { replaceExisting?: boolean } = {}): string | null {
+  try {
+    const ex = parseJsonLike<Record<string, any>>(existing);
+    const inc = parseJsonLike<Record<string, any>>(incoming);
+    if (!ex.hooks || typeof ex.hooks !== 'object') ex.hooks = {};
+    if (typeof inc.hooks !== 'object' || !inc.hooks) return null;
+
+    let hasChange = false;
+    for (const event of Object.keys(inc.hooks)) {
+      const incomingEntries = inc.hooks[event];
+      if (!Array.isArray(incomingEntries)) continue;
+      const existingEntries: unknown[] = Array.isArray(ex.hooks[event]) ? ex.hooks[event] : [];
+
+      if (!options.replaceExisting && existingEntries.some(hasEngramHook)) continue;
+
+      const kept = removeEngramHookEntries(existingEntries);
+      ex.hooks[event] = [...kept, ...incomingEntries];
+      hasChange = true;
+    }
+    if (!hasChange) return null;
+    return `${JSON.stringify(ex, null, 2)}\n`;
+  } catch {
+    return null;
+  }
+}
+
+/** Remove only the engram-auto-load hook entries from a hooks.json config. */
+export function unmergeGeminiHookConfig(existing: string): string | null {
+  try {
+    const ex = parseJsonLike<Record<string, any>>(existing);
+    if (!ex.hooks || typeof ex.hooks !== 'object') return null;
+    let hadEngram = false;
+    for (const event of Object.keys(ex.hooks)) {
+      if (!Array.isArray(ex.hooks[event])) continue;
+      const before = ex.hooks[event].length;
+      ex.hooks[event] = removeEngramHookEntries(ex.hooks[event]);
+      if (ex.hooks[event].length !== before) hadEngram = true;
+      if (ex.hooks[event].length === 0) delete ex.hooks[event];
+    }
+    if (!hadEngram) return null;
+    if (!Object.keys(ex.hooks).length) delete ex.hooks;
+    if (!Object.keys(ex).filter((k) => k !== 'hooks').length && !ex.hooks) return '';
+    return `${JSON.stringify(ex, null, 2)}\n`;
+  } catch {
+    return null;
+  }
+}
+
 
 
 

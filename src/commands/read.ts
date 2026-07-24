@@ -1,11 +1,11 @@
 /** Read-oriented commands: load, rebuild-index, verify, audit, and rehash. */
 import path from 'node:path';
-import { getContext, loadSummary } from '../core/memory/context.js';
+import { getContext } from '../core/memory/context.js';
 import { classifyTaskType } from '../core/memory/task-classifier.js';
 import { inferTaskIntent, taskIntentQuery, intentIsActionable } from '../core/memory/task-intent.js';
 import { rebuildGraph } from '../core/memory/graph.js';
 import { invalidMemoryFiles, rebuildIndex } from '../core/memory/index.js';
-import { loadEntries, routeDetailed, visibleEntries, type RouteDetail } from '../core/memory/routing.js';
+import { routeDetailed, visibleEntries, type RouteDetail } from '../core/memory/routing.js';
 import { ensureVectorIndex, vectorRouteHits } from '../core/memory/vector-db.js';
 import { formatRecords, type RecordBlock } from '../core/cli/format.js';
 import { isJsonMode, jsonOk } from '../core/cli/json-output.js';
@@ -18,6 +18,8 @@ import { inside, listFiles, readText, writeJson } from '../core/system/fsx.js';
 import { scopeRootsForConfig } from '../core/runtime/config.js';
 import { HASH_FILE } from '../core/runtime/constants.js';
 import { explainRoute } from '../core/memory/route-explain.js';
+import { planLoad, renderCompactPayload } from '../core/memory/load-plan.js';
+import { DEFAULT_MAX_TOKENS, parseMaxTokens } from '../core/runtime/load-limit.js';
 
 /** Load routed memory for a query. */
 export async function cmdLoad(args: string[], flags: Record<string, any> = {}): Promise<string> {
@@ -33,43 +35,32 @@ export async function cmdLoad(args: string[], flags: Record<string, any> = {}): 
   }
   targetIds = targetIds.map((i) => i.trim()).filter(Boolean);
 
-  let entries: MemoryEntry[] = [];
-  let routed: RouteDetail;
+  const query = args.join(' ') || 'current session';
   const full = flags.full === true || flags.f === true;
   const forAgents = !full;
-  let intent: ReturnType<typeof inferTaskIntent> | undefined;
+  const all = flags.all === true;
+  const budgetTokens = flags['budget-tokens'] === undefined
+    ? ctx.config.load.max_tokens ?? DEFAULT_MAX_TOKENS
+    : parseMaxTokens(flags['budget-tokens'], '--budget-tokens');
+
+  const plan = await planLoad(ctx, query, {
+    all,
+    full,
+    id: targetIds,
+    budgetTokens,
+    forAgents
+  });
+
+  const routed = plan.routeDetail!;
+  const entries = routed.entries;
+  const intent = plan.query.intent ? (inferTaskIntent(query)) : undefined;
 
   if (targetIds.length > 0) {
-    entries = ctx.index.entries.filter((e) => targetIds.includes(e.id));
     const archivedHits = entries.filter((e) => e.lifecycle === 'archived');
-    routed = {
-      entries,
-      candidates: entries.length,
-      selected: entries.length,
-      omitted: 0,
-      refined: false,
-      facets: [],
-      reasons: entries.map((e) => ({ key: `${e.scope}:${e.file}`, kind: 'direct' as const, matchedBy: ['literal' as const], terms: [e.id] }))
-    };
     if (archivedHits.length) {
       const ids = archivedHits.map((e) => e.id).join(', ');
       process.stderr.write(`warning: ${ids} archived via frontmatter; loaded by explicit --id only.\n`);
     }
-  } else {
-    const query = args.join(' ') || 'current session';
-    const all = flags.all === true;
-    intent = forAgents ? inferTaskIntent(query) : undefined;
-    const routingQuery = intent && intentIsActionable(intent) ? taskIntentQuery(intent) : query;
-    const vectorHits = all ? [] : await vectorRouteHits(ctx.roots, ctx.scopeIndexes, ctx.config, routingQuery, ctx.ignorePatterns, all);
-    routed = routeDetailed(ctx.index, routingQuery, ctx.config, all, {
-      all,
-      ignorePatterns: ctx.ignorePatterns,
-      vectorHits,
-      candidatePool: ctx.config.vector.candidate_pool,
-      intent,
-      semanticRelaxed: forAgents
-    }, ctx.graph);
-    entries = routed.entries;
   }
 
   if (flags.explain === true) {
@@ -116,19 +107,13 @@ export async function cmdLoad(args: string[], flags: Record<string, any> = {}): 
   }
   if (isJsonMode(flags)) {
     return jsonOk({
-      selected: entries.length,
+      selected: plan.selected_ids.length,
       total_related: routed.candidates,
       omitted: routed.omitted,
-      entries: entries.map((entry) => ({ id: entry.id, scope: entry.scope, type: entry.type, file: entry.file, summary: entry.summary }))
+      entries: plan.payload_rows.map(({ entry }) => ({ id: entry.id, scope: entry.scope, type: entry.type, file: entry.file, summary: entry.summary }))
     });
   }
-  const loaded = await loadEntries(process.cwd(), entries, ctx.config, { forAgents });
-  const summary = loadSummary(entries, ctx.hiddenCount, routed.candidates);
-  return `${summary}${routeHint(routed)}\n\n${loaded.map((row) => {
-    if (!row.content) return `SKIPPED ${row.entry.file}: ${row.flagged ?? 'empty'}`;
-    if (row.flagged) return `⚠ ${row.entry.file}: ${row.flagged} (run \`engram rehash ${row.entry.scope}\` to re-hash)\n\n${row.content}`;
-    return row.content;
-  }).join('\n---\n')}`.trim();
+  return renderCompactPayload(ctx, routed, plan.payload_rows, plan.skipped_rows);
 }
 
 /** Classify a user task for `engram load` and save tags. */
@@ -255,12 +240,6 @@ function refinementRecord(routed: RouteDetail): RecordBlock {
       ['Narrow with tags', tags]
     ]
   };
-}
-
-function routeHint(routed: RouteDetail): string {
-  if (!routed.omitted) return '';
-  const tags = routed.facets.map((facet) => facet.tag).join(', ');
-  return `\nengram: refined ${routed.selected} of ${routed.candidates} related memories${tags ? `; narrow with tags: ${tags}` : ''}`;
 }
 
 function matchReason(routed: RouteDetail, entry: { scope: string; file: string }): string {

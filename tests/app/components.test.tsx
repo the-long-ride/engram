@@ -11,6 +11,8 @@ import { Modal } from '../../src/core/web/app/components/Modal.js';
 import { ScopeChips } from '../../src/core/web/app/components/ScopeChips.js';
 import { SectionHeader } from '../../src/core/web/app/components/SectionHeader.js';
 import { Toast } from '../../src/core/web/app/components/Toast.js';
+import { MultiChoice } from '../../src/core/web/app/components/MultiChoice.js';
+import { MemoryPropertiesGrid } from '../../src/core/web/app/components/MemoryPropertiesGrid.js';
 import { Toggle } from '../../src/core/web/app/components/Toggle.js';
 import { entryDoc } from '../../src/core/web/app/utils/docs.js';
 
@@ -229,5 +231,45 @@ describe('Modal', () => {
     // Click on dialog doesn't trigger close
     fireEvent.mouseDown(screen.getByRole('dialog'));
     expect(closeMock).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe('MemoryPropertiesGrid', () => {
+  test('renders left properties with prop-span-2 and opens full-value modal on click', () => {
+    render(
+      <MemoryPropertiesGrid
+        properties={[
+          ['id', 'very-long-memory-id-12345'],
+          ['type', 'rule'],
+          ['scope', 'workspace'],
+          ['tags', 'task_type:planning, repo, test']
+        ]}
+      />
+    );
+
+    const idValue = screen.getByText('very-long-memory-id-12345');
+    expect(idValue.parentElement).toHaveClass('prop-span-2');
+
+    const typeValue = screen.getByText('rule');
+    expect(typeValue.parentElement).toHaveClass('prop-span-1');
+
+    // Click on value to open full value detail modal
+    fireEvent.click(idValue);
+    expect(screen.getByRole('dialog', { name: 'id' })).toBeInTheDocument();
+  });
+
+  test('splits comma-separated source_files and source_hashes into multiple lines in modal', () => {
+    render(
+      <MemoryPropertiesGrid
+        properties={[
+          ['source_files', 'file-a.md, file-b.md, file-c.md'],
+          ['source_hashes', 'hash123, hash456']
+        ]}
+      />
+    );
+
+    const filesValue = screen.getByText('file-a.md, file-b.md, file-c.md');
+    fireEvent.click(filesValue);
+    expect(document.querySelector('.prop-full-val')?.textContent).toBe('file-a.md\nfile-b.md\nfile-c.md');
   });
 });

@@ -9,7 +9,8 @@ test('docs workflows use pnpm for website jobs', async () => {
   const docs = (await readFile(path.join(root, '.github', 'workflows', 'docs.yml'), 'utf8')).replace(/\r\n/g, '\n');
 
   for (const workflow of [deployDocs, docs]) {
-    assert.match(workflow, /pnpm\/action-setup@v4/);
+    assert.match(workflow, /pnpm\/action-setup@v6/);
+    assert.match(workflow, /actions\/setup-node@v7/);
     assert.match(workflow, /cache: pnpm/);
     assert.match(workflow, /cache-dependency-path: website\/pnpm-lock\.yaml/);
     assert.doesNotMatch(workflow, /package-lock\.json/);
@@ -18,6 +19,7 @@ test('docs workflows use pnpm for website jobs', async () => {
   }
 
   assert.match(deployDocs, /run: pnpm build/);
+  assert.match(deployDocs, /actions\/deploy-pages@v5/);
   assert.match(deployDocs, /run: pnpm check:entry-fields/);
   assert.doesNotMatch(deployDocs, /run: npm run build/);
   assert.doesNotMatch(deployDocs, /run: npm run check:entry-fields/);
@@ -49,4 +51,12 @@ test('test workflow runs the full suite on pull_request/push and exposes node + 
   assert.match(workflow, /^permissions:\n\s+contents: read/m);
   // Schedule full-suite safety net
   assert.match(workflow, /cron: '17 6 \* \* \*'/);
+});
+
+
+test('release workflow uses current artifact and release action majors', async () => {
+  const release = (await readFile(path.join(path.resolve('.'), '.github', 'workflows', 'release.yml'), 'utf8')).replace(/\r\n/g, '\n');
+  assert.match(release, /actions\/setup-node@v7/);
+  assert.match(release, /actions\/download-artifact@v8/);
+  assert.match(release, /softprops\/action-gh-release@v3/);
 });

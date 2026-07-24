@@ -256,16 +256,16 @@
   right: 24px;
   background: var(--bg);
   border: 1px solid var(--g300);
+  border-left: 3px solid var(--g500);
   border-radius: var(--r8);
   padding: 10px 16px;
   font-size: 13px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 200ms;
+  transition: opacity 200ms, border-left-color 200ms;
   z-index: 9999;
   max-width: 320px;
-  border-left: 3px solid var(--g500);
 }
 #toast.ok {
   border-left-color: var(--green);
@@ -474,8 +474,14 @@
 .modal-panel { width: min(840px, 100%); max-height: min(760px, calc(100vh - 40px)); background: var(--bg); color: var(--g1000); border: 1px solid var(--g300); border-radius: var(--r8); overflow: hidden; display: flex; flex-direction: column; }
 .memory-preview-modal { width: min(980px, 100%); max-height: min(840px, calc(100vh - 32px)); }
 .memory-modal-document { display: grid; gap: 16px; }
-.memory-modal-properties { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 18px; margin: 0; padding: 14px; border: 1px solid var(--g300); border-radius: var(--r8); background: var(--bg2); }
+.memory-modal-properties { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 16px; margin: 0; padding: 14px; border: 1px solid var(--g300); border-radius: var(--r8); background: var(--bg2); }
 .memory-modal-properties > div { min-width: 0; }
+.prop-span-2 { grid-column: span 2; }
+.prop-span-1 { grid-column: span 1; }
+.prop-val-clickable { cursor: pointer; border-bottom: 1px dashed var(--g400); transition: color 120ms, border-color 120ms, background 120ms; }
+.prop-val-clickable:hover { color: var(--g1000); border-bottom-color: var(--g700); background: rgba(255, 255, 255, 0.05); }
+.prop-detail-panel { width: min(90vw, 680px); max-width: 680px; background: var(--bg); border: 1px solid var(--g300); border-radius: var(--r12); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.36); }
+.prop-full-val { margin: 0; padding: 14px; max-height: 380px; overflow: auto; border: 1px solid var(--g200); border-radius: var(--r6); background: var(--bg2); color: var(--g1000); font: 12px/1.55 var(--mono); white-space: pre-wrap; word-break: break-all; }
 .memory-modal-properties dt { color: var(--g600); font-size: 10px; letter-spacing: .45px; text-transform: uppercase; }
 .memory-modal-properties dd { margin-top: 4px; overflow: hidden; color: var(--g900); font: 11px/1.35 var(--mono); text-overflow: ellipsis; white-space: nowrap; }
 .memory-modal-content { min-width: 0; }

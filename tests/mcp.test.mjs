@@ -108,6 +108,7 @@ test('mcp status and save proposal do not write silently', async () => {
       content: 'Release foundation checklist lives in docs/release.md.'
     }));
     await runCli(['rebuild-index', 'workspace']);
+    await runCli(['rehash', 'workspace']);
 
     const related = await handleMcp({
       id: 6,

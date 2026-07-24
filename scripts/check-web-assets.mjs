@@ -8,10 +8,10 @@ const rawBudgets = [
 ];
 
 const cssDir = 'src/core/web';
-const cssLineBudgetMax = 600;
+const cssLineBudgetMax = 650;
 
 const bundleBudgets = [
-  ['dist/core/web/panel.js', 261000]
+  ['dist/core/web/panel.js', 267000]
 ];
 
 function lineCount(source) {

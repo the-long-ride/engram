@@ -2,6 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ApiResult, ModalController, ShowToast } from '../types.js';
 import { DependencyPicker, type DependencyChoice } from '../components/DependencyPicker.js';
 import { MemoryDiff } from '../components/MemoryDiff.js';
+import { Button } from '../components/Button.js';
+import { CompareModal } from '../components/CompareModal.js';
+import { MemoryPreviewContent } from '../components/MemoryPreviewContent.js';
 import { reviewInspect, reviewPreview, reviewQueue, reviewWrite } from '../api-client.js';
 import { copyText } from '../utils/clipboard.js';
 
@@ -29,9 +32,22 @@ export function ReviewTab({ active, toast, modal }: { active: boolean; toast: Sh
   const [memoryPreviewError, setMemoryPreviewError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [writing, setWriting] = useState(false);
+  const [compareOpen, setCompareOpen] = useState(false);
   const requestVersion = useRef(0);
   const queueVersion = useRef(0);
   const previewVersion = useRef(0);
+
+  function openMemoryModal(preview: ReviewMemoryPreview) {
+    if (!modal) return;
+    modal.open({
+      title: preview.id || preview.file || 'Memory detail',
+      copyContent: preview.content || '',
+      copyLabel: 'Copied content',
+      className: 'modal-panel memory-preview-modal',
+      content: <MemoryPreviewContent content={preview.content || ''} properties={preview.properties} />,
+      actions: <Button variant="primary" onClick={modal.close}>Close</Button>
+    });
+  }
 
   const applySelection = (item: ReviewItem) => {
     setSelected(item);
@@ -138,13 +154,14 @@ export function ReviewTab({ active, toast, modal }: { active: boolean; toast: Sh
       <section className="review-detail" aria-label="Selected review item">
         {!selected ? <div className="review-empty review-detail-empty"><span className="review-empty-mark">↗</span><h2>Select an item</h2><p className="muted">Choose a finding to inspect context and preview a proposal.</p></div> : <>
           <div className="card review-summary"><div className="review-summary-top"><div><span className="review-kind">{selected.kind === 'inbox' ? 'Deferred candidate' : `${selected.kind} finding`}</span><h2 title={selected.id}>{shortId(selected.id)}</h2></div><span className="review-state">Review</span></div><p>{selected.safe_summary}</p><div className="review-summary-meta"><span>{relatedIds.length} related {relatedIds.length === 1 ? 'memory' : 'memories'}</span><span className="review-id" title={selected.id}>{selected.id}</span></div></div>
-          <div className="card review-memory-preview"><div className="review-section-heading"><div><span className="card-title">Context</span><p className="review-section-note">Open only when needed.</p></div><span className="review-step">01</span></div>{memoryPreviewLoading ? <div className="review-preview-state">Loading…</div> : memoryPreviewError ? <div className="review-preview-state error">{memoryPreviewError}</div> : !memoryPreviews.length ? <div className="review-preview-state">No readable memory linked.</div> : <div className="review-preview-list">{memoryPreviews.map((preview) => <article className="review-memory-document" key={`${preview.kind}:${preview.id}`}><details><summary className="review-memory-document-header"><div><span className="review-kind">{preview.kind === 'candidate' ? 'Candidate' : preview.type}</span><h3 title={preview.id}>{preview.id}</h3></div><span className="review-memory-scope">{preview.scope}</span></summary><div className="review-memory-document-body">{preview.file ? <p className="review-memory-file">{preview.file}</p> : null}<dl className="review-properties">{preview.properties.map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl><div className="review-memory-content"><span className="review-content-label">Content</span><pre>{preview.content || '(empty content)'}</pre></div></div></details></article>)}</div>}</div>
+          <div className="card review-memory-preview"><div className="review-section-heading"><div><span className="card-title">Context</span><p className="review-section-note">Open only when needed.</p></div><div className="review-section-right">{memoryPreviews.length >= 2 ? <Button variant="outline" className="review-compare-btn" onClick={() => setCompareOpen(true)}>Compare</Button> : null}<span className="review-step">01</span></div></div>{memoryPreviewLoading ? <div className="review-preview-state">Loading…</div> : memoryPreviewError ? <div className="review-preview-state error">{memoryPreviewError}</div> : !memoryPreviews.length ? <div className="review-preview-state">No readable memory linked.</div> : <div className="review-preview-list">{memoryPreviews.map((preview) => <article className="review-memory-item" key={`${preview.kind}:${preview.id}`}><div className="review-memory-item-hdr"><div className="review-memory-item-meta"><span className="badge badge-primary">{preview.type ? preview.type.toUpperCase() : 'MEMORY'}</span><span className="badge badge-neutral">{preview.scope ? preview.scope.toUpperCase() : 'WORKSPACE'}</span><strong className="mono review-memory-item-id" title={preview.id}>{preview.id}</strong></div><Button variant="primary" style={{ height: 26, fontSize: 11, padding: '0 12px', fontWeight: 600 }} onClick={() => openMemoryModal(preview)}>Open</Button></div></article>)}</div>}</div>
           <div className="card review-proposal"><div className="review-section-heading"><div><span className="card-title">Review prompt</span><p className="review-section-note">Copied prompt lets agent write.</p></div><span className="review-step">02</span></div><div className="review-candidate-block"><div className="review-candidate-heading"><span>Candidate</span><span className="review-readonly">Read-only</span></div><pre className="review-candidate">{generatedCandidate || '(no candidate text)'}</pre></div><div className="review-prompt-actions"><button className="btn btn-outline" onClick={() => copyText(reviewPrompt, toast, 'Copied review prompt')}>Copy review prompt</button><button className="btn btn-primary" onClick={confirmWrite} disabled={!proposal.trim() || writing}>{writing ? 'Writing…' : 'Write'}</button><span className="muted">If agent cannot write, paste reply and confirm.</span></div><details className="review-paste"><summary>Paste AI output</summary><label className="field-label" htmlFor="review-proposal">Proposal</label><textarea id="review-proposal" aria-label="Paste AI output" value={proposal} onChange={(event) => setProposal(event.target.value)} placeholder="Paste AI output" rows={7} /><p className="muted">Writes to {writeScope} memory after confirmation.</p></details></div>
           <DependencyPicker ids={relatedIds} value={relations} onChange={setRelations} />
           <RelationSummary relations={relations} />
         </>}
       </section>
     </div>
+    {compareOpen ? <CompareModal items={memoryPreviews} onClose={() => setCompareOpen(false)} /> : null}
     {proposal.trim() ? <MemoryDiff current={currentMemory || selected?.safe_summary || ''} proposed={proposal} footer={<div className="tab-actions"><button className="btn btn-outline" onClick={() => { setProposal(''); setRelations([]); toast('Review preview cleared'); }}>Clear preview</button></div>} /> : null}
   </div>;
 }

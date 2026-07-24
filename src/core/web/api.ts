@@ -470,7 +470,7 @@ import path from 'node:path';
 import { readText } from '../system/fsx.js';
 import { detectInstalledAgents } from '../integrations/agent-detect.js';
 import { isGenerated } from '../integrations/skillset-render.js';
-import { readGlobalSkillsetRegistry, installSkillset, unlinkSkillset, installGlobalSkillset, unlinkGlobalSkillset, type SkillsetTarget } from '../integrations/skillset.js';
+import { readGlobalSkillsetRegistry, installSkillset, unlinkSkillset, installGlobalSkillset, unlinkGlobalSkillset, globalInstallPlans, type SkillsetTarget } from '../integrations/skillset.js';
 import { applyAgentHookAction } from '../integrations/agent-hooks.js';
 import { globalAgentConfigHome, globalOpenCodeConfigHome } from '../integrations/agent-paths.js';
 
@@ -482,6 +482,7 @@ export interface AgentUiInfo {
   workspaceLinked: boolean;
   globalLinked: boolean;
   targets: string[];
+  globalTargets?: string[];
 }
 
 const AGENT_TARGET_MAP: Record<string, string[]> = {
@@ -509,6 +510,7 @@ const TARGET_FILES: Record<string, string[]> = {
     '.antigravity/skills/engram/SKILL.md',
     '.antigravity-cli/skills/engram/SKILL.md',
     '.antigravity-ide/skills/engram/SKILL.md',
+    '.gemini/skills/engram/SKILL.md',
     '.antigravityrules'
   ],
   opencode: ['opencode.json', '.opencode/engram.md'],
@@ -576,6 +578,7 @@ export async function apiAgentsScan(cwd: string): Promise<AgentUiInfo[]> {
     const isDet = detected.has(agent.id);
     const wsLinked = await isTargetLinkedWorkspace(cwd, agent.id);
     const glLinked = await isTargetLinkedGlobal(agent.id);
+    const plans = globalInstallPlans(agent.id).filter((p) => !p.reason && p.file && p.file !== '<manual>');
     result.push({
       id: agent.id,
       name: agent.name,
@@ -584,6 +587,7 @@ export async function apiAgentsScan(cwd: string): Promise<AgentUiInfo[]> {
       workspaceLinked: wsLinked,
       globalLinked: glLinked,
       targets: AGENT_TARGET_MAP[agent.id] ?? [agent.id],
+      globalTargets: plans.map((p) => p.file),
     });
   }
   return result;

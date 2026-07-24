@@ -1,0 +1,54 @@
+{
+  "version": 2,
+  "cases": [
+    {
+      "id": "case-paraphrase-auth",
+      "category": "paraphrase",
+      "query": "refresh auth tokens",
+      "expect": ["knowledge/auth-tokens-refresh-before-expiry.md"],
+      "forbid": [],
+      "depends_on": []
+    },
+    {
+      "id": "case-dep-chain-session",
+      "category": "dependency-chain",
+      "query": "middleware session validation",
+      "expect": ["session-middleware-validates-auth-tokens"],
+      "forbid": [],
+      "depends_on": []
+    },
+    {
+      "id": "case-mixed-intent-billing",
+      "category": "mixed-intent",
+      "query": "billing invoice export PDF format",
+      "expect": ["knowledge/billing-invoice-export.md"],
+      "forbid": [],
+      "depends_on": []
+    },
+    {
+      "id": "case-zero-match-nonsense",
+      "category": "zero-match",
+      "query": "unrelated non-existent query term xyz1239999",
+      "expect": [],
+      "forbid": [],
+      "depends_on": []
+    },
+    {
+      "id": "case-profile-isolation",
+      "category": "profile-isolation",
+      "query": "auth tokens refresh",
+      "expect": ["knowledge/auth-tokens-refresh-before-expiry.md"],
+      "forbid": [],
+      "depends_on": [],
+      "scope": "workspace"
+    },
+    {
+      "id": "case-disagreement-exact-id",
+      "category": "disagreement",
+      "query": "use-pnpm-lockfiles-in-ci",
+      "expect": ["use-pnpm-lockfiles-in-ci"],
+      "forbid": [],
+      "depends_on": []
+    }
+  ]
+}

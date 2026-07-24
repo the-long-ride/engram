@@ -1,45 +1,45 @@
 ---
 title: Cursor
 sidebar_position: 5
-description: Engram integration with Cursor via rules, MCP, local plugin, slash commands, and session-start hooks.
+description: Intégration d'Engram avec Cursor via des règles, MCP, un plugin local, des commandes slash et des hooks de début de session.
 ---
 
 # Cursor
 
-Cursor reads project rules from `.cursor/rules/*.mdc` files. Engram writes `.cursor/rules/engram.mdc` with valid frontmatter (`alwaysApply: true`) and a bootstrap instruction block.
+Cursor lit les règles du projet depuis les fichiers `.cursor/rules/*.mdc`. Engram écrit `.cursor/rules/engram.mdc` avec un frontmatter valide (`alwaysApply: true`) et un bloc d'instructions de bootstrap.
 
-## Install
+## Installation
 
 ```bash
 engram link cursor
 ```
 
-## Files written
+## Fichiers écrits
 
-| File | Purpose |
+| Fichier | Objectif |
 | --- | --- |
-| `.cursor/rules/engram.mdc` | Project rules with `alwaysApply: true` |
-| `.cursor/mcp.json` | MCP registration (`type: "stdio"`) |
-| `.cursor/hooks.json` | `sessionStart` hook |
-| `.cursor/commands/engram.md` | `/engram` slash adapter |
+| `.cursor/rules/engram.mdc` | Règles du projet avec `alwaysApply: true` |
+| `.cursor/mcp.json` | Enregistrement MCP (`type: "stdio"`) |
+| `.cursor/hooks.json` | Hook `sessionStart` |
+| `.cursor/commands/engram.md` | Adaptateur slash `/engram` |
 
-## Global install
+## Installation globale
 
 ```bash
 engram link --global cursor
 ```
 
-Engram creates a local plugin at `~/.cursor/plugins/local/engram/` containing the plugin manifest, rules, skills, commands, MCP config, and hooks.
+Engram crée un plugin local dans `~/.cursor/plugins/local/engram/` contenant le manifeste du plugin, les règles, les compétences (skills), les commandes, la configuration MCP et les hooks.
 
-## Runtime-first target
+## Cible axée sur le runtime
 
-Cursor is a runtime-first target. Project rules contain short bootstrap instructions that rely on MCP tools and hooks for detailed protocol; the Agent Skill file carries the full write/approval workflow.
+Cursor est une cible axée sur le runtime. Les règles du projet contiennent des instructions de bootstrap courtes qui s'appuient sur les outils et hooks MCP pour le protocole détaillé ; le fichier Agent Skill gère l'ensemble du flux d'écriture et d'approbation.
 
-## Hook behavior
+## Comportement des hooks
 
-The `sessionStart` hook injects Engram startup context through the `additional_context` output field. `beforeSubmitPrompt` is allow/block-only and is not used for context injection.
+Le hook `sessionStart` injecte le contexte de démarrage d'Engram via le champ de sortie `additional_context`. `beforeSubmitPrompt` est réservé à l'autorisation/blocage uniquement et n'est pas utilisé pour l'injection de contexte.
 
-## Next steps
+## Étapes suivantes
 
-- [Agent Integrations overview](overview.md)
-- [Hooks and proof lines](hooks.md)
+- [Présentation des intégrations d'agents](overview.md)
+- [Hooks et lignes de preuve](hooks.md)

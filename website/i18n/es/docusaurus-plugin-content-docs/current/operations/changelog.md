@@ -1,24 +1,24 @@
 ---
-title: Historial de cambios
+title: Changelog
 sidebar_position: 5
-description: Historial de versiones de Engram.
+description: Engram release history.
 ---
 
-# Historial de cambios (Changelog)
+# Changelog
 
-El historial de versiones de Engram reside en el repositorio [`CHANGELOG.md`](https://github.com/the-long-ride/engram/blob/main/CHANGELOG.md).
+Engram release history lives in the repository [`CHANGELOG.md`](https://github.com/the-long-ride/engram/blob/main/CHANGELOG.md).
 
-Para conocer la versión actual del paquete, consulte [`package.json`](https://github.com/the-long-ride/engram/blob/main/package.json).
+For the current package version, see [`package.json`](https://github.com/the-long-ride/engram/blob/main/package.json).
 
-## Versión actual
+## Current version
 
-La versión actual de Engram publicada es `0.0.27`.
+The current released Engram version is `0.0.28`.
 
-## Actualizar
+## Upgrade
 
 ```bash
 npm install -g @the-long-ride/engram@latest
 engram upgrade
 ```
 
-Consulte [Proceso de publicación y actualización](release-upgrade.md) para más detalles.
+See [Release and upgrade process](release-upgrade.md) for details.

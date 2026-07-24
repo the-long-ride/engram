@@ -1,45 +1,45 @@
 ---
-title: Privacy, ignore rules, and safety
+title: Privacidad, reglas de ignorado y seguridad
 sidebar_position: 7
-description: Ignore rules, approval gates, hashes, and profiles protect private context from accidental capture.
+description: Las reglas de ignorado, puertas de aprobación, hashes y perfiles protegen el contexto privado de capturas accidentales.
 ---
 
-# Privacy, ignore rules, and safety
+# Privacidad, reglas de ignorado y seguridad
 
-Engram is private by default. Several layers keep private context from leaking into durable memory or across profile boundaries.
+Engram es privado por defecto. Varias capas evitan que el contexto privado se filtre a la memoria duradera o a través de los límites del perfil.
 
-## Approval gate
+## Puerta de aprobación
 
-Writes require human approval. Agents propose candidates; humans approve, reject, edit, or archive. Direct terminal CLI uses A/B/C. AI-agent chat uses `yes` / `audit` / `cancel`.
+Las escrituras requieren aprobación humana. Los agentes proponen candidatos; los humanos aprueban, rechazan, editan o archivan. La CLI directa de la terminal utiliza A/B/C. El chat del agente de IA utiliza `yes` / `audit` / `cancel`.
 
-## Ignore rules
+## Reglas de ignorado
 
-Ignore rules are privacy controls. They hide irrelevant or sensitive entries from routing. Configure them in `.engramignore` and workspace memory config so private paths and patterns never enter the index.
+Las reglas de ignorado son controles de privacidad. Ocultan entradas irrelevantes o sensibles del enrutamiento. Configúrelas en `.engramignore` y en la configuración de la memoria del espacio de trabajo para que las rutas y patrones privados nunca entren en el índice.
 
 ## Hashes
 
-Hashes are integrity checks. They run before content is printed and reveal unsafe edits that bypassed the normal write flow.
+Los hashes son comprobaciones de integridad. Se ejecutan antes de imprimir el contenido y revelan ediciones inseguras que omitieron el flujo de escritura normal.
 
-## Profiles
+## Perfiles
 
-Profiles isolate company, client, and personal memory so external APIs or company-provided agents do not leak context across projects. See [Profiles and scope resolution](profiles.md).
+Los perfiles aíslan la memoria de la empresa, del cliente y la personal para que las API externas o los agentes proporcionados por la empresa no filtren contexto entre proyectos. Consulte [Perfiles y resolución de alcance](profiles.md).
 
-## Secrets and injection scanning
+## Escaneo de secretos e inyección
 
-At save time Engram checks:
+Al momento de guardar, Engram verifica:
 
-- schema validation
-- secret scan
-- prompt-injection patterns
-- path safety
+- validación de esquema
+- escaneo de secretos
+- patrones de inyección de prompts
+- seguridad de ruta
 
-## Limits to know
+## Límites a conocer
 
-Default Engram search is deterministic lexical search. `engram search --semantic` adds deterministic local similarity, not embedding-backed semantic search. Graph vectors are local hashed word vectors, not semantic embeddings. Contradiction detection is advisory. Encryption config exists, but encrypted storage is not implemented yet.
+La búsqueda predeterminada de Engram es una búsqueda léxica determinista. `engram search --semantic` agrega similitud local determinista, no búsqueda semántica respaldada por incrustaciones (embeddings). Los vectores del grafo son vectores de palabras hash locales, no incrustaciones semánticas. La detección de contradicciones es consultiva. Existe la configuración de cifrado, pero el almacenamiento cifrado aún no está implementado.
 
-These limits are intentional to state clearly. Engram should tell users what is real today and what is future work.
+Estos límites se indican claramente de forma intencionada. Engram debe decir a los usuarios qué es real hoy y qué es trabajo futuro.
 
-## Next steps
+## Siguientes pasos
 
-- [Write path and approval](./write-path.md)
-- [Operations troubleshooting](../operations/troubleshooting.md)
+- [Ruta de escritura y aprobación](./write-path.md)
+- [Resolución de problemas de operaciones](../operations/troubleshooting.md)

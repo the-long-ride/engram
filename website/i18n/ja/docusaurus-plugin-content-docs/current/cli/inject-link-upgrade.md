@@ -1,30 +1,33 @@
 ---
 title: inject / link / upgrade
 sidebar_position: 4
-description: セットアップおよびアダプターコマンド — ワークスペースの初期化、エージェントのリンク、およびパッケージ更新後の調整。
+description: Setup and adapter commands — initialize workspaces, link agents, and reconcile after package updates.
 ---
 
 # inject / link / upgrade
 
-セットアップおよびアダプターコマンドは、ワークスペースを初期化し、エージェントをリンクし、パッケージ更新後に調整を行います。
+Setup and adapter commands initialize workspaces, link agents, and reconcile after package updates.
 
 ## inject
 
 ```bash
 engram inject
+engram inject --scope workspace|global|both
 engram inject --global-only --global-path <path>
 engram inject --submodule
 engram inject --submodule-remote <git-url>
 engram inject --global-remote <git-url>
+engram inject --global-branch <branch>
 engram inject --no-skillset
 engram inject --skillset all
+engram inject --no-global
 ```
 
-`engram inject` は `.agents/.engram/` を作成し、デフォルトでコンパクトな Codex ターゲットをインストールします。人間が作成した既存のファイルはスキップされます。
+`engram inject` creates `.agents/.engram/` and installs the compact Codex target by default. Existing human-authored files are skipped.
 
-対話型のインジェクトは、次の順序で質問します：`./.agents/.engram` をサブモジュールとして追加するかどうか、グローバルな Engram パスを使用するかどうか、共有グローバル Git オリジンを追加するかどうか。
+Interactive inject asks in this order: whether to add `./.agents/.engram` as a submodule, whether to use a global Engram path, and whether to add a shared global Git origin.
 
-構成されたグローバルパスのみを更新するには、`engram update-global-folder <new-path>` または `engram ugf <new-path>` を使用します。`engram set global memory path to <new-path>` や `engram move global folder from <old-path> to <new-path>` などのチャット形式は、同じコマンドに正規化されます。古いグローバルルート全体を移動させたい場合は、`--move-from-path <old-path>` を追加します。
+Use `engram update-global-folder <new-path>` or `engram ugf <new-path>` to update only the configured global path. Chat-style forms such as `engram set global memory path to <new-path>` and `engram move global folder from <old-path> to <new-path>` normalize to the same command. Add `--move-from-path <old-path>` when they also want Engram to move the whole old global root.
 
 ## link
 
@@ -36,10 +39,12 @@ engram link cursor
 engram link windsurf
 engram link --global opencode
 engram link all
+engram link list
+engram link --all-supported
 engram unlink
 ```
 
-`engram link all` は、パブリックターゲットセットをインストールし、スキルセット指示ファイル、MCP 構成、スラッシュアダプター、およびエージェント hook において、部分的なホストに対する決定論的な `SKIPPED` 理由を 1 つの統合インストールで報告します。`engram unlink` はこれらをすべてまとめて削除します。`engram unlink --global <target>` は Engram が生成したグローバルプラグインのみを削除します。人間が作成したファイルは、`--force` が明示されない限り保持されます。
+`engram link all` installs the public target set and reports deterministic `SKIPPED` reasons for partial hosts across skillset instruction files, MCP config, slash adapters, and agent hooks in one unified install. `engram unlink` removes all of these together. `engram unlink --global <target>` removes only the Engram-generated global plugin; a human-authored file is preserved unless `--force` is explicit.
 
 ## upgrade
 
@@ -47,15 +52,19 @@ engram unlink
 engram upgrade
 engram upgrade --plan
 engram upgrade --latest
+engram upgrade --self
+engram upgrade --memory-only
+engram upgrade --global-skillsets-only
+engram upgrade --target codex
 ```
 
-新しい Engram パッケージをインストールした後に `engram upgrade` を使用します。このコマンドは、v0.0.8 以降に初期化されたメモリルートを現在のリリーススキーマと比較し、生成された `HELP.md`、メモリインデックス、グラフファイル、適格なベクトルサイドカ、生成されたワークスペーススキルセット、グローバルメモリのスキャフォールディング、および登録されたグローバルエージェントスキルセットを更新する一方で、人間が作成したファイルは保存します。
+Use `engram upgrade` after installing a newer Engram package. The command compares initialized memory roots from v0.0.8 onward to the current release schema and refreshes generated `HELP.md`, memory indexes, graph files, eligible vector sidecars, generated workspace skillsets, global memory scaffolding, and registered global agent skillsets while preserving human-authored files.
 
-通常のコマンドも、`--no-auto-upgrade` または `ENGRAM_NO_AUTO_UPGRADE=1` が設定されていない限り、パッケージバージョンごとに 1 回、同じルート調整をサイレントに実行します。
+Normal commands also run the same root reconciliation quietly once per package version unless `--no-auto-upgrade` or `ENGRAM_NO_AUTO_UPGRADE=1` is set.
 
-新しいパッケージの出力が、現在 Engram が管理しているリンクされたエージェントアーティファクトを上書きする必要がある場合は、`engram upgrade --latest` を使用します。そのパスは、リンクされたワークスペース指示ファイル、ルール、MCP/プラグイン構成、および管理対象 hook を再適用し、登録されたグローバルエージェントのインストールを最新の生成ファイルで更新します。
+Use `engram upgrade --latest` when the new package output must overwrite current Engram-managed linked agent artifacts. That path reapplies linked workspace instruction files, rules, MCP/plugin config, and managed hooks, and also refreshes registered global agent installs with the latest generated files.
 
-`--force` は、生成された Engram アダプターファイルを意図的に置き換える場合にのみ使用してください。
+Use `--force` only when replacing generated Engram adapter files intentionally.
 
 ## take-control
 
@@ -69,9 +78,9 @@ engram take-control --max-sources 5 --max-chars 900
 engram take-control --all --metacognize --force
 ```
 
-`take-control` は、既存のワークスペース指示のためのエージェント支援によるテイクオーバーフローです。`AGENTS.md`、`CLAUDE.md`、`GEMINI.md`、Cursor ルール、メモリバンクメモ、および最上位の `rules/`、`skills/`、`workflows/`、`knowledge/`、または `notes/` フォルダ（.txt メモを含む）などのファイルからコンパクトなソースパックを構築します。
+`take-control` is the agent-assisted takeover flow for existing workspace guidance. It builds a compact source pack from files such as `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, Cursor rules, memory-bank notes, and top-level `rules/`, `skills/`, `workflows/`, `knowledge/`, or `notes/` folders, including `.txt` notes.
 
-保存された take-control メモリは `source_files` と `source_hashes` を記録するため、変更されていないソースは後でスキップされます。
+Saved take-control memories record `source_files` and `source_hashes`, so unchanged sources are skipped later.
 
 ## metacognize
 
@@ -81,10 +90,9 @@ engram metacognize --global --dry-run
 engram metacognize --all --force
 ```
 
-AI エージェントに既存の Engram メモリフォルダをレビューさせ、同じ save-session 承認フローを通じてより安全な構造を提案させたい場合は、`metacognize` を使用します。エージェントは、統合や文言の整理には `UPDATE: memory-id` を使用し、階層化されたメモリには `DEPENDS_ON: memory-id` を使用する必要があります。
+Use `metacognize` when you want an AI agent to review an existing Engram memory folder and propose safer structure through the same save-session approval flow. Agents should use `UPDATE: memory-id` for consolidation or wording cleanup and `DEPENDS_ON: memory-id` for layered memories.
 
-## 次のステップ
+## Next steps
 
 - [profiles / workspaces / config](profiles-workspaces-config.md)
-- [エージェント統合の概要](../integrations/overview.md)
-
+- [Agent Integrations overview](../integrations/overview.md)

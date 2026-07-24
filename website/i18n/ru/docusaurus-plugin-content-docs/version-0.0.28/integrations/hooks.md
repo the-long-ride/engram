@@ -1,14 +1,14 @@
 ---
-title: Hooks and proof lines
+title: Хуки и строки подтверждения
 sidebar_position: 12
-description: Engram agent hooks inject routed memory at session start and prompt turns. Proof lines make injection visible.
+description: Агентские хуки Engram внедряют перенаправленную память при запуске сессии и вводе промптов. Строки подтверждения делают внедрение видимым.
 ---
 
-# Hooks and proof lines
+# Хуки и строки подтверждения
 
-Agent hooks are opt-in host hooks that inject routed Engram context at session start and later task-change turns when the host exposes a safe prompt-time context channel.
+Агентские хуки — это дополнительные хуки хоста, которые внедряют перенаправленный контекст Engram при старте сессии и последующей смене задач, когда хост предоставляет безопасный контекстный канал во время ввода промпта.
 
-## Install hooks
+## Установка хуков
 
 ```bash
 engram link codex
@@ -20,37 +20,37 @@ engram link --global opencode
 engram set-proof compact
 ```
 
-Use `--global` for user-level config and `engram unlink` to remove only Engram-managed hook entries.
+Используйте `--global` для конфигурации на уровне пользователя и `engram unlink` для удаления только управляемых Engram записей хуков.
 
-## Read mode
+## Режим чтения
 
-`engram set-read startup|auto|always|manual|off` controls runtime behavior:
+`engram set-read startup|auto|always|manual|off` управляет поведением во время выполнения:
 
-- `auto` loads on session start and reinjects only when routed Engram context changes.
-- `startup` loads only at session start.
-- `always` reinjects on every eligible turn.
-- `manual` and `off` reduce automation.
+- `auto` загружает при старте сессии и повторно внедряет только при изменении перенаправленного контекста Engram.
+- `startup` загружает только при старте сессии.
+- `always` повторно внедряет при каждом подходящем запросе.
+- `manual` и `off` снижают автоматизацию.
 
-The hook cache stores hashes, session ids, host, cwd, and routed signatures — never raw prompt text.
+Кэш хуков хранит хэши, идентификаторы сессий, хост, cwd и перенаправленные сигнатуры — и никогда не хранит исходный текст промпта.
 
-## Proof mode
+## Режим подтверждения
 
-`engram set-proof off|compact` controls whether supported hooks also append a compact `Engram proof:` line on each eligible turn. Proof visibility is separate from `set-read`: `compact` can report loaded, reused, or skipped turns without changing when full Engram memory is injected.
+`engram set-proof off|compact` управляет тем, будут ли поддерживаемые хуки также добавлять компактную строку `Engram proof:` на каждом подходящем шаге. Видимость строки подтверждения не зависит от `set-read`: режим `compact` может сообщать о загруженных, повторно используемых или пропущенных шагах без изменения момента внедрения полной памяти Engram.
 
-## Hook capability matrix
+## Матрица возможностей хуков
 
-| Host | Config path | Events |
+| Хост | Путь конфигурации | События |
 | --- | --- | --- |
 | `codex` | `.codex/hooks.json`; global `~/.codex/hooks.json` | `SessionStart`, `UserPromptSubmit` |
 | `claude` | `.claude/settings.json`; global `~/.claude/settings.json` | `SessionStart`, `UserPromptSubmit` |
 | `gemini` | `.gemini/settings.json`; global `~/.gemini/settings.json` | `SessionStart`, `BeforeAgent` |
-| `cursor` | `.cursor/hooks.json`; global plugin `hooks/hooks.json` | `sessionStart` |
+| `cursor` | `.cursor/hooks.json`; глобальный плагин `hooks/hooks.json` | `sessionStart` |
 | `windsurf` / `cascade` | `.windsurf/hooks.json`; global `~/.codeium/windsurf/hooks.json` | `pre_user_prompt` |
 | `opencode` | `~/.config/opencode/plugins/engram.js` | `chat.message`, `experimental.chat.system.transform` |
-| `copilot` | None written | N/A |
-| `cline` | None written | N/A |
+| `copilot` | Не записано | N/A |
+| `cline` | Не записано | N/A |
 
-## Next steps
+## Дальнейшие шаги
 
-- [Agent Integrations overview](overview.md)
-- [CLI: inject / link / upgrade](../cli/inject-link-upgrade.md)
+- [Обзор интеграций с агентами](overview.md)
+- [CLI: внедрение / привязка / обновление](../cli/inject-link-upgrade.md)

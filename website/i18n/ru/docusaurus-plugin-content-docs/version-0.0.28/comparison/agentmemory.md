@@ -1,27 +1,27 @@
 ---
 title: agentmemory
 sidebar_position: 3
-description: Engram vs rohitg00/agentmemory — file protocol vs automatic memory engine.
+description: Engram против rohitg00/agentmemory — файловый протокол против автоматического движка памяти.
 ---
 
 # agentmemory
 
-[rohitg00/agentmemory](https://github.com/rohitg00/agentmemory) is a powerful automatic memory engine for coding agents. Its README presents server-based memory, MCP/hooks/REST integration, many agent adapters, benchmark claims, a viewer, replay, hybrid retrieval, and Hermes integration.
+[rohitg00/agentmemory](https://github.com/rohitg00/agentmemory) — это мощный автоматический движок памяти для агентов кодирования. Его README описывает серверную память, интеграцию MCP/hooks/REST, множество адаптеров агентов, утверждения о бенчмарках, средство просмотра, воспроизведение, гибридное извлечение и интеграцию с Hermes.
 
-Use agentmemory when you want automatic capture, live viewer/replay, vector retrieval, many MCP tools, and server-style shared memory.
+Используйте agentmemory, если вам нужен автоматический сбор, просмотр/воспроизведение в реальном времени, векторное извлечение, множество инструментов MCP и общая память в серверном стиле.
 
-Use Engram when you want memory to be a repo-readable protocol: Markdown first, human approved, Git reviewed, portable across agents even without a running server.
+Используйте Engram, если хотите, чтобы память была доступным для чтения репозиторием протоколом: сначала Markdown, одобрено человеком, проверено Git, переносимо между агентами даже без работающего сервера.
 
-| Dimension | Engram | agentmemory |
+| Параметр | Engram | agentmemory |
 | --- | --- | --- |
-| Source of truth | Approved Markdown files | Memory server/store |
-| Trust boundary | Human A/B/C approval | Automatic capture plus tool governance |
-| Default mode | File protocol, no daemon required | Running service recommended |
-| Review | Git diff and Markdown review | Viewer/API and stored sessions |
-| Best fit | teams that need ownership and auditability | users who want automatic recall and replay |
-| Risk | more manual discipline | more invisible state unless governed carefully |
+| Источник истины | Одобренные Markdown-файлы | Сервер памяти/хранилище |
+| Граница доверия | Одобрение человека A/B/C | Автоматический сбор плюс управление инструментами |
+| Режим по умолчанию | Файловый протокол, демон не требуется | Рекомендуется запущенная служба |
+| Проверка | Git diff и проверка Markdown | Средство просмотра/API и сохраненные сессии |
+| Кому подходит | командам, которым требуется владение и аудит | пользователям, которым требуется автовызов и воспроизведение |
+| Риск | больше ручной дисциплины | больше невидимого состояния без тщательного контроля |
 
-## Next steps
+## Следующие шаги
 
 - [Hermes Agent](hermes-agent.md)
-- [Comparison overview](overview.md)
+- [Обзор сравнения](overview.md)

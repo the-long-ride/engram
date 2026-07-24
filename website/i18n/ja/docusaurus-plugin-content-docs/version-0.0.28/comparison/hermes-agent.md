@@ -1,7 +1,7 @@
 ---
 title: Hermes Agent
 sidebar_position: 6
-description: Engram vs Hermes Agent — human-owned file protocol vs autonomous always-active memory.
+description: Engram 対 Hermes Agent — 人間所有のファイルプロトコル対自律的で常にアクティブなメモリ。
 ---
 
 # Hermes Agent
@@ -10,45 +10,45 @@ description: Engram vs Hermes Agent — human-owned file protocol vs autonomous 
 
 | | Engram | Hermes Agent |
 |---|---|---|
-| **Philosophy** | Human-owned, file-first protocol (automation optional) | Autonomous, always-active memory |
-| **Storage** | Typed Markdown files in `.agents/.engram/` | `MEMORY.md` + `USER.md` (hard char caps) |
-| **Write model** | Human-approved by default (A/B/C gate; automatable via rules) | Agent writes autonomously |
-| **Recall** | On-demand: `engram load "<task>"` injects relevant files | Always-on: core files frozen into system prompt each session |
-| **Vector search** | Optional local sqlite-vec (deterministic, not embedding-backed) | Via external provider (e.g. agentmemory — BM25 + vector) |
-| **Cross-agent** | Any file-reading agent can consume Engram memory | Hermes core is single-agent; cross-agent via agentmemory plugin |
-| **Portability** | Git-native, offline-first, plain Markdown | Local files; external providers may add cloud lock-in |
-| **Overhead** | No daemon, requires save discipline (unless automated) | Server process + viewer UI, REST API, MCP server |
+| **哲学** | 人間所有、ファイル優先プロトコル（自動化はオプション） | 自律的で常にアクティブなメモリ |
+| **ストレージ** | `.agents/.engram/` 内の型指定された Markdown ファイル | `MEMORY.md` + `USER.md`（厳格な文字数制限） |
+| **書き込みモデル** | デフォルトで人間が承認（A/B/C ゲート、ルールによる自動化が可能） | エージェントが自律的に書き込む |
+| **想起** | オンデマンド：`engram load "<task>"` が関連ファイルを注入 | 常にオン：セッションごとにコアファイルが system prompt に固定される |
+| **ベクトル検索** | オプションのローカル sqlite-vec（決定論的、埋め込みサポートなし） | 外部プロバイダー経由（例：agentmemory — BM25 + ベクトル） |
+| **クロスエージェント** | ファイルを読み取れるエージェントなら誰でも Engram メモリを使用可能 | Hermes コアは単一エージェント。agentmemory プラグイン経由でクロスエージェントに対応 |
+| **移植性** | Git ネイティブ、オフラインファースト、プレーン Markdown | ローカルファイル。外部プロバイダーはクラウドロックインをもたらす可能性あり |
+| **オーバーヘッド** | デーモンなし、保存の規律が必要（自動化されていない場合） | サーバープロセス + ビューア UI、REST API、MCP サーバー |
 
-## Storage formats
+## ストレージ形式
 
-**Engram** stores each memory as a typed Markdown file with YAML frontmatter, hash integrity checks, and an optional dependency graph (`depends_on`). A JSON index, graph, and sqlite-vec sidecar act as acceleration layers — Markdown is the source of truth.
+**Engram** は、各メモリを YAML frontmatter、ハッシュ整合性チェック、およびオプションの依存関係グラフ（`depends_on`）を持つ型指定された Markdown ファイルとして保存します。JSON インデックス、グラフ、および sqlite-vec サイドカーは加速レイヤーとして機能し、Markdown が信頼できるソースです。
 
-**Hermes** compresses all persistent memory into two bounded files:
+**Hermes** は、すべての永続メモリを制限された 2 つのファイルに圧縮します：
 
-- `~/.hermes/memories/MEMORY.md` — agent notes, capped at 2,200 characters
-- `~/.hermes/memories/USER.md` — user profile, capped at 1,375 characters
+- `~/.hermes/memories/MEMORY.md` — エージェントメモ、2,200 文字に制限
+- `~/.hermes/memories/USER.md` — ユーザープロファイル、1,375 文字に制限
 
-Hard character limits force the agent to curate rather than accumulate. Session history is searchable via SQLite FTS5.
+厳格な文字数制限により、エージェントは蓄積するのではなく整理することを強制されます。セッション履歴は SQLite FTS5 を介して検索可能です。
 
-## Write model
+## 書き込みモデル
 
-**Engram** — explicit human gate by default. Agents propose candidates; a human must approve before anything lands on disk. Secret and prompt-injection scanning happen at save time. Users can opt to automate this process by saving a rule to automatically save new proposed memories when a response completes.
+**Engram** — デフォルトで明示的な人間ゲートがあります。エージェントが候補を提案し、人間が承認しなければディスクに書き込まれません。秘密情報と prompt-injection のスキャンは保存時に行われます。ユーザーは、応答が完了したときに提案された新しいメモリ候補を自動的に保存するルールを保存することで、このプロセスを自動化できます。
 
-**Hermes** — autonomous. The agent decides what to write and when, constrained only by the character caps. No human approval in the core loop.
+**Hermes** — 自律的。エージェントは何をいつ書き込むかを決定し、文字数制限のみによって制御されます。コアループに人間の承認はありません。
 
-## Recall model
+## 想起モデル
 
-**Engram** — on-demand routing. `engram load "<task>"` reranks candidates by tags, type, recency, graph, and optional vector signals, then injects a compact pack (default: 8 files) into context.
+**Engram** — オンデマンドルーティング。`engram load "<task>"` は、タグ、タイプ、新しさ、グラフ、およびオプションのベクトル信号によって候補を再ランク付けし、コンパクトなパック（デフォルト：8 ファイル）をコンテキストに注入します。
 
-**Hermes** — always-active injection. Core files are frozen into the system prompt at session start. An optional external provider (e.g. agentmemory) runs a prefetch before each LLM turn and syncs after.
+**Hermes** — 常にアクティブな注入。コアファイルはセッション開始時に system prompt に固定されます。オプションの外部プロバイダー（例：agentmemory）は、LLM の各ターンの前にプリフェッチを実行し、その後に同期します。
 
-## When to use which
+## どちらをいつ使うか
 
-**Use Engram** when you need auditable, human-reviewed memory; team sharing via Git; privacy guarantees; or agent-agnostic portability across tools (with the option to automate saves via custom rules).
+監査可能で人間がレビューしたメモリ、Git によるチーム共有、プライバシーの保証、またはツール間でエージェントに依存しない移植性（カスタムルールを介して保存を自動化するオプション付き）が必要な場合は、**Engram を使用してください**。
 
-**Use Hermes** when you want memory that accumulates automatically without save discipline, always-on context injection, or a richer runtime with viewers, REST API, and pluggable vector backends.
+保存の規律なしに自動的に蓄積されるメモリ、常にオンのコンテキスト注入、またはビューア、REST API、プラグ可能ベクトルバックエンドを備えたより豊富なランタイム環境が必要な場合は、**Hermes を使用してください**。
 
-## Next steps
+## 次のステップ
 
 - [agentmemory](agentmemory.md)
-- [Comparison overview](overview.md)
+- [比較の概要](overview.md)

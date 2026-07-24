@@ -1,45 +1,45 @@
 ---
 title: Codex
 sidebar_position: 2
-description: Intégration d'Engram avec OpenAI Codex via AGENTS.md et Agent Skills.
+description: Engram integration with OpenAI Codex via AGENTS.md and Agent Skills.
 ---
 
 # Codex
 
-OpenAI Codex et d'autres agents compatibles avec AGENTS.md utilisent `AGENTS.md` comme fichier d'instructions de projet. L'alias `codex` écrit également `.agents/skills/engram/SKILL.md` pour que les agents qui découvrent des Agent Skills puissent router Engram comme une compétence invocable.
+OpenAI Codex and other AGENTS.md-compatible agents use `AGENTS.md` as a project instruction file. The `codex` alias also writes `.agents/skills/engram/SKILL.md` so agents that discover Agent Skills can route Engram as an invokable skill.
 
-## Installation
+## Install
 
 ```bash
 engram link codex
 ```
 
-## Fichiers écrits
+## Files written
 
-| Fichier | Objectif |
+| File | Purpose |
 | --- | --- |
-| `AGENTS.md` | Bootstrap des instructions du projet |
-| `.agents/skills/engram/SKILL.md` | Agent Skill avec flux d'écriture/approbation complet |
-| `.codex/hooks.json` | Hooks `SessionStart` et `UserPromptSubmit` |
-| `.mcp.json` | Enregistrement MCP |
+| `AGENTS.md` | Project instructions bootstrap |
+| `.agents/skills/engram/SKILL.md` | Agent Skill with full write/approval workflow |
+| `.codex/hooks.json` | `SessionStart` and `UserPromptSubmit` hooks |
+| `.mcp.json` | MCP registration |
 
-## Installation globale
+## Global install
 
 ```bash
 engram link --global codex
 ```
 
-Écrit la compétence Codex dans `~/.codex/skills/engram/SKILL.md` et ajoute un bloc géré aux fichiers d'instructions Codex partagés.
+Writes the Codex skill to `~/.codex/skills/engram/SKILL.md` and appends a managed block to shared Codex instruction files.
 
-## Comportement des hooks
+## Hook behavior
 
-Codex prend en charge l'injection de contexte supplémentaire au démarrage et au moment de la saisie (prompt). `SessionStart` charge la mémoire routée au démarrage ; `UserPromptSubmit` réinjecte uniquement lorsque le contexte Engram routé change.
+Codex supports startup and prompt-time additional context injection. `SessionStart` loads routed memory at startup; `UserPromptSubmit` reinjects only when routed Engram context changes.
 
-## Cible axée sur le runtime
+## Runtime-first target
 
-Codex est une cible axée sur le runtime. `AGENTS.md` contient des instructions de bootstrap courtes qui s'appuient sur les outils et hooks MCP pour le protocole détaillé ; le fichier Agent Skill gère l'ensemble du flux d'écriture et d'approbation.
+Codex is a runtime-first target. `AGENTS.md` contains short bootstrap instructions that rely on MCP tools and hooks for detailed protocol; the Agent Skill file carries the full write/approval workflow.
 
-## Étapes suivantes
+## Next steps
 
-- [Présentation des intégrations d'agents](overview.md)
-- [Hooks et lignes de preuve](hooks.md)
+- [Agent Integrations overview](overview.md)
+- [Hooks and proof lines](hooks.md)

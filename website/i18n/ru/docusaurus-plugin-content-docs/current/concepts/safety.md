@@ -1,45 +1,45 @@
 ---
-title: Конфиденциальность, правила игнорирования и безопасность
+title: Privacy, ignore rules, and safety
 sidebar_position: 7
-description: Правила игнорирования, шлюзы утверждения, хэши и профили защищают приватный контекст от случайного захвата.
+description: Ignore rules, approval gates, hashes, and profiles protect private context from accidental capture.
 ---
 
-# Конфиденциальность, правила игнорирования и безопасность
+# Privacy, ignore rules, and safety
 
-Engram является приватным по умолчанию. Несколько уровней защищают приватный контекст от утечки в долговечную память или за границы профиля.
+Engram is private by default. Several layers keep private context from leaking into durable memory or across profile boundaries.
 
-## Шлюз утверждения (Approval gate)
+## Approval gate
 
-Запись требует утверждения человеком. Агенты предлагают кандидатов; люди одобряют, отклоняют, редактируют или архивируют. Прямой интерфейс CLI в терминале использует A/B/C. Чат ИИ-агента использует `yes` / `audit` / `cancel`.
+Writes require human approval. Agents propose candidates; humans approve, reject, edit, or archive. Direct terminal CLI uses A/B/C. AI-agent chat uses `yes` / `audit` / `cancel`.
 
-## Правила игнорирования (Ignore rules)
+## Ignore rules
 
-Правила игнорирования — это средства управления конфиденциальностью. Они скрывают нерелевантные или конфиденциальные записи от маршрутизации. Настройте их в `.engramignore` и в конфигурации памяти рабочего пространства, чтобы приватные пути и шаблоны никогда не попадали в индекс.
+Ignore rules are privacy controls. They hide irrelevant or sensitive entries from routing. Configure them in `.engramignore` and workspace memory config so private paths and patterns never enter the index.
 
-## Хэши (Hashes)
+## Hashes
 
-Хэши — это проверки целостности. Они выполняются перед выводом содержимого и выявляют небезопасные изменения, сделанные в обход стандартного процесса записи.
+Hashes are integrity checks. They run before content is printed and reveal unsafe edits that bypassed the normal write flow.
 
-## Профили (Profiles)
+## Profiles
 
-Профили изолируют память компании, клиентов и личные данные, чтобы внешние API или предоставленные компанией агенты не допускали утечки контекста между проектами. См. [Профили и разрешение областей видимости](profiles.md).
+Profiles isolate company, client, and personal memory so external APIs or company-provided agents do not leak context across projects. See [Profiles and scope resolution](profiles.md).
 
-## Сканирование на секреты и инъекции
+## Secrets and injection scanning
 
-При сохранении Engram проверяет:
+At save time Engram checks:
 
-- валидацию схемы
-- сканирование секретов (secret scan)
-- шаблоны внедрения подсказок (prompt-injection)
-- безопасность путей
+- schema validation
+- secret scan
+- prompt-injection patterns
+- path safety
 
-## Ограничения, о которых следует знать
+## Limits to know
 
-Поиск в Engram по умолчанию — это детерминированный лексический поиск. Команда `engram search --semantic` добавляет детерминированное локальное сходство, а не семантический поиск на основе эмбеддингов (embedding-backed semantic search). Векторы графа — это локальные хэшированные векторы слов, а не семантические эмбеддинги. Обнаружение противоречий носит рекомендательный характер. Конфигурация шифрования существует, но зашифрованное хранилище еще не реализовано.
+Default Engram search is deterministic lexical search. `engram search --semantic` adds deterministic local similarity, not embedding-backed semantic search. Graph vectors are local hashed word vectors, not semantic embeddings. Contradiction detection is advisory. Encryption config exists, but encrypted storage is not implemented yet.
 
-Эти ограничения указаны намеренно. Engram должен четко сообщать пользователям, что работает на сегодняшний день, а что является планом на будущее.
+These limits are intentional to state clearly. Engram should tell users what is real today and what is future work.
 
-## Следующие шаги
+## Next steps
 
-- [Путь записи и утверждение](./write-path.md)
-- [Устранение неполадок в работе](../operations/troubleshooting.md)
+- [Write path and approval](./write-path.md)
+- [Operations troubleshooting](../operations/troubleshooting.md)

@@ -1,61 +1,61 @@
 ---
-title: Field authoring guidelines
+title: フィールド作成ガイドライン
 sidebar_position: 11
-description: Rules for maintainers documenting new Entry UI fields.
+description: 新しい Entry UI フィールドを文書化するメンテナー向けのルール。
 ---
 
-# Field authoring guidelines
+# フィールド作成ガイドライン
 
-Rules for maintainers documenting new Entry UI fields.
+新しい Entry UI フィールドを文書化するメンテナー向けのルール。
 
-## When you add a field
+## フィールドを追加するとき
 
-1. Add the field to `CONFIG_FIELDS` in `src/core/web/config-schema.ts` with a short `description`, `options`, `min`/`max`/`step`, and `risk`.
-2. Add a docs entry to `website/src/data/entryFields.ts` with `shortDescription`, `useCases`, and `guidelines` at minimum.
-3. Document the field on the [Construct tab](construct.md) page and in the [Complete field reference](field-reference.md).
-4. Run the field docs coverage check:
+1. `src/core/web/config-schema.ts` の `CONFIG_FIELDS` に、簡単な説明(`description`)、オプション(`options`)、最小/最大/ステップ(`min`/`max`/`step`)、およびリスク度(`risk`)を設定してフィールドを追加します。
+2. `website/src/data/entryFields.ts` に、最低限 `shortDescription`、`useCases`、および `guidelines` を含むドキュメント項目を作成します。
+3. [Construct タブ](construct.md)ページと[完全なフィールドリファレンス](field-reference.md)に該当するフィールドを文書化します。
+4. フィールドドキュメントのカバレッジ（網羅率）チェックを実行します:
 
    ```bash
    npm --prefix website run check:entry-fields
    ```
 
-5. If the field is risky, add at least one recovery/troubleshooting note.
+5. フィールドがリスクを伴う（risky）設定である場合、復旧/トラブルシューティングノートを最低1つ以上追加してください。
 
-## Required doc items per field
+## フィールドごとに必要なドキュメント項目
 
-| Item | Required |
+| 項目 | 必須 |
 | --- | --- |
-| Plain-language description | Yes |
-| Use cases | Yes (1+) |
-| Recommended default | Yes |
-| Allowed values / range | Yes |
-| Risk level | Yes |
-| Side effects | When relevant |
-| CLI equivalent | When relevant |
-| Example values | For text/path fields |
-| Troubleshooting notes | For risky fields |
+| 一般ユーザー向けの平易な説明 | はい |
+| ユースケース | はい (1つ以上) |
+| 推奨デフォルト値 | はい |
+| 許容される値 / 範囲 | はい |
+| リスクレベル | はい |
+| 副作用 | 関連する場合のみ記述 |
+| CLI 等価コマンド | 関連する場合のみ記述 |
+| 値の例 | テキスト/パスフィールドには必須 |
+| トラブルシューティングノート | リスクを伴うフィールドには必須 |
 
-## Writing rules
+## 作成ルール
 
-- Write for a user configuring an AI-agent memory system, not a maintainer reading source code.
-- Name the real effect on memory ownership, routing, context size, privacy, or Git sync.
-- Prefer examples from Engram workflows: Codex, Claude, Gemini, Cursor, OpenCode, personal memory, client profile, team repo.
-- Do not recommend high limits by default; explain context bloat tradeoffs.
-- Mark settings as risky when they can disable Engram, change save location, change Git sync, archive memory, or affect encryption/security.
-- Include recovery commands for risky settings.
-- Keep in-app descriptions short; put detailed guidance in Docusaurus.
+- ソースコードを読むメンテナーではなく、AI エージェントのメモリシステムを設定するエンドユーザー向けに記述してください。
+- メモリ所有権、ルーティング、コンテキストサイズ、プライバシー、Git 同期などに対する実際の効果を指定してください。
+- Engram ワークフローに即した例を優先します: Codex、Claude、Gemini、Cursor、OpenCode、個人メモリ、クライアントプロファイル、チームリポジトリなど。
+- デフォルトで高い上限を設定するよう勧めないでください。コンテキスト肥大化による性能上のトレードオフを説明してください。
+- Engram の無効化、保存場所の変更、Git 同期の変更、メモリのアーカイブ、暗号化/セキュリティに影響を及ぼし得る設定は「risky」とマークしてください。
+- リスクのある設定に対しては復旧用のコマンドを提供してください。
+- アプリ内の説明は短く保ち、詳細なガイダンスは Docusaurus に記述してください。
 
-## CI coverage
+## CI チェックカバレッジ
 
-`website/scripts/check-entry-field-docs.mjs` fails when:
+`website/scripts/check-entry-field-docs.mjs` は以下の場合に失敗します:
 
-1. A visible `CONFIG_FIELDS` key lacks a docs entry.
-2. A docs entry references a field no longer in `CONFIG_FIELDS`.
-3. A field lacks `shortDescription`, `useCases`, or `guidelines`.
-4. A risky field lacks at least one troubleshooting note.
-5. A numeric field omits allowed range in rendered docs.
+1. 表示対象の `CONFIG_FIELDS` キーにドキュメント項目がないとき。
+2. ドキュメント項目が存在するが、実際の `CONFIG_FIELDS` には存在しないフィールドを参照しているとき。
+3. フィールドドキュメントに `shortDescription`、`useCases`、または `guidelines` が不足しているとき。
+4. リスクのあるフィールドにトラブルシューティングノートが1つも書かれていないとき。
+5. 数値フィールドがレンダリングドキュメントで許容範囲を欠いているとき。
 
-## Next steps
+## 次のステップ
 
-- [Complete field reference](field-reference.md)
-- [Construct tab](construct.md)
+- [完全なフィールドリファレンス](field-reference.md)
+- [Construct タブ](construct.md)

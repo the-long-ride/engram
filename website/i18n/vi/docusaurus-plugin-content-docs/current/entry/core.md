@@ -1,34 +1,34 @@
 ---
-title: Tab Core (Cốt lõi)
+title: Maintain tab
 sidebar_position: 7
-description: Xem xét các bộ nhớ trùng lặp và xung đột với các bộ lọc phạm vi và loại.
+description: Review duplicate and conflicting memories with scope and type filters.
 ---
 
-# Tab Core
+# Maintain tab
 
-Tab Core dùng để xem xét các bộ nhớ trùng lặp và xung đột. Đây là không gian làm việc nhận thức siêu việt (metacognition) bên trong bảng điều khiển Entry.
+The Maintain tab reviews duplicate and conflicting memories. It is the metacognition workspace inside the Entry panel.
 
-## Các thẻ phạm vi (Scope chips): profile / global / workspace
+## Scope chips: profile / global / workspace {#scope-chips-profile-global-workspace}
 
-Lọc phân tích trùng lặp/xung đột theo nguồn bộ nhớ. Kiểm tra một phạm vi hoặc so sánh các trùng lặp chéo phạm vi. Giữ ít nhất một phạm vi được chọn.
+Filter duplicate/conflict analysis by memory source. Audit one scope or compare cross-scope duplicates. Keep at least one scope selected.
 
-## Các thẻ loại (Type chips): rule / skill / workflow / knowledge
+## Type chips: rule / skill / workflow / knowledge {#type-chips-rule-skill-workflow-knowledge}
 
-Lọc các ứng viên trùng lặp theo loại bộ nhớ. Tập trung dọn dẹp các quy tắc (rule) trước hoặc các dữ kiện kiến thức (knowledge) trước. Tài liệu hóa ý nghĩa loại bộ nhớ inline để người dùng hiểu khi nào việc trùng lặp là vô hại.
+Filter duplicate candidates by memory type. Focus cleanup on rules first or knowledge facts first. Document type meanings inline so users understand when duplicates are harmless.
 
-## Bao gồm các ứng viên ngữ nghĩa (Include semantic candidates)
+## Include semantic candidates {#include-semantic-candidates}
 
-Thêm tính năng tìm kiếm trùng lặp theo ngữ nghĩa, chứ không chỉ khớp chính xác/từ vựng. Sử dụng khi dọn dẹp các kho lưu trữ bộ nhớ trưởng thành; chuẩn bị cho nhiều trường hợp dương tính giả hơn.
+Adds semantic duplicate search, not just exact/lexical matches. Use when cleaning mature memory stores; expect more false positives.
 
-## Sao chép gợi ý (Copy prompt)
+## Copy prompt
 
-Sao chép một gợi ý `/engram` cho tác nhân hoặc mô hình mạnh hơn để giải quyết các trùng lặp. Sử dụng cho quy trình dọn dẹp và đánh giá có con người hướng dẫn. Nhắc nhở người dùng xem lại các thay đổi được tạo ra thông qua các cổng phê duyệt.
+Copies an `/engram` prompt for a stronger agent or model to resolve duplicates. Use for human-guided cleanup and review. Remind users to review generated changes through approval gates.
 
-## Xem trước (Preview)
+## Preview
 
-Hiển thị gợi ý trước khi sao chép. Khuyến khích xem trước cho các hoạt động dọn dẹp rủi ro.
+Shows the prompt before copying. Encourage preview for risky cleanup operations.
 
-## Tương đương CLI
+## CLI equivalent
 
 ```bash
 engram resolve-conflicts --dry-run --metacognize
@@ -36,8 +36,7 @@ engram resolve-conflicts --metacognize
 engram metacognize --workspace --force
 ```
 
-## Các bước tiếp theo
+## Next steps
 
-- [Tab Memories](memories.md)
+- [Memories tab](memories.md)
 - [CLI: verify / repair / quality-check](../cli/verify-repair-quality.md)
-

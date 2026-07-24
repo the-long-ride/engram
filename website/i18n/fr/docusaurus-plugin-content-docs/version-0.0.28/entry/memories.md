@@ -1,63 +1,52 @@
 ---
-title: Memories tab
-sidebar_position: 6
-description: Inspect the memory graph, preview memories, edit, and archive.
+title: Onglet Memories (Mémoires)
+sidebar_position: 8
+description: Inspectez le graphe de mémoire, prévisualisez les mémoires, modifiez-les et archivez-les.
 ---
 
 import RiskCallout from '@site/src/components/RiskCallout';
 
-# Memories tab
+# Onglet Memories
 
-The Memories tab inspects active memory, explores its graph, and performs maintenance actions.
+L'onglet Memories inspecte le graphe de mémoire et effectue des actions de maintenance de la mémoire.
 
-## Search
+## Jetons de portée (Scope chips)
 
-Use the search field to match text anywhere in each Markdown memory file. The search is case-insensitive and works together with the scope and type filters.
+Filtrez le graphe par source de mémoire. Comparez la mémoire de l'espace de travail à la mémoire globale. Commencez avec l'espace de travail actuel uniquement lorsque le graphe semble trop chargé en bruit.
 
-The search mode menu has two options:
+## Jetons de type (Type chips)
 
-- **Text matches only** shows memories whose file content or metadata directly matches the query.
-- **Text matches + related memories** also shows connected dependency, duplicate, and semantic memories.
+Filtrez le graphe par type de mémoire. Inspectez séparément les règles, les compétences ou les connaissances.
 
-Clear the field to restore the full graph for the selected filters.
+## Commutateur des liens sémantiques
 
-## Scope chips {#scope-chips}
+Affiche les arêtes sémantiques du graphe. Désactivez-le lorsque le graphe est visuellement trop chargé.
 
-Filter the graph by memory source. Compare workspace vs global memory. Start with the current workspace only when the graph feels noisy.
+## Rafraîchir / reconstruire (Refresh / rebuild)
 
-## Type chips {#type-chips}
+Recharge ou reconstruit les données du graphe. À utiliser après des modifications, des importations, des actions d'archivage ou des changements de configuration.
 
-Filter the graph by memory type. Inspect rules, skills, or knowledge separately.
+## Aperçu de la mémoire
 
-## Semantic links toggle {#semantic-links-toggle}
-
-Shows semantic graph edges. Turn off when the graph is visually noisy.
-
-## Refresh / rebuild
-
-Reloads or rebuilds graph data. Use after edits, imports, archive actions, or config changes.
-
-## Memory preview
-
-Reads selected memory content. Useful to audit what the agent will receive.
+Lit le contenu de la mémoire sélectionnée. Utile pour auditer ce que l'agent recevra.
 
 <RiskCallout level="caution">
-Sensitive local content may be visible in the browser. Treat the panel as open while previewing.
+Le contenu local sensible peut être visible dans le navigateur. Traitez le panneau comme ouvert pendant la prévisualisation.
 </RiskCallout>
 
-## Edit memory
+## Modifier la mémoire
 
-Opens the file in an editor and copies the path. Use for manual correction or review. The source of truth is the Markdown file.
+Ouvre le fichier dans un éditeur et copie le chemin. À utiliser pour une correction manuelle ou un examen. La source de vérité est le fichier Markdown.
 
-## Archive memory
+## Archiver la mémoire
 
-Removes memory from active routing while preserving it under `archive/`. Use archive, not delete, for auditability.
+Supprime la mémoire du routage actif tout en la préservant dans `archive/`. Utilisez l'archivage, pas la suppression, pour l'auditabilité.
 
 <RiskCallout level="caution">
-Archiving changes routing immediately. Use archive, not manual deletion, so history is preserved.
+L'archivage modifie le routage immédiatement. Utilisez l'archivage, pas la suppression manuelle, afin que l'historique soit préservé.
 </RiskCallout>
 
-## CLI equivalent
+## Équivalent CLI
 
 ```bash
 engram graph "<topic>"
@@ -65,7 +54,7 @@ engram quality-check
 engram archive --reason "<why>" <id-or-file>
 ```
 
-## Next steps
+## Étapes suivantes
 
-- [Maintain tab](core.md)
-- [CLI: verify / repair / quality-check](../cli/verify-repair-quality.md)
+- [Onglet Core](core.md)
+- [Onglet Runtime](runtime.md)

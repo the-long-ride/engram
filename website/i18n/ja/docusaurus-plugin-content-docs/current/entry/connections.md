@@ -1,63 +1,63 @@
 ---
-title: Connections タブ
+title: Connections tab
 sidebar_position: 3
-description: Entry Web UI からサポートされている AI エージェントを検出してリンクします。
+description: Detect and link supported AI agents from the Entry Web UI.
 ---
 
 import RiskCallout from '@site/src/components/RiskCallout';
 
-# Connections タブ
+# Connections tab
 
-Connections タブは、サポートされている AI エージェントのインターフェースをスキャンし、ワークスペースまたはグローバルレベルで Engram をそれぞれにリンクできるようにします。
+The Connections tab scans your machine for supported AI agent surfaces and lets you link Engram to each one at the workspace or global level.
 
-## エージェントスキャン (Agent scan)
+## Agent scan
 
-このタブには、サポートされているエージェントごとにカードが表示されます。各カードは、検出（detected）または未検出（missing）のステータスを報告します。
+The tab shows a card per supported agent. Each card reports a detected or missing status.
 
-- **Detected** — Engram がサポートされているローカルエージェントのインターフェース（設定パスまたはアプリが存在）を検出しました。
-- **Missing** — Engram がエージェントのインターフェースを見つけられませんでした。未検出は必ずしも非サポートを意味するわけではなく、アプリまたは設定パスがまだ存在していないことを意味する場合があります。
+- **Detected** — Engram found a supported local agent surface (config path or app present).
+- **Missing** — Engram did not find the agent surface. Missing does not always mean unsupported; it can mean the app or config path is not present yet.
 
 <RiskCallout level="caution">
-未検出は必ずしも非サポートを意味するわけではありません。このマシンにアプリや設定パスがまだ存在しないことを意味する場合があります。
+Missing does not always mean unsupported. It can mean the app or config path is not present on this machine yet.
 </RiskCallout>
 
-## ワークスペースリンクの切り替え (Workspace link toggle)
+## Workspace link toggle {#workspace-link-toggle}
 
-該当するエージェントについて、現在のリポジトリ/ワークスペースに Engram をリンクします。プロジェクトごとのルール、リポジトリ固有のメモリ、チーム共有の指示など、メモリをリポジトリに追従させたい場合に使用します。
+Links Engram to the current repo/workspace for that agent. Use when memory should follow the repository: per-project rules, repo-specific memory, team-shared instructions.
 
-## グローバルリンクの切り替え (Global link toggle)
+## Global link toggle {#global-link-toggle}
 
-該当するエージェントについて、グローバルに Engram をリンクします。個人用のメモリ、クロスプロジェクトのワークフロー、再利用可能なスタイルやルールに使用します。
+Links Engram globally for that agent. Use for personal memory, cross-project workflows, and reusable style/rules.
 
 <RiskCallout level="risky">
-共有マシンではグローバルリンクを慎重に使用してください。Engram は共有指示ファイルに管理ブロックを書き込みます。グローバルにリンクする前に、エージェントごとに Engram が書き込むファイルを確認してください。
+Use global links carefully on shared machines. Engram writes managed blocks into shared instruction files. Review what files Engram writes per agent before linking globally.
 </RiskCallout>
 
-## エージェントごとに Engram が書き込むファイル
+## What files Engram writes per agent
 
-| 対象 | ファイル |
+| Target | File |
 | --- | --- |
 | `codex` | `AGENTS.md`, `.agents/skills/engram/SKILL.md` |
 | `agents-md` | `AGENTS.md` |
-| `copilot` | `.github/copilot-instructions.md`; グローバル: `~/.copilot/copilot-instructions.md` |
+| `copilot` | `.github/copilot-instructions.md`; global: `~/.copilot/copilot-instructions.md` |
 | `claude` | `CLAUDE.md` |
-| `cursor` | `.cursor/rules/engram.mdc`; グローバル: `~/.cursor/plugins/local/engram/` |
-| `gemini` | `GEMINI.md`; グローバル: `~/.gemini/GEMINI.md`, `~/.gemini/skills/engram/SKILL.md` |
+| `cursor` | `.cursor/rules/engram.mdc`; global: `~/.cursor/plugins/local/engram/` |
+| `gemini` | `GEMINI.md`; global: `~/.gemini/GEMINI.md`, `~/.gemini/skills/engram/SKILL.md` |
 | `cline` | `.clinerules` |
-| `windsurf` | `.windsurf/rules/engram.md`; グローバル: `~/.codeium/windsurf/memories/global_rules.md` |
+| `windsurf` | `.windsurf/rules/engram.md`; global: `~/.codeium/windsurf/memories/global_rules.md` |
 | `opencode` | `AGENTS.md`, `.opencode/engram.md`, `.opencode/skills/engram/SKILL.md`, `opencode.json` |
-| `mcp` | `.mcp.json`; グローバル: ホストの MCP 設定ファイル |
-| `slash` | `.claude/commands/engram.md`, `.cursor/commands/engram.md`, `.gemini/commands/engram.toml`, `.opencode/commands/engram.md` |
+| `mcp` | `.mcp.json`; global: host MCP config files |
+| `slash` | `.claude/commands/engram.md`, `.claude/skills/engram/SKILL.md`, `.cursor/commands/engram.md`, `.gemini/commands/engram.toml`, `.opencode/commands/engram.md` |
 
-## リンクを解除するタイミング
+## When to unlink
 
-- リポジトリまたはテストワークスペースのアーカイブ時
-- エージェントを Engram から移行するとき
-- 新規の `engram upgrade --latest` を実行する前に、古い管理ブロックをクリーンアップするとき
+- Archiving a repo or test workspace
+- Switching an agent away from Engram
+- Cleaning stale managed blocks before a fresh `engram upgrade --latest`
 
-`engram unlink` は、Engram が管理するフックエントリとアダプターファイルのみを削除します。`--force` が明示されない限り、人間が作成したファイルは保護されます。
+`engram unlink` removes only Engram-managed hook entries and adapter files. Human-authored files are preserved unless `--force` is explicit.
 
-## CLI 等価コマンド
+## CLI equivalent
 
 ```bash
 engram link codex
@@ -66,7 +66,7 @@ engram link --global opencode
 engram unlink
 ```
 
-## 次のステップ
+## Next steps
 
-- [Construct タブ](construct.md)
-- [エージェント統合の概要](../integrations/overview.md)
+- [Construct tab](construct.md)
+- [Agent Integrations overview](../integrations/overview.md)

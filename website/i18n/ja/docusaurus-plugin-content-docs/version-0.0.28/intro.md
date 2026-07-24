@@ -1,69 +1,68 @@
 ---
-title: What is Engram?
+title: "Engramとは何ですか？"
 sidebar_position: 1
-description: Engram is a human-owned memory protocol for AI agents. Memory lives as approved Markdown files humans can inspect, review, and sync.
+description: "Engramは、AIエージェント向けの人間所有のメモリプロトコルです。人間が検査、レビュー、同期、修復できるファイルに、プロジェクト、チーム、個人の永続的な知識を保持します。"
 ---
 
-# What is Engram?
+# Engram
 
-Engram is a **human-owned memory protocol for AI agents**. It keeps durable project, team, and personal knowledge in files that humans can inspect, review, sync, and repair.
+Engram は、AI エージェントのための人間が所有するメモリプロトコルです。プロジェクト、チーム、そして個人の永続的な知識を、人間が検査、レビュー、同期、および修復できるファイルとして保存します。
 
-Engram is not a hidden agent brain. The agent may propose memory, but the source of truth is approved Markdown under `.agents/.engram/` or an optional global memory folder.
+Engram はエージェントの隠された脳ではありません。エージェントはメモリを提案できますが、信頼できる唯一の情報源（source of truth）は、`.agents/.engram/` またはオプションのグローバルメモリフォルダにある承認済みの Markdown です。
 
-## What problem it solves
+## 解決する問題
 
-AI agents forget project decisions, repeat setup questions, and mix old context with new instructions. Built-in memory is often private to one vendor, one app, or one machine.
+AI エージェントはプロジェクトの決定事項を忘れ、セットアップに関する質問を繰り返し、古いコンテキストと新しい指示を混同しがちです。また、内蔵のメモリは多くの場合、特定のベンダー、アプリ、またはマシンに固定されており、プライベートな状態になっています。
 
-Engram gives memory a stable contract:
+Engram はメモリに対して安定した契約を提供します：
 
-- approved facts, rules, and workflows live as Markdown
-- indexes and graphs make routing fast
-- writes require human approval
-- hashes reveal unsafe edits
-- ignore rules protect private context
-- profiles isolate company, client, and personal memory so external APIs or company-provided agents do not leak context across projects
-- Git gives history, portability, and team review
+- 承認された事実、ルール、ワークフローは Markdown として保存されます。
+- インデックスとグラフによってルーティングが高速化されます。
+- 書き込みには人間の承認が必要です。
+- ハッシュ値によって安全でない編集が検出されます。
+- 除外ルール（ignore rules）によってプライベートなコンテキストが保護されます。
+- プロファイルは会社、クライアント、個人のメモリを分離し、外部 API や会社提供のエージェントがプロジェクト間でコンテキストを漏らさないようにします。
+- Git により、履歴の追跡、ポータビリティ、およびチームでのレビューが可能になります。
 
-## Mental model
+## メンタルモデル
 
-Think of Engram as a knowledge memory center:
+Engram は知識メモリセンターのようなものです：
 
-| Layer | Job |
+| レイヤー | 役割 |
 | --- | --- |
-| Markdown | durable source of truth |
-| JSON index | fast lookup layer |
-| JSON graph | topic and relationship routing layer |
-| Approval gate | trust boundary before writes |
-| Hashes | integrity checks before reads |
-| Ignore rules | privacy controls |
-| Git | audit history and sync |
-| Agent adapters | convenience, not authority |
+| Markdown | 永続的な信頼できる唯一の情報源（source of truth） |
+| JSON インデックス | 高速なルックアップレイヤー |
+| JSON グラフ | トピックと関係性のルーティングレイヤー |
+| 承認ゲート | 書き込み前の信頼の境界 |
+| ハッシュ | 読み込み前の整合性チェック |
+| 除外ルール | プライバシーコントロール |
+| Git | 変更履歴の監査と同期 |
+| エージェントアダプター | 権限ではなく、利便性のためのレイヤー |
 
-## Scope priority
+## スコープの優先順位
 
-Engram resolves memory in this order:
+Engram は以下の順序でメモリを解決します：
 
-1. Workspace memory: `<project>/.agents/.engram/`
-2. Global memory: `$ENGRAM_GLOBAL_DIR` or `engram inject --global-path <path>`
+1. ワークスペースメモリ：`<project>/.agents/.engram/`
+2. グローバルメモリ：`$ENGRAM_GLOBAL_DIR` または `engram inject --global-path <path>`
 
-Workspace memory wins. Global memory is fallback for reusable preferences and team context across projects.
+ワークスペースメモリが優先されます。グローバルメモリは、複数のプロジェクトにわたる再利用可能な設定やチームのコンテキストのためのフォールバック（備え）です。
 
-## Current shape
+## 現在の機能
 
-Engram includes:
+Engram には以下が含まれます：
 
-- `save` for one approved memory
-- `save-session` / `ss` for several memories from a session
-- `observe` for raw notes that are not active memory yet
-- `take-control` for importing existing agent guidance and docs
-- `graph` and `quality-check` for review signals
-- `archive` for wrong or superseded memory
-- `repair` for invalid memory files skipped by index rebuild
-- `benchmark` for retrieval regression checks
-- agent skillsets, slash adapters, and MCP-style proposal tools
+- `save`：1つの承認されたメモリを保存します。
+- `save-session` / `ss`：セッションからの複数のメモリ候補を保存します。任意で `--query-level <n>` を使い、アクセス可能な直近 n 件までのチャットから候補を抽出できます。`/engram ss -f last 50 sessions` は `engram save-session --query-level 50 --force` に正規化されます。
+- `observe`：まだアクティブなメモリになっていない生メモ（raw notes）をキャプチャします。
+- `take-control`：既存のエージェント向けガイドラインやドキュメントを取り込みます。
+- `graph` および `quality-check`：レビューのためのシグナルを出力します。
+- `archive`：誤ったメモリや古くなったメモリをアーカイブします。
+- `repair`：インデックス再構築時にスキップされた不正なメモリファイルを検出・報告します。
+- `benchmark`：検索のデグレード（regressions）をチェックします。
+- エージェントスキルセット（skillsets）、スラッシュコマンド用アダプター、MCP スタイルの提案ツール。
 
-## Next steps
+コマンドを使用する前に、コンセプトページをお読みください：[Engram を理解する](concepts/protocol.md)。
 
-- [AI-agent quickstart](quickstart.md)
-- [Install and configure](install.md)
-- [Human-owned protocol](concepts/protocol.md)
+次へ：[AI エージェントクイックスタート](quickstart.md)。
+

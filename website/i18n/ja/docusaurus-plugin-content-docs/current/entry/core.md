@@ -1,34 +1,34 @@
 ---
-title: Core タブ (核心)
+title: Maintain tab
 sidebar_position: 7
-description: スコープとタイプのフィルターを使用して、重複および競合するメモリを確認します。
+description: Review duplicate and conflicting memories with scope and type filters.
 ---
 
-# Core タブ
+# Maintain tab
 
-Core タブは、重複および競合するメモリを確認します。Entry パネル内でのメタ認知（metacognition）ワークスペースです。
+The Maintain tab reviews duplicate and conflicting memories. It is the metacognition workspace inside the Entry panel.
 
-## スコープチップ (Scope chips): profile / global / workspace
+## Scope chips: profile / global / workspace {#scope-chips-profile-global-workspace}
 
-メモリソースごとに重複/競合分析フィルターを適用します。単一のスコープを監査するか、スコープ間で重複を比較します。少なくとも1つのスコープを選択した状態に維持する必要があります。
+Filter duplicate/conflict analysis by memory source. Audit one scope or compare cross-scope duplicates. Keep at least one scope selected.
 
-## タイプチップ (Type chips): rule / skill / workflow / knowledge
+## Type chips: rule / skill / workflow / knowledge {#type-chips-rule-skill-workflow-knowledge}
 
-メモリタイプごとに重複候補フィルターを適用します。クリーンアップ作業はルール(rule)または知識(knowledge)ファクトの整理にまず集中してください。各タイプの定義をインラインドキュメントとして提供し、どのような重複が無害であるかをユーザーが理解できるようにします。
+Filter duplicate candidates by memory type. Focus cleanup on rules first or knowledge facts first. Document type meanings inline so users understand when duplicates are harmless.
 
-## 意味論的候補を含める (Include semantic candidates)
+## Include semantic candidates {#include-semantic-candidates}
 
-完全な言葉の一致だけでなく、意味論的な重複検索を追加します。十分に管理されたメモリリポジトリを整理するときに使用しますが、誤検出が多く発生する可能性があることを念頭に置いてください。
+Adds semantic duplicate search, not just exact/lexical matches. Use when cleaning mature memory stores; expect more false positives.
 
-## プロンプトをコピー (Copy prompt)
+## Copy prompt
 
-性能のより高いエージェントやモデルが重複を解決できるように `/engram` プロンプトをコピーします。人間が確認しながら行うクリーンアップとレビューに適しています。生成された変更については、承認ゲートを介して確認するようユーザーに促してください。
+Copies an `/engram` prompt for a stronger agent or model to resolve duplicates. Use for human-guided cleanup and review. Remind users to review generated changes through approval gates.
 
-## プレビュー (Preview)
+## Preview
 
-コピーする前にプロンプトを表示します。リスクを伴うクリーンアップ操作の前にプレビューを推奨します。
+Shows the prompt before copying. Encourage preview for risky cleanup operations.
 
-## CLI 等価コマンド
+## CLI equivalent
 
 ```bash
 engram resolve-conflicts --dry-run --metacognize
@@ -36,8 +36,7 @@ engram resolve-conflicts --metacognize
 engram metacognize --workspace --force
 ```
 
-## 次のステップ
+## Next steps
 
-- [Memories タブ](memories.md)
+- [Memories tab](memories.md)
 - [CLI: verify / repair / quality-check](../cli/verify-repair-quality.md)
-

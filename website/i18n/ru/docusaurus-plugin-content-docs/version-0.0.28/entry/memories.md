@@ -1,63 +1,52 @@
 ---
-title: Memories tab
-sidebar_position: 6
-description: Inspect the memory graph, preview memories, edit, and archive.
+title: Вкладка Memories (Воспоминания)
+sidebar_position: 8
+description: Просмотр графа памяти, предварительный просмотр воспоминаний, их редактирование и архивирование.
 ---
 
 import RiskCallout from '@site/src/components/RiskCallout';
 
-# Memories tab
+# Вкладка Memories
 
-The Memories tab inspects active memory, explores its graph, and performs maintenance actions.
+Вкладка Memories проверяет граф памяти и выполняет действия по обслуживанию памяти.
 
-## Search
+## Фишки области действия (Scope chips)
 
-Use the search field to match text anywhere in each Markdown memory file. The search is case-insensitive and works together with the scope and type filters.
+Фильтрация графа по источнику памяти. Сравнение памяти рабочей области и глобальной памяти. Начните только с текущей рабочей области, если граф кажется зашумленным.
 
-The search mode menu has two options:
+## Фишки типа (Type chips)
 
-- **Text matches only** shows memories whose file content or metadata directly matches the query.
-- **Text matches + related memories** also shows connected dependency, duplicate, and semantic memories.
+Фильтрация графа по типу памяти. Проверяйте правила, навыки или знания отдельно.
 
-Clear the field to restore the full graph for the selected filters.
+## Переключатель семантических связей
 
-## Scope chips {#scope-chips}
+Показывает семантические связи графа. Отключайте, когда граф визуально зашумлен.
 
-Filter the graph by memory source. Compare workspace vs global memory. Start with the current workspace only when the graph feels noisy.
+## Обновить / Перестроить (Refresh / rebuild)
 
-## Type chips {#type-chips}
+Перезагружает или перестраивает данные графа. Используйте после редактирования, импорта, архивации или изменений конфигурации.
 
-Filter the graph by memory type. Inspect rules, skills, or knowledge separately.
+## Предварительный просмотр памяти
 
-## Semantic links toggle {#semantic-links-toggle}
-
-Shows semantic graph edges. Turn off when the graph is visually noisy.
-
-## Refresh / rebuild
-
-Reloads or rebuilds graph data. Use after edits, imports, archive actions, or config changes.
-
-## Memory preview
-
-Reads selected memory content. Useful to audit what the agent will receive.
+Читает содержимое выбранного воспоминания. Полезно для аудита того, что получит агент.
 
 <RiskCallout level="caution">
-Sensitive local content may be visible in the browser. Treat the panel as open while previewing.
+Конфиденциальный локальный контент может быть виден в браузере. Относитесь к панели как к открытой во время предварительного просмотра.
 </RiskCallout>
 
-## Edit memory
+## Редактировать память
 
-Opens the file in an editor and copies the path. Use for manual correction or review. The source of truth is the Markdown file.
+Открывает файл в редакторе и копирует путь. Используйте для ручного исправления или проверки. Источником истины является Markdown-файл.
 
-## Archive memory
+## Архивировать память
 
-Removes memory from active routing while preserving it under `archive/`. Use archive, not delete, for auditability.
+Удаляет память из активной маршрутизации, сохраняя ее в каталоге `archive/`. Используйте архив, а не удаление, для обеспечения возможности аудита.
 
 <RiskCallout level="caution">
-Archiving changes routing immediately. Use archive, not manual deletion, so history is preserved.
+Архивирование немедленно меняет маршрутизацию. Используйте архивацию, а не ручное удаление, чтобы сохранить историю.
 </RiskCallout>
 
-## CLI equivalent
+## Эквивалент в CLI
 
 ```bash
 engram graph "<topic>"
@@ -65,7 +54,7 @@ engram quality-check
 engram archive --reason "<why>" <id-or-file>
 ```
 
-## Next steps
+## Следующие шаги
 
-- [Maintain tab](core.md)
-- [CLI: verify / repair / quality-check](../cli/verify-repair-quality.md)
+- [Вкладка Core](core.md)
+- [Вкладка Runtime](runtime.md)

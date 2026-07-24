@@ -1,23 +1,23 @@
 ---
-title: Built-in agent memory
+title: 内置 Agent 内存
 sidebar_position: 2
-description: Engram treats built-in agent memory as a convenience layer, not the authority.
+description: Engram 将内置 Agent 内存视为便利层，而不是权威。
 ---
 
-# Built-in agent memory
+# 内置 Agent 内存
 
-Built-in agent memory is convenient, but often tied to one host. It can be hard to diff, export, review, or share with another agent.
+内置 Agent 内存很方便，但通常与单一主机绑定。它可能难以进行 diff、导出、审查或与其他 Agent 共享。
 
-Engram treats built-in memory as a convenience layer, not the authority. The authority remains files the human owns.
+Engram 将内置内存视为便利层，而不是权威。权威仍然是人类拥有的文件。
 
-| Dimension | Engram | Built-in agent memory |
+| 维度 | Engram | 内置 Agent 内存 |
 | --- | --- | --- |
-| Source of truth | Approved Markdown files | Vendor-owned hidden state |
-| Portability | Git-native, agent-agnostic | Tied to one app or account |
-| Review | Git diff and Markdown review | Hard to inspect or export |
-| Best fit | teams that need ownership and auditability | quick personal recall within one host |
+| 信任源 | 经批准的 Markdown 文件 | 厂商拥有的隐藏状态 |
+| 移植性 | Git 原生，与 Agent 无关 | 绑定到单个应用或账户 |
+| 审查 | Git diff 和 Markdown 审查 | 难以检查或导出 |
+| 最合适 | 需要所有权和可审计性的团队 | 单个主机内的快速个人召回 |
 
-## Next steps
+## 下一步
 
 - [agentmemory](agentmemory.md)
-- [Comparison overview](overview.md)
+- [对比概述](overview.md)

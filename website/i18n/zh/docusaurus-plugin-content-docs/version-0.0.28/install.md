@@ -1,75 +1,75 @@
 ---
-title: Install and configure
+title: 安装与配置
 sidebar_position: 3
-description: Install the Engram CLI, initialize a workspace, configure global memory, and link AI agents.
+description: 安装 Engram CLI、初始化工作区、配置全局内存并链接 AI Agent。
 ---
 
-# Install and configure
+# 安装与配置
 
-## Requirements
+## 要求
 
 - Node.js `>=20`
-- A supported AI agent (Codex, Claude, Gemini, Cursor, Windsurf, OpenCode, Copilot, Cline, or any AGENTS.md-compatible host)
+- 受支持的 AI Agent（Codex、Claude、Gemini、Cursor、Windsurf、OpenCode、Copilot、Cline 或任何兼容 AGENTS.md 的主机）
 
-## Install the CLI
+## 安装 CLI
 
 ```bash
 npm install -g @the-long-ride/engram
 ```
 
-Verify:
+验证：
 
 ```bash
 engram --version
 ```
 
-Two binaries are installed:
+安装了两个二进制文件：
 
-- `engram` — main CLI
-- `engram-mcp` — MCP server binary for hosts that register external tool processes
+- `engram` — 主 CLI
+- `engram-mcp` — 适用于注册外部工具进程的主机的 MCP 服务端二进制文件
 
-## Initialize a workspace
+## 初始化工作区 (workspace)
 
-From the project root:
+从项目根目录运行：
 
 ```bash
 engram inject
 ```
 
-This creates `.agents/.engram/` and installs the compact Codex target by default: `AGENTS.md` plus `.agents/skills/engram/SKILL.md`.
+这将创建 `.agents/.engram/` 并默认安装紧凑的 Codex 目标：`AGENTS.md` 加上 `.agents/skills/engram/SKILL.md`。
 
-Use `engram inject --no-skillset` to skip agent files, or `engram inject --skillset all` to install every supported adapter during inject. Existing human-authored files are skipped.
+使用 `engram inject --no-skillset` 跳过 Agent 文件，或使用 `engram inject --skillset all` 在注入期间安装每个受支持的适配器。现有的由人类创作的文件将被跳过。
 
-## Configure with the Entry Web UI
+## 使用 Entry Web UI 进行配置
 
-The friendliest setup path:
+最友好的设置路径：
 
 ```bash
 engram entry
 ```
 
-This launches a local-only control panel. Configure memory roots, link agents, and tune routing without editing JSON by hand. See [Entry Web UI](entry/index.md) for every tab and field.
+这将启动一个仅限本地的控制面板。无需手动编辑 JSON 即可配置内存根、链接 Agent 并调整路由。有关每个选项卡和字段的信息，请参阅 [Entry Web UI](entry/index.md)。
 
-## Configure global memory
+## 配置全局内存
 
-Global memory is optional and lives wherever you configure it. It holds preferences and team context that should follow you across repos.
+全局内存是可选的，并且活在你配置的任何地方。它保存了应该跨仓库跟随你的偏好和团队上下文。
 
 ```bash
 engram inject --global-only --global-path ~/Documents/engram
 ```
 
-Or update the global folder later:
+或者稍后更新全局文件夹：
 
 ```bash
 engram update-global-folder ~/Documents/engram
 engram ugf ~/Documents/engram
 ```
 
-Chat-style forms such as `engram set global memory path to <new-path>` and `engram move global folder from <old-path> to <new-path>` normalize to the same command. Add `--move-from-path <old-path>` when they also want Engram to move the whole old global root into the new location.
+聊天风格的表单（如 `engram set global memory path to <new-path>` 和 `engram move global folder from <old-path> to <new-path>`）会标准化为相同的命令。如果他们还希望 Engram 将整个旧全局根移动到新位置，请添加 `--move-from-path <old-path>`。
 
-## Link AI agents
+## 链接 AI Agent
 
-Install agent hooks and MCP registration for a host:
+为宿主安装 Agent 钩子（hooks）和 MCP 注册：
 
 ```bash
 engram link codex
@@ -81,29 +81,29 @@ engram link --global opencode
 engram set-proof compact
 ```
 
-`engram link all` installs the public target set and reports deterministic `SKIPPED` reasons for partial hosts across skillset instruction files, MCP config, slash adapters, and agent hooks in one unified install. `engram unlink` removes all of these together.
+`engram link all` 在一个统一的安装中安装公共目标集，并报告针对说明文件、MCP 配置、斜杠适配器和 Agent 钩子的部分宿主的确定性 `SKIPPED` 原因。`engram unlink` 会将它们全部移除。
 
-See [Agent Integrations](integrations/overview.md) for the full target matrix.
+有关完整的目标矩阵，请参阅 [Agent 集成](integrations/overview.md)。
 
-## Submodule workflow
+## 子模块工作流 (Submodule)
 
-If the human wants `.agents/.engram` tracked as a separate repository:
+如果人类希望将 `.agents/.engram` 作为单独的仓库进行跟踪：
 
 ```bash
 engram inject --submodule
 ```
 
-Add `--submodule-remote <git-url>` only after the human provides a URL. Engram validates the URL, initializes the submodule on `main`, and creates the first submodule commit as `Initialize engram`.
+仅在人类提供 URL 后添加 `--submodule-remote <git-url>`。Engram 会验证该 URL，在 `main` 分支上初始化子模块，并创建第一个子模块提交为 `Initialize engram`。
 
-## Shared global Git origin
+## 共享的全局 Git 源
 
-If `engram entry` shows no `global_git_detected.remote_url`, ask the human whether global memory should be shared through Git. When they provide a URL:
+如果 `engram entry` 显示未检测到 `global_git_detected.remote_url`，请询问人类是否应通过 Git 共享全局内存。当他们提供 URL 时：
 
 ```bash
 engram inject --global-remote <git-url>
 ```
 
-## Verify the install
+## 验证安装
 
 ```bash
 engram verify
@@ -111,10 +111,10 @@ engram load --dry-run "setup"
 engram llm
 ```
 
-`engram llm` prints the packaged AI-agent usage guide and does not require an injected workspace.
+`engram llm` 打印打包的 AI Agent 使用指南，且不需要注入的工作区。
 
-## Next steps
+## 下一步
 
-- [Daily workflow](daily-workflow.md)
+- [日常工作流](daily-workflow.md)
 - [Entry Web UI](entry/index.md)
-- [Agent Integrations](integrations/overview.md)
+- [Agent 集成](integrations/overview.md)

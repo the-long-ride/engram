@@ -1,38 +1,38 @@
 ---
 title: Copilot
 sidebar_position: 8
-description: Engram integration with GitHub Copilot via repository and user custom instructions.
+description: Integración de Engram con GitHub Copilot a través de instrucciones personalizadas del repositorio y del usuario.
 ---
 
 # Copilot
 
-GitHub Copilot reads repository custom instructions from `.github/copilot-instructions.md`. For global Copilot installs, Engram appends its managed block to `~/.copilot/copilot-instructions.md`.
+GitHub Copilot lee las instrucciones personalizadas del repositorio desde `.github/copilot-instructions.md`. Para instalaciones globales de Copilot, Engram añade su bloque gestionado a `~/.copilot/copilot-instructions.md`.
 
-## Install
+## Instalación
 
 ```bash
 engram link copilot
 ```
 
-## Files written
+## Archivos escritos
 
-| File | Purpose |
+| Archivo | Propósito |
 | --- | --- |
-| `.github/copilot-instructions.md` | Repository custom instructions |
+| `.github/copilot-instructions.md` | Instrucciones personalizadas del repositorio |
 
-## Global install
+## Instalación global
 
 ```bash
 engram link --global copilot
 ```
 
-Appends a managed block to `~/.copilot/copilot-instructions.md`.
+Añade un bloque gestionado a `~/.copilot/copilot-instructions.md`.
 
-## Compact/manual fallback target
+## Objetivo de respaldo compacto/manual
 
-Copilot is a compact/manual fallback target. It receives the full compact protocol. Hook install is skipped in v1; use the Engram skillset or a manual `engram load` for context.
+Copilot es un objetivo de respaldo compacto/manual. Recibe el protocolo compacto completo porque los hooks actuales exponen el contexto de inicio de sesión pero no una inyección de contexto confiable en el momento del prompt en v1. Se omite la instalación del hook; no se escribe la configuración del hook.
 
-## Next steps
+## Siguientes pasos
 
-- [Agent Integrations overview](overview.md)
-- [Hooks and proof lines](hooks.md)
+- [Descripción general de las integraciones de agentes](overview.md)
+- [Hooks y líneas de verificación](hooks.md)

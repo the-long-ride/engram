@@ -1,49 +1,50 @@
 ---
-title: Entry Web UI overview
+title: Entry Web UI 概述
 sidebar_position: 1
-description: The Entry Web UI is the local-only control panel for configuring Engram memory and agent connections.
+description: Entry Web UI 是本地控制面板，用于配置 Engram 内存、配置文件、工作区和智能体连接。
 ---
 
 import RiskCallout from '@site/src/components/RiskCallout';
 
-# Entry Web UI overview
+# Entry Web UI 概述
 
-The Entry Web UI is the local-only control panel for Engram. Use it to configure memory roots, link AI agents, tune routing, review findings, inspect the memory graph, and debug resolved config without editing JSON by hand.
+Entry Web UI 是 Engram 的本地控制面板。使用它来配置内存根、链接 AI 智能体、微调路由、审查重复、检查内存图谱以及调试运行时配置，而无需手动编辑 JSON。
 
-## When to use it
+## 何时使用
 
-- First-time setup of a workspace or global memory root
-- Linking or unlinking AI agents without remembering CLI flags
-- Tuning routing, graph, vector, and rule variant settings
-- Reviewing duplicate or conflicting memories
-- Inspecting the memory graph
-- Debugging resolved config, paths, and Git detection
+- 首次设置工作区或全局内存根
+- 链接或取消链接 AI 智能体，而无需记住 CLI 标志
+- 微调路由、图、向量和规则变体设置
+- 审查重复或冲突的内存
+- 检查内存图谱
+- 调试解析后的配置、路径和 Git 检测
 
-## Local-only access model
+## 本地专用访问模型 (Local-only)
 
-The panel runs on your machine. It is not a cloud service. Close the server when you are done for security hygiene.
+该面板在您的机器上运行。它不是云服务。为了安全起见，请在完成后关闭服务器。
 
 <RiskCallout level="risky">
-The Entry panel is local-only. Treat it as open while you are configuring memory, then close the server from the sidebar footer when finished.
+Entry 面板仅限本地访问。在配置内存时将其视为开启状态，完成后从 Runtime 标签页关闭服务器。
 </RiskCallout>
 
-## Relationship to CLI commands
+## 与 CLI 命令的关系
 
-Every visible control maps to a CLI command or config key. Where a CLI equivalent exists, the field reference lists it. The CLI remains the source of truth for scripting and automation.
+每个可见的控件都映射到一个 CLI 命令或配置键。在存在 CLI 等效项的地方，字段参考会列出它。对于脚本编写和自动化，CLI 仍然是事实来源。
 
-## Tabs at a glance
+## 标签页一览
 
-| Tab | Job |
+| 标签页 | 任务 |
 | --- | --- |
-| [Construct](construct.md) | Configure every Engram runtime field |
-| [Memories](memories.md) | Search, inspect, and archive active memory |
-| [Review](review.md) | Resolve findings and confirm reviewed memory writes |
-| [Maintain](core.md) | Review duplicate and conflicting memories |
-| [Connections](connections.md) | Detect and link supported AI agents |
+| [Connections](connections.md) | 检测并链接受支持的 AI 智能体 |
+| [Construct](construct.md) | 配置每个 Engram 运行时字段 |
+| [Profiles](profiles.md) | 管理隔离的全局内存配置文件 |
+| [Workspaces](workspaces.md) | 注册并链接项目仓库 |
+| [Core](core.md) | 审查重复和冲突的内存 |
+| [Memories](memories.md) | 检查内存图谱并归档内存 |
+| [Runtime](runtime.md) | 只读的解析后配置和路径 |
 
-## Next steps
+## 后续步骤
 
-- [Launching the control panel](launch.md)
-- [Construct tab](construct.md)
-- [Maintain tab](core.md)
-- [Complete field reference](field-reference.md)
+- [启动控制面板](launch.md)
+- [Construct 标签页](construct.md)
+- [完整字段参考](field-reference.md)

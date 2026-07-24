@@ -1,71 +1,53 @@
 ---
-title: "書き込みパスと承認"
+title: Write path and approval
 sidebar_position: 6
-description: "エージェントが提案し、人間が承認します。承認されたメモリのみが書き込まれ、その後、インデックス、グラフ、ハッシュ、および変更ログが更新されます。"
+description: Agents propose, humans approve. Only approved memory is written, then indexes, graph, hashes, and changelog refresh.
 ---
 
-# 人間が所有するメモリプロトコル
+# Write path and approval
 
-## AIチャットでの承認
+The write flow is the trust boundary. Agents propose, humans approve.
 
-AIエージェントとのチャットでは、Engram の承認は会話型です。エージェントはまず洗練した `TYPE: ... | TEXT: ...` 候補を表示し、ルールでは Light/Balanced/Strict の各バリアントも示します。正確にその候補を保存するには `yes`、修正するには `audit`、中止するには `cancel` と返信します。`yes` の後、エージェントは承認された候補そのままで `engram save-session --force` を使います。直接の CLI 保存は、accept-all コマンドが明示的に呼ばれていない限り、引き続き A/B/C を使います。
+## Write flow
 
+1. Agent proposes one or more candidates.
+   With `save-session --query-level <n>`, the agent may consider up to n recent accessible human-agent chats, but only as proposal context.
+   Natural `/engram ss -f last 50 sessions` is the same scope plus explicit force approval: `engram save-session --query-level 50 --force`.
+2. Engram parses candidate type and target scope.
+3. Engram checks schema, secrets, prompt-injection patterns, and path safety.
+4. Human sees a preview.
+5. Direct CLI replies use `A`, `A 1,3`, `B <note>`, or `C`.
+6. AI-agent chat replies use `yes`, `audit`, or `cancel` after the exact displayed candidates.
+7. Only approved memory is written.
+8. Index, graph, hashes, and changelog are refreshed.
 
-Engram は単なる「エージェントのメモリ」ではありません。メモリを検査可能にし、ポータブルにし、人間によって統治されるようにするプロトコルです。
+## Approval words
 
-## 契約事項
+Approval words are `yes`, `approve`, `confirm`, or `save`. Audit words are `audit`, `revise`, `correct`, or edited replacement text. Cancel words are `cancel`, `stop`, or rejection. Only approval after exact candidate display authorizes `engram save-session --force` for those candidates.
 
-Markdown は永続メモリです。
+Direct terminal CLI remains A/B/C. MCP proposal tools remain no-write.
 
-JSON インデックスおよびグラフファイルは、高速化のためのアクセラレーションレイヤーです。
+## Related-memory hints
 
-承認（Approval）は信頼の境界です。
+When `engram save` finds related active memories, the approval preview reports them with a suggested `depends_on` or possible-duplicate warning. Accepting saves the preview as-is; reject first if you want to restructure dependencies or archive duplicates before saving.
 
-ハッシュは整合性チェックです。
+For `save-session --force`, Engram pauses before writing when those related memory hints appear. The agent should use the response to brainstorm a structured rerun: add `DEPENDS_ON: memory-id` for dependencies, `LEVEL: advanced` when a memory is deeper than its prerequisite, or `UPDATE: memory-id` when a candidate should merge into a possible duplicate.
 
-除外ルールはプライバシーコントロールです。
+## Safety checks at save time
 
-Git はポータビリティと変更履歴の監査を提供します。
+- Schema validation
+- Secret scan
+- Prompt-injection scan
+- Path safety
+- Hash integrity
 
-エージェントアダプターは利便性のためのものであり、権威ではありません。
+## Why this matters
 
-エージェントはメモリを提案できますが、何がメモリになるかは人間が決定・所有します。
+Without a protocol, memory can become invisible state. Invisible state is hard to review, hard to share, and easy for agents to poison by accident.
 
-## メモリのタイプ
+Engram makes memory boring on purpose: files, diffs, hashes, review gates, and commands a human can rerun.
 
-| タイプ | 用途 |
-| --- | --- |
-| Rule | ユーザーの好み、修正、制約、「常に実行する/決して実行しない」といったガイドライン |
-| Skill | 繰り返し発生するワークフロー、チェックリスト、手順、ランブック |
-| Knowledge | 客観的なプロジェクトの事実、決定事項、実装の詳細 |
+## Next steps
 
-すべてのアクティブなメモリファイルには、`Context`、`Content`、および `Example` セクションがあります。ルールメモリは、ロードされたガイドラインが常に有用であるように、簡潔な行数制限もターゲットにしています。
-
-## 書き込みフロー
-
-1. エージェントが 1 つまたは複数の候補を提案します。
-   `save-session --query-level <n>` を使用すると、エージェントはアクセス可能な直近 n 件までの人間-エージェントチャットを提案コンテキストとしてのみ考慮できます。
-   自然な `/engram ss -f last 50 sessions` は同じ範囲に明示的な一括承認を加えたものです：`engram save-session --query-level 50 --force`。
-2. Engram が候補のタイプとターゲットスコープを解析します。
-3. Engram がスキーマ、機密情報（secrets）、プロンプトインジェクションのパターン、およびパスの安全性を検証します。
-4. 人間にプレビューが表示されます。
-5. 人間が `A`、`A 1,3`、`B <メモ>`、または `C` と返答します。
-6. 承認されたメモリのみが書き込まれます。
-7. インデックス、グラフ、ハッシュ、および変更履歴（changelog）が更新されます。
-
-## 読み込みフロー
-
-1. Engram がワークスペースおよびオプションのグローバルインデックスをロードします。
-2. 重複する ID がある場合、ワークスペースのエントリがグローバルよりも優先されます。
-3. 除外ルールとロールフィルタにより、無関係なエントリが非表示になります。
-4. グラフ指向ルーティングにより、コンパクトなコンテキストパックが選択されます。
-5. コンテンツが出力される前に、ハッシュと安全性のチェックが実行されます。
-
-## なぜこれが重要なのか
-
-プロトコルがないと、メモリは「不可視な状態」になってしまいます。不可視な状態はレビューが難しく、共有するのも困難であり、エージェントによって誤って破損（汚染）される危険性があります。
-
-Engram は意図的にメモリを退屈なものにしています：ファイル、差分（diffs）、ハッシュ、レビューゲート、そして人間が再実行できるコマンドによって管理されます。
-
-次へ：[操作ガイド](../cli/overview.md)。
-
+- [Privacy, ignore rules, and safety](safety.md)
+- [CLI: save / save-session / observe](../cli/save-session.md)

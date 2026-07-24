@@ -1,57 +1,58 @@
 ---
-title: Read path and routing
+title: Đường dẫn đọc và định tuyến
 sidebar_position: 5
-description: Engram loads workspace and global indexes, applies ignore rules and role filters, then routes a compact context pack.
+description: Engram tải các chỉ mục của workspace và toàn cục, áp dụng các quy tắc bỏ qua và bộ lọc vai trò, sau đó định tuyến một gói ngữ cảnh nhỏ gọn.
 ---
 
-# Read path and routing
+# Đường dẫn đọc và định tuyến
 
-The read flow decides which memory an agent sees for a given task.
+Luồng đọc quyết định bộ nhớ nào mà agent nhìn thấy cho một nhiệm vụ nhất định.
 
-## Read flow
+## Luồng đọc
 
-1. Engram loads workspace and optional global indexes.
-2. Workspace entries win over global duplicates.
-3. Ignore rules and role filters hide irrelevant entries.
-4. Graph-aware routing selects a compact context pack.
-5. Hash and safety checks run before content is printed.
+1. Engram tải chỉ mục của workspace và chỉ mục toàn cục tùy chọn.
+2. Các mục trong workspace sẽ thắng các mục trùng lặp toàn cục.
+3. Các quy tắc bỏ qua (ignore rules) và bộ lọc vai trò (role filters) ẩn các mục không liên quan.
+4. Định tuyến nhận biết đồ thị (graph-aware routing) chọn một gói ngữ cảnh nhỏ gọn.
+5. Kiểm tra mã băm (hash) và an toàn trước khi in nội dung.
 
-## Anchor and refine
+## Định vị và tinh lọc
 
-`load` first anchors routing on meaningful query terms, ignoring generic memory words such as `rule`, `knowledge`, and common stopwords. It then refines the wider candidate pool into a compact context pack.
+`load` trước tiên định vị việc định tuyến dựa trên các thuật ngữ truy vấn có ý nghĩa, bỏ qua các từ bộ nhớ chung chung như `rule`, `knowledge` và các từ dừng phổ biến (stopwords). Sau đó, nó tinh lọc nhóm ứng viên rộng hơn thành một gói ngữ cảnh nhỏ gọn.
 
-Normal load reports selected and total related counts, like `loaded 8 memory files / 14 total related memories`.
+Tải thông thường sẽ báo cáo số lượng bộ nhớ được chọn và tổng số bộ nhớ liên quan, ví dụ: `loaded 8 memory files / 14 total related memories`.
 
-- `load --dry-run` shows candidate counts, narrowing tags, and match reasons.
-- `load --all` returns every visible routed match instead of applying the compact limit.
-- Default `load` is the agent-facing compact route. Use `load --full` for broader legacy output.
+- `load --dry-run` hiển thị số lượng ứng viên, thẻ thu hẹp phạm vi và lý do khớp.
+- `load --all` trả về mọi kết quả định tuyến hiển thị thay vì áp dụng giới hạn gói nhỏ gọn.
+- `load` là đường dẫn rút gọn dành cho agent.
 
-`workflow` and `workflows` still route to skill memories, but generic type words do not make a broad match by themselves.
+`workflow` và `workflows` vẫn định tuyến đến bộ nhớ kỹ năng (skill memories), nhưng các từ loại chung chung tự chúng không tạo ra một kết quả khớp rộng.
 
-## Dependency layers
+## Các lớp phụ thuộc
 
-Use `depends_on` frontmatter when a memory should build on another memory instead of repeating it:
+Sử dụng trường `depends_on` trong frontmatter khi một bộ nhớ cần xây dựng dựa trên một bộ nhớ khác thay vì lặp lại nó:
 
 ```yaml
 depends_on: [release-foundation]
 level: advanced
 ```
 
-Run `engram graph --rebuild` after manual edits. The graph reports dependency layers, and `engram load` pulls routed prerequisites into the same compact context pack before deeper memories. Graph related edges and vector hits cannot load unrelated memories by themselves; they only help rerank or expand memories that already overlap meaningful query terms. Explicit `depends_on` prerequisites may still load without their own keyword overlap.
+Chạy `engram graph --rebuild` sau khi chỉnh sửa thủ công. Đồ thị báo cáo các lớp phụ thuộc và `engram load` sẽ kéo các điều kiện tiên quyết đã định tuyến vào cùng một gói ngữ cảnh nhỏ gọn trước các bộ nhớ sâu hơn. Các cạnh liên quan trong đồ thị và lượt khớp vector không thể tự tải các bộ nhớ không liên quan; chúng chỉ giúp xếp hạng lại hoặc mở rộng các bộ nhớ đã trùng lặp các từ khóa truy vấn có ý nghĩa. Các điều kiện tiên quyết `depends_on` rõ ràng vẫn có thể tải mà không cần trùng lặp từ khóa riêng của chúng.
 
-## Routing diagram
+## Sơ đồ định tuyến
 
 ```mermaid
 flowchart LR
-  A[Agent request] --> B[Load workspace + global indexes]
-  B --> C[Workspace wins over global duplicates]
-  C --> D[Ignore rules + role filters]
-  D --> E[Graph-aware routing]
-  E --> F[Hash + safety checks]
-  F --> G[Compact context pack]
+  A[Yêu cầu từ Agent] --> B[Tải chỉ mục workspace + toàn cục]
+  B --> C[Workspace thắng các bản trùng lặp toàn cục]
+  C --> D[Quy tắc bỏ qua + Bộ lọc vai trò]
+  D --> E[Định tuyến nhận biết đồ thị]
+  E --> F[Kiểm tra mã băm + an toàn]
+  F --> G[Gói ngữ cảnh nhỏ gọn]
 ```
 
-## Next steps
+## Bước tiếp theo
 
-- [Write path and approval](write-path.md)
+- [Đường dẫn ghi và phê duyệt](write-path.md)
 - [CLI: load / search / graph](../cli/load-search-graph.md)
+

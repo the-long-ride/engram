@@ -1,63 +1,63 @@
 ---
-title: Ежедневный рабочий процесс
+title: Daily workflow
 sidebar_position: 4
-description: Ежедневный цикл Engram — загрузка, работа, поиск, сохранение и поддержание здоровья памяти.
+description: The everyday Engram loop — load, work, search, save, and keep memory healthy.
 ---
 
-# Ежедневный рабочий процесс
+# Daily workflow
 
-Ежедневный цикл Engram намеренно сделан простым: загрузка памяти в начале, поиск при необходимости, сохранение при появлении долговечных данных и аудит в конце.
+The Engram daily loop is intentionally boring: load memory at the start, search when you need more, save when something durable emerges, and audit at the end.
 
-## Начало сессии
-
-```text
-/engram load "текущая задача"
-```
-
-Или из терминала:
-
-```bash
-engram load "<задача>"
-```
-
-Агент должен ответить компактной строкой подсчета, например `Engram loaded: 8 memories / 24 total related memories.`, если только человек не запросит ID, правила или необработанный вывод.
-
-## Во время работы
-
-Выполняйте поиск при изменении задачи или если подозреваете, что отсутствуют знания о проекте:
+## Start of session
 
 ```text
-/engram search "тема, которую я могу упустить"
+/engram load "current task"
 ```
 
-Предварительный просмотр файлов памяти, которые будут маршрутизированы, без вывода их содержимого:
+Or from the terminal:
 
 ```bash
-engram load --dry-run "<запрос>"
+engram load "<task>"
 ```
 
-Возврат всех видимых совпадений маршрутизации вместо компактного лимита:
+The agent should reply with a compact count line such as `Engram loaded: 8 memories / 24 total related memories.` unless the human asks for IDs, rules, or raw output.
+
+## During work
+
+Search when the task changes or you suspect project knowledge is missing:
+
+```text
+/engram search "topic I might be missing"
+```
+
+Preview which memory files would route without printing their contents:
 
 ```bash
-engram load --all "<запрос>"
+engram load --dry-run "<query>"
 ```
 
-## Сохранение одного долговечного факта
+Return every visible routed match instead of the compact limit:
+
+```bash
+engram load --all "<query>"
+```
+
+## Save one durable fact
 
 ```text
 /engram save knowledge
 ```
 
-`engram save` захватывает лучший единственный кандидат памяти, автоматически обновляет соответствующую память или создает новую и всегда показывает шлюз подтверждения A/B/C перед записью.
+`engram save` captures the best single memory candidate, automatically updates a matching memory or creates a new one, and always shows the A/B/C approval gate before writing.
 
-## Сохранение нескольких воспоминаний сессии
+## Save several memories from a session
 
 ```text
 /engram save-session
 /engram ss
 ```
 
-Предоставьте кандидатов в следующей форме:
+Provide candidates in this shape:
 
 ```text
 TYPE: rule | TEXT: Always run tests before release. | CONTEXT: Created from release planning so future agents preserve the test gate.
@@ -65,42 +65,42 @@ TYPE: knowledge | TEXT: Release notes live in CHANGELOG.md.
 TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
 ```
 
-`CONTEXT: ...` необязателен. Добавляйте его только тогда, когда он объясняет, почему память существует.
+`CONTEXT: ...` is optional. Add it only when it explains why the memory exists.
 
-## Анализ недавних чатов
+## Mine recent chats
 
 ```text
 /engram save-session --query-level 3
 /engram ss -f last 50 sessions
 ```
 
-`--query-level` должен быть положительным целым числом. Агент может использовать до указанного количества недавних сессий чата человека и агента, включая текущую, и не должен выдумывать недоступную историю.
+`--query-level` must be a positive integer. The agent may use up to that many recent human-agent chat sessions, including the current one, and must not invent unavailable history.
 
-## Быстрое подтверждение всего
+## Accept-all shortcut
 
 ```text
 /engram ss -f
 ```
 
-`-f` означает, что человек явно одобряет каждого рекомендованного агентом кандидата. Агенты не должны добавлять `--force`, если человек этого не просил.
+`-f` means the human explicitly approves every agent-recommended candidate. Agents must not add `--force` unless the human requested it.
 
-Если запуск «принять все» сообщает о связанных воспоминаниях перед записью, файлы еще не сохранены. Агент должен перезапустить процесс со структурированными кандидатами:
+When an accept-all run reports related memories before writing, no file was saved yet. The agent should rerun with structured candidates:
 
 ```text
 TYPE: rule | TEXT: OAuth rotation follows release foundations. | DEPENDS_ON: release-foundation | LEVEL: advanced
 TYPE: knowledge | TEXT: Invoice retries use exponential backoff. | UPDATE: invoice-retry-baseline
 ```
 
-## Маршрутизация ролей (Role routing)
+## Role routing
 
-Сохранение памяти для конкретной роли:
+Save role-specific memory:
 
 ```bash
 engram save --role frontend ...
 engram save-session --role backend ...
 ```
 
-Настройка маршрутизации ролей:
+Tune role routing:
 
 ```bash
 engram set-role frontend
@@ -108,28 +108,27 @@ engram set-role backend security
 engram set-role
 ```
 
-При успешном выполнении `engram set-role ...` или `engram set-rule-variant ...` CLI возвращает строку `Agent action:`. Совместимые с Engram слеш-адаптеры и MCP-хосты должны немедленно перезапустить `engram load "<текущая задача/запрос>"` и рассматривать этот результат как замену ранее загруженного контекста Engram.
+When `engram set-role ...` or `engram set-rule-variant ...` succeeds, the CLI returns an `Agent action:` line. Engram-aware slash adapters and MCP hosts should immediately rerun `engram load "<current task/request>"` and treat that result as replacing prior Engram-loaded context.
 
-## Конец значимой работы
+## End of meaningful work
 
 ```text
 Check Engram health, report invalid memories, and propose anything worth saving from this session.
 ```
 
-Полезные команды:
+Useful commands:
 
 ```bash
 engram upgrade
 engram verify
 engram repair
-engram graph "<тема>"
+engram graph "<topic>"
 engram quality-check
-engram archive --reason "<почему>" <id-или-файл>
+engram archive --reason "<why>" <id-or-file>
 ```
 
-## Следующие шаги
+## Next steps
 
-- [Справочник по CLI](cli/overview.md)
-- [Устранение неполадок при эксплуатации](operations/troubleshooting.md)
+- [CLI Reference](cli/overview.md)
+- [Operations troubleshooting](operations/troubleshooting.md)
 - [Entry Web UI](entry/index.md)
-

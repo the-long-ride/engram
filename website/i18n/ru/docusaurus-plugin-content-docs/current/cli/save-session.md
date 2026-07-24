@@ -1,12 +1,12 @@
 ---
 title: save / save-session / observe
 sidebar_position: 3
-description: Команды записи — сохранение одного воспоминания, сохранение нескольких воспоминаний сессии и сбор необработанных заметок.
+description: Write commands — save one memory, save several from a session, and capture raw notes.
 ---
 
 # save / save-session / observe
 
-Команды записи предлагают память через шлюз подтверждения.
+Write commands propose memory through the approval gate.
 
 ## save
 
@@ -16,9 +16,9 @@ engram save --role frontend "<text>"
 engram save --scope global "<text>"
 ```
 
-`engram save` захватывает лучший единственный кандидат памяти, автоматически обновляет соответствующую память или создает новую и всегда показывает шлюз подтверждения A/B/C перед записью.
+`engram save` captures the best single memory candidate, automatically updates a matching memory or creates a new one, and always shows the A/B/C approval gate before writing.
 
-Когда `engram save` находит связанную активную память, превью одобрения сообщает о ней с предлагаемым `depends_on` или предупреждением о возможном дублировании.
+When `engram save` finds related active memories, the approval preview reports them with a suggested `depends_on` or possible-duplicate warning.
 
 ## save-session
 
@@ -32,7 +32,7 @@ engram save-session --file transcript.md
 engram save-session --force
 ```
 
-Используйте `save-session`, когда долгое взаимодействие привело к созданию нескольких кандидатов:
+Use `save-session` when a long interaction produced multiple candidates:
 
 ```text
 TYPE: rule | TEXT: Always run tests before release. | CONTEXT: Created from release planning so future agents preserve the test gate.
@@ -40,13 +40,13 @@ TYPE: knowledge | TEXT: Release notes live in CHANGELOG.md.
 TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
 ```
 
-`CONTEXT: ...` необязателен. Добавляйте его только тогда, когда он объясняет, почему память существует. Кандидаты также могут добавлять поля `DEPENDS_ON`, `LEVEL` или `UPDATE` при реструктуризации связанной памяти.
+`CONTEXT: ...` is optional. Add it only when it explains why the memory exists. Candidates may also add `DEPENDS_ON`, `LEVEL`, or `UPDATE` fields when restructuring related memory.
 
-- `--query-level <n>` — извлечь до n недавних доступных чатов между человеком и агентом; должно быть положительным целым числом; агенты не должны придумывать недоступную историю
-- `--force` / `-f` — каждый сгенерированный кандидат сохраняется, потому что человек явно одобрил это сокращение
-- `--file <path>` — для транскриптов или длинных резюме, уже находящихся на диске
+- `--query-level <n>` — mine up to n recent accessible human-agent chats; must be a positive integer; agents must not invent unavailable history
+- `--force` / `-f` — every generated candidate is saved because the human explicitly approved that shortcut
+- `--file <path>` — for transcripts or long summaries already on disk
 
-Для `/engram take-control --force` или обычного `/engram take control accept all` слеш-адаптер нормализует формулировку, генерирует только кратких кандидатов `TYPE: ... | TEXT: ...` и позволяет Engram сохранить их без второго запроса одобрения.
+For `/engram take-control --force` or natural `/engram take control force`, the slash adapter normalizes the wording, generates only concise `TYPE: ... | TEXT: ...` candidates, and lets Engram save them without a second approval prompt.
 
 ## observe
 
@@ -55,19 +55,18 @@ engram observe --file session.md
 engram save-session --file .agents/.engram/inbox/<note>.md
 ```
 
-`observe` сохраняет очищенные необработанные заметки в папке `inbox/`. Заметки из папки inbox не являются активной памятью. Используйте это, когда хотите сохранить черновые заметки перед тем, как решить, что должно стать постоянной памятью.
+`observe` stores sanitized raw notes in `inbox/`. Inbox notes are not active memory. Use this when you want to preserve rough notes before deciding what should become durable memory.
 
-## Подсказки о связанной памяти
+## Related-memory hints
 
-Если запуск «принять все» сообщает о связанных воспоминаниях перед записью, файлы еще не сохранены. Агент должен перезапустить процесс со структурированными кандидатами:
+When an accept-all run reports related memories before writing, no file was saved yet. The agent should rerun with structured candidates:
 
 ```text
 TYPE: rule | TEXT: OAuth rotation follows release foundations. | DEPENDS_ON: release-foundation | LEVEL: advanced
 TYPE: knowledge | TEXT: Invoice retries use exponential backoff. | UPDATE: invoice-retry-baseline
 ```
 
-## Следующие шаги
+## Next steps
 
 - [inject / link / upgrade](inject-link-upgrade.md)
-- [Концепции: путь записи и одобрение](../concepts/write-path.md)
-
+- [Concepts: write path and approval](../concepts/write-path.md)

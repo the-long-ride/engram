@@ -1,181 +1,175 @@
 ---
-title: AI-Agent Quickstart
+title: "Быстрый старт для ИИ-агента"
 sidebar_position: 2
-description: Start using Engram through your AI agent. Load memory, do the work, then propose durable memory when something useful emerges.
+description: "Начните использовать Engram через ИИ-агента. Загрузите память, выполните работу, а затем предложите сохранить долговечную память."
 ---
 
-# AI-Agent Quickstart
+# Быстрый старт для ИИ-агента
 
-Use Engram through your agent first. The CLI exists, but the best experience is: ask the agent to load memory, do the work, then propose durable memory when something useful emerges.
+## Одобрение в чате с ИИ
 
-## AI-agent chat approval
+В чате с ИИ-агентом одобрение Engram является разговорным. Сначала агент показывает уточненные кандидаты `TYPE: ... | TEXT: ...`, а для правил также варианты Light/Balanced/Strict. Ответьте `yes`, чтобы сохранить именно эти кандидаты, `audit`, чтобы их исправить, или `cancel`, чтобы остановить процесс. После `yes` агент использует `engram save-session --force` с точно одобренными кандидатами. Прямые сохранения через CLI по-прежнему используют A/B/C, если только команда accept-all не была вызвана явно.
 
-In AI-agent chat, Engram approval is conversational. The agent shows refined `TYPE: ... | TEXT: ...` candidates first, including Light/Balanced/Strict variants for rules. Reply `yes` to save the exact candidates, `audit` to revise them, or `cancel` to stop. After `yes`, the agent uses `engram save-session --force` with the exact approved candidates. Direct terminal CLI saves still use A/B/C unless a force command was explicitly invoked.
 
-## First message in a new session
+Используйте Engram в первую очередь через вашего агента. CLI-интерфейс существует, но лучший сценарий использования таков: попросите агента загрузить память, выполните работу, а затем предложите зафиксировать долговечную память, когда появится что-то полезное.
 
-Ask:
+## Первое сообщение в новой сессии
 
-```text
-Use Engram for this task. Load memory for: <what we are doing>.
-```
-
-If slash adapters are installed:
+Спросите:
 
 ```text
-/engram load "<current task>"
+Используй Engram для этой задачи. Загрузи память для: <описание того, что мы делаем>.
 ```
 
-The agent should reply with a compact count line by default, such as `Engram loaded: 8 memories / 24 total related memories.` With slash adapters, `load` is the agent-facing route.
+Если установлены адаптеры слэш-команд:
 
-When an agent needs a self-contained Engram usage guide, run:
+```text
+/engram load "<текущая задача>"
+```
+
+Агент должен лишь резюмировать связанные идентификаторы памяти (ID) и правила, а не вставлять файлы целиком.
+
+Когда агенту требуется автономное руководство по использованию Engram, запустите:
 
 ```bash
 engram llm
 ```
 
-This prints the packaged `llm.txt` guide and does not require `engram inject`.
+Это выведет упакованное руководство `llm.txt` и не потребует запуска `engram inject`.
 
-## Recommended setup conversation
+## Рекомендуемый диалог настройки
 
-Ask the agent:
+Спросите агента:
 
 ```text
-Inject Engram memory routing for this workspace, configure it, and connect this agent.
+Инициализируй Engram для этого рабочего пространства, установи подходящий набор навыков (skillset) для этого агента и подскажи, какую команду мне использовать дальше.
 ```
 
-The agent will suggest running:
-
-```bash
-engram entry
-```
-
-To configure memory and link AI agents in a clean web UI. Under the hood, to initialize the workspace:
+Агент может запустить:
 
 ```bash
 engram inject
+engram help link
+engram link <имя_агента>
 ```
 
-To link the same agent globally, so new workspaces can load Engram global memory without running `engram inject` first:
+Чтобы настроить этого же агента глобально, дабы новые рабочие пространства могли загружать глобальную память Engram без предварительного запуска `engram inject`:
 
 ```bash
-engram link --global <agent-name>
+engram link --global <имя_агента>
 ```
 
-For chat-native use, ask:
+Для использования прямо в чате спросите:
 
 ```text
-Install slash support so I can use /engram directly from this agent.
+Установи поддержку слэш-команд, чтобы я мог использовать /engram прямо из этого агента.
 ```
 
-## Daily loop
+## Ежедневный цикл работы
 
-Start:
+Начало:
 
 ```text
-/engram load "current task"
+/engram load "текущая задача"
 ```
 
-During work:
+В процессе работы:
 
 ```text
-/engram search "topic I might be missing"
+/engram search "тема, которую я мог упустить"
 ```
 
-When the agent learns one durable fact:
+Когда агент узнает важный долговечный факт:
 
 ```text
 /engram save knowledge
 ```
 
-When the session produced several useful rules, facts, or workflows:
+Когда по итогам сессии появилось несколько полезных правил, фактов или рабочих процессов:
 
 ```text
 /engram save-session
 ```
 
-Short form:
+Короткая форма:
 
 ```text
 /engram ss
 ```
 
-To include recent chat history the agent can actually access:
+Чтобы включить недавнюю историю чатов, к которой агент действительно имеет доступ:
 
 ```text
 /engram save-session --query-level 3
 ```
 
-`--query-level` must be a positive integer. The agent may use up to that many recent human-agent chat sessions, including the current one, and must not invent unavailable history.
+`--query-level` должен быть положительным целым числом. Агент может использовать не больше указанного числа недавних сессий человек-агент, включая текущую, и не должен выдумывать недоступную историю.
 
-Force shortcut only when you truly mean it:
+Используйте флаг автоматического одобрения (accept-all) только тогда, когда вы действительно в этом уверены:
 
 ```text
 /engram ss -f
 ```
 
-`-f` means the human explicitly approves every agent-recommended candidate. Agents must not add it by themselves.
+Флаг `-f` означает, что человек явно одобряет сохранение каждого предложенного агентом кандидата. Агенты не должны добавлять его самостоятельно без прямого указания человека.
 
-To mine recent accessible chats and force-save generated candidates in one request:
+Чтобы обработать доступные недавние чаты и сразу одобрить все сгенерированные кандидаты:
 
 ```text
 /engram ss -f last 50 sessions
 ```
 
-That normalizes to `engram save-session --query-level 50 --force`.
+Эта формулировка нормализуется в `engram save-session --query-level 50 --force`.
 
-## Import existing knowledge
+## Импорт существующих знаний
 
-For a repo that already has `AGENTS.md`, `CLAUDE.md`, Cursor rules, notes, or docs:
+Для репозитория, в котором уже есть `AGENTS.md`, `CLAUDE.md`, правила Cursor, заметки или документация:
 
 ```text
 /engram take-control --plan
 /engram take-control --all
 ```
 
-Use `--plan` first when you want to see selected files, skipped files, token estimates, and likely memory types.
+Используйте флаг `--plan` вначале, если хотите увидеть выбранные файлы, пропущенные файлы, оценки токенов и предполагаемые типы памяти.
 
-## Global memory
+## Глобальная память
 
-Use global memory for preferences that should follow you across repos:
+Используйте глобальную память для настроек, которые должны следовать за вами во всех репозиториях:
 
 ```text
-Set up global Engram memory at <path>, then save this preference globally:
-Use pnpm for package management.
+Настрой глобальную память Engram по пути <путь>, затем сохрани это предпочтение глобально:
+Используй pnpm для управления пакетами.
 ```
 
-The agent may use:
+Агент может использовать:
 
 ```bash
-engram inject --global-only --global-path <path>
-engram save --scope global "Use pnpm for package management."
-engram link --global <agent-name>
+engram inject --global-only --global-path <путь>
+engram save --scope global "Используйте pnpm для управления пакетами."
+engram link --global <имя_агента>
 ```
 
-When inject sees configured global memory, it creates or selects a user default profile for that global root so future workspaces can reuse it.
+Когда inject видит настроенную глобальную память, он создает или выбирает пользовательский профиль по умолчанию для этого глобального корня, чтобы будущие рабочие пространства могли использовать его повторно.
 
-## Keep it healthy
+## Поддержание здоровья памяти
 
-Ask the agent at the end of meaningful work:
+В конце любой значимой работы спросите агента:
 
 ```text
-Check Engram health, report invalid memories, and propose anything worth saving from this session.
+Проверь состояние здоровья Engram, сообщи о невалидных записях памяти и предложи все, что стоит сохранить по итогам этой сессии.
 ```
 
-Useful commands:
+Полезные команды:
 
 ```bash
 engram upgrade
 engram upgrade --plan
 engram verify
 engram repair
-engram graph "<topic>"
+engram graph "<тема>"
 engram quality-check
-engram archive --reason "<why>" <id-or-file>
+engram archive --reason "<причина>" <id или файл>
 ```
 
-## Next steps
+Далее: [Протокол памяти, контролируемый человеком](concepts/write-path.md).
 
-- [Daily workflow](daily-workflow.md)
-- [Install and configure](install.md)
-- [Human-owned protocol](concepts/protocol.md)

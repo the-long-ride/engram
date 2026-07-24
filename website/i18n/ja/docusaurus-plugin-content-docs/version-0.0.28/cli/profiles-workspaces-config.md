@@ -1,12 +1,12 @@
 ---
 title: profiles / workspaces / config
 sidebar_position: 5
-description: Manage profiles, save targets, load limits, read/proof modes, roles, and runtime config.
+description: プロファイル、保存先、ロード制限、読み取り/検証モード、ロール、およびランタイム構成の管理。
 ---
 
 # profiles / workspaces / config
 
-Manage profiles, save targets, load limits, read/proof modes, roles, and runtime config.
+プロファイル、保存先、ロード制限、読み取り/検証モード、ロール、およびランタイム構成を管理します。
 
 ## profile
 
@@ -17,7 +17,7 @@ engram profile use company --workspace
 engram profile merge personal company --dry-run
 ```
 
-Profile resolution order is explicit `--profile` or `ENGRAM_PROFILE`, then the workspace `default_profile`, then the active user profile. If workspace `W` is pinned to profile `B` while the user default remains profile `A`, every normal load, MCP load, and agent-hook injection for `W` reads profile `B` global memory and never profile `A`. An explicit profile different from the workspace default uses that profile's global memory and disables workspace memory for that command.
+プロファイルの解決順序は、明示的な `--profile` または `ENGRAM_PROFILE`、ワークスペースの `default_profile`、アクティブなユーザープロファイルです。ユーザーのデフォルトがプロファイル `A` のままで、ワークスペース `W` がプロファイル `B` に固定されている場合、`W` に対する通常のロード、MCP ロード、およびエージェント hook のインジェクションは、プロファイル `B` のグローバルメモリを読み取り、プロファイル `A` は読み取りません。ワークスペースのデフォルトと異なる明示的なプロファイルは、そのプロファイルのグローバルメモリを使用し、そのコマンドのワークスペースメモリを無効にします。
 
 ## set-save-target
 
@@ -58,12 +58,12 @@ engram set-role backend security
 engram set-role
 ```
 
-When `engram set-role ...` or `engram set-rule-variant ...` succeeds, the CLI returns an `Agent action:` line. Engram-aware slash adapters and MCP hosts should immediately rerun `engram load "<current task/request>"`.
+`engram set-role ...` または `engram set-rule-variant ...` が成功すると、CLI は `Agent action:` 行を返します。Engram を認識するスラッシュアダプターと MCP ホストは、すぐに `engram load "<current task/request>"` を再実行する必要があります。
 
 ## set-rule-variant
 
 ```bash
-engram set-rule-variant strict|balanced|light|off|status
+engram set-rule-variant strict|balanced|light|off
 ```
 
 ## config
@@ -73,27 +73,27 @@ engram config view
 engram config set <key> <value>
 ```
 
-### Key settings reference
+### 主要な設定リファレンス
 
-| Key | Description | Default | Range / Options |
+| キー | 説明 | デフォルト | 範囲 / オプション |
 | --- | --- | --- | --- |
-| `memory.rule_line_target` | Recommended line count target for rule memories | `70` | `50` to `200` |
-| `memory.rule_line_hard_limit` | Maximum allowed line count for rule memories | `100` | `50` to `200` |
-| `load.limit` | Max memories returned by normal load | `8` | `1` to `32` |
-| `rule_variants.enabled` | Enable or disable rule variants generation | `false` | `true`, `false` |
-| `rule_variants.active` | Active rule variant mode | `balanced` | `light`, `balanced`, `strict` |
-| `graph.enabled` | Enable or disable graph-aware routing | `true` | `true`, `false` |
-| `graph.max_related` | Max related memories to fetch from graph edges | `4` | `1` to `20` |
-| `graph.min_related_score` | Min similarity score to add graph edges | `0.22` | `0.0` to `1.0` |
-| `vector.enabled` | Enable or disable vector search fallback | `true` | `true`, `false` |
-| `live_sync.enabled` | Sync generated agent context files on save | `false` | `true`, `false` |
-| `global_git.enabled` | Enable global Git repo sync automation | `true` | `true`, `false` |
-| `global_git.remote` | Git remote name for global sync | `origin` | String |
-| `global_git.branch` | Git branch name for global sync | `main` | String |
+| `memory.rule_line_target` | ルールメモリの推奨行数ターゲット | `70` | `50` から `200` |
+| `memory.rule_line_hard_limit` | ルールメモリの最大許容行数 | `100` | `50` から `200` |
+| `load.limit` | 通常のロードで返される最大メモリ数 | `8` | `1` から `32` |
+| `rule_variants.enabled` | ルールバリアントの生成を有効または無効にする | `true` | `true`, `false` |
+| `rule_variants.active` | アクティブなルールバリアントモード | `balanced` | `light`, `balanced`, `strict` |
+| `graph.enabled` | グラフ対応ルーティングを有効または無効にする | `true` | `true`, `false` |
+| `graph.max_related` | グラフのエッジから取得する最大関連メモリ数 | `8` | `1` から `20` |
+| `graph.min_related_score` | グラフエッジを追加するための最小類似度スコア | `0.3` | `0.0` から `1.0` |
+| `vector.enabled` | ベクトル検索フォールバックを有効または無効にする | `true` | `true`, `false` |
+| `live_sync.enabled` | 保存時に生成されたエージェントコンテキストファイルを同期する | `true` | `true`, `false` |
+| `global_git.enabled` | グローバル Git リポジトリの同期自動化を有効にする | `false` | `true`, `false` |
+| `global_git.remote` | グローバル同期の Git リモート名 | `origin` | 文字列 |
+| `global_git.branch` | グローバル同期の Git ブランチ名 | `main` | 文字列 |
 
-These settings are also manageable visually under the **Construct** tab in `engram entry`.
+これらの設定は、`engram entry` の **Construct** タブで視覚的に管理することもできます。
 
-## Next steps
+## 次のステップ
 
 - [verify / repair / quality-check](verify-repair-quality.md)
-- [Entry Web UI: Construct tab](../entry/construct.md)
+- [Entry Web UI: Construct タブ](../entry/construct.md)

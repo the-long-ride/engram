@@ -1,50 +1,49 @@
 ---
-title: Présentation de l'interface Entry Web UI
+title: Entry Web UI overview
 sidebar_position: 1
-description: L'interface Entry Web UI est le panneau de contrôle exclusivement local permettant de configurer la mémoire, les profils, les espaces de travail et les connexions d'agents d'Engram.
+description: The Entry Web UI is the local-only control panel for configuring Engram memory and agent connections.
 ---
 
 import RiskCallout from '@site/src/components/RiskCallout';
 
-# Présentation de l'interface Entry Web UI
+# Entry Web UI overview
 
-L'interface Entry Web UI est le panneau de contrôle local pour Engram. Utilisez-le pour configurer les racines de mémoire, lier les agents IA, ajuster le routage, examiner les doublons, inspecter le graphe de mémoire et déboguer la configuration d'exécution sans modifier manuellement les fichiers JSON.
+The Entry Web UI is the local-only control panel for Engram. Use it to configure memory roots, link AI agents, tune routing, review findings, inspect the memory graph, and debug resolved config without editing JSON by hand.
 
-## Quand l'utiliser
+## When to use it
 
-- Configuration initiale d'un espace de travail ou d'une racine de mémoire globale
-- Liaison ou déliaison d'agents IA sans avoir à se souvenir des drapeaux CLI
-- Réglage du routage, du graphe, du vecteur et des paramètres de variante de règle
-- Examen des mémoires en doublon ou en conflit
-- Inspection du graphe de mémoire
-- Débogage des configurations résolues, des chemins et de la détection Git
+- First-time setup of a workspace or global memory root
+- Linking or unlinking AI agents without remembering CLI flags
+- Tuning routing, graph, vector, and rule variant settings
+- Reviewing duplicate or conflicting memories
+- Inspecting the memory graph
+- Debugging resolved config, paths, and Git detection
 
-## Modèle d'accès exclusivement local (Local-only)
+## Local-only access model
 
-Le panneau s'exécute sur votre machine. Ce n'est pas un service cloud. Fermez le serveur lorsque vous avez terminé pour des raisons d'hygiène de sécurité.
+The panel runs on your machine. It is not a cloud service. Close the server when you are done for security hygiene.
 
 <RiskCallout level="risky">
-Le panneau Entry est exclusivement local. Traitez-le comme ouvert pendant la configuration de la mémoire, puis fermez le serveur depuis l'onglet Runtime lorsque vous avez terminé.
+The Entry panel is local-only. Treat it as open while you are configuring memory, then close the server from the sidebar footer when finished.
 </RiskCallout>
 
-## Relation avec les commandes CLI
+## Relationship to CLI commands
 
-Chaque contrôle visible correspond à une commande CLI ou à une clé de configuration. Lorsqu'un équivalent CLI existe, la référence du champ le répertorie. La CLI reste la source de vérité pour les scripts et l'automatisation.
+Every visible control maps to a CLI command or config key. Where a CLI equivalent exists, the field reference lists it. The CLI remains the source of truth for scripting and automation.
 
-## Onglets en un coup d'œil
+## Tabs at a glance
 
-| Onglet | Rôle |
+| Tab | Job |
 | --- | --- |
-| [Connections](connections.md) | Détecter et lier les agents IA pris en charge |
-| [Construct](construct.md) | Configurer chaque champ d'exécution d'Engram |
-| [Profiles](profiles.md) | Gérer les profils de mémoire globale isolés |
-| [Workspaces](workspaces.md) | Enregistrer et lier les dépôts de projet |
-| [Core](core.md) | Examiner les mémoires en doublon et en conflit |
-| [Memories](memories.md) | Inspecter le graphe de mémoire et archiver les mémoires |
-| [Runtime](runtime.md) | Configuration résolue et chemins en lecture seule |
+| [Construct](construct.md) | Configure every Engram runtime field |
+| [Memories](memories.md) | Search, inspect, and archive active memory |
+| [Review](review.md) | Resolve findings and confirm reviewed memory writes |
+| [Maintain](core.md) | Review duplicate and conflicting memories |
+| [Connections](connections.md) | Detect and link supported AI agents |
 
-## Étapes suivantes
+## Next steps
 
-- [Lancement du panneau de contrôle](launch.md)
-- [Onglet Construct](construct.md)
-- [Référence complète des champs](field-reference.md)
+- [Launching the control panel](launch.md)
+- [Construct tab](construct.md)
+- [Maintain tab](core.md)
+- [Complete field reference](field-reference.md)

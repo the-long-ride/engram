@@ -1,29 +1,29 @@
 ---
 title: Cline
 sidebar_position: 9
-description: Intégration d'Engram avec Cline via les règles de l'espace de travail.
+description: Engram integration with Cline via workspace rules.
 ---
 
 # Cline
 
-Cline lit les règles de l'espace de travail depuis `.clinerules`.
+Cline reads workspace rules from `.clinerules`.
 
-## Installation
+## Install
 
 ```bash
 engram link cline
 ```
 
-## Fichiers écrits
+## Files written
 
-| Fichier | Objectif |
+| File | Purpose |
 | --- | --- |
-| `.clinerules` | Règles d'espace de travail de style Cline |
+| `.clinerules` | Cline-style workspace rules |
 
-## Cible de secours compacte/manuelle
+## Compact/manual fallback target
 
-Cline est une cible de secours compacte/manuelle. La prise en charge des hooks est basée sur des plugins et n'est pas alignée sur l'installateur d'adaptateurs axé sur les fichiers d'Engram dans la v1, l'installation des hooks est donc ignorée et aucune configuration de hook n'est écrite.
+Cline is a compact/manual fallback target. Hook support is plugin-based and not aligned with Engram's file-first adapter installer in v1, so hook install is skipped and no hook config is written.
 
-## Étapes suivantes
+## Next steps
 
-- [Présentation des intégrations d'agents](overview.md)
+- [Agent Integrations overview](overview.md)

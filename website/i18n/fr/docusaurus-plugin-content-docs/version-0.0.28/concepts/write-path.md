@@ -1,53 +1,71 @@
 ---
-title: Write path and approval
+title: "Chemin d'écriture et approbation"
 sidebar_position: 6
-description: Agents propose, humans approve. Only approved memory is written, then indexes, graph, hashes, and changelog refresh.
+description: "Les agents proposent, les humains approuvent. Seule la mémoire approuvée est écrite, puis les index, le graphe, les empreintes numériques (hashes) et le journal des modifications sont actualisés."
 ---
 
-# Write path and approval
+# Protocole de Mémoire Humaine
 
-The write flow is the trust boundary. Agents propose, humans approve.
+## Approbation en Chat IA
 
-## Write flow
+Dans le chat avec un agent IA, l'approbation Engram est conversationnelle. L'agent montre d'abord des candidats affines `TYPE: ... | TEXT: ...`, y compris les variantes Light/Balanced/Strict pour les regles. Repondez `yes` pour enregistrer exactement ces candidats, `audit` pour les reviser, ou `cancel` pour arreter. Apres `yes`, l'agent utilise `engram save-session --force` avec les candidats approuves. Les enregistrements directs en CLI continuent d'utiliser A/B/C sauf si une commande accept-all a ete invoquee explicitement.
 
-1. Agent proposes one or more candidates.
-   With `save-session --query-level <n>`, the agent may consider up to n recent accessible human-agent chats, but only as proposal context.
-   Natural `/engram ss -f last 50 sessions` is the same scope plus explicit force approval: `engram save-session --query-level 50 --force`.
-2. Engram parses candidate type and target scope.
-3. Engram checks schema, secrets, prompt-injection patterns, and path safety.
-4. Human sees a preview.
-5. Direct CLI replies use `A`, `A 1,3`, `B <note>`, or `C`.
-6. AI-agent chat replies use `yes`, `audit`, or `cancel` after the exact displayed candidates.
-7. Only approved memory is written.
-8. Index, graph, hashes, and changelog are refreshed.
 
-## Approval words
+Engram n'est pas simplement une « mémoire d'agent ». C'est un protocole qui rend la mémoire inspectable, portable et gouvernée par les humains.
 
-Approval words are `yes`, `approve`, `confirm`, or `save`. Audit words are `audit`, `revise`, `correct`, or edited replacement text. Cancel words are `cancel`, `stop`, or rejection. Only approval after exact candidate display authorizes `engram save-session --force` for those candidates.
+## Le Contrat
 
-Direct terminal CLI remains A/B/C. MCP proposal tools remain no-write.
+Le Markdown est une mémoire durable.
 
-## Related-memory hints
+Les fichiers d'index et de graphe JSON sont des couches d'accélération.
 
-When `engram save` finds related active memories, the approval preview reports them with a suggested `depends_on` or possible-duplicate warning. Accepting saves the preview as-is; reject first if you want to restructure dependencies or archive duplicates before saving.
+L'approbation est la frontière de confiance (trust boundary).
 
-For `save-session --force`, Engram pauses before writing when those related memory hints appear. The agent should use the response to brainstorm a structured rerun: add `DEPENDS_ON: memory-id` for dependencies, `LEVEL: advanced` when a memory is deeper than its prerequisite, or `UPDATE: memory-id` when a candidate should merge into a possible duplicate.
+Les hashes sont des vérifications d'intégrité.
 
-## Safety checks at save time
+Les règles d'exclusion (ignore rules) sont des contrôles de confidentialité.
 
-- Schema validation
-- Secret scan
-- Prompt-injection scan
-- Path safety
-- Hash integrity
+Git assure la portabilité et l'historique d'audit.
 
-## Why this matters
+Les adaptateurs d'agent sont des commodités, pas des autorités.
 
-Without a protocol, memory can become invisible state. Invisible state is hard to review, hard to share, and easy for agents to poison by accident.
+Les agents peuvent suggérer une mémoire, mais les humains possèdent ce qui devient de la mémoire.
 
-Engram makes memory boring on purpose: files, diffs, hashes, review gates, and commands a human can rerun.
+## Types de Mémoire
 
-## Next steps
+| Type | Utilisation |
+| --- | --- |
+| Rule | préférence utilisateur, correction, contrainte, consigne "toujours/jamais" |
+| Skill | flux de travail (workflow) répétable, liste de contrôle, procédure, procédure opérationnelle (runbook) |
+| Knowledge | fait objectif du projet, décision, détail d'implémentation |
 
-- [Privacy, ignore rules, and safety](safety.md)
-- [CLI: save / save-session / observe](../cli/save-session.md)
+Chaque fichier de mémoire active comporte des sections `Context`, `Content` et `Example`. Les mémoires de type Rule visent également des limites de lignes concises afin que les directives chargées restent utiles.
+
+## Flux d'Écriture
+
+1. L'agent propose un ou plusieurs candidats.
+   Avec `save-session --query-level <n>`, l'agent peut prendre en compte jusqu'à n conversations humain-agent récentes et accessibles, mais seulement comme contexte de proposition.
+   La forme naturelle `/engram ss -f last 50 sessions` utilise le même périmètre avec approbation explicite de tous les candidats : `engram save-session --query-level 50 --force`.
+2. Engram analyse le type de candidat et la portée cible (scope).
+3. Engram vérifie le schéma, les secrets, les modèles d'injection de prompt et la sécurité des chemins d'accès.
+4. L'humain voit un aperçu.
+5. L'humain répond `A`, `A 1,3`, `B <note>` ou `C`.
+6. Seule la mémoire approuvée est écrite.
+7. L'index, le graphe, les hashes et le journal des modifications (changelog) sont actualisés.
+
+## Flux de Lecture
+
+1. Engram charge l'espace de travail (workspace) et les index globaux facultatifs.
+2. Les entrées de l'espace de travail l'emportent sur les doublons globaux.
+3. Les règles d'exclusion et les filtres de rôle masquent les entrées non pertinentes.
+4. Le routage sensible au graphe sélectionne un pack de contexte compact.
+5. Les vérifications de hash et de sécurité s'exécutent avant l'affichage du contenu.
+
+## Pourquoi C'est Important
+
+Sans protocole, la mémoire peut devenir un état invisible. Un état invisible est difficile à réviser, difficile à partager et facile à empoisonner accidentellement par les agents.
+
+Engram rend la mémoire volontairement ennuyeuse : des fichiers, des diffs, des hashes, des barrières de révision et des commandes qu'un humain peut réexécuter.
+
+Suivant : [Opérations](../cli/overview.md).
+

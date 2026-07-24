@@ -1,29 +1,29 @@
 ---
 title: Cline
 sidebar_position: 9
-description: 워크스페이스 규칙을 통한 Engram과 Cline의 통합.
+description: Engram integration with Cline via workspace rules.
 ---
 
 # Cline
 
-Cline은 `.clinerules`에서 워크스페이스 규칙을 읽습니다.
+Cline reads workspace rules from `.clinerules`.
 
-## 설치
+## Install
 
 ```bash
 engram link cline
 ```
 
-## 작성된 파일
+## Files written
 
-| 파일 | 목적 |
+| File | Purpose |
 | --- | --- |
-| `.clinerules` | Cline 스타일의 워크스페이스 규칙 |
+| `.clinerules` | Cline-style workspace rules |
 
-## 컴팩트/수동 대체 대상
+## Compact/manual fallback target
 
-Cline은 컴팩트/수동 대체 대상입니다. 훅 지원은 플러그인 기반이며 v1에서 Engram의 파일 우선 어댑터 설치 프로그램과 정렬되지 않으므로 훅 설치를 건너뛰고 훅 구성이 작성되지 않습니다.
+Cline is a compact/manual fallback target. Hook support is plugin-based and not aligned with Engram's file-first adapter installer in v1, so hook install is skipped and no hook config is written.
 
-## 다음 단계
+## Next steps
 
-- [에이전트 통합 개요](overview.md)
+- [Agent Integrations overview](overview.md)

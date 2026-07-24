@@ -1,45 +1,45 @@
 ---
-title: 隐私、忽略规则与安全
+title: Privacy, ignore rules, and safety
 sidebar_position: 7
-description: 忽略规则、审批门槛、哈希和配置文件保护隐私上下文免遭意外捕获。
+description: Ignore rules, approval gates, hashes, and profiles protect private context from accidental capture.
 ---
 
-# 隐私、忽略规则与安全
+# Privacy, ignore rules, and safety
 
-Engram 默认是私有的。多个层级可防止私有上下文泄漏到持久内存或跨配置文件边界。
+Engram is private by default. Several layers keep private context from leaking into durable memory or across profile boundaries.
 
-## 审批门槛
+## Approval gate
 
-写入需要人工审批。智能体提出候选方案；人类进行审批、拒绝、编辑或归档。终端 CLI 直接使用 A/B/C 交互。AI 智能体聊天使用 `yes` / `audit` / `cancel`。
+Writes require human approval. Agents propose candidates; humans approve, reject, edit, or archive. Direct terminal CLI uses A/B/C. AI-agent chat uses `yes` / `audit` / `cancel`.
 
-## 忽略规则
+## Ignore rules
 
-忽略规则是隐私控制手段。它们在路由中隐藏无关或敏感的条目。在 `.engramignore` 和工作空间内存配置中配置它们，以便私有路径和模式永远不会进入索引。
+Ignore rules are privacy controls. They hide irrelevant or sensitive entries from routing. Configure them in `.engramignore` and workspace memory config so private paths and patterns never enter the index.
 
-## 哈希
+## Hashes
 
-哈希是完整性检查。它们在内容打印之前运行，并揭示绕过正常写入流程的安全漏洞编辑。
+Hashes are integrity checks. They run before content is printed and reveal unsafe edits that bypassed the normal write flow.
 
-## 配置文件
+## Profiles
 
-配置文件将公司、客户和个人内存隔离开来，以便外部 API 或公司提供的智能体不会跨项目泄漏上下文。参见 [配置文件与范围解析](profiles.md)。
+Profiles isolate company, client, and personal memory so external APIs or company-provided agents do not leak context across projects. See [Profiles and scope resolution](profiles.md).
 
-## 秘密与注入扫描
+## Secrets and injection scanning
 
-在保存时，Engram 会检查：
+At save time Engram checks:
 
-- 模式验证 (schema validation)
-- 秘密扫描 (secret scan)
-- 提示词注入模式 (prompt-injection patterns)
-- 路径安全性 (path safety)
+- schema validation
+- secret scan
+- prompt-injection patterns
+- path safety
 
-## 需了解的局限性
+## Limits to know
 
-默认的 Engram 搜索是确定性词法搜索。`engram search --semantic` 增加了确定性局部相似度，而不是基于嵌入的语义搜索。图向量是本地哈希词向量，而不是语义嵌入。矛盾检测仅供参考。加密配置存在，但加密存储尚未实现。
+Default Engram search is deterministic lexical search. `engram search --semantic` adds deterministic local similarity, not embedding-backed semantic search. Graph vectors are local hashed word vectors, not semantic embeddings. Contradiction detection is advisory. Encryption config exists, but encrypted storage is not implemented yet.
 
-这些限制是故意明确说明的。Engram 应当告知用户目前哪些是真实可用的，哪些是未来的工作。
+These limits are intentional to state clearly. Engram should tell users what is real today and what is future work.
 
-## 下一步
+## Next steps
 
-- [写入路径与审批](./write-path.md)
-- [运营故障排除](../operations/troubleshooting.md)
+- [Write path and approval](./write-path.md)
+- [Operations troubleshooting](../operations/troubleshooting.md)

@@ -1,14 +1,14 @@
 ---
-title: Hook và dòng kiểm chứng
+title: Hooks and proof lines
 sidebar_position: 12
-description: Các hook agent của Engram chèn bộ nhớ được định tuyến tại thời điểm bắt đầu phiên và các lượt prompt. Các dòng kiểm chứng giúp việc chèn hiển thị rõ ràng.
+description: Engram agent hooks inject routed memory at session start and prompt turns. Proof lines make injection visible.
 ---
 
-# Hook và dòng kiểm chứng
+# Hooks and proof lines
 
-Các hook của agent là các hook máy chủ tùy chọn giúp chèn ngữ cảnh Engram được định tuyến lúc khởi động phiên và các lượt thay đổi tác vụ sau đó khi máy chủ cung cấp kênh ngữ cảnh thời điểm prompt an toàn.
+Agent hooks are opt-in host hooks that inject routed Engram context at session start and later task-change turns when the host exposes a safe prompt-time context channel.
 
-## Cài đặt hook
+## Install hooks
 
 ```bash
 engram link codex
@@ -20,37 +20,37 @@ engram link --global opencode
 engram set-proof compact
 ```
 
-Sử dụng `--global` cho cấu hình cấp người dùng và `engram unlink` để chỉ xóa các mục nhập hook do Engram quản lý.
+Use `--global` for user-level config and `engram unlink` to remove only Engram-managed hook entries.
 
-## Chế độ đọc
+## Read mode
 
-`engram set-read startup|auto|always|manual|off` kiểm soát hành vi runtime:
+`engram set-read startup|auto|always|manual|off` controls runtime behavior:
 
-- `auto` tải khi bắt đầu phiên và chỉ đưa lại ngữ cảnh khi ngữ cảnh Engram được định tuyến thay đổi.
-- `startup` chỉ tải khi bắt đầu phiên.
-- `always` đưa lại ngữ cảnh trong mọi lượt hợp lệ.
-- `manual` và `off` giảm bớt tính tự động.
+- `auto` loads on session start and reinjects only when routed Engram context changes.
+- `startup` loads only at session start.
+- `always` reinjects on every eligible turn.
+- `manual` and `off` reduce automation.
 
-Bộ nhớ đệm hook lưu trữ mã băm, session id, host, cwd, và chữ ký được định tuyến — không bao giờ lưu văn bản prompt thô.
+The hook cache stores hashes, session ids, host, cwd, and routed signatures — never raw prompt text.
 
-## Chế độ kiểm chứng
+## Proof mode
 
-`engram set-proof off|compact` kiểm soát việc các hook được hỗ trợ có nối thêm dòng kiểm chứng thu gọn `Engram proof:` trên mỗi lượt đủ điều kiện hay không. Khả năng hiển thị kiểm chứng độc lập với `set-read`: chế độ `compact` can báo cáo các lượt được tải, dùng lại hoặc bị bỏ qua mà không làm thay đổi thời điểm bộ nhớ Engram đầy đủ được chèn vào.
+`engram set-proof off|compact` controls whether supported hooks also append a compact `Engram proof:` line on each eligible turn. Proof visibility is separate from `set-read`: `compact` can report loaded, reused, or skipped turns without changing when full Engram memory is injected.
 
-## Bảng tính năng hook
+## Hook capability matrix
 
-| Máy chủ | Đường dẫn cấu hình | Sự kiện |
+| Host | Config path | Events |
 | --- | --- | --- |
 | `codex` | `.codex/hooks.json`; global `~/.codex/hooks.json` | `SessionStart`, `UserPromptSubmit` |
 | `claude` | `.claude/settings.json`; global `~/.claude/settings.json` | `SessionStart`, `UserPromptSubmit` |
 | `gemini` | `.gemini/settings.json`; global `~/.gemini/settings.json` | `SessionStart`, `BeforeAgent` |
-| `cursor` | `.cursor/hooks.json`; plugin toàn cục `hooks/hooks.json` | `sessionStart` |
+| `cursor` | `.cursor/hooks.json`; global plugin `hooks/hooks.json` | `sessionStart` |
 | `windsurf` / `cascade` | `.windsurf/hooks.json`; global `~/.codeium/windsurf/hooks.json` | `pre_user_prompt` |
 | `opencode` | `~/.config/opencode/plugins/engram.js` | `chat.message`, `experimental.chat.system.transform` |
-| `copilot` | Không ghi | N/A |
-| `cline` | Không ghi | N/A |
+| `copilot` | None written | N/A |
+| `cline` | None written | N/A |
 
-## Các bước tiếp theo
+## Next steps
 
-- [Tổng quan về tích hợp Agent](overview.md)
-- [CLI: inject / link / nâng cấp](../cli/inject-link-upgrade.md)
+- [Agent Integrations overview](overview.md)
+- [CLI: inject / link / upgrade](../cli/inject-link-upgrade.md)

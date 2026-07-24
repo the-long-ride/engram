@@ -1,262 +1,313 @@
 ---
-title: Pestaña Construct (Construir)
+title: Construct tab
 sidebar_position: 4
-description: Configure cada campo del tiempo de ejecución de Engram desde la pestaña Construct. Cada campo tiene su caso de uso, valor predeterminado seguro, validación y advertencia de riesgo.
+description: Configure every Engram runtime field from the Construct tab. Each field has a use case, safe default, validation, and risk warning.
 ---
 
 import RiskCallout from '@site/src/components/RiskCallout';
 
-# Pestaña Construct
+# Construct tab
 
-La pestaña Construct expone cada campo de configuración del tiempo de ejecución de Engram, agrupado exactamente como en la interfaz de usuario. Cada campo tiene su descripción, casos de uso, valor predeterminado seguro, validación y advertencia de riesgo.
+The Construct tab exposes every Engram runtime config field, grouped exactly like the UI. Each field has a description, use cases, safe default, validation, and risk warning.
 
 <RiskCallout level="caution">
-Los campos marcados como **risky** (riesgosos) pueden deshabilitar Engram, cambiar los objetivos de almacenamiento, cambiar el comportamiento de Git o afectar la seguridad de la memoria. Lea la advertencia antes de modificarlos.
+Fields marked **risky** can disable Engram, change save targets, change Git behavior, or affect memory security. Read the warning before changing them.
 </RiskCallout>
 
-## Grupo Core (Núcleo)
+## Core group
 
-### Enabled (Habilitado)
+### Enabled
 
-**Clave de configuración:** `enabled`  
-**Control:** alternancia  
-**Predeterminado:** `true`  
-**Riesgo:** risky
+**Config key:** `enabled`  
+**Control:** toggle  
+**Default:** `true`  
+**Risk:** risky
 
-Interruptor principal. Deshabilitarlo detiene por completo el comportamiento de Engram. Úselo únicamente para apagados temporales o pruebas.
+Master switch. Disabling it stops Engram behavior entirely. Use only for temporary shutdown or testing.
 
-### Save Target (Objetivo de almacenamiento)
+### Save Target
 
-**Clave de configuración:** `scope`  
-**Control:** selección — `workspace`, `global`, `both`  
-**Predeterminado:** `both`  
-**Riesgo:** risky
+**Config key:** `scope`  
+**Control:** select — `workspace`, `global`, `both`  
+**Default:** `both`  
+**Risk:** risky
 
-Controla dónde se guardan las nuevas memorias aprobadas. Use `workspace` para memoria específica del repositorio, `global` para memoria personal/de equipo y `both` para nuevas instalaciones que deseen usar ambos ámbitos.
+Controls where new approved memories are saved. Use `workspace` for repo-specific memory, `global` for personal/team memory, `both` for fresh installs that want both.
 
-### Read Mode (Modo de lectura)
+### Update Mode
 
-**Clave de configuración:** `read`  
-**Control:** selección — `auto`, `startup`, `always`, `manual`, `off`  
-**Predeterminado:** `auto`  
-**Riesgo:** normal
+**Config key:** `update`  
+**Control:** select — `auto`, `manual`, `off`  
+**Default:** `auto`  
+**Risk:** normal
 
-Controla cuándo los hooks de los agentes inyectan el contexto de memoria. `auto` carga en el inicio de la sesión y vuelve a inyectar solo cuando cambia el contexto enrutado. `manual` y `off` reducen la automatización a cambio de evitar la sobrecarga del contexto.
+Controls the quiet one-time package upgrade check run by normal commands. Use `manual` or `off` only when upgrades are managed outside Engram.
 
-### Proof Mode (Modo de prueba)
+### Read Mode
 
-**Clave de configuración:** `proof`  
-**Control:** selección — `off`, `compact`  
-**Predeterminado:** `off`  
-**Riesgo:** normal
+**Config key:** `read`  
+**Control:** select — `auto`, `startup`, `always`, `manual`, `off`  
+**Default:** `auto`  
+**Risk:** normal
 
-Si los hooks añaden una línea compacta `Engram proof:` en cada turno elegible. Útil para depuración y visibilidad de auditoría.
+Controls when agent hooks inject memory context. `auto` loads on session start and reinjects only when routed context changes. `manual` and `off` reduce automation at the cost of context bloat.
 
-### Global Memory Path (Ruta de memoria global)
+### Proof Mode
 
-**Clave de configuración:** `global_path`  
-**Control:** texto/ruta  
-**Predeterminado:** vacío hasta que se configure  
-**Riesgo:** risky
+**Config key:** `proof`  
+**Control:** select — `off`, `compact`  
+**Default:** `off`  
+**Risk:** normal
 
-Ruta del sistema de archivos para la memoria global. Use una carpeta estable y de propiedad del usuario como `~/Documents/engram`. Evite carpetas temporales, carpetas públicas sincronizadas y directorios en los que no pueda escribir.
+Whether hooks append a compact `Engram proof:` line on each eligible turn. Useful for debugging and audit visibility.
+
+### Global Memory Path
+
+**Config key:** `global_path`  
+**Control:** text/path  
+**Default:** empty until configured  
+**Risk:** risky
+
+Filesystem path for global memory. Use a stable, user-owned folder such as `~/Documents/engram`. Avoid temp folders, synced public folders, and directories you cannot write to.
 
 <RiskCallout level="risky">
-El uso de una carpeta pública sincronizada en la nube para la memoria privada puede filtrar secretos. Use una ruta privada o un repositorio Git privado.
+Using a cloud-synced public folder for private memory can leak secrets. Use a private path or a private Git repo.
 </RiskCallout>
 
-**Equivalente en CLI:**
+**CLI equivalent:**
 
 ```bash
 engram update-global-folder ~/Documents/engram
 engram ugf ~/Documents/engram
 ```
 
-### Default Profile (Perfil predeterminado)
+### Default Profile
 
-**Clave de configuración:** `default_profile`  
-**Control:** selección  
-**Predeterminado:** vacío  
-**Riesgo:** risky
+**Config key:** `default_profile`  
+**Control:** select  
+**Default:** empty  
+**Risk:** risky
 
-Perfil utilizado cuando no se establece ninguno explícitamente. Consulte [Perfiles y resolución de alcance](../concepts/profiles.md).
+Profile used when none is explicitly set. See [Profiles and scope resolution](../concepts/profiles.md).
 
-### Active Roles (Roles activos)
+### Active Roles
 
-**Clave de configuración:** `roles`  
-**Control:** entrada de roles separada por comas  
-**Predeterminado:** lista vacía  
-**Riesgo:** normal
+**Config key:** `roles`  
+**Control:** roles/comma input  
+**Default:** empty list  
+**Risk:** normal
 
-Restringe y vuelve a clasificar las memorias por rol. Use nombres seguros que coincidan con `^[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$`.
+Restricts and reranks memories by role. Use safe names matching `^[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$`.
 
-## Grupo Load Routing (Enrutamiento de carga)
+## Ignore Rules group
 
-### Load Limit (Límite de carga)
+| Field | Control | Default | Notes |
+| --- | --- | --- | --- |
+| `ignore.source` | select | `engramignore` | Choose `engramignore`, `gitignore`, `both`, or `off` as scan-rule sources. |
+| `ignore.gitignore_path` | text | `.gitignore` | Git ignore file to use when enabled. |
+| `ignore.engramignore_path` | text | `.engramignore` | Engram ignore file to use when enabled. |
+| `ignore.global_engramignore` | toggle | `true` | Apply global ignore rules when global memory is configured. |
+| `ignore.also_ignore` | list | `*.secret`, `private/**` | Additional comma-separated glob patterns. |
 
-**Clave de configuración:** `load.limit`  
-**Control:** número 1–32  
-**Predeterminado:** `8`  
-**Riesgo:** normal
+### Global Ignore Patterns
 
-Cantidad máxima de memorias devueltas por una carga normal. Los valores más bajos reducen la saturación del contexto en modelos de contexto bajo; los valores más altos ayudan en tareas de arquitectura profunda.
+**Config key:** `ignore.global_patterns`  
+**Control:** textarea, one glob pattern per line  
+**Default:** empty list  
+**Risk:** normal
 
-## Grupo Memory Limits (Límites de memoria)
+Patterns apply to global memory reads. Every `engram inject` synchronizes them into a managed block in the workspace `.engramignore`; human-authored lines outside that block are preserved.
 
-### Rule Line Target (Línea objetivo de regla)
+### Auto-save policy
 
-**Clave de configuración:** `memory.rule_line_target`  
-**Control:** número 50–200, paso 10  
-**Predeterminado:** `70`  
-**Riesgo:** normal
+The **Auto-save policy** editor writes `.agents/engram.policy.json`. It controls whether policy-approved candidates can save without an interactive prompt; normal saves remain approval-based.
 
-Tamaño recomendado para las memorias de reglas. Las reglas concisas se enrutan mejor que las políticas demasiado largas.
+See the [Auto-save Policy reference](policy.md) for every control, default, allowed value, review gate, quota, and rollback setting.
 
-### Rule Line Hard Limit (Límite estricto de línea de regla)
+## Load Routing group
 
-**Clave de configuración:** `memory.rule_line_hard_limit`  
-**Control:** número 50–200, paso 10  
-**Predeterminado:** `100`  
-**Riesgo:** risky
+### Load Limit
 
-Límite máximo estricto para memorias de reglas.
+**Config key:** `load.limit`  
+**Control:** number 1–32  
+**Default:** `8`  
+**Risk:** normal
+
+Max memories returned by normal load. Lower values reduce context bloat for low-context models; higher values help deep architecture tasks.
+
+## Memory Limits group
+
+### Rule Line Target
+
+**Config key:** `memory.rule_line_target`  
+**Control:** number 50–200, step 10  
+**Default:** `70`  
+**Risk:** normal
+
+Recommended size for rule memories. Concise rules route better than overlong policies.
+
+### Rule Line Hard Limit
+
+**Config key:** `memory.rule_line_hard_limit`  
+**Control:** number 50–200, step 10  
+**Default:** `100`  
+**Risk:** risky
+
+Hard maximum for rule memories.
 
 <RiskCallout level="risky">
-Aumentar este límite puede incrementar la saturación del contexto y reducir la calidad del enrutamiento. Mantenga las reglas concisas.
+Raising this can increase context bloat and reduce routing quality. Keep rules concise.
 </RiskCallout>
 
-## Grupo Graph (Grafo)
+## Graph group
 
 ### graph.enabled
 
-**Control:** alternancia  
-**Predeterminado:** `true`  
-**Riesgo:** normal
+**Control:** toggle  
+**Default:** `true`  
+**Risk:** normal
 
-Habilita el enrutamiento de dependencias y relaciones mediante `depends_on`, memorias relacionadas y la vista de grafo.
+Enables dependency/relationship routing via `depends_on`, related memories, and the graph view.
 
 ### graph.max_related
 
-**Control:** número 1–20  
-**Predeterminado:** `4`  
-**Riesgo:** normal
+**Control:** number 1–20  
+**Default:** `4`  
+**Risk:** normal
 
-Limita el número de memorias relacionadas extraídas a través de las señales del grafo.
+Limits related memories pulled through graph signals.
 
 ### graph.min_related_score
 
-**Control:** número 0–1, paso 0.01  
-**Predeterminado:** `0.22`  
-**Riesgo:** normal
+**Control:** number 0–1, step 0.01  
+**Default:** `0.22`  
+**Risk:** normal
 
-Puntaje mínimo de similitud para aristas relacionadas. Aumente para mayor precisión, disminuya para mayor recuperación.
+Minimum similarity score for related edges. Raise for precision, lower for recall.
 
-## Grupo Vector Search (Búsqueda vectorial)
+## Vector Search group
+
+### vector.provider
+
+**Control:** select — `sqlite-vec`  
+**Default:** `sqlite-vec`  
+**Risk:** normal
+
+Selects the local vector provider. `sqlite-vec` is the only supported provider.
 
 ### vector.enabled
 
-**Control:** alternancia  
-**Predeterminado:** `true`  
-**Riesgo:** normal
+**Control:** toggle  
+**Default:** `true`  
+**Risk:** normal
 
-Habilita el enrutamiento vectorial local opcional. Sin dependencias de la nube.
+Enables optional local vector routing. No cloud dependency.
 
 ### vector.auto_threshold
 
-**Control:** número 10–1000  
-**Predeterminado:** `100`  
-**Riesgo:** normal
+**Control:** number 10–1000  
+**Default:** `100`  
+**Risk:** normal
 
-Cantidad de memorias a partir de la cual se activa la búsqueda vectorial. Es posible que las bóvedas pequeñas no necesiten búsqueda vectorial.
+Memory count where vector search activates. Small vaults may not need vector search.
 
 ### vector.candidate_pool
 
-**Control:** número 8–100  
-**Predeterminado:** `24`  
-**Riesgo:** normal
+**Control:** number 8–100  
+**Default:** `24`  
+**Risk:** normal
 
-Cuántos candidatos considera la búsqueda vectorial antes de volver a clasificar. Valores más altos mejoran la recuperación a costa de la latencia.
+How many candidates vector search considers before reranking. Higher improves recall at latency cost.
 
 ### vector.dimensions
 
-**Control:** número 16–512  
-**Predeterminado:** `64`  
-**Riesgo:** normal
+**Control:** number 16–512  
+**Default:** `64`  
+**Risk:** normal
 
-Dimensiones de incrustación (embeddings) para el sidecar vectorial local. Cambiar esto requiere una reconstrucción.
+Embedding dimensions for the local vector sidecar. Changing this requires a rebuild.
 
-## Grupo Rule Variants (Variantes de reglas)
+## Rule Variants group
 
 ### rule_variants.enabled
 
-**Control:** alternancia  
-**Predeterminado:** `false`  
-**Riesgo:** normal
+**Control:** toggle  
+**Default:** `false`  
+**Risk:** normal
 
-Habilita las variantes de roles/estrictez. Úselo cuando los equipos necesiten un enrutamiento ligero, equilibrado o estricto.
+Enables role/strictness variants. Use when teams need light/balanced/strict routing.
 
 ### rule_variants.active
 
-**Control:** selección — `light`, `balanced`, `strict`  
-**Predeterminado:** `balanced`  
-**Riesgo:** normal
+**Control:** select — `light`, `balanced`, `strict`  
+**Default:** `balanced`  
+**Risk:** normal
 
-Controla la estrictez de las reglas cargadas. El modo `strict` ayuda a los modelos de menor capacidad; `light` y `balanced` suelen adaptarse mejor a modelos más fuertes.
+Controls strictness of loaded rules. `strict` helps lower-tier models; `light`/`balanced` usually suit stronger models.
 
-## Grupo Live Sync (Sincronización en vivo)
+## Live Sync group
 
 ### live_sync.enabled
 
-**Control:** alternancia  
-**Predeterminado:** `false`  
-**Riesgo:** normal
+**Control:** toggle  
+**Default:** `false`  
+**Risk:** normal
 
-Sincroniza los archivos de contexto generados del agente al guardar.
+Syncs generated agent context files on save.
 
-## Grupo Global Git (Git global)
+### live_sync.targets
 
-<RiskCallout level="risky">
-Todos los campos de Git global son riesgosos. Controlan el historial de auditoría y el comportamiento de sincronización del equipo para la memoria global. Revise cada uno antes de habilitarlos.
-</RiskCallout>
+**Control:** list  
+**Default:** `agents-md`, `claude-md`, `cursorrules`
 
-| Campo | Control | Predeterminado | Notas |
-| --- | --- | --- | --- |
-| `global_git.enabled` | alternancia | `true` | Habilita el comportamiento de Git para la memoria global |
-| `global_git.remote` | texto | `origin` | Nombre del remoto de Git; no puede contener espacios en blanco |
-| `global_git.remote_url` | texto | vacío | URL del remoto de memoria global compartida; se acepta HTTPS/SSH |
-| `global_git.branch` | texto | `main` | Rama de destino para la sincronización |
-| `global_git.auto_sync` | alternancia | `true` | Comportamiento automático de pull/push |
-| `global_git.auto_resolve` | alternancia | `true` | Manejo automático de conflictos — revise las diferencias de memoria |
+Comma-separated generated context targets refreshed when live sync runs.
 
-## Grupo Pattern Mining (Minería de patrones)
-
-| Campo | Control | Predeterminado | Notas |
-| --- | --- | --- | --- |
-| `pattern_mining.enabled` | alternancia | `false` | Extracción experimental de patrones recurrentes |
-| `pattern_mining.threshold` | número 1–20 | `3` | Repeticiones antes de que un candidato a patrón sea relevante |
-| `pattern_mining.lookback_sessions` | número 1–100 | `20` | Sesiones recientes a inspeccionar |
-
-## Grupo PR Workflow (Flujo de trabajo de PR)
-
-| Campo | Control | Predeterminado | Notas |
-| --- | --- | --- | --- |
-| `pr_workflow.enabled` | alternancia | `false` | Flujo de trabajo de PR en equipo experimental para cambios de memoria |
-| `pr_workflow.target_branch` | texto | `main` | Rama que recibe las PR de memoria |
-
-## Grupo Encryption (Cifrado)
+## Global Git group
 
 <RiskCallout level="risky">
-Existe la configuración de cifrado, pero el almacenamiento cifrado aún no está implementado. Documente claramente las limitaciones actuales a los usuarios.
+All Global Git fields are risky. They control audit history and team sync behavior for global memory. Review each before enabling.
 </RiskCallout>
 
-| Campo | Control | Predeterminado | Notas |
+| Field | Control | Default | Notes |
 | --- | --- | --- | --- |
-| `encryption.enabled` | alternancia | `false` | Modo de cifrado futuro/avanzado |
-| `encryption.scope` | selección — `workspace`, `global` | `global` | A qué ámbito se aplica el cifrado |
-| `encryption.key_source` | selección — `portable-file` | `portable-file` | Estrategia de origen de la clave; riesgo de pérdida de la copia de seguridad |
+| `global_git.enabled` | toggle | `true` | Enables Git behavior for global memory |
+| `global_git.remote` | text | `origin` | Git remote name; cannot contain whitespace |
+| `global_git.remote_url` | text | empty | Shared global memory remote URL; HTTPS/SSH accepted |
+| `global_git.branch` | text | `main` | Target branch for sync |
+| `global_git.auto_sync` | toggle | `true` | Auto pull/push behavior |
+| `global_git.auto_resolve` | toggle | `true` | Auto conflict handling — review memory diffs |
 
-## Siguientes pasos
+## Pattern Mining group
 
-- [Referencia completa de campos](field-reference.md)
-- [Pestaña Profiles](profiles.md)
-- [Pestaña Runtime](runtime.md)
+| Field | Control | Default | Notes |
+| --- | --- | --- | --- |
+| `pattern_mining.enabled` | toggle | `false` | Experimental recurring-pattern extraction |
+| `pattern_mining.threshold` | number 1–20 | `3` | Repetitions before a pattern candidate matters |
+| `pattern_mining.lookback_sessions` | number 1–100 | `20` | Recent sessions to inspect |
+
+## PR Workflow group
+
+| Field | Control | Default | Notes |
+| --- | --- | --- | --- |
+| `pr_workflow.enabled` | toggle | `false` | Experimental team PR workflow for memory changes |
+| `pr_workflow.provider` | text | empty | Provider identifier for an already configured team workflow |
+| `pr_workflow.repo` | text | empty | Repository identifier for an already configured team workflow |
+| `pr_workflow.target_branch` | text | `main` | Branch receiving memory PRs |
+
+## Encryption group
+
+<RiskCallout level="risky">
+Encryption config exists, but encrypted storage is not implemented yet. Document current limitations clearly to users.
+</RiskCallout>
+
+| Field | Control | Default | Notes |
+| --- | --- | --- | --- |
+| `encryption.enabled` | toggle | `false` | Future/advanced encryption mode |
+| `encryption.scope` | select — `workspace`, `global` | `global` | Which scope encryption applies to |
+| `encryption.key_source` | select — `portable-file` | `portable-file` | Key source strategy; backup loss risk |
+
+## Next steps
+
+- [Complete field reference](field-reference.md)
+- [Memories tab](memories.md)
+- [Maintain tab](core.md)

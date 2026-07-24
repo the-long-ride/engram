@@ -1,12 +1,12 @@
 ---
 title: save / save-session / observe
 sidebar_position: 3
-description: Write commands — save one memory, save several from a session, and capture raw notes.
+description: 写入命令 — 保存单个内存、保存会话中的多个内存并捕获原始笔记。
 ---
 
 # save / save-session / observe
 
-Write commands propose memory through the approval gate.
+写入命令通过审批门提出内存建议。
 
 ## save
 
@@ -16,9 +16,9 @@ engram save --role frontend "<text>"
 engram save --scope global "<text>"
 ```
 
-`engram save` captures the best single memory candidate, automatically updates a matching memory or creates a new one, and always shows the A/B/C approval gate before writing.
+`engram save` 捕获最佳的单个内存候选，自动更新匹配的内存或创建新内存，并在写入前始终显示 A/B/C 审批门。
 
-When `engram save` finds related active memories, the approval preview reports them with a suggested `depends_on` or possible-duplicate warning.
+当 `engram save` 发现相关的活动内存时，审批预览会报告 these 内存，并附带建议的 `depends_on` 或潜在的重复警告。
 
 ## save-session
 
@@ -32,7 +32,7 @@ engram save-session --file transcript.md
 engram save-session --force
 ```
 
-Use `save-session` when a long interaction produced multiple candidates:
+当长时间的交互产生了多个候选时，使用 `save-session`：
 
 ```text
 TYPE: rule | TEXT: Always run tests before release. | CONTEXT: Created from release planning so future agents preserve the test gate.
@@ -40,13 +40,13 @@ TYPE: knowledge | TEXT: Release notes live in CHANGELOG.md.
 TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
 ```
 
-`CONTEXT: ...` is optional. Add it only when it explains why the memory exists. Candidates may also add `DEPENDS_ON`, `LEVEL`, or `UPDATE` fields when restructuring related memory.
+`CONTEXT: ...` 是可选的。仅在解释内存存在的原因时添加它。重构相关内存时，候选还可以添加 `DEPENDS_ON`、`LEVEL` 或 `UPDATE` 字段。
 
-- `--query-level <n>` — mine up to n recent accessible human-agent chats; must be a positive integer; agents must not invent unavailable history
-- `--force` / `-f` — every generated candidate is saved because the human explicitly approved that shortcut
-- `--file <path>` — for transcripts or long summaries already on disk
+- `--query-level <n>` — 挖掘最多 n 次最近的可访问人类与 Agent 的聊天；必须为正整数；Agent 不得编造不可用的历史记录
+- `--force` / `-f` — 由于人类明确批准了该快捷方式，生成的每个候选都会被保存
+- `--file <path>` — 针对磁盘上已有的记录或长总结
 
-For `/engram take-control --force` or natural `/engram take control force`, the slash adapter normalizes the wording, generates only concise `TYPE: ... | TEXT: ...` candidates, and lets Engram save them without a second approval prompt.
+对于 `/engram take-control --force` 或自然的 `/engram take control accept all`，斜杠适配器会标准化表述，仅生成简明的 `TYPE: ... | TEXT: ...` 候选，并允许 Engram 保存它们而无需第二次审批提示。
 
 ## observe
 
@@ -55,18 +55,19 @@ engram observe --file session.md
 engram save-session --file .agents/.engram/inbox/<note>.md
 ```
 
-`observe` stores sanitized raw notes in `inbox/`. Inbox notes are not active memory. Use this when you want to preserve rough notes before deciding what should become durable memory.
+`observe` 将脱敏的原始笔记存储在 `inbox/` 中。收件箱（inbox）笔记不是活动内存。当你希望在决定哪些内容应该成为持久内存之前保留草稿笔记时，使用此功能。
 
-## Related-memory hints
+## 相关内存提示
 
-When an accept-all run reports related memories before writing, no file was saved yet. The agent should rerun with structured candidates:
+当“接受全部”运行在写入前报告相关内存时，说明尚未保存任何文件。Agent 应当使用结构化候选重新运行：
 
 ```text
 TYPE: rule | TEXT: OAuth rotation follows release foundations. | DEPENDS_ON: release-foundation | LEVEL: advanced
 TYPE: knowledge | TEXT: Invoice retries use exponential backoff. | UPDATE: invoice-retry-baseline
 ```
 
-## Next steps
+## 下一步
 
 - [inject / link / upgrade](inject-link-upgrade.md)
-- [Concepts: write path and approval](../concepts/write-path.md)
+- [概念：写入路径和审批](../concepts/write-path.md)
+

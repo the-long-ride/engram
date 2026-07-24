@@ -1,262 +1,313 @@
 ---
-title: Tab Construct (Cấu trúc)
+title: Construct tab
 sidebar_position: 4
-description: Cấu hình mọi trường thời gian chạy (runtime field) của Engram từ tab Construct. Mỗi trường đều có trường hợp sử dụng, mặc định an toàn, xác thực và cảnh báo rủi ro.
+description: Configure every Engram runtime field from the Construct tab. Each field has a use case, safe default, validation, and risk warning.
 ---
 
 import RiskCallout from '@site/src/components/RiskCallout';
 
-# Tab Construct
+# Construct tab
 
-Tab Construct hiển thị mọi trường cấu hình thời gian chạy của Engram, được nhóm chính xác giống như trên giao diện người dùng. Mỗi trường đều có phần mô tả, trường hợp sử dụng, mặc định an toàn, xác thực và cảnh báo rủi ro.
+The Construct tab exposes every Engram runtime config field, grouped exactly like the UI. Each field has a description, use cases, safe default, validation, and risk warning.
 
 <RiskCallout level="caution">
-Các trường được đánh dấu **risky** (rủi ro) có thể vô hiệu hóa Engram, thay đổi mục tiêu lưu, thay đổi hành vi Git hoặc ảnh hưởng đến bảo mật bộ nhớ. Hãy đọc cảnh báo trước khi thay đổi chúng.
+Fields marked **risky** can disable Engram, change save targets, change Git behavior, or affect memory security. Read the warning before changing them.
 </RiskCallout>
 
-## Nhóm Core (Cốt lõi)
+## Core group
 
-### Enabled (Đã bật)
+### Enabled
 
-**Khóa cấu hình:** `enabled`  
-**Điều khiển:** nút bật tắt  
-**Mặc định:** `true`  
-**Rủi ro:** risky
+**Config key:** `enabled`  
+**Control:** toggle  
+**Default:** `true`  
+**Risk:** risky
 
-Nút bật tắt chính. Tắt tùy chọn này sẽ dừng hoàn toàn hoạt động của Engram. Chỉ sử dụng để tạm thời tắt hoặc thử nghiệm.
+Master switch. Disabling it stops Engram behavior entirely. Use only for temporary shutdown or testing.
 
-### Save Target (Mục tiêu lưu)
+### Save Target
 
-**Khóa cấu hình:** `scope`  
-**Điều khiển:** chọn — `workspace`, `global`, `both`  
-**Mặc định:** `both`  
-**Rủi ro:** risky
+**Config key:** `scope`  
+**Control:** select — `workspace`, `global`, `both`  
+**Default:** `both`  
+**Risk:** risky
 
-Kiểm soát nơi lưu các bộ nhớ mới được phê duyệt. Sử dụng `workspace` cho bộ nhớ riêng của kho lưu trữ, `global` cho bộ nhớ cá nhân/nhóm, và `both` cho các cài đặt mới muốn sử dụng cả hai.
+Controls where new approved memories are saved. Use `workspace` for repo-specific memory, `global` for personal/team memory, `both` for fresh installs that want both.
 
-### Read Mode (Chế độ đọc)
+### Update Mode
 
-**Khóa cấu hình:** `read`  
-**Điều khiển:** chọn — `auto`, `startup`, `always`, `manual`, `off`  
-**Mặc định:** `auto`  
-**Rủi ro:** normal
+**Config key:** `update`  
+**Control:** select — `auto`, `manual`, `off`  
+**Default:** `auto`  
+**Risk:** normal
 
-Kiểm soát thời điểm các hook tác nhân chèn ngữ cảnh bộ nhớ. `auto` tải khi bắt đầu phiên và chỉ chèn lại khi ngữ cảnh định tuyến thay đổi. `manual` và `off` làm giảm mức độ tự động hóa nhưng tránh việc phình to ngữ cảnh.
+Controls the quiet one-time package upgrade check run by normal commands. Use `manual` or `off` only when upgrades are managed outside Engram.
 
-### Proof Mode (Chế độ chứng minh)
+### Read Mode
 
-**Khóa cấu hình:** `proof`  
-**Điều khiển:** chọn — `off`, `compact`  
-**Mặc định:** `off`  
-**Rủi ro:** normal
+**Config key:** `read`  
+**Control:** select — `auto`, `startup`, `always`, `manual`, `off`  
+**Default:** `auto`  
+**Risk:** normal
 
-Liệu các hook có nối thêm dòng ngắn gọn `Engram proof:` trên mỗi lượt đủ điều kiện hay không. Hữu ích cho việc gỡ lỗi và kiểm tra trực quan.
+Controls when agent hooks inject memory context. `auto` loads on session start and reinjects only when routed context changes. `manual` and `off` reduce automation at the cost of context bloat.
 
-### Global Memory Path (Đường dẫn bộ nhớ toàn cục)
+### Proof Mode
 
-**Khóa cấu hình:** `global_path`  
-**Điều khiển:** văn bản/đường dẫn  
-**Mặc định:** trống cho đến khi cấu hình  
-**Rủi ro:** risky
+**Config key:** `proof`  
+**Control:** select — `off`, `compact`  
+**Default:** `off`  
+**Risk:** normal
 
-Đường dẫn hệ thống tệp cho bộ nhớ toàn cục. Sử dụng một thư mục ổn định thuộc sở hữu của người dùng như `~/Documents/engram`. Tránh các thư mục tạm thời, thư mục công cộng được đồng bộ hóa và các thư mục bạn không có quyền ghi.
+Whether hooks append a compact `Engram proof:` line on each eligible turn. Useful for debugging and audit visibility.
+
+### Global Memory Path
+
+**Config key:** `global_path`  
+**Control:** text/path  
+**Default:** empty until configured  
+**Risk:** risky
+
+Filesystem path for global memory. Use a stable, user-owned folder such as `~/Documents/engram`. Avoid temp folders, synced public folders, and directories you cannot write to.
 
 <RiskCallout level="risky">
-Sử dụng một thư mục công cộng đồng bộ hóa đám mây cho bộ nhớ riêng tư có thể rò rỉ bí mật. Hãy sử dụng một đường dẫn riêng tư hoặc một kho lưu trữ Git riêng tư.
+Using a cloud-synced public folder for private memory can leak secrets. Use a private path or a private Git repo.
 </RiskCallout>
 
-**Tương đương CLI:**
+**CLI equivalent:**
 
 ```bash
 engram update-global-folder ~/Documents/engram
 engram ugf ~/Documents/engram
 ```
 
-### Default Profile (Hồ sơ mặc định)
+### Default Profile
 
-**Khóa cấu hình:** `default_profile`  
-**Điều khiển:** chọn  
-**Mặc định:** trống  
-**Rủi ro:** risky
+**Config key:** `default_profile`  
+**Control:** select  
+**Default:** empty  
+**Risk:** risky
 
-Hồ sơ được sử dụng khi không có hồ sơ nào được cấu hình rõ ràng. Xem thêm [Hồ sơ và giải quyết phạm vi](../concepts/profiles.md).
+Profile used when none is explicitly set. See [Profiles and scope resolution](../concepts/profiles.md).
 
-### Active Roles (Vai trò hoạt động)
+### Active Roles
 
-**Khóa cấu hình:** `roles`  
-**Điều khiển:** nhập vai trò/dấu phẩy  
-**Mặc định:** danh sách trống  
-**Rủi ro:** normal
+**Config key:** `roles`  
+**Control:** roles/comma input  
+**Default:** empty list  
+**Risk:** normal
 
-Giới hạn và xếp hạng lại bộ nhớ theo vai trò. Sử dụng các tên an sau khớp với định dạng `^[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$`.
+Restricts and reranks memories by role. Use safe names matching `^[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$`.
 
-## Nhóm Load Routing (Định tuyến tải)
+## Ignore Rules group
 
-### Load Limit (Giới hạn tải)
+| Field | Control | Default | Notes |
+| --- | --- | --- | --- |
+| `ignore.source` | select | `engramignore` | Choose `engramignore`, `gitignore`, `both`, or `off` as scan-rule sources. |
+| `ignore.gitignore_path` | text | `.gitignore` | Git ignore file to use when enabled. |
+| `ignore.engramignore_path` | text | `.engramignore` | Engram ignore file to use when enabled. |
+| `ignore.global_engramignore` | toggle | `true` | Apply global ignore rules when global memory is configured. |
+| `ignore.also_ignore` | list | `*.secret`, `private/**` | Additional comma-separated glob patterns. |
 
-**Khóa cấu hình:** `load.limit`  
-**Điều khiển:** số từ 1–32  
-**Mặc định:** `8`  
-**Rủi ro:** normal
+### Global Ignore Patterns
 
-Số bộ nhớ tối đa được trả về bởi một lần tải bình thường. Giá trị thấp hơn làm giảm phình to ngữ cảnh đối với các mô hình ngữ cảnh thấp; giá trị cao hơn giúp ích cho các tác vụ kiến trúc sâu sắc.
+**Config key:** `ignore.global_patterns`  
+**Control:** textarea, one glob pattern per line  
+**Default:** empty list  
+**Risk:** normal
 
-## Nhóm Memory Limits (Giới hạn bộ nhớ)
+Patterns apply to global memory reads. Every `engram inject` synchronizes them into a managed block in the workspace `.engramignore`; human-authored lines outside that block are preserved.
 
-### Rule Line Target (Mục tiêu dòng quy tắc)
+### Auto-save policy
 
-**Khóa cấu hình:** `memory.rule_line_target`  
-**Điều khiển:** số từ 50–200, bước nhảy 10  
-**Mặc định:** `70`  
-**Rủi ro:** normal
+The **Auto-save policy** editor writes `.agents/engram.policy.json`. It controls whether policy-approved candidates can save without an interactive prompt; normal saves remain approval-based.
 
-Kích thước khuyến nghị cho bộ nhớ quy tắc. Các quy tắc ngắn gọn định tuyến tốt hơn các chính sách quá dài.
+See the [Auto-save Policy reference](policy.md) for every control, default, allowed value, review gate, quota, and rollback setting.
 
-### Rule Line Hard Limit (Giới hạn cứng dòng quy tắc)
+## Load Routing group
 
-**Khóa cấu hình:** `memory.rule_line_hard_limit`  
-**Điều khiển:** số từ 50–200, bước nhảy 10  
-**Mặc định:** `100`  
-**Rủi ro:** risky
+### Load Limit
 
-Giới hạn tối đa nghiêm ngặt đối với bộ nhớ quy tắc.
+**Config key:** `load.limit`  
+**Control:** number 1–32  
+**Default:** `8`  
+**Risk:** normal
+
+Max memories returned by normal load. Lower values reduce context bloat for low-context models; higher values help deep architecture tasks.
+
+## Memory Limits group
+
+### Rule Line Target
+
+**Config key:** `memory.rule_line_target`  
+**Control:** number 50–200, step 10  
+**Default:** `70`  
+**Risk:** normal
+
+Recommended size for rule memories. Concise rules route better than overlong policies.
+
+### Rule Line Hard Limit
+
+**Config key:** `memory.rule_line_hard_limit`  
+**Control:** number 50–200, step 10  
+**Default:** `100`  
+**Risk:** risky
+
+Hard maximum for rule memories.
 
 <RiskCallout level="risky">
-Việc nâng giới hạn này có thể làm tăng sự phình to của ngữ cảnh và làm giảm chất lượng định tuyến. Hãy giữ cho các quy tắc ngắn gọn.
+Raising this can increase context bloat and reduce routing quality. Keep rules concise.
 </RiskCallout>
 
-## Nhóm Graph (Đồ thị)
+## Graph group
 
 ### graph.enabled
 
-**Điều khiển:** nút bật tắt  
-**Mặc định:** `true`  
-**Rủi ro:** normal
+**Control:** toggle  
+**Default:** `true`  
+**Risk:** normal
 
-Bật định tuyến phụ thuộc/quan hệ thông qua `depends_on`, bộ nhớ liên quan và chế độ xem đồ thị.
+Enables dependency/relationship routing via `depends_on`, related memories, and the graph view.
 
 ### graph.max_related
 
-**Điều khiển:** số từ 1–20  
-**Mặc định:** `4`  
-**Rủi ro:** normal
+**Control:** number 1–20  
+**Default:** `4`  
+**Risk:** normal
 
-Giới hạn số lượng bộ nhớ liên quan được kéo qua các tín hiệu đồ thị.
+Limits related memories pulled through graph signals.
 
 ### graph.min_related_score
 
-**Điều khiển:** số từ 0–1, bước nhảy 0.01  
-**Mặc định:** `0.22`  
-**Rủi ro:** normal
+**Control:** number 0–1, step 0.01  
+**Default:** `0.22`  
+**Risk:** normal
 
-Điểm số tương đồng tối thiểu cho các cạnh liên quan. Tăng lên để có độ chính xác cao hơn, giảm xuống để tăng khả năng truy xuất.
+Minimum similarity score for related edges. Raise for precision, lower for recall.
 
-## Nhóm Vector Search (Tìm kiếm Vector)
+## Vector Search group
+
+### vector.provider
+
+**Control:** select — `sqlite-vec`  
+**Default:** `sqlite-vec`  
+**Risk:** normal
+
+Selects the local vector provider. `sqlite-vec` is the only supported provider.
 
 ### vector.enabled
 
-**Điều khiển:** nút bật tắt  
-**Mặc định:** `true`  
-**Rủi ro:** normal
+**Control:** toggle  
+**Default:** `true`  
+**Risk:** normal
 
-Bật tùy chọn định tuyến vector cục bộ. Không có sự phụ thuộc vào đám mây.
+Enables optional local vector routing. No cloud dependency.
 
 ### vector.auto_threshold
 
-**Điều khiển:** số từ 10–1000  
-**Mặc định:** `100`  
-**Rủi ro:** normal
+**Control:** number 10–1000  
+**Default:** `100`  
+**Risk:** normal
 
-Số lượng bộ nhớ tối thiểu để kích hoạt tìm kiếm vector. Các kho lưu trữ bộ nhớ nhỏ có thể không cần tìm kiếm vector.
+Memory count where vector search activates. Small vaults may not need vector search.
 
 ### vector.candidate_pool
 
-**Điều khiển:** số từ 8–100  
-**Mặc định:** `24`  
-**Rủi ro:** normal
+**Control:** number 8–100  
+**Default:** `24`  
+**Risk:** normal
 
-Số lượng ứng viên mà tìm kiếm vector xem xét trước khi xếp hạng lại. Giá trị cao hơn cải thiện khả năng truy xuất nhưng làm tăng độ trễ.
+How many candidates vector search considers before reranking. Higher improves recall at latency cost.
 
 ### vector.dimensions
 
-**Điều khiển:** số từ 16–512  
-**Mặc định:** `64`  
-**Rủi ro:** normal
+**Control:** number 16–512  
+**Default:** `64`  
+**Risk:** normal
 
-Số chiều nhúng cho vector sidecar cục bộ. Thay đổi cấu hình này yêu cầu phải xây dựng lại.
+Embedding dimensions for the local vector sidecar. Changing this requires a rebuild.
 
-## Nhóm Rule Variants (Các biến thể quy tắc)
+## Rule Variants group
 
 ### rule_variants.enabled
 
-**Điều khiển:** nút bật tắt  
-**Mặc định:** `false`  
-**Rủi ro:** normal
+**Control:** toggle  
+**Default:** `false`  
+**Risk:** normal
 
-Bật các biến thể vai trò/mức độ nghiêm ngặt. Sử dụng khi nhóm cần định tuyến nhẹ nhàng/cân bằng/nghiêm ngặt.
+Enables role/strictness variants. Use when teams need light/balanced/strict routing.
 
 ### rule_variants.active
 
-**Điều khiển:** chọn — `light`, `balanced`, `strict`  
-**Mặc định:** `balanced`  
-**Rủi ro:** normal
+**Control:** select — `light`, `balanced`, `strict`  
+**Default:** `balanced`  
+**Risk:** normal
 
-Kiểm soát mức độ nghiêm ngặt của các quy tắc tải. `strict` giúp ích cho các mô hình phân khúc thấp hơn; `light`/`balanced` thường phù hợp hơn với các mô hình mạnh hơn.
+Controls strictness of loaded rules. `strict` helps lower-tier models; `light`/`balanced` usually suit stronger models.
 
-## Nhóm Live Sync (Đồng bộ trực tiếp)
+## Live Sync group
 
 ### live_sync.enabled
 
-**Điều khiển:** nút bật tắt  
-**Mặc định:** `false`  
-**Rủi ro:** normal
+**Control:** toggle  
+**Default:** `false`  
+**Risk:** normal
 
-Đồng bộ các tệp ngữ cảnh tác nhân được tạo ra ngay khi lưu.
+Syncs generated agent context files on save.
 
-## Nhóm Global Git (Git toàn cục)
+### live_sync.targets
 
-<RiskCallout level="risky">
-Tất cả các trường Git toàn cục đều có rủi ro (risky). Chúng kiểm soát lịch sử kiểm tra và hành vi đồng bộ hóa nhóm cho bộ nhớ toàn cục. Hãy xem xét kỹ từng trường trước khi bật.
-</RiskCallout>
+**Control:** list  
+**Default:** `agents-md`, `claude-md`, `cursorrules`
 
-| Trường | Điều khiển | Mặc định | Ghi chú |
-| --- | --- | --- | --- |
-| `global_git.enabled` | nút bật tắt | `true` | Bật hành vi Git cho bộ nhớ toàn cục |
-| `global_git.remote` | văn bản | `origin` | Tên của Git remote; không chứa khoảng trắng |
-| `global_git.remote_url` | văn bản | trống | URL remote của bộ nhớ toàn cục chia sẻ; chấp nhận HTTPS/SSH |
-| `global_git.branch` | văn bản | `main` | Nhánh đích cho đồng bộ hóa |
-| `global_git.auto_sync` | nút bật tắt | `true` | Hành vi tự động pull/push |
-| `global_git.auto_resolve` | nút bật tắt | `true` | Xử lý xung đột tự động — xem xét các khác biệt bộ nhớ |
+Comma-separated generated context targets refreshed when live sync runs.
 
-## Nhóm Pattern Mining (Khai thác mẫu)
-
-| Trường | Điều khiển | Mặc định | Ghi chú |
-| --- | --- | --- | --- |
-| `pattern_mining.enabled` | nút bật tắt | `false` | Thử nghiệm trích xuất các mẫu lặp đi lặp lại |
-| `pattern_mining.threshold` | số từ 1–20 | `3` | Số lần lặp lại tối thiểu trước khi xem xét một ứng viên mẫu |
-| `pattern_mining.lookback_sessions` | số từ 1–100 | `20` | Số phiên làm việc gần đây cần kiểm tra |
-
-## Nhóm PR Workflow (Quy trình PR)
-
-| Trường | Điều khiển | Mặc định | Ghi chú |
-| --- | --- | --- | --- |
-| `pr_workflow.enabled` | nút bật tắt | `false` | Thử nghiệm quy trình PR nhóm cho các thay đổi bộ nhớ |
-| `pr_workflow.target_branch` | văn bản | `main` | Nhánh nhận các PR bộ nhớ |
-
-## Nhóm Encryption (Mã hóa)
+## Global Git group
 
 <RiskCallout level="risky">
-Cấu hình mã hóa tồn tại, nhưng tính năng lưu trữ mã hóa chưa được triển khai. Hãy ghi chú rõ ràng các hạn chế hiện tại cho người dùng.
+All Global Git fields are risky. They control audit history and team sync behavior for global memory. Review each before enabling.
 </RiskCallout>
 
-| Trường | Điều khiển | Mặc định | Ghi chú |
+| Field | Control | Default | Notes |
 | --- | --- | --- | --- |
-| `encryption.enabled` | nút bật tắt | `false` | Chế độ mã hóa nâng cao/tương lai |
-| `encryption.scope` | chọn — `workspace`, `global` | `global` | Phạm vi áp dụng mã hóa |
-| `encryption.key_source` | chọn — `portable-file` | `portable-file` | Chiến lược nguồn khóa; có rủi ro mất bản sao lưu |
+| `global_git.enabled` | toggle | `true` | Enables Git behavior for global memory |
+| `global_git.remote` | text | `origin` | Git remote name; cannot contain whitespace |
+| `global_git.remote_url` | text | empty | Shared global memory remote URL; HTTPS/SSH accepted |
+| `global_git.branch` | text | `main` | Target branch for sync |
+| `global_git.auto_sync` | toggle | `true` | Auto pull/push behavior |
+| `global_git.auto_resolve` | toggle | `true` | Auto conflict handling — review memory diffs |
 
-## Các bước tiếp theo
+## Pattern Mining group
 
-- [Tài liệu tham khảo trường đầy đủ](field-reference.md)
-- [Tab Profiles](profiles.md)
-- [Tab Runtime](runtime.md)
+| Field | Control | Default | Notes |
+| --- | --- | --- | --- |
+| `pattern_mining.enabled` | toggle | `false` | Experimental recurring-pattern extraction |
+| `pattern_mining.threshold` | number 1–20 | `3` | Repetitions before a pattern candidate matters |
+| `pattern_mining.lookback_sessions` | number 1–100 | `20` | Recent sessions to inspect |
+
+## PR Workflow group
+
+| Field | Control | Default | Notes |
+| --- | --- | --- | --- |
+| `pr_workflow.enabled` | toggle | `false` | Experimental team PR workflow for memory changes |
+| `pr_workflow.provider` | text | empty | Provider identifier for an already configured team workflow |
+| `pr_workflow.repo` | text | empty | Repository identifier for an already configured team workflow |
+| `pr_workflow.target_branch` | text | `main` | Branch receiving memory PRs |
+
+## Encryption group
+
+<RiskCallout level="risky">
+Encryption config exists, but encrypted storage is not implemented yet. Document current limitations clearly to users.
+</RiskCallout>
+
+| Field | Control | Default | Notes |
+| --- | --- | --- | --- |
+| `encryption.enabled` | toggle | `false` | Future/advanced encryption mode |
+| `encryption.scope` | select — `workspace`, `global` | `global` | Which scope encryption applies to |
+| `encryption.key_source` | select — `portable-file` | `portable-file` | Key source strategy; backup loss risk |
+
+## Next steps
+
+- [Complete field reference](field-reference.md)
+- [Memories tab](memories.md)
+- [Maintain tab](core.md)

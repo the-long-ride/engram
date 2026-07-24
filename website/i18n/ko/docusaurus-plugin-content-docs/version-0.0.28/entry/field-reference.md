@@ -1,141 +1,125 @@
 ---
-title: Complete field reference
+title: 전체 필드 참조
 sidebar_position: 10
-description: Searchable reference for every Entry Web UI input and control.
+description: 모든 Entry Web UI 입력 및 컨트롤에 대한 검색 가능한 참조.
 ---
 
-# Complete field reference
+# 전체 필드 참조
 
-This page is the canonical end-user field reference for every Entry Web UI input and control.
+이 페이지는 모든 Entry Web UI 입력 및 컨트롤에 대한 최종 사용자 표준 필드 참조 문서입니다.
 
-## How to read this reference
+## 이 참조 문서를 읽는 방법
 
-Each field lists:
+각 필드 정보 항목:
 
-- **Config key** — the key used in config files and the CLI
-- **Control** — the input type
-- **Default** — the safe default value
-- **Risk** — `normal`, `caution`, or `risky`
-- **Notes** — what the field does and when to change it
+- **설정 키** — 설정 파일 및 CLI에서 사용되는 키
+- **컨트롤** — 입력 타입
+- **기본값** — 안전한 기본값
+- **위험도** — `normal`, `caution` 또는 `risky`
+- **비고** — 필드가 수행하는 역할 및 설정을 변경해야 하는 시점
 
-## Core {#core}
+## Core
 
-| Config key | Control | Default | Risk | Notes |
+| 설정 키 | 컨트롤 | 기본값 | 위험도 | 비고 |
 | --- | --- | --- | --- | --- |
-| <span id="enabled"></span>`enabled` | toggle | `true` | risky | Master switch. Disabling stops Engram behavior. |
-| <span id="scope"></span>`scope` | select | `both` | risky | Save target: `workspace`, `global`, `both`. |
-| <span id="update"></span>`update` | select | `auto` | normal | Quiet package upgrade check: `auto`, `manual`, `off`. |
-| <span id="read"></span>`read` | select | `auto` | normal | When hooks inject memory: `auto`, `startup`, `always`, `manual`, `off`. |
-| <span id="proof"></span>`proof` | select | `off` | normal | Hook proof line: `off`, `compact`. |
-| <span id="global-path"></span>`global_path` | text | empty | risky | Filesystem path for global memory. |
-| <span id="default-profile"></span>`default_profile` | select | empty | risky | Profile used when none is explicitly set. |
-| <span id="roles"></span>`roles` | roles | empty | normal | Comma-separated role names for routing. |
+| `enabled` | 토글 | `true` | risky | 마스터 스위치. 비활성화 시 Engram 동작이 중단됩니다. |
+| `scope` | 선택 | `both` | risky | 저장 대상 범위: `workspace`, `global`, `both`. |
+| `read` | 선택 | `auto` | normal | 훅이 메모리를 주입하는 시점: `auto`, `startup`, `always`, `manual`, `off`. |
+| `proof` | 선택 | `off` | normal | 훅 증명 행 표시 여부: `off`, `compact`. |
+| `global_path` | 텍스트 | 비어 있음 | risky | 글로벌 메모리용 파일 시스템 경로. |
+| `default_profile` | 선택 | 비어 있음 | risky | 명시적으로 설정되지 않았을 때 사용되는 기본 프로필. |
+| `roles` | 역할 | 비어 있음 | normal | 라우팅용 역할 이름 목록 (쉼표 구분). |
+| `theme` | 선택 | `dark` | hidden | 내부용/숨김 설정. 사용자에게 보이지 않습니다. |
 
-## Ignore Rules {#ignore-rules}
+## Load Routing (로드 라우팅)
 
-| Config key | Control | Default | Risk | Notes |
+| 설정 키 | 컨트롤 | 기본값 | 위험도 | 비고 |
 | --- | --- | --- | --- | --- |
-| <span id="ignore-source"></span>`ignore.source` | select | `engramignore` | normal | Scan-rule sources: `engramignore`, `gitignore`, `both`, `off`. |
-| <span id="ignore-gitignore-path"></span>`ignore.gitignore_path` | text | `.gitignore` | normal | Git ignore file path. |
-| <span id="ignore-engramignore-path"></span>`ignore.engramignore_path` | text | `.engramignore` | normal | Engram ignore file path. |
-| <span id="ignore-global-engramignore"></span>`ignore.global_engramignore` | toggle | `true` | normal | Applies global ignore rules when configured. |
-| <span id="ignore-also-ignore"></span>`ignore.also_ignore` | list | `*.secret`, `private/**` | normal | Extra comma-separated glob patterns. |
-| <span id="ignore-global-patterns"></span>`ignore.global_patterns` | textarea | empty | normal | One global glob per line; inject syncs a managed workspace block. |
+| `load.limit` | 숫자 1–32 | `8` | normal | 일반 로드 시 반환되는 최대 메모리 개수. |
 
-## Load Routing {#load-routing}
+## Memory Limits (메모리 제한)
 
-| Config key | Control | Default | Risk | Notes |
+| 설정 키 | 컨트롤 | 기본값 | 위험도 | 비고 |
 | --- | --- | --- | --- | --- |
-| <span id="load-limit"></span>`load.limit` | number 1–32 | `8` | normal | Max memories returned by normal load. |
+| `memory.rule_line_target` | 숫자 50–200, 10단위 | `70` | normal | 규칙 메모리에 권장되는 줄 수. |
+| `memory.rule_line_hard_limit` | 숫자 50–200, 10단위 | `100` | risky | 규칙 메모리에 허용되는 엄격한 최대 줄 수. |
 
-## Memory Limits {#memory-limits}
+## Graph (그래프)
 
-| Config key | Control | Default | Risk | Notes |
+| 설정 키 | 컨트롤 | 기본값 | 위험도 | 비고 |
 | --- | --- | --- | --- | --- |
-| <span id="memory-rule-line-target"></span>`memory.rule_line_target` | number 50–200, step 10 | `70` | normal | Recommended line count for rules. |
-| <span id="memory-rule-line-hard-limit"></span>`memory.rule_line_hard_limit` | number 50–200, step 10 | `100` | risky | Hard max line count for rules. |
+| `graph.enabled` | 토글 | `true` | normal | 종속성 및 관계 기반 라우팅을 활성화합니다. |
+| `graph.max_related` | 숫자 1–20 | `4` | normal | 그래프 엣지로부터 검색되는 관련 메모리 제한 개수. |
+| `graph.min_related_score` | 숫자 0–1, 0.01단위 | `0.22` | normal | 관련 엣지의 최소 유사도 기준 점수. |
 
-## Graph {#graph}
+## Vector Search (벡터 검색)
 
-| Config key | Control | Default | Risk | Notes |
+| 설정 키 | 컨트롤 | 기본값 | 위험도 | 비고 |
 | --- | --- | --- | --- | --- |
-| <span id="graph-enabled"></span>`graph.enabled` | toggle | `true` | normal | Enables dependency/relationship routing. |
-| <span id="graph-max-related"></span>`graph.max_related` | number 1–20 | `4` | normal | Limits related memories from graph edges. |
-| <span id="graph-min-related-score"></span>`graph.min_related_score` | number 0–1, step 0.01 | `0.22` | normal | Min similarity score for related edges. |
+| `vector.enabled` | 토글 | `true` | normal | 로컬 벡터 라우팅을 활성화합니다 (선택 사항). |
+| `vector.auto_threshold` | 숫자 10–1000 | `100` | normal | 벡터 검색이 활성화되는 기준 메모리 개수. |
+| `vector.candidate_pool` | 숫자 8–100 | `24` | normal | 재순위를 매기기 전에 필터링할 후보의 수. |
+| `vector.dimensions` | 숫자 16–512 | `64` | normal | 임베딩 차원; 변경 시 재생성이 필요합니다. |
 
-## Vector Search {#vector-search}
+## Rule Variants (규칙 변형)
 
-| Config key | Control | Default | Risk | Notes |
+| 설정 키 | 컨트롤 | 기본값 | 위험도 | 비고 |
 | --- | --- | --- | --- | --- |
-| <span id="vector-enabled"></span>`vector.enabled` | toggle | `true` | normal | Enables optional local vector routing. |
-| <span id="vector-provider"></span>`vector.provider` | select | `sqlite-vec` | normal | The only supported local vector provider. |
-| <span id="vector-auto-threshold"></span>`vector.auto_threshold` | number 10–1000 | `100` | normal | Memory count where vector search activates. |
-| <span id="vector-candidate-pool"></span>`vector.candidate_pool` | number 8–100 | `24` | normal | Candidates considered before reranking. |
-| <span id="vector-dimensions"></span>`vector.dimensions` | number 16–512 | `64` | normal | Embedding dimensions; rebuild after change. |
+| `rule_variants.enabled` | 토글 | `false` | normal | 역할/엄격성 기준 변형 규칙을 활성화합니다. |
+| `rule_variants.active` | 선택 | `balanced` | normal | 활성화된 변형: `light`, `balanced`, `strict`. |
 
-## Rule Variants {#rule-variants}
+## Live Sync (라이브 동기화)
 
-| Config key | Control | Default | Risk | Notes |
+| 설정 키 | 컨트롤 | 기본값 | 위험도 | 비고 |
 | --- | --- | --- | --- | --- |
-| <span id="rule-variants-enabled"></span>`rule_variants.enabled` | toggle | `false` | normal | Enables role/strictness variants. |
-| <span id="rule-variants-active"></span>`rule_variants.active` | select | `balanced` | normal | Active variant: `light`, `balanced`, `strict`. |
+| `live_sync.enabled` | 토글 | `false` | normal | 메모리 저장 시 실시간으로 에이전트 컨텍스트 파일을 동기화합니다. |
 
-## Live Sync {#live-sync}
+## Global Git (글로벌 Git)
 
-| Config key | Control | Default | Risk | Notes |
+| 설정 키 | 컨트롤 | 기본값 | 위험도 | 비고 |
 | --- | --- | --- | --- | --- |
-| <span id="live-sync-enabled"></span>`live_sync.enabled` | toggle | `false` | normal | Sync generated agent context files on save. |
-| <span id="live-sync-targets"></span>`live_sync.targets` | list | `agents-md`, `claude-md`, `cursorrules` | normal | Generated context targets refreshed by live sync. |
+| `global_git.enabled` | 토글 | `true` | risky | 글로벌 메모리에 대해 Git 동작을 연동합니다. |
+| `global_git.remote` | 텍스트 | `origin` | risky | Git 원격저장소 이름; 공백은 사용할 수 없습니다. |
+| `global_git.remote_url` | 텍스트 | 비어 있음 | risky | 공유되는 글로벌 메모리의 Git 원격 주소. |
+| `global_git.branch` | 텍스트 | `main` | risky | 동기화 대상 원격 브랜치. |
+| `global_git.auto_sync` | 토글 | `true` | risky | 자동으로 pull 및 push를 수행합니다. |
+| `global_git.auto_resolve` | 토글 | `true` | risky | 충돌 자동 해결; 변경점을 상시 검토하십시오. |
 
-## Global Git {#global-git}
+## Pattern Mining (패턴 마이닝)
 
-| Config key | Control | Default | Risk | Notes |
+| 설정 키 | 컨트롤 | 기본값 | 위험도 | 비고 |
 | --- | --- | --- | --- | --- |
-| <span id="global-git-enabled"></span>`global_git.enabled` | toggle | `true` | risky | Enables Git behavior for global memory. |
-| <span id="global-git-remote"></span>`global_git.remote` | text | `origin` | risky | Git remote name; no whitespace. |
-| <span id="global-git-remote-url"></span>`global_git.remote_url` | text | empty | risky | Shared global memory remote URL. |
-| <span id="global-git-branch"></span>`global_git.branch` | text | `main` | risky | Target branch for sync. |
-| <span id="global-git-auto-sync"></span>`global_git.auto_sync` | toggle | `true` | risky | Auto pull/push behavior. |
-| <span id="global-git-auto-resolve"></span>`global_git.auto_resolve` | toggle | `true` | risky | Auto conflict handling; review diffs. |
+| `pattern_mining.enabled` | 토글 | `false` | normal | 실험적인 반복 패턴 추출 기능. |
+| `pattern_mining.threshold` | 숫자 1–20 | `3` | normal | 패턴으로 등록되기 위해 요구되는 최소 반복 횟수. |
+| `pattern_mining.lookback_sessions` | 숫자 1–100 | `20` | normal | 탐색 대상인 최근 세션 개수. |
 
-## Pattern Mining {#pattern-mining}
+## PR Workflow (PR 워크플로우)
 
-| Config key | Control | Default | Risk | Notes |
+| 설정 키 | 컨트롤 | 기본값 | 위험도 | 비고 |
 | --- | --- | --- | --- | --- |
-| <span id="pattern-mining-enabled"></span>`pattern_mining.enabled` | toggle | `false` | normal | Experimental recurring-pattern extraction. |
-| <span id="pattern-mining-threshold"></span>`pattern_mining.threshold` | number 1–20 | `3` | normal | Repetitions before a pattern matters. |
-| <span id="pattern-mining-lookback-sessions"></span>`pattern_mining.lookback_sessions` | number 1–100 | `20` | normal | Recent sessions to inspect. |
+| `pr_workflow.enabled` | 토글 | `false` | risky | 팀 단위의 실험적 PR 기반 메모리 관리 기능. |
+| `pr_workflow.target_branch` | 텍스트 | `main` | risky | 메모리 PR 대상 브랜치. |
 
-## PR Workflow {#pr-workflow}
+## Encryption (암호화)
 
-| Config key | Control | Default | Risk | Notes |
+| 설정 키 | 컨트롤 | 기본값 | 위험도 | 비고 |
 | --- | --- | --- | --- | --- |
-| <span id="pr-workflow-enabled"></span>`pr_workflow.enabled` | toggle | `false` | risky | Experimental team PR workflow. |
-| <span id="pr-workflow-provider"></span>`pr_workflow.provider` | text | empty | risky | Provider identifier for configured team workflow. |
-| <span id="pr-workflow-repo"></span>`pr_workflow.repo` | text | empty | risky | Repository identifier for configured team workflow. |
-| <span id="pr-workflow-target-branch"></span>`pr_workflow.target_branch` | text | `main` | risky | Branch receiving memory PRs. |
+| `encryption.enabled` | 토글 | `false` | risky | 향후 개발 적용될 고급 암호화 모드. |
+| `encryption.scope` | 선택 | `global` | risky | 암호화 범위: `workspace`, `global`. |
+| `encryption.key_source` | 선택 | `portable-file` | risky | 키 관리 전략; 백업 파일 유실 시 복구가 어렵습니다. |
 
-## Encryption {#encryption}
+## 비설정 요소 컨트롤
 
-| Config key | Control | Default | Risk | Notes |
-| --- | --- | --- | --- | --- |
-| <span id="encryption-enabled"></span>`encryption.enabled` | toggle | `false` | risky | Future/advanced encryption mode. |
-| <span id="encryption-scope"></span>`encryption.scope` | select | `global` | risky | Scope: `workspace`, `global`. |
-| <span id="encryption-key-source"></span>`encryption.key_source` | select | `portable-file` | risky | Key source strategy; backup loss risk. |
+설정 필드 외 기능 제어는 아래의 각 탭 안내 페이지를 참조하십시오:
 
-## Non-config controls
+- [Connections 탭](connections.md)
+- [Profiles 탭](profiles.md)
+- [Workspaces 탭](workspaces.md)
+- [Core 탭](core.md)
+- [Memories 탭](memories.md)
+- [Runtime 탭](runtime.md)
 
-See the per-tab pages for non-config controls:
+## 다음 단계
 
-- [Construct tab](construct.md)
-- [Memories tab](memories.md)
-- [Review tab](review.md)
-- [Maintain tab](core.md)
-- [Connections tab](connections.md)
-
-Profile and workspace management are available in the Construct tab and through `engram profile` and `engram workspace`. See [Profiles and scope resolution](../concepts/profiles.md).
-
-## Next steps
-
-- [Construct tab](construct.md)
-- [Field authoring guidelines](field-authoring-guidelines.md)
+- [Construct 탭](construct.md)
+- [필드 작성 가이드라인](field-authoring-guidelines.md)

@@ -1,24 +1,24 @@
 ---
 title: Obsidian
 sidebar_position: 4
-description: Engram vs Obsidian — agent memory protocol vs personal knowledge base.
+description: Engram 対 Obsidian — エージェントメモリプロトコル対個人知識ベース。
 ---
 
 # Obsidian
 
-Obsidian is a popular personal knowledge base built on local Markdown files. Engram is also file-first and Markdown-based, but the focus differs.
+Obsidian は、ローカルの Markdown ファイル上に構築された人気の個人知識ベースです。Engram もファイル優先で Markdown ベースですが、焦点が異なります。
 
-| Dimension | Engram | Obsidian |
+| 次元 | Engram | Obsidian |
 | --- | --- | --- |
-| Purpose | AI-agent memory protocol | Personal knowledge base |
-| Routing | Graph-aware task routing into agent context | Manual linking and search |
-| Approval | Human approval gate before durable writes | Human authors directly |
-| Agent integration | Skill files, slash adapters, MCP, hooks | None built-in |
-| Best fit | teams using AI agents that need durable, routed memory | individuals building a linked note graph |
+| 目的 | AI エージェントメモリプロトコル | 個人知識ベース |
+| ルーティング | グラフ対応のタスクルーティングをエージェントコンテキストに注入 | 手動リンクと検索 |
+| 承認 | 永続的な書き込み前の人間承認ゲート | 人間が直接作成 |
+| エージェント統合 | スキルファイル、スラッシュアダプター、MCP、hook | 内蔵機能なし |
+| 最適な用途 | ルーティングされた永続的なメモリを必要とする AI エージェントを使用するチーム | リンクされたノートグラフを構築する個人 |
 
-Use both: Engram for agent-facing durable memory, Obsidian for personal knowledge. Both are Markdown and Git-friendly.
+両方使用する：エージェント向けの永続メモリには Engram を、個人知識には Obsidian を使用します。どちらも Markdown および Git フレンドリーです。
 
-## Next steps
+## 次ের 단계
 
 - [Tolaria](tolaria.md)
-- [Comparison overview](overview.md)
+- [비교 개요](overview.md)

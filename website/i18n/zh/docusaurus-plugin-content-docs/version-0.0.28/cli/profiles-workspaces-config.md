@@ -1,12 +1,12 @@
 ---
 title: profiles / workspaces / config
 sidebar_position: 5
-description: Manage profiles, save targets, load limits, read/proof modes, roles, and runtime config.
+description: 管理配置文件、保存目标、加载限制、读取/核对模式、角色和运行时配置。
 ---
 
 # profiles / workspaces / config
 
-Manage profiles, save targets, load limits, read/proof modes, roles, and runtime config.
+管理配置文件、保存目标、加载限制、读取/核对模式、角色和运行时配置。
 
 ## profile
 
@@ -17,7 +17,7 @@ engram profile use company --workspace
 engram profile merge personal company --dry-run
 ```
 
-Profile resolution order is explicit `--profile` or `ENGRAM_PROFILE`, then the workspace `default_profile`, then the active user profile. If workspace `W` is pinned to profile `B` while the user default remains profile `A`, every normal load, MCP load, and agent-hook injection for `W` reads profile `B` global memory and never profile `A`. An explicit profile different from the workspace default uses that profile's global memory and disables workspace memory for that command.
+配置文件解析顺序是显式的 `--profile` 或 `ENGRAM_PROFILE`，然后是工作区 `default_profile`，最后是活动的活动用户配置文件。如果工作区 `W` 固定到配置文件 `B`，而用户默认仍为配置文件 `A`，则针对 `W` 的每次普通加载、MCP 加载和 Agent 钩子注入都将读取配置文件 `B` 的全局内存，而绝不会读取配置文件 `A`。与工作区默认不同的显式配置文件使用该配置文件的全局内存，并禁用该命令的工作区内存。
 
 ## set-save-target
 
@@ -58,12 +58,12 @@ engram set-role backend security
 engram set-role
 ```
 
-When `engram set-role ...` or `engram set-rule-variant ...` succeeds, the CLI returns an `Agent action:` line. Engram-aware slash adapters and MCP hosts should immediately rerun `engram load "<current task/request>"`.
+当 `engram set-role ...` 或 `engram set-rule-variant ...` 成功时，CLI 返回一行 `Agent action:`。支持 Engram 的斜杠适配器和 MCP 主机应立即重新运行 `engram load "<current task/request>"`。
 
 ## set-rule-variant
 
 ```bash
-engram set-rule-variant strict|balanced|light|off|status
+engram set-rule-variant strict|balanced|light|off
 ```
 
 ## config
@@ -73,27 +73,27 @@ engram config view
 engram config set <key> <value>
 ```
 
-### Key settings reference
+### 关键设置参考
 
-| Key | Description | Default | Range / Options |
+| 键 | 描述 | 默认值 | 范围 / 选项 |
 | --- | --- | --- | --- |
-| `memory.rule_line_target` | Recommended line count target for rule memories | `70` | `50` to `200` |
-| `memory.rule_line_hard_limit` | Maximum allowed line count for rule memories | `100` | `50` to `200` |
-| `load.limit` | Max memories returned by normal load | `8` | `1` to `32` |
-| `rule_variants.enabled` | Enable or disable rule variants generation | `false` | `true`, `false` |
-| `rule_variants.active` | Active rule variant mode | `balanced` | `light`, `balanced`, `strict` |
-| `graph.enabled` | Enable or disable graph-aware routing | `true` | `true`, `false` |
-| `graph.max_related` | Max related memories to fetch from graph edges | `4` | `1` to `20` |
-| `graph.min_related_score` | Min similarity score to add graph edges | `0.22` | `0.0` to `1.0` |
-| `vector.enabled` | Enable or disable vector search fallback | `true` | `true`, `false` |
-| `live_sync.enabled` | Sync generated agent context files on save | `false` | `true`, `false` |
-| `global_git.enabled` | Enable global Git repo sync automation | `true` | `true`, `false` |
-| `global_git.remote` | Git remote name for global sync | `origin` | String |
-| `global_git.branch` | Git branch name for global sync | `main` | String |
+| `memory.rule_line_target` | 规则内存的推荐行数目标 | `70` | `50` 到 `200` |
+| `memory.rule_line_hard_limit` | 规则内存的最大允许行数 | `100` | `50` 到 `200` |
+| `load.limit` | 普通加载返回的最大内存数 | `8` | `1` 到 `32` |
+| `rule_variants.enabled` | 启用或禁用规则变体生成 | `true` | `true`, `false` |
+| `rule_variants.active` | 活动规则变体模式 | `balanced` | `light`, `balanced`, `strict` |
+| `graph.enabled` | 启用或禁用图感知路由 | `true` | `true`, `false` |
+| `graph.max_related` | 从图的边中提取的最大相关内存数 | `8` | `1` 到 `20` |
+| `graph.min_related_score` | 添加图边的最小相似度分数 | `0.3` | `0.0` 到 `1.0` |
+| `vector.enabled` | 启用或禁用向量搜索退路 | `true` | `true`, `false` |
+| `live_sync.enabled` | 保存时同步生成的 Agent 上下文文件 | `true` | `true`, `false` |
+| `global_git.enabled` | 启用全局 Git 仓库同步自动化 | `false` | `true`, `false` |
+| `global_git.remote` | 全局同步的 Git 远程名称 | `origin` | 字符串 |
+| `global_git.branch` | 全局同步的 Git 分支名称 | `main` | 字符串 |
 
-These settings are also manageable visually under the **Construct** tab in `engram entry`.
+这些设置也可以在 `engram entry` 的 **Construct** 选项卡下以可视化方式管理。
 
-## Next steps
+## 下一步
 
 - [verify / repair / quality-check](verify-repair-quality.md)
-- [Entry Web UI: Construct tab](../entry/construct.md)
+- [Entry Web UI: Construct 选项卡](../entry/construct.md)

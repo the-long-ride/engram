@@ -1,41 +1,41 @@
 ---
 title: Windsurf / Cascade
 sidebar_position: 6
-description: Tích hợp Engram với Windsurf Cascade thông qua quy tắc, MCP, hook và bộ nhớ toàn cục.
+description: Engram integration with Windsurf Cascade via rules, MCP, hooks, and global memories.
 ---
 
 # Windsurf / Cascade
 
-Windsurf đọc quy tắc workspace từ `.windsurf/rules/*.md`. Engram ghi tệp `.windsurf/rules/engram.md` với frontmatter `trigger: always_on`. `cascade` là một bí danh cho `windsurf`.
+Windsurf reads workspace rules from `.windsurf/rules/*.md`. Engram writes `.windsurf/rules/engram.md` with `trigger: always_on` frontmatter. `cascade` is an alias for `windsurf`.
 
-## Cài đặt
+## Install
 
 ```bash
 engram link windsurf
 ```
 
-MCP workspace không được tạo vì các tài liệu chính thức chỉ quy định cấu hình MCP ở cấp người dùng. Lệnh `engram link windsurf` thông báo rõ điều này và gợi ý chạy `engram link --global windsurf` để cấu hình MCP.
+Workspace MCP is not generated because the official contract documents only user-level MCP config. `engram link windsurf` reports this explicitly and suggests `engram link --global windsurf` for MCP.
 
-## Các tệp được ghi
+## Files written
 
-| Tệp | Mục đích |
+| File | Purpose |
 | --- | --- |
-| `.windsurf/rules/engram.md` | Quy tắc dự án với `trigger: always_on` |
-| `.windsurf/hooks.json` | Hook `pre_user_prompt` |
+| `.windsurf/rules/engram.md` | Project rules with `trigger: always_on` |
+| `.windsurf/hooks.json` | `pre_user_prompt` hook |
 
-## Cài đặt toàn cục
+## Global install
 
 ```bash
 engram link --global windsurf
 ```
 
-Engram ghi một khối được quản lý vào `~/.codeium/windsurf/memories/global_rules.md` (giữ nguyên văn bản người dùng và ở mức dưới giới hạn ký tự), hợp nhất cấu hình MCP vào `~/.codeium/windsurf/mcp_config.json`, và hợp nhất cấu hình hook vào `~/.codeium/windsurf/hooks.json`.
+Engram writes a managed block into `~/.codeium/windsurf/memories/global_rules.md` (preserving user text and staying below the character budget), merges MCP into `~/.codeium/windsurf/mcp_config.json`, and merges hooks into `~/.codeium/windsurf/hooks.json`.
 
-## Hành vi hook
+## Hook behavior
 
-Hook `pre_user_prompt` có thể kiểm tra/tải trước/chặn nhưng không thể trực tiếp chèn ngữ cảnh cho mô hình. Các quy tắc và MCP cung cấp các kênh ngữ cảnh AI đáng tin cậy.
+The `pre_user_prompt` hook can audit/preload/block but cannot inject model context directly. Rules and MCP provide the reliable AI context channels.
 
-## Các bước tiếp theo
+## Next steps
 
-- [Tổng quan về tích hợp Agent](overview.md)
-- [Hook và dòng kiểm chứng](hooks.md)
+- [Agent Integrations overview](overview.md)
+- [Hooks and proof lines](hooks.md)

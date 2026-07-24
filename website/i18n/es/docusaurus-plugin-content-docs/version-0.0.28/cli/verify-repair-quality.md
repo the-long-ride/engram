@@ -1,12 +1,12 @@
 ---
 title: verify / repair / quality-check
 sidebar_position: 6
-description: Maintenance commands — verify hashes, repair invalid files, check quality, and resolve conflicts.
+description: Comandos de mantenimiento — verificar hashes, reparar archivos no válidos, verificar calidad y resolver conflictos.
 ---
 
 # verify / repair / quality-check
 
-Maintenance commands keep memory healthy.
+Los comandos de mantenimiento mantienen la memoria saludable.
 
 ## verify
 
@@ -14,7 +14,7 @@ Maintenance commands keep memory healthy.
 engram verify
 ```
 
-Checks hashes for integrity. Run after manual edits or imports.
+Verifica la integridad de los hashes. Ejecútalo después de ediciones manuales o importaciones.
 
 ## repair
 
@@ -23,7 +23,7 @@ engram repair
 engram rebuild-index
 ```
 
-Use `repair` after manual edits or imports to find malformed memory files skipped by index rebuild.
+Usa `repair` después de ediciones manuales o importaciones para buscar archivos de memoria mal formados que se hayan omitido en la reconstrucción del índice.
 
 ## quality-check
 
@@ -31,7 +31,7 @@ Use `repair` after manual edits or imports to find malformed memory files skippe
 engram quality-check
 ```
 
-Reports contradiction candidates compactly. Contradiction detection is heuristic and advisory.
+Informa de candidatos de contradicción de forma compacta. La detección de contradicciones es heurística y consultiva.
 
 ## graph
 
@@ -40,7 +40,7 @@ engram graph "package manager"
 engram graph --rebuild
 ```
 
-Inspect graph routing before archiving. Run `engram graph --rebuild` after manual edits.
+Inspecciona el enrutamiento del grafo antes de archivar. Ejecuta `engram graph --rebuild` después de ediciones manuales.
 
 ## archive
 
@@ -48,7 +48,7 @@ Inspect graph routing before archiving. Run `engram graph --rebuild` after manua
 engram archive --reason "Repo migrated to npm." rules/use-pnpm.md
 ```
 
-Archive wrong or superseded memory. Use archive, not delete, for auditability. The file leaves active routing only after approval and remains preserved under `archive/`.
+Archiva memoria incorrecta o superada. Usa archivar, no eliminar, para fines de auditoría. El archivo sale del enrutamiento activo solo después de la aprobación y permanece preservado en `archive/`.
 
 ## resolve-conflicts
 
@@ -57,7 +57,7 @@ engram resolve-conflicts --dry-run --metacognize
 engram resolve-conflicts --metacognize
 ```
 
-Preview or resolve only Engram-owned workspace memory conflicts. Add `--metacognize` when an agent should review the memory folder after conflict handling. The command keeps deterministic conflict handling scoped to `.agents/.engram/`, then appends the workspace metacognize source pack for concise `TYPE/TEXT` candidates.
+Previsualiza o resuelve solo los conflictos de memoria del espacio de trabajo propiedad de Engram. Agrega `--metacognize` cuando un agente deba revisar la carpeta de memoria después del manejo de conflictos. El comando mantiene el manejo de conflictos determinista delimitado a `.agents/.engram/`, luego agrega el paquete de origen de metacognición del espacio de trabajo para candidatos `TYPE/TEXT` concisos.
 
 ## benchmark
 
@@ -65,9 +65,9 @@ Preview or resolve only Engram-owned workspace memory conflicts. Add `--metacogn
 engram benchmark
 ```
 
-Retrieval regression checks.
+Verificaciones de regresión de recuperación.
 
-## Next steps
+## Siguientes pasos
 
 - [sync / archive](sync-archive.md)
-- [Operations troubleshooting](../operations/troubleshooting.md)
+- [Resolución de problemas de operaciones](../operations/troubleshooting.md)

@@ -1,34 +1,34 @@
 ---
-title: Maintain tab
+title: Pestaña Core (Núcleo)
 sidebar_position: 7
-description: Review duplicate and conflicting memories with scope and type filters.
+description: Revise memorias duplicadas y en conflicto con filtros de alcance y tipo.
 ---
 
-# Maintain tab
+# Pestaña Core
 
-The Maintain tab reviews duplicate and conflicting memories. It is the metacognition workspace inside the Entry panel.
+La pestaña Core revisa memorias duplicadas y en conflicto. Es el espacio de trabajo de metacognición dentro del panel Entry.
 
-## Scope chips: profile / global / workspace {#scope-chips-profile-global-workspace}
+## Fichas de alcance (Scope chips): profile / global / workspace
 
-Filter duplicate/conflict analysis by memory source. Audit one scope or compare cross-scope duplicates. Keep at least one scope selected.
+Filtre el análisis de duplicados/conflictos por origen de memoria. Audite un alcance o compare duplicados entre alcances. Mantenga al menos un alcance seleccionado.
 
-## Type chips: rule / skill / workflow / knowledge {#type-chips-rule-skill-workflow-knowledge}
+## Fichas de tipo (Type chips): rule / skill / workflow / knowledge
 
-Filter duplicate candidates by memory type. Focus cleanup on rules first or knowledge facts first. Document type meanings inline so users understand when duplicates are harmless.
+Filtre los candidatos a duplicados por tipo de memoria. Concéntrese primero en la limpieza de reglas o en los hechos de conocimiento. Documente los significados de los tipos en línea para que los usuarios entiendan cuándo los duplicados son inofensivos.
 
-## Include semantic candidates {#include-semantic-candidates}
+## Incluir candidatos semánticos (Include semantic candidates)
 
-Adds semantic duplicate search, not just exact/lexical matches. Use when cleaning mature memory stores; expect more false positives.
+Añade la búsqueda de duplicados semánticos, no solo coincidencias exactas/léxicas. Úselo al limpiar almacenes de memoria maduros; espere más falsos positivos.
 
-## Copy prompt
+## Copiar sugerencia (Copy prompt)
 
-Copies an `/engram` prompt for a stronger agent or model to resolve duplicates. Use for human-guided cleanup and review. Remind users to review generated changes through approval gates.
+Copia una sugerencia `/engram` para que un agente o modelo más fuerte resuelva los duplicados. Úselo para limpiezas y revisiones guiadas por humanos. Recuerde a los usuarios revisar los cambios generados a través de las puertas de aprobación.
 
-## Preview
+## Vista previa (Preview)
 
-Shows the prompt before copying. Encourage preview for risky cleanup operations.
+Muestra la sugerencia antes de copiarla. Fomente la vista previa para operaciones de limpieza riesgosas.
 
-## CLI equivalent
+## Equivalente en CLI
 
 ```bash
 engram resolve-conflicts --dry-run --metacognize
@@ -36,7 +36,8 @@ engram resolve-conflicts --metacognize
 engram metacognize --workspace --force
 ```
 
-## Next steps
+## Siguientes pasos
 
-- [Memories tab](memories.md)
+- [Pestaña Memories](memories.md)
 - [CLI: verify / repair / quality-check](../cli/verify-repair-quality.md)
+

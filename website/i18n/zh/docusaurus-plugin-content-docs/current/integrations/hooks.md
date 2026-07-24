@@ -1,14 +1,14 @@
 ---
-title: Hook 和验证行
+title: Hooks and proof lines
 sidebar_position: 12
-description: Engram agent hook 在会话启动和提示词轮次注入路由内存。验证行使注入可见。
+description: Engram agent hooks inject routed memory at session start and prompt turns. Proof lines make injection visible.
 ---
 
-# Hook 和验证行
+# Hooks and proof lines
 
-Agent hook 是选择性加入的主机 hook，当主机公开安全的提示词上下文通道时，在会话启动和随后的任务更改轮次注入路由的 Engram 上下文。
+Agent hooks are opt-in host hooks that inject routed Engram context at session start and later task-change turns when the host exposes a safe prompt-time context channel.
 
-## 安装 hook
+## Install hooks
 
 ```bash
 engram link codex
@@ -20,37 +20,37 @@ engram link --global opencode
 engram set-proof compact
 ```
 
-使用 `--global` 进行用户级配置，使用 `engram unlink` 仅删除由 Engram 托管的 hook 条目。
+Use `--global` for user-level config and `engram unlink` to remove only Engram-managed hook entries.
 
-## 读取模式
+## Read mode
 
-`engram set-read startup|auto|always|manual|off` 控制运行时行为：
+`engram set-read startup|auto|always|manual|off` controls runtime behavior:
 
-- `auto` 在会话启动时加载，并仅在路由的 Engram 上下文更改时重新注入。
-- `startup` 仅在会话启动时加载。
-- `always` 在每个符合条件的轮次重新注入。
-- `manual` 和 `off` 减少自动化。
+- `auto` loads on session start and reinjects only when routed Engram context changes.
+- `startup` loads only at session start.
+- `always` reinjects on every eligible turn.
+- `manual` and `off` reduce automation.
 
-Hook 缓存存储哈希值、会话 ID、主机、当前工作目录（cwd）和路由签名，从不存储原始提示词文本。
+The hook cache stores hashes, session ids, host, cwd, and routed signatures — never raw prompt text.
 
-## 验证模式
+## Proof mode
 
-`engram set-proof off|compact` 控制受支持的 hook 是否也在每个符合条件的轮次中追加一条紧凑的 `Engram proof:` 行。验证可见性与 `set-read` 分开：`compact` 可以报告已加载、已重用或已跳过的轮次，而不会改变完整 Engram 内存的注入时机。
+`engram set-proof off|compact` controls whether supported hooks also append a compact `Engram proof:` line on each eligible turn. Proof visibility is separate from `set-read`: `compact` can report loaded, reused, or skipped turns without changing when full Engram memory is injected.
 
-## Hook 功能矩阵
+## Hook capability matrix
 
-| 主机 | 配置路径 | 事件 |
+| Host | Config path | Events |
 | --- | --- | --- |
 | `codex` | `.codex/hooks.json`; global `~/.codex/hooks.json` | `SessionStart`, `UserPromptSubmit` |
 | `claude` | `.claude/settings.json`; global `~/.claude/settings.json` | `SessionStart`, `UserPromptSubmit` |
 | `gemini` | `.gemini/settings.json`; global `~/.gemini/settings.json` | `SessionStart`, `BeforeAgent` |
-| `cursor` | `.cursor/hooks.json`; 插件全局 `hooks/hooks.json` | `sessionStart` |
+| `cursor` | `.cursor/hooks.json`; global plugin `hooks/hooks.json` | `sessionStart` |
 | `windsurf` / `cascade` | `.windsurf/hooks.json`; global `~/.codeium/windsurf/hooks.json` | `pre_user_prompt` |
 | `opencode` | `~/.config/opencode/plugins/engram.js` | `chat.message`, `experimental.chat.system.transform` |
-| `copilot` | 未写入 | N/A |
-| `cline` | 未写入 | N/A |
+| `copilot` | None written | N/A |
+| `cline` | None written | N/A |
 
-## 后续步骤
+## Next steps
 
-- [Agent 集成概述](overview.md)
-- [CLI: 注入 / 链接 / 升级](../cli/inject-link-upgrade.md)
+- [Agent Integrations overview](overview.md)
+- [CLI: inject / link / upgrade](../cli/inject-link-upgrade.md)

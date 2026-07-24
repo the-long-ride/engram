@@ -1,123 +1,111 @@
 ---
-title: "人类掌控的内存协议"
+title: Human-owned memory protocol
 sidebar_position: 1
-description: "Engram 是一个使 AI 智能体内存可检查、可移植且由人类治理的协议。"
+description: Engram is a protocol that makes AI agent memory inspectable, portable, and governed by humans.
 ---
 
-# 理解 Engram
+# Human-owned memory protocol
 
-在阅读命令指南之前请先阅读本文。Engram 的价值在于谁拥有内存，而不是它有很多命令。
+Engram is not just "agent memory." It is a protocol that makes memory inspectable, portable, and governed by humans.
 
-## 一句话模型
+## The contract
 
-Engram 是一个文件协议，它允许 AI 智能体使用持久的内存，同时由人类决定什么会变得持久。
+- Markdown is durable memory.
+- JSON index and graph files are acceleration layers.
+- Approval is the trust boundary.
+- Hashes are integrity checks.
+- Ignore rules are privacy controls.
+- Git is portability and audit history.
+- Agent adapters are convenience, not authority.
 
-## Engram 是什么
+Agents can suggest memory, but humans own what becomes memory.
 
-Engram 是一个知识内存中心，用于存放：
+## One-sentence model
 
-- 项目规则
-- 团队决策
-- 可重复的工作流
-- 持久的事实
-- 应该随项目移动的个人偏好
+Engram is a file protocol that lets AI agents use durable memory while humans decide what becomes durable.
 
-内存以纯 Markdown 格式保存。索引、图谱、哈希和适配器文件仅用于使该 Markdown 的使用更轻松、更安全。
+## What Engram is
 
-## Engram 不是什么
+Engram is a knowledge memory center for:
 
-Engram 不是：
+- project rules
+- team decisions
+- repeatable workflows
+- durable facts
+- personal preferences that should travel across projects
 
-- 智能体的隐藏大脑
-- 厂商拥有的封闭内存孤岛
-- 项目文档的替代品
-- 假装是权威的向量数据库
-- 永久自动记录一切的录音机
+The memory is plain Markdown. The index, graph, hashes, and adapter files exist to make that Markdown easier and safer to use.
 
-智能体可以建议内存。人类进行批准、拒绝、编辑、归档和拥有内存。
+## What Engram is not
 
-## 核心承诺
+Engram is not:
 
-Engram 试图使 AI 内存：
+- a hidden brain for an agent
+- a vendor-owned memory silo
+- a replacement for project documentation
+- a vector database pretending to be authority
+- an automatic recorder that saves everything forever
 
-- 可评审：您可以在常规编辑器中直接阅读它
-- 可移植：您可以通过 Git 进行同步，并跨不同的智能体使用
-- 可修正：错误的内存可以被归档（带上原因），而不是在以后的工作中默默产生负面影响
-- 默认隐私：忽略规则和批准门槛可防止意外捕获数据
-- 刻意简单：相比看不见的平台状态，Markdown 文件更容易被信任
+Agents may suggest memory. Humans approve, reject, edit, archive, and own memory.
 
-## 系统层级
+## The core promise
 
-| 层级 | 含义 |
+Engram tries to make AI memory:
+
+- **reviewable**: you can read it in a normal editor
+- **portable**: you can sync it with Git and use it across agents
+- **correctable**: wrong memory can be archived instead of silently haunting future work
+- **private by default**: ignore rules and approval gates stop accidental capture
+- **boring on purpose**: Markdown is easier to trust than invisible platform state
+
+## The layers
+
+| Layer | Meaning |
 | --- | --- |
-| Markdown | 持久的唯一事实来源（source of truth） |
-| JSON index | 快速查找层 |
-| JSON graph | 主题与关系路由层 |
-| Hashes | 完整性检查 |
-| Approval | 写入前的信任边界 |
-| Ignore rules | 隐私控制 |
-| Git | 历史、可移植性、评审、恢复 |
-| Agent adapters | 适用于 Codex、Claude、Cursor、Gemini 和其他智能体的便利层 |
+| Markdown | durable source of truth |
+| JSON index | fast lookup layer |
+| JSON graph | topic and relationship routing layer |
+| Hashes | integrity checks |
+| Approval | trust boundary before writes |
+| Ignore rules | privacy controls |
+| Git | history, portability, review, recovery |
+| Agent adapters | convenience layer for Codex, Claude, Cursor, Gemini, and other agents |
 
-生成的 JSON 有助于智能体更快地找到内存，但它不是权威来源。如果生成的文件与 Markdown 不一致，Markdown 优先。
+Generated JSON helps agents find memory faster, but it is not the authority. If generated files disagree with Markdown, Markdown wins.
 
-## 内存生命周期
+Memory files may declare `depends_on: [...]` in frontmatter when one rule, skill, or knowledge item needs another as a prerequisite. The graph derives foundation-to-deep layers from those dependencies, and default `engram load` keeps prerequisites before dependent memories inside the compact agent-facing route. SessionStart hooks call that routed load path at startup and inject only changed context, while prompt-turn hooks reuse or skip unchanged routes.
 
-1. 会话、文件或人类笔记包含有用的知识。
-2. 智能体提出简明的内存候选。
-3. 人类批准全部、选择部分、添加注释或拒绝它们。
-4. Engram 写入批准的 Markdown 内存。
-5. Engram 更新哈希、索引、图谱和变更历史（changelog）。
-6. 未来的智能体仅加载与当前任务相关的内存。
-7. 如果内存变得不正确，Engram 会将其归档并记录原因。
+## Memory lifecycle
 
-这一生命周期在保持内存有效的同时，并没有使其变得不可见。
+1. A session, file, or human note contains useful knowledge.
+2. An agent proposes concise memory candidates.
+3. A human approves all, selects some, adds a note, or rejects them.
+4. Engram writes approved Markdown memory.
+5. Engram refreshes hashes, index, graph, and changelog.
+6. Future agents load only the memory relevant to the current task.
+7. If memory becomes wrong, Engram archives it with a reason.
 
-## 人类、智能体、Engram、Git
+This lifecycle keeps memory active without making it invisible.
 
-| 主体 | 角色 |
+## Human, Agent, Engram, Git
+
+| Actor | Role |
 | --- | --- |
-| 人类 | 选择什么会成为持久内存 |
-| 智能体 | 发现模式并建议候选 |
-| Engram | 强制执行模式、安全、路由、批准和维护 |
-| Git | 在机器之间传送内存并提供评审历史 |
+| Human | chooses what becomes durable memory |
+| Agent | notices patterns and proposes candidates |
+| Engram | enforces schema, safety, routing, approval, and maintenance |
+| Git | carries memory between machines and gives review history |
 
-智能体是有帮助的，但智能体不是所有者。
+The agent is helpful, but the agent is not the owner.
 
-## 什么是好的内存
+## Why not only built-in agent memory
 
-好的 Engram 内存应该：
+Built-in memory is convenient, but it can be hard to inspect, diff, export, share, or correct. It often belongs to one app or account.
 
-- 足够稳定，下周依然重要
-- 足够具体，以便后续路由
-- 足够短，可以加载到智能体上下文中
-- 足够安全，可以在预期的作用域内共享
-- 编写为规则（rule）、技能（skill）或知识（knowledge）项
+Engram makes the durable layer visible. Built-in memory can still help, but Engram should be the owned source when the knowledge matters.
 
-坏的内存包括临时的聊天噪音、秘密、凭据、一次性的猜测或未经任何人批准的事实。
+## Next steps
 
-## 作用域
-
-工作区内存保存在：
-
-```text
-<project>/.agents/.engram/
-```
-
-全局内存是可选的，保存在用户配置的任何位置。
-
-工作区内存优先。全局内存是跨项目可重用偏好、个人习惯或团队默认设置的后备。
-
-## 为什么不仅使用智能体内置内存
-
-内置内存很方便，但可能难以检查、对比（diff）、导出、共享或纠正。它通常属于单个应用或账户。
-
-Engram 使持久层可见。内置内存仍然可以提供帮助，但当知识至关重要时，人类拥有的 Engram 应该是权威来源。
-
-## 需要了解的局限性
-
-默认的 Engram 搜索是确定性的词汇搜索。`engram search --semantic` 增加了确定性的局部相似度，而不是基于模型向量的语义搜索。图谱向量是局部哈希的词向量，而不是语义嵌入。矛盾检测仅具建议性质。加密配置存在，但加密存储尚未实现。
-
-这些局限性是被特意清晰说明的。Engram 应该明确告诉用户今天什么是真实的，什么是未来的工作。
-
-下一步：[AI 智能体快速开始](../quickstart.md)。
+- [Memory types](memory-types.md)
+- [Read path and routing](read-path.md)
+- [Write path and approval](write-path.md)

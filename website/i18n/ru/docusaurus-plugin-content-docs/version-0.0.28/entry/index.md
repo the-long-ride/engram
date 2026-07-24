@@ -1,49 +1,50 @@
 ---
-title: Entry Web UI overview
+title: Обзор Entry Web UI
 sidebar_position: 1
-description: The Entry Web UI is the local-only control panel for configuring Engram memory and agent connections.
+description: Entry Web UI — это локальная панель управления для настройки памяти Engram, профилей, рабочих областей и подключений агентов.
 ---
 
 import RiskCallout from '@site/src/components/RiskCallout';
 
-# Entry Web UI overview
+# Обзор Entry Web UI
 
-The Entry Web UI is the local-only control panel for Engram. Use it to configure memory roots, link AI agents, tune routing, review findings, inspect the memory graph, and debug resolved config without editing JSON by hand.
+Entry Web UI — это локальная панель управления для Engram. Используйте ее для настройки корней памяти, привязки ИИ-агентов, точной настройки маршрутизации, просмотра дубликатов, проверки графа памяти и отладки конфигурации времени выполнения без ручного редактирования файлов JSON.
 
-## When to use it
+## Когда использовать
 
-- First-time setup of a workspace or global memory root
-- Linking or unlinking AI agents without remembering CLI flags
-- Tuning routing, graph, vector, and rule variant settings
-- Reviewing duplicate or conflicting memories
-- Inspecting the memory graph
-- Debugging resolved config, paths, and Git detection
+- Первая настройка рабочей области или корня глобальной памяти
+- Привязка или отвязка ИИ-агентов без необходимости помнить флаги CLI
+- Настройка параметров маршрутизации, графа, векторного поиска и вариантов правил
+- Просмотр дублирующихся или конфликтующих воспоминаний
+- Инспектирование графа памяти
+- Отладка разрешенной конфигурации, путей и обнаружения Git
 
-## Local-only access model
+## Локальная модель доступа (Local-only)
 
-The panel runs on your machine. It is not a cloud service. Close the server when you are done for security hygiene.
+Панель работает на вашем компьютере. Это не облачный сервис. Закрывайте сервер по окончании работы в целях безопасности.
 
 <RiskCallout level="risky">
-The Entry panel is local-only. Treat it as open while you are configuring memory, then close the server from the sidebar footer when finished.
+Панель управления Entry является локальной. Считайте ее открытой во время настройки памяти, а затем закройте сервер на вкладке Runtime по завершении работы.
 </RiskCallout>
 
-## Relationship to CLI commands
+## Отношение к командам CLI
 
-Every visible control maps to a CLI command or config key. Where a CLI equivalent exists, the field reference lists it. The CLI remains the source of truth for scripting and automation.
+Каждый видимый элемент управления сопоставляется с командой CLI или ключом конфигурации. Если существует эквивалент CLI, справочник полей указывает его. CLI остается источником истины для сценариев и автоматизации.
 
-## Tabs at a glance
+## Обзор вкладок
 
-| Tab | Job |
+| Вкладка | Назначение |
 | --- | --- |
-| [Construct](construct.md) | Configure every Engram runtime field |
-| [Memories](memories.md) | Search, inspect, and archive active memory |
-| [Review](review.md) | Resolve findings and confirm reviewed memory writes |
-| [Maintain](core.md) | Review duplicate and conflicting memories |
-| [Connections](connections.md) | Detect and link supported AI agents |
+| [Connections](connections.md) | Обнаружение и привязка поддерживаемых ИИ-агентов |
+| [Construct](construct.md) | Настройка каждого поля времени выполнения Engram |
+| [Profiles](profiles.md) | Управление изолированными глобальными профилями памяти |
+| [Workspaces](workspaces.md) | Регистрация и привязка репозиториев проектов |
+| [Core](core.md) | Просмотр дублирующихся и конфликтующих воспоминаний |
+| [Memories](memories.md) | Просмотр графа памяти и архивирование воспоминаний |
+| [Runtime](runtime.md) | Разрешенная конфигурация и пути только для чтения |
 
-## Next steps
+## Следующие шаги
 
-- [Launching the control panel](launch.md)
-- [Construct tab](construct.md)
-- [Maintain tab](core.md)
-- [Complete field reference](field-reference.md)
+- [Запуск панели управления](launch.md)
+- [Вкладка Construct](construct.md)
+- [Полный справочник полей](field-reference.md)

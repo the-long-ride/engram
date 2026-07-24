@@ -1,51 +1,51 @@
 ---
 title: Gemini
 sidebar_position: 4
-description: Gemini CLI および Antigravity の Gemini 互換サーフェスを介した Engram の統合。
+description: Engram integration with Gemini CLI and Antigravity Gemini-compatible surfaces.
 ---
 
 # Gemini
 
-Gemini CLI はコンテキストとして `GEMINI.md` ファイルを検索します。`slash` ターゲットは `.gemini/commands/engram.toml` を書き込むため、`/engram <args>` は Gemini CLI のプロジェクトカスタムコマンドになります。
+Gemini CLI searches for `GEMINI.md` files as context. The `slash` target writes `.gemini/commands/engram.toml` so `/engram <args>` becomes a project custom command in Gemini CLI.
 
-Engram は、現在の Google ドキュメントが依然として Antigravity のコンテキストとスキルを Gemini 互換の場所に結び付けているため、`gemini` を Antigravity 2.0、Antigravity CLI、および Antigravity IDE の公式ターゲットとして扱います。非表示の `antigravity` および `antigravity-cli` ターゲット名は明示的な互換パスのままですが、`engram link list`、ヘルプ、補完、または `all` には表示されません。
+Engram also treats `gemini` as the advertised target for Antigravity 2.0, Antigravity CLI, and Antigravity IDE because current Google docs still tie Antigravity context and skills to Gemini-compatible locations. The hidden `antigravity` and `antigravity-cli` target names remain explicit compatibility paths, but they are not shown in `engram link list`, help, completion, or `all`.
 
-## インストール
+## Install
 
 ```bash
 engram link gemini
 ```
 
-## 書き込まれるファイル
+## Files written
 
-| ファイル | 用途 |
+| File | Purpose |
 | --- | --- |
-| `GEMINI.md` | プロジェクトコンテキストのブートストラップ |
-| `.gemini/commands/engram.toml` | `/engram` スラッシュアダプター |
-| `.gemini/settings.json` | `SessionStart` および `BeforeAgent` フック |
-| Gemini MCP config | MCP 登録 |
+| `GEMINI.md` | Project context bootstrap |
+| `.gemini/commands/engram.toml` | `/engram` slash adapter |
+| `.gemini/settings.json` | `SessionStart` and `BeforeAgent` hooks |
+| Gemini MCP config | MCP registration |
 
-## グローバルインストール
+## Global install
 
 ```bash
 engram link --global gemini
 ```
 
-`~/.gemini/GEMINI.md`、`~/.gemini/skills/engram/SKILL.md`、および Gemini MCP 構成ファイルを書き込みます。
+Writes `~/.gemini/GEMINI.md`, `~/.gemini/skills/engram/SKILL.md`, and the Gemini MCP config file.
 
-## ランタイム優先ターゲット
+## Runtime-first target
 
-Gemini はランタイム優先のターゲットです。`GEMINI.md` には、詳細なプロトコルについて MCP ツールとフックに依存する短いブートストラップ指示が含まれています。実際の書き込み/承認ワークフローは Agent Skill ファイルが担います。
+Gemini is a runtime-first target. `GEMINI.md` contains short bootstrap instructions that rely on MCP tools and hooks for detailed protocol; the Agent Skill file carries the full write/approval workflow.
 
-## フックの動作
+## Hook behavior
 
-Gemini は、`SessionStart` および `BeforeAgent` イベントを介して、起動時およびプロンプト送信時の `hookSpecificOutput.additionalContext` 注入をサポートしています。
+Gemini supports startup and prompt-time `hookSpecificOutput.additionalContext` injection via `SessionStart` and `BeforeAgent` events.
 
-## Antigravity の互換性
+## Antigravity compatibility
 
-フックに関しては、`gemini` は公開の Antigravity フォールバックでもあります。Google が安定したプライマリの Antigravity フック/構成ドキュメントを公開するまで、非表示の `antigravity` および `antigravity-cli` フックターゲットは Gemini のフック動作とパスに正規化されます。
+For hooks, `gemini` is also the public Antigravity fallback. The hidden `antigravity` and `antigravity-cli` hook targets normalize to Gemini hook behavior and paths until Google publishes stable primary Antigravity hook/config documentation.
 
-## 次のステップ
+## Next steps
 
-- [エージェント統合の概要](overview.md)
-- [フックと検証行](hooks.md)
+- [Agent Integrations overview](overview.md)
+- [Hooks and proof lines](hooks.md)

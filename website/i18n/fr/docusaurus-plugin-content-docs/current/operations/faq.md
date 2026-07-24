@@ -1,58 +1,57 @@
 ---
 title: FAQ
 sidebar_position: 4
-description: Questions fréquemment posées sur Engram.
+description: Frequently asked questions about Engram.
 ---
 
 # FAQ
 
-## Engram est-il une base de données vectorielle ?
+## Is Engram a vector database?
 
-Non. La recherche par défaut d'Engram est une recherche lexicale déterministe. `engram search --semantic` ajoute une similarité locale déterministe, et non une recherche sémantique basée sur des plongements (embeddings). Les vecteurs du graphe sont des vecteurs de mots hachés locaux, pas des plongements sémantiques. Le module local sqlite-vec optionnel sert de couche d'accélération, il n'est pas la source unique de vérité.
+No. Default Engram search is deterministic lexical search. `engram search --semantic` adds deterministic local similarity, not embedding-backed semantic search. Graph vectors are local hashed word vectors, not semantic embeddings. Optional local sqlite-vec is an acceleration layer, not the source of truth.
 
-## Engram écrit-il la mémoire de manière automatique ?
+## Does Engram write memory automatically?
 
-Non. Les agents proposent des candidats ; les humains les valident. L'interface CLI directe en terminal utilise A/B/C. Le chat de l'agent d'IA utilise `yes`/`audit`/`cancel`. Seules les requêtes explicites d'acceptation globale (`ss -f`) enregistrent chaque candidat, et les agents ne doivent pas ajouter le paramètre `--force` sans demande expresse de l'utilisateur.
+No. Agents propose candidates; humans approve. Direct terminal CLI uses A/B/C. AI-agent chat uses `yes`/`audit`/`cancel`. Only explicit force requests (`ss -f`) save every candidate, and agents must not add `--force` unless the human requested it.
 
-## Où réside la mémoire ?
+## Where does memory live?
 
-- Mémoire de l'espace de travail : `<project>/.agents/.engram/`
-- Mémoire globale : à l'emplacement configuré (vide par défaut avant configuration)
+- Workspace memory: `<project>/.agents/.engram/`
+- Global memory: wherever you configure it (default empty until configured)
 
-La mémoire de l'espace de travail l'emporte. La mémoire globale sert de repli pour les préférences réutilisables et le contexte d'équipe.
+Workspace memory wins. Global memory is fallback for reusable preferences and team context.
 
-## Quels agents sont pris en charge ?
+## Which agents are supported?
 
-Codex, Claude, Gemini (ainsi que les interfaces compatibles Gemini d'Antigravity), Cursor, Windsurf/Cascade, OpenCode, Copilot, Cline, les hôtes génériques compatibles avec le fichier AGENTS.md, les hôtes compatibles avec le protocole MCP et les hôtes acceptant les commandes slash. Voir la [Présentation des intégrations d'agents](../integrations/overview.md).
+Codex, Claude, Gemini (and Antigravity Gemini-compatible surfaces), Cursor, Windsurf/Cascade, OpenCode, Copilot, Cline, generic AGENTS.md-compatible hosts, MCP-capable hosts, and slash-command hosts. See [Agent Integrations overview](../integrations/overview.md).
 
-## Le chiffrement est-il implémenté ?
+## Is encryption implemented?
 
-La configuration pour le chiffrement existe, mais le stockage chiffré n'est pas encore implémenté. Documentez clairement les limitations actuelles.
+Encryption config exists, but encrypted storage is not implemented yet. Document current limitations clearly.
 
-## Puis-je utiliser Engram sans Git ?
+## Can I use Engram without Git?
 
-Oui. Git est facultatif mais fortement recommandé pour l'historique d'audit, la portabilité et la révision en équipe.
+Yes. Git is optional but recommended for audit history, portability, and team review.
 
-## Comment archiver une mémoire erronée ?
-
-```bash
-engram archive --reason "<pourquoi>" <id-ou-fichier>
-```
-
-Le fichier quitte le routage actif uniquement après approbation et reste préservé dans le dossier `archive/`. Privilégiez l'archivage à la suppression pour assurer l'auditabilité.
-
-## Comment déplacer la mémoire globale ?
+## How do I archive wrong memory?
 
 ```bash
-engram update-global-folder <nouveau-chemin>
-engram ugf <nouveau-chemin>
-engram move global folder from <ancien-chemin> to <nouveau-chemin>
+engram archive --reason "<why>" <id-or-file>
 ```
 
-Ajoutez `--move-from-path <ancien-chemin>` si vous souhaitez qu'Engram déplace également l'intégralité de l'ancienne racine globale vers le nouvel emplacement.
+The file leaves active routing only after approval and remains preserved under `archive/`. Use archive, not delete, for auditability.
 
-## Étapes suivantes
+## How do I move global memory?
 
-- [Résolution des problèmes](troubleshooting.md)
-- [Comparatif et feuille de route](../comparison/overview.md)
+```bash
+engram update-global-folder <new-path>
+engram ugf <new-path>
+engram move global folder from <old-path> to <new-path>
+```
 
+Add `--move-from-path <old-path>` when they also want Engram to move the whole old global root into the new location.
+
+## Next steps
+
+- [Troubleshooting](troubleshooting.md)
+- [Comparison and roadmap](../comparison/overview.md)

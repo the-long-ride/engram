@@ -1,181 +1,179 @@
 ---
-title: AI-Agent Quickstart
+title: "Bắt đầu nhanh với tác nhân AI"
 sidebar_position: 2
-description: Start using Engram through your AI agent. Load memory, do the work, then propose durable memory when something useful emerges.
+description: "Bắt đầu sử dụng Engram thông qua tác nhân AI của bạn. Tải bộ nhớ, thực hiện công việc, sau đó đề xuất lưu bộ nhớ bền vững."
 ---
 
-# AI-Agent Quickstart
+# Bắt Đầu Nhanh Với Tác Nhân AI
 
-Use Engram through your agent first. The CLI exists, but the best experience is: ask the agent to load memory, do the work, then propose durable memory when something useful emerges.
+## Phe duyet trong chat AI
 
-## AI-agent chat approval
+Trong chat voi tac nhan AI, phe duyet Engram la dang hoi dap. Tac nhan truoc tien hien thi cac ung vien da duoc bien tap `TYPE: ... | TEXT: ...`, va voi rule thi kem theo cac bien the Light/Balanced/Strict. Tra loi `yes` de luu dung cac ung vien do, `audit` de sua lai, hoac `cancel` de dung. Sau `yes`, tac nhan dung `engram save-session --force` voi chinh cac ung vien da duoc phe duyet. Cac lan luu truc tiep tren CLI van dung A/B/C tru khi lenh accept-all da duoc goi ro rang.
 
-In AI-agent chat, Engram approval is conversational. The agent shows refined `TYPE: ... | TEXT: ...` candidates first, including Light/Balanced/Strict variants for rules. Reply `yes` to save the exact candidates, `audit` to revise them, or `cancel` to stop. After `yes`, the agent uses `engram save-session --force` with the exact approved candidates. Direct terminal CLI saves still use A/B/C unless a force command was explicitly invoked.
 
-## First message in a new session
+Hãy sử dụng Engram thông qua tác nhân AI trước tiên. Mặc dù giao diện dòng lệnh (CLI) có sẵn, nhưng trải nghiệm tốt nhất là: yêu cầu tác nhân AI tải bộ nhớ, thực hiện công việc, sau đó đề xuất ghi nhận bộ nhớ bền vững khi có thông tin hữu ích xuất hiện.
 
-Ask:
+## Tin Nhắn Đầu Tiên Trong Một Phiên Làm Việc Mới
 
-```text
-Use Engram for this task. Load memory for: <what we are doing>.
-```
-
-If slash adapters are installed:
+Hãy hỏi tác nhân AI:
 
 ```text
-/engram load "<current task>"
+Hãy dùng Engram cho tác vụ này. Tải bộ nhớ cho: <chủ đề chúng ta đang thực hiện>.
 ```
 
-The agent should reply with a compact count line by default, such as `Engram loaded: 8 memories / 24 total related memories.` With slash adapters, `load` is the agent-facing route.
+Nếu các bộ điều hợp lệnh slash đã được cài đặt:
 
-When an agent needs a self-contained Engram usage guide, run:
+```text
+/engram load "<tác vụ hiện tại>"
+```
+
+Tác nhân AI chỉ nên tóm tắt các mã định danh bộ nhớ (IDs) và các quy tắc liên quan, chứ không dán toàn bộ nội dung của từng tệp tin vào cửa sổ chat.
+
+Khi tác nhân cần một hướng dẫn sử dụng Engram độc lập, hãy chạy:
 
 ```bash
 engram llm
 ```
 
-This prints the packaged `llm.txt` guide and does not require `engram inject`.
+Lệnh này sẽ in hướng dẫn `llm.txt` được đóng gói sẵn và không yêu cầu `engram inject`.
 
-## Recommended setup conversation
 
-Ask the agent:
+## Đoạn Hội Thoại Thiết Lập Được Đề Xuất
+
+Yêu cầu tác nhân AI:
 
 ```text
-Inject Engram memory routing for this workspace, configure it, and connect this agent.
+Hãy khởi tạo Engram cho không gian làm việc này, cài đặt bộ kỹ năng (skillset) phù hợp cho tác nhân AI này, và cho tôi biết tôi nên dùng lệnh nào tiếp theo.
 ```
 
-The agent will suggest running:
-
-```bash
-engram entry
-```
-
-To configure memory and link AI agents in a clean web UI. Under the hood, to initialize the workspace:
+Tác nhân AI có thể chạy:
 
 ```bash
 engram inject
+engram help link
+engram link <tên-tác-nhân-ai>
 ```
 
-To link the same agent globally, so new workspaces can load Engram global memory without running `engram inject` first:
+Để cấu hình tác nhân đó trên toàn cục (globally), giúp các không gian làm việc mới có thể tải bộ nhớ toàn cục Engram mà không cần chạy `engram inject` trước tiên:
 
 ```bash
-engram link --global <agent-name>
+engram link --global <tên-tác-nhân-ai>
 ```
 
-For chat-native use, ask:
+
+Để sử dụng trực tiếp trong chat, hãy hỏi:
 
 ```text
-Install slash support so I can use /engram directly from this agent.
+Hãy cài đặt hỗ trợ lệnh slash để tôi có thể sử dụng lệnh /engram trực tiếp từ tác nhân AI này.
 ```
 
-## Daily loop
+## Vòng Lặp Hằng Ngày
 
-Start:
+Bắt đầu:
 
 ```text
-/engram load "current task"
+/engram load "tác vụ hiện tại"
 ```
 
-During work:
+Trong lúc làm việc:
 
 ```text
-/engram search "topic I might be missing"
+/engram search "chủ đề tôi có thể đang thiếu sót"
 ```
 
-When the agent learns one durable fact:
+Khi tác nhân AI học được một sự thật bền vững:
 
 ```text
 /engram save knowledge
 ```
 
-When the session produced several useful rules, facts, or workflows:
+Khi phiên làm việc tạo ra nhiều quy tắc, sự thật hoặc quy trình làm việc hữu ích:
 
 ```text
 /engram save-session
 ```
 
-Short form:
+Dạng viết tắt:
 
 ```text
 /engram ss
 ```
 
-To include recent chat history the agent can actually access:
+Để bao gồm lịch sử chat gần đây mà tác nhân AI thật sự có thể truy cập:
 
 ```text
 /engram save-session --query-level 3
 ```
 
-`--query-level` must be a positive integer. The agent may use up to that many recent human-agent chat sessions, including the current one, and must not invent unavailable history.
+`--query-level` phải là một số nguyên dương. Tác nhân AI chỉ được dùng tối đa số phiên chat gần đây đó, bao gồm phiên hiện tại, và không được bịa ra lịch sử không thể truy cập.
 
-Force shortcut only when you truly mean it:
+Lối tắt phê duyệt toàn bộ (accept-all) chỉ khi bạn thực sự muốn sử dụng nó:
 
 ```text
 /engram ss -f
 ```
 
-`-f` means the human explicitly approves every agent-recommended candidate. Agents must not add it by themselves.
+`-f` có nghĩa là con người phê duyệt rõ ràng cho mọi ứng viên được tác nhân AI đề xuất. Các tác nhân AI không được tự ý thêm cờ này vào lệnh.
 
-To mine recent accessible chats and force-save generated candidates in one request:
+Để khai thác các chat gần đây có thể truy cập và phê duyệt toàn bộ ứng viên được tạo trong một yêu cầu:
 
 ```text
 /engram ss -f last 50 sessions
 ```
 
-That normalizes to `engram save-session --query-level 50 --force`.
+Lệnh này được chuẩn hóa thành `engram save-session --query-level 50 --force`.
 
-## Import existing knowledge
+## Nhập Kiến Thức Hiện Có (Import)
 
-For a repo that already has `AGENTS.md`, `CLAUDE.md`, Cursor rules, notes, or docs:
+Đối với một kho lưu trữ đã có sẵn các tệp `AGENTS.md`, `CLAUDE.md`, các quy tắc Cursor, ghi chú hoặc tài liệu khác:
 
 ```text
 /engram take-control --plan
 /engram take-control --all
 ```
 
-Use `--plan` first when you want to see selected files, skipped files, token estimates, and likely memory types.
+Hãy sử dụng `--plan` trước tiên khi bạn muốn xem danh sách các tệp được chọn, tệp bị bỏ qua, ước tính số lượng token và loại bộ nhớ dự kiến.
 
-## Global memory
+## Bộ Nhớ Toàn Cục (Global Memory)
 
-Use global memory for preferences that should follow you across repos:
+Sử dụng bộ nhớ toàn cục cho các tùy chọn ưu tiên đi theo bạn xuyên suốt các kho lưu trữ:
 
 ```text
-Set up global Engram memory at <path>, then save this preference globally:
-Use pnpm for package management.
+Thiết lập bộ nhớ toàn cục Engram tại <đường_dẫn>, sau đó lưu tùy chọn này trên toàn cục:
+Sử dụng pnpm để quản lý gói (package management).
 ```
 
-The agent may use:
+Tác nhân AI có thể sử dụng:
 
 ```bash
-engram inject --global-only --global-path <path>
-engram save --scope global "Use pnpm for package management."
-engram link --global <agent-name>
+engram inject --global-only --global-path <đường_dẫn>
+engram save --scope global "Sử dụng pnpm để quản lý gói."
+engram link --global <tên-tác-nhân-ai>
 ```
 
-When inject sees configured global memory, it creates or selects a user default profile for that global root so future workspaces can reuse it.
+Khi inject phát hiện bộ nhớ toàn cục đã được cấu hình, nó sẽ tạo hoặc chọn một profile người dùng mặc định cho thư mục gốc toàn cục đó để các không gian làm việc trong tương lai có thể tái sử dụng.
 
-## Keep it healthy
 
-Ask the agent at the end of meaningful work:
+## Giữ Cho Bộ Nhớ Luôn Khỏe Mạnh
+
+Hãy hỏi tác nhân AI vào cuối những phiên làm việc có ý nghĩa:
 
 ```text
-Check Engram health, report invalid memories, and propose anything worth saving from this session.
+Hãy kiểm tra sức khỏe Engram, báo cáo các bộ nhớ không hợp lệ và đề xuất những nội dung đáng lưu lại từ phiên làm việc này.
 ```
 
-Useful commands:
+Các lệnh hữu ích:
 
 ```bash
 engram upgrade
 engram upgrade --plan
 engram verify
 engram repair
-engram graph "<topic>"
+engram graph "<chủ đề>"
 engram quality-check
-engram archive --reason "<why>" <id-or-file>
+engram archive --reason "<lý do>" <id-hoặc-tên-tệp>
 ```
 
-## Next steps
 
-- [Daily workflow](daily-workflow.md)
-- [Install and configure](install.md)
-- [Human-owned protocol](concepts/protocol.md)
+Tiếp theo: [Giao thức bộ nhớ do con người sở hữu](concepts/write-path.md).
+

@@ -1,14 +1,14 @@
 ---
-title: Perfiles y resolución de alcance
+title: Profiles and scope resolution
 sidebar_position: 4
-description: Los perfiles aíslan las raíces de la memoria global para contextos de empresa, equipo y personales.
+description: Profiles isolate global memory roots for company, team, and personal contexts.
 ---
 
-# Perfiles y resolución de alcance
+# Profiles and scope resolution
 
-Los perfiles aíslan las raíces de la memoria global para contextos de empresa, equipo y personales. Evitan que la memoria del cliente, de la empresa y la personal se filtren a través de los límites.
+Profiles isolate global memory roots for company, team, and personal contexts. They keep client, company, and personal memory from leaking across boundaries.
 
-## Crear y cambiar perfiles
+## Create and switch profiles
 
 ```bash
 engram profile create personal --global-path ~/Documents/engram-personal --use
@@ -16,28 +16,28 @@ engram profile use company --workspace
 engram profile merge personal company --dry-run
 ```
 
-## Orden de resolución
+## Resolution order
 
-El orden de resolución del perfil es:
+Profile resolution order is:
 
-1. `--profile` explícito o `ENGRAM_PROFILE`
-2. El `default_profile` del espacio de trabajo
-3. El perfil de usuario activo
+1. Explicit `--profile` or `ENGRAM_PROFILE`
+2. The workspace `default_profile`
+3. The active user profile
 
-Si el espacio de trabajo `W` está fijado al perfil `B` mientras que el predeterminado del usuario sigue siendo el perfil `A`, cada carga normal, carga MCP e inyección de hook de agente para `W` lee la memoria global del perfil `B` y nunca la del perfil `A`. Un perfil explícito diferente del predeterminado del espacio de trabajo utiliza la memoria global de ese perfil y deshabilita la memoria del espacio de trabajo para ese comando.
+If workspace `W` is pinned to profile `B` while the user default remains profile `A`, every normal load, MCP load, and agent-hook injection for `W` reads profile `B` global memory and never profile `A`. An explicit profile different from the workspace default uses that profile's global memory and disables workspace memory for that command.
 
-## Cuándo usar perfiles
+## When to use profiles
 
-- Memoria personal que nunca debería llegar a un repositorio de cliente
-- Memoria de la empresa que nunca debería llegar a un repositorio personal
-- Memoria aislada del cliente para consultores que trabajan en varios compromisos
-- Memoria compartida del equipo que no debería filtrarse en experimentos individuales
+- Personal memory that should never reach a client repo
+- Company memory that should never reach a personal repo
+- Client-isolated memory for consultants working across engagements
+- Team-shared memory that should not bleed into individual experiments
 
-## Alternativa de base de datos de configuración SQLite
+## SQLite config DB fallback
 
-La base de datos de configuración SQLite de Engram es una optimización para la gestión de espacios de trabajo/perfiles. Si la base de datos no se puede abrir o inicializar, los comandos normales de lectura/escritura recurren a instantáneas de configuración JSON. Los comandos específicos de la base de datos informan que SQLite no está disponible en lugar de bloquear el uso normal de la memoria.
+Engram's SQLite config DB is an optimization for workspace/profile management. If the DB cannot be opened or initialized, normal read/write commands fall back to JSON config snapshots. DB-specific commands report SQLite as unavailable instead of blocking normal memory use.
 
-## Siguientes pasos
+## Next steps
 
-- [Memoria de espacio de trabajo frente a memoria global](scopes.md)
-- [Ruta de escritura y aprobación](write-path.md)
+- [Workspace vs global memory](scopes.md)
+- [Write path and approval](write-path.md)

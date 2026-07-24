@@ -1,63 +1,52 @@
 ---
-title: Memories tab
-sidebar_position: 6
-description: Inspect the memory graph, preview memories, edit, and archive.
+title: Memories タブ (メモリ)
+sidebar_position: 8
+description: メモリグラフの検査、メモリのプレビュー、編集、アーカイブを行います。
 ---
 
 import RiskCallout from '@site/src/components/RiskCallout';
 
-# Memories tab
+# Memories タブ
 
-The Memories tab inspects active memory, explores its graph, and performs maintenance actions.
+Memories タブは、保存されたメモリ同士のグラフ構造を分析し、個別の維持管理タスクを実行します。
 
-## Search
+## スコープチップ (Scope chips)
 
-Use the search field to match text anywhere in each Markdown memory file. The search is case-insensitive and works together with the scope and type filters.
+メモリソース基準グラフフィルターを使用して、ワークスペース用のメモリとグローバル用のメモリを比較します。グラフ構造が非常に複雑で視覚的にわかりにくい場合は、現在のワークスペースのみの条件から始めてください。
 
-The search mode menu has two options:
+## タイプチップ (Type chips)
 
-- **Text matches only** shows memories whose file content or metadata directly matches the query.
-- **Text matches + related memories** also shows connected dependency, duplicate, and semantic memories.
+ルール、スキル、または一般知識など、メモリタイプごとにフィルターして詳細にスキャンします。
 
-Clear the field to restore the full graph for the selected filters.
+## 意味論的リンクの切り替え
 
-## Scope chips {#scope-chips}
+意味論的なつながりを示すグラフのエッジを表示または非表示にします。構造が非常に複雑に絡み合っている場合は、トグルをオフにしてください。
 
-Filter the graph by memory source. Compare workspace vs global memory. Start with the current workspace only when the graph feels noisy.
+## リロード / 再構築
 
-## Type chips {#type-chips}
+手動での編集、インポート、アーカイブ、または設定変更を行った後は、グラフデータをリロードするか再構築してください。
 
-Filter the graph by memory type. Inspect rules, skills, or knowledge separately.
+## メモリ内容のプレビュー
 
-## Semantic links toggle {#semantic-links-toggle}
-
-Shows semantic graph edges. Turn off when the graph is visually noisy.
-
-## Refresh / rebuild
-
-Reloads or rebuilds graph data. Use after edits, imports, archive actions, or config changes.
-
-## Memory preview
-
-Reads selected memory content. Useful to audit what the agent will receive.
+選択された個別のメモリ本文テキストを読み込み、エージェントが実際に受け取る最終的な形式を事前に監査できます。
 
 <RiskCallout level="caution">
-Sensitive local content may be visible in the browser. Treat the panel as open while previewing.
+機密性の高いローカルコンテンツがブラウザに表示される場合があります。プレビューを使用する際は、画面のセキュリティに注意してください。
 </RiskCallout>
 
-## Edit memory
+## メモリの編集
 
-Opens the file in an editor and copies the path. Use for manual correction or review. The source of truth is the Markdown file.
+該当の Markdown ファイルをエディタで開き、パスをコピーします。手動での修正や確認に使用します。元のファイルは常にローカルの Markdown ファイルです。
 
-## Archive memory
+## メモリのアーカイブ (保管処理)
 
-Removes memory from active routing while preserving it under `archive/`. Use archive, not delete, for auditability.
+メモリをランタイムのルーティングから除外しますが、物理的に削除するのではなく `archive/` 下にアカイビング保存します。履歴監査を容易にするため、削除ではなくアーカイブを使用してください。
 
 <RiskCallout level="caution">
-Archiving changes routing immediately. Use archive, not manual deletion, so history is preserved.
+アーカイブを行うと、すぐにルーティングが変更されます。履歴を保護するため、手動による削除ではなくアーカイブを使用してください。
 </RiskCallout>
 
-## CLI equivalent
+## CLI 等価コマンド
 
 ```bash
 engram graph "<topic>"
@@ -65,7 +54,7 @@ engram quality-check
 engram archive --reason "<why>" <id-or-file>
 ```
 
-## Next steps
+## 次のステップ
 
-- [Maintain tab](core.md)
-- [CLI: verify / repair / quality-check](../cli/verify-repair-quality.md)
+- [Core タブ](core.md)
+- [Runtime タブ](runtime.md)

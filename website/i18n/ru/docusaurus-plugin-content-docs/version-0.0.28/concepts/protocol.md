@@ -1,111 +1,123 @@
 ---
-title: Human-owned memory protocol
+title: "Принадлежащий человеку протокол памяти"
 sidebar_position: 1
-description: Engram is a protocol that makes AI agent memory inspectable, portable, and governed by humans.
+description: "Engram — это протокол, который делает память ИИ-агента проверяемой, переносимой и управляемой людьми."
 ---
 
-# Human-owned memory protocol
+# Понимание Engram
 
-Engram is not just "agent memory." It is a protocol that makes memory inspectable, portable, and governed by humans.
+Прочтите это перед изучением руководства по командам. Engram полезен тем, кто именно владеет памятью, а не количеством поддерживаемых команд.
 
-## The contract
+## Модель в одном предложении
 
-- Markdown is durable memory.
-- JSON index and graph files are acceleration layers.
-- Approval is the trust boundary.
-- Hashes are integrity checks.
-- Ignore rules are privacy controls.
-- Git is portability and audit history.
-- Agent adapters are convenience, not authority.
+Engram — это файловый протокол, который позволяет ИИ-агентам использовать долговечную память, в то время как человек решает, что именно становится долговечным.
 
-Agents can suggest memory, but humans own what becomes memory.
+## Что такое Engram
 
-## One-sentence model
+Engram — это центр памяти знаний для хранения:
 
-Engram is a file protocol that lets AI agents use durable memory while humans decide what becomes durable.
+- правил проекта
+- командных решений
+- повторяющихся рабочих процессов (workflows)
+- долговечных фактов
+- личных предпочтений, переносимых между проектами
 
-## What Engram is
+Память хранится в виде обычных файлов Markdown. Индекс, граф, хэши и файлы адаптеров существуют исключительно для того, чтобы сделать работу с этим Markdown удобнее и безопаснее.
 
-Engram is a knowledge memory center for:
+## Чем Engram не является
 
-- project rules
-- team decisions
-- repeatable workflows
-- durable facts
-- personal preferences that should travel across projects
+Engram — это НЕ:
 
-The memory is plain Markdown. The index, graph, hashes, and adapter files exist to make that Markdown easier and safer to use.
+- скрытый мозг агента
+- закрытое хранилище памяти, принадлежащее вендору
+- замена проектной документации
+- векторная база данных, претендующая на роль абсолютной истины
+- автоматический регистратор, сохраняющий всё подряд навсегда
 
-## What Engram is not
+Агенты могут предлагать элементы памяти. Люди одобряют, отклоняют, редактируют, архивируют и владеют памятью.
 
-Engram is not:
+## Ключевое обещание
 
-- a hidden brain for an agent
-- a vendor-owned memory silo
-- a replacement for project documentation
-- a vector database pretending to be authority
-- an automatic recorder that saves everything forever
+Engram стремится сделать память ИИ:
 
-Agents may suggest memory. Humans approve, reject, edit, archive, and own memory.
+- доступной для проверки: вы можете читать её в любом текстовом редакторе
+- переносимой: вы можете синхронизировать её через Git и использовать с разными агентами
+- исправляемой: неверная память может быть архивирована с указанием причины, вместо того чтобы незаметно портить будущую работу
+- приватной по умолчанию: правила исключения (ignore rules) и барьеры одобрения предотвращают случайный захват данных
+- простой по дизайну: файлам Markdown доверять проще, чем невидимому состоянию платформы
 
-## The core promise
+## Уровни системы
 
-Engram tries to make AI memory:
-
-- **reviewable**: you can read it in a normal editor
-- **portable**: you can sync it with Git and use it across agents
-- **correctable**: wrong memory can be archived instead of silently haunting future work
-- **private by default**: ignore rules and approval gates stop accidental capture
-- **boring on purpose**: Markdown is easier to trust than invisible platform state
-
-## The layers
-
-| Layer | Meaning |
+| Уровень | Значение |
 | --- | --- |
-| Markdown | durable source of truth |
-| JSON index | fast lookup layer |
-| JSON graph | topic and relationship routing layer |
-| Hashes | integrity checks |
-| Approval | trust boundary before writes |
-| Ignore rules | privacy controls |
-| Git | history, portability, review, recovery |
-| Agent adapters | convenience layer for Codex, Claude, Cursor, Gemini, and other agents |
+| Markdown | Долговечный источник истины (source of truth) |
+| JSON index | Слой быстрого поиска |
+| JSON graph | Слой маршрутизации по темам и взаимосвязям |
+| Hashes | Проверка целостности данных |
+| Approval | Граница доверия перед записью |
+| Ignore rules | Контроль приватности |
+| Git | История изменений, переносимость, рецензирование и восстановление |
+| Agent adapters | Слой удобства для Codex, Claude, Cursor, Gemini и других агентов |
 
-Generated JSON helps agents find memory faster, but it is not the authority. If generated files disagree with Markdown, Markdown wins.
+Сгенерированные файлы JSON помогают агентам быстрее находить память, но они не являются первоисточником. Если сгенерированные файлы расходятся с Markdown, Markdown имеет приоритет.
 
-Memory files may declare `depends_on: [...]` in frontmatter when one rule, skill, or knowledge item needs another as a prerequisite. The graph derives foundation-to-deep layers from those dependencies, and default `engram load` keeps prerequisites before dependent memories inside the compact agent-facing route. SessionStart hooks call that routed load path at startup and inject only changed context, while prompt-turn hooks reuse or skip unchanged routes.
+## Жизненный цикл памяти
 
-## Memory lifecycle
+1. Сессия, файл или заметка человека содержат полезные знания.
+2. Агент предлагает лаконичные кандидаты в память.
+3. Человек одобряет все, выбирает часть, добавляет примечание или отклоняет предложения.
+4. Engram записывает утвержденную память в Markdown.
+5. Engram обновляет хэши, индекс, граф и журнал изменений (changelog).
+6. Будущие агенты загружают только ту память, которая относится к текущей задаче.
+7. Если память становится неверной, Engram архивирует её с указанием причины.
 
-1. A session, file, or human note contains useful knowledge.
-2. An agent proposes concise memory candidates.
-3. A human approves all, selects some, adds a note, or rejects them.
-4. Engram writes approved Markdown memory.
-5. Engram refreshes hashes, index, graph, and changelog.
-6. Future agents load only the memory relevant to the current task.
-7. If memory becomes wrong, Engram archives it with a reason.
+Этот жизненный цикл поддерживает память в актуальном состоянии, не делая её скрытой.
 
-This lifecycle keeps memory active without making it invisible.
+## Человек, Агент, Engram, Git
 
-## Human, Agent, Engram, Git
-
-| Actor | Role |
+| Действующее лицо | Роль |
 | --- | --- |
-| Human | chooses what becomes durable memory |
-| Agent | notices patterns and proposes candidates |
-| Engram | enforces schema, safety, routing, approval, and maintenance |
-| Git | carries memory between machines and gives review history |
+| Человек | Решает, что становится долговечной памятью |
+| Агент | Замечает паттерны и предлагает кандидатов |
+| Engram | Следит за схемой, безопасностью, маршрутизацией, одобрением и обслуживанием |
+| Git | Переносит память между машинами и хранит историю изменений |
 
-The agent is helpful, but the agent is not the owner.
+Агент помогает, но не владеет памятью.
 
-## Why not only built-in agent memory
+## Хорошая память
 
-Built-in memory is convenient, but it can be hard to inspect, diff, export, share, or correct. It often belongs to one app or account.
+Хорошая память в Engram:
 
-Engram makes the durable layer visible. Built-in memory can still help, but Engram should be the owned source when the knowledge matters.
+- достаточно стабильна, чтобы иметь значение на следующей неделе
+- достаточно конкретна, чтобы её можно было маршрутизировать позже
+- достаточно коротка, чтобы поместиться в контекст агента
+- достаточно безопасна, чтобы делиться ею в рамках выбранной области видимости
+- написана как правило (rule), навык (skill) или элемент знаний (knowledge)
 
-## Next steps
+Плохая память — это временный шум чата, секреты, учетные данные, сиюминутные предположения или факты, которые никто не утверждал.
 
-- [Memory types](memory-types.md)
-- [Read path and routing](read-path.md)
-- [Write path and approval](write-path.md)
+## Область видимости (Scope)
+
+Память проекта (workspace) хранится в:
+
+```text
+<project>/.agents/.engram/
+```
+
+Глобальная память опциональна и хранится там, где укажет пользователь.
+
+Память проекта приоритетна. Глобальная память используется для переносимых настроек, личных привычек или дефолтных правил команды для всех репозиториев.
+
+## Почему не использовать только встроенную память агента?
+
+Встроенная память удобна, но её трудно проверить, сравнить (diff), экспортировать, передать или исправить. Часто она привязана к одному приложению или аккаунту.
+
+Engram делает долговечный слой видимым. Встроенная память всё ещё может помогать, но Engram должен быть основным контролируемым источником, когда знания имеют значение.
+
+## Известные ограничения
+
+Поиск Engram по умолчанию — это детерминированный лексический поиск. `engram search --semantic` добавляет детерминированное локальное сходство слов, а не семантический поиск на основе нейросетевых эмбеддингов. Векторы графа — это локальные хэшированные векторы слов. Обнаружение противоречий носит рекомендательный характер. Настройки шифрования существуют, но зашифрованное хранилище пока не реализовано.
+
+Эти ограничения заявлены открыто. Engram стремится честно сообщать пользователям, что работает уже сегодня, а что является планом на будущее.
+
+Далее: [Быстрый старт для ИИ-агента](../quickstart.md).

@@ -1,18 +1,18 @@
 ---
-title: Release and upgrade process
+title: Quy trình phát hành và nâng cấp
 sidebar_position: 2
-description: Upgrade Engram packages and reconcile memory roots safely.
+description: Nâng cấp các gói Engram và đối chiếu các gốc bộ nhớ một cách an toàn.
 ---
 
-# Release and upgrade process
+# Quy trình phát hành và nâng cấp
 
-## After an npm package update
+## Sau khi cập nhật gói npm
 
-The next normal Engram command quietly reconciles already-initialized workspace/global roots once for the new version. This covers release-to-release memory schema changes from v0.0.8 onward by refreshing generated help, memory indexes, graph files, and eligible vector sidecars when older metadata is detected.
+Lệnh Engram thông thường tiếp theo sẽ âm thầm đối chiếu các gốc workspace/global đã khởi tạo một lần cho phiên bản mới. Điều này bao gồm các thay đổi lược đồ bộ nhớ từ phiên bản này sang phiên bản khác từ v0.0.8 trở đi bằng cách làm mới trợ giúp được tạo, chỉ mục bộ nhớ, tệp đồ thị và các vector sidecar đủ điều kiện khi phát hiện siêu dữ liệu cũ hơn.
 
-The startup check is intentionally cheap after the first run: it only reads small config markers when the current version is already recorded. It does not run from npm postinstall, create new memory roots, or replace human-authored files. Use `--no-auto-upgrade` or `ENGRAM_NO_AUTO_UPGRADE=1` to skip it for a command.
+Kiểm tra khi khởi động cố ý được tối ưu hóa rất nhẹ sau lần chạy đầu tiên: nó chỉ đọc các dấu hiệu cấu hình nhỏ khi phiên bản hiện tại đã được ghi nhận. Nó không chạy từ npm postinstall, tạo gốc bộ nhớ mới hoặc thay thế các tệp do con người viết. Sử dụng `--no-auto-upgrade` hoặc `ENGRAM_NO_AUTO_UPGRADE=1` để bỏ qua thao tác này cho một lệnh.
 
-## Explicit upgrade
+## Nâng cấp rõ ràng
 
 ```bash
 engram upgrade
@@ -20,21 +20,21 @@ engram upgrade --plan
 engram upgrade --latest
 ```
 
-`engram upgrade` refreshes generated workspace help, memory indexes, graph files, eligible vector sidecars, existing Engram-generated workspace skillset files, and registered global skillsets while preserving human-authored files.
+Lệnh `engram upgrade` làm mới các trợ giúp workspace được tạo, chỉ mục bộ nhớ, tệp đồ thị, các vector sidecar đủ điều kiện, các tệp skillset workspace do Engram tạo hiện có và các skillset toàn cục đã đăng ký trong khi vẫn giữ nguyên các tệp do con người tự viết.
 
-`engram upgrade --latest` is stronger: it overwrites current Engram-managed linked agent artifacts for already-linked workspace agents and registered global installs, including instruction files, rules, MCP/plugin config, and managed hooks, so linked hosts pick up the new package output immediately.
+Lệnh `engram upgrade --latest` mạnh mẽ hơn: nó ghi đè lên các bản cấu phần agent liên kết được quản lý bởi Engram hiện tại cho các agent workspace đã liên kết và các lượt cài đặt toàn cục đã đăng ký, bao gồm các tệp hướng dẫn, quy tắc, cấu hình MCP/plugin và các hook được quản lý, để các host liên kết nhận được gói đầu ra mới ngay lập tức.
 
-Use `--force` only when replacing generated Engram adapter files intentionally.
+Chỉ sử dụng `--force` khi có chủ ý thay thế các tệp bộ điều hợp Engram được tạo.
 
-## Skillset render profiles
+## Hồ sơ kết xuất bộ kỹ năng (Skillset render profiles)
 
-For runtime-capable hosts, Engram installs small bootstrap instructions instead of the full protocol. Hooks provide routed task context, MCP tools provide load/search/proposal behavior, and slash adapters or Agent Skills carry detailed command workflows. Fallback targets without reliable runtime context injection still receive compact manual instructions.
+Đối với các host hỗ trợ chạy thực thi (runtime-capable), Engram sẽ cài đặt các hướng dẫn bootstrap nhỏ thay vì toàn bộ giao thức. Các hook cung cấp ngữ cảnh tác vụ được định tuyến, công cụ MCP cung cấp hành vi tải/tìm kiếm/đề xuất và các bộ điều hợp slash hoặc Agent Skills mang lại các quy trình lệnh chi tiết. Các mục tiêu dự phòng không có chèn ngữ cảnh thời gian chạy đáng tin cậy vẫn sẽ nhận được hướng dẫn thủ công nhỏ gọn.
 
-## SQLite config DB fallback
+## Cơ chế dự phòng cơ sở dữ liệu SQLite config
 
-Engram's SQLite config DB is an optimization for workspace/profile management. If the DB cannot be opened or initialized, normal read/write commands fall back to JSON config snapshots. DB-specific commands report SQLite as unavailable instead of blocking normal memory use.
+Cơ sở dữ liệu cấu hình SQLite của Engram là một tối ưu hóa cho việc quản lý workspace/profile. Nếu cơ sở dữ liệu không thể mở hoặc khởi tạo, các lệnh đọc/ghi bình thường sẽ tự động chuyển sang sử dụng các ảnh chụp nhanh cấu hình JSON (JSON config snapshots). Các lệnh đặc thù của cơ sở dữ liệu sẽ báo cáo SQLite không khả dụng thay vì chặn việc sử dụng bộ nhớ thông thường.
 
-## Next steps
+## Bước tiếp theo
 
-- [Troubleshooting](troubleshooting.md)
+- [Khắc phục sự cố](troubleshooting.md)
 - [CLI: inject / link / upgrade](../cli/inject-link-upgrade.md)

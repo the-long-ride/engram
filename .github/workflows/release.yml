@@ -25,7 +25,7 @@ jobs:
       id-token: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Verify tag matches package version
         run: node scripts/check-release-version.mjs "${{ github.ref_name }}"

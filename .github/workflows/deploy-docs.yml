@@ -42,7 +42,7 @@ jobs:
       - name: Verify field docs coverage
         working-directory: website
         run: pnpm check:entry-fields
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: website/build
   deploy:

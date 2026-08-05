@@ -1,17 +1,34 @@
 # Dependencies
 node_modules/
+.pnpm-store/
+.npm-cache/
 
-# Build output
+# Build and export outputs
 dist/
+build/
+out/
 coverage/
+*.lcov
 *.tsbuildinfo
+.docusaurus/
+.cache-loader/
+.vite/
+.turbo/
 
-# npm artifacts
+# Playwright & Testing artifacts
+.playwright-mcp/
+playwright-report/
+test-results/
+.nyc_output/
+
+# npm / yarn / pnpm / bun artifacts & logs
 *.tgz
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+.pnpm-debug.log*
 
 # Local Engram runtime data created while testing the CLI
 .agents/.engram/
@@ -26,15 +43,22 @@ pnpm-debug.log*
 
 # Editor and OS files
 .idea/
+.vscode/*
+!.vscode/tasks.json
+!.vscode/launch.json
 *.swp
 *.swo
 .DS_Store
 Thumbs.db
+ehthumbs.db
+Desktop.ini
 
 # Temporary files
 tmp/
 temp/
 .cache/
+*.tmp
+*.bak
 
 # Documentation
 *blueprint-*.md
@@ -57,7 +81,6 @@ AGENTS.md
 
 # engram
 docs/superpowers/
-.pnpm-store/
 
 # local agent working state (goal tracking, plans)
 .opencode/

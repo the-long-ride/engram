@@ -290,6 +290,11 @@
   flex-direction: column;
   gap: 12px;
 }
+.core-prompt-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
 .core-prompt-body p,
 .core-empty {
   color: var(--g700);

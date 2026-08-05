@@ -788,7 +788,7 @@ export interface CorePanelData {
     resolveDuplicates: string;
     metacognize: string;
   };
-  warning: string;
+  warning?: string;
 }
 
 type PanelMemoryEntry = MemoryEntry & {
@@ -926,7 +926,9 @@ export async function apiCoreData(
     duplicates,
     relationship: coreRelationshipData(activeProfile, ctx.graph.nodes, ctx.graph.edges, duplicates),
     prompts: corePrompts(filter, duplicates),
-    warning: 'Duplicate resolution and metacognition can consume more tokens than regular Engram operations. Use a strong AI model and review proposed UPDATE or archive actions before saving.'
+    ...(duplicates.length
+      ? { warning: 'Duplicate resolution and metacognition can consume more tokens than regular Engram operations. Use a strong AI model and review proposed UPDATE or archive actions before saving.' }
+      : {})
   };
 }
 

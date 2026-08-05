@@ -8,6 +8,6 @@ module.exports = {
     '^(\\.{1,2}/.*)\\.js$': '$1',
   },
   transform: {
-    '^.+\\.tsx?$': '<rootDir>/tests/jest-esbuild-transform.cjs',
+    '^.+\\.tsx?$': ['babel-jest', { configFile: './babel.config.test.json' }],
   },
 };

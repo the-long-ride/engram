@@ -53,6 +53,7 @@ export function reviewPreview(id: string, memoryIds: string[] = []): Promise<Api
   return getJson(`/api/review/preview?${params.toString()}`);
 }
 export function reviewWrite(body: { proposal: string; scope: 'workspace' | 'global'; relations: Array<{ id: string; reason: 'DEPENDS_ON' | 'UPDATE' }>; confirmed: true }): Promise<ApiResult> { return postJson('/api/review/write', body); }
+export function reviewDismiss(ids: string[]): Promise<ApiResult> { return postJson('/api/review/dismiss', { ids }); }
 export function policyStatus(): Promise<ApiResult> { return getJson('/api/policy'); }
 export function savePolicyPatch(patch: Record<string, unknown>): Promise<ApiResult> { return postJson('/api/policy', { patch }); }
 export function capabilities(): Promise<ApiResult> { return getJson('/api/capabilities'); }

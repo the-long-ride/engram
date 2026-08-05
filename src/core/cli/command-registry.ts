@@ -14,7 +14,7 @@ export const HELP_DATA: HelpSection[] = [
       { command: 'engram profile status|list|create|use|merge', alias: 'pf', purpose: 'Manage isolated global memory profiles for company, personal, or team contexts' },
       { command: 'engram update-global-folder <new-path> [--move-from-path path]', alias: 'ugf', purpose: 'Update the configured global memory folder and optionally move an old global root' },
       { command: 'engram completion [bash|zsh|powershell]', alias: 'c', purpose: 'Generate shell completion support for Tab suggestions' },
-      { command: 'engram upgrade [--plan] [--latest] [--self] [--memory-only|--global-skillsets-only] [--target agent]', alias: 'up', purpose: 'Recommend package update and refresh generated help, indexes, graphs, linked agent configs/hooks, global memory, and registered global agent skillsets' }
+      { command: 'engram upgrade [--plan] [--latest] [--self] [--memory-only|--global-skillsets-only|--configs-only] [--target agent]', alias: 'up', purpose: 'Recommend package update and refresh generated help, indexes, graphs, linked agent configs/hooks, detected agent configs, global memory, and registered global agent skillsets' }
     ]
   },
   {
@@ -66,7 +66,7 @@ export const HELP_DATA: HelpSection[] = [
       { command: 'engram resolve-conflicts [--dry-run] [--metacognize] [--force]', alias: 'rc', purpose: 'Preview or resolve Git conflicts in memory files, then optionally run workspace metacognition' },
       { command: 'engram install-hooks', alias: 'ih', purpose: 'Install local Git hooks for Engram integrity checks' },
       { command: 'engram agent-hook --host codex|claude|gemini', purpose: 'Internal JSON hook runtime used by installed agent hooks' },
-      { command: 'engram link [all|list|target] [--global] [--force] [--all-supported]', alias: 'l', purpose: 'Link Engram skillset, MCP config, slash adapters, and agent hooks to an AI agent' },
+      { command: 'engram link [all|list|target] [--global] [--force] [--all-supported] [--parent <id> --children <id>...]', alias: 'l', purpose: 'Link Engram skillset, MCP config, slash adapters, and agent hooks to an AI agent; with --parent/--children, bulk-link memory children to a parent via DEPENDS_ON' },
       { command: 'engram unlink [all|target] [--global] [--force]', purpose: 'Remove Engram skillset, MCP config, instruction content, and agent hooks from an AI agent' },
       { command: 'engram clone-memory workspace global [--force] [--dry-run] [--metacognize]', alias: 'cm', purpose: 'Clone active memory Markdown between workspace and global scopes; --metacognize uses save-session-style approval instead of raw file copy' },
       { command: 'engram sync', alias: 'sy', purpose: 'Sync global memory with Git remote and refresh enabled live-sync targets' },

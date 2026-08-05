@@ -22,6 +22,7 @@ export type SaveRelatedHint = {
   summary: string;
   score: number;
   action: 'suggested-dependency' | 'possible-duplicate';
+  declaredChild?: boolean;
 };
 
 export type SavePlan = {
@@ -43,7 +44,7 @@ export type SavePreviewOptions = {
 
 /** Choose whether each scope should add a new memory or update an existing one. */
 export async function planMemorySave(input: {
-  ctx: EngramContext; text: string; type: MemoryType; scopes: Scope[]; author: string; role?: string[]; context?: string; triggers?: string[]; dependsOn?: string[]; level?: string; updateId?: string; source?: MemorySourceMeta; taskType?: TaskType; variants?: Partial<Record<'light' | 'balanced' | 'strict', string>>; confidence?: Confidence;
+  ctx: EngramContext; text: string; type: MemoryType; scopes: Scope[]; author: string; role?: string[]; context?: string; triggers?: string[]; dependsOn?: string[]; level?: string; updateId?: string; parent?: string[]; source?: MemorySourceMeta; taskType?: TaskType; variants?: Partial<Record<'light' | 'balanced' | 'strict', string>>; confidence?: Confidence;
 }): Promise<SavePlan[]> {
   const plans: SavePlan[] = [];
   const options = { ruleVariants: true };
@@ -53,17 +54,23 @@ export async function planMemorySave(input: {
       ? await explicitMatch(input.ctx, input.updateId, input.type, scope)
       : await bestMatch(input.ctx, input.text, input.type, scope);
     if (explicitUpdate && !match) throw new Error(`UPDATE target not found for ${input.type} in ${scope}: ${input.updateId}`);
-    const related = relatedMemoryHints(input.ctx, input.text, input.type, scope, match?.entry);
+    const parentIds = normalizeParentRefs(input.parent ?? []);
+    const related = relatedMemoryHints(input.ctx, input.text, input.type, scope, match?.entry, parentIds);
     if (match) {
-      const content = updateMemory(match.raw, { text: input.text, type: input.type, scope, author: input.author, role: input.role, context: input.context, triggers: input.triggers, dependsOn: input.dependsOn, level: input.level, source: input.source, taskType: input.taskType, variants: input.variants, confidence: input.confidence }, options);
+      const content = updateMemory(match.raw, { text: input.text, type: input.type, scope, author: input.author, role: input.role, context: input.context, triggers: input.triggers, dependsOn: input.dependsOn, level: input.level, parent: input.parent, source: input.source, taskType: input.taskType, variants: input.variants, confidence: input.confidence }, options);
       plans.push({ action: 'update', scope, file: match.entry.file, id: match.entry.id, content, previousContent: match.raw, matchScore: match.score, related, message: `update ${input.type}: ${match.entry.id}` });
     } else {
-      const draft = draftMemory({ text: input.text, type: input.type, scope, author: input.author, role: input.role, context: input.context, triggers: input.triggers, dependsOn: input.dependsOn, level: input.level, source: input.source, taskType: input.taskType, variants: input.variants, confidence: input.confidence }, options);
+      const draft = draftMemory({ text: input.text, type: input.type, scope, author: input.author, role: input.role, context: input.context, triggers: input.triggers, dependsOn: input.dependsOn, level: input.level, parent: input.parent, source: input.source, taskType: input.taskType, variants: input.variants, confidence: input.confidence }, options);
       const unique = await avoidCollision(input.ctx, scope, draft, input.text);
       plans.push({ action: 'add', scope, file: unique.file, id: unique.id, content: unique.content, related, message: `add ${input.type}: ${unique.id}` });
     }
   }
   return plans;
+}
+
+/** Normalize parent/child references the same way depends_on refs are compared. */
+function normalizeParentRefs(ids: string[]): string[] {
+  return ids.map((ref) => normalizeRef(ref)).filter(Boolean);
 }
 
 /** Render the automatically chosen add/update plan for human approval. */
@@ -106,7 +113,7 @@ async function bestMatch(ctx: EngramContext, text: string, type: MemoryType, sco
   return best.score >= 0.25 && best.overlap >= 2 ? best : undefined;
 }
 
-function relatedMemoryHints(ctx: EngramContext, text: string, type: MemoryType, scope: Scope, exclude?: MemoryEntry): SaveRelatedHint[] {
+function relatedMemoryHints(ctx: EngramContext, text: string, type: MemoryType, scope: Scope, exclude?: MemoryEntry, parentIds: string[] = []): SaveRelatedHint[] {
   const index = ctx.scopeIndexes[scope];
   if (!index.entries.length) return [];
   const intent = inferTaskIntent(text);
@@ -119,6 +126,7 @@ function relatedMemoryHints(ctx: EngramContext, text: string, type: MemoryType, 
     semanticRelaxed: true
   }, ctx.graph).entries;
   const queryWords = words(text);
+  const declaredChildren = new Set(parentIds);
   return routed
     .filter((entry) => entry.scope === scope && !sameEntry(entry, exclude))
     .map((entry) => {
@@ -129,15 +137,26 @@ function relatedMemoryHints(ctx: EngramContext, text: string, type: MemoryType, 
     .filter((row) => row.score >= 0.08 && row.overlap >= 1)
     .sort((a, b) => b.score - a.score || a.entry.file.localeCompare(b.entry.file))
     .slice(0, RELATED_HINT_LIMIT)
-    .map((row) => ({
-      id: row.entry.id,
-      type: row.entry.type,
-      scope: row.entry.scope,
-      file: row.entry.file,
-      summary: row.entry.summary,
-      score: row.score,
-      action: row.entry.type === type && row.score >= 0.18 && row.overlap >= 2 ? 'possible-duplicate' : 'suggested-dependency'
-    }));
+    .map((row) => {
+      // A candidate declaring `PARENT: <child-ids>` intentionally generalizes those
+      // children. Overlap is expected by design, so never classify those hints as
+      // duplicates — they should remain `suggested-dependency` wiring, letting the
+      // parent write cleanly while children get DEPENDS_ON wiring afterwards.
+      const isDeclaredChild = declaredChildren.has(normalizeRef(row.entry.id))
+        || declaredChildren.has(normalizeRef(row.entry.file))
+        || declaredChildren.has(normalizeRef(row.entry.file.replace(/\.md$/i, '')));
+      const isPossibleDuplicate = row.entry.type === type && row.score >= 0.18 && row.overlap >= 2 && !isDeclaredChild;
+      return {
+        id: row.entry.id,
+        type: row.entry.type,
+        scope: row.entry.scope,
+        file: row.entry.file,
+        summary: row.entry.summary,
+        score: row.score,
+        action: isPossibleDuplicate ? 'possible-duplicate' : 'suggested-dependency',
+        declaredChild: isDeclaredChild || undefined
+      };
+    });
 }
 
 function relatedPreview(related: SaveRelatedHint[] = []): string {

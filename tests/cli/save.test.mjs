@@ -475,6 +475,43 @@ test('save-session force saves ready candidates and defers dependency restructur
   await rm(cwd, { recursive: true, force: true });
 });
 
+test('save-session force writes a PARENT candidate cleanly and stores parent frontmatter', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-parent-');
+  await runEngram(cwd, env, ['inject']);
+  // Two child memories.
+  await runEngram(cwd, env, [
+    'save-session', '--scope', 'workspace', '--force',
+    [
+      'TYPE: knowledge | TEXT: Auth rotation refreshes tokens before expiry.',
+      'TYPE: knowledge | TEXT: Deploy gate forces a clean test run before release.'
+    ].join('\n')
+  ]);
+  // Resolve child ids from index by matching content (mirrors how a parent would declare its children).
+  const list = await runEngram(cwd, env, ['search', 'release OR auth OR deploy']);
+  assert.equal(list.code, 0, list.stderr);
+  const authRegex = /auth-rotation-refreshes-tokens-before-expiry/;
+  const deployRegex = /deploy-gate-forces-a-clean-test-run-before-release/;
+  assert.match(list.stdout, authRegex, `expected auth id in: ${list.stdout}`);
+  assert.match(list.stdout, deployRegex, `expected deploy id in: ${list.stdout}`);
+  const authId = 'auth-rotation-refreshes-tokens-before-expiry';
+  const deployId = 'deploy-gate-forces-a-clean-test-run-before-release';
+
+  // Now save a parent that declares those children via PARENT field.
+  const parent = await runEngram(cwd, env, [
+    'save-session', '--scope', 'workspace', '--force',
+    `TYPE: knowledge | TEXT: Release foundation sets the gates every follow-up relies on. | PARENT: ${authId},${deployId}`
+  ]);
+  assert.equal(parent.code, 0, parent.stderr);
+  assert.match(parent.stdout, /Saved ->/);
+  // The parent should be written (not deferred as a duplicate of the children).
+  assert.doesNotMatch(parent.stdout, /Deferred candidates not written/);
+  assert.doesNotMatch(parent.stdout, /Action: rerun with DEPENDS_ON/);
+  const parentFile = path.join(workspaceMemoryRoot(cwd), 'knowledge', 'release-foundation-sets-the-gates-every-follow-up-relies-on.md');
+  const raw = await readFile(parentFile, 'utf8');
+  assert.match(raw, new RegExp(`parent: \\[${authId}, ${deployId}\\]`));
+  await rm(cwd, { recursive: true, force: true });
+});
+
 test('save-session force saves ready candidates and defers duplicate updates by id', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
   await runEngram(cwd, env, ['inject']);

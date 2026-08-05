@@ -13,6 +13,13 @@ export type MemoryCandidate = {
   dependsOn?: string[];
   level?: string;
   updateId?: string;
+  /**
+   * Declared children of a parent candidate. Suppresses `possible-duplicate`
+   * deferral against these ids (the parent generalizes them by design) and is
+   * recorded in the parent's `parent` frontmatter so `engram link --parent
+   * --children` and future tooling can trace the relationship back.
+   */
+  parent?: string[];
   variants?: Partial<Record<RuleVariant, string>>;
 };
 type CandidateOptions = { explicitType?: MemoryType };
@@ -38,6 +45,7 @@ export function parseMemoryCandidate(raw: string, options: CandidateOptions = {}
   let level: string | undefined;
   let updateId: string | undefined;
   let triggers: string[] = [];
+  let declaredChildren: string[] = [];
   let variants: Partial<Record<RuleVariant, string>> = {};
   let confidence: Confidence | undefined;
   const content: string[] = [];
@@ -84,6 +92,11 @@ export function parseMemoryCandidate(raw: string, options: CandidateOptions = {}
       updateId = updateMatch[1].trim();
       continue;
     }
+    const parentMatch = line.match(/^(?:parent|parent_ids|children|child_ids)\s*:\s*(.+)$/i);
+    if (parentMatch) {
+      declaredChildren = uniqueStrings([...declaredChildren, ...parseList(parentMatch[1])]);
+      continue;
+    }
     const confidenceMatch = line.match(/^confidence\s*:\s*(.+)$/i);
     if (confidenceMatch) {
       confidence = parseConfidence(confidenceMatch[1]);
@@ -113,6 +126,7 @@ export function parseMemoryCandidate(raw: string, options: CandidateOptions = {}
     dependsOn,
     level,
     updateId,
+    ...(declaredChildren.length ? { parent: uniqueStrings(declaredChildren) } : {}),
     confidence,
     variants
   });
@@ -130,7 +144,7 @@ export function parseMemoryCandidates(raw: string): MemoryCandidate[] {
     const variantKey = candidate.variants
       ? `${candidate.variants.light ?? ''}:${candidate.variants.balanced ?? ''}:${candidate.variants.strict ?? ''}`
       : '';
-    unique.set(`${candidate.type}:${candidate.text.toLowerCase()}:${candidate.context ?? ''}:${(candidate.triggers ?? []).join(',')}:${(candidate.dependsOn ?? []).join(',')}:${candidate.level ?? ''}:${candidate.updateId ?? ''}:${candidate.confidence ?? ''}:${variantKey}`, candidate);
+    unique.set(`${candidate.type}:${candidate.text.toLowerCase()}:${candidate.context ?? ''}:${(candidate.triggers ?? []).join(',')}:${(candidate.dependsOn ?? []).join(',')}:${candidate.level ?? ''}:${candidate.updateId ?? ''}:${(candidate.parent ?? []).join(',')}:${candidate.confidence ?? ''}:${variantKey}`, candidate);
   }
   return [...unique.values()].slice(0, 8);
 }
@@ -239,6 +253,7 @@ function candidateFromFields(fields: Record<string, string>, options: CandidateO
   const dependsOn = parseList(fields.depends_on ?? fields.depends ?? fields.dependencies ?? fields.dependency ?? fields.prerequisites ?? '');
   const level = fields.level ?? fields.depth ?? fields.dependency_depth;
   const updateId = fields.update ?? fields.update_id ?? fields.merge_with ?? fields.existing;
+  const parent = parseList(fields.parent ?? fields.parent_ids ?? fields.children ?? fields.child_ids ?? '');
   const confidence = fields.confidence === undefined ? undefined : parseConfidence(fields.confidence);
   const variants = variantFields(fields);
   return compactCandidate({
@@ -250,6 +265,7 @@ function candidateFromFields(fields: Record<string, string>, options: CandidateO
     dependsOn,
     level,
     updateId,
+    ...(parent.length ? { parent } : {}),
     confidence,
     variants
   });
@@ -266,6 +282,7 @@ function compactCandidate(candidate: MemoryCandidate): MemoryCandidate {
     ...(candidate.dependsOn?.length ? { dependsOn: uniqueStrings(candidate.dependsOn) } : {}),
     ...(candidate.level?.trim() ? { level: candidate.level.trim() } : {}),
     ...(candidate.updateId?.trim() ? { updateId: candidate.updateId.trim() } : {}),
+    ...(candidate.parent?.length ? { parent: uniqueStrings(candidate.parent) } : {}),
     ...(candidate.confidence ? { confidence: candidate.confidence } : {}),
     ...(Object.keys(variants).length ? { variants } : {})
   };

@@ -32,13 +32,15 @@ export async function cmdAutosave(args: string[], flags: Record<string, any> = {
     dependsOn: candidate.dependsOn,
     level: candidate.level,
     updateId: candidate.updateId,
+    parent: candidate.parent,
     variants: candidate.variants,
     confidence,
     source: { source: 'autosave' },
     taskType: classifyTaskType(candidate.text).taskType
   });
   const implicitUpdate = plans.some((plan) => plan.action === 'update' && !candidate.updateId);
-  const possibleDuplicate = plans.some((plan) => (plan.related ?? []).some((hint) => hint.action === 'possible-duplicate') && !candidate.updateId);
+  const declaredChildren = new Set((candidate.parent ?? []).map((id) => id.trim().toLowerCase()));
+  const possibleDuplicate = plans.some((plan) => (plan.related ?? []).some((hint) => hint.action === 'possible-duplicate' && !declaredChildren.has(hint.id.trim().toLowerCase())) && !candidate.updateId);
   if (implicitUpdate || possibleDuplicate) {
     const reason = 'deferred: autonomous writes require an explicit UPDATE target for related or duplicate memories';
     return isJsonMode(flags) ? jsonOk({ allowed: true, status: 'deferred', reason, related_ids: plans.flatMap((plan) => (plan.related ?? []).map((hint) => hint.id)) }) : `Autosave deferred: ${reason}`;

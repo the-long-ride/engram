@@ -17,6 +17,7 @@ export type InboxCandidate = {
   dependsOn?: string[];
   level?: string;
   updateId?: string;
+  parent?: string[];
 };
 
 export type InboxReceipt = {

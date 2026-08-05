@@ -66,7 +66,7 @@
 .review-page-header > div:first-child > .muted { max-width: none; margin-top: 8px; font-size: 12px; line-height: 1.45; }
 .review-shell {
   display: grid;
-  grid-template-columns: minmax(250px, 330px) minmax(0, 1fr);
+  grid-template-columns: minmax(280px, 400px) minmax(0, 1fr);
   gap: 16px;
   align-items: start;
   margin-bottom: 16px;
@@ -89,6 +89,12 @@
   margin-top: 4px;
   color: var(--g600);
   font-size: 11px;
+}
+.review-queue-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
 }
 .review-queue-total,
 .review-step {
@@ -157,6 +163,24 @@
   line-height: 1.35;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+}
+.review-row-check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 4px;
+  cursor: pointer;
+}
+.review-row-check input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: var(--blue);
+  cursor: pointer;
+}
+.review-row.checked {
+  border-color: color-mix(in srgb, var(--blue) 30%, transparent);
+  background: color-mix(in srgb, var(--blue) 6%, transparent);
 }
 .review-detail { min-width: 0; }
 .review-detail > .card { margin-bottom: 12px; }

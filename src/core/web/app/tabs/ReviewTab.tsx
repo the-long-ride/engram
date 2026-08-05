@@ -5,7 +5,7 @@ import { MemoryDiff } from '../components/MemoryDiff.js';
 import { Button } from '../components/Button.js';
 import { CompareModal } from '../components/CompareModal.js';
 import { MemoryPreviewContent } from '../components/MemoryPreviewContent.js';
-import { reviewInspect, reviewPreview, reviewQueue, reviewWrite } from '../api-client.js';
+import { reviewInspect, reviewPreview, reviewQueue, reviewWrite, reviewDismiss } from '../api-client.js';
 import { copyText } from '../utils/clipboard.js';
 
 type Candidate = { type?: string; text?: string; context?: string; triggers?: string[]; dependsOn?: string[]; updateId?: string };
@@ -33,6 +33,7 @@ export function ReviewTab({ active, toast, modal }: { active: boolean; toast: Sh
   const [refreshing, setRefreshing] = useState(false);
   const [writing, setWriting] = useState(false);
   const [compareOpen, setCompareOpen] = useState(false);
+  const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
   const requestVersion = useRef(0);
   const queueVersion = useRef(0);
   const previewVersion = useRef(0);
@@ -53,6 +54,139 @@ export function ReviewTab({ active, toast, modal }: { active: boolean; toast: Sh
     setSelected(item);
     setProposal('');
   };
+
+  function toggleCheck(id: string) {
+    setCheckedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function generateBulkPrompt(bulkItems: ReviewItem[], scope: 'workspace' | 'global'): string {
+    const sections = bulkItems.map((item, i) => {
+      const relatedIds = [...(item.memory_ids ?? []), ...(item.related_ids ?? [])];
+      return [
+        `### Item ${String(i + 1).padStart(2, '0')}: ${item.id}`,
+        `**Kind:** ${item.kind}`,
+        `**Summary:** ${item.safe_summary}`,
+        relatedIds.length ? `**Related IDs:** ${relatedIds.join(', ')}` : '',
+      ].filter(Boolean).join('\n');
+    });
+
+    return [
+      '# Engram Review Queue — Bulk Review',
+      '',
+      `**Total items:** ${bulkItems.length}`,
+      `**Scope:** ${scope}`,
+      '',
+      '## Instructions',
+      '',
+      'For each finding below, classify the relationship between the two memory IDs and output exactly one of:',
+      '',
+      '- **MERGE**: True duplicate. Both memories cover the same fact.',
+      '  Output one merged candidate. Keep one ID. Add `UPDATE: <other-id>` so Engram archives the loser.',
+      '',
+      '- **CONTRADICT**: True contradiction. Both cannot be true simultaneously.',
+      '  Pick the winner. Output a candidate keeping the winner ID. Add `ARCHIVE: <loser-id>` so Engram removes it.',
+      '  Use sparingly — most flagged "contradictions" are actually siblings (see below).',
+      '',
+      '- **SIBLING**: Distinct memories that share a theme but are not duplicates or contradictions.',
+      '  This is the most common case. Propose a NEW parent memory that generalizes both.',
+      '  The parent must capture the shared theme without duplicating child-specific content.',
+      '  Output: `PARENT CANDIDATE` (a new memory), then for each child add `DEPENDS_ON: <parent-id>` (or `UPDATE: <parent-id>` if replacing).',
+      '  The new parent id will be derived from its TYPE + summary; reference children by their full IDs.',
+      '  If the two memories have no genuine shared theme, choose DISMISS instead.',
+      '',
+      '- **DISMISS**: False positive. The two memories are unrelated or the finding is noise.',
+      '  Output: `RESULT: DISMISS\\nID: <finding-id>\\nNOTE: <short reason>`.',
+      '  The user can then run: `engram review dismiss <finding-id> --note "<reason>"` (or use the web UI Dismiss button).',
+      '',
+      'Do not invent facts not present in the summaries. If a summary is too short to classify, choose DISMISS with note "insufficient signal to classify".',
+      '',
+      '---',
+      '',
+      '## Findings',
+      '',
+      ...sections,
+      '',
+      '---',
+      '',
+      '## Output format',
+      '',
+      'For each item, output a block starting with the item header:',
+      '',
+      '```',
+      '### Item NN: <finding-id>',
+      'RESULT: MERGE | CONTRADICT | SIBLING | DISMISS',
+      'KEEP: <id>                     # for MERGE / CONTRADICT',
+      'UPDATE: <other-id>              # for MERGE (marks loser as replaced)',
+      'ARCHIVE: <loser-id>             # for CONTRADICT',
+      'PARENT CANDIDATE:              # for SIBLING',
+      'TYPE: knowledge | rule | ...',
+      'TEXT: <generalizing theme>',
+      'TRIGGERS: shared,tags',
+      'CHILDREN: <id-a>, <id-b>       # add DEPENDS_ON: <parent-derived-id> to each child',
+      'NOTE: <why>                    # for DISMISS',
+      '```',
+      '',
+      'Return all item blocks in order. No extra commentary.',
+      '',
+      '## WRITE',
+      '',
+      `If you can write directly, run: engram save-session --scope ${scope} --force "<exact sanitized proposal>" per accepted candidate.`,
+      'For SIBLING parents, save the parent first, then update each child to add DEPENDS_ON.',
+      'For DISMISS, the user runs: engram review dismiss <finding-id> --note "<reason>"',
+    ].join('\n');
+  }
+
+  function copyAllPrompts() {
+    if (!items.length) { toast('No items in queue', false); return; }
+    copyText(generateBulkPrompt(items, writeScope), toast, 'Copied all prompts');
+  }
+
+  function copySelectedPrompts() {
+    const selected = items.filter(i => checkedIds.has(i.id));
+    if (!selected.length) { toast('No items selected', false); return; }
+    copyText(generateBulkPrompt(selected, writeScope), toast, `Copied ${selected.length} prompts`);
+  }
+
+  function downloadPromptsMd() {
+    if (!items.length) { toast('No items in queue', false); return; }
+    const content = generateBulkPrompt(items, writeScope);
+    const blob = new Blob([content], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'engram-review-queue.md';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast('Downloaded prompt.md');
+  }
+
+  async function dismissSelected() {
+    const selected = items.filter(i => checkedIds.has(i.id));
+    if (!selected.length) { toast('No items selected', false); return; }
+
+    async function doDismiss() {
+      const result = await reviewDismiss(selected.map(i => i.id));
+      const count = result.data?.dismissed?.length ?? 0;
+      const errs = result.data?.errors;
+      toast(`Dismissed ${count} item${count !== 1 ? 's' : ''}${errs ? `, ${errs.length} failed` : ''}`, !errs?.length);
+      setCheckedIds(new Set());
+      await refreshQueue();
+    }
+
+    if (!modal) { await doDismiss(); return; }
+    modal.open({
+      title: 'Dismiss items?',
+      content: <div className="confirm-copy"><p>Dismiss {selected.length} selected item{selected.length !== 1 ? 's' : ''} from the review queue.</p><p>Dismissals persist by fingerprint and do not reappear on rebuild.</p></div>,
+      actions: <><button className="btn btn-outline" onClick={modal.close}>Cancel</button><button className="btn btn-danger" onClick={() => { modal.close(); void doDismiss(); }}>Dismiss</button></>
+    });
+  }
 
   const inspect = (item: ReviewItem) => {
     const version = ++requestVersion.current;
@@ -91,6 +225,7 @@ export function ReviewTab({ active, toast, modal }: { active: boolean; toast: Sh
       const next = [...findings, ...receipts];
       setItems(next);
       setRelations([]);
+      setCheckedIds(new Set());
       setSelected(next[0] ?? null);
       setProposal('');
       if (next[0]) inspect(next[0]);
@@ -148,8 +283,49 @@ export function ReviewTab({ active, toast, modal }: { active: boolean; toast: Sh
     <div className="page-header review-page-header"><div><h1>Review</h1><p className="muted">Inspect findings, copy prompt, then confirm.</p></div><div className="review-header-meta"><span className="review-count">{items.length} {items.length === 1 ? 'item' : 'items'}</span><span className="review-readonly">Confirm</span><button className="btn btn-outline review-refresh" onClick={refreshQueue} disabled={refreshing} aria-label="Refresh review queue">{refreshing ? 'Refreshing…' : '↻ Refresh'}</button></div></div>
     <div className="review-shell">
       <aside className="card review-queue" aria-label="Pending review items">
-        <div className="review-queue-header"><div><span className="card-title">Queue</span><p className="review-queue-meta">{findingCount} findings · {deferredCount} deferred</p></div><span className="review-queue-total">{items.length}</span></div>
-        {!items.length ? <div className="review-empty"><span className="review-empty-mark">✓</span><p>No findings</p><span className="muted">Queue clear.</span></div> : <div className="review-queue-list">{items.map((item, index) => <button key={item.id} className={'review-row' + (selected?.id === item.id ? ' selected' : '')} aria-current={selected?.id === item.id ? 'true' : undefined} onClick={() => selectItem(item)}><span className="review-row-top"><span className="review-kind">{item.kind === 'inbox' ? 'Deferred' : item.kind}</span><span className="review-row-index">{String(index + 1).padStart(2, '0')}</span></span><strong title={item.id}>{shortId(item.id)}</strong><span className="review-row-summary">{item.safe_summary}</span></button>)}</div>}
+        <div className="review-queue-header">
+          <div>
+            <span className="card-title">Queue</span>
+            <p className="review-queue-meta">{findingCount} findings · {deferredCount} deferred</p>
+          </div>
+          <div className="review-queue-toolbar">
+            <button className="btn btn-outline" type="button" style={{ height: 24, fontSize: 11, padding: '0 8px' }} onClick={copyAllPrompts} title="Copy review prompts for all items">Copy all</button>
+            <button className="btn btn-outline" type="button" style={{ height: 24, fontSize: 11, padding: '0 8px' }} onClick={downloadPromptsMd} title="Download all prompts as markdown">Download .md</button>
+            {checkedIds.size > 0 && (
+              <>
+                <button className="btn btn-outline" type="button" style={{ height: 24, fontSize: 11, padding: '0 8px' }} onClick={copySelectedPrompts} title="Copy prompts for selected items">Copy {checkedIds.size}</button>
+                <button className="btn btn-outline-danger" type="button" style={{ height: 24, fontSize: 11, padding: '0 8px' }} onClick={dismissSelected} title="Dismiss selected items from review queue">Dismiss {checkedIds.size}</button>
+              </>
+            )}
+            <span className="review-queue-total">{items.length}</span>
+          </div>
+        </div>
+        {!items.length ? <div className="review-empty"><span className="review-empty-mark">✓</span><p>No findings</p><span className="muted">Queue clear.</span></div> : <div className="review-queue-list">{items.map((item, index) => (
+            <div
+              key={item.id}
+              className={'review-row' + (selected?.id === item.id ? ' selected' : '') + (checkedIds.has(item.id) ? ' checked' : '')}
+              aria-current={selected?.id === item.id ? 'true' : undefined}
+              role="button"
+              tabIndex={0}
+              onClick={() => selectItem(item)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectItem(item); }}}
+            >
+              <div className="review-row-top">
+                <label className="review-row-check" onClick={(e) => e.stopPropagation()} title="Select for bulk operations">
+                  <input
+                    type="checkbox"
+                    checked={checkedIds.has(item.id)}
+                    onChange={() => toggleCheck(item.id)}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </label>
+                <span className="review-kind">{item.kind === 'inbox' ? 'Deferred' : item.kind}</span>
+                <span className="review-row-index">{String(index + 1).padStart(2, '0')}</span>
+              </div>
+              <strong title={item.id}>{shortId(item.id)}</strong>
+              <span className="review-row-summary">{item.safe_summary}</span>
+            </div>
+          ))}</div>}
       </aside>
       <section className="review-detail" aria-label="Selected review item">
         {!selected ? <div className="review-empty review-detail-empty"><span className="review-empty-mark">↗</span><h2>Select an item</h2><p className="muted">Choose a finding to inspect context and preview a proposal.</p></div> : <>

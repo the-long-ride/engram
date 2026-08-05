@@ -256,22 +256,21 @@
   right: 24px;
   background: var(--bg);
   border: 1px solid var(--g300);
-  border-left: 3px solid var(--g500);
   border-radius: var(--r8);
   padding: 10px 16px;
   font-size: 13px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 200ms, border-left-color 200ms;
+  transition: opacity 200ms, box-shadow 200ms;
   z-index: 9999;
   max-width: 320px;
 }
 #toast.ok {
-  border-left-color: var(--green);
+  box-shadow: 0 1px var(--green-soft, rgba(0, 128, 0, 0.08)), 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 #toast.err {
-  border-left-color: var(--red);
+  box-shadow: 0 1px var(--red-soft, rgba(255, 0, 0, 0.08)), 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 #toast.show {
   opacity: 1;

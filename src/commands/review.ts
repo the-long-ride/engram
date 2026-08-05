@@ -100,13 +100,56 @@ async function cmdReviewInspectReceipt(ctx: EngramContext, id: string, flags: Re
 
 async function cmdReviewDismiss(ctx: EngramContext, rest: string[], flags: Record<string, any>): Promise<string> {
   const fingerprint = rest[0];
-  if (!fingerprint) throw new EngramError('ENG_USAGE', 'review dismiss requires a finding id', 2);
+  const all = flags.all === true || flags.a === true;
+  const kindFilter = typeof flags.kind === 'string' ? flags.kind as FindingKind : undefined;
+  const force = flags.force === true || flags.f === true;
   const note = typeof flags.note === 'string' ? flags.note : undefined;
-  const result = await dismissFindingAction(ctx, fingerprint, note);
-  if (isJsonMode(flags)) {
-    return result.ok ? jsonOk({ dismissed: fingerprint }) : throwJson(result.message);
+
+  if (!all && !kindFilter) {
+    if (!fingerprint) throw new EngramError('ENG_USAGE', 'review dismiss requires a finding id (or use --all / --kind to bulk dismiss)', 2);
+    const result = await dismissFindingAction(ctx, fingerprint, note);
+    if (isJsonMode(flags)) {
+      return result.ok ? jsonOk({ dismissed: fingerprint }) : throwJson(result.message);
+    }
+    return result.ok ? result.message : result.message;
   }
-  return result.ok ? result.message : result.message;
+
+  const findings = await gatherFindings(ctx);
+  const targets = kindFilter ? findings.filter((f) => f.kind === kindFilter) : findings;
+  if (!targets.length) {
+    if (isJsonMode(flags)) return jsonOk({ dismissed: [], message: 'No matching findings to dismiss.' });
+    return 'No matching findings to dismiss.';
+  }
+
+  if (!force) {
+    const byKind = new Map<string, number>();
+    for (const f of targets) byKind.set(f.kind, (byKind.get(f.kind) || 0) + 1);
+    const breakdown = [...byKind.entries()].map(([k, n]) => `${k}: ${n}`).join(', ');
+    const previewCount = Math.min(targets.length, 10);
+    const summary = targets.slice(0, previewCount).map((f) => `  ${f.kind}: ${f.id}  [${f.scope}]`).join('\n');
+    const moreLine = targets.length > previewCount ? `\n  …and ${targets.length - previewCount} more` : '';
+    const approved = await requestApproval(
+      `Dismiss ${targets.length} finding(s) (${breakdown}):\n\n${summary}${moreLine}\n\nProceed?`
+    );
+    if (!approved.accepted) {
+      if (isJsonMode(flags)) return jsonOk({ dismissed: [], status: 'discarded' });
+      return 'Discarded. No findings dismissed.';
+    }
+  }
+
+  const dismissed: string[] = [];
+  const errors: string[] = [];
+  for (const f of targets) {
+    const result = await dismissFindingAction(ctx, f.fingerprint, note);
+    if (result.ok) dismissed.push(f.fingerprint);
+    else errors.push(`${f.fingerprint}: ${result.message}`);
+  }
+  if (isJsonMode(flags)) {
+    return jsonOk({ dismissed, count: dismissed.length, ...(errors.length ? { errors } : {}) });
+  }
+  let msg = `Dismissed ${dismissed.length} finding(s).`;
+  if (errors.length) msg += ` ${errors.length} failed.`;
+  return msg;
 }
 
 async function cmdReviewVerify(ctx: EngramContext, rest: string[], flags: Record<string, any>): Promise<string> {
@@ -173,6 +216,7 @@ function unresolvedHintGuides(candidate: MemoryCandidate, plan: SavePlan): strin
   const dependsOn = new Set((candidate.dependsOn ?? []).map((ref) => ref.trim().toLowerCase()));
   const updateId = candidate.updateId?.trim().toLowerCase();
   for (const hint of plan.related ?? []) {
+    if (hint.declaredChild) continue;
     if (hint.action === 'possible-duplicate' && !updateId) {
       guides.push(`Possible duplicate ${hint.id}: add UPDATE: ${hint.id}.`);
     } else if (hint.action === 'suggested-dependency' && !dependsOn.has(hint.id.trim().toLowerCase())) {
@@ -209,7 +253,7 @@ async function cmdReviewApply(ctx: EngramContext, rest: string[], flags: Record<
     ctx, text: candidate.text, type: candidate.type, scopes: [receipt.candidate.scope], author, role,
     context: candidate.context, triggers: candidate.triggers,
     dependsOn: candidate.dependsOn, level: candidate.level,
-    updateId: candidate.updateId, variants: candidate.variants
+    updateId: candidate.updateId, parent: candidate.parent, variants: candidate.variants
   });
   const relatedIds = [...new Set(plans.flatMap((plan) => plan.related?.map((hint) => hint.id) ?? []))];
   const unresolved = plans.flatMap((plan) => unresolvedHintGuides(candidate, plan));
@@ -285,7 +329,7 @@ function reviewHelp(): string {
     '  engram review inbox [--json]            List pending deferred-save receipts',
     '  engram review inspect <id> [--json]     Finding fingerprint OR receipt id (r-xxxxx)',
     '  engram review apply <receipt-id> [--force]   Rerun the candidate through the save flow',
-    '  engram review dismiss <finding-id> [--note text]',
+    '  engram review dismiss <finding-id> [--note text] [--all] [--kind duplicate|stale|..] [--force]',
     '  engram review verify <memory-id>',
     '  engram review supersede <old-id> <new-id>',
     '  engram review archive <memory-id> [--reason text]',

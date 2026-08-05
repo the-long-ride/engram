@@ -441,6 +441,7 @@ describe('CoreTab', () => {
   test('opens memory modal with properties separated from content', async () => {
     (api.getJson as jest.Mock)
       .mockResolvedValueOnce(mockCoreData)
+      .mockResolvedValueOnce({ ok: true, data: { nodes: [], links: [] } })
       .mockResolvedValueOnce({ content: 'Readable body', properties: [['type', 'knowledge'], ['updated', '2026-07-14']] });
     const modalMock = { open: jest.fn(), close: jest.fn() };
     render(<CoreTab active={true} toast={jest.fn()} modal={modalMock} />);

@@ -50,7 +50,7 @@ export async function cmdSave(args: string[], flags: Record<string, any>): Promi
       type = candidate.type;
       text = candidate.text;
       const resolvedTaskType = await saveTaskType(text, flags, explicitTaskType);
-      plans = await planMemorySave({ ctx, text, type, scopes, author, role, context: candidate.context, triggers: candidate.triggers, dependsOn: candidate.dependsOn, level: candidate.level, updateId: candidate.updateId, taskType: resolvedTaskType, variants: candidate.variants });
+      plans = await planMemorySave({ ctx, text, type, scopes, author, role, context: candidate.context, triggers: candidate.triggers, dependsOn: candidate.dependsOn, level: candidate.level, updateId: candidate.updateId, parent: candidate.parent, taskType: resolvedTaskType, variants: candidate.variants });
       return previewSavePlans(plans, previewOptions);
     }, { explicitType, guidance: generatedMemoryGuidance(explicitType, { ruleLineTarget: ctx.config.memory.rule_line_target, ruleLineHardLimit: ctx.config.memory.rule_line_hard_limit }) });
     if (!captured) return 'Discarded. No file written.';
@@ -60,7 +60,7 @@ export async function cmdSave(args: string[], flags: Record<string, any>): Promi
     const candidate = parseMemoryCandidate(text, { explicitType });
     type = candidate.type;
     text = candidate.text;
-    plans = await planMemorySave({ ctx, text, type, scopes, author, role, context: candidate.context, triggers: candidate.triggers, dependsOn: candidate.dependsOn, level: candidate.level, updateId: candidate.updateId, taskType, variants: candidate.variants });
+    plans = await planMemorySave({ ctx, text, type, scopes, author, role, context: candidate.context, triggers: candidate.triggers, dependsOn: candidate.dependsOn, level: candidate.level, updateId: candidate.updateId, parent: candidate.parent, taskType, variants: candidate.variants });
     const force = flags.force === true || flags.f === true;
     approval = force ? { accepted: true } : await requestApproval(previewSavePlans(plans, previewOptions));
   }
@@ -203,6 +203,7 @@ async function planSaveSessionCandidates(ctx: Awaited<ReturnType<typeof getConte
       dependsOn: candidate.dependsOn,
       level: candidate.level,
       updateId: candidate.updateId,
+      parent: candidate.parent,
       source,
       taskType,
       variants: candidate.variants
@@ -282,7 +283,8 @@ async function attachReceipts(
         ...(candidate.triggers?.length ? { triggers: candidate.triggers } : {}),
         ...(candidate.dependsOn?.length ? { dependsOn: candidate.dependsOn } : {}),
         ...(candidate.level ? { level: candidate.level } : {}),
-        ...(candidate.updateId ? { updateId: candidate.updateId } : {})
+        ...(candidate.updateId ? { updateId: candidate.updateId } : {}),
+        ...(candidate.parent?.length ? { parent: candidate.parent } : {})
       };
       const receipt = buildReceipt({
         scope: item.plan.scope,
@@ -343,6 +345,9 @@ function unresolvedRelatedHints(plan: SavePlan) {
   const dependsOn = frontmatterStrings(parseMemory(plan.content).frontmatter.depends_on).map((ref) => normalizeRef(ref));
   const dependencyIntent = hasDependencyIntent(plan.content);
   return (plan.related ?? []).filter((hint) => {
+    // Hints for memories the candidate explicitly declared as children (PARENT: ...)
+    // are intentional generalization, not unresolved overlap — never defer on them.
+    if (hint.declaredChild) return false;
     if (hint.action === 'possible-duplicate') return plan.action !== 'update';
     return dependencyIntent && !dependsOn.includes(normalizeRef(hint.id)) && !dependsOn.includes(normalizeRef(hint.file));
   });

@@ -18,6 +18,11 @@ import { exists } from "../core/system/fsx.js";
 /** Install agent-host instruction files, MCP config, and agent hooks for Engram integration. */
 export async function cmdLink(args: string[], flags: Record<string, any> = {}): Promise<string> {
   if (args[0] === "list") return skillsetList("Currently, engram supports these agents:");
+  // Memory parent-link mode: `engram link --parent <id> --children <id1> --children <id2>`.
+  // Branches before target parsing so positional memory ids are not misread as skillset targets.
+  if (typeof flags.parent === 'string' || Array.isArray(flags.parent) || Array.isArray(flags.children) || typeof flags.children === 'string') {
+    return await cmdLinkMemoryParent(flags);
+  }
   const target = args[0] ?? "all";
   const global = flags.global === true;
   const allSupported = flags["all-supported"] === true;
@@ -174,3 +179,31 @@ const skillsetListNotes: Partial<Record<SkillsetTarget, string>> = {
   gemini: "# Also covers current Antigravity 2.0, CLI, and IDE Gemini-compatible paths",
   slash: "# Installs IDE/chat slash commands (/engram) for manual requests"
 };
+
+/** Memory parent-link mode: add DEPENDS_ON <parentId> to each declared child. */
+async function cmdLinkMemoryParent(flags: Record<string, any>): Promise<string> {
+  const parentId = typeof flags.parent === 'string' ? flags.parent : '';
+  const childIds = Array.isArray(flags.children) ? flags.children
+    : Array.isArray(flags.child) ? flags.child
+    : typeof flags.children === 'string' ? [flags.children]
+    : typeof flags.child === 'string' ? [flags.child]
+    : [];
+  if (!parentId) return "Error: --parent <id> is required for memory parent-link.";
+  if (childIds.length === 0) return "Error: at least one --children <id> is required for memory parent-link.";
+  const { getContext } = await import('../core/memory/context.js');
+  const { linkMemoryChildren } = await import('../core/memory/link-memory.js');
+  const ctx = await getContext(process.cwd());
+  const summary = await linkMemoryChildren({ ctx, parentId, childIds, findParent: true });
+  const lines: string[] = [];
+  lines.push(`Parent: ${summary.parent ?? parentId}${summary.parent ? '' : ' (not found in visible memories)'}`);
+  lines.push(`Updated: ${summary.updated} | Skipped: ${summary.skipped} | Missing: ${summary.missing}`);
+  if (summary.results.length) {
+    lines.push('');
+    for (const r of summary.results) {
+      const tag = r.status === 'updated' ? '+' : r.status === 'skipped' ? '=' : r.status === 'missing' ? '!' : '?';
+      const where = r.file ? `${r.scope}/${r.file}` : r.id;
+      lines.push(`  [${tag}] ${where}${r.reason ? ` — ${r.reason}` : ''}`);
+    }
+  }
+  return lines.join('\n');
+}

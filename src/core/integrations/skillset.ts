@@ -330,6 +330,18 @@ export async function overwriteLinkedWorkspaceSkillsets(cwd: string, options: { 
   return dedupeInstallResults(results);
 }
 
+/** Install skillsets for every agent detected on this device, installing any not already linked. */
+export async function installDetectedWorkspaceSkillsets(cwd: string, options: { plan?: boolean } = { }): Promise<InstallResult[]> {
+  const detected = resolveAllTargets();
+  const linked = await detectLinkedWorkspaceTargets(cwd);
+  const missing = detected.filter((target) => !linked.includes(target));
+  if (!missing.length) return [];
+  if (options.plan) return planLinkedWorkspaceSkillsets(missing);
+  const results: InstallResult[] = [];
+  for (const target of missing) results.push(...await installSkillset(cwd, target, true));
+  return dedupeInstallResults(results);
+}
+
 export async function detectLinkedWorkspaceTargets(cwd: string): Promise<SkillsetTarget[]> {
   const linked: SkillsetTarget[] = [];
   for (const name of Object.keys(targets) as SkillsetTarget[]) {

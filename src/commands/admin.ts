@@ -16,6 +16,7 @@ import { ensureDir, exists, readText, writeText } from '../core/system/fsx.js';
 import { findConflicts, resolveConflicts } from '../core/vcs/conflict.js';
 import {
   detectLinkedWorkspaceTargets,
+  installDetectedWorkspaceSkillsets,
   installGlobalSkillset,
   overwriteLinkedWorkspaceSkillsets,
   readGlobalSkillsetRegistry,
@@ -217,19 +218,29 @@ async function gitHookDir(cwd: string): Promise<string> {
 /** Upgrade Engram package guidance, generated workspace assets, global memory scaffold, and registered global skillsets. */
 export async function cmdUpgrade(args: string[] = [], flags: Record<string, any> = {}): Promise<string> {
   if (flags['memory-only'] === true && flags['global-skillsets-only'] === true) throw new Error('upgrade cannot use --memory-only and --global-skillsets-only together');
+  if (flags['configs-only'] === true && (flags['memory-only'] === true || flags['global-skillsets-only'] === true)) throw new Error('upgrade cannot use --configs-only with --memory-only or --global-skillsets-only');
   const plan = flags.plan === true || flags['dry-run'] === true;
   const dbMigrate = flags['db-migrate'] === true;
   const overwriteLinked = flags.latest === true;
+  const configsOnly = flags['configs-only'] === true;
   const target = upgradeTarget(args, flags);
   const records: RecordBlock[] = [];
-  records.push(await upgradePackageRecord(flags, plan));
+  if (!configsOnly) records.push(await upgradePackageRecord(flags, plan));
   if (flags['global-skillsets-only'] !== true && !dbMigrate) {
-    records.push(await workspaceMemoryUpgradeRecord(plan, Boolean(flags.force)));
-    records.push(await workspaceSkillsetUpgradeRecord(plan, overwriteLinked));
-    if (overwriteLinked) records.push(await workspaceHookUpgradeRecord(plan));
-    records.push(...await globalMemoryUpgradeRecords(plan, Boolean(flags.force)));
+    if (configsOnly) {
+      // configs-only: refresh workspace agent config files only.
+      records.push(await workspaceSkillsetUpgradeRecord(plan, overwriteLinked));
+      if (overwriteLinked) records.push(await workspaceDetectedSkillsetUpgradeRecord(plan));
+    } else {
+      records.push(await workspaceMemoryUpgradeRecord(plan, Boolean(flags.force)));
+      records.push(await workspaceSkillsetUpgradeRecord(plan, overwriteLinked));
+      if (overwriteLinked) records.push(await workspaceHookUpgradeRecord(plan));
+      records.push(...await globalMemoryUpgradeRecords(plan, Boolean(flags.force)));
+      // Re-install skillsets for any installed agent that isn't already linked in this workspace.
+      if (overwriteLinked) records.push(await workspaceDetectedSkillsetUpgradeRecord(plan));
+    }
   }
-  if (flags['memory-only'] !== true && !dbMigrate) {
+  if (flags['memory-only'] !== true && !dbMigrate && !configsOnly) {
     records.push(...await globalSkillsetUpgradeRecords(target, flags, plan, overwriteLinked));
     if (overwriteLinked) records.push(await globalHookUpgradeRecord(target, plan));
   }
@@ -301,6 +312,19 @@ async function workspaceSkillsetUpgradeRecord(plan: boolean, overwriteLinked: bo
   return {
     title: plan ? 'PLAN workspace skillsets' : 'UPDATED workspace skillsets',
     fields: [['Files', [...new Set(results.map((result) => result.file))].join(', ')]],
+    lines: results.map((result) => `${result.action.toUpperCase()} ${result.target}: ${result.file}`)
+  };
+}
+
+/** Install skillsets for agents detected on this device that are not yet linked in the current workspace. */
+async function workspaceDetectedSkillsetUpgradeRecord(plan: boolean): Promise<RecordBlock> {
+  const results = await installDetectedWorkspaceSkillsets(process.cwd(), { plan });
+  if (!results.length) {
+    return { title: 'SKIPPED detected agent skillsets', fields: [['Reason', 'all installed agents already have workspace skillsets linked']] };
+  }
+  return {
+    title: plan ? 'PLAN detected agent skillsets' : 'INSTALLED detected agent skillsets',
+    fields: [['Targets', [...new Set(results.map((result) => result.target))].join(', ')]],
     lines: results.map((result) => `${result.action.toUpperCase()} ${result.target}: ${result.file}`)
   };
 }

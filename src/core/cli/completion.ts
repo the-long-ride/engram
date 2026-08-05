@@ -21,7 +21,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
   const takeControlArgs = ['--file', '--dir', '--include', '--exclude', '--max-sources', '--max-chars', '--scope', '--profile', '--role', '--roles', '--all', '--force', '--metacognize', '--dry-run', '--plan'].join(' ');
   const metacognizeArgs = ['--workspace', '--global', '--all', '--force', '--dry-run'].join(' ');
   const resolveConflictArgs = ['--dry-run', '--metacognize', '--force'].join(' ');
-  const upgradeArgs = ['--plan', '--latest', '--self', '--memory-only', '--global-skillsets-only', '--target', '--force', '--no-version-check', '--no-auto-upgrade'].join(' ');
+  const upgradeArgs = ['--plan', '--latest', '--self', '--memory-only', '--global-skillsets-only', '--configs-only', '--target', '--force', '--no-version-check', '--no-auto-upgrade'].join(' ');
   const globalFolderArgs = ['--move-from-path'].join(' ');
   const cloneMemoryArgs = ['workspace', 'global', '--force', '--dry-run', '--metacognize'].join(' ');
   const skillsetTargets = ['all', 'list', 'agents-md', 'codex', 'copilot', 'claude', 'cursor', 'gemini', 'cline', 'windsurf', 'opencode', 'open-code', 'mcp', 'slash'].join(' ');
@@ -63,7 +63,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '    load|ld)\n      _arguments "--all" "--budget-tokens[compact payload cap]:tokens:" "--dry-run" "-f[load broader legacy memory output]" "--full[load broader legacy memory output]" "1:query: "\n      ;;',
       '    graph|g)\n      _arguments "--rebuild" "1:query: "\n      ;;',
       '    archive|ar)\n      _arguments "--reason[archive reason]:reason:" "1:memory: "\n      ;;',
-      '    review)\n      _arguments "--json[versioned contract envelope]" "--kind[finding kind]:kind:(duplicate contradiction stale invalid_dependency)" "--note[dismissal note]:note:" "--reason[archive reason]:reason:" "--depends-on[related memory ID]:id:" "--update[existing memory ID]:id:" "--force[apply receipt through save flow without second approval]" "1:action:(list inbox inspect dismiss verify supersede archive apply cleanup)"\n      ;;',
+      '    review)\n      _arguments "--json[versioned contract envelope]" "--all[dismiss all pending findings]" "-a[dismiss all pending findings]" "--kind[finding kind]:kind:(duplicate contradiction stale invalid_dependency)" "--note[dismissal note]:note:" "--reason[archive reason]:reason:" "--depends-on[related memory ID]:id:" "--update[existing memory ID]:id:" "--force[bypass confirmation for bulk dismiss]" "1:action:(list inbox inspect dismiss verify supersede archive apply cleanup)"\n      ;;',
       '    benchmark|bm)\n      _arguments "1:cases file:_files"\n      ;;',
       '    search|f)\n      _arguments "1:query: "\n      ;;',
       '    verify|vf|rehash|rh|rebuild-index|ri|repair|rp)',

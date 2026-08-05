@@ -3,7 +3,7 @@ export type FlagValue = string | boolean | string[];
 export type ParsedArgs = { command: string; rest: string[]; flags: Record<string, FlagValue> };
 
 const booleanFlags = new Set([
-  'all', 'auto', 'dry-run', 'explain', 'force', 'full', 'h', 'help',
+  'all', 'auto', 'configs-only', 'dry-run', 'explain', 'force', 'full', 'h', 'help',
   'global', 'global-only', 'global-skillsets-only', 'inbox', 'json', 'latest', 'low-confidence', 'memory-only', 'no-auto-upgrade', 'no-global', 'no-skillset',
   'no-submodule', 'no-version-check', 'plan', 'propose', 'rebuild', 'metacognize', 'restructure', 'self', 'semantic', 'show-rule-variants', 'skip-task-type-prompt', 'stale', 'strict',
   'submodule', 'use', 'user', 'v', 'version', 'workspace', 'host-only'
@@ -15,7 +15,7 @@ const cloneMemoryCommands = new Set(['clone-memory', 'cm']);
 const resolveConflictCommands = new Set(['resolve-conflicts', 'rc']);
 const forceCommands = new Set([...saveSessionCommands, ...takeControlCommands, ...metacognizeCommands, ...resolveConflictCommands]);
 const fullLoadCommands = new Set(['load', 'ld']);
-const repeatableFlags = new Set(['depends-on', 'dir', 'exclude', 'file', 'include', 'id', 'update']);
+const repeatableFlags = new Set(['depends-on', 'dir', 'exclude', 'file', 'include', 'id', 'update', 'children', 'child']);
 const recentSessionWords = new Set(['session', 'sessions', 'chat', 'chats', 'conversation', 'conversations']);
 const recentSessionPrefixes = new Set(['last', 'latest', 'past', 'previous', 'recent']);
 const cloneMemoryVerbs = new Set(['clone', 'copy']);

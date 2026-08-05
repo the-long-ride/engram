@@ -463,6 +463,19 @@ async function handleApiRequest(req: any, res: any, ctx: RequestContext, url: st
       json(200, { ok: true, data });
       return;
     }
+    if (url === '/api/review/dismiss') {
+      const ids = Array.isArray(body?.ids) ? body.ids : (body?.id ? [body.id] : []);
+      const dismissed: string[] = [];
+      const errors: string[] = [];
+      for (const id of ids.filter(Boolean)) {
+        try {
+          const result = JSON.parse(await cmdReview(['dismiss', id], { json: true, cwd }));
+          if (result.data?.dismissed) dismissed.push(result.data.dismissed);
+        } catch (e: any) { errors.push(`${id}: ${e.message}`); }
+      }
+      json(200, { ok: errors.length === 0 && ids.length > 0, data: { dismissed, errors: errors.length ? errors : undefined } });
+      return;
+    }
     if (url === '/api/policy') {
       const message = await apiPolicyUpdate(body.patch ?? body.policy ?? body, cwd);
       json(200, { ok: true, message });

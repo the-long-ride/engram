@@ -29,6 +29,7 @@ import {
   agentMemoryValueGateText
 } from '../dist/core/memory/agent-proposal-protocol.js';
 import { parseMemoryCandidate, generatedMemoryGuidance, saveSessionGuidance } from '../dist/core/memory/memory-candidate.js';
+import { canonicalCandidateText, serializeCandidateForApply } from '../dist/core/review/inbox.js';
 import { canonicalRuleText, renderMemoryForAgent, ruleVariantsAreCustomized, stripRuleVariantSection } from '../dist/core/memory/rule-variants.js';
 import { route, routeDetailed } from '../dist/core/memory/routing.js';
 import { planLoad } from '../dist/core/memory/load-plan.js';
@@ -1372,6 +1373,57 @@ test('legacy CONTEXT still maps to context field in parseMemoryCandidate', () =>
   const candidate = parseMemoryCandidate('TYPE: knowledge | TEXT: Testing context. | CONTEXT: From a debugging session.');
   assert.ok(candidate.context);
   assert.equal(candidate.context, 'From a debugging session.');
+});
+
+test('parseMemoryCandidate accepts PARENT field as comma-separated pipe form', () => {
+  const candidate = parseMemoryCandidate('TYPE: knowledge | TEXT: Release foundation sets the gates every follow-up relies on. | PARENT: auth-rotation,deploy-gate');
+  assert.deepEqual(candidate.parent, ['auth-rotation', 'deploy-gate']);
+});
+
+test('parseMemoryCandidate accepts PARENT_IDS alias field', () => {
+  const candidate = parseMemoryCandidate('TYPE: knowledge | TEXT: Release foundation. | PARENT_IDS: auth-rotation,deploy-gate');
+  assert.deepEqual(candidate.parent, ['auth-rotation', 'deploy-gate']);
+});
+
+test('parseMemoryCandidate accepts CHILDREN alias field', () => {
+  const candidate = parseMemoryCandidate('TYPE: knowledge | TEXT: Release foundation. | CHILDREN: auth-rotation,deploy-gate');
+  assert.deepEqual(candidate.parent, ['auth-rotation', 'deploy-gate']);
+});
+
+test('parseMemoryCandidate accepts PARENT field as multiline list form', () => {
+  const candidate = parseMemoryCandidate([
+    'TYPE: knowledge',
+    'TEXT: Release foundation sets the gates every follow-up relies on.',
+    'PARENT: [auth-rotation, deploy-gate]'
+  ].join('\n'));
+  assert.deepEqual(candidate.parent, ['auth-rotation', 'deploy-gate']);
+});
+
+test('parseMemoryCandidate accepts PARENT field with single child id', () => {
+  const candidate = parseMemoryCandidate('TYPE: knowledge | TEXT: Release foundation. | PARENT: auth-rotation');
+  assert.deepEqual(candidate.parent, ['auth-rotation']);
+});
+
+test('canonicalCandidateText and serializeCandidateForApply round-trip parent field', () => {
+  const candidate = {
+    type: 'knowledge',
+    text: 'Release foundation.',
+    scope: 'workspace',
+    parent: ['auth-rotation', 'deploy-gate']
+  };
+  const canon = canonicalCandidateText(candidate);
+  assert.match(canon, /PARENT: auth-rotation,deploy-gate/);
+  const serialized = serializeCandidateForApply(candidate);
+  assert.match(serialized, /PARENT: auth-rotation,deploy-gate/);
+  // Round-trip: parse the serialized form back and verify parent survives.
+  const reParsed = parseMemoryCandidate(serialized);
+  assert.deepEqual(reParsed.parent, ['auth-rotation', 'deploy-gate']);
+});
+
+test('canonicalCandidateText and serializeCandidateForApply omit PARENT when absent', () => {
+  const candidate = { type: 'knowledge', text: 'Tester.', scope: 'workspace' };
+  assert.doesNotMatch(canonicalCandidateText(candidate), /PARENT/);
+  assert.doesNotMatch(serializeCandidateForApply(candidate), /PARENT/);
 });
 
 test('rule memory at exactly 100 effective body lines passes hard limit', () => {

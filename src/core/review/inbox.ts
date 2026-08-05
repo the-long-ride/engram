@@ -21,6 +21,7 @@ export function canonicalCandidateText(candidate: InboxCandidate): string {
   if (candidate.dependsOn?.length) parts.push(`DEPENDS_ON: ${candidate.dependsOn.join(',')}`);
   if (candidate.level) parts.push(`LEVEL: ${candidate.level}`);
   if (candidate.updateId) parts.push(`UPDATE: ${candidate.updateId}`);
+  if (candidate.parent?.length) parts.push(`PARENT: ${candidate.parent.join(',')}`);
   return parts.join(' | ');
 }
 
@@ -33,6 +34,7 @@ export function serializeCandidateForApply(candidate: InboxCandidate): string {
   if (candidate.dependsOn?.length) parts.push(`DEPENDS_ON: ${candidate.dependsOn.join(',')}`);
   if (candidate.level) parts.push(`LEVEL: ${candidate.level}`);
   if (candidate.updateId) parts.push(`UPDATE: ${candidate.updateId}`);
+  if (candidate.parent?.length) parts.push(`PARENT: ${candidate.parent.join(',')}`);
   return parts.join(' | ');
 }
 

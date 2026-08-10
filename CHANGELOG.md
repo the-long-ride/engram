@@ -13,6 +13,10 @@
 - Standardized prompt action buttons, made panel Cards non-collapsible by default, and replaced native browser confirm popups with custom confirmation modal dialogs for AI agent unlinking.
 - Fixed workspace AI agent unlinking (`apiAgentUnlink`) to always clean workspace instruction blocks, files, and hooks even when `config.scope` is `global`.
 - Upgraded TypeScript to `7.0.2`, Docusaurus to `3.10.2`, `tsx` to `4.23.1`, Geist to `5.3.0`, and the requested GitHub Actions majors.
+- Resolved Dependabot security alerts in both lockfiles by upgrading `js-yaml`, `pdfjs-dist`, and `svgo`, and patching `image-size` against parser denial-of-service loops.
+- Added v2 benchmark report metadata validation with typed categories and token-budget fields.
+- Added memory relationship bulk-linking with `engram link --parent <id> --children <id>...` (DEPENDS_ON refs), memory detail views, and enhanced memories/review maintenance flows in the Web UI.
+- Improved review and config panel UX with memory comparison, properties grids, a dependency picker, and multi-choice controls.
 
 ## 0.0.27
 

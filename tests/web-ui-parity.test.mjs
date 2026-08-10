@@ -5,8 +5,8 @@ import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 
 const root = path.resolve('.');
-const CANONICAL_TAB_LABELS = ['Construct', 'Git', 'Updates', 'Memories', 'Review', 'Maintain', 'Connect'];
-const STALE_TAB_TERMS = ['Core Tab', 'Connections Tab'];
+const CANONICAL_TAB_LABELS = ['Construct', 'Git', 'Updates', 'Memories', 'Review', 'Core', 'Connect'];
+const STALE_TAB_TERMS = ['Maintain Tab', 'Connections Tab'];
 
 async function read(rel) {
   return readFile(path.join(root, rel), 'utf8');
@@ -32,7 +32,7 @@ test('README documents every canonical tab label and avoids stale tab wording', 
   // The install section describes the five operational tabs by their `<Label> Tab` heading.
   // The Review tab uses the same label inside the canonical tab-order summary and elsewhere,
   // so it is not required to have its own install bullet.
-  for (const label of ['Connect', 'Construct', 'Maintain', 'Memories']) {
+  for (const label of ['Connect', 'Construct', 'Core', 'Memories']) {
     assert.ok(readme.includes(label + ' Tab'), 'README must describe the ' + label + ' Tab');
   }
   for (const label of CANONICAL_TAB_LABELS) {

@@ -11,7 +11,9 @@ const cssDir = 'src/core/web';
 const cssLineBudgetMax = 650;
 
 const bundleBudgets = [
-  ['dist/core/web/panel.js', 267000]
+  // v0.0.28 grew the panel with Core/Author/Upgrade tabs and review/config
+  // components (~319 KB); the budget stays tight enough to catch runaway growth.
+  ['dist/core/web/panel.js', 350000]
 ];
 
 function lineCount(source) {

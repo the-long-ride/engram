@@ -1,40 +1,40 @@
 ---
-title: Résolution des problèmes
+title: Troubleshooting
 sidebar_position: 3
-description: Problèmes courants d'Engram et comment les résoudre.
+description: Common Engram problems and how to recover.
 ---
 
-# Résolution des problèmes
+# Troubleshooting
 
-Première étape : ouvrez `engram entry` et lisez l'onglet **Runtime**. Il présente le profil résolu, les racines de mémoire, la configuration principale, le routage, le graphe et la détection Git.
+First step: open `engram entry` and read the **Runtime** tab. It shows the resolved profile, memory roots, core config, routing, graph, and Git detection.
 
-## La mémoire ne se charge pas
+## Memory did not load
 
-- Exécutez `engram load --dry-run "<tâche>"` pour inspecter le nombre de candidats et les étiquettes de restriction.
-- Vérifiez `engram config view` pour les paramètres `enabled`, `read` et `load.limit`.
-- Confirmez que la mémoire de l'espace de travail existe dans le répertoire `.agents/.engram/`.
-- Exécutez `engram verify` pour contrôler les hachages.
+- Run `engram load --dry-run "<task>"` to inspect candidate counts and narrowing tags.
+- Check `engram config view` for `enabled`, `read`, and `load.limit`.
+- Confirm workspace memory exists under `.agents/.engram/`.
+- Run `engram verify` to check hashes.
 
-## Les hooks ne s'injectent pas
+## Hooks not injecting
 
-- Confirmez que le paramètre `engram set-read status` n'est ni à `off` ni à `manual`.
-- Confirmez que l'hôte est lié : `engram link <cible>`.
-- Redémarrez ou rechargez l'hôte après un `link`/`unlink` (notamment OpenCode).
-- Vérifiez `engram set-proof status` pour s'assurer de la visibilité de la ligne de preuve.
+- Confirm `engram set-read status` is not `off` or `manual`.
+- Confirm the host is linked: `engram link <target>`.
+- Restart or reload the host after `link`/`unlink` (especially OpenCode).
+- Check `engram set-proof status` for proof line visibility.
 
-## Échec de la sauvegarde
+## Save failed
 
-- Lisez l'aperçu d'approbation pour identifier les indices concernant la mémoire liée.
-- Si une requête d'acceptation globale a signalé des mémoires liées, aucun fichier n'a été enregistré. Relancez la commande avec les candidats `DEPENDS_ON` ou `UPDATE`.
-- Vérifiez les erreurs de validation de schéma, de détection de secrets et d'injections dans la sortie CLI.
+- Read the approval preview for related-memory hints.
+- If accept-all reported related memories, no file was saved. Rerun with `DEPENDS_ON` or `UPDATE` candidates.
+- Check schema, secret, and injection scan errors in the CLI output.
 
-## Confusion de profils
+## Profile confusion
 
-- Exécutez `engram profile status`.
-- Confirmez le profil par défaut (`default_profile`) de l'espace de travail et le profil utilisateur actif.
-- Rappel : l'utilisation d'un profil explicite différent de celui par défaut de l'espace de travail désactive la mémoire de l'espace de travail pour cette commande.
+- Run `engram profile status`.
+- Confirm the workspace `default_profile` and active user profile.
+- Remember: an explicit profile different from the workspace default disables workspace memory for that command.
 
-## Fichiers de mémoire non valides
+## Invalid memory files
 
 ```bash
 engram verify
@@ -43,7 +43,7 @@ engram rebuild-index
 engram graph --rebuild
 ```
 
-## Adaptateurs obsolètes après une mise à jour de package
+## Stale adapters after package update
 
 ```bash
 engram upgrade
@@ -51,20 +51,20 @@ engram upgrade --latest
 engram link all
 ```
 
-N'utilisez `--force` que pour remplacer intentionnellement des fichiers d'adaptateur Engram générés.
+Use `--force` only when replacing generated Engram adapter files intentionally.
 
-## Base SQLite de configuration indisponible
+## SQLite config DB unavailable
 
-Les commandes normales de lecture/écriture se replient sur des instantanés de configuration JSON. Les commandes spécifiques à la base de données signalent que SQLite est indisponible au lieu de bloquer l'utilisation normale de la mémoire.
+Normal read/write commands fall back to JSON config snapshots. DB-specific commands report SQLite as unavailable instead of blocking normal memory use.
 
-## Problèmes de synchronisation Git globale
+## Global Git sync issues
 
-- Confirmez que `global_git.enabled` est à `true`.
-- Vérifiez que `global_git.remote_url` est une URL de dépôt distant Git valide.
-- Revise `global_git.auto_resolve` — la gestion automatique des conflits peut masquer les différences de mémoire.
-- Exécutez `engram entry`, onglet Runtime, pour inspecter la variable `global_git_detected`.
+- Confirm `global_git.enabled` is `true`.
+- Check `global_git.remote_url` is a valid Git remote URL.
+- Review `global_git.auto_resolve` — auto conflict handling can mask memory diffs.
+- Run `engram entry` and open the Construct tab, or run `engram config view`, to inspect resolved Git detection.
 
-## Étapes suivantes
+## Next steps
 
 - [FAQ](faq.md)
-- [CLI : verify / repair / quality-check](../cli/verify-repair-quality.md)
+- [CLI: verify / repair / quality-check](../cli/verify-repair-quality.md)

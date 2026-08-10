@@ -26,6 +26,14 @@ engram upgrade --latest
 
 Use `--force` only when replacing generated Engram adapter files intentionally.
 
+## Ownership-aware configuration reconciliation
+
+The latest-upgrade inventory deduplicates registered integrations by physical file. If several hosts share the same Engram guide, Engram renders and writes that file once instead of letting host-specific rows rewrite one another.
+
+When manual edits make a known Engram artifact unsafe for normal replacement, Entry can offer **Force upgrade** only when ownership is provable. For a marked Engram block, force replaces only that block and preserves surrounding user text. For a registered/generated Engram file, force can replace the entire generated file. Unknown ownership is never forceable, and bulk confirmation never performs force actions.
+
+A successful apply is verified by a post-write rescan. Rolled-back or failed transactions and expected-updated artifacts that do not converge to `current` are reported as errors; Entry does not show an upgrade-success toast for those cases.
+
 ## Skillset render profiles
 
 For runtime-capable hosts, Engram installs small bootstrap instructions instead of the full protocol. Hooks provide routed task context, MCP tools provide load/search/proposal behavior, and slash adapters or Agent Skills carry detailed command workflows. Fallback targets without reliable runtime context injection still receive compact manual instructions.
@@ -34,10 +42,6 @@ For runtime-capable hosts, Engram installs small bootstrap instructions instead 
 
 Engram's SQLite config DB is an optimization for workspace/profile management. If the DB cannot be opened or initialized, normal read/write commands fall back to JSON config snapshots. DB-specific commands report SQLite as unavailable instead of blocking normal memory use.
 
-## Next steps
-
-- [Troubleshooting](troubleshooting.md)
-- [CLI: inject / link / upgrade](../cli/inject-link-upgrade.md)
 
 ## Legacy memory migration to schema v3
 
@@ -61,17 +65,11 @@ Skip memory migration during a latest upgrade:
 engram upgrade --latest --no-migrate-memories
 ```
 
-<!-- configuration-upgrade-inventory -->
+## Next steps
 
-La revisión de conflictos utiliza el mismo plan compartido en la CLI y en Entry. Ejecute ngram upgrade --latest --review para aceptar la última propuesta según el tipo, editarla mediante $VISUAL/$EDITOR o confirmar **Keep current**. Entry proporciona vistas **Current**, **Proposed** y **Diff**; **Diff** está predeterminado en **Inline** y puede cambiar a **Parallel**, con el contenido eliminado resaltado en rojo y el contenido añadido en verde. La aplicación final se bloquea mientras pendingReviewCount no sea cero, y ngram upgrade --latest --yes rechaza decisiones no resueltas o desactualizadas. Cada decisión se verifica con su hash de origen antes de escribir.
+- [Troubleshooting](troubleshooting.md)
+- [CLI: inject / link / upgrade](../cli/inject-link-upgrade.md)
 
-## Reconciliación de configuración con conocimiento de propiedad
-
-El inventario de la actualización más reciente elimina duplicados de integraciones registradas por archivo físico. Si varios hosts comparten la misma guía Engram, Engram genera y escribe ese archivo una sola vez.
-
-Cuando las ediciones manuales hacen que un artefacto Engram no sea seguro para el reemplazo normal, Entry solo ofrece **Force upgrade** cuando la propiedad se puede probar. Para un bloque Engram marcado, la actualización forzada solo reemplaza ese bloque y conserva el texto del usuario circundante. Para un archivo Engram generado/registrado, la actualización forzada puede reemplazar todo el archivo generado. La propiedad desconocida nunca se puede forzar, y la confirmación masiva nunca realiza acciones de forzado.
-
-La aplicación exitosa se verifica mediante un escaneo posterior a la escritura. Los artefactos esperados que no convergen a current se notifican como errores de verificación.
 
 ## Git author identity
 
@@ -88,3 +86,12 @@ engram author migrate-memories --confirm
 ```
 
 Read the complete [Git author settings guide](git-author-settings.md).
+
+
+<!-- configuration-upgrade-inventory -->
+
+Conflict review uses the same shared plan in CLI and Entry. Run `engram upgrade --latest --review` to accept the latest type-aware proposal, edit it via `$VISUAL`/`$EDITOR`, or confirm **Keep current**. Entry provides **Current**, **Proposed**, and **Diff** views; **Diff** defaults to **Inline** and can switch to **Parallel**, with removed content highlighted red and added content green. Final apply is blocked while `pendingReviewCount` is non-zero, and `engram upgrade --latest --yes` refuses unresolved or stale decisions. Each decision is checked against its source hash before writing.
+
+## Configuration upgrade inventory
+
+After a package update, run `engram upgrade --latest --plan` before `engram upgrade --latest`. The shared inventory scans workspace and global Engram-managed memories, instructions, skillsets, configs, hooks, and plugins. User-authored bytes are preserved; ambiguous mixed files are reported as conflicts that require explicit review before apply. See [Configuration upgrades](configuration-upgrades.md).

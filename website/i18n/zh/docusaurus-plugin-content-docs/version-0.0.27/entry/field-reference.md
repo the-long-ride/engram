@@ -1,125 +1,142 @@
 ---
-title: 完整字段参考
+title: Complete field reference
 sidebar_position: 10
-description: Entry Web UI 每个输入和控制的可搜索参考。
+description: Searchable reference for every Entry Web UI input and control.
 ---
 
-# 完整字段参考
+# Complete field reference
 
-此页面是 Entry Web UI 每个输入和控制的规范最终用户字段参考。
+This page is the canonical end-user field reference for every Entry Web UI input and control.
 
-## 如何阅读此参考
+## How to read this reference
 
-每个字段列出：
+Each field lists:
 
-- **配置键** — 在配置文件和 CLI 中使用的键
-- **控制** — 输入类型
-- **默认值** — 安全的默认值
-- **风险** — `normal` (正常), `caution` (小心), 或 `risky` (有风险)
-- **备注** — 该字段的作用以及何时进行更改
+- **Config key** — the key used in config files and the CLI
+- **Control** — the input type
+- **Default** — the safe default value
+- **Risk** — `normal`, `caution`, or `risky`
+- **Notes** — what the field does and when to change it
 
-## Core (核心)
+## Core {#core}
 
-| 配置键 | 控制 | 默认值 | 风险 | 备注 |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `enabled` | 开关 | `true` | risky | 主开关。禁用会停止 Engram 行为。 |
-| `scope` | 选择 | `both` | risky | 保存目标: `workspace`, `global`, `both`。 |
-| `read` | 选择 | `auto` | normal | 注入内存的时机: `auto`, `startup`, `always`, `manual`, `off`。 |
-| `proof` | 选择 | `off` | normal | Hook 凭证行: `off`, `compact`。 |
-| `global_path` | 文本 | 空 | risky | 全局内存的文件系统路径。 |
-| `default_profile` | 选择 | 空 | risky | 未明确设置时使用的配置文件。 |
-| `roles` | 角色 | 空 | normal | 用于路由的以逗号分隔的角色名称。 |
-| `theme` | 选择 | `dark` | hidden | 内部/隐藏设置。不面向用户。 |
+| `enabled` | toggle | `true` | risky | Master switch. Disabling stops Engram behavior. |
+| `scope` | select | `both` | risky | Save target: `workspace`, `global`, `both`. |
+| `update` | select | `auto` | normal | Quiet package upgrade check: `auto`, `manual`, `off`. |
+| `read` | select | `auto` | normal | When hooks inject memory: `auto`, `startup`, `always`, `manual`, `off`. |
+| `proof` | select | `off` | normal | Hook proof line: `off`, `compact`. |
+| `global_path` | text | empty | risky | Filesystem path for global memory. |
+| `default_profile` | select | empty | risky | Profile used when none is explicitly set. |
+| `roles` | roles | empty | normal | Comma-separated role names for routing. |
+| `theme` | select | `dark` | hidden | Internal/hidden. Not user-facing. |
 
-## Load Routing (加载路由)
+## Ignore Rules {#ignore-rules}
 
-| 配置键 | 控制 | 默认值 | 风险 | 备注 |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `load.limit` | 数字 1–32 | `8` | normal | 普通加载返回的最大内存数。 |
+| `ignore.source` | select | `engramignore` | normal | Scan-rule sources: `engramignore`, `gitignore`, `both`, `off`. |
+| `ignore.gitignore_path` | text | `.gitignore` | normal | Git ignore file path. |
+| `ignore.engramignore_path` | text | `.engramignore` | normal | Engram ignore file path. |
+| `ignore.global_engramignore` | toggle | `true` | normal | Applies global ignore rules when configured. |
+| `ignore.also_ignore` | list | `*.secret`, `private/**` | normal | Extra comma-separated glob patterns. |
+| `ignore.global_patterns` | textarea | empty | normal | One global glob per line; inject syncs a managed workspace block. |
 
-## Memory Limits (内存限制)
+## Load Routing {#load-routing}
 
-| 配置键 | 控制 | 默认值 | 风险 | 备注 |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `memory.rule_line_target` | 数字 50–200，步长 10 | `70` | normal | 推荐的规则行数。 |
-| `memory.rule_line_hard_limit` | 数字 50–200，步长 10 | `100` | risky | 规则的最大硬限制行数。 |
+| `load.limit` | number 1–32 | `8` | normal | Max memories returned by normal load. |
 
-## Graph (图)
+## Memory Limits {#memory-limits}
 
-| 配置键 | 控制 | 默认值 | 风险 | 备注 |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `graph.enabled` | 开关 | `true` | normal | 启用依赖项/关系路由。 |
-| `graph.max_related` | 数字 1–20 | `4` | normal | 限制来自图边缘的相关内存。 |
-| `graph.min_related_score` | 数字 0–1，步长 0.01 | `0.22` | normal | 相关边的最小相似度分数。 |
+| `memory.rule_line_target` | number 50–200, step 10 | `70` | normal | Recommended line count for rules. |
+| `memory.rule_line_hard_limit` | number 50–200, step 10 | `100` | risky | Hard max line count for rules. |
 
-## Vector Search (向量搜索)
+## Graph {#graph}
 
-| 配置键 | 控制 | 默认值 | 风险 | 备注 |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `vector.enabled` | 开关 | `true` | normal | 启用可选的本地向量路由。 |
-| `vector.auto_threshold` | 数字 10–1000 | `100` | normal | 激活向量搜索的内存数量。 |
-| `vector.candidate_pool` | 数字 8–100 | `24` | normal | 在重新排序前考虑的候选者数。 |
-| `vector.dimensions` | 数字 16–512 | `64` | normal | 嵌入维度；更改后需重建。 |
+| `graph.enabled` | toggle | `true` | normal | Enables dependency/relationship routing. |
+| `graph.max_related` | number 1–20 | `4` | normal | Limits related memories from graph edges. |
+| `graph.min_related_score` | number 0–1, step 0.01 | `0.22` | normal | Min similarity score for related edges. |
 
-## Rule Variants (规则变体)
+## Vector Search {#vector-search}
 
-| 配置键 | 控制 | 默认值 | 风险 | 备注 |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `rule_variants.enabled` | 开关 | `false` | normal | 启用角色/严格度变体。 |
-| `rule_variants.active` | 选择 | `balanced` | normal | 活动变体: `light`, `balanced`, `strict`。 |
+| `vector.enabled` | toggle | `true` | normal | Enables optional local vector routing. |
+| `vector.provider` | select | `sqlite-vec` | normal | The only supported local vector provider. |
+| `vector.auto_threshold` | number 10–1000 | `100` | normal | Memory count where vector search activates. |
+| `vector.candidate_pool` | number 8–100 | `24` | normal | Candidates considered before reranking. |
+| `vector.dimensions` | number 16–512 | `64` | normal | Embedding dimensions; rebuild after change. |
 
-## Live Sync (实时同步)
+## Rule Variants {#rule-variants}
 
-| 配置键 | 控制 | 默认值 | 风险 | 备注 |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `live_sync.enabled` | 开关 | `false` | normal | 保存时同步生成的智能体上下文文件。 |
+| `rule_variants.enabled` | toggle | `false` | normal | Enables role/strictness variants. |
+| `rule_variants.active` | select | `balanced` | normal | Active variant: `light`, `balanced`, `strict`. |
 
-## Global Git (全局 Git)
+## Live Sync {#live-sync}
 
-| 配置键 | 控制 | 默认值 | 风险 | 备注 |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `global_git.enabled` | 开关 | `true` | risky | 启用全局内存的 Git 行为。 |
-| `global_git.remote` | 文本 | `origin` | risky | Git 远程名称；无空格。 |
-| `global_git.remote_url` | 文本 | 空 | risky | 共享全局内存远程仓库 URL。 |
-| `global_git.branch` | 文本 | `main` | risky | 同步目标分支。 |
-| `global_git.auto_sync` | 开关 | `true` | risky | 自动拉取/推送行为。 |
-| `global_git.auto_resolve` | 开关 | `true` | risky | 自动冲突处理；审查 diff。 |
+| `live_sync.enabled` | toggle | `false` | normal | Sync generated agent context files on save. |
+| `live_sync.targets` | list | `agents-md`, `claude-md`, `cursorrules` | normal | Generated context targets refreshed by live sync. |
 
-## Pattern Mining (模式挖掘)
+## Global Git {#global-git}
 
-| 配置键 | 控制 | 默认值 | 风险 | 备注 |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `pattern_mining.enabled` | 开关 | `false` | normal | 实验性的重复模式提取。 |
-| `pattern_mining.threshold` | 数字 1–20 | `3` | normal | 重复多少次后模式开始生效。 |
-| `pattern_mining.lookback_sessions` | 数字 1–100 | `20` | normal | 要检查的最近会话数。 |
+| `global_git.enabled` | toggle | `true` | risky | Enables Git behavior for global memory. |
+| `global_git.remote` | text | `origin` | risky | Git remote name; no whitespace. |
+| `global_git.remote_url` | text | empty | risky | Shared global memory remote URL. |
+| `global_git.branch` | text | `main` | risky | Target branch for sync. |
+| `global_git.auto_sync` | toggle | `true` | risky | Auto pull/push behavior. |
+| `global_git.auto_resolve` | toggle | `true` | risky | Auto conflict handling; review diffs. |
 
-## PR Workflow (PR 工作流)
+## Pattern Mining {#pattern-mining}
 
-| 配置键 | 控制 | 默认值 | 风险 | 备注 |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `pr_workflow.enabled` | 开关 | `false` | risky | 实验性的团队 PR 工作流。 |
-| `pr_workflow.target_branch` | 文本 | `main` | risky | 接收内存 PR 的分支。 |
+| `pattern_mining.enabled` | toggle | `false` | normal | Experimental recurring-pattern extraction. |
+| `pattern_mining.threshold` | number 1–20 | `3` | normal | Repetitions before a pattern matters. |
+| `pattern_mining.lookback_sessions` | number 1–100 | `20` | normal | Recent sessions to inspect. |
 
-## Encryption (加密)
+## PR Workflow {#pr-workflow}
 
-| 配置键 | 控制 | 默认值 | 风险 | 备注 |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `encryption.enabled` | 开关 | `false` | risky | 未来/高级加密模式。 |
-| `encryption.scope` | 选择 | `global` | risky | 范围: `workspace`, `global`。 |
-| `encryption.key_source` | 选择 | `portable-file` | risky | 密钥来源策略；有备份丢失风险。 |
+| `pr_workflow.enabled` | toggle | `false` | risky | Experimental team PR workflow. |
+| `pr_workflow.provider` | text | empty | risky | Provider identifier for configured team workflow. |
+| `pr_workflow.repo` | text | empty | risky | Repository identifier for configured team workflow. |
+| `pr_workflow.target_branch` | text | `main` | risky | Branch receiving memory PRs. |
 
-## 非配置控件
+## Encryption {#encryption}
 
-有关非配置控件，请参见各个标签页：
+| Config key | Control | Default | Risk | Notes |
+| --- | --- | --- | --- | --- |
+| `encryption.enabled` | toggle | `false` | risky | Future/advanced encryption mode. |
+| `encryption.scope` | select | `global` | risky | Scope: `workspace`, `global`. |
+| `encryption.key_source` | select | `portable-file` | risky | Key source strategy; backup loss risk. |
 
-- [Connections 标签页](connections.md)
-- [Profiles 标签页](profiles.md)
-- [Workspaces 标签页](workspaces.md)
-- [Core 标签页](core.md)
-- [Memories 标签页](memories.md)
-- [Runtime 标签页](runtime.md)
+## Non-config controls
 
-## 后续步骤
+See the per-tab pages for non-config controls:
 
-- [Construct 标签页](construct.md)
-- [字段编写指南](field-authoring-guidelines.md)
+- [Construct tab](construct.md)
+- [Memories tab](memories.md)
+- [Review tab](review.md)
+- [Core tab](core.md)
+- [Connections tab](connections.md)
+
+Profile and workspace management are available in the Construct tab and through `engram profile` and `engram workspace`. See [Profiles and scope resolution](../concepts/profiles.md).
+
+## Next steps
+
+- [Construct tab](construct.md)
+- [Field authoring guidelines](field-authoring-guidelines.md)

@@ -104,15 +104,20 @@ Built-in memory is convenient, but it can be hard to inspect, diff, export, shar
 
 Engram makes the durable layer visible. Built-in memory can still help, but Engram should be the owned source when the knowledge matters.
 
+<!-- evidence-foundation:v3:start -->
+## Evidence-backed memory
+
+`engram observe --file <path>` creates exactly one canonical record in `traces/<trace-id>.jsonl` plus a non-indexed inbox wrapper. Promotion with `save-session --file` reopens the trace, verifies its hash and scope, and ignores edits that try to replace the trace text. New memory uses schema v3 with `authority`, `evidence_refs`, `derived_from`, `revision`, supersession, validity dates, and `last_confirmed`. Legacy v1 and v2 files remain readable. `authority: evidence` is data only.
+<!-- evidence-foundation:v3:end -->
+
 ## Next steps
 
 - [Memory types](memory-types.md)
 - [Read path and routing](read-path.md)
 - [Write path and approval](write-path.md)
 
-<!-- evidence-foundation:v3:start -->
-## Mémoire étayée par des preuves
 
-New files use `schema_version: 3`. Rule and skill memories default to `authority: instruction`; knowledge defaults to `authority: reference`. `revision` starts at 1 and increments on updates. Trace IDs belong in `evidence_refs`, while session or source identities belong in `derived_from`. Legacy v1 (`Context` + `Content` + `Example`) and v2 (`Content`, optional `Origin`) remain readable. Traces live in `.agents/.engram/traces/` with `traces/<trace-id>.jsonl` files recording `engram observe --file` and `save-session --file` provenance, `trust_level`, `sensitivity`, and `retention`.
-Traces have `authority: evidence`.
-<!-- evidence-foundation:v3:end -->
+<!-- configuration-upgrade-inventory -->
+## Configuration upgrade inventory
+
+After a package update, run `engram upgrade --latest --plan` before `engram upgrade --latest`. The shared inventory scans workspace and global Engram-managed memories, instructions, skillsets, configs, hooks, and plugins. User-authored bytes are preserved; ambiguous mixed files are reported as conflicts. See [Configuration upgrades](../operations/configuration-upgrades.md).

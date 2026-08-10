@@ -1,54 +1,54 @@
 ---
-title: Flujo de trabajo en equipo con Git
+title: Team workflow with Git
 sidebar_position: 1
-description: Use Git para llevar la memoria de Engram entre máquinas y proporcionar historial de revisión.
+description: Use Git to carry Engram memory between machines and give review history.
 ---
 
-# Flujo de trabajo en equipo con Git
+# Team workflow with Git
 
-Git lleva la memoria entre máquinas y proporciona un historial de revisión. Engram es nativo de Git: la memoria es Markdown simple, por lo que se aplica el flujo de trabajo normal de Git.
+Git carries memory between machines and gives review history. Engram is Git-native: memory is plain Markdown, so the normal Git workflow applies.
 
-## Memoria del espacio de trabajo como submódulo
+## Workspace memory as a submodule
 
-Si el humano desea que `.agents/.engram` sea rastreado como un repositorio separado:
+If the human wants `.agents/.engram` tracked as a separate repository:
 
 ```bash
 engram inject --submodule
 engram inject --submodule-remote <git-url>
 ```
 
-Engram valida la URL, inicializa el submódulo en `main` y crea la primera confirmación (commit) del submódulo como `Initialize engram`.
+Engram validates the URL, initializes the submodule on `main`, and creates the first submodule commit as `Initialize engram`.
 
-## Origen Git global compartido
+## Shared global Git origin
 
-Si `engram entry` no muestra `global_git_detected.remote_url`, pregunte al humano si la memoria global debe compartirse a través de Git. Cuando proporcionen una URL:
+If `engram entry` shows no `global_git_detected.remote_url`, ask the human whether global memory should be shared through Git. When they provide a URL:
 
 ```bash
 engram inject --global-remote <git-url>
 ```
 
-Configure el comportamiento de sincronización con los campos `global_git.*`:
+Configure sync behavior with the `global_git.*` fields:
 
-- `global_git.enabled` — habilita el comportamiento de Git para la memoria global
-- `global_git.remote` — nombre del control remoto (por defecto `origin`)
-- `global_git.remote_url` — URL remota de memoria global compartida
-- `global_git.branch` — rama de destino (por defecto `main`)
-- `global_git.auto_sync` — comportamiento automático de pull/push
-- `global_git.auto_resolve` — manejo automático de conflictos
+- `global_git.enabled` — enables Git behavior for global memory
+- `global_git.remote` — remote name (default `origin`)
+- `global_git.remote_url` — shared global memory remote URL
+- `global_git.branch` — target branch (default `main`)
+- `global_git.auto_sync` — auto pull/push behavior
+- `global_git.auto_resolve` — auto conflict handling
 
 :::warning
-El manejo automático de conflictos puede ocultar los diffs de memoria. Revise los diffs de memoria antes de confiar en `global_git.auto_resolve`.
+Auto conflict handling can mask memory diffs. Review memory diffs before relying on `global_git.auto_resolve`.
 :::
 
-## Flujo de trabajo de revisión
+## Review workflow
 
-1. El agente propone candidatos de memoria.
-2. El humano aprueba a través de la puerta A/B/C (terminal) o `yes`/`audit`/`cancel` (chat).
-3. Engram escribe el Markdown aprobado y actualiza los hashes, el índice, el grafo y el historial de cambios.
-4. Confirme (commit) y envíe (push) el cambio de memoria a través de Git.
-5. Los compañeros de equipo realizan pull y ejecutan `engram upgrade` para conciliar.
+1. Agent proposes memory candidates.
+2. Human approves via the A/B/C gate (terminal) or `yes`/`audit`/`cancel` (chat).
+3. Engram writes approved Markdown and refreshes hashes, index, graph, and changelog.
+4. Commit and push the memory change through Git.
+5. Teammates pull and run `engram upgrade` to reconcile.
 
-## Siguientes pasos
+## Next steps
 
-- [Proceso de publicación y actualización](release-upgrade.md)
-- [Conceptos: ruta de escritura y aprobación](../concepts/write-path.md)
+- [Release and upgrade process](release-upgrade.md)
+- [Concepts: write path and approval](../concepts/write-path.md)

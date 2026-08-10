@@ -57,6 +57,12 @@ Removes memory from active routing while preserving it under `archive/`. Use arc
 Archiving changes routing immediately. Use archive, not manual deletion, so history is preserved.
 </RiskCallout>
 
+<!-- evidence-foundation:v3:start -->
+## Evidence-backed memory
+
+The detail panel mirrors CLI/index metadata. It shows `authority`, `revision`, `evidence_refs`, `derived_from`, `supersedes`, `superseded_by`, `valid_from`, `valid_until`, and `last_confirmed` when present. These fields explain why a memory exists and which immutable trace supports it; the Web UI does not turn evidence into an instruction.
+<!-- evidence-foundation:v3:end -->
+
 ## CLI equivalent
 
 ```bash
@@ -69,9 +75,3 @@ engram archive --reason "<why>" <id-or-file>
 
 - [Core tab](core.md)
 - [CLI: verify / repair / quality-check](../cli/verify-repair-quality.md)
-
-<!-- evidence-foundation:v3:start -->
-## 証拠に基づくメモリ
-
-New files use `schema_version: 3`. Rule and skill memories default to `authority: instruction`; knowledge defaults to `authority: reference`. `revision` starts at 1 and increments on updates. Trace IDs belong in `evidence_refs`, while session or source identities belong in `derived_from`. Legacy v1 (`Context` + `Content` + `Example`) and v2 (`Content`, optional `Origin`) remain readable. Traces live in `.agents/.engram/traces/` with `traces/<trace-id>.jsonl` files recording `engram observe --file` and `save-session --file` provenance, `trust_level`, `sensitivity`, and `retention`.
-<!-- evidence-foundation:v3:end -->

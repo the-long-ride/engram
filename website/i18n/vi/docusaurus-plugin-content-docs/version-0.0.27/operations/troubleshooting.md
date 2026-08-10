@@ -1,40 +1,40 @@
 ---
-title: Khắc phục sự cố
+title: Troubleshooting
 sidebar_position: 3
-description: Các sự cố thường gặp của Engram và cách khôi phục.
+description: Common Engram problems and how to recover.
 ---
 
-# Khắc phục sự cố
+# Troubleshooting
 
-Bước đầu tiên: mở `engram entry` và đọc tab **Runtime**. Tab này hiển thị hồ sơ đã được phân giải, các gốc bộ nhớ, cấu hình cốt lõi, định tuyến, đồ thị và phát hiện Git.
+First step: open `engram entry` and read the **Runtime** tab. It shows the resolved profile, memory roots, core config, routing, graph, and Git detection.
 
-## Bộ nhớ không tải được
+## Memory did not load
 
-- Chạy lệnh `engram load --dry-run "<tác vụ>"` để kiểm tra số lượng ứng viên và các thẻ thu hẹp phạm vi.
-- Kiểm tra `engram config view` xem các trường `enabled`, `read`, và `load.limit` có được bật hay không.
-- Xác nhận bộ nhớ workspace có tồn tại trong thư mục `.agents/.engram/`.
-- Chạy lệnh `engram verify` để kiểm tra các mã băm.
+- Run `engram load --dry-run "<task>"` to inspect candidate counts and narrowing tags.
+- Check `engram config view` for `enabled`, `read`, and `load.limit`.
+- Confirm workspace memory exists under `.agents/.engram/`.
+- Run `engram verify` to check hashes.
 
-## Các hook không chèn được
+## Hooks not injecting
 
-- Xác nhận trạng thái `engram set-read status` không ở chế độ `off` hoặc `manual`.
-- Xác nhận host đã được liên kết: `engram link <mục-tiêu>`.
-- Khởi động lại hoặc tải lại host sau khi thực hiện `link`/`unlink` (đặc biệt là đối với OpenCode).
-- Kiểm tra `engram set-proof status` xem dòng chứng minh (proof line) có hiển thị hay không.
+- Confirm `engram set-read status` is not `off` or `manual`.
+- Confirm the host is linked: `engram link <target>`.
+- Restart or reload the host after `link`/`unlink` (especially OpenCode).
+- Check `engram set-proof status` for proof line visibility.
 
-## Lưu không thành công
+## Save failed
 
-- Đọc bản xem trước phê duyệt để xem các gợi ý về bộ nhớ liên quan.
-- Nếu accept-all báo cáo bộ nhớ liên quan, không có tệp nào được lưu. Hãy chạy lại với các ứng viên `DEPENDS_ON` hoặc `UPDATE`.
-- Kiểm tra lỗi quét lược đồ, quét secrets và tiêm lệnh (injection scan) trong đầu ra của CLI.
+- Read the approval preview for related-memory hints.
+- If accept-all reported related memories, no file was saved. Rerun with `DEPENDS_ON` or `UPDATE` candidates.
+- Check schema, secret, and injection scan errors in the CLI output.
 
-## Nhầm lẫn hồ sơ (Profile confusion)
+## Profile confusion
 
-- Chạy lệnh `engram profile status`.
-- Xác nhận hồ sơ mặc định của workspace `default_profile` và hồ sơ hoạt động của người dùng.
-- Hãy nhớ rằng: việc chỉ định một hồ sơ rõ ràng khác với mặc định của workspace sẽ vô hiệu hóa bộ nhớ workspace đối với lệnh đó.
+- Run `engram profile status`.
+- Confirm the workspace `default_profile` and active user profile.
+- Remember: an explicit profile different from the workspace default disables workspace memory for that command.
 
-## Các tệp bộ nhớ không hợp lệ
+## Invalid memory files
 
 ```bash
 engram verify
@@ -43,7 +43,7 @@ engram rebuild-index
 engram graph --rebuild
 ```
 
-## Các bộ điều hợp lỗi thời sau khi cập nhật gói
+## Stale adapters after package update
 
 ```bash
 engram upgrade
@@ -51,20 +51,20 @@ engram upgrade --latest
 engram link all
 ```
 
-Chỉ sử dụng `--force` khi có chủ ý thay thế các tệp bộ điều hợp Engram được tạo.
+Use `--force` only when replacing generated Engram adapter files intentionally.
 
-## Cơ sở dữ liệu SQLite config không khả dụng
+## SQLite config DB unavailable
 
-Các lệnh đọc/ghi thông thường sẽ tự động chuyển sang sử dụng các ảnh chụp nhanh cấu hình JSON (JSON config snapshots). Các lệnh đặc thù của cơ sở dữ liệu sẽ báo cáo SQLite không khả dụng thay vì chặn việc sử dụng bộ nhớ thông thường.
+Normal read/write commands fall back to JSON config snapshots. DB-specific commands report SQLite as unavailable instead of blocking normal memory use.
 
-## Sự cố đồng bộ hóa Git toàn cầu
+## Global Git sync issues
 
-- Xác nhận `global_git.enabled` được đặt thành `true`.
-- Kiểm tra xem `global_git.remote_url` có phải là một URL Git remote hợp lệ hay không.
-- Xem lại trường `global_git.auto_resolve` — tự động xử lý xung đột có thể che giấu các khác biệt bộ nhớ.
-- Chạy tab Runtime của `engram entry` để kiểm tra `global_git_detected`.
+- Confirm `global_git.enabled` is `true`.
+- Check `global_git.remote_url` is a valid Git remote URL.
+- Review `global_git.auto_resolve` — auto conflict handling can mask memory diffs.
+- Run `engram entry` and open the Construct tab, or run `engram config view`, to inspect resolved Git detection.
 
-## Bước tiếp theo
+## Next steps
 
-- [Câu hỏi thường gặp](faq.md)
+- [FAQ](faq.md)
 - [CLI: verify / repair / quality-check](../cli/verify-repair-quality.md)

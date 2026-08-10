@@ -1,23 +1,23 @@
 ---
-title: 内置エージェントメモリ
+title: Built-in agent memory
 sidebar_position: 2
-description: Engram は内蔵エージェントメモリを権限ではなく、便宜レイヤーとして扱います。
+description: Engram treats built-in agent memory as a convenience layer, not the authority.
 ---
 
-# 内置エージェントメモリ
+# Built-in agent memory
 
-内蔵エージェントメモリは便利ですが、多くの場合 1 つのホストに縛られます。diff の取得、エクスポート、レビュー、または別のエージェントとの共有が難しい場合があります。
+Built-in agent memory is convenient, but often tied to one host. It can be hard to diff, export, review, or share with another agent.
 
-Engram は内蔵メモリを権限ではなく、便宜レイヤーとして扱います。最終的な権限は人間が所有するファイルにあります。
+Engram treats built-in memory as a convenience layer, not the authority. The authority remains files the human owns.
 
-| 次元 | Engram | 内置エージェントメモリ |
+| Dimension | Engram | Built-in agent memory |
 | --- | --- | --- |
-| 信頼できるソース | 承認された Markdown ファイル | ベンダー所有の隠された状態 |
-| 移植性 | Git ネイティブ、エージェントに依存しない | 1 つのアプリまたはアカウントに縛られる |
-| レビュー | Git diff と Markdown のレビュー | 検査やエクスポートが困難 |
-| 最適な用途 | 所有権と監査性を必要とするチーム | ホスト内での迅速な個人の想起 |
+| Source of truth | Approved Markdown files | Vendor-owned hidden state |
+| Portability | Git-native, agent-agnostic | Tied to one app or account |
+| Review | Git diff and Markdown review | Hard to inspect or export |
+| Best fit | teams that need ownership and auditability | quick personal recall within one host |
 
-## 次のステップ
+## Next steps
 
 - [agentmemory](agentmemory.md)
-- [比較の概要](overview.md)
+- [Comparison overview](overview.md)

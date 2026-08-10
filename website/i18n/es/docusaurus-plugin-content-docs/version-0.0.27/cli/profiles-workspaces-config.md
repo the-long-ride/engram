@@ -1,12 +1,12 @@
 ---
 title: profiles / workspaces / config
 sidebar_position: 5
-description: Administrar perfiles, destinos de guardado, límites de carga, modos de lectura/prueba, roles y configuración de tiempo de ejecución.
+description: Manage profiles, save targets, load limits, read/proof modes, roles, and runtime config.
 ---
 
 # profiles / workspaces / config
 
-Administrar perfiles, destinos de guardado, límites de carga, modos de lectura/prueba, roles y configuración de tiempo de ejecución.
+Manage profiles, save targets, load limits, read/proof modes, roles, and runtime config.
 
 ## profile
 
@@ -17,7 +17,7 @@ engram profile use company --workspace
 engram profile merge personal company --dry-run
 ```
 
-El orden de resolución del perfil es el `--profile` explícito o `ENGRAM_PROFILE`, luego el `default_profile` del espacio de trabajo, y luego el perfil de usuario activo. Si el espacio de trabajo `W` está fijado al perfil `B` mientras el predeterminado del usuario sigue siendo el perfil `A`, cada carga normal, carga MCP e inyección de hook de agente para `W` lee la memoria global del perfil `B` y nunca la del perfil `A`. Un perfil explícito diferente al predeterminado del espacio de trabajo utiliza la memoria global de ese perfil y deshabilita la memoria del espacio de trabajo para ese comando.
+Profile resolution order is explicit `--profile` or `ENGRAM_PROFILE`, then the workspace `default_profile`, then the active user profile. If workspace `W` is pinned to profile `B` while the user default remains profile `A`, every normal load, MCP load, and agent-hook injection for `W` reads profile `B` global memory and never profile `A`. An explicit profile different from the workspace default uses that profile's global memory and disables workspace memory for that command.
 
 ## set-save-target
 
@@ -58,12 +58,12 @@ engram set-role backend security
 engram set-role
 ```
 
-Cuando `engram set-role ...` o `engram set-rule-variant ...` tiene éxito, la CLI devuelve una línea `Agent action:`. Los adaptadores de comandos slash y hosts MCP compatibles con Engram deben volver a ejecutar inmediatamente `engram load "<current task/request>"`.
+When `engram set-role ...` or `engram set-rule-variant ...` succeeds, the CLI returns an `Agent action:` line. Engram-aware slash adapters and MCP hosts should immediately rerun `engram load "<current task/request>"`.
 
 ## set-rule-variant
 
 ```bash
-engram set-rule-variant strict|balanced|light|off
+engram set-rule-variant strict|balanced|light|off|status
 ```
 
 ## config
@@ -73,27 +73,27 @@ engram config view
 engram config set <key> <value>
 ```
 
-### Referencia de configuraciones clave
+### Key settings reference
 
-| Clave | Descripción | Predeterminado | Rango / Opciones |
+| Key | Description | Default | Range / Options |
 | --- | --- | --- | --- |
-| `memory.rule_line_target` | Recuento de líneas recomendado para memorias de reglas | `70` | `50` a `200` |
-| `memory.rule_line_hard_limit` | Recuento de líneas máximo permitido para memorias de reglas | `100` | `50` a `200` |
-| `load.limit` | Memorias máximas devueltas por carga normal | `8` | `1` a `32` |
-| `rule_variants.enabled` | Habilitar o deshabilitar la generación de variantes de reglas | `true` | `true`, `false` |
-| `rule_variants.active` | Modo de variante de regla activa | `balanced` | `light`, `balanced`, `strict` |
-| `graph.enabled` | Habilitar o deshabilitar el enrutamiento compatible con grafos | `true` | `true`, `false` |
-| `graph.max_related` | Memorias relacionadas máximas a obtener de bordes de grafo | `8` | `1` a `20` |
-| `graph.min_related_score` | Puntuación de similitud mínima para agregar bordes de grafo | `0.3` | `0.0` a `1.0` |
-| `vector.enabled` | Habilitar o deshabilitar la búsqueda vectorial de respaldo | `true` | `true`, `false` |
-| `live_sync.enabled` | Sincronizar archivos de contexto de agente generados al guardar | `true` | `true`, `false` |
-| `global_git.enabled` | Habilitar automatización de sincronización de repositorio Git global | `false` | `true`, `false` |
-| `global_git.remote` | Nombre remoto de Git para sincronización global | `origin` | Cadena |
-| `global_git.branch` | Nombre de rama de Git para sincronización global | `main` | Cadena |
+| `memory.rule_line_target` | Recommended line count target for rule memories | `70` | `50` to `200` |
+| `memory.rule_line_hard_limit` | Maximum allowed line count for rule memories | `100` | `50` to `200` |
+| `load.limit` | Max memories returned by normal load | `8` | `1` to `32` |
+| `rule_variants.enabled` | Enable or disable rule variants generation | `false` | `true`, `false` |
+| `rule_variants.active` | Active rule variant mode | `balanced` | `light`, `balanced`, `strict` |
+| `graph.enabled` | Enable or disable graph-aware routing | `true` | `true`, `false` |
+| `graph.max_related` | Max related memories to fetch from graph edges | `4` | `1` to `20` |
+| `graph.min_related_score` | Min similarity score to add graph edges | `0.22` | `0.0` to `1.0` |
+| `vector.enabled` | Enable or disable vector search fallback | `true` | `true`, `false` |
+| `live_sync.enabled` | Sync generated agent context files on save | `false` | `true`, `false` |
+| `global_git.enabled` | Enable global Git repo sync automation | `true` | `true`, `false` |
+| `global_git.remote` | Git remote name for global sync | `origin` | String |
+| `global_git.branch` | Git branch name for global sync | `main` | String |
 
-Estas configuraciones también se pueden administrar visualmente en la pestaña **Construct** en `engram entry`.
+These settings are also manageable visually under the **Construct** tab in `engram entry`.
 
-## Siguientes pasos
+## Next steps
 
 - [verify / repair / quality-check](verify-repair-quality.md)
-- [Interfaz Web de Entry: pestaña Construct](../entry/construct.md)
+- [Entry Web UI: Construct tab](../entry/construct.md)

@@ -1,24 +1,24 @@
 ---
-title: Adaptadores slash
+title: Slash adapters
 sidebar_position: 10
-description: Los adaptadores slash de Engram exponen comandos /engram en Claude, Cursor, Gemini y OpenCode.
+description: Engram slash adapters expose /engram commands across Claude, Cursor, Gemini, and OpenCode.
 ---
 
-# Adaptadores slash
+# Slash adapters
 
-El objetivo `slash` escribe adaptadores slash `/engram` nativos para hosts que admiten comandos slash de proyecto o Agent Skills.
+The `slash` target writes native `/engram` slash adapters for hosts that support project slash commands or Agent Skills.
 
-## Archivos escritos
+## Files written
 
-| Archivo | Host |
+| File | Host |
 | --- | --- |
 | `.claude/commands/engram.md` | Claude Code |
-| `.claude/skills/engram/SKILL.md` | Claude Code (forma de skill) |
+| `.claude/skills/engram/SKILL.md` | Claude Code (skill form) |
 | `.cursor/commands/engram.md` | Cursor |
 | `.gemini/commands/engram.toml` | Gemini CLI |
 | `.opencode/commands/engram.md` | OpenCode |
 
-## Comandos comunes
+## Common commands
 
 ```text
 /engram
@@ -32,8 +32,8 @@ El objetivo `slash` escribe adaptadores slash `/engram` nativos para hosts que a
 /engram ss -f
 /engram ss -f last 50 sessions
 /engram take-control
-/engram take control accept all
-/engram restructure workspace memory accept all
+/engram take control force
+/engram restructure workspace memory force
 /engram resolve conflicts and metacognize
 /engram graph release workflow
 /engram archive --reason "Superseded" knowledge/old-fact.md
@@ -41,25 +41,24 @@ El objetivo `slash` escribe adaptadores slash `/engram` nativos para hosts que a
 /engram verify
 ```
 
-## Comportamiento
+## Behavior
 
-Si el host expone solo un comando `/engram` visible, el comando `/engram` sin argumentos debe devolver un menú compacto de `load`, `search`, `save`, `propose`, `entry` y `help` en lugar de ejecutar la CLI. `/engram propose` es un alias a nivel de slash: se normaliza a `engram save-session` sobre el chat/sesión actual.
+If the host exposes only one visible `/engram` command, bare `/engram` should return a compact menu of `load`, `search`, `save`, `propose`, `entry`, and `help` instead of running the CLI. `/engram propose` is a slash-level alias: normalize it to `engram save-session` over the current chat/session.
 
-`/engram ss -f` es el atajo para aceptar todo. Los agentes no deben añadir `--force` a menos que el humano lo haya solicitado.
+`/engram ss -f` is the force shortcut. Agents must not add `--force` unless the human requested it.
 
-## Normalización de lenguaje natural
+## Natural wording normalization
 
-| Lenguaje natural | Se normaliza a |
+| Natural wording | Normalizes to |
 | --- | --- |
 | `/engram auto save` | `engram save-session` |
-| `/engram take control accept all` | `engram take-control --force` |
-| `/engram restructure workspace memory accept all` | `engram metacognize --workspace --force` |
-| `/engram take control accept all metacognize` | `engram take-control --force --metacognize` |
+| `/engram take control force` | `engram take-control --force` |
+| `/engram restructure workspace memory force` | `engram metacognize --workspace --force` |
+| `/engram take control force metacognize` | `engram take-control --force --metacognize` |
 | `/engram resolve conflicts and metacognize` | `engram resolve-conflicts --metacognize` |
 | `/engram ss -f last 50 sessions` | `engram save-session --query-level 50 --force` |
 
-## Siguientes pasos
+## Next steps
 
-- [Herramientas MCP](mcp.md)
-- [Hooks y líneas de verificación](hooks.md)
-
+- [MCP tools](mcp.md)
+- [Hooks and proof lines](hooks.md)

@@ -1,20 +1,20 @@
 ---
-title: Git 작성자 설정
+title: Git author settings
 sidebar_position: 2
-description: 향후 Engram 메모리 및 Git 커밋에 기록될 식별 정보를 설정합니다.
+description: Configure the identity written to future Engram memories and Engram-created Git commits.
 ---
 
-# Git 작성자 설정
+# Git author settings
 
-Engram은 작성자 프로필을 보유하여 메모리 저작권을 명시적이고 이식 가능하게 만듭니다.
+Engram owns an author profile so memory authorship is explicit and portable. The resolved identity is written to future memory frontmatter and supplied to Engram-created Git commits through process-local environment variables. Repository Git configuration is not changed.
 
 <!-- future-memories-only -->
-작성자 설정은 **향후 메모리에만** 영향을 미칩니다.
+Author settings affect **future memories only**. Existing memories change only through the explicit migration command.
 
 <a id="global-author"></a>
-## 글로벌 작성자
+## Global author
 
-모든 워크스페이스에 대한 기본 Engram 식별 정보를 설정합니다:
+Set the default Engram identity for all workspaces:
 
 ```bash
 engram author set --name "Jane Doe" --email "jane@example.com"
@@ -23,12 +23,19 @@ engram author --help
 engram author set --help
 ```
 
-새 파일은 별도의 `author_name` 및 `author_email` 필드를 사용합니다.
+New memory files use separate fields:
+
+```yaml
+author_name: Jane Doe
+author_email: jane@example.com
+```
+
+Legacy `author: jane@example.com` remains readable, but new memories do not write it.
 
 <a id="workspace-override"></a>
-## 워크스페이스 재정의
+## Workspace override
 
-워크스페이스는 글로벌 Engram 프로필을 재정의할 수 있습니다:
+A workspace can override the global Engram profile without changing other workspaces:
 
 ```bash
 engram author set --scope workspace --name "Workspace Jane" --email "jane@work.com"
@@ -36,10 +43,17 @@ engram author show --scope workspace
 ```
 
 <!-- workspace-never-syncs-global-git -->
-워크스페이스 재정의는 글로벌 Git 설정을 동기화하지 않습니다.
+A workspace override never changes global Git config. It is stored in the workspace and is used only for memories and Engram-created commits in that workspace.
 
 <a id="resolution-order"></a>
-## 확인 순서
+## Resolution order
+
+Engram resolves identity in this order:
+
+1. Workspace Engram author.
+2. Global Engram author.
+3. Read-only effective Git `user.name` and `user.email` fallback.
+4. Unresolved.
 
 ```bash
 engram author show
@@ -47,16 +61,12 @@ engram author show --json
 engram author show --help
 ```
 
-Engram은 다음 순서로 식별 정보를 확인합니다:
-1. 워크스페이스 Engram 작성자
-2. 글로벌 Engram 작성자
-3. 읽기 전용 Git 대체
-4. 미해결
+A complete valid name and email are required before a memory write. Engram-created commits receive `GIT_AUTHOR_NAME`, `GIT_AUTHOR_EMAIL`, `GIT_COMMITTER_NAME`, and `GIT_COMMITTER_EMAIL`; local and global Git config remain unchanged.
 
-Entry에서는 `WORKSPACE`, `GLOBAL`, `GIT`, `UNRESOLVED` 뱃지가 표시됩니다.
+In Entry, the resolved name is followed by a compact source badge: `WORKSPACE` for a workspace override, `GLOBAL` for the Engram global profile, `GIT` for Git fallback, and `UNRESOLVED` when no complete identity exists.
 
 <a id="remove-an-author-profile"></a>
-## 작성자 프로필 제거
+## Remove an author profile
 
 ```bash
 engram author unset --scope workspace
@@ -64,15 +74,19 @@ engram author unset --scope global
 engram author unset --help
 ```
 
-`engram author unset --scope workspace` 또는 `--scope global`을 사용하세요.
+The Web UI requires confirmation. The CLI removes the profile immediately after the explicit `unset` command. After removal, the next source in the resolution order becomes active.
 
 <a id="global-git-configuration"></a>
-## 글로벌 Git 구성
+## Global Git configuration
 
-Entry는 **설정 → Git**의 글로벌 탭에만 구성을 노출합니다.
+Entry exposes the existing global-memory Git settings **only in the Global tab** under **Settings → Git**. They continue to use the shared configuration backend; moving the controls does not create a second Git config store.
+
+The Global tab can edit `global_git.enabled`, `global_git.remote`, `global_git.remote_url`, `global_git.branch`, `global_git.auto_sync`, and `global_git.auto_resolve`. These fields are risky, so Entry validates the patch, shows the exact changed keys, and requires review before saving. The Workspace tab never renders these global controls.
 
 <a id="sync-to-global-git"></a>
-## 글로벌 Git으로 동기화
+## Sync to global Git
+
+Only the global Engram profile can be copied to global Git configuration. Preview first, then explicitly confirm:
 
 ```bash
 engram author sync-git-global --plan
@@ -80,14 +94,26 @@ engram author sync-git-global --confirm
 engram author sync-git-global --help
 ```
 
-글로벌 프로필만 동기화할 수 있습니다. 먼저 미리보고 `--confirm`을 사용하여 실행하세요.
+The confirmed operation writes `git config --global user.name` and `git config --global user.email`, verifies both values, and restores the exact previous values if either write or verification fails. A workspace profile is never eligible for this operation.
 
 <a id="migrate-existing-memories"></a>
-## 기존 메모리 마이그레이션
+## Migrate existing memories
+
+Backfill `author_name` and `author_email` only when a complete deterministic identity is available:
 
 ```bash
 engram author migrate-memories --plan
-engram author migrate-memories --confirm
+engram author migrate-memories --scope workspace --confirm
+engram author migrate-memories --scope both --confirm
+engram author migrate-memories --help
 ```
 
-`engram author migrate-memories --plan`을 사용하고 `--confirm`으로 적용하세요.
+Migration preserves the Markdown body, creates a `.pre-author-v3.bak` backup, skips archives and invalid files, and is idempotent. It never guesses a missing name. Preview output lists eligible, current, skipped, and invalid files before any write.
+
+## Entry Web UI
+
+Open `engram entry`, then choose **Settings → Git**. Global and Workspace tabs show stored profiles, the resolved source badge, review-before-save dialogs, and memory migration preview. The Global tab additionally owns **Global Git configuration** and the explicit Git sync preview; those controls are hidden from Workspace. Every information button opens this localized page in a new tab and shows the matching CLI `--help` command.
+
+## Privacy and troubleshooting
+
+Names and email addresses become durable metadata in Markdown and Git history. Use an address appropriate for the repository's visibility. If saving reports an unresolved author, run `engram author show`, set a global or workspace profile, or configure Git fallback values. Global Git sync is never automatic.

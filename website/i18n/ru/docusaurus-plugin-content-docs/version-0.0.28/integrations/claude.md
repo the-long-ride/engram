@@ -1,49 +1,49 @@
 ---
 title: Claude
 sidebar_position: 3
-description: Интеграция Engram с Claude Code через CLAUDE.md, слэш-команды, Agent Skills, MCP и хуки.
+description: Engram integration with Claude Code via CLAUDE.md, slash commands, Agent Skills, MCP, and hooks.
 ---
 
 # Claude
 
-Claude Code считывает `CLAUDE.md` для руководства по проекту и поддерживает настройку внешних инструментов через `.mcp.json`.
+Claude Code reads `CLAUDE.md` for project guidance and supports external tool configuration through `.mcp.json`.
 
-## Установка
+## Install
 
 ```bash
 engram link claude
 ```
 
-## Записанные файлы
+## Files written
 
-| Файл | Назначение |
+| File | Purpose |
 | --- | --- |
-| `CLAUDE.md` | Загрузчик руководства по проекту |
-| `.claude/commands/engram.md` | Классическая слэш-команда `/engram` |
-| `.claude/skills/engram/SKILL.md` | Agent Skill для вызова через слэш |
-| `.claude/settings.json` | Хуки `SessionStart` и `UserPromptSubmit` |
-| `.mcp.json` | Регистрация MCP |
+| `CLAUDE.md` | Project guidance bootstrap |
+| `.claude/commands/engram.md` | Classic `/engram` slash command |
+| `.claude/skills/engram/SKILL.md` | Agent Skill for slash invocation |
+| `.claude/settings.json` | `SessionStart` and `UserPromptSubmit` hooks |
+| `.mcp.json` | MCP registration |
 
-Claude получает как `.claude/commands/engram.md`, так и `.claude/skills/engram/SKILL.md`, поэтому `/engram` появляется в старых меню команд и в новых сессиях Claude Code, поддерживающих навыки.
+Claude receives both `.claude/commands/engram.md` and `.claude/skills/engram/SKILL.md` so `/engram` appears in older command menus and newer skill-aware Claude Code sessions.
 
-## Глобальная установка
+## Global install
 
 ```bash
 engram link --global claude
 ```
 
-Engram добавляет управляемый блок в `~/.claude/CLAUDE.md` (сохраняя пользовательский текст) и записывает навык Claude в `~/.claude/skills/engram/SKILL.md`. Глобальный MCP производит запись в `~/.claude/mcp.json`.
+Engram appends a managed block to `~/.claude/CLAUDE.md` (preserving user text) and writes the Claude skill to `~/.claude/skills/engram/SKILL.md`. Global MCP writes to `~/.claude/mcp.json`.
 
-## Runtime-first цель
+## Runtime-first target
 
-Claude является runtime-first целью. `CLAUDE.md` содержит краткие инструкции по загрузке, которые полагаются на инструменты MCP и хуки для детального протокола; файл Agent Skill содержит полный рабочий процесс записи/утверждения.
+Claude is a runtime-first target. `CLAUDE.md` contains short bootstrap instructions that rely on MCP tools and hooks for detailed protocol; the Agent Skill file carries the full write/approval workflow.
 
-## Поведение хуков
+## Hook behavior
 
-Claude поддерживает запуск и внедрение дополнительного контекста во время ввода промпта. `SessionStart` загружает перенаправленную память при запуске; `UserPromptSubmit` выполняет повторное внедрение только при изменении перенаправленного контекста Engram.
+Claude supports startup and prompt-time additional context injection. `SessionStart` loads routed memory at startup; `UserPromptSubmit` reinjects only when routed Engram context changes.
 
-## Дальнейшие шаги
+## Next steps
 
-- [Обзор интеграций с агентами](overview.md)
-- [Слэш-адаптеры](slash.md)
-- [Инструменты MCP](mcp.md)
+- [Agent Integrations overview](overview.md)
+- [Slash adapters](slash.md)
+- [MCP tools](mcp.md)

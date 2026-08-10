@@ -6,11 +6,11 @@ description: Engram vs Tolaria.
 
 # Tolaria
 
-Tolaria est un autre outil axé sur la mémoire dans l'espace des agents. Engram se différencie en faisant de la propriété humaine et du Markdown axé sur les fichiers le contrat, avec un historique d'audit natif de Git et des adaptateurs indépendants de l'agent.
+Tolaria is another memory-focused tool in the agent space. Engram differs by making human ownership and file-first Markdown the contract, with Git-native audit history and agent-agnostic adapters.
 
-Utilisez Engram lorsque vous souhaitez que la mémoire soit un protocole lisible par le dépôt : Markdown en premier, approuvé par l'humain, révisé par Git, portable entre agents même sans serveur en cours d'exécution.
+Use Engram when you want memory to be a repo-readable protocol: Markdown first, human approved, Git reviewed, portable across agents even without a running server.
 
-## Étapes suivantes
+## Next steps
 
 - [Hermes Agent](hermes-agent.md)
-- [Présentation des comparaisons](overview.md)
+- [Comparison overview](overview.md)

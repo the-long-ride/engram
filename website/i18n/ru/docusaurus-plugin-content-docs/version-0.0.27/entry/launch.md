@@ -1,38 +1,46 @@
 ---
-title: Запуск панели управления
+title: Launching the control panel
 sidebar_position: 2
-description: Запустите engram entry для запуска локальной панели управления Entry.
+description: Run engram entry to launch the local-only Entry control panel.
 ---
 
-# Запуск панели управления
+# Launching the control panel
 
-Запуск панели:
+Launch the panel:
 
 ```bash
 engram entry
 ```
 
-Команда запускает локальный сервер и открывает ваш браузер по умолчанию на URL-адресе панели.
+`engram entry` starts a local server and opens your default browser at the panel URL. The command prints the Engram wordmark before the launch details.
 
-## Поведение браузера
+## Browser behavior
 
-Панель автоматически открывается в вашем браузере по умолчанию. Если этого не произошло, скопируйте выведенный URL-адрес в браузер вручную.
+The panel opens automatically in your default browser. If it does not, copy the printed URL into a browser manually.
 
-## Поведение локального сервера
+## Local server behavior
 
-Сервер привязывается к локальному хосту, поэтому доступ к нему может получить только ваш компьютер. По умолчанию он не доступен из внешней сети.
+The server binds locally so only your machine can reach it. It is not exposed to the network by default.
 
-## Поток закрытия сервера
+## `--host-only`
 
-Закройте сервер на вкладке **Runtime** с помощью действия **Close server** или остановите процесс терминала, запустивший `engram entry`. Закрытие вкладки браузера не останавливает сервер.
+Use `--host-only` to start the server without opening a browser tab:
 
-## Общие ошибки запуска
+```bash
+engram entry --host-only
+```
 
-- **Port already in use (Порт уже используется)** — другой процесс использует порт панели. Остановите его или следуйте выведенным запасным инструкциям.
-- **Browser did not open (Браузер не открылся)** — скопируйте выведенный URL-адрес в браузер вручную.
-- **No workspace initialized (Рабочая область не инициализирована)** — сначала запустите `engram inject` или используйте `engram entry` из корня проекта.
+## Close server flow
 
-## Следующие шаги
+Close the server from the **Close Server** button in the sidebar footer, or stop the terminal process that started `engram entry`. Closing the browser tab does not stop the server.
 
-- [Вкладка Connections](connections.md)
-- [Вкладка Construct](construct.md)
+## Common launch errors
+
+- **Port already in use** — another process is using the panel port. Stop it or follow the printed fallback instructions.
+- **Browser did not open** — copy the printed URL into a browser manually.
+- **No workspace initialized** — run `engram inject` first, or use `engram entry` from a project root.
+
+## Next steps
+
+- [Connections tab](connections.md)
+- [Construct tab](construct.md)

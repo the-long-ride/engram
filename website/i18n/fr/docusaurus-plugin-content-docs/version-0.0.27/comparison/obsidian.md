@@ -1,24 +1,24 @@
 ---
 title: Obsidian
 sidebar_position: 4
-description: Engram vs Obsidian — protocole de mémoire d'agent vs base de connaissances personnelle.
+description: Engram vs Obsidian — agent memory protocol vs personal knowledge base.
 ---
 
 # Obsidian
 
-Obsidian est une base de connaissances personnelle populaire construite sur des fichiers Markdown locaux. Engram est également basé sur les fichiers et le Markdown, mais l'accent est différent.
+Obsidian is a popular personal knowledge base built on local Markdown files. Engram is also file-first and Markdown-based, but the focus differs.
 
 | Dimension | Engram | Obsidian |
 | --- | --- | --- |
-| Objectif | Protocole de mémoire pour agents d'IA | Base de connaissances personnelle |
-| Routage | Routage des tâches basé sur le graphe dans le contexte de l'agent | Liaison manuelle et recherche |
-| Approbation | Validation d'approbation humaine avant les écritures durables | Les humains écrivent directement |
-| Intégration de l'agent | Fichiers de compétences, adaptateurs slash, MCP, hooks | Aucun intégré |
-| Idéal pour | les équipes utilisant des agents d'IA ayant besoin d'une mémoire routée et durable | les individus construisant un graphe de notes liées |
+| Purpose | AI-agent memory protocol | Personal knowledge base |
+| Routing | Graph-aware task routing into agent context | Manual linking and search |
+| Approval | Human approval gate before durable writes | Human authors directly |
+| Agent integration | Skill files, slash adapters, MCP, hooks | None built-in |
+| Best fit | teams using AI agents that need durable, routed memory | individuals building a linked note graph |
 
-Utilisez les deux : Engram pour la mémoire durable destinée à l'agent, Obsidian pour les connaissances personnelles. Les deux sont compatibles avec Markdown et Git.
+Use both: Engram for agent-facing durable memory, Obsidian for personal knowledge. Both are Markdown and Git-friendly.
 
-## Étapes suivantes
+## Next steps
 
 - [Tolaria](tolaria.md)
-- [Présentation des comparaisons](overview.md)
+- [Comparison overview](overview.md)

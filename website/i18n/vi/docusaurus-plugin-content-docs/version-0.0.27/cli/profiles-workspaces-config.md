@@ -1,12 +1,12 @@
 ---
 title: profiles / workspaces / config
 sidebar_position: 5
-description: Quản lý hồ sơ, đích lưu, giới hạn tải, chế độ đọc/bằng chứng, vai trò và cấu hình thời gian chạy.
+description: Manage profiles, save targets, load limits, read/proof modes, roles, and runtime config.
 ---
 
 # profiles / workspaces / config
 
-Quản lý hồ sơ, đích lưu, giới hạn tải, chế độ đọc/bằng chứng, vai trò và cấu hình thời gian chạy.
+Manage profiles, save targets, load limits, read/proof modes, roles, and runtime config.
 
 ## profile
 
@@ -17,7 +17,7 @@ engram profile use company --workspace
 engram profile merge personal company --dry-run
 ```
 
-Thứ tự phân giải hồ sơ là `--profile` rõ ràng hoặc `ENGRAM_PROFILE`, sau đó là `default_profile` của không gian làm việc, rồi hồ sơ người dùng đang hoạt động. Nếu không gian làm việc `W` được ghim vào hồ sơ `B` trong khi mặc định của người dùng vẫn là hồ sơ `A`, mọi lượt tải thông thường, tải MCP và chèn hook tác nhân cho `W` sẽ đọc bộ nhớ toàn cục của hồ sơ `B` và không bao giờ đọc hồ sơ `A`. Một hồ sơ rõ ràng khác với mặc định không gian làm việc sẽ sử dụng bộ nhớ toàn cục của hồ sơ đó và tắt bộ nhớ không gian làm việc cho lệnh đó.
+Profile resolution order is explicit `--profile` or `ENGRAM_PROFILE`, then the workspace `default_profile`, then the active user profile. If workspace `W` is pinned to profile `B` while the user default remains profile `A`, every normal load, MCP load, and agent-hook injection for `W` reads profile `B` global memory and never profile `A`. An explicit profile different from the workspace default uses that profile's global memory and disables workspace memory for that command.
 
 ## set-save-target
 
@@ -58,12 +58,12 @@ engram set-role backend security
 engram set-role
 ```
 
-Khi `engram set-role ...` hoặc `engram set-rule-variant ...` thành công, CLI sẽ trả về một dòng `Agent action:`. Các bộ chuyển đổi slash và host MCP nhận biết Engram nên chạy lại ngay lập tức `engram load "<current task/request>"`.
+When `engram set-role ...` or `engram set-rule-variant ...` succeeds, the CLI returns an `Agent action:` line. Engram-aware slash adapters and MCP hosts should immediately rerun `engram load "<current task/request>"`.
 
 ## set-rule-variant
 
 ```bash
-engram set-rule-variant strict|balanced|light|off
+engram set-rule-variant strict|balanced|light|off|status
 ```
 
 ## config
@@ -73,27 +73,27 @@ engram config view
 engram config set <key> <value>
 ```
 
-### Tham chiếu thiết lập chính
+### Key settings reference
 
-| Khóa | Mô tả | Mặc định | Phạm vi / Tùy chọn |
+| Key | Description | Default | Range / Options |
 | --- | --- | --- | --- |
-| `memory.rule_line_target` | Mục tiêu số dòng đề xuất cho bộ nhớ quy tắc | `70` | `50` đến `200` |
-| `memory.rule_line_hard_limit` | Giới hạn số dòng tối đa cho phép đối với bộ nhớ quy tắc | `100` | `50` đến `200` |
-| `load.limit` | Số bộ nhớ tối đa được trả về bởi tải thông thường | `8` | `1` đến `32` |
-| `rule_variants.enabled` | Bật hoặc tắt tính năng tạo các biến thể quy tắc | `true` | `true`, `false` |
-| `rule_variants.active` | Chế độ biến thể quy tắc đang hoạt động | `balanced` | `light`, `balanced`, `strict` |
-| `graph.enabled` | Bật hoặc tắt định tuyến dựa trên đồ thị | `true` | `true`, `false` |
-| `graph.max_related` | Số bộ nhớ liên quan tối đa cần lấy từ các cạnh đồ thị | `8` | `1` đến `20` |
-| `graph.min_related_score` | Điểm tương đồng tối thiểu để thêm các cạnh đồ thị | `0.3` | `0.0` đến `1.0` |
-| `vector.enabled` | Bật hoặc tắt chức năng tìm kiếm vectơ dự phòng | `true` | `true`, `false` |
-| `live_sync.enabled` | Đồng bộ hóa các tệp ngữ cảnh tác nhân được tạo khi lưu | `true` | `true`, `false` |
-| `global_git.enabled` | Bật tự động hóa đồng bộ hóa kho lưu trữ Git toàn cục | `false` | `true`, `false` |
-| `global_git.remote` | Tên remote Git để đồng bộ hóa toàn cục | `origin` | Chuỗi |
-| `global_git.branch` | Tên nhánh Git để đồng bộ hóa toàn cục | `main` | Chuỗi |
+| `memory.rule_line_target` | Recommended line count target for rule memories | `70` | `50` to `200` |
+| `memory.rule_line_hard_limit` | Maximum allowed line count for rule memories | `100` | `50` to `200` |
+| `load.limit` | Max memories returned by normal load | `8` | `1` to `32` |
+| `rule_variants.enabled` | Enable or disable rule variants generation | `false` | `true`, `false` |
+| `rule_variants.active` | Active rule variant mode | `balanced` | `light`, `balanced`, `strict` |
+| `graph.enabled` | Enable or disable graph-aware routing | `true` | `true`, `false` |
+| `graph.max_related` | Max related memories to fetch from graph edges | `4` | `1` to `20` |
+| `graph.min_related_score` | Min similarity score to add graph edges | `0.22` | `0.0` to `1.0` |
+| `vector.enabled` | Enable or disable vector search fallback | `true` | `true`, `false` |
+| `live_sync.enabled` | Sync generated agent context files on save | `false` | `true`, `false` |
+| `global_git.enabled` | Enable global Git repo sync automation | `true` | `true`, `false` |
+| `global_git.remote` | Git remote name for global sync | `origin` | String |
+| `global_git.branch` | Git branch name for global sync | `main` | String |
 
-Các thiết lập này cũng có thể được quản lý trực quan dưới tab **Construct** trong `engram entry`.
+These settings are also manageable visually under the **Construct** tab in `engram entry`.
 
-## Các bước tiếp theo
+## Next steps
 
 - [verify / repair / quality-check](verify-repair-quality.md)
-- [Giao diện Web Entry: Tab Construct](../entry/construct.md)
+- [Entry Web UI: Construct tab](../entry/construct.md)

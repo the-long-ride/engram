@@ -119,3 +119,9 @@ engram upgrade --latest --no-migrate-memories
 
 - [profiles / workspaces / config](profiles-workspaces-config.md)
 - [Agent Integrations overview](../integrations/overview.md)
+
+
+<!-- configuration-upgrade-inventory -->
+## Configuration upgrade inventory
+
+After a package update, run `engram upgrade --latest --plan` before `engram upgrade --latest`. The shared inventory scans workspace and global Engram-managed memories, instructions, skillsets, configs, hooks, and plugins. User-authored bytes are preserved; ambiguous mixed files are reported as conflicts. See [Configuration upgrades](../operations/configuration-upgrades.md).

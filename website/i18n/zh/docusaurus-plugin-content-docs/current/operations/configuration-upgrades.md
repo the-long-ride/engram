@@ -40,13 +40,13 @@ The Updates page now uses a compact dashboard: a **status banner** reports wheth
 
 Open `engram entry`, then **Settings → Updates**. The sidebar **copy command** action copies `engram upgrade --latest --plan` without navigating away. The preview has `All` plus only actionable kind tabs: `Config`, `Instructions`, `Memories`, `Skillsets`, `Hooks`, and `Plugins`.
 
-Every conflict has a **Review** action. The modal provides **Current**, **Proposed**, and **Diff** views. **Current** is read-only. **Proposed** is editable for replaceable Config/Instruction/Skillset items and starts from Engram's type-aware merged/replacement result. **Diff** defaults to **Inline** and can switch to **Parallel**. Inline marks removed lines with `-` （红色背景） and added lines with `+` （绿色背景）; Parallel aligns **Current** and **Proposed** rows with the same 红/绿高亮. Use **Use latest**, **Reset proposed**, **Keep current**, or—when Engram can prove ownership—**Force upgrade**, then **Confirm change**.
+Every conflict has a **Review** action. The modal provides **Current**, **Proposed**, and **Diff** views. **Current** is read-only. **Proposed** is editable for replaceable Config/Instruction/Skillset items and starts from Engram's type-aware merged/replacement result. **Diff** defaults to **Inline** and can switch to **Parallel**. Inline marks removed lines with `-` on a red background and added lines with `+` on a green background; Parallel aligns **Current** and **Proposed** rows with the same red/green highlighting. Use **Use latest**, **Reset proposed**, **Keep current**, or—when Engram can prove ownership—**Force upgrade**, then **Confirm change**.
 
 **Open in editor** opens the exact current artifact resolved by the server, using `$VISUAL`, then `$EDITOR`, then the platform fallback. The browser never supplies a filesystem path. For **Instructions**, **Proposed** contains only the managed `<!-- engram:start -->` block; the full global skillset stays in the companion `.agents/engram.md` guide. If the external edit changes the file, the preview/source hash becomes stale and the review must be refreshed before confirmation.
 
 Eligible pending replaceable conflicts have selection checkboxes. **Select all visible** selects eligible rows in the active kind tab; selection persists when switching tabs. **Confirm selected changes** accepts **Use latest** for the checked rows, while **Confirm all changes** accepts **Use latest** for every eligible pending conflict in the full preview. Non-replaceable, stale, and already-reviewed rows cannot be selected. The server validates the complete batch against the preview fingerprint, current source hashes, review states, and generated proposals before one atomic review-store write. If any selected item fails validation, zero batch decisions are saved.
 
-Entry uses the same custom checkbox treatment across upgrade review: checked, keyboard-focus, and disabled states are visibly distinct. Result toast feedback uses a 绿色边框/发光 for success and a 红色边框/发光 for errors.
+Entry uses the same custom checkbox treatment across upgrade review: checked, keyboard-focus, and disabled states are visibly distinct. Result toast feedback uses a green border/glow for success and a red border/glow for errors.
 
 The page shows review progress. The final Upgrade action remains disabled until every conflict is explicitly resolved as accepted latest, edited proposal, **Force upgrade**, or **Keep current**. A final confirmation summarizes automatic updates, accepted proposals, edited proposals, forced replacements, kept-current files, and backups.
 
@@ -116,13 +116,3 @@ engram upgrade --latest
 ```
 
 Re-running the upgrade is idempotent for current artifacts. Reviewed `Keep current` files remain untouched unless their state changes and requires a new review.
-
-## 具备所有权感知的配置对齐
-
-最新升级清单按物理文件对已注册的集成进行去重。如果多个 Host 共享同一个 Engram 指南，Engram 只会渲染并写入该文件一次。
-
-当手动编辑导致正常的替换不安全时，Entry 仅在所有权可证明时提供 **Force upgrade**。对于标记的 Engram 块，强制替换仅替换该 Engram 块并保留周围的用户文本。对于注册/生成的 Engram 文件，强制替换可以替换整个生成的文件。未知的所有权绝不能强制替换，批量确认也决不执行强制操作。
-
-写回后的重新扫描将验证是否成功应用。未收敛至 current 的预期的更新文件将被报告为验证错误。
-
-更新页面使用紧凑仪表板：**状态横幅**报告状态，**Workspace**、**Global** 和 **Conflicts** 卡片显示数量。可操作项目显示在带有共享**水平滚动**的**表**格中。包含**复选框**，结果**提示**反馈使用绿色表示**成功**，红色表示**失败**。

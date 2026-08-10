@@ -1,29 +1,30 @@
 ---
 title: load / search / graph
 sidebar_position: 2
-description: 読み取りコマンド — ルーティングされたメモリのロード、ボルトの検索、およびグラフのルーティング検査。
+description: Read commands — load routed memory, search the vault, and inspect graph routing.
 ---
 
 # load / search / graph
 
-読み取りコマンドは、ルーティングされたメモリをロードし、ボルトを検索し、グラフのルーティングを検査します。
+Read commands load routed memory, search the vault, and inspect graph routing.
 
 ## load
 
 ```bash
 engram load "<task>"
-engram load "<task>"
+engram load --full "<task>"
 engram load --dry-run "<task>"
 engram load --all "<task>"
 ```
 
-`load` はまず、`rule`、`knowledge`、一般的なストップワードなどの一般的なメモリワードを無視して、意味のあるクエリ語にルーティングを固定します。次に、より広い候補プールをコンパクトなコンテキストパックに精査します。通常のロードでは、`loaded 8 memory files / 14 total related memories` のように、選択されたカウントと関連する合計カウントが報告されます。
+`load` first anchors routing on meaningful query terms, ignoring generic memory words such as `rule`, `knowledge`, and common stopwords. It then refines the wider candidate pool into a compact context pack. Normal load reports selected and total related counts, like `loaded 8 memory files / 14 total related memories`.
 
-- `--full` — エージェント向けのコンパクトなルート（frontmatter の `id`、`type`、`tags`、`confidence`、`depends_on` のみ。選択されたルールバリアントが 1 つ）
-- `--dry-run` — コンテンツを出力せずに候補数、絞り込みタグ、一致理由を表示
-- `--all` — コンパクトな制限の代わりに、表示されているすべてのルーティング一致を返す
+- default `load` — compact agent-facing route (only `id`, `type`, `tags`, `confidence`, `depends_on` in frontmatter; one selected rule variant)
+- `--full` — broader legacy output with full frontmatter and full rule variants
+- `--dry-run` — show candidate counts, narrowing tags, and match reasons without printing content
+- `--all` — return every visible routed match instead of the compact limit
 
-`workflow` と `workflows` は依然としてスキルメモリにルーティングされますが、汎用的なタイプワードだけでは広範な一致は作成されません。
+`workflow` and `workflows` still route to skill memories, but generic type words do not make a broad match by themselves.
 
 ## search
 
@@ -32,7 +33,7 @@ engram search "<topic>"
 engram search --semantic "<topic>"
 ```
 
-デフォルトの検索は決定論的な語彙検索です。`search --semantic` は決定論的なローカル類似性を追加しますが、埋め込み（embedding）を利用した意味検索ではありません。
+Default search is deterministic lexical search. `search --semantic` adds deterministic local similarity, not embedding-backed semantic search.
 
 ## graph
 
@@ -41,21 +42,20 @@ engram graph "<topic>"
 engram graph --rebuild
 ```
 
-グラフのルーティングを検査します。手動編集後に `engram graph --rebuild` を実行します。グラフは依存関係レイヤーを報告し、`engram load` はより深いメモリの前に、ルーティングされた前提条件を同じコンパクトなコンテキストパックにプルします。
+Inspect graph routing. Run `engram graph --rebuild` after manual edits. The graph reports dependency layers, and `engram load` pulls routed prerequisites into the same compact context pack before deeper memories.
 
-グラフの関連するエッジとベクトルヒットは、それ自体で無関係なメモリをロードすることはできません。意味のあるクエリ語とすでに重複しているメモリの再ランク付けまたは拡張のみを支援します。明示的な `depends_on` 前置条件は、独自のキーワード重複なしでロードされる可能性があります。
+Graph related edges and vector hits cannot load unrelated memories by themselves; they only help rerank or expand memories that already overlap meaningful query terms. Explicit `depends_on` prerequisites may still load without their own keyword overlap.
 
-## 依存関係レイヤー (Dependency layers)
+## Dependency layers
 
 ```yaml
 depends_on: [release-foundation]
 level: advanced
 ```
 
-メモリが別のメモリを繰り返す代わりに、その上に構築する必要がある場合は、`depends_on` frontmatter を使用します。
+Use `depends_on` frontmatter when a memory should build on another memory instead of repeating it.
 
-## 次のステップ
+## Next steps
 
 - [save / save-session / observe](save-session.md)
-- [概念：読み取りパスとルーティング](../concepts/read-path.md)
-
+- [Concepts: read path and routing](../concepts/read-path.md)

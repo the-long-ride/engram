@@ -1,45 +1,45 @@
 ---
 title: Cursor
 sidebar_position: 5
-description: ルール、MCP、ローカルプラグイン、スラッシュコマンド、およびセッション開始フックを介した Cursor と Engram の統合。
+description: Engram integration with Cursor via rules, MCP, local plugin, slash commands, and session-start hooks.
 ---
 
 # Cursor
 
-Cursor は `.cursor/rules/*.mdc` ファイルからプロジェクトルールを読み込みます。Engram は、有効なフロントマター（`alwaysApply: true`）とブートストラップ指示ブロックを含む `.cursor/rules/engram.mdc` を書き込みます。
+Cursor reads project rules from `.cursor/rules/*.mdc` files. Engram writes `.cursor/rules/engram.mdc` with valid frontmatter (`alwaysApply: true`) and a bootstrap instruction block.
 
-## インストール
+## Install
 
 ```bash
 engram link cursor
 ```
 
-## 書き込まれるファイル
+## Files written
 
-| ファイル | 用途 |
+| File | Purpose |
 | --- | --- |
-| `.cursor/rules/engram.mdc` | `alwaysApply: true` を持つプロジェクトルール |
-| `.cursor/mcp.json` | MCP 登録 (`type: "stdio"`) |
-| `.cursor/hooks.json` | `sessionStart` フック |
-| `.cursor/commands/engram.md` | `/engram` スラッシュアダプター |
+| `.cursor/rules/engram.mdc` | Project rules with `alwaysApply: true` |
+| `.cursor/mcp.json` | MCP registration (`type: "stdio"`) |
+| `.cursor/hooks.json` | `sessionStart` hook |
+| `.cursor/commands/engram.md` | `/engram` slash adapter |
 
-## グローバルインストール
+## Global install
 
 ```bash
 engram link --global cursor
 ```
 
-Engram は、プラグインマニフェスト、ルール、スキル、コマンド、MCP 設定、およびフックを含むローカルプラグインを `~/.cursor/plugins/local/engram/` に作成します。
+Engram creates a local plugin at `~/.cursor/plugins/local/engram/` containing the plugin manifest, rules, skills, commands, MCP config, and hooks.
 
-## ランタイム優先ターゲット
+## Runtime-first target
 
-Cursor はランタイム優先のターゲットです。プロジェクトルールには、詳細なプロトコルについて MCP ツールとフックに依存する短いブートストラップ指示が含まれています。実際の書き込み/承認ワークフローは Agent Skill ファイルが担います。
+Cursor is a runtime-first target. Project rules contain short bootstrap instructions that rely on MCP tools and hooks for detailed protocol; the Agent Skill file carries the full write/approval workflow.
 
-## フックの動作
+## Hook behavior
 
-`sessionStart` フックは、`additional_context` 出力フィールドを介して Engram の起動コンテキストを注入します。`beforeSubmitPrompt` は許可/ブロックのみに使用され、コンテキスト注入には使用されません。
+The `sessionStart` hook injects Engram startup context through the `additional_context` output field. `beforeSubmitPrompt` is allow/block-only and is not used for context injection.
 
-## 次のステップ
+## Next steps
 
-- [エージェント統合の概要](overview.md)
-- [フックと検証行](hooks.md)
+- [Agent Integrations overview](overview.md)
+- [Hooks and proof lines](hooks.md)

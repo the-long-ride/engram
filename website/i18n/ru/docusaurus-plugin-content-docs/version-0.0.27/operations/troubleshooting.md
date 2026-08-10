@@ -1,40 +1,40 @@
 ---
-title: Устранение неполадок
+title: Troubleshooting
 sidebar_position: 3
-description: Общие проблемы с Engram и способы их решения.
+description: Common Engram problems and how to recover.
 ---
 
-# Устранение неполадок
+# Troubleshooting
 
-Первый шаг: выполните команду `engram entry` и откройте вкладку **Runtime**. На ней отображаются разрешенный профиль, корни памяти, основная конфигурация, маршрутизация, граф и статус Git.
+First step: open `engram entry` and read the **Runtime** tab. It shows the resolved profile, memory roots, core config, routing, graph, and Git detection.
 
-## Память не загружается
+## Memory did not load
 
-- Запустите `engram load --dry-run "<задача>"`, чтобы проверить количество кандидатов и сужающие теги.
-- Проверьте `engram config view` на наличие параметров `enabled`, `read` и `load.limit`.
-- Убедитесь, что память рабочего пространства существует в папке `.agents/.engram/`.
-- Выполните `engram verify`, чтобы проверить хэши.
+- Run `engram load --dry-run "<task>"` to inspect candidate counts and narrowing tags.
+- Check `engram config view` for `enabled`, `read`, and `load.limit`.
+- Confirm workspace memory exists under `.agents/.engram/`.
+- Run `engram verify` to check hashes.
 
-## Хуки не внедряются
+## Hooks not injecting
 
-- Убедитесь, что статус `engram set-read status` не установлен в значение `off` или `manual`.
-- Проверьте связь хоста: `engram link <цель>`.
-- Перезапустите или перезагрузите хост после выполнения `link`/`unlink` (особенно для OpenCode).
-- Проверьте `engram set-proof status` на предмет видимости проверочной строки (proof line).
+- Confirm `engram set-read status` is not `off` or `manual`.
+- Confirm the host is linked: `engram link <target>`.
+- Restart or reload the host after `link`/`unlink` (especially OpenCode).
+- Check `engram set-proof status` for proof line visibility.
 
-## Сбой сохранения
+## Save failed
 
-- Прочтите превью утверждения для получения подсказок о связанной памяти.
-- Если режим автопринятия (accept-all) сообщил о связанной памяти, ни один файл не был сохранен. Перезапустите команду с кандидатами `DEPENDS_ON` или `UPDATE`.
-- Проверьте ошибки валидации схемы, секретов и сканирования инъекций подсказок в выводе CLI.
+- Read the approval preview for related-memory hints.
+- If accept-all reported related memories, no file was saved. Rerun with `DEPENDS_ON` or `UPDATE` candidates.
+- Check schema, secret, and injection scan errors in the CLI output.
 
-## Путаница с профилями
+## Profile confusion
 
-- Выполните команду `engram profile status`.
-- Убедитесь в правильности настроек `default_profile` рабочего пространства и активного профиля пользователя.
-- Помните: явный профиль, отличный от профиля по умолчанию для рабочего пространства, отключает память рабочего пространства для этой команды.
+- Run `engram profile status`.
+- Confirm the workspace `default_profile` and active user profile.
+- Remember: an explicit profile different from the workspace default disables workspace memory for that command.
 
-## Неверные файлы памяти
+## Invalid memory files
 
 ```bash
 engram verify
@@ -43,7 +43,7 @@ engram rebuild-index
 engram graph --rebuild
 ```
 
-## Устаревшие адаптеры после обновления пакета
+## Stale adapters after package update
 
 ```bash
 engram upgrade
@@ -51,20 +51,20 @@ engram upgrade --latest
 engram link all
 ```
 
-Используйте `--force` только при намеренной замене сгенерированных файлов адаптеров Engram.
+Use `--force` only when replacing generated Engram adapter files intentionally.
 
-## БД конфигурации SQLite недоступна
+## SQLite config DB unavailable
 
-Обычные команды чтения/записи переходят на использование снимков конфигурации JSON. Команды, привязанные к БД, сообщают о недоступности SQLite вместо блокирования стандартного использования памяти.
+Normal read/write commands fall back to JSON config snapshots. DB-specific commands report SQLite as unavailable instead of blocking normal memory use.
 
-## Проблемы синхронизации глобального Git
+## Global Git sync issues
 
-- Убедитесь, что параметр `global_git.enabled` равен `true`.
-- Проверьте, является ли `global_git.remote_url` допустимым удаленным URL-адресом Git.
-- Просмотрите `global_git.auto_resolve` — авторазрешение конфликтов может скрывать разницу в версиях памяти.
-- Запустите вкладку Runtime в `engram entry`, чтобы изучить состояние `global_git_detected`.
+- Confirm `global_git.enabled` is `true`.
+- Check `global_git.remote_url` is a valid Git remote URL.
+- Review `global_git.auto_resolve` — auto conflict handling can mask memory diffs.
+- Run `engram entry` and open the Construct tab, or run `engram config view`, to inspect resolved Git detection.
 
-## Следующие шаги
+## Next steps
 
-- [Часто задаваемые вопросы (FAQ)](faq.md)
+- [FAQ](faq.md)
 - [CLI: verify / repair / quality-check](../cli/verify-repair-quality.md)

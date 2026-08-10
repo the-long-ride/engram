@@ -51,6 +51,7 @@ engram move global folder from <old-path> to <new-path>
 
 Add `--move-from-path <old-path>` when they also want Engram to move the whole old global root into the new location.
 
+
 ## Legacy memory migration to schema v3
 
 `engram upgrade --latest` also migrates active v1/v2 memory files in the workspace and configured global roots to schema v3. Engram preserves each Markdown body exactly, creates `<memory-file>.pre-v3.bak`, fills only deterministic metadata, refreshes integrity hashes, and rebuilds the index, graph, and eligible vector sidecars. It never invents `evidence_refs`; a memory without verified trace links is marked `evidence_status: unverified`. Invalid memories are reported and skipped, archived memories are not rewritten, and a second run is idempotent.
@@ -77,3 +78,9 @@ engram upgrade --latest --no-migrate-memories
 
 - [Troubleshooting](troubleshooting.md)
 - [Comparison and roadmap](../comparison/overview.md)
+
+
+<!-- configuration-upgrade-inventory -->
+## Configuration upgrade inventory
+
+After a package update, run `engram upgrade --latest --plan` before `engram upgrade --latest`. The shared inventory scans workspace and global Engram-managed memories, instructions, skillsets, configs, hooks, and plugins. User-authored bytes are preserved; ambiguous mixed files are reported as conflicts. See [Configuration upgrades](configuration-upgrades.md).

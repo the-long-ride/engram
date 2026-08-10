@@ -1,125 +1,142 @@
 ---
-title: Tài liệu tham khảo trường đầy đủ
+title: Complete field reference
 sidebar_position: 10
-description: Tài liệu tham khảo có thể tìm kiếm cho mọi đầu vào và điều khiển của Entry Web UI.
+description: Searchable reference for every Entry Web UI input and control.
 ---
 
-# Tài liệu tham khảo trường đầy đủ
+# Complete field reference
 
-Trang này là tài liệu tham khảo trường chuẩn dành cho người dùng cuối cho mọi đầu vào và điều khiển của Entry Web UI.
+This page is the canonical end-user field reference for every Entry Web UI input and control.
 
-## Cách đọc tài liệu tham khảo này
+## How to read this reference
 
-Mỗi trường liệt kê các thông tin sau:
+Each field lists:
 
-- **Khóa cấu hình** — khóa được sử dụng trong các tệp cấu hình và CLI
-- **Điều khiển** — loại đầu vào
-- **Mặc định** — giá trị mặc định an toàn
-- **Rủi ro** — `normal` (bình thường), `caution` (cẩn trọng), hoặc `risky` (rủi ro)
-- **Ghi chú** — trường này có tác dụng gì và khi nào nên thay đổi nó
+- **Config key** — the key used in config files and the CLI
+- **Control** — the input type
+- **Default** — the safe default value
+- **Risk** — `normal`, `caution`, or `risky`
+- **Notes** — what the field does and when to change it
 
-## Core (Cốt lõi)
+## Core {#core}
 
-| Khóa cấu hình | Điều khiển | Mặc định | Rủi ro | Ghi chú |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `enabled` | nút bật tắt | `true` | risky | Nút bật tắt chính. Tắt sẽ dừng hoạt động của Engram. |
-| `scope` | danh sách chọn | `both` | risky | Mục tiêu lưu: `workspace`, `global`, `both`. |
-| `read` | danh sách chọn | `auto` | normal | Thời điểm các hook chèn bộ nhớ: `auto`, `startup`, `always`, `manual`, `off`. |
-| `proof` | danh sách chọn | `off` | normal | Dòng chứng minh của hook: `off`, `compact`. |
-| `global_path` | văn bản | trống | risky | Đường dẫn hệ thống tệp cho bộ nhớ toàn cục. |
-| `default_profile` | danh sách chọn | trống | risky | Hồ sơ được sử dụng khi không có hồ sơ nào được đặt rõ ràng. |
-| `roles` | vai trò | trống | normal | Tên vai trò được phân tách bằng dấu phẩy để định tuyến. |
-| `theme` | danh sách chọn | `dark` | hidden | Cấu hình nội bộ/ẩn. Không hiển thị cho người dùng. |
+| `enabled` | toggle | `true` | risky | Master switch. Disabling stops Engram behavior. |
+| `scope` | select | `both` | risky | Save target: `workspace`, `global`, `both`. |
+| `update` | select | `auto` | normal | Quiet package upgrade check: `auto`, `manual`, `off`. |
+| `read` | select | `auto` | normal | When hooks inject memory: `auto`, `startup`, `always`, `manual`, `off`. |
+| `proof` | select | `off` | normal | Hook proof line: `off`, `compact`. |
+| `global_path` | text | empty | risky | Filesystem path for global memory. |
+| `default_profile` | select | empty | risky | Profile used when none is explicitly set. |
+| `roles` | roles | empty | normal | Comma-separated role names for routing. |
+| `theme` | select | `dark` | hidden | Internal/hidden. Not user-facing. |
 
-## Load Routing (Định tuyến tải)
+## Ignore Rules {#ignore-rules}
 
-| Khóa cấu hình | Điều khiển | Mặc định | Rủi ro | Ghi chú |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `load.limit` | số 1–32 | `8` | normal | Số lượng bộ nhớ tối đa được trả về bởi tải bình thường. |
+| `ignore.source` | select | `engramignore` | normal | Scan-rule sources: `engramignore`, `gitignore`, `both`, `off`. |
+| `ignore.gitignore_path` | text | `.gitignore` | normal | Git ignore file path. |
+| `ignore.engramignore_path` | text | `.engramignore` | normal | Engram ignore file path. |
+| `ignore.global_engramignore` | toggle | `true` | normal | Applies global ignore rules when configured. |
+| `ignore.also_ignore` | list | `*.secret`, `private/**` | normal | Extra comma-separated glob patterns. |
+| `ignore.global_patterns` | textarea | empty | normal | One global glob per line; inject syncs a managed workspace block. |
 
-## Memory Limits (Giới hạn bộ nhớ)
+## Load Routing {#load-routing}
 
-| Khóa cấu hình | Điều khiển | Mặc định | Rủi ro | Ghi chú |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `memory.rule_line_target` | số 50–200, bước 10 | `70` | normal | Số dòng khuyến nghị cho các quy tắc. |
-| `memory.rule_line_hard_limit` | số 50–200, bước 10 | `100` | risky | Số dòng tối đa cứng cho các quy tắc. |
+| `load.limit` | number 1–32 | `8` | normal | Max memories returned by normal load. |
 
-## Graph (Đồ thị)
+## Memory Limits {#memory-limits}
 
-| Khóa cấu hình | Điều khiển | Mặc định | Rủi ro | Ghi chú |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `graph.enabled` | nút bật tắt | `true` | normal | Bật định tuyến quan hệ/phụ thuộc. |
-| `graph.max_related` | số 1–20 | `4` | normal | Giới hạn bộ nhớ liên quan từ các cạnh đồ thị. |
-| `graph.min_related_score` | số 0–1, bước 0.01 | `0.22` | normal | Điểm số tương đồng tối thiểu cho các cạnh liên quan. |
+| `memory.rule_line_target` | number 50–200, step 10 | `70` | normal | Recommended line count for rules. |
+| `memory.rule_line_hard_limit` | number 50–200, step 10 | `100` | risky | Hard max line count for rules. |
 
-## Vector Search (Tìm kiếm Vector)
+## Graph {#graph}
 
-| Khóa cấu hình | Điều khiển | Mặc định | Rủi ro | Ghi chú |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `vector.enabled` | nút bật tắt | `true` | normal | Bật định tuyến vector cục bộ tùy chọn. |
-| `vector.auto_threshold` | số 10–1000 | `100` | normal | Số lượng bộ nhớ để kích hoạt tìm kiếm vector. |
-| `vector.candidate_pool` | số 8–100 | `24` | normal | Số lượng ứng viên được xem xét trước khi xếp hạng lại. |
-| `vector.dimensions` | số 16–512 | `64` | normal | Số chiều nhúng; xây dựng lại sau khi thay đổi. |
+| `graph.enabled` | toggle | `true` | normal | Enables dependency/relationship routing. |
+| `graph.max_related` | number 1–20 | `4` | normal | Limits related memories from graph edges. |
+| `graph.min_related_score` | number 0–1, step 0.01 | `0.22` | normal | Min similarity score for related edges. |
 
-## Rule Variants (Biến thể quy tắc)
+## Vector Search {#vector-search}
 
-| Khóa cấu hình | Điều khiển | Mặc định | Rủi ro | Ghi chú |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `rule_variants.enabled` | nút bật tắt | `false` | normal | Bật các biến thể vai trò/mức độ nghiêm ngặt. |
-| `rule_variants.active` | danh sách chọn | `balanced` | normal | Biến thể hoạt động: `light`, `balanced`, `strict`. |
+| `vector.enabled` | toggle | `true` | normal | Enables optional local vector routing. |
+| `vector.provider` | select | `sqlite-vec` | normal | The only supported local vector provider. |
+| `vector.auto_threshold` | number 10–1000 | `100` | normal | Memory count where vector search activates. |
+| `vector.candidate_pool` | number 8–100 | `24` | normal | Candidates considered before reranking. |
+| `vector.dimensions` | number 16–512 | `64` | normal | Embedding dimensions; rebuild after change. |
 
-## Live Sync (Đồng bộ trực tiếp)
+## Rule Variants {#rule-variants}
 
-| Khóa cấu hình | Điều khiển | Mặc định | Rủi ro | Ghi chú |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `live_sync.enabled` | nút bật tắt | `false` | normal | Đồng bộ các tệp ngữ cảnh tác nhân được tạo ra khi lưu. |
+| `rule_variants.enabled` | toggle | `false` | normal | Enables role/strictness variants. |
+| `rule_variants.active` | select | `balanced` | normal | Active variant: `light`, `balanced`, `strict`. |
 
-## Global Git (Git toàn cục)
+## Live Sync {#live-sync}
 
-| Khóa cấu hình | Điều khiển | Mặc định | Rủi ro | Ghi chú |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `global_git.enabled` | nút bật tắt | `true` | risky | Bật hành vi Git cho bộ nhớ toàn cục. |
-| `global_git.remote` | văn bản | `origin` | risky | Tên Git remote; không có khoảng trắng. |
-| `global_git.remote_url` | văn bản | trống | risky | URL remote của bộ nhớ toàn cục chia sẻ. |
-| `global_git.branch` | văn bản | `main` | risky | Nhánh đích cho đồng bộ hóa. |
-| `global_git.auto_sync` | nút bật tắt | `true` | risky | Tự động pull/push. |
-| `global_git.auto_resolve` | nút bật tắt | `true` | risky | Tự động xử lý xung đột; xem xét các khác biệt. |
+| `live_sync.enabled` | toggle | `false` | normal | Sync generated agent context files on save. |
+| `live_sync.targets` | list | `agents-md`, `claude-md`, `cursorrules` | normal | Generated context targets refreshed by live sync. |
 
-## Pattern Mining (Khai thác mẫu)
+## Global Git {#global-git}
 
-| Khóa cấu hình | Điều khiển | Mặc định | Rủi ro | Ghi chú |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `pattern_mining.enabled` | nút bật tắt | `false` | normal | Thử nghiệm tự động trích xuất mẫu lặp lại. |
-| `pattern_mining.threshold` | số 1–20 | `3` | normal | Số lần lặp lại trước khi mẫu có hiệu lực. |
-| `pattern_mining.lookback_sessions` | số 1–100 | `20` | normal | Số phiên gần đây cần kiểm tra. |
+| `global_git.enabled` | toggle | `true` | risky | Enables Git behavior for global memory. |
+| `global_git.remote` | text | `origin` | risky | Git remote name; no whitespace. |
+| `global_git.remote_url` | text | empty | risky | Shared global memory remote URL. |
+| `global_git.branch` | text | `main` | risky | Target branch for sync. |
+| `global_git.auto_sync` | toggle | `true` | risky | Auto pull/push behavior. |
+| `global_git.auto_resolve` | toggle | `true` | risky | Auto conflict handling; review diffs. |
 
-## PR Workflow (Quy trình PR)
+## Pattern Mining {#pattern-mining}
 
-| Khóa cấu hình | Điều khiển | Mặc định | Rủi ro | Ghi chú |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `pr_workflow.enabled` | nút bật tắt | `false` | risky | Thử nghiệm quy trình PR của nhóm. |
-| `pr_workflow.target_branch` | văn bản | `main` | risky | Nhánh nhận các PR bộ nhớ. |
+| `pattern_mining.enabled` | toggle | `false` | normal | Experimental recurring-pattern extraction. |
+| `pattern_mining.threshold` | number 1–20 | `3` | normal | Repetitions before a pattern matters. |
+| `pattern_mining.lookback_sessions` | number 1–100 | `20` | normal | Recent sessions to inspect. |
 
-## Encryption (Mã hóa)
+## PR Workflow {#pr-workflow}
 
-| Khóa cấu hình | Điều khiển | Mặc định | Rủi ro | Ghi chú |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `encryption.enabled` | nút bật tắt | `false` | risky | Chế độ mã hóa nâng cao/tương lai. |
-| `encryption.scope` | danh sách chọn | `global` | risky | Phạm vi: `workspace`, `global`. |
-| `encryption.key_source` | danh sách chọn | `portable-file` | risky | Chiến lược nguồn khóa; rủi ro mất bản sao lưu. |
+| `pr_workflow.enabled` | toggle | `false` | risky | Experimental team PR workflow. |
+| `pr_workflow.provider` | text | empty | risky | Provider identifier for configured team workflow. |
+| `pr_workflow.repo` | text | empty | risky | Repository identifier for configured team workflow. |
+| `pr_workflow.target_branch` | text | `main` | risky | Branch receiving memory PRs. |
 
-## Các điều khiển không phải cấu hình
+## Encryption {#encryption}
 
-Xem các trang theo tab cho các điều khiển không phải cấu hình:
+| Config key | Control | Default | Risk | Notes |
+| --- | --- | --- | --- | --- |
+| `encryption.enabled` | toggle | `false` | risky | Future/advanced encryption mode. |
+| `encryption.scope` | select | `global` | risky | Scope: `workspace`, `global`. |
+| `encryption.key_source` | select | `portable-file` | risky | Key source strategy; backup loss risk. |
 
-- [Tab Connections](connections.md)
-- [Tab Profiles](profiles.md)
-- [Tab Workspaces](workspaces.md)
-- [Tab Core](core.md)
-- [Tab Memories](memories.md)
-- [Tab Runtime](runtime.md)
+## Non-config controls
 
-## Các bước tiếp theo
+See the per-tab pages for non-config controls:
 
-- [Tab Construct](construct.md)
-- [Hướng dẫn biên soạn trường](field-authoring-guidelines.md)
+- [Construct tab](construct.md)
+- [Memories tab](memories.md)
+- [Review tab](review.md)
+- [Core tab](core.md)
+- [Connections tab](connections.md)
+
+Profile and workspace management are available in the Construct tab and through `engram profile` and `engram workspace`. See [Profiles and scope resolution](../concepts/profiles.md).
+
+## Next steps
+
+- [Construct tab](construct.md)
+- [Field authoring guidelines](field-authoring-guidelines.md)

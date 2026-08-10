@@ -1,39 +1,39 @@
 ---
-title: Công cụ MCP
+title: MCP tools
 sidebar_position: 11
-description: Máy chủ Engram MCP cung cấp các công cụ tải, tìm kiếm và chỉ-đề-xuất cho các máy chủ hỗ trợ MCP.
+description: Engram MCP server exposes load, search, and proposal-only tools to MCP-capable hosts.
 ---
 
-# Công cụ MCP
+# MCP tools
 
-Engram đi kèm với một tệp nhị phân máy chủ MCP `engram-mcp` cung cấp các công cụ cho các máy chủ hỗ trợ MCP.
+Engram ships an MCP server binary `engram-mcp` that exposes tools to MCP-capable hosts.
 
-## Đăng ký
+## Registration
 
-Theo mặc định, `engram link <target>` cũng cài đặt đăng ký MCP đã biết cho mục tiêu đó.
+`engram link <target>` also installs the known MCP registration for that target by default.
 
-| Phạm vi | Đường dẫn |
+| Scope | Path |
 | --- | --- |
-| Workspace (hầu hết máy chủ) | `.mcp.json` |
-| Workspace của Cursor | `.cursor/mcp.json` |
-| Workspace của OpenCode | trường `mcp` trong `opencode.json` / `opencode.jsonc` |
+| Workspace (most hosts) | `.mcp.json` |
+| Cursor workspace | `.cursor/mcp.json` |
+| OpenCode workspace | `mcp` field in `opencode.json` / `opencode.jsonc` |
 | Global Claude | `~/.claude/mcp.json` |
-| Global Gemini / Antigravity | Tệp cấu hình Gemini MCP |
-| Global OpenCode | trường `mcp` trong `~/.config/opencode/opencode.jsonc` / `opencode.json` |
-| Global Cursor | Được đóng gói trong plugin cục bộ |
+| Global Gemini / Antigravity | Gemini MCP config file |
+| Global OpenCode | `mcp` field in `~/.config/opencode/opencode.jsonc` / `opencode.json` |
+| Global Cursor | Bundled in the local plugin |
 | Global Windsurf | `~/.codeium/windsurf/mcp_config.json` |
 
-MCP workspace của Windsurf bị bỏ qua vì tài liệu chính thức chỉ quy định cấu hình MCP ở cấp người dùng.
+Windsurf workspace MCP is skipped because the official contract documents only user-level MCP config.
 
-## Công cụ
+## Tools
 
-Các máy chủ MCP nên xử lý `engram_save` và `engram_autosave` như các công cụ **chỉ-đề-xuất**; chúng vẫn phải định tuyến các lệnh ghi cuối cùng thông qua luồng phê duyệt CLI hiển thị với con người. `engram_load` mặc định là `--full` (chọn bỏ qua thông qua `full: true`).
+MCP hosts should treat `engram_save` and `engram_autosave` as **proposal-only** tools; they must still route final writes through the human-visible CLI approval flow. `engram_load` defaults to compact output; pass `full: true` for broader legacy output.
 
-## Quy tắc phê duyệt tất cả
+## Force rule
 
-Các yêu cầu rõ ràng `/engram save-session --force`, bao gồm cả phím tắt `/engram ss -f`, nên sử dụng đường dẫn ghi của CLI vì tính năng tự động lưu của MCP vẫn chỉ là đề xuất. Phím tắt đếm số phiên `/engram ss -f last 50 sessions` nên sử dụng `engram save-session --query-level 50 --force`.
+Explicit `/engram save-session --force` requests, including the shortcut `/engram ss -f`, should use the CLI write path because MCP autosave remains proposal-only. The counted shortcut `/engram ss -f last 50 sessions` should use `engram save-session --query-level 50 --force`.
 
-## Khai báo OpenCode MCP
+## OpenCode MCP entry
 
 ```json
 "engram": {
@@ -44,10 +44,9 @@ Các yêu cầu rõ ràng `/engram save-session --force`, bao gồm cả phím t
 }
 ```
 
-Máy chủ MCP triển khai quy trình bắt tay JSON-RPC tiêu chuẩn (`initialize`, `notifications/initialized`, `tools/list`, và `tools/call`).
+The MCP server implements the standard JSON-RPC handshake (`initialize`, `notifications/initialized`, `tools/list`, and `tools/call`).
 
-## Các bước tiếp theo
+## Next steps
 
-- [Tổng quan về tích hợp Agent](overview.md)
-- [Hook và dòng kiểm chứng](hooks.md)
-
+- [Agent Integrations overview](overview.md)
+- [Hooks and proof lines](hooks.md)

@@ -1,20 +1,20 @@
 ---
-title: Cấu hình tác giả Git
+title: Git author settings
 sidebar_position: 2
-description: Cấu hình danh tính được ghi vào các bộ nhớ Engram tương lai và commit Git.
+description: Configure the identity written to future Engram memories and Engram-created Git commits.
 ---
 
-# Cấu hình tác giả Git
+# Git author settings
 
-Engram sở hữu hồ sơ tác giả để quyền tác giả bộ nhớ rõ ràng và di động.
+Engram owns an author profile so memory authorship is explicit and portable. The resolved identity is written to future memory frontmatter and supplied to Engram-created Git commits through process-local environment variables. Repository Git configuration is not changed.
 
 <!-- future-memories-only -->
-Cấu hình tác giả **chỉ ảnh hưởng đến các bộ nhớ tương lai**.
+Author settings affect **future memories only**. Existing memories change only through the explicit migration command.
 
 <a id="global-author"></a>
-## Tác giả toàn cục
+## Global author
 
-Thiết lập danh tính Engram mặc định cho mọi không gian làm việc:
+Set the default Engram identity for all workspaces:
 
 ```bash
 engram author set --name "Jane Doe" --email "jane@example.com"
@@ -23,12 +23,19 @@ engram author --help
 engram author set --help
 ```
 
-Các tệp mới sử dụng các trường riêng biệt `author_name` và `author_email`.
+New memory files use separate fields:
+
+```yaml
+author_name: Jane Doe
+author_email: jane@example.com
+```
+
+Legacy `author: jane@example.com` remains readable, but new memories do not write it.
 
 <a id="workspace-override"></a>
-## Ghi đè không gian làm việc
+## Workspace override
 
-Một không gian làm việc có thể ghi đè hồ sơ Engram toàn cục:
+A workspace can override the global Engram profile without changing other workspaces:
 
 ```bash
 engram author set --scope workspace --name "Workspace Jane" --email "jane@work.com"
@@ -36,10 +43,17 @@ engram author show --scope workspace
 ```
 
 <!-- workspace-never-syncs-global-git -->
-Ghi đè không gian làm việc không bao giờ đồng bộ cấu hình Git toàn cục.
+A workspace override never changes global Git config. It is stored in the workspace and is used only for memories and Engram-created commits in that workspace.
 
 <a id="resolution-order"></a>
-## Thứ tự phân giải
+## Resolution order
+
+Engram resolves identity in this order:
+
+1. Workspace Engram author.
+2. Global Engram author.
+3. Read-only effective Git `user.name` and `user.email` fallback.
+4. Unresolved.
 
 ```bash
 engram author show
@@ -47,16 +61,12 @@ engram author show --json
 engram author show --help
 ```
 
-Engram phân giải danh tính theo thứ tự:
-1. Tác giả Engram của không gian làm việc.
-2. Tác giả Engram toàn cục.
-3. Dự phòng Git chỉ đọc.
-4. Chưa phân giải.
+A complete valid name and email are required before a memory write. Engram-created commits receive `GIT_AUTHOR_NAME`, `GIT_AUTHOR_EMAIL`, `GIT_COMMITTER_NAME`, and `GIT_COMMITTER_EMAIL`; local and global Git config remain unchanged.
 
-Trong Entry, nguồn được hiển thị bằng các huy hiệu `WORKSPACE`, `GLOBAL`, `GIT` hoặc `UNRESOLVED`.
+In Entry, the resolved name is followed by a compact source badge: `WORKSPACE` for a workspace override, `GLOBAL` for the Engram global profile, `GIT` for Git fallback, and `UNRESOLVED` when no complete identity exists.
 
 <a id="remove-an-author-profile"></a>
-## Xóa hồ sơ tác giả
+## Remove an author profile
 
 ```bash
 engram author unset --scope workspace
@@ -64,15 +74,19 @@ engram author unset --scope global
 engram author unset --help
 ```
 
-Sử dụng `engram author unset --scope workspace` hoặc `--scope global`.
+The Web UI requires confirmation. The CLI removes the profile immediately after the explicit `unset` command. After removal, the next source in the resolution order becomes active.
 
 <a id="global-git-configuration"></a>
-## Cấu hình Git toàn cục
+## Global Git configuration
 
-Entry hiển thị cài đặt Git trong thẻ Toàn cục tại **Cài đặt → Git**.
+Entry exposes the existing global-memory Git settings **only in the Global tab** under **Settings → Git**. They continue to use the shared configuration backend; moving the controls does not create a second Git config store.
+
+The Global tab can edit `global_git.enabled`, `global_git.remote`, `global_git.remote_url`, `global_git.branch`, `global_git.auto_sync`, and `global_git.auto_resolve`. These fields are risky, so Entry validates the patch, shows the exact changed keys, and requires review before saving. The Workspace tab never renders these global controls.
 
 <a id="sync-to-global-git"></a>
-## Đồng bộ sang Git toàn cục
+## Sync to global Git
+
+Only the global Engram profile can be copied to global Git configuration. Preview first, then explicitly confirm:
 
 ```bash
 engram author sync-git-global --plan
@@ -80,14 +94,26 @@ engram author sync-git-global --confirm
 engram author sync-git-global --help
 ```
 
-Chỉ hồ sơ toàn cục mới có thể sao chép. Xem trước trước, sau đó dùng `--confirm` để thực thi.
+The confirmed operation writes `git config --global user.name` and `git config --global user.email`, verifies both values, and restores the exact previous values if either write or verification fails. A workspace profile is never eligible for this operation.
 
 <a id="migrate-existing-memories"></a>
-## Di chuyển các bộ nhớ hiện có
+## Migrate existing memories
+
+Backfill `author_name` and `author_email` only when a complete deterministic identity is available:
 
 ```bash
 engram author migrate-memories --plan
-engram author migrate-memories --confirm
+engram author migrate-memories --scope workspace --confirm
+engram author migrate-memories --scope both --confirm
+engram author migrate-memories --help
 ```
 
-Điền `author_name` và `author_email` bằng `engram author migrate-memories --plan` và `--confirm`.
+Migration preserves the Markdown body, creates a `.pre-author-v3.bak` backup, skips archives and invalid files, and is idempotent. It never guesses a missing name. Preview output lists eligible, current, skipped, and invalid files before any write.
+
+## Entry Web UI
+
+Open `engram entry`, then choose **Settings → Git**. Global and Workspace tabs show stored profiles, the resolved source badge, review-before-save dialogs, and memory migration preview. The Global tab additionally owns **Global Git configuration** and the explicit Git sync preview; those controls are hidden from Workspace. Every information button opens this localized page in a new tab and shows the matching CLI `--help` command.
+
+## Privacy and troubleshooting
+
+Names and email addresses become durable metadata in Markdown and Git history. Use an address appropriate for the repository's visibility. If saving reports an unresolved author, run `engram author show`, set a global or workspace profile, or configure Git fallback values. Global Git sync is never automatic.

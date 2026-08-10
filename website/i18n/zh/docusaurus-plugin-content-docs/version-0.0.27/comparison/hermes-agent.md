@@ -1,7 +1,7 @@
 ---
 title: Hermes Agent
 sidebar_position: 6
-description: Engram 对比 Hermes Agent — 人类拥有的文件协议对比自主且始终活跃的内存。
+description: Engram vs Hermes Agent — human-owned file protocol vs autonomous always-active memory.
 ---
 
 # Hermes Agent
@@ -10,45 +10,45 @@ description: Engram 对比 Hermes Agent — 人类拥有的文件协议对比自
 
 | | Engram | Hermes Agent |
 |---|---|---|
-| **哲学** | 人类拥有的、文件优先的协议（自动化可选） | 自主且始终活跃的内存 |
-| **存储** | `.agents/.engram/` 中有类型划分的 Markdown 文件 | `MEMORY.md` + `USER.md`（硬性字符限制） |
-| **写入模型** | 默认由人类批准（A/B/C 门；可通过规则实现自动化） | Agent 自主写入 |
-| **召回** | 按需：`engram load "<task>"` 注入相关文件 | 始终开启：核心文件在每次会话中冻结到 system prompt 中 |
-| **向量搜索** | 可选的本地 sqlite-vec（确定性的，不由嵌入支持） | 通过外部提供商（例如 agentmemory — BM25 + 向量） |
-| **跨 Agent** | 任何可读取文件的 Agent 均可消费 Engram 内存 | Hermes 核心是单 Agent 的；通过 agentmemory 插件实现跨 Agent |
-| **移植性** | Git 原生、离线优先、纯 Markdown | 本地文件；外部提供商可能会增加云端绑定风险 |
-| **开销** | 无守护进程，需要保存纪律（除非已自动化） | 服务端进程 + 查看器 UI、REST API、MCP 服务端 |
+| **Philosophy** | Human-owned, file-first protocol (automation optional) | Autonomous, always-active memory |
+| **Storage** | Typed Markdown files in `.agents/.engram/` | `MEMORY.md` + `USER.md` (hard char caps) |
+| **Write model** | Human-approved by default (A/B/C gate; automatable via rules) | Agent writes autonomously |
+| **Recall** | On-demand: `engram load "<task>"` injects relevant files | Always-on: core files frozen into system prompt each session |
+| **Vector search** | Optional local sqlite-vec (deterministic, not embedding-backed) | Via external provider (e.g. agentmemory — BM25 + vector) |
+| **Cross-agent** | Any file-reading agent can consume Engram memory | Hermes core is single-agent; cross-agent via agentmemory plugin |
+| **Portability** | Git-native, offline-first, plain Markdown | Local files; external providers may add cloud lock-in |
+| **Overhead** | No daemon, requires save discipline (unless automated) | Server process + viewer UI, REST API, MCP server |
 
-## 存储格式
+## Storage formats
 
-**Engram** 将每个内存存储为带 YAML frontmatter、哈希完整性检查和可选依赖图（`depends_on`）的类型化 Markdown 文件。JSON 索引、图和 sqlite-vec 随从文件（sidecar）作为加速层 — Markdown 是信任源。
+**Engram** stores each memory as a typed Markdown file with YAML frontmatter, hash integrity checks, and an optional dependency graph (`depends_on`). A JSON index, graph, and sqlite-vec sidecar act as acceleration layers — Markdown is the source of truth.
 
-**Hermes** 将所有持久内存压缩为两个受限的文件：
+**Hermes** compresses all persistent memory into two bounded files:
 
-- `~/.hermes/memories/MEMORY.md` — Agent 笔记，限制为 2,200 个字符
-- `~/.hermes/memories/USER.md` — 用户配置文件，限制为 1,375 个字符
+- `~/.hermes/memories/MEMORY.md` — agent notes, capped at 2,200 characters
+- `~/.hermes/memories/USER.md` — user profile, capped at 1,375 characters
 
-硬性字符限制迫使 Agent 进行挑选，而不是堆砌。会话历史记录可通过 SQLite FTS5 进行搜索。
+Hard character limits force the agent to curate rather than accumulate. Session history is searchable via SQLite FTS5.
 
-## 写入模型
+## Write model
 
-**Engram** — 默认是显式的人类审批门。Agent 提出候选；人类必须在任何内容落地到磁盘之前进行批准。秘密和 prompt-injection 扫描在保存时进行。用户可以通过保存一条规则来自动化此过程，该规则会在响应完成时自动保存新提出的内存候选。
+**Engram** — explicit human gate by default. Agents propose candidates; a human must approve before anything lands on disk. Secret and prompt-injection scanning happen at save time. Users can opt to automate this process by saving a rule to automatically save new proposed memories when a response completes.
 
-**Hermes** — 自主的。Agent 决定写什么以及何时写，仅受字符限制。核心循环中没有人类审批。
+**Hermes** — autonomous. The agent decides what to write and when, constrained only by the character caps. No human approval in the core loop.
 
-## 召回模型
+## Recall model
 
-**Engram** — 按需路由。`engram load "<task>"` 根据标签、类型、时效性、图和可选的向量信号对候选进行重新排序，然后将紧凑包（默认：8 个文件）注入上下文中。
+**Engram** — on-demand routing. `engram load "<task>"` reranks candidates by tags, type, recency, graph, and optional vector signals, then injects a compact pack (default: 8 files) into context.
 
-**Hermes** — 始终活跃的注入。核心文件在会话开始时冻结到 system prompt 中。可选的外部提供商（例如 agentmemory）在每次 LLM 轮次之前运行预取，并在之后进行同步。
+**Hermes** — always-active injection. Core files are frozen into the system prompt at session start. An optional external provider (e.g. agentmemory) runs a prefetch before each LLM turn and syncs after.
 
-## 何时使用哪一个
+## When to use which
 
-当你需要可审计的、经人类审查的内存；通过 Git 进行团队共享；隐私保证；或工具之间与 Agent 无关的移植性时，**使用 Engram**（并可选择通过自定义规则自动化保存）。
+**Use Engram** when you need auditable, human-reviewed memory; team sharing via Git; privacy guarantees; or agent-agnostic portability across tools (with the option to automate saves via custom rules).
 
-当你想自动积累内存而不需要保存纪律、始终开启的上下文注入或拥有查看器、REST API 和可插拔向量后端的更丰富运行时环境时，**使用 Hermes**。
+**Use Hermes** when you want memory that accumulates automatically without save discipline, always-on context injection, or a richer runtime with viewers, REST API, and pluggable vector backends.
 
-## 下一步
+## Next steps
 
 - [agentmemory](agentmemory.md)
-- [对比概述](overview.md)
+- [Comparison overview](overview.md)

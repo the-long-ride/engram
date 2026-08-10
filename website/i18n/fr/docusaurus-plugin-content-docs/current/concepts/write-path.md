@@ -33,6 +33,19 @@ When `engram save` finds related active memories, the approval preview reports t
 
 For `save-session --force`, Engram pauses before writing when those related memory hints appear. The agent should use the response to brainstorm a structured rerun: add `DEPENDS_ON: memory-id` for dependencies, `LEVEL: advanced` when a memory is deeper than its prerequisite, or `UPDATE: memory-id` when a candidate should merge into a possible duplicate.
 
+<!-- evidence-foundation:v3:start -->
+## Evidence-backed memory
+
+For source material that should be reviewed before it becomes active memory:
+
+```bash
+engram observe --file session.md
+engram save-session --file .agents/.engram/inbox/<observation>.md
+```
+
+The first command sanitizes the source and writes an immutable trace identified by `trace_id` plus an editable inbox wrapper. The second command resolves the wrapper to its trace, verifies hash and scope, then writes only human-approved schema v3 memory with `evidence_refs`. Editing `## Raw Note` cannot replace the trace evidence.
+<!-- evidence-foundation:v3:end -->
+
 ## Safety checks at save time
 
 - Schema validation
@@ -51,10 +64,3 @@ Engram makes memory boring on purpose: files, diffs, hashes, review gates, and c
 
 - [Privacy, ignore rules, and safety](safety.md)
 - [CLI: save / save-session / observe](../cli/save-session.md)
-
-<!-- evidence-foundation:v3:start -->
-## Mémoire étayée par des preuves
-
-New files use `schema_version: 3`. Rule and skill memories default to `authority: instruction`; knowledge defaults to `authority: reference`. `revision` starts at 1 and increments on updates. Trace IDs belong in `evidence_refs`, while session or source identities belong in `derived_from`. Legacy v1 (`Context` + `Content` + `Example`) and v2 (`Content`, optional `Origin`) remain readable. Traces live in `.agents/.engram/traces/` with `traces/<trace-id>.jsonl` files recording `engram observe --file` and `save-session --file` provenance, `trust_level`, `sensitivity`, and `retention`.
-Traces are assigned a unique `trace_id`.
-<!-- evidence-foundation:v3:end -->

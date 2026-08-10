@@ -1,30 +1,33 @@
 ---
 title: inject / link / upgrade
 sidebar_position: 4
-description: Команды настройки и адаптера — инициализация рабочих пространств, связывание агентов и согласование после обновления пакетов.
+description: Setup and adapter commands — initialize workspaces, link agents, and reconcile after package updates.
 ---
 
 # inject / link / upgrade
 
-Команды настройки и адаптера инициализируют рабочие пространства, связывают агентов и согласовывают данные после обновления пакетов.
+Setup and adapter commands initialize workspaces, link agents, and reconcile after package updates.
 
 ## inject
 
 ```bash
 engram inject
+engram inject --scope workspace|global|both
 engram inject --global-only --global-path <path>
 engram inject --submodule
 engram inject --submodule-remote <git-url>
 engram inject --global-remote <git-url>
+engram inject --global-branch <branch>
 engram inject --no-skillset
 engram inject --skillset all
+engram inject --no-global
 ```
 
-`engram inject` создает `.agents/.engram/` и по умолчанию устанавливает компактную цель Codex. Существующие файлы, созданные человеком, пропускаются.
+`engram inject` creates `.agents/.engram/` and installs the compact Codex target by default. Existing human-authored files are skipped.
 
-Интерактивное внедрение запрашивает в следующем порядке: добавить ли `./.agents/.engram` в качестве подмодуля, использовать ли глобальный путь Engram и добавить ли общий глобальный Git-источник.
+Interactive inject asks in this order: whether to add `./.agents/.engram` as a submodule, whether to use a global Engram path, and whether to add a shared global Git origin.
 
-Используйте `engram update-global-folder <new-path>` или `engram ugf <new-path>` для обновления только настроенного глобального пути. Формы в стиле чата, такие как `engram set global memory path to <new-path>` и `engram move global folder from <old-path> to <new-path>`, приводятся к одной и той же команде. Добавьте `--move-from-path <old-path>`, если они также хотят, чтобы Engram переместил весь старый глобальный корень.
+Use `engram update-global-folder <new-path>` or `engram ugf <new-path>` to update only the configured global path. Chat-style forms such as `engram set global memory path to <new-path>` and `engram move global folder from <old-path> to <new-path>` normalize to the same command. Add `--move-from-path <old-path>` when they also want Engram to move the whole old global root.
 
 ## link
 
@@ -36,10 +39,12 @@ engram link cursor
 engram link windsurf
 engram link --global opencode
 engram link all
+engram link list
+engram link --all-supported
 engram unlink
 ```
 
-`engram link all` устанавливает набор публичных целей и сообщает о детерминированных причинах `SKIPPED` для частичных хостов в файлах инструкций наборов навыков, конфигурации MCP, слеш-адаптерах и хуках агента в одной унифицированной установке. `engram unlink` удаляет все это вместе. `engram unlink --global <target>` удаляет только глобальный плагин, сгенерированный Engram; файл, созданный человеком, сохраняется, если только не указан флаг `--force`.
+`engram link all` installs the public target set and reports deterministic `SKIPPED` reasons for partial hosts across skillset instruction files, MCP config, slash adapters, and agent hooks in one unified install. `engram unlink` removes all of these together. `engram unlink --global <target>` removes only the Engram-generated global plugin; a human-authored file is preserved unless `--force` is explicit.
 
 ## upgrade
 
@@ -47,15 +52,19 @@ engram unlink
 engram upgrade
 engram upgrade --plan
 engram upgrade --latest
+engram upgrade --self
+engram upgrade --memory-only
+engram upgrade --global-skillsets-only
+engram upgrade --target codex
 ```
 
-Используйте `engram upgrade` после установки более новой версии пакета Engram. Команда сравнивает инициализированные корни памяти, начиная с версии v0.0.8, с текущей схемой выпуска и обновляет сгенерированный `HELP.md`, индексы памяти, файлы графов, подходящие векторные контейнеры, сгенерированные наборы навыков рабочего пространства, глобальную структуру памяти и зарегистрированные наборы навыков глобального агента, сохраняя при этом файлы, созданные человеком.
+Use `engram upgrade` after installing a newer Engram package. The command compares initialized memory roots from v0.0.8 onward to the current release schema and refreshes generated `HELP.md`, memory indexes, graph files, eligible vector sidecars, generated workspace skillsets, global memory scaffolding, and registered global agent skillsets while preserving human-authored files.
 
-Обычные команды также выполняют то же самое согласование корней без уведомления один раз для каждой версии пакета, если только не установлена переменная `--no-auto-upgrade` или `ENGRAM_NO_AUTO_UPGRADE=1`.
+Normal commands also run the same root reconciliation quietly once per package version unless `--no-auto-upgrade` or `ENGRAM_NO_AUTO_UPGRADE=1` is set.
 
-Используйте `engram upgrade --latest`, когда вывод нового пакета должен перезаписать текущие связанные артефакты агентов, управляемые Engram. Этот путь повторно применяет связанные файлы инструкций рабочего пространства, правила, конфигурацию MCP/плагинов и управляемые хуки, а также обновляет зарегистрированные глобальные установки агентов последними сгенерированными файлами.
+Use `engram upgrade --latest` when the new package output must overwrite current Engram-managed linked agent artifacts. That path reapplies linked workspace instruction files, rules, MCP/plugin config, and managed hooks, and also refreshes registered global agent installs with the latest generated files.
 
-Используйте `--force` только при намеренной замене сгенерированных файлов адаптера Engram.
+Use `--force` only when replacing generated Engram adapter files intentionally.
 
 ## take-control
 
@@ -69,9 +78,9 @@ engram take-control --max-sources 5 --max-chars 900
 engram take-control --all --metacognize --force
 ```
 
-`take-control` — это поддерживаемый агентом процесс перехвата существующих инструкций рабочего пространства. Он создает компактный пакет исходников из таких файлов, как `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, правила Cursor, заметки банка памяти и папки верхнего уровня `rules/`, `skills/`, `workflows/`, `knowledge/` или `notes/`, включая заметки `.txt`.
+`take-control` is the agent-assisted takeover flow for existing workspace guidance. It builds a compact source pack from files such as `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, Cursor rules, memory-bank notes, and top-level `rules/`, `skills/`, `workflows/`, `knowledge/`, or `notes/` folders, including `.txt` notes.
 
-Сохраненные воспоминания take-control записывают `source_files` и `source_hashes`, поэтому неизмененные источники в дальнейшем пропускаются.
+Saved take-control memories record `source_files` and `source_hashes`, so unchanged sources are skipped later.
 
 ## metacognize
 
@@ -81,10 +90,9 @@ engram metacognize --global --dry-run
 engram metacognize --all --force
 ```
 
-Используйте `metacognize`, когда вы хотите, чтобы AI-агент проверил существующую папку памяти Engram и предложил более безопасную структуру через тот же поток подтверждения save-session. Агенты должны использовать `UPDATE: memory-id` для консолидации или очистки формулировок и `DEPENDS_ON: memory-id` для многоуровневой памяти.
+Use `metacognize` when you want an AI agent to review an existing Engram memory folder and propose safer structure through the same save-session approval flow. Agents should use `UPDATE: memory-id` for consolidation or wording cleanup and `DEPENDS_ON: memory-id` for layered memories.
 
-## Следующие шаги
+## Next steps
 
 - [profiles / workspaces / config](profiles-workspaces-config.md)
-- [Обзор интеграции агентов](../integrations/overview.md)
-
+- [Agent Integrations overview](../integrations/overview.md)

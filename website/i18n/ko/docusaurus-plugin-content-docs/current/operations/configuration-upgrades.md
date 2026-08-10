@@ -40,13 +40,13 @@ The Updates page now uses a compact dashboard: a **status banner** reports wheth
 
 Open `engram entry`, then **Settings → Updates**. The sidebar **copy command** action copies `engram upgrade --latest --plan` without navigating away. The preview has `All` plus only actionable kind tabs: `Config`, `Instructions`, `Memories`, `Skillsets`, `Hooks`, and `Plugins`.
 
-Every conflict has a **Review** action. The modal provides **Current**, **Proposed**, and **Diff** views. **Current** is read-only. **Proposed** is editable for replaceable Config/Instruction/Skillset items and starts from Engram's type-aware merged/replacement result. **Diff** defaults to **Inline** and can switch to **Parallel**. Inline marks removed lines with `-` (빨간색 배경) and added lines with `+` (초록색 배경); Parallel aligns **Current** and **Proposed** rows with the same 빨간색/초록색 강조. Use **Use latest**, **Reset proposed**, **Keep current**, or—when Engram can prove ownership—**Force upgrade**, then **Confirm change**.
+Every conflict has a **Review** action. The modal provides **Current**, **Proposed**, and **Diff** views. **Current** is read-only. **Proposed** is editable for replaceable Config/Instruction/Skillset items and starts from Engram's type-aware merged/replacement result. **Diff** defaults to **Inline** and can switch to **Parallel**. Inline marks removed lines with `-` on a red background and added lines with `+` on a green background; Parallel aligns **Current** and **Proposed** rows with the same red/green highlighting. Use **Use latest**, **Reset proposed**, **Keep current**, or—when Engram can prove ownership—**Force upgrade**, then **Confirm change**.
 
 **Open in editor** opens the exact current artifact resolved by the server, using `$VISUAL`, then `$EDITOR`, then the platform fallback. The browser never supplies a filesystem path. For **Instructions**, **Proposed** contains only the managed `<!-- engram:start -->` block; the full global skillset stays in the companion `.agents/engram.md` guide. If the external edit changes the file, the preview/source hash becomes stale and the review must be refreshed before confirmation.
 
 Eligible pending replaceable conflicts have selection checkboxes. **Select all visible** selects eligible rows in the active kind tab; selection persists when switching tabs. **Confirm selected changes** accepts **Use latest** for the checked rows, while **Confirm all changes** accepts **Use latest** for every eligible pending conflict in the full preview. Non-replaceable, stale, and already-reviewed rows cannot be selected. The server validates the complete batch against the preview fingerprint, current source hashes, review states, and generated proposals before one atomic review-store write. If any selected item fails validation, zero batch decisions are saved.
 
-Entry uses the same custom checkbox treatment across upgrade review: checked, keyboard-focus, and disabled states are visibly distinct. Result toast feedback uses a 초록색 테두리/글로우 for success and a 빨간색 테두리/ग्로우 for errors.
+Entry uses the same custom checkbox treatment across upgrade review: checked, keyboard-focus, and disabled states are visibly distinct. Result toast feedback uses a green border/glow for success and a red border/glow for errors.
 
 The page shows review progress. The final Upgrade action remains disabled until every conflict is explicitly resolved as accepted latest, edited proposal, **Force upgrade**, or **Keep current**. A final confirmation summarizes automatic updates, accepted proposals, edited proposals, forced replacements, kept-current files, and backups.
 
@@ -116,13 +116,3 @@ engram upgrade --latest
 ```
 
 Re-running the upgrade is idempotent for current artifacts. Reviewed `Keep current` files remain untouched unless their state changes and requires a new review.
-
-## 소유권 인식 구성 조정
-
-최신 업그레이드 인벤토리는 물리적 파일별로 등록된 통합의 중복을 제거합니다. 여러 호스트가 동일한 Engram 가이드를 공유하는 경우 Engram은 해당 파일을 한 번만 렌더링하고 기록합니다.
-
-수동 편집으로 인해 정상적인 교체가 안전하지 않은 경우, Entry는 소유권을 증명할 수 있는 경우에만 **Force upgrade**를 제공합니다. 표시된 Engram 블록의 경우 강제 교체는 해당 Engram 블록만 교체하고 주변 사용자 텍스트를 보존합니다. 등록/생성된 Engram 파일의 경우 강제 교체는 생성된 파일 전체를 교체할 수 있습니다. 알 수 없는 소유권은 일괄 처리로 강제 실행되지 않습니다.
-
-쓰기 후 재검색을 통해 성공적인 적용이 검증됩니다. current로 수렴되지 않는 예상 업데이트 아티팩트는 검증 오류로 보고됩니다.
-
-Updates 페이지는 컴팩트한 대시보드를 사용합니다. **상태 배너**가 상태를 보고하고 **Workspace**, **Global**, **Conflicts** 카드가 개수를 표시합니다. 항목은 공유 **가로 스크롤**이 있는 **테이블**에 표시됩니다. **체크박스** 컨트롤을 사용하고 **토스트** 피드백은 **성공**의 녹색과 **오류**의 빨간색 테두리를 표시합니다.

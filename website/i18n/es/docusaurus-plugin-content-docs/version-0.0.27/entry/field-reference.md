@@ -1,125 +1,142 @@
 ---
-title: Referencia completa de campos
+title: Complete field reference
 sidebar_position: 10
-description: Referencia de búsqueda para cada entrada y control de la interfaz Entry Web UI.
+description: Searchable reference for every Entry Web UI input and control.
 ---
 
-# Referencia completa de campos
+# Complete field reference
 
-Esta página es la referencia de campos canónica del usuario final para cada entrada y control de la interfaz Entry Web UI.
+This page is the canonical end-user field reference for every Entry Web UI input and control.
 
-## Cómo leer esta referencia
+## How to read this reference
 
-Cada campo incluye:
+Each field lists:
 
-- **Clave de configuración** — la clave utilizada en los archivos de configuración y la CLI
-- **Control** — el tipo de entrada
-- **Predeterminado** — el valor predeterminado seguro
-- **Riesgo** — `normal`, `caution` (precaución) o `risky` (riesgoso)
-- **Notas** — qué hace el campo y cuándo cambiarlo
+- **Config key** — the key used in config files and the CLI
+- **Control** — the input type
+- **Default** — the safe default value
+- **Risk** — `normal`, `caution`, or `risky`
+- **Notes** — what the field does and when to change it
 
-## Core (Núcleo)
+## Core {#core}
 
-| Clave de configuración | Control | Predeterminado | Riesgo | Notas |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `enabled` | alternancia | `true` | risky | Interruptor principal. Deshabilitar detiene el comportamiento de Engram. |
-| `scope` | selección | `both` | risky | Ámbito de guardado: `workspace`, `global`, `both`. |
-| `read` | selección | `auto` | normal | Cuándo los hooks inyectan memoria: `auto`, `startup`, `always`, `manual`, `off`. |
-| `proof` | selección | `off` | normal | Línea de prueba del hook: `off`, `compact`. |
-| `global_path` | texto | vacío | risky | Ruta del sistema de archivos para la memoria global. |
-| `default_profile` | selección | vacío | risky | Perfil utilizado cuando no se establece ninguno explícitamente. |
-| `roles` | roles | vacío | normal | Nombres de roles separados por comas para el enrutamiento. |
-| `theme` | selección | `dark` | hidden | Interno/oculto. No de cara al usuario. |
+| `enabled` | toggle | `true` | risky | Master switch. Disabling stops Engram behavior. |
+| `scope` | select | `both` | risky | Save target: `workspace`, `global`, `both`. |
+| `update` | select | `auto` | normal | Quiet package upgrade check: `auto`, `manual`, `off`. |
+| `read` | select | `auto` | normal | When hooks inject memory: `auto`, `startup`, `always`, `manual`, `off`. |
+| `proof` | select | `off` | normal | Hook proof line: `off`, `compact`. |
+| `global_path` | text | empty | risky | Filesystem path for global memory. |
+| `default_profile` | select | empty | risky | Profile used when none is explicitly set. |
+| `roles` | roles | empty | normal | Comma-separated role names for routing. |
+| `theme` | select | `dark` | hidden | Internal/hidden. Not user-facing. |
 
-## Load Routing (Enrutamiento de carga)
+## Ignore Rules {#ignore-rules}
 
-| Clave de configuración | Control | Predeterminado | Riesgo | Notas |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `load.limit` | número 1–32 | `8` | normal | Cantidad máxima de memorias por carga normal. |
+| `ignore.source` | select | `engramignore` | normal | Scan-rule sources: `engramignore`, `gitignore`, `both`, `off`. |
+| `ignore.gitignore_path` | text | `.gitignore` | normal | Git ignore file path. |
+| `ignore.engramignore_path` | text | `.engramignore` | normal | Engram ignore file path. |
+| `ignore.global_engramignore` | toggle | `true` | normal | Applies global ignore rules when configured. |
+| `ignore.also_ignore` | list | `*.secret`, `private/**` | normal | Extra comma-separated glob patterns. |
+| `ignore.global_patterns` | textarea | empty | normal | One global glob per line; inject syncs a managed workspace block. |
 
-## Memory Limits (Límites de memoria)
+## Load Routing {#load-routing}
 
-| Clave de configuración | Control | Predeterminado | Riesgo | Notas |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `memory.rule_line_target` | número 50–200, paso 10 | `70` | normal | Recuento de líneas recomendado para reglas. |
-| `memory.rule_line_hard_limit` | número 50–200, paso 10 | `100` | risky | Recuento máximo estricto de líneas para reglas. |
+| `load.limit` | number 1–32 | `8` | normal | Max memories returned by normal load. |
 
-## Graph (Grafo)
+## Memory Limits {#memory-limits}
 
-| Clave de configuración | Control | Predeterminado | Riesgo | Notas |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `graph.enabled` | alternancia | `true` | normal | Habilita el enrutamiento de dependencias/relaciones. |
-| `graph.max_related` | número 1–20 | `4` | normal | Limita las memorias relacionadas desde las aristas del grafo. |
-| `graph.min_related_score` | número 0–1, paso 0.01 | `0.22` | normal | Puntaje mínimo de similitud para aristas relacionadas. |
+| `memory.rule_line_target` | number 50–200, step 10 | `70` | normal | Recommended line count for rules. |
+| `memory.rule_line_hard_limit` | number 50–200, step 10 | `100` | risky | Hard max line count for rules. |
 
-## Vector Search (Búsqueda vectorial)
+## Graph {#graph}
 
-| Clave de configuración | Control | Predeterminado | Riesgo | Notas |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `vector.enabled` | alternancia | `true` | normal | Habilita el enrutamiento vectorial local opcional. |
-| `vector.auto_threshold` | número 10–1000 | `100` | normal | Cantidad de memorias para activar la búsqueda vectorial. |
-| `vector.candidate_pool` | número 8–100 | `24` | normal | Candidatos considerados antes de volver a clasificar. |
-| `vector.dimensions` | número 16–512 | `64` | normal | Dimensiones de incrustación; reconstruir tras cambio. |
+| `graph.enabled` | toggle | `true` | normal | Enables dependency/relationship routing. |
+| `graph.max_related` | number 1–20 | `4` | normal | Limits related memories from graph edges. |
+| `graph.min_related_score` | number 0–1, step 0.01 | `0.22` | normal | Min similarity score for related edges. |
 
-## Rule Variants (Variantes de reglas)
+## Vector Search {#vector-search}
 
-| Clave de configuración | Control | Predeterminado | Riesgo | Notas |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `rule_variants.enabled` | alternancia | `false` | normal | Habilita las variantes de roles/estrictez. |
-| `rule_variants.active` | selección | `balanced` | normal | Variante activa: `light`, `balanced`, `strict`. |
+| `vector.enabled` | toggle | `true` | normal | Enables optional local vector routing. |
+| `vector.provider` | select | `sqlite-vec` | normal | The only supported local vector provider. |
+| `vector.auto_threshold` | number 10–1000 | `100` | normal | Memory count where vector search activates. |
+| `vector.candidate_pool` | number 8–100 | `24` | normal | Candidates considered before reranking. |
+| `vector.dimensions` | number 16–512 | `64` | normal | Embedding dimensions; rebuild after change. |
 
-## Live Sync (Sincronización en vivo)
+## Rule Variants {#rule-variants}
 
-| Clave de configuración | Control | Predeterminado | Riesgo | Notas |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `live_sync.enabled` | alternancia | `false` | normal | Sincroniza archivos de contexto del agente al guardar. |
+| `rule_variants.enabled` | toggle | `false` | normal | Enables role/strictness variants. |
+| `rule_variants.active` | select | `balanced` | normal | Active variant: `light`, `balanced`, `strict`. |
 
-## Global Git (Git global)
+## Live Sync {#live-sync}
 
-| Clave de configuración | Control | Predeterminado | Riesgo | Notas |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `global_git.enabled` | alternancia | `true` | risky | Habilita comportamiento Git para memoria global. |
-| `global_git.remote` | texto | `origin` | risky | Nombre de remoto Git; sin espacios. |
-| `global_git.remote_url` | texto | vacío | risky | URL de remoto de memoria global compartida. |
-| `global_git.branch` | texto | `main` | risky | Rama destino para la sincronización. |
-| `global_git.auto_sync` | alternancia | `true` | risky | Comportamiento automático de pull/push. |
-| `global_git.auto_resolve` | alternancia | `true` | risky | Manejo automático de conflictos; revisar diffs. |
+| `live_sync.enabled` | toggle | `false` | normal | Sync generated agent context files on save. |
+| `live_sync.targets` | list | `agents-md`, `claude-md`, `cursorrules` | normal | Generated context targets refreshed by live sync. |
 
-## Pattern Mining (Minería de patrones)
+## Global Git {#global-git}
 
-| Clave de configuración | Control | Predeterminado | Riesgo | Notas |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `pattern_mining.enabled` | alternancia | `false` | normal | Extracción experimental de patrones recurrentes. |
-| `pattern_mining.threshold` | número 1–20 | `3` | normal | Repeticiones antes de que un patrón sea relevante. |
-| `pattern_mining.lookback_sessions` | número 1–100 | `20` | normal | Sesiones recientes a inspeccionar. |
+| `global_git.enabled` | toggle | `true` | risky | Enables Git behavior for global memory. |
+| `global_git.remote` | text | `origin` | risky | Git remote name; no whitespace. |
+| `global_git.remote_url` | text | empty | risky | Shared global memory remote URL. |
+| `global_git.branch` | text | `main` | risky | Target branch for sync. |
+| `global_git.auto_sync` | toggle | `true` | risky | Auto pull/push behavior. |
+| `global_git.auto_resolve` | toggle | `true` | risky | Auto conflict handling; review diffs. |
 
-## PR Workflow (Flujo de trabajo de PR)
+## Pattern Mining {#pattern-mining}
 
-| Clave de configuración | Control | Predeterminado | Riesgo | Notas |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `pr_workflow.enabled` | alternancia | `false` | risky | Flujo de trabajo de PR de equipo experimental. |
-| `pr_workflow.target_branch` | texto | `main` | risky | Rama que recibe las PR de memoria. |
+| `pattern_mining.enabled` | toggle | `false` | normal | Experimental recurring-pattern extraction. |
+| `pattern_mining.threshold` | number 1–20 | `3` | normal | Repetitions before a pattern matters. |
+| `pattern_mining.lookback_sessions` | number 1–100 | `20` | normal | Recent sessions to inspect. |
 
-## Encryption (Cifrado)
+## PR Workflow {#pr-workflow}
 
-| Clave de configuración | Control | Predeterminado | Riesgo | Notas |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `encryption.enabled` | alternancia | `false` | risky | Modo de cifrado futuro/avanzado. |
-| `encryption.scope` | selección | `global` | risky | Ámbito: `workspace`, `global`. |
-| `encryption.key_source` | selección | `portable-file` | risky | Estrategia de origen; riesgo de pérdida de copia. |
+| `pr_workflow.enabled` | toggle | `false` | risky | Experimental team PR workflow. |
+| `pr_workflow.provider` | text | empty | risky | Provider identifier for configured team workflow. |
+| `pr_workflow.repo` | text | empty | risky | Repository identifier for configured team workflow. |
+| `pr_workflow.target_branch` | text | `main` | risky | Branch receiving memory PRs. |
 
-## Controles que no son de configuración
+## Encryption {#encryption}
 
-Consulte las páginas por pestaña para los controles que no son de configuración:
+| Config key | Control | Default | Risk | Notes |
+| --- | --- | --- | --- | --- |
+| `encryption.enabled` | toggle | `false` | risky | Future/advanced encryption mode. |
+| `encryption.scope` | select | `global` | risky | Scope: `workspace`, `global`. |
+| `encryption.key_source` | select | `portable-file` | risky | Key source strategy; backup loss risk. |
 
-- [Pestaña Connections](connections.md)
-- [Pestaña Profiles](profiles.md)
-- [Pestaña Workspaces](workspaces.md)
-- [Pestaña Core](core.md)
-- [Pestaña Memories](memories.md)
-- [Pestaña Runtime](runtime.md)
+## Non-config controls
 
-## Siguientes pasos
+See the per-tab pages for non-config controls:
 
-- [Pestaña Construct](construct.md)
-- [Pautas de redacción de campos](field-authoring-guidelines.md)
+- [Construct tab](construct.md)
+- [Memories tab](memories.md)
+- [Review tab](review.md)
+- [Core tab](core.md)
+- [Connections tab](connections.md)
+
+Profile and workspace management are available in the Construct tab and through `engram profile` and `engram workspace`. See [Profiles and scope resolution](../concepts/profiles.md).
+
+## Next steps
+
+- [Construct tab](construct.md)
+- [Field authoring guidelines](field-authoring-guidelines.md)

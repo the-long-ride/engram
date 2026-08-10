@@ -53,6 +53,7 @@ Auto conflict handling can mask memory diffs. Review memory diffs before relying
 - [Release and upgrade process](release-upgrade.md)
 - [Concepts: write path and approval](../concepts/write-path.md)
 
+
 ## Git author identity
 
 Engram can store a global author and an optional workspace override. Resolution is workspace, global, then read-only Git fallback. Settings affect future memories only; a workspace override never changes global Git configuration. Use explicit plan and confirmation for global Git sync or legacy-memory migration.

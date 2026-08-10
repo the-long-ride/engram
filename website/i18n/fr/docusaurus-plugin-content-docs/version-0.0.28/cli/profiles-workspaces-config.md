@@ -1,12 +1,12 @@
 ---
 title: profiles / workspaces / config
 sidebar_position: 5
-description: Gérer les profils, les cibles d'enregistrement, les limites de chargement, les modes de lecture/preuve, les rôles et la configuration d'exécution.
+description: Manage profiles, save targets, load limits, read/proof modes, roles, and runtime config.
 ---
 
 # profiles / workspaces / config
 
-Gérer les profils, les cibles d'enregistrement, les limites de chargement, les modes de lecture/preuve, les rôles et la configuration d'exécution.
+Manage profiles, save targets, load limits, read/proof modes, roles, and runtime config.
 
 ## profile
 
@@ -17,7 +17,7 @@ engram profile use company --workspace
 engram profile merge personal company --dry-run
 ```
 
-L'ordre de résolution du profil est le `--profile` explicite ou `ENGRAM_PROFILE`, puis le `default_profile` de l'espace de travail, puis le profil de l'utilisateur actif. Si l'espace de travail `W` est épinglé sur le profil `B` alors que le profil par défaut de l'utilisateur reste le profil `A`, chaque chargement normal, chargement MCP et injection de hook d'agent pour `W` lit la mémoire globale du profil `B` et jamais celle du profil `A`. Un profil explicite différent de la valeur par défaut de l'espace de travail utilise la mémoire globale de ce profil et désactive la mémoire de l'espace de travail pour cette commande.
+Profile resolution order is explicit `--profile` or `ENGRAM_PROFILE`, then the workspace `default_profile`, then the active user profile. If workspace `W` is pinned to profile `B` while the user default remains profile `A`, every normal load, MCP load, and agent-hook injection for `W` reads profile `B` global memory and never profile `A`. An explicit profile different from the workspace default uses that profile's global memory and disables workspace memory for that command.
 
 ## set-save-target
 
@@ -58,12 +58,12 @@ engram set-role backend security
 engram set-role
 ```
 
-Lorsque `engram set-role ...` ou `engram set-rule-variant ...` réussit, la CLI renvoie une ligne `Agent action:`. Les adaptateurs slash et les hôtes MCP compatibles avec Engram doivent immédiatement réexécuter `engram load "<current task/request>"`.
+When `engram set-role ...` or `engram set-rule-variant ...` succeeds, the CLI returns an `Agent action:` line. Engram-aware slash adapters and MCP hosts should immediately rerun `engram load "<current task/request>"`.
 
 ## set-rule-variant
 
 ```bash
-engram set-rule-variant strict|balanced|light|off
+engram set-rule-variant strict|balanced|light|off|status
 ```
 
 ## config
@@ -73,43 +73,27 @@ engram config view
 engram config set <key> <value>
 ```
 
-### Référence des paramètres clés
+### Key settings reference
 
-| Clé | Description | Par défaut | Plage / Options |
+| Key | Description | Default | Range / Options |
 | --- | --- | --- | --- |
-| `memory.rule_line_target` | Nombre de lignes recommandé pour les mémoires de règles | `70` | `50` à `200` |
-| `memory.rule_line_hard_limit` | Nombre de lignes maximal autorisé pour les mémoires de règles | `100` | `50` à `200` |
-| `load.limit` | Nombre maximum de mémoires renvoyées par un chargement normal | `8` | `1` à `32` |
-| `rule_variants.enabled` | Activer ou désactiver la génération de variantes de règles | `true` | `true`, `false` |
-| `rule_variants.active` | Mode de variante de règle active | `balanced` | `light`, `balanced`, `strict` |
-| `graph.enabled` | Activer ou désactiver le routage basé sur le graphe | `true` | `true`, `false` |
-| `graph.max_related` | Nombre maximum de mémoires associées à récupérer du graphe | `8` | `1` à `20` |
-| `graph.min_related_score` | Score de similarité minimal pour ajouter des arêtes de graphe | `0.3` | `0.0` à `1.0` |
-| `vector.enabled` | Activer ou désactiver la recherche vectorielle de secours | `true` | `true`, `false` |
-| `live_sync.enabled` | Synchroniser les fichiers de contexte d'agent générés lors de l'enregistrement | `true` | `true`, `false` |
-| `global_git.enabled` | Activer l'automatisation de la synchronisation du dépôt Git global | `false` | `true`, `false` |
-| `global_git.remote` | Nom du dépôt distant Git pour la synchronisation globale | `origin` | Chaîne |
-| `global_git.branch` | Nom de la branche Git pour la synchronisation globale | `main` | Chaîne |
+| `memory.rule_line_target` | Recommended line count target for rule memories | `70` | `50` to `200` |
+| `memory.rule_line_hard_limit` | Maximum allowed line count for rule memories | `100` | `50` to `200` |
+| `load.limit` | Max memories returned by normal load | `8` | `1` to `32` |
+| `rule_variants.enabled` | Enable or disable rule variants generation | `false` | `true`, `false` |
+| `rule_variants.active` | Active rule variant mode | `balanced` | `light`, `balanced`, `strict` |
+| `graph.enabled` | Enable or disable graph-aware routing | `true` | `true`, `false` |
+| `graph.max_related` | Max related memories to fetch from graph edges | `4` | `1` to `20` |
+| `graph.min_related_score` | Min similarity score to add graph edges | `0.22` | `0.0` to `1.0` |
+| `vector.enabled` | Enable or disable vector search fallback | `true` | `true`, `false` |
+| `live_sync.enabled` | Sync generated agent context files on save | `false` | `true`, `false` |
+| `global_git.enabled` | Enable global Git repo sync automation | `true` | `true`, `false` |
+| `global_git.remote` | Git remote name for global sync | `origin` | String |
+| `global_git.branch` | Git branch name for global sync | `main` | String |
 
-Ces paramètres sont également gérables visuellement sous l'onglet **Construct** dans `engram entry`.
+These settings are also manageable visually under the **Construct** tab in `engram entry`.
 
-## Étapes suivantes
+## Next steps
 
 - [verify / repair / quality-check](verify-repair-quality.md)
-- [Interface Web d'Entry : onglet Construct](../entry/construct.md)
-
-## Git author identity
-
-Engram can store a global author and an optional workspace override. Resolution is workspace, global, then read-only Git fallback. Settings affect future memories only; a workspace override never changes global Git configuration. Use explicit plan and confirmation for global Git sync or legacy-memory migration.
-
-```bash
-engram author show
-engram author set --name "Jane Doe" --email "jane@example.com"
-engram author unset --scope workspace
-engram author sync-git-global --plan
-engram author sync-git-global --confirm
-engram author migrate-memories --plan
-engram author migrate-memories --confirm
-```
-
-Read the complete [Git author settings guide](../operations/git-author-settings.md).
+- [Entry Web UI: Construct tab](../entry/construct.md)

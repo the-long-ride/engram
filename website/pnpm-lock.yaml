@@ -8,8 +8,6 @@ overrides:
   brace-expansion: ^2.0.2
   dompurify: ^3.4.13
   fast-uri: ^3.0.3
-  image-size: 2.0.2
-  '@docusaurus/mdx-loader>image-size': 2.0.2
   js-yaml: ^5.2.3
   mermaid: ^11.16.1
   nanoid: ^5.1.5

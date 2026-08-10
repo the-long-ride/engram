@@ -1,39 +1,39 @@
 ---
-title: Outils MCP
+title: MCP tools
 sidebar_position: 11
-description: Le serveur Engram MCP expose des outils de chargement, de recherche et de proposition uniquement aux hôtes compatibles MCP.
+description: Engram MCP server exposes load, search, and proposal-only tools to MCP-capable hosts.
 ---
 
-# Outils MCP
+# MCP tools
 
-Engram fournit un binaire de serveur MCP `engram-mcp` qui expose des outils aux hôtes compatibles MCP.
+Engram ships an MCP server binary `engram-mcp` that exposes tools to MCP-capable hosts.
 
-## Enregistrement
+## Registration
 
-`engram link <target>` installe également par défaut l'enregistrement MCP connu pour cette cible.
+`engram link <target>` also installs the known MCP registration for that target by default.
 
-| Portée | Chemin |
+| Scope | Path |
 | --- | --- |
-| Espace de travail (la plupart des hôtes) | `.mcp.json` |
-| Espace de travail de Cursor | `.cursor/mcp.json` |
-| Espace de travail de OpenCode | champ `mcp` dans `opencode.json` / `opencode.jsonc` |
-| Claude global | `~/.claude/mcp.json` |
-| Gemini / Antigravity global | Fichier de configuration Gemini MCP |
-| OpenCode global | champ `mcp` dans `~/.config/opencode/opencode.jsonc` / `opencode.json` |
-| Cursor global | Intégré dans le plugin local |
-| Windsurf global | `~/.codeium/windsurf/mcp_config.json` |
+| Workspace (most hosts) | `.mcp.json` |
+| Cursor workspace | `.cursor/mcp.json` |
+| OpenCode workspace | `mcp` field in `opencode.json` / `opencode.jsonc` |
+| Global Claude | `~/.claude/mcp.json` |
+| Global Gemini / Antigravity | Gemini MCP config file |
+| Global OpenCode | `mcp` field in `~/.config/opencode/opencode.jsonc` / `opencode.json` |
+| Global Cursor | Bundled in the local plugin |
+| Global Windsurf | `~/.codeium/windsurf/mcp_config.json` |
 
-L'espace de travail MCP de Windsurf est ignoré car les documents officiels ne décrivent que la configuration MCP au niveau de l'utilisateur.
+Windsurf workspace MCP is skipped because the official contract documents only user-level MCP config.
 
-## Outils
+## Tools
 
-Les hôtes MCP doivent traiter `engram_save` et `engram_autosave` comme des outils de **proposition uniquement** ; ils doivent toujours acheminer les écritures finales via le flux d'approbation CLI visible par l'homme. `engram_load` utilise par défaut `--full` (désactivation via `forAgents : false`).
+MCP hosts should treat `engram_save` and `engram_autosave` as **proposal-only** tools; they must still route final writes through the human-visible CLI approval flow. `engram_load` defaults to compact output; pass `full: true` for broader legacy output.
 
-## Règle tout accepter
+## Force rule
 
-Les requêtes explicites `/engram save-session --force`, y compris le raccourci `/engram ss -f`, doivent utiliser le chemin d'écriture CLI car la sauvegarde automatique MCP reste sur proposition uniquement. Le raccourci compté `/engram ss -f last 50 sessions` doit utiliser `engram save-session --query-level 50 --force`.
+Explicit `/engram save-session --force` requests, including the shortcut `/engram ss -f`, should use the CLI write path because MCP autosave remains proposal-only. The counted shortcut `/engram ss -f last 50 sessions` should use `engram save-session --query-level 50 --force`.
 
-## Entrée MCP OpenCode
+## OpenCode MCP entry
 
 ```json
 "engram": {
@@ -44,10 +44,9 @@ Les requêtes explicites `/engram save-session --force`, y compris le raccourci 
 }
 ```
 
-Le serveur MCP implémente la liaison JSON-RPC standard (`initialize`, `notifications/initialized`, `tools/list` et `tools/call`).
+The MCP server implements the standard JSON-RPC handshake (`initialize`, `notifications/initialized`, `tools/list`, and `tools/call`).
 
-## Étapes suivantes
+## Next steps
 
-- [Présentation des intégrations d'agents](overview.md)
-- [Hooks et lignes de preuve](hooks.md)
-
+- [Agent Integrations overview](overview.md)
+- [Hooks and proof lines](hooks.md)

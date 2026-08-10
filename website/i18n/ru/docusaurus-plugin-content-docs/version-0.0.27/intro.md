@@ -1,68 +1,69 @@
 ---
-title: "Что такое Engram?"
+title: What is Engram?
 sidebar_position: 1
-description: "Engram — это принадлежащий человеку протокол памяти для ИИ-агентов. Он сохраняет долговечные знания проекта, команды и личные предпочтения в файлах."
+description: Engram is a human-owned memory protocol for AI agents. Memory lives as approved Markdown files humans can inspect, review, and sync.
 ---
 
-# Engram
+# What is Engram?
 
-Engram — это контролируемый человеком протокол памяти для ИИ-агентов. Он сохраняет долгосрочные знания о проекте, команде и личных предпочтениях в файлах, которые люди могут проверять, просматривать, синхронизировать и восстанавливать.
+Engram is a **human-owned memory protocol for AI agents**. It keeps durable project, team, and personal knowledge in files that humans can inspect, review, sync, and repair.
 
-Engram не является скрытым мозгом агента. Агент может предлагать записи памяти, но единственным источником истины (source of truth) является утвержденный Markdown в директории `.agents/.engram/` или в опциональной папке глобальной памяти.
+Engram is not a hidden agent brain. The agent may propose memory, but the source of truth is approved Markdown under `.agents/.engram/` or an optional global memory folder.
 
-## Какую проблему он решает
+## What problem it solves
 
-ИИ-агенты забывают о решениях по проекту, повторяют вопросы по настройке окружения и смешивают старый контекст с новыми инструкциями. Встроенная память часто привязана к конкретному поставщику услуг, приложению или машине.
+AI agents forget project decisions, repeat setup questions, and mix old context with new instructions. Built-in memory is often private to one vendor, one app, or one machine.
 
-Engram предоставляет памяти стабильное соглашение:
+Engram gives memory a stable contract:
 
-- Утвержденные факты, правила и рабочие процессы хранятся в формате Markdown.
-- Индексы и графы ускоряют маршрутизацию.
-- Любая запись требует одобрения человеком.
-- Хэши выявляют небезопасные правки.
-- Правила исключения (ignore rules) защищают приватный контекст.
-- Профили изолируют память компании, клиента и личных проектов, чтобы внешние API или корпоративные агенты не переносили контекст между проектами.
-- Git обеспечивает историю изменений, переносимость и проверку командой.
+- approved facts, rules, and workflows live as Markdown
+- indexes and graphs make routing fast
+- writes require human approval
+- hashes reveal unsafe edits
+- ignore rules protect private context
+- profiles isolate company, client, and personal memory so external APIs or company-provided agents do not leak context across projects
+- Git gives history, portability, and team review
 
-## Ментальная модель
+## Mental model
 
-Представьте Engram как центр хранения знаний:
+Think of Engram as a knowledge memory center:
 
-| Уровень | Задача |
+| Layer | Job |
 | --- | --- |
-| Markdown | Долговечный источник истины (source of truth) |
-| JSON index | Быстрый поиск по индексу |
-| JSON graph | Маршрутизация по темам и связям |
-| Approval gate | Граница доверия перед записью |
-| Hashes | Проверка целостности перед чтением |
-| Ignore rules | Контроль приватности |
-| Git | История аудита и синхронизация |
-| Agent adapters | Удобство интеграции, но не источник власти |
+| Markdown | durable source of truth |
+| JSON index | fast lookup layer |
+| JSON graph | topic and relationship routing layer |
+| Approval gate | trust boundary before writes |
+| Hashes | integrity checks before reads |
+| Ignore rules | privacy controls |
+| Git | audit history and sync |
+| Agent adapters | convenience, not authority |
 
-## Приоритет областей видимости (Scopes)
+## Scope priority
 
-Engram разрешает память в следующем порядке:
+Engram resolves memory in this order:
 
-1. Память проекта (workspace): `<project>/.agents/.engram/`
-2. Глобальная память: `$ENGRAM_GLOBAL_DIR` или `engram inject --global-path <путь>`
+1. Workspace memory: `<project>/.agents/.engram/`
+2. Global memory: `$ENGRAM_GLOBAL_DIR` or `engram inject --global-path <path>`
 
-Память проекта имеет приоритет. Глобальная память используется как резервная (fallback) для переносимых личных настроек и командного контекста между разными проектами.
+Workspace memory wins. Global memory is fallback for reusable preferences and team context across projects.
 
-## Текущее состояние
+## Current shape
 
-Engram включает в себя:
+Engram includes:
 
-- `save` для одной утвержденной записи памяти.
-- `save-session` / `ss` для нескольких записей памяти по итогам сессии, с опциональным `--query-level <n>` для обработки до n доступных недавних чатов; `/engram ss -f last 50 sessions` нормализуется в `engram save-session --query-level 50 --force`.
-- `observe` для черновых заметок, которые еще не стали активной памятью.
-- `take-control` для импорта существующих руководств и документации агента.
-- `graph` и `quality-check` для анализа структуры памяти и выявления конфликтов.
-- `archive` для удаления неверной или устаревшей памяти из активной маршрутизации.
-- `repair` для обнаружения поврежденных файлов памяти, пропущенных при пересборке индекса.
-- `benchmark` для контроля регрессии поиска.
-- Наборы навыков агента (skillsets), адаптеры для слэш-команд и инструменты предложений в стиле MCP.
+- `save` for one approved memory
+- `save-session` / `ss` for several memories from a session
+- `observe` for raw notes that are not active memory yet
+- `take-control` for importing existing agent guidance and docs
+- `graph` and `quality-check` for review signals
+- `archive` for wrong or superseded memory
+- `repair` for invalid memory files skipped by index rebuild
+- `benchmark` for retrieval regression checks
+- agent skillsets, slash adapters, and MCP-style proposal tools
 
-Перед использованием команд ознакомьтесь с концептуальной страницей: [Понимание Engram](concepts/protocol.md).
+## Next steps
 
-Далее: [Быстрый старт для ИИ-агента](quickstart.md).
-
+- [AI-agent quickstart](quickstart.md)
+- [Install and configure](install.md)
+- [Human-owned protocol](concepts/protocol.md)

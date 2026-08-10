@@ -1,75 +1,75 @@
 ---
-title: Instalar y configurar
+title: Install and configure
 sidebar_position: 3
-description: Instalar la CLI de Engram, inicializar un espacio de trabajo, configurar la memoria global y vincular agentes de IA.
+description: Install the Engram CLI, initialize a workspace, configure global memory, and link AI agents.
 ---
 
-# Instalar y configurar
+# Install and configure
 
-## Requisitos
+## Requirements
 
 - Node.js `>=20`
-- Un agente de IA compatible (Codex, Claude, Gemini, Cursor, Windsurf, OpenCode, Copilot, Cline o cualquier host compatible con AGENTS.md)
+- A supported AI agent (Codex, Claude, Gemini, Cursor, Windsurf, OpenCode, Copilot, Cline, or any AGENTS.md-compatible host)
 
-## Instalar la CLI
+## Install the CLI
 
 ```bash
 npm install -g @the-long-ride/engram
 ```
 
-Verificar:
+Verify:
 
 ```bash
 engram --version
 ```
 
-Se instalan dos binarios:
+Two binaries are installed:
 
-- `engram` — CLI principal
-- `engram-mcp` — binario del servidor MCP para hosts que registran procesos de herramientas externos
+- `engram` — main CLI
+- `engram-mcp` — MCP server binary for hosts that register external tool processes
 
-## Inicializar un espacio de trabajo (workspace)
+## Initialize a workspace
 
-Desde la raíz del proyecto:
+From the project root:
 
 ```bash
 engram inject
 ```
 
-Esto crea `.agents/.engram/` e instala el objetivo Codex compacto de forma predeterminada: `AGENTS.md` más `.agents/skills/engram/SKILL.md`.
+This creates `.agents/.engram/` and installs the compact Codex target by default: `AGENTS.md` plus `.agents/skills/engram/SKILL.md`.
 
-Usa `engram inject --no-skillset` para omitir los archivos del agente, o `engram inject --skillset all` para instalar todos los adaptadores compatibles durante la inyección. Se omiten los archivos existentes escritos por humanos.
+Use `engram inject --no-skillset` to skip agent files, or `engram inject --skillset all` to install every supported adapter during inject. Existing human-authored files are skipped.
 
-## Configurar con la interfaz Web de Entry
+## Configure with the Entry Web UI
 
-La ruta de configuración más amigable:
+The friendliest setup path:
 
 ```bash
 engram entry
 ```
 
-Esto inicia un panel de control solo local. Configura las raíces de memoria, vincula agentes y ajusta el enrutamiento sin editar JSON a mano. Consulta [Interfaz Web de Entry](entry/index.md) para ver cada pestaña y campo.
+This launches a local-only control panel. Configure memory roots, link agents, and tune routing without editing JSON by hand. See [Entry Web UI](entry/index.md) for every tab and field.
 
-## Configurar la memoria global
+## Configure global memory
 
-La memoria global es opcional y reside donde la configures. Guarda preferencias y contexto de equipo que deberían seguirte a través de los repositorios.
+Global memory is optional and lives wherever you configure it. It holds preferences and team context that should follow you across repos.
 
 ```bash
 engram inject --global-only --global-path ~/Documents/engram
 ```
 
-O actualiza la carpeta global más tarde:
+Or update the global folder later:
 
 ```bash
 engram update-global-folder ~/Documents/engram
 engram ugf ~/Documents/engram
 ```
 
-Las formas de estilo chat como `engram set global memory path to <new-path>` y `engram move global folder from <old-path> to <new-path>` se normalizan al mismo comando. Agrega `--move-from-path <old-path>` cuando también deseen que Engram mueva toda la raíz global antigua a la nueva ubicación.
+Chat-style forms such as `engram set global memory path to <new-path>` and `engram move global folder from <old-path> to <new-path>` normalize to the same command. Add `--move-from-path <old-path>` when they also want Engram to move the whole old global root into the new location.
 
-## Vincular agentes de IA
+## Link AI agents
 
-Instala hooks de agente y registro MCP para un host:
+Install agent hooks and MCP registration for a host:
 
 ```bash
 engram link codex
@@ -81,29 +81,29 @@ engram link --global opencode
 engram set-proof compact
 ```
 
-`engram link all` instala el conjunto de objetivos públicos e informa razones deterministas `SKIPPED` para hosts parciales a través de archivos de instrucciones de conjunto de habilidades, configuración de MCP, adaptadores de comandos slash y hooks de agente en una sola instalación unificada. `engram unlink` elimina todos ellos juntos.
+`engram link all` installs the public target set and reports deterministic `SKIPPED` reasons for partial hosts across skillset instruction files, MCP config, slash adapters, and agent hooks in one unified install. `engram unlink` removes all of these together.
 
-Consulta [Integraciones de agentes](integrations/overview.md) para ver la matriz de objetivos completa.
+See [Agent Integrations](integrations/overview.md) for the full target matrix.
 
-## Flujo de trabajo de subgrupamiento (Submodule)
+## Submodule workflow
 
-Si el humano desea que `.agents/.engram` se rastree como un repositorio separado:
+If the human wants `.agents/.engram` tracked as a separate repository:
 
 ```bash
 engram inject --submodule
 ```
 
-Agrega `--submodule-remote <git-url>` solo después de que el humano proporcione una URL. Engram valida la URL, inicializa el submódulo en `main` y crea el primer commit del submódulo como `Initialize engram`.
+Add `--submodule-remote <git-url>` only after the human provides a URL. Engram validates the URL, initializes the submodule on `main`, and creates the first submodule commit as `Initialize engram`.
 
-## Origen Git global compartido
+## Shared global Git origin
 
-Si `engram entry` no muestra `global_git_detected.remote_url`, pregunta al humano si la memoria global debe compartirse a través de Git. Cuando proporcionen una URL:
+If `engram entry` shows no `global_git_detected.remote_url`, ask the human whether global memory should be shared through Git. When they provide a URL:
 
 ```bash
 engram inject --global-remote <git-url>
 ```
 
-## Verificar la instalación
+## Verify the install
 
 ```bash
 engram verify
@@ -111,10 +111,10 @@ engram load --dry-run "setup"
 engram llm
 ```
 
-`engram llm` imprime la guía de uso empaquetada del agente de IA y no requiere un espacio de trabajo inyectado.
+`engram llm` prints the packaged AI-agent usage guide and does not require an injected workspace.
 
-## Siguientes pasos
+## Next steps
 
-- [Flujo de trabajo diario](daily-workflow.md)
-- [Interfaz Web de Entry](entry/index.md)
-- [Integraciones de agentes](integrations/overview.md)
+- [Daily workflow](daily-workflow.md)
+- [Entry Web UI](entry/index.md)
+- [Agent Integrations](integrations/overview.md)

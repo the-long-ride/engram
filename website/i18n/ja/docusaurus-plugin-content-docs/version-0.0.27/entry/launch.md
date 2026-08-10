@@ -1,38 +1,46 @@
 ---
-title: コントロールパネルの起動
+title: Launching the control panel
 sidebar_position: 2
-description: engram entry を実行して、ローカル専用の Entry コントロールパネルを起動します。
+description: Run engram entry to launch the local-only Entry control panel.
 ---
 
-# コントロールパネルの起動
+# Launching the control panel
 
-パネルの起動コマンド:
+Launch the panel:
 
 ```bash
 engram entry
 ```
 
-このコマンドを実行するとローカルサーバーが起動し、デフォルトのブラウザで自動的にパネルの URL が開かれます。
+`engram entry` starts a local server and opens your default browser at the panel URL. The command prints the Engram wordmark before the launch details.
 
-## ブラウザの動作
+## Browser behavior
 
-パネルはデフォルトのブラウザで自動的に開きます。開かない場合は、出力された URL を手動でコピーしてブラウザに貼り付けてください。
+The panel opens automatically in your default browser. If it does not, copy the printed URL into a browser manually.
 
-## ローカルサーバーの動作
+## Local server behavior
 
-起動したサーバーはローカルにバインドされるため、実行マシンからのみアクセス可能です。デフォルトでは外部ネットワークへは公開されません。
+The server binds locally so only your machine can reach it. It is not exposed to the network by default.
 
-## サーバー停止の手順
+## `--host-only`
 
-完了したら、**Runtime** タブから **Close server** ボタンをクリックするか、`engram entry` を起動したターミナルのプロセスを停止（Ctrl+C）してください。ブラウザのタブを閉じるだけでは、ローカルのバックグラウンドサーバーは停止しません。
+Use `--host-only` to start the server without opening a browser tab:
 
-## 主要な起動エラーの原因
+```bash
+engram entry --host-only
+```
 
-- **Port already in use** — 他のプロセスがパネルのポートを使用しています。そのプロセスを停止するか、出力された代替の指示に従ってください。
-- **Browser did not open** — ブラウザが自動的に起動しなかったため、出力された URL を手動でコピーしてブラウザに貼り付けてください。
-- **No workspace initialized** — 最初に `engram inject` を実行するか、プロジェクトのルートディレクトリから `engram entry` を実行してください。
+## Close server flow
 
-## 次のステップ
+Close the server from the **Close Server** button in the sidebar footer, or stop the terminal process that started `engram entry`. Closing the browser tab does not stop the server.
 
-- [Connections タブ](connections.md)
-- [Construct タブ](construct.md)
+## Common launch errors
+
+- **Port already in use** — another process is using the panel port. Stop it or follow the printed fallback instructions.
+- **Browser did not open** — copy the printed URL into a browser manually.
+- **No workspace initialized** — run `engram inject` first, or use `engram entry` from a project root.
+
+## Next steps
+
+- [Connections tab](connections.md)
+- [Construct tab](construct.md)

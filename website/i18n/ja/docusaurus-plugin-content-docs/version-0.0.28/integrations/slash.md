@@ -1,24 +1,24 @@
 ---
-title: スラッシュアダプター
+title: Slash adapters
 sidebar_position: 10
-description: Engram スラッシュアダプターは、Claude、Cursor、Gemini、および OpenCode にわたって /engram コマンドを公開します。
+description: Engram slash adapters expose /engram commands across Claude, Cursor, Gemini, and OpenCode.
 ---
 
-# スラッシュアダプター
+# Slash adapters
 
-`slash` ターゲットは、プロジェクトのスラッシュコマンドまたは Agent Skills をサポートするホスト用のネイティブ `/engram` スラッシュアダプターを書き込みます。
+The `slash` target writes native `/engram` slash adapters for hosts that support project slash commands or Agent Skills.
 
-## 書き込まれるファイル
+## Files written
 
-| ファイル | ホスト |
+| File | Host |
 | --- | --- |
 | `.claude/commands/engram.md` | Claude Code |
-| `.claude/skills/engram/SKILL.md` | Claude Code (スキル形式) |
+| `.claude/skills/engram/SKILL.md` | Claude Code (skill form) |
 | `.cursor/commands/engram.md` | Cursor |
 | `.gemini/commands/engram.toml` | Gemini CLI |
 | `.opencode/commands/engram.md` | OpenCode |
 
-## 共通コマンド
+## Common commands
 
 ```text
 /engram
@@ -32,8 +32,8 @@ description: Engram スラッシュアダプターは、Claude、Cursor、Gemini
 /engram ss -f
 /engram ss -f last 50 sessions
 /engram take-control
-/engram take control accept all
-/engram restructure workspace memory accept all
+/engram take control force
+/engram restructure workspace memory force
 /engram resolve conflicts and metacognize
 /engram graph release workflow
 /engram archive --reason "Superseded" knowledge/old-fact.md
@@ -41,25 +41,24 @@ description: Engram スラッシュアダプターは、Claude、Cursor、Gemini
 /engram verify
 ```
 
-## 動作
+## Behavior
 
-ホストが視覚的な `/engram` コマンドを1つだけ公開している場合、引数なしの `/engram` は CLI を実行する代わりに、`load`、`search`、`save`、`propose`、`entry`、および `help` のコンパクトなメニューを返す必要があります。`/engram propose` はスラッシュレベルのエイリアスです。現在のチャット/セッションにおいて `engram save-session` に正規化されます。
+If the host exposes only one visible `/engram` command, bare `/engram` should return a compact menu of `load`, `search`, `save`, `propose`, `entry`, and `help` instead of running the CLI. `/engram propose` is a slash-level alias: normalize it to `engram save-session` over the current chat/session.
 
-`/engram ss -f` は全承認のショートカットです。エージェントは、人間が明示的に要求しない限り `--force` を追加してはなりません。
+`/engram ss -f` is the force shortcut. Agents must not add `--force` unless the human requested it.
 
-## 自然文の正規化
+## Natural wording normalization
 
-| 自然な表記 | 正規化先 |
+| Natural wording | Normalizes to |
 | --- | --- |
 | `/engram auto save` | `engram save-session` |
-| `/engram take control accept all` | `engram take-control --force` |
-| `/engram restructure workspace memory accept all` | `engram metacognize --workspace --force` |
-| `/engram take control accept all metacognize` | `engram take-control --force --metacognize` |
+| `/engram take control force` | `engram take-control --force` |
+| `/engram restructure workspace memory force` | `engram metacognize --workspace --force` |
+| `/engram take control force metacognize` | `engram take-control --force --metacognize` |
 | `/engram resolve conflicts and metacognize` | `engram resolve-conflicts --metacognize` |
 | `/engram ss -f last 50 sessions` | `engram save-session --query-level 50 --force` |
 
-## 次のステップ
+## Next steps
 
-- [MCP ツール](mcp.md)
-- [フックと検証行](hooks.md)
-
+- [MCP tools](mcp.md)
+- [Hooks and proof lines](hooks.md)

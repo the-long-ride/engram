@@ -26,6 +26,14 @@ engram upgrade --latest
 
 Use `--force` only when replacing generated Engram adapter files intentionally.
 
+## Ownership-aware configuration reconciliation
+
+The latest-upgrade inventory deduplicates registered integrations by physical file. If several hosts share the same Engram guide, Engram renders and writes that file once instead of letting host-specific rows rewrite one another.
+
+When manual edits make a known Engram artifact unsafe for normal replacement, Entry can offer **Force upgrade** only when ownership is provable. For a marked Engram block, force replaces only that block and preserves surrounding user text. For a registered/generated Engram file, force can replace the entire generated file. Unknown ownership is never forceable, and bulk confirmation never performs force actions.
+
+A successful apply is verified by a post-write rescan. Rolled-back or failed transactions and expected-updated artifacts that do not converge to `current` are reported as errors; Entry does not show an upgrade-success toast for those cases.
+
 ## Skillset render profiles
 
 For runtime-capable hosts, Engram installs small bootstrap instructions instead of the full protocol. Hooks provide routed task context, MCP tools provide load/search/proposal behavior, and slash adapters or Agent Skills carry detailed command workflows. Fallback targets without reliable runtime context injection still receive compact manual instructions.
@@ -34,10 +42,6 @@ For runtime-capable hosts, Engram installs small bootstrap instructions instead 
 
 Engram's SQLite config DB is an optimization for workspace/profile management. If the DB cannot be opened or initialized, normal read/write commands fall back to JSON config snapshots. DB-specific commands report SQLite as unavailable instead of blocking normal memory use.
 
-## Next steps
-
-- [Troubleshooting](troubleshooting.md)
-- [CLI: inject / link / upgrade](../cli/inject-link-upgrade.md)
 
 ## Legacy memory migration to schema v3
 
@@ -61,17 +65,11 @@ Skip memory migration during a latest upgrade:
 engram upgrade --latest --no-migrate-memories
 ```
 
-<!-- configuration-upgrade-inventory -->
+## Next steps
 
-競合レビューは CLI と Entry で同じ共有プランを使用します。ngram upgrade --latest --review を実行して、タイプ認識された最新の提案を受け入れるか、$VISUAL/$EDITOR で編集するか、**Keep current** を確認します。Entry は **Current**、**Proposed**、**Diff** ビューを提供します。**Diff** はデフォルトで **Inline** に設定されており、**Parallel** に切り替えることができます。削除されたコンテンツは赤でハイライトされ、追加されたコンテンツは緑でハイライトされます。pendingReviewCount がゼロでない間は最終適用がブロックされ、ngram upgrade --latest --yes は未解決または古い決定を拒否します。各決定は書き込み前にソースハッシュと照合されます。
+- [Troubleshooting](troubleshooting.md)
+- [CLI: inject / link / upgrade](../cli/inject-link-upgrade.md)
 
-## 所有権を認識した構成の照合
-
-最新のアップグレード インベントリは、物理ファイルごとに登録された統合を重複排除します。複数のホストが同じ Engram ガイドを共有している場合、Engram はそのファイルを 1 回だけレンダリングして書き込みます。
-
-手動編集によって Engram アーティファクトの通常の置換が安全でない場合、Entry は所有権が証明できる場合にのみ **Force upgrade** を提供します。マークされた Engram ブロックの場合、強制置換はその Engram ブロックのみを置き換え、周囲のユーザーテキストを保持します。登録/生成された Engram ファイルの場合、強制置換は生成されたファイル全体を置き換えることができます。不明な所有権は一括操作で強制されることはありません。
-
-書き込み後の再スキャンによって適用が成功したことが検証されます。current に収束しない予想更新アーティファクトは検証エラーとして報告されます。
 
 ## Git author identity
 
@@ -88,3 +86,12 @@ engram author migrate-memories --confirm
 ```
 
 Read the complete [Git author settings guide](git-author-settings.md).
+
+
+<!-- configuration-upgrade-inventory -->
+
+Conflict review uses the same shared plan in CLI and Entry. Run `engram upgrade --latest --review` to accept the latest type-aware proposal, edit it via `$VISUAL`/`$EDITOR`, or confirm **Keep current**. Entry provides **Current**, **Proposed**, and **Diff** views; **Diff** defaults to **Inline** and can switch to **Parallel**, with removed content highlighted red and added content green. Final apply is blocked while `pendingReviewCount` is non-zero, and `engram upgrade --latest --yes` refuses unresolved or stale decisions. Each decision is checked against its source hash before writing.
+
+## Configuration upgrade inventory
+
+After a package update, run `engram upgrade --latest --plan` before `engram upgrade --latest`. The shared inventory scans workspace and global Engram-managed memories, instructions, skillsets, configs, hooks, and plugins. User-authored bytes are preserved; ambiguous mixed files are reported as conflicts that require explicit review before apply. See [Configuration upgrades](configuration-upgrades.md).

@@ -1,125 +1,142 @@
 ---
-title: 完全なフィールドリファレンス
+title: Complete field reference
 sidebar_position: 10
-description: すべての Entry Web UI の入力とコントロールの検索可能なリファレンス。
+description: Searchable reference for every Entry Web UI input and control.
 ---
 
-# 完全なフィールドリファレンス
+# Complete field reference
 
-このページは、すべての Entry Web UI 入力とコントロールに関する最終ユーザー向けの canonical（公式）フィールドリファレンスです。
+This page is the canonical end-user field reference for every Entry Web UI input and control.
 
-## このリファレンスの読み方
+## How to read this reference
 
-各フィールドリストの項目:
+Each field lists:
 
-- **構成キー** — 設定ファイルおよび CLI で使用されるキー
-- **コントロール** — 入力タイプ
-- **デフォルト** — 安全なデフォルト値
-- **リスク** — `normal`, `caution`, または `risky`
-- **備考** — フィールドが行う動作および設定を変更するタイミング
+- **Config key** — the key used in config files and the CLI
+- **Control** — the input type
+- **Default** — the safe default value
+- **Risk** — `normal`, `caution`, or `risky`
+- **Notes** — what the field does and when to change it
 
-## Core
+## Core {#core}
 
-| 構成キー | コントロール | デフォルト | リスク | 備考 |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `enabled` | 切り替え | `true` | risky | マスターマスタースイッチ。無効にすると Engram の動作が停止します。 |
-| `scope` | 選択 | `both` | risky | 保存先スコープ: `workspace`, `global`, `both`。 |
-| `read` | 選択 | `auto` | normal | フックがメモリを挿入するタイミング: `auto`, `startup`, `always`, `manual`, `off`。 |
-| `proof` | 選択 | `off` | normal | フックの証明行: `off`, `compact`。 |
-| `global_path` | テキスト | 空 | risky | グローバルメモリ用のファイルシステムパス。 |
-| `default_profile` | 選択 | 空 | risky | 明示的に設定されていない場合に使用されるプロファイル。 |
-| `roles` | ロール | 空 | normal | ルーティング用のカンマ区切りロール名リスト。 |
-| `theme` | 選択 | `dark` | hidden | 内部/非表示設定。ユーザーには表示されません。 |
+| `enabled` | toggle | `true` | risky | Master switch. Disabling stops Engram behavior. |
+| `scope` | select | `both` | risky | Save target: `workspace`, `global`, `both`. |
+| `update` | select | `auto` | normal | Quiet package upgrade check: `auto`, `manual`, `off`. |
+| `read` | select | `auto` | normal | When hooks inject memory: `auto`, `startup`, `always`, `manual`, `off`. |
+| `proof` | select | `off` | normal | Hook proof line: `off`, `compact`. |
+| `global_path` | text | empty | risky | Filesystem path for global memory. |
+| `default_profile` | select | empty | risky | Profile used when none is explicitly set. |
+| `roles` | roles | empty | normal | Comma-separated role names for routing. |
+| `theme` | select | `dark` | hidden | Internal/hidden. Not user-facing. |
 
-## Load Routing (ロードルーティング)
+## Ignore Rules {#ignore-rules}
 
-| 構成キー | コントロール | デフォルト | リスク | 備考 |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `load.limit` | 数値 1–32 | `8` | normal | 通常のロードで返される最大メモリ数。 |
+| `ignore.source` | select | `engramignore` | normal | Scan-rule sources: `engramignore`, `gitignore`, `both`, `off`. |
+| `ignore.gitignore_path` | text | `.gitignore` | normal | Git ignore file path. |
+| `ignore.engramignore_path` | text | `.engramignore` | normal | Engram ignore file path. |
+| `ignore.global_engramignore` | toggle | `true` | normal | Applies global ignore rules when configured. |
+| `ignore.also_ignore` | list | `*.secret`, `private/**` | normal | Extra comma-separated glob patterns. |
+| `ignore.global_patterns` | textarea | empty | normal | One global glob per line; inject syncs a managed workspace block. |
 
-## Memory Limits (メモリ制限)
+## Load Routing {#load-routing}
 
-| 構成キー | コントロール | デフォルト | リスク | 備考 |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `memory.rule_line_target` | 数値 50–200, 10ステップ | `70` | normal | ルールメモリの推奨行数。 |
-| `memory.rule_line_hard_limit` | 数値 50–200, 10ステップ | `100` | risky | ルールメモリの厳格な最大行数。 |
+| `load.limit` | number 1–32 | `8` | normal | Max memories returned by normal load. |
 
-## Graph (グラフ)
+## Memory Limits {#memory-limits}
 
-| 構成キー | コントロール | デフォルト | リスク | 備考 |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `graph.enabled` | 切り替え | `true` | normal | 依存関係および関係性ルーティングを有効にします。 |
-| `graph.max_related` | 数値 1–20 | `4` | normal | グラフエッジから取得される関連メモリの最大数。 |
-| `graph.min_related_score` | 数値 0–1, 0.01ステップ | `0.22` | normal | 関連エッジの最小類似度しきい値スコア。 |
+| `memory.rule_line_target` | number 50–200, step 10 | `70` | normal | Recommended line count for rules. |
+| `memory.rule_line_hard_limit` | number 50–200, step 10 | `100` | risky | Hard max line count for rules. |
 
-## Vector Search (ベクトル検索)
+## Graph {#graph}
 
-| 構成キー | コントロール | デフォルト | リスク | 備考 |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `vector.enabled` | 切り替え | `true` | normal | オプションのローカルベクトルルーティングを有効にします。 |
-| `vector.auto_threshold` | 数値 10–1000 | `100` | normal | ベクトル検索を有効化する基準となるメモリ数。 |
-| `vector.candidate_pool` | 数値 8–100 | `24` | normal | 再ランク付けを行う前に考慮する候補の数。 |
-| `vector.dimensions` | 数値 16–512 | `64` | normal | 埋め込み次元数; 変更した場合は再構築が必要です。 |
+| `graph.enabled` | toggle | `true` | normal | Enables dependency/relationship routing. |
+| `graph.max_related` | number 1–20 | `4` | normal | Limits related memories from graph edges. |
+| `graph.min_related_score` | number 0–1, step 0.01 | `0.22` | normal | Min similarity score for related edges. |
 
-## Rule Variants (ルールバリアント)
+## Vector Search {#vector-search}
 
-| 構成キー | コントロール | デフォルト | リスク | 備考 |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `rule_variants.enabled` | 切り替え | `false` | normal | ロール/厳格性に基づくルールバリアントを有効化します。 |
-| `rule_variants.active` | 選択 | `balanced` | normal | 有効なバリアント: `light`, `balanced`, `strict`。 |
+| `vector.enabled` | toggle | `true` | normal | Enables optional local vector routing. |
+| `vector.provider` | select | `sqlite-vec` | normal | The only supported local vector provider. |
+| `vector.auto_threshold` | number 10–1000 | `100` | normal | Memory count where vector search activates. |
+| `vector.candidate_pool` | number 8–100 | `24` | normal | Candidates considered before reranking. |
+| `vector.dimensions` | number 16–512 | `64` | normal | Embedding dimensions; rebuild after change. |
 
-## Live Sync (ライブ同期)
+## Rule Variants {#rule-variants}
 
-| 構成キー | コントロール | デフォルト | リスク | 備考 |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `live_sync.enabled` | 切り替え | `false` | normal | メモリ保存時にエージェントのコンテキストファイルを同期します。 |
+| `rule_variants.enabled` | toggle | `false` | normal | Enables role/strictness variants. |
+| `rule_variants.active` | select | `balanced` | normal | Active variant: `light`, `balanced`, `strict`. |
 
-## Global Git (グローバル Git)
+## Live Sync {#live-sync}
 
-| 構成キー | コントロール | デフォルト | リスク | 備考 |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `global_git.enabled` | 切り替え | `true` | risky | グローバルメモリに対する Git 連携を有効にします。 |
-| `global_git.remote` | テキスト | `origin` | risky | Git リモート名; 空白文字は使えません。 |
-| `global_git.remote_url` | テキスト | 空 | risky | 共有グローバルメモリのリモートリポジトリ URL。 |
-| `global_git.branch` | テキスト | `main` | risky | 同期のターゲットブランチ。 |
-| `global_git.auto_sync` | 切り替え | `true` | risky | 自動的に pull および push を行うかどうか。 |
-| `global_git.auto_resolve` | 切り替え | `true` | risky | 競合の自動処理; 差分を常に確認してください。 |
+| `live_sync.enabled` | toggle | `false` | normal | Sync generated agent context files on save. |
+| `live_sync.targets` | list | `agents-md`, `claude-md`, `cursorrules` | normal | Generated context targets refreshed by live sync. |
 
-## Pattern Mining (パターンマイニング)
+## Global Git {#global-git}
 
-| 構成キー | コントロール | デフォルト | リスク | 備考 |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `pattern_mining.enabled` | 切り替え | `false` | normal | 実験的な繰り返しパターンの抽出機能。 |
-| `pattern_mining.threshold` | 数値 1–20 | `3` | normal | パターンが処理対象として認められる最小繰り返し数。 |
-| `pattern_mining.lookback_sessions` | 数値 1–100 | `20` | normal | 検査対象とする直近のセッション数。 |
+| `global_git.enabled` | toggle | `true` | risky | Enables Git behavior for global memory. |
+| `global_git.remote` | text | `origin` | risky | Git remote name; no whitespace. |
+| `global_git.remote_url` | text | empty | risky | Shared global memory remote URL. |
+| `global_git.branch` | text | `main` | risky | Target branch for sync. |
+| `global_git.auto_sync` | toggle | `true` | risky | Auto pull/push behavior. |
+| `global_git.auto_resolve` | toggle | `true` | risky | Auto conflict handling; review diffs. |
 
-## PR Workflow (PR ワークフロー)
+## Pattern Mining {#pattern-mining}
 
-| 構成キー | コントロール | デフォルト | リスク | 備考 |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `pr_workflow.enabled` | 切り替え | `false` | risky | チーム開発用の実験的な PR 型のメモリ管理フロー。 |
-| `pr_workflow.target_branch` | テキスト | `main` | risky | メモリ PR を受け取るブランチ。 |
+| `pattern_mining.enabled` | toggle | `false` | normal | Experimental recurring-pattern extraction. |
+| `pattern_mining.threshold` | number 1–20 | `3` | normal | Repetitions before a pattern matters. |
+| `pattern_mining.lookback_sessions` | number 1–100 | `20` | normal | Recent sessions to inspect. |
 
-## Encryption (暗号化)
+## PR Workflow {#pr-workflow}
 
-| 構成キー | コントロール | デフォルト | リスク | 備考 |
+| Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| `encryption.enabled` | 切り替え | `false` | risky | 将来的に導入予定の高度な暗号化モード。 |
-| `encryption.scope` | 選択 | `global` | risky | 暗号化スコープ: `workspace`, `global`。 |
-| `encryption.key_source` | 選択 | `portable-file` | risky | キー管理戦略; バックアップ紛失時の復旧不可リスクあり。 |
+| `pr_workflow.enabled` | toggle | `false` | risky | Experimental team PR workflow. |
+| `pr_workflow.provider` | text | empty | risky | Provider identifier for configured team workflow. |
+| `pr_workflow.repo` | text | empty | risky | Repository identifier for configured team workflow. |
+| `pr_workflow.target_branch` | text | `main` | risky | Branch receiving memory PRs. |
 
-## 非構成コントロール
+## Encryption {#encryption}
 
-設定フィールド以外の機能制御については、以下の各タブ案内ページを参照してください:
+| Config key | Control | Default | Risk | Notes |
+| --- | --- | --- | --- | --- |
+| `encryption.enabled` | toggle | `false` | risky | Future/advanced encryption mode. |
+| `encryption.scope` | select | `global` | risky | Scope: `workspace`, `global`. |
+| `encryption.key_source` | select | `portable-file` | risky | Key source strategy; backup loss risk. |
 
-- [Connections タブ](connections.md)
-- [Profiles タブ](profiles.md)
-- [Workspaces タブ](workspaces.md)
-- [Core タブ](core.md)
-- [Memories タブ](memories.md)
-- [Runtime タブ](runtime.md)
+## Non-config controls
 
-## 次のステップ
+See the per-tab pages for non-config controls:
 
-- [Construct タブ](construct.md)
-- [フィールド作成ガイドライン](field-authoring-guidelines.md)
+- [Construct tab](construct.md)
+- [Memories tab](memories.md)
+- [Review tab](review.md)
+- [Core tab](core.md)
+- [Connections tab](connections.md)
+
+Profile and workspace management are available in the Construct tab and through `engram profile` and `engram workspace`. See [Profiles and scope resolution](../concepts/profiles.md).
+
+## Next steps
+
+- [Construct tab](construct.md)
+- [Field authoring guidelines](field-authoring-guidelines.md)

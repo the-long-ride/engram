@@ -26,6 +26,14 @@ engram upgrade --latest
 
 Use `--force` only when replacing generated Engram adapter files intentionally.
 
+## Ownership-aware configuration reconciliation
+
+The latest-upgrade inventory deduplicates registered integrations by physical file. If several hosts share the same Engram guide, Engram renders and writes that file once instead of letting host-specific rows rewrite one another.
+
+When manual edits make a known Engram artifact unsafe for normal replacement, Entry can offer **Force upgrade** only when ownership is provable. For a marked Engram block, force replaces only that block and preserves surrounding user text. For a registered/generated Engram file, force can replace the entire generated file. Unknown ownership is never forceable, and bulk confirmation never performs force actions.
+
+A successful apply is verified by a post-write rescan. Rolled-back or failed transactions and expected-updated artifacts that do not converge to `current` are reported as errors; Entry does not show an upgrade-success toast for those cases.
+
 ## Skillset render profiles
 
 For runtime-capable hosts, Engram installs small bootstrap instructions instead of the full protocol. Hooks provide routed task context, MCP tools provide load/search/proposal behavior, and slash adapters or Agent Skills carry detailed command workflows. Fallback targets without reliable runtime context injection still receive compact manual instructions.
@@ -34,10 +42,6 @@ For runtime-capable hosts, Engram installs small bootstrap instructions instead 
 
 Engram's SQLite config DB is an optimization for workspace/profile management. If the DB cannot be opened or initialized, normal read/write commands fall back to JSON config snapshots. DB-specific commands report SQLite as unavailable instead of blocking normal memory use.
 
-## Next steps
-
-- [Troubleshooting](troubleshooting.md)
-- [CLI: inject / link / upgrade](../cli/inject-link-upgrade.md)
 
 ## Legacy memory migration to schema v3
 
@@ -61,17 +65,11 @@ Skip memory migration during a latest upgrade:
 engram upgrade --latest --no-migrate-memories
 ```
 
-<!-- configuration-upgrade-inventory -->
+## Next steps
 
-冲突评审在 CLI 和 Entry 中使用相同的共享计划。运行 ngram upgrade --latest --review 以接受最新的按类型合并/替换建议，通过 $VISUAL/$EDITOR 进行编辑，或确认 **Keep current**。Entry 提供 **Current**、**Proposed** 和 **Diff** 视图；**Diff** 默认为 **Inline** 模式，并可切换至 **Parallel**，删除的内容高亮显示为红色，新增的内容高亮显示为绿色。当 pendingReviewCount 不为零时，最终应用将被阻止，并且 ngram upgrade --latest --yes 会拒绝未解决或过期的决策。写回前会根据源哈希对每个决策进行校验。
+- [Troubleshooting](troubleshooting.md)
+- [CLI: inject / link / upgrade](../cli/inject-link-upgrade.md)
 
-## 具备所有权感知的配置对齐
-
-最新升级清单按物理文件对已注册的集成进行去重。如果多个 Host 共享同一个 Engram 指南，Engram 只会渲染并写入该文件一次。
-
-当手动编辑导致正常的替换不安全时，Entry 仅在所有权可证明时提供 **Force upgrade**。对于标记的 Engram 块，强制替换仅替换该 Engram 块并保留周围的用户文本。对于注册/生成的 Engram 文件，强制替换可以替换整个生成的文件。未知的所有权绝不能强制替换，批量确认也决不执行强制操作。
-
-写回后的重新扫描将验证是否成功应用。未收敛至 current 的预期的更新文件将被报告为验证错误。
 
 ## Git author identity
 
@@ -88,3 +86,12 @@ engram author migrate-memories --confirm
 ```
 
 Read the complete [Git author settings guide](git-author-settings.md).
+
+
+<!-- configuration-upgrade-inventory -->
+
+Conflict review uses the same shared plan in CLI and Entry. Run `engram upgrade --latest --review` to accept the latest type-aware proposal, edit it via `$VISUAL`/`$EDITOR`, or confirm **Keep current**. Entry provides **Current**, **Proposed**, and **Diff** views; **Diff** defaults to **Inline** and can switch to **Parallel**, with removed content highlighted red and added content green. Final apply is blocked while `pendingReviewCount` is non-zero, and `engram upgrade --latest --yes` refuses unresolved or stale decisions. Each decision is checked against its source hash before writing.
+
+## Configuration upgrade inventory
+
+After a package update, run `engram upgrade --latest --plan` before `engram upgrade --latest`. The shared inventory scans workspace and global Engram-managed memories, instructions, skillsets, configs, hooks, and plugins. User-authored bytes are preserved; ambiguous mixed files are reported as conflicts that require explicit review before apply. See [Configuration upgrades](configuration-upgrades.md).

@@ -11,13 +11,16 @@ overrides:
   js-yaml: ^5.2.3
   mermaid: ^11.16.1
   nanoid: ^5.1.5
-  pdfjs-dist: ^4.10.38
+  pdfjs-dist: ^6.2.108
   postcss: ^8.5.23
-  postcss-svgo>svgo: 3.3.2
+  postcss-svgo>svgo: 3.3.4
   serialize-javascript: ^7.0.5
-  svgo: 3.3.2
+  svgo: 3.3.4
   undici: ^7.29.0
   uuid: ^11.1.1
+
+patchedDependencies:
+  image-size@2.0.2: 13fdd414f4cd92abcba8b9440fe4ecde2a2448c20c08026f45d5578f6d98b94b
 
 importers:
 
@@ -2187,10 +2190,6 @@ packages:
   '@szmarczak/http-timer@5.0.1':
     resolution: {integrity: sha512-+PmQX0PiAYPMeVYe237LJAYvOMYW1j2rH5YROyS3b4CTVJum34HfRvKvAzozHAQG0TnHNdUfY9nCeUyRAs//cw==}
     engines: {node: '>=14.16'}
-
-  '@trysound/sax@0.2.0':
-    resolution: {integrity: sha512-L7z9BgrNEcYyUYtF+HaEfiS5ebkh9jXqbszz7pC0hRBPaatV0XjSD3+eHrpqFemQfgwiFF0QPIarnIihIDn7OA==}
-    engines: {node: '>=10.13.0'}
 
   '@tybys/wasm-util@0.10.3':
     resolution: {integrity: sha512-F3fo1MYrRJYL3zER0OUOmkutjr1Vp23m7OsSgp7nq4SP6OqX6C/56XFIPAl5bt3zaBRjmW7SGz3u/6LwFpYcOg==}
@@ -5795,8 +5794,8 @@ packages:
   svg-parser@2.0.4:
     resolution: {integrity: sha512-e4hG1hRwoOdRb37cIMSgzNsxyzKfayW6VOflrwvR+/bzrkyxY/31WkbgnQpgtrNp1SdpJvpUAGTa/ZoiPNDuRQ==}
 
-  svgo@3.3.2:
-    resolution: {integrity: sha512-OoohrmuUlBs8B8o6MB2Aevn+pRIH9zDALSR+6hhqVfa6fRwG/Qw9VUMSMW9VNg2CFc/MTIfabtdOVl9ODIJjpw==}
+  svgo@3.3.4:
+    resolution: {integrity: sha512-GsNRis4e8jxn2Y9ENz/8lbJ93CstG8svtMnuRaHbiF2LTJ5tK0/q3t/URPq9Zc7zVWBJnNnJMIp6bevK7bSmNg==}
     engines: {node: '>=14.0.0'}
     hasBin: true
 
@@ -7654,7 +7653,7 @@ snapshots:
       estree-util-value-to-estree: 3.5.0
       file-loader: 6.2.0(webpack@5.109.2(@swc/core@1.15.47)(postcss@8.5.26))
       fs-extra: 11.4.0
-      image-size: 2.0.2
+      image-size: 2.0.2(patch_hash=13fdd414f4cd92abcba8b9440fe4ecde2a2448c20c08026f45d5578f6d98b94b)
       mdast-util-mdx: 3.0.0
       mdast-util-to-string: 4.0.0
       react: 19.2.8
@@ -9178,7 +9177,7 @@ snapshots:
       '@svgr/core': 8.1.0(typescript@5.7.3)
       cosmiconfig: 8.3.6(typescript@5.7.3)
       deepmerge: 4.3.1
-      svgo: 3.3.2
+      svgo: 3.3.4
     transitivePeerDependencies:
       - typescript
 
@@ -9312,8 +9311,6 @@ snapshots:
   '@szmarczak/http-timer@5.0.1':
     dependencies:
       defer-to-connect: 2.0.1
-
-  '@trysound/sax@0.2.0': {}
 
   '@tybys/wasm-util@0.10.3':
     dependencies:
@@ -11322,7 +11319,7 @@ snapshots:
 
   ignore@5.3.2: {}
 
-  image-size@2.0.2: {}
+  image-size@2.0.2(patch_hash=13fdd414f4cd92abcba8b9440fe4ecde2a2448c20c08026f45d5578f6d98b94b): {}
 
   immediate@3.3.0: {}
 
@@ -12904,7 +12901,7 @@ snapshots:
     dependencies:
       postcss: 8.5.26
       postcss-value-parser: 4.2.0
-      svgo: 3.3.2
+      svgo: 3.3.4
 
   postcss-unique-selectors@6.0.4(postcss@8.5.26):
     dependencies:
@@ -13580,15 +13577,15 @@ snapshots:
 
   svg-parser@2.0.4: {}
 
-  svgo@3.3.2:
+  svgo@3.3.4:
     dependencies:
-      '@trysound/sax': 0.2.0
       commander: 7.2.0
       css-select: 5.2.2
       css-tree: 2.3.1
       css-what: 6.2.2
       csso: 5.0.5
       picocolors: 1.1.1
+      sax: 1.6.1
 
   swc-loader@0.2.7(@swc/core@1.15.47)(webpack@5.109.2(@swc/core@1.15.47)(postcss@8.5.26)):
     dependencies:

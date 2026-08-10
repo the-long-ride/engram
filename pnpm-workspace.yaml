@@ -1,8 +1,8 @@
 allowBuilds:
-  better-sqlite3: set this to true or false
-  esbuild: set this to true or false
-  tesseract.js: set this to true or false
-  unrs-resolver: set this to true or false
+  better-sqlite3: true
+  esbuild: true
+  tesseract.js: true
+  unrs-resolver: true
 
 overrides:
   brace-expansion: '^2.0.2'
@@ -11,8 +11,8 @@ overrides:
   js-yaml: '^5.2.3'
   mermaid: '^11.16.1'
   nanoid: '^5.1.5'
-  pdfjs-dist: '^4.10.38'
+  pdfjs-dist: '^6.2.108'
   postcss: '^8.5.23'
-  postcss-svgo>svgo: '3.3.2'
-  svgo: '3.3.2'
+  postcss-svgo>svgo: '3.3.4'
+  svgo: '3.3.4'
   undici: '^7.29.0'

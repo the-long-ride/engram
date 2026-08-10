@@ -1,0 +1,72 @@
+diff --git a/dist/types/heif.cjs b/dist/types/heif.cjs
+index 1f49078..70335e8 100644
+--- a/dist/types/heif.cjs
++++ b/dist/types/heif.cjs
+@@ -69,6 +69,7 @@ var HEIF = {
+         width = rawWidth - cropRight;
+       }
+       images.push({ height, width });
++      if (ispeBox.size === 0) break;
+       currentOffset = ispeBox.offset + ispeBox.size;
+     }
+     if (images.length === 0) {
+diff --git a/dist/types/heif.mjs b/dist/types/heif.mjs
+index 0133091..45704e1 100644
+--- a/dist/types/heif.mjs
++++ b/dist/types/heif.mjs
+@@ -67,6 +67,7 @@ var HEIF = {
+         width = rawWidth - cropRight;
+       }
+       images.push({ height, width });
++      if (ispeBox.size === 0) break;
+       currentOffset = ispeBox.offset + ispeBox.size;
+     }
+     if (images.length === 0) {
+diff --git a/dist/types/icns.cjs b/dist/types/icns.cjs
+index 32c8d37..0d503fa 100644
+--- a/dist/types/icns.cjs
++++ b/dist/types/icns.cjs
+@@ -74,6 +74,7 @@ var ICNS = {
+       const imageHeader = readImageHeader(input, imageOffset);
+       const imageSize = getImageSize(imageHeader[0]);
+       images.push(imageSize);
++      if (imageHeader[1] === 0) break;
+       imageOffset += imageHeader[1];
+     }
+     if (images.length === 0) {
+diff --git a/dist/types/icns.mjs b/dist/types/icns.mjs
+index 8710027..fb889d8 100644
+--- a/dist/types/icns.mjs
++++ b/dist/types/icns.mjs
+@@ -72,6 +72,7 @@ var ICNS = {
+       const imageHeader = readImageHeader(input, imageOffset);
+       const imageSize = getImageSize(imageHeader[0]);
+       images.push(imageSize);
++      if (imageHeader[1] === 0) break;
+       imageOffset += imageHeader[1];
+     }
+     if (images.length === 0) {
+diff --git a/dist/types/jxl.cjs b/dist/types/jxl.cjs
+index a12095b..34a7f17 100644
+--- a/dist/types/jxl.cjs
++++ b/dist/types/jxl.cjs
+@@ -119,6 +119,7 @@ function extractPartialStreams(input) {
+     partialStreams.push(
+       input.slice(jxlpBox.offset + 12, jxlpBox.offset + jxlpBox.size)
+     );
++    if (jxlpBox.size === 0) break;
+     offset = jxlpBox.offset + jxlpBox.size;
+   }
+   return partialStreams;
+diff --git a/dist/types/jxl.mjs b/dist/types/jxl.mjs
+index 49b0c4c..1e116d1 100644
+--- a/dist/types/jxl.mjs
++++ b/dist/types/jxl.mjs
+@@ -117,6 +117,7 @@ function extractPartialStreams(input) {
+     partialStreams.push(
+       input.slice(jxlpBox.offset + 12, jxlpBox.offset + jxlpBox.size)
+     );
++    if (jxlpBox.size === 0) break;
+     offset = jxlpBox.offset + jxlpBox.size;
+   }
+   return partialStreams;

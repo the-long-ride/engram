@@ -58,9 +58,20 @@ export function MemoryDetail({
       <div className="memory-detail-hdr">
         <Badge>{node.profile}</Badge>
         <Badge>{node.scope || node.sourceScope}</Badge>
+        {node.authority ? <Badge tone={node.authority === 'instruction' ? 'blue' : undefined}>{node.authority}</Badge> : null}
         {node.workspaceName ? <Badge tone="blue">{node.workspaceName}</Badge> : null}
       </div>
       <h2>{node.memoryId}</h2>
+
+      <div className="memory-provenance" aria-label="Memory provenance">
+        {node.revision !== undefined ? <div><strong>Revision {node.revision}</strong></div> : null}
+        {node.evidenceRefs?.length ? <div><strong>Evidence</strong><div className="mono">{node.evidenceRefs.map((ref) => <div key={ref}>{ref}</div>)}</div></div> : null}
+        {node.derivedFrom?.length ? <div><strong>Derived from</strong><div className="mono">{node.derivedFrom.map((ref) => <div key={ref}>{ref}</div>)}</div></div> : null}
+        {node.supersedes?.length ? <div><strong>Supersedes</strong><div className="mono">{node.supersedes.map((ref) => <div key={ref}>{ref}</div>)}</div></div> : null}
+        {node.supersededBy ? <div><strong>Superseded by</strong><div className="mono">{node.supersededBy}</div></div> : null}
+        {node.validFrom ? <div><strong>Validity</strong><div>{node.validFrom} → {node.validUntil || 'open'}</div></div> : null}
+        {node.lastConfirmed ? <div>Confirmed {node.lastConfirmed}</div> : null}
+      </div>
 
       <div className="memory-detail-body">
         {loading ? (

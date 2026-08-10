@@ -11,7 +11,7 @@ export function workspaceMemoryRoot(cwd) {
 
 export async function tempWorkspace(prefix = 'engram-test-') {
   const cwd = await mkdtemp(path.join(os.tmpdir(), prefix));
-  return { cwd, env: { ...process.env, NODE_ENV: 'test', ENGRAM_CONFIG_DIR: path.join(cwd, 'user-config'), ENGRAM_GLOBAL_DIR: path.join(cwd, 'global') } };
+  return { cwd, env: { ...process.env, NODE_ENV: 'test', ENGRAM_CONFIG_DIR: path.join(cwd, 'user-config'), ENGRAM_GLOBAL_DIR: path.join(cwd, 'global'), GIT_CONFIG_COUNT: '2', GIT_CONFIG_KEY_0: 'user.name', GIT_CONFIG_VALUE_0: 'Engram Test', GIT_CONFIG_KEY_1: 'user.email', GIT_CONFIG_VALUE_1: 'engram-test@example.com' } };
 }
 
 export function runEngram(cwd, env, args, input = '') {

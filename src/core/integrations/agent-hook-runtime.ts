@@ -87,7 +87,18 @@ async function maybeIngestTranscript(host: AgentHookHost, payload: HookPayload, 
   const event = eventName(payload);
   const text = queryText(payload, event);
   if (!text || text === 'current task' || isSessionStart(event)) return;
-  await ingestTranscript(root, { text, host, session_id: sessionId(payload) }, options);
+  await ingestTranscript(root, {
+    text,
+    host,
+    session_id: sessionId(payload),
+    turn_id: numericTurnId(payload),
+    speaker: 'user',
+    event_time: payloadEventTime(payload),
+    source: 'agent-hook',
+    trust_level: 'human',
+    sensitivity: options.sensitivity ?? 'private',
+    retention: options.retention ?? '30d'
+  }, options);
 }
 
 function isSessionStart(event: string): boolean {
@@ -181,6 +192,18 @@ function payloadCwd(payload: HookPayload): string {
 
 function sessionId(payload: HookPayload): string {
   return String(payload.session_id ?? payload.sessionId ?? payload.conversation_id ?? payload.trajectory_id ?? process.env.GEMINI_SESSION_ID ?? 'default');
+}
+
+function numericTurnId(payload: HookPayload): number | undefined {
+  const value = Number(payload.turn_id ?? payload.turnId ?? payload.message_index);
+  return Number.isInteger(value) && value >= 0 ? value : undefined;
+}
+
+function payloadEventTime(payload: HookPayload): string | undefined {
+  const value = payload.event_time ?? payload.timestamp ?? payload.created_at;
+  if (!value) return undefined;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed.toISOString();
 }
 
 function queryText(payload: HookPayload, event: string): string {

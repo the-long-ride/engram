@@ -8,16 +8,17 @@ export const LEGACY_ENGRAM_DIR = '.engram';
 export const INDEX_FILE = 'memory.index.json';
 export const GRAPH_FILE = 'memory.graph.json';
 export const VECTOR_DB_FILE = 'memory.vec.sqlite';
-export const VECTOR_DB_SCHEMA_VERSION = 1;
+export const VECTOR_DB_SCHEMA_VERSION = 2;
 export const HASH_FILE = 'memory.hashes.json';
 export const CHANGELOG_FILE = 'changelog.md';
 export const HELP_FILE = 'HELP.md';
 export const README_FILE = 'README.md';
 export const REVIEW_DIR = 'review';
 export const INBOX_DIR = 'inbox';
+export const TRACE_DIR = 'traces';
 export const INBOX_DEFAULT_TTL_DAYS = 14;
 
-export const MEMORY_DIRS = ['rules', 'skills', 'knowledge', 'archive', 'quarantine', 'proposals', 'inbox'];
+export const MEMORY_DIRS = ['rules', 'skills', 'knowledge', 'archive', 'quarantine', 'proposals', 'inbox', 'traces'];
 
 export const DEFAULT_IGNORE = `# Engram ignores private or generated AI context.
 .env

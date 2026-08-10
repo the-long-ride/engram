@@ -5,7 +5,7 @@ import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 
 const root = path.resolve('.');
-const CANONICAL_TAB_LABELS = ['Construct', 'Memories', 'Review', 'Maintain', 'Connect'];
+const CANONICAL_TAB_LABELS = ['Construct', 'Git', 'Updates', 'Memories', 'Review', 'Maintain', 'Connect'];
 const STALE_TAB_TERMS = ['Core Tab', 'Connections Tab'];
 
 async function read(rel) {
@@ -18,18 +18,18 @@ function parseTabLabelsFromSidebar(source) {
     .map((m) => m[1]);
 }
 
-test('Sidebar exposes the canonical five tab labels in source order', async () => {
+test('Sidebar exposes the canonical seven tab labels in source order', async () => {
   const sidebar = await read('src/core/web/app/layout/Sidebar.tsx');
   const labels = parseTabLabelsFromSidebar(sidebar);
   assert.deepEqual(labels, CANONICAL_TAB_LABELS);
-  // Internal TabName union must remain the same five keys.
+  // Internal TabName union must remain aligned with the seven visible tabs.
   const types = await read('src/core/web/app/types.ts');
-  assert.match(types, /export type TabName = 'recall' \| 'review' \| 'maintain' \| 'connect' \| 'config';/);
+  assert.match(types, /export type TabName = 'recall' \| 'review' \| 'maintain' \| 'connect' \| 'config' \| 'author' \| 'upgrade';/);
 });
 
 test('README documents every canonical tab label and avoids stale tab wording', async () => {
   const readme = await read('README.md');
-  // The install section describes the four operational tabs by their `<Label> Tab` heading.
+  // The install section describes the five operational tabs by their `<Label> Tab` heading.
   // The Review tab uses the same label inside the canonical tab-order summary and elsewhere,
   // so it is not required to have its own install bullet.
   for (const label of ['Connect', 'Construct', 'Maintain', 'Memories']) {
@@ -70,4 +70,16 @@ test('package.json, CHANGELOG head, and latest versioned docs folder agree on th
   assert.ok(versionedDirs.length > 0, 'versioned_docs must contain at least one released version');
   const latestPublished = versionedDirs[versionedDirs.length - 1];
   assert.equal(latestPublished, pkg.version, 'latest versioned_docs folder must match the package version (' + pkg.version + ')');
+});
+
+test('author frontend DTO and named API clients cover every approved route', async () => {
+  const types = await read('src/core/web/app/types.ts');
+  for (const name of ['AuthorProfileDto', 'ResolvedAuthorDto', 'AuthorStateDto']) assert.ok(types.includes(name), name + ' DTO missing');
+  assert.match(types, /author\?: AuthorStateDto/);
+  const client = await read('src/core/web/app/api-client.ts');
+  for (const route of [
+    '/api/author', '/api/author/set', '/api/author/unset',
+    '/api/author/sync-git-global/plan', '/api/author/sync-git-global',
+    '/api/author/migrate/plan', '/api/author/migrate'
+  ]) assert.ok(client.includes(route), route + ' client missing');
 });

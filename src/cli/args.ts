@@ -3,9 +3,9 @@ export type FlagValue = string | boolean | string[];
 export type ParsedArgs = { command: string; rest: string[]; flags: Record<string, FlagValue> };
 
 const booleanFlags = new Set([
-  'all', 'auto', 'configs-only', 'dry-run', 'explain', 'force', 'full', 'h', 'help',
-  'global', 'global-only', 'global-skillsets-only', 'inbox', 'json', 'latest', 'low-confidence', 'memory-only', 'no-auto-upgrade', 'no-global', 'no-skillset',
-  'no-submodule', 'no-version-check', 'plan', 'propose', 'rebuild', 'metacognize', 'restructure', 'self', 'semantic', 'show-rule-variants', 'skip-task-type-prompt', 'stale', 'strict',
+  'all', 'auto', 'confirm', 'configs-only', 'dry-run', 'explain', 'force', 'full', 'h', 'help',
+  'global', 'global-only', 'global-skillsets-only', 'inbox', 'json', 'latest', 'low-confidence', 'memory-only', 'migrate-memories', 'no-auto-upgrade', 'no-global', 'no-migrate-memories', 'no-skillset',
+  'no-submodule', 'no-version-check', 'plan', 'propose', 'review', 'yes', 'rebuild', 'metacognize', 'restructure', 'self', 'semantic', 'show-rule-variants', 'skip-task-type-prompt', 'stale', 'strict',
   'submodule', 'use', 'user', 'v', 'version', 'workspace', 'host-only'
 ]);
 const saveSessionCommands = new Set(['save-session', 'ss']);

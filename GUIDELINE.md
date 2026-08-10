@@ -188,6 +188,11 @@ falling back to `global_git.branch` (`main` by default) for new repos. Automatic
 conflict resolution is limited to Engram memory Markdown files in the global
 root; unresolved Git conflicts must remain visible for human review.
 
+
+## Documentation Synchronization
+
+Breaking changes must update `README.md`, the canonical English docs-site, and all supported locale copies in the same change. Ownership/force-upgrade semantics, destructive-action warnings, and apply-success/failure behavior are part of that user-visible contract and require synchronized tests and translations. Any user-visible workflow or UI contract change that is documented on the docs-site must keep the English page and every current translation synchronized; do not merge English-only explanatory prose into localized pages. Stable product labels and CLI/code tokens may remain literal when they match the interface.
+
 ## Publishing
 
 1. Update `version` in `package.json`.

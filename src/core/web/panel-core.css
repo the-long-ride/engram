@@ -169,6 +169,11 @@ button {
   color: var(--amber-dk);
   letter-spacing: 0.3px;
 }
+.sb-upgrade-detail {
+  font-size: 10px;
+  line-height: 1.35;
+  color: var(--g700);
+}
 .sb-upgrade-cmd {
   font-family: var(--mono);
   font-size: 10px;
@@ -631,4 +636,15 @@ button {
 }
 .btn-cancel:hover {
   color: var(--g1000);
+}
+/* ── Author settings navigation ── */
+.nav-section {
+  padding: 14px 12px 6px;
+  color: var(--g500);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  cursor: default;
+  user-select: none;
 }

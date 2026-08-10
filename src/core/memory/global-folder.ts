@@ -8,11 +8,14 @@ import { ensureDir, exists, listFiles } from '../system/fsx.js';
 import { ensureGlobalGit, gitCommitGlobal } from '../vcs/git.js';
 import { resolveConflictsInRoot } from '../vcs/conflict.js';
 import { createScope } from './storage.js';
+import { requireResolvedAuthor } from '../author/resolve.js';
 
 type GlobalFolderUpdateOptions = { moveFromPath?: string };
 
 /** Update the configured global root, optionally moving an existing root first. */
 export async function updateGlobalFolder(cwd: string, newPath: string, options: GlobalFolderUpdateOptions = {}): Promise<string[]> {
+  const author = await requireResolvedAuthor(cwd);
+  const commitContext = { cwd, author };
   const target = normalizeRequiredPath(newPath, 'a new global path');
   const current = await loadConfig(cwd);
   const profile = profileResolutionForConfig(current);
@@ -34,7 +37,7 @@ export async function updateGlobalFolder(cwd: string, newPath: string, options: 
   const global = await createScope(target, config, 'global', false, { global_path: target });
   lines.push(...scopeRepairLines('global', global, false));
   const branch = await ensureGlobalGit(target, config.global_git.branch);
-  await gitCommitGlobal(target, 'update global memory folder', config.global_git, () => resolveGlobalConflicts(target));
+  await gitCommitGlobal(target, 'update global memory folder', config.global_git, () => resolveGlobalConflicts(target), commitContext);
   lines.push(`config updated: ${configFile}`);
   lines.push(`engram global ready at ${target} (git branch: ${branch})`);
   const env = process.env.ENGRAM_GLOBAL_DIR?.trim();

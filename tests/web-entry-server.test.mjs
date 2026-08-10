@@ -518,3 +518,74 @@ test('entry server rejects foreign Origin, foreign Host, and tokenless /api/* mu
     await rm(cwd, { recursive: true, force: true });
   }
 });
+
+test('entry server exposes author settings with confirmation and CLI parity', async () => {
+  const { cwd, env } = await tempWorkspace('engram-entry-author-');
+  const oldEnv = {
+    ENGRAM_CONFIG_DIR: process.env.ENGRAM_CONFIG_DIR,
+    ENGRAM_GLOBAL_DIR: process.env.ENGRAM_GLOBAL_DIR,
+    NODE_ENV: process.env.NODE_ENV,
+    GIT_CONFIG_COUNT: process.env.GIT_CONFIG_COUNT,
+    GIT_CONFIG_KEY_0: process.env.GIT_CONFIG_KEY_0,
+    GIT_CONFIG_VALUE_0: process.env.GIT_CONFIG_VALUE_0,
+    GIT_CONFIG_KEY_1: process.env.GIT_CONFIG_KEY_1,
+    GIT_CONFIG_VALUE_1: process.env.GIT_CONFIG_VALUE_1
+  };
+  for (const key of ['ENGRAM_CONFIG_DIR', 'ENGRAM_GLOBAL_DIR', 'GIT_CONFIG_COUNT', 'GIT_CONFIG_KEY_0', 'GIT_CONFIG_VALUE_0', 'GIT_CONFIG_KEY_1', 'GIT_CONFIG_VALUE_1']) {
+    process.env[key] = env[key];
+  }
+  process.env.NODE_ENV = 'test';
+  try {
+    const baseUrl = await servePanel(cwd);
+    csrfToken = await fetchCsrfToken(baseUrl);
+    const initial = await requestJson(baseUrl + '/api/author');
+    assert.equal(initial.response.status, 200);
+    assert.equal(initial.body.data.resolved.source, 'git');
+
+    const unconfirmedSet = await requestJson(baseUrl + '/api/author/set', {
+      method: 'POST',
+      body: JSON.stringify({ scope: 'global', name: 'Jane Doe', email: 'jane@example.com', confirmed: false })
+    });
+    assert.equal(unconfirmedSet.response.status, 400);
+    assert.match(unconfirmedSet.body.error.message, /confirmation/i);
+
+    const set = await requestJson(baseUrl + '/api/author/set', {
+      method: 'POST',
+      body: JSON.stringify({ scope: 'global', name: 'Jane Doe', email: 'jane@example.com', confirmed: true })
+    });
+    assert.equal(set.response.status, 200);
+    assert.equal(set.body.ok, true);
+
+    const author = await requestJson(baseUrl + '/api/author');
+    const cli = JSON.parse((await runEngram(cwd, env, ['author', 'show', '--json'])).stdout);
+    assert.deepEqual(author.body.data, cli.data);
+
+    const plan = await requestJson(baseUrl + '/api/author/sync-git-global/plan', { method: 'POST', body: '{}' });
+    assert.equal(plan.response.status, 200);
+    assert.equal(plan.body.data.next.email, 'jane@example.com');
+
+    const unconfirmedSync = await requestJson(baseUrl + '/api/author/sync-git-global', {
+      method: 'POST', body: JSON.stringify({ confirmed: false })
+    });
+    assert.equal(unconfirmedSync.response.status, 400);
+    assert.match(unconfirmedSync.body.error.message, /confirmation/i);
+
+    const migrationPlan = await requestJson(baseUrl + '/api/author/migrate/plan', {
+      method: 'POST', body: JSON.stringify({ scope: 'both' })
+    });
+    assert.equal(migrationPlan.response.status, 200);
+    assert.equal(migrationPlan.body.data.scope, 'both');
+
+    const unconfirmedMigration = await requestJson(baseUrl + '/api/author/migrate', {
+      method: 'POST', body: JSON.stringify({ scope: 'both', confirmed: false })
+    });
+    assert.equal(unconfirmedMigration.response.status, 400);
+    assert.match(unconfirmedMigration.body.error.message, /confirmation/i);
+  } finally {
+    stopServer();
+    for (const [key, value] of Object.entries(oldEnv)) {
+      if (value === undefined) delete process.env[key]; else process.env[key] = value;
+    }
+    await rm(cwd, { recursive: true, force: true });
+  }
+});

@@ -84,7 +84,10 @@ function countRows(counts: Record<string, number>): string[] {
 
 function authorCounts(entries: MemoryEntry[]): Record<string, number> {
   return entries.reduce<Record<string, number>>((acc, entry) => {
-    acc[entry.author] = (acc[entry.author] ?? 0) + 1;
+    const key = entry.authorName && entry.authorEmail
+      ? `${entry.authorName} <${entry.authorEmail}>`
+      : entry.authorEmail || entry.author || 'unknown';
+    acc[key] = (acc[key] ?? 0) + 1;
     return acc;
   }, {});
 }

@@ -13,6 +13,7 @@ import { ensureVectorIndex } from './vector-db.js';
 import { appendChangelog } from './storage.js';
 import { gitCommitGlobal, pullGlobalGit } from '../vcs/git.js';
 import { resolveConflictsInRoot } from '../vcs/conflict.js';
+import { requireResolvedAuthor } from '../author/resolve.js';
 
 export type ArchivePlan = { entry: MemoryEntry; originalPath: string; archiveFile: string; content: string };
 type NormalizedArchiveTarget = { scope?: Scope; value: string };
@@ -67,7 +68,8 @@ export async function archiveMemory(ctx: EngramContext, plan: ArchivePlan, reaso
   const root = ctx.roots[plan.entry.scope];
   if (!root) throw new Error(`${plan.entry.scope} memory is not configured`);
   const globalGit = plan.entry.scope === 'global' ? ctx.config.global_git : undefined;
-  if (globalGit) await pullGlobalGit(root, globalGit, () => resolveGlobalConflicts(root));
+  const commitContext = globalGit ? { cwd: ctx.cwd, author: await requireResolvedAuthor(ctx.cwd) } : undefined;
+  if (globalGit) await pullGlobalGit(root, globalGit, () => resolveGlobalConflicts(root), commitContext);
   const raw = await readText(plan.originalPath);
   const archivePath = inside(root, plan.archiveFile);
   await ensureDir(path.dirname(archivePath));
@@ -80,7 +82,7 @@ export async function archiveMemory(ctx: EngramContext, plan: ArchivePlan, reaso
   await rebuildGraph(root, plan.entry.scope, index, ctx.config);
   await ensureVectorIndex(root, plan.entry.scope, index.entries, ctx.config);
   await appendChangelog(root, plan.archiveFile, `archive ${plan.entry.id}: ${reason || 'No reason provided'}`);
-  if (globalGit) await gitCommitGlobal(root, `archive memory: ${plan.entry.id}`, globalGit, () => resolveGlobalConflicts(root));
+  if (globalGit) await gitCommitGlobal(root, `archive memory: ${plan.entry.id}`, globalGit, () => resolveGlobalConflicts(root), commitContext);
   return archivePath;
 }
 

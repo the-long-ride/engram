@@ -11,7 +11,7 @@ import { visibleEntries } from './routing.js';
 
 suppressSqliteExperimentalWarning();
 
-type VectorDb = {
+export type VectorDb = {
   db: any;
   bindVector(vector: number[]): any;
 };
@@ -58,38 +58,42 @@ export async function ensureVectorIndex(
   scope: Scope,
   entries: MemoryEntry[],
   config: EngramConfig,
-  options: { force?: boolean; readOnly?: boolean } = {}
+  options: { force?: boolean; readOnly?: boolean; _runtimeFactory?: (file: string) => Promise<VectorDb | undefined> } = {}
 ): Promise<VectorIndexStatus> {
   const file = vectorDbPath(root);
   const eligible = entries.filter((entry) => !entry.ignored);
   if (!config.vector.enabled) return skipped(scope, file, eligible.length, 'vector routing disabled');
   if (eligible.length < config.vector.auto_threshold) return skipped(scope, file, eligible.length, `below threshold ${config.vector.auto_threshold}`);
   if (options.readOnly && !(await exists(file))) return skipped(scope, file, eligible.length, 'vector index missing');
-  const runtime = await openVectorDb(file);
-  if (!runtime) return skipped(scope, file, eligible.length, 'sqlite-vec runtime unavailable');
-  const fingerprint = indexFingerprint(scope, eligible, config.vector.dimensions);
+  const open = options._runtimeFactory ?? openVectorDb;
+  let runtime: VectorDb | undefined;
   try {
-    const meta = readMeta(runtime.db);
-    const schemaMatches = Number(meta.schema_version ?? 0) === VECTOR_DB_SCHEMA_VERSION;
-    const dimensionsMatch = Number(meta.dimensions ?? 0) === config.vector.dimensions;
-    const fingerprintMatches = meta.fingerprint === fingerprint;
-    closeDb(runtime.db);
-    if (!options.force && schemaMatches && dimensionsMatch && fingerprintMatches) {
-      return { scope, file, action: 'ready', entries: eligible.length };
+    runtime = await open(file);
+    if (!runtime) return skipped(scope, file, eligible.length, 'sqlite-vec runtime unavailable');
+    const fingerprint = indexFingerprint(scope, eligible, config.vector.dimensions);
+    try {
+      const meta = readMeta(runtime.db);
+      const schemaMatches = Number(meta.schema_version ?? 0) === VECTOR_DB_SCHEMA_VERSION;
+      const dimensionsMatch = Number(meta.dimensions ?? 0) === config.vector.dimensions;
+      const fingerprintMatches = meta.fingerprint === fingerprint;
+      closeDb(runtime.db);
+      runtime = undefined;
+      if (!options.force && schemaMatches && dimensionsMatch && fingerprintMatches) {
+        return { scope, file, action: 'ready', entries: eligible.length };
+      }
+      if (options.readOnly) return skipped(scope, file, eligible.length, 'vector index stale');
+    } catch (error) {
+      if (runtime) closeDb(runtime.db);
+      runtime = undefined;
+      if (options.readOnly) return skipped(scope, file, eligible.length, `vector index degraded: ${messageOf(error)}`);
     }
-    if (options.readOnly) return skipped(scope, file, eligible.length, 'vector index stale');
-  } catch {
-    closeDb(runtime.db);
-    if (options.readOnly) return skipped(scope, file, eligible.length, 'vector index unreadable');
-  }
-  if (options.readOnly) return skipped(scope, file, eligible.length, 'vector index missing');
-  await fs.rm(file, { force: true });
-  const rebuilt = await openVectorDb(file);
-  if (!rebuilt) return skipped(scope, file, eligible.length, 'sqlite-vec runtime unavailable');
-  try {
-    createSchema(rebuilt.db, config.vector.dimensions);
-    insertEntries(rebuilt, scope, eligible, config.vector.dimensions);
-    writeMeta(rebuilt.db, {
+    if (options.readOnly) return skipped(scope, file, eligible.length, 'vector index missing');
+    await cleanupVectorFiles(file);
+    runtime = await open(file);
+    if (!runtime) return skipped(scope, file, eligible.length, 'sqlite-vec runtime unavailable');
+    createSchema(runtime.db, config.vector.dimensions);
+    insertEntries(runtime, scope, eligible, config.vector.dimensions);
+    writeMeta(runtime.db, {
       schema_version: String(VECTOR_DB_SCHEMA_VERSION),
       provider: config.vector.provider,
       dimensions: String(config.vector.dimensions),
@@ -98,9 +102,13 @@ export async function ensureVectorIndex(
       engram_version: VERSION,
       updated: new Date().toISOString()
     });
+    closeDb(runtime.db);
+    runtime = undefined;
     return { scope, file, action: 'rebuilt', entries: eligible.length };
-  } finally {
-    closeDb(rebuilt.db);
+  } catch (error) {
+    if (runtime) closeDb(runtime.db);
+    await cleanupVectorFiles(file);
+    return skipped(scope, file, eligible.length, `vector index degraded: ${messageOf(error)}`);
   }
 }
 
@@ -187,7 +195,7 @@ function insertEntries(runtime: VectorDb, scope: Scope, entries: MemoryEntry[], 
     const vectorStmt = runtime.db.prepare('insert into memory_vectors(rowid, embedding) values (?, ?)');
     for (let i = 0; i < entries.length; i += 1) {
       const entry = entries[i];
-      const rowid = i + 1;
+      const rowid = BigInt(i + 1);
       entryStmt.run(rowid, scope, entry.id, entry.type, entry.file, entry.updated, entrySignature(entry));
       vectorStmt.run(rowid, runtime.bindVector(routingVector(entryText(entry), dimensions)));
     }
@@ -237,6 +245,19 @@ function entrySignature(entry: MemoryEntry): string {
 
 function entryText(entry: MemoryEntry): string {
   return `${entry.id} ${entry.tags.join(' ')} ${entry.summary} ${(entry.routingTerms ?? []).join(' ')}`;
+}
+
+/** Test seam for validating sqlite binding behavior without loading an optional native runtime. */
+export function __insertVectorEntriesForTest(runtime: VectorDb, scope: Scope, entries: MemoryEntry[], dimensions: number): void {
+  insertEntries(runtime, scope, entries, dimensions);
+}
+
+async function cleanupVectorFiles(file: string): Promise<void> {
+  await Promise.all(['', '-wal', '-shm'].map((suffix) => fs.rm(`${file}${suffix}`, { force: true }).catch(() => undefined)));
+}
+
+function messageOf(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
 
 function skipped(scope: Scope, file: string, entries: number, reason: string): VectorIndexStatus {

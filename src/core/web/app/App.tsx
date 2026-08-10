@@ -13,6 +13,8 @@ import { CoreTab } from './tabs/CoreTab.js';
 import { MemoriesTab } from './tabs/MemoriesTab.js';
 import { ConnectionsTab } from './tabs/ConnectionsTab.js';
 import { ReviewTab } from './tabs/ReviewTab.js';
+import { AuthorTab } from './tabs/AuthorTab.js';
+import { UpgradeTab } from './tabs/UpgradeTab.js';
 
 export function App() {
   const [data, setData] = useState<PanelData | null>(null);
@@ -58,6 +60,8 @@ export function App() {
     if (active === 'maintain') return <CoreTab active toast={toast} modal={modalApi} />;
     if (active === 'connect') return <ConnectionsTab active toast={toast} />;
     if (active === 'config') return data ? <ConfigTab data={data} reload={reload} toast={toast} /> : null;
+    if (active === 'author') return data ? <AuthorTab data={data} reload={reload} toast={toast} modal={modalApi} /> : null;
+    if (active === 'upgrade') return data ? <UpgradeTab data={data} reload={reload} toast={toast} modal={modalApi} /> : null;
     return <MemoriesTab active toast={toast} modal={modalApi} />;
   }, [data, active, reload, toast, modalApi]);
 

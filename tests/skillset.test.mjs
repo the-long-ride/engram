@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { installSkillset, unlinkSkillset, unlinkGlobalSkillset, skillsetTargets, resolveLinkTargets } from '../dist/core/integrations/skillset.js';
+import { installSkillset, installGlobalSkillset, previewRegisteredGlobalSkillsets, unlinkSkillset, unlinkGlobalSkillset, skillsetTargets, resolveLinkTargets } from '../dist/core/integrations/skillset.js';
 import { detectInstalledAgents, resolveAllTargets, allSupportedTargets } from '../dist/core/integrations/agent-detect.js';
 import { VERSION } from '../dist/core/runtime/version.js';
 import { runEngram, tempWorkspace } from './helpers.mjs';
@@ -253,6 +253,26 @@ assert.match(guide, /engram load "<current task>"/);
   assert.equal(updated.code, 0, updated.stderr);
   assert.match(updated.stdout, /UPDATED codex: .*AGENTS\.md/);
   assert.match(updated.stdout, /UPDATED codex: .*SKILL\.md/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+
+test('shared global Engram guide stays canonical across codex claude and gemini installs', async () => {
+  const { cwd, env } = await tempWorkspace('engram-skillset-global-shared-');
+  const agentHome = path.join(cwd, 'agent-home');
+  const globalEnv = { ...env, ENGRAM_AGENT_HOME: agentHome, ENGRAM_AGENT_CONFIG_HOME: path.join(cwd, 'agent-config') };
+  const guideFile = path.join(agentHome, '.agents', 'engram.md');
+
+  let canonical = '';
+  for (const target of ['codex', 'claude', 'gemini']) {
+    const result = await runEngram(cwd, globalEnv, ['link', '--global', target]);
+    assert.equal(result.code, 0, result.stderr);
+    const guide = await readFile(guideFile, 'utf8');
+    assert.match(guide, /Global Startup/);
+    if (!canonical) canonical = guide;
+    else assert.equal(guide, canonical, `${target} must not rewrite the shared guide with host-specific content`);
+  }
+
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -1951,3 +1971,34 @@ function isObject(v) {
   return Boolean(v) && typeof v === 'object' && !Array.isArray(v);
 }
 
+
+
+test('global Codex instruction preview uses the same minimal block renderer as install', async () => {
+  const { cwd, env } = await tempWorkspace('engram-global-preview-render-');
+  const agentHome = path.join(cwd, 'agent-home');
+  const previous = {
+    configDir: process.env.ENGRAM_CONFIG_DIR,
+    agentHome: process.env.ENGRAM_AGENT_HOME,
+    cwd: process.cwd()
+  };
+  process.env.ENGRAM_CONFIG_DIR = env.ENGRAM_CONFIG_DIR;
+  process.env.ENGRAM_AGENT_HOME = agentHome;
+  process.chdir(cwd);
+  try {
+    await installGlobalSkillset('codex', { home: agentHome });
+    const previews = await previewRegisteredGlobalSkillsets(agentHome, cwd);
+    const agents = previews.find((row) => path.normalize(row.file) === path.normalize(path.join(agentHome, '.codex', 'AGENTS.md')));
+    const guide = previews.find((row) => path.normalize(row.file) === path.normalize(path.join(agentHome, '.agents', 'engram.md')));
+    assert.ok(agents, 'Codex AGENTS.md preview should exist');
+    assert.ok(guide, 'global companion guide preview should exist');
+    assert.match(agents.latest ?? '', /<!-- engram:start -->/);
+    assert.doesNotMatch(agents.latest ?? '', /# Engram Global Agent Skillset/);
+    assert.equal(agents.current, agents.expected, 'freshly installed instruction file should already equal its preview');
+    assert.match(guide.latest ?? '', /# Engram Global Agent Skillset/);
+  } finally {
+    process.chdir(previous.cwd);
+    if (previous.configDir === undefined) delete process.env.ENGRAM_CONFIG_DIR; else process.env.ENGRAM_CONFIG_DIR = previous.configDir;
+    if (previous.agentHome === undefined) delete process.env.ENGRAM_AGENT_HOME; else process.env.ENGRAM_AGENT_HOME = previous.agentHome;
+    await rm(cwd, { recursive: true, force: true });
+  }
+});

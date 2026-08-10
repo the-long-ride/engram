@@ -5,7 +5,7 @@ import { cmdLoad, cmdRoute, cmdVerify } from '../commands/read.js';
 import { cmdHealth, cmdSearch } from '../commands/ops.js';
 import { getContext } from '../core/memory/context.js';
 import { planMemorySave, previewSavePlans, type SavePreviewOptions } from '../core/memory/save-plan.js';
-import { resolveAuthor } from '../core/memory/storage.js';
+import { requireResolvedAuthor } from '../core/author/resolve.js';
 import { normalizeMemoryType, parseMemoryCandidate, parseMemoryCandidates } from '../core/memory/memory-candidate.js';
 import { agentMemoryChatApprovalText } from '../core/memory/agent-proposal-protocol.js';
 import { normalizeTaskType } from '../core/memory/task-classifier.js';
@@ -199,12 +199,14 @@ async function saveProposal(args: any): Promise<string> {
   if (requestedType && !explicitType) throw new Error('engram_save type must be rule, skill, workflow, or knowledge');
   const scopes = proposalScopes(ctx, args.scope, 'engram_save scope');
   const candidate = parseMemoryCandidate(text, { explicitType });
+  const author = await requireResolvedAuthor(ctx.cwd);
   const plans = await planMemorySave({
     ctx,
     text: candidate.text,
     type: candidate.type,
     scopes,
-    author: await resolveAuthor(),
+    authorName: author.name,
+    authorEmail: author.email,
     role: rolesFromArgs(args),
     taskType: normalizeTaskType(args.taskType ?? args['task-type']),
     context: candidate.context,
@@ -222,7 +224,7 @@ async function saveSessionProposal(args: any): Promise<string> {
   const text = String(args.text ?? '').trim();
   if (!text) throw new Error('engram_save_session requires non-empty text');
   const scopes = proposalScopes(ctx, args.scope, 'engram_save_session scope');
-  const author = await resolveAuthor();
+  const author = await requireResolvedAuthor(ctx.cwd);
   const role = rolesFromArgs(args);
   const plans = [];
   let candidateIndex = 1;
@@ -232,7 +234,8 @@ async function saveSessionProposal(args: any): Promise<string> {
       text: candidate.text,
       type: candidate.type,
       scopes,
-      author,
+      authorName: author.name,
+      authorEmail: author.email,
       role,
       context: candidate.context,
       triggers: candidate.triggers,

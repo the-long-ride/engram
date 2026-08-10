@@ -32,6 +32,19 @@ import {
   apiMemoriesGraphData,
   apiResolveMemoryFile,
   apiArchiveMemory,
+  apiAuthorState,
+  apiAuthorSet,
+  apiAuthorUnset,
+  apiAuthorSyncPlan,
+  apiAuthorSync,
+  apiAuthorMigrationPlan,
+  apiAuthorMigration,
+  apiUpgradePlan,
+  apiUpgradeReview,
+  apiUpgradeResolve,
+  apiUpgradeResolveBatch,
+  apiUpgradeOpenFile,
+  apiUpgradeApply,
 } from './api.js';
 import { CONTRACT_VERSION } from '../contracts/result.js';
 import { cmdCapabilities } from '../../commands/capabilities.js';
@@ -306,6 +319,26 @@ async function handleApiRequest(req: any, res: any, ctx: RequestContext, url: st
     return;
   }
 
+  if (url === '/api/upgrade/plan' && method === 'GET') {
+    try { json(200, { ok: true, data: await apiUpgradePlan(cwd) }); }
+    catch (e: any) { json(400, { error: e.message }); }
+    return;
+  }
+
+  if (url === '/api/upgrade/review' && method === 'GET') {
+    try {
+      const parsed = new URL(req.url, 'http://localhost');
+      json(200, { ok: true, data: await apiUpgradeReview(cwd, parsed.searchParams.get('fingerprint') || '', parsed.searchParams.get('item') || '') });
+    } catch (e: any) { json(400, { error: e.message }); }
+    return;
+  }
+
+  if (url === '/api/author' && method === 'GET') {
+    try { json(200, { ok: true, data: await apiAuthorState(cwd) }); }
+    catch (e: any) { json(400, { error: e.message }); }
+    return;
+  }
+
   if (url === '/api/core' && method === 'GET') {
     try {
       const data = await apiCoreData(cwd, {});
@@ -424,6 +457,46 @@ async function handleApiRequest(req: any, res: any, ctx: RequestContext, url: st
     return;
   }
   try {
+    if (url === '/api/upgrade/review/batch') {
+      json(200, { ok: true, data: await apiUpgradeResolveBatch(cwd, body) });
+      return;
+    }
+    if (url === '/api/upgrade/open-file') {
+      json(200, { ok: true, data: await apiUpgradeOpenFile(cwd, body) });
+      return;
+    }
+    if (url === '/api/upgrade/review') {
+      json(200, { ok: true, data: await apiUpgradeResolve(cwd, body) });
+      return;
+    }
+    if (url === '/api/upgrade/apply') {
+      json(200, { ok: true, data: await apiUpgradeApply(cwd, body) });
+      return;
+    }
+    if (url === '/api/author/set') {
+      json(200, { ok: true, data: await apiAuthorSet(cwd, body) });
+      return;
+    }
+    if (url === '/api/author/unset') {
+      json(200, { ok: true, data: await apiAuthorUnset(cwd, body) });
+      return;
+    }
+    if (url === '/api/author/sync-git-global/plan') {
+      json(200, { ok: true, data: await apiAuthorSyncPlan(cwd) });
+      return;
+    }
+    if (url === '/api/author/sync-git-global') {
+      json(200, { ok: true, data: await apiAuthorSync(cwd, body.confirmed === true) });
+      return;
+    }
+    if (url === '/api/author/migrate/plan') {
+      json(200, { ok: true, data: await apiAuthorMigrationPlan(cwd, body.scope ?? 'both') });
+      return;
+    }
+    if (url === '/api/author/migrate') {
+      json(200, { ok: true, data: await apiAuthorMigration(cwd, body.scope ?? 'both', body.confirmed === true) });
+      return;
+    }
     if (url === '/api/memories') {
       const data = await apiMemoriesGraphData(cwd, {
         scopes: body.scopes,

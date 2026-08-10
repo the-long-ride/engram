@@ -1,4 +1,5 @@
 /** Shared Engram domain types used by CLI, MCP, and tests. */
+import type { AuthorProfile } from '../author/types.js';
 export type MemoryType = 'rule' | 'skill' | 'knowledge';
 export type Scope = 'workspace' | 'global';
 export type Confidence = 'high' | 'medium' | 'low';
@@ -6,6 +7,9 @@ export type RuleVariant = 'light' | 'balanced' | 'strict';
 export type ProfileSource = 'env' | 'workspace' | 'user' | 'none';
 export type Lifecycle = 'active' | 'review_due' | 'superseded' | 'archived';
 export type InboxReceiptSource = 'save' | 'save-session';
+export type MemoryAuthority = 'instruction' | 'reference';
+export type EvidenceStatus = 'verified' | 'unverified';
+export type MemorySchemaVersion = 1 | 2 | 3;
 
 export type InboxCandidate = {
   type: MemoryType;
@@ -59,6 +63,7 @@ export type AutoUpgradeState = {
 };
 
 export type EngramConfig = {
+  author?: AuthorProfile;
   version: string;
   enabled: boolean;
   theme?: 'light' | 'dark';
@@ -106,7 +111,12 @@ export type MemoryEntry = {
   routingTerms?: string[];
   file: string;
   author: string;
+  authorName?: string;
+  authorEmail?: string;
+  legacyAuthorEmail?: string;
   confidence: Confidence;
+  authority: MemoryAuthority;
+  evidenceStatus?: EvidenceStatus;
   ignored: boolean;
   updated: string;
   dependsOn?: string[];
@@ -115,7 +125,14 @@ export type MemoryEntry = {
   lifecycle?: Lifecycle;
   reviewAfter?: string;
   lastVerified?: string;
-  supersedes?: string;
+  evidenceRefs?: string[];
+  derivedFrom?: string[];
+  revision?: number;
+  supersedes?: string[];
+  supersededBy?: string;
+  validFrom?: string;
+  validUntil?: string;
+  lastConfirmed?: string;
   archivedAt?: string;
 };
 
@@ -157,6 +174,37 @@ export type MemoryGraph = {
   last_updated: string;
   nodes: MemoryGraphNode[];
   edges: MemoryGraphEdge[];
+};
+
+
+export type TraceAuthority = 'evidence';
+export type TrustLevel = 'human' | 'repository' | 'tool' | 'web' | 'generated';
+export type Sensitivity = 'public' | 'internal' | 'private' | 'secret';
+export type TraceRetention = 'permanent' | `${number}d`;
+
+export type TraceUnit = {
+  traceId: string;
+  sessionId: string;
+  turnId?: number;
+  speaker?: string;
+  host: string;
+  eventTime: string;
+  ingestedAt: string;
+  source: string;
+  sourceFile?: string;
+  sourceHash: string;
+  trustLevel: TrustLevel;
+  sensitivity: Sensitivity;
+  retention: TraceRetention;
+  authority: TraceAuthority;
+  text: string;
+  redactedFindings: number;
+  removedInjectionLines: number;
+};
+
+export type TraceWriteInput = Omit<TraceUnit, 'authority' | 'sourceHash' | 'traceId' | 'ingestedAt'> & {
+  traceId?: string;
+  ingestedAt?: string;
 };
 
 export type WorkspaceRow = {

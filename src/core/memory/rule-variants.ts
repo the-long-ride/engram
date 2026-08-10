@@ -1,5 +1,6 @@
 /** Rule variant extraction and compact rendering helpers. */
 import type { EngramConfig, MemoryEntry, RuleVariant } from '../runtime/types.js';
+import { parseFrontmatter, renderFrontmatter } from './frontmatter.js';
 
 const headings: Record<RuleVariant, string> = {
   light: 'Light',
@@ -115,14 +116,13 @@ function replaceContent(raw: string, content: string): string {
 }
 
 function slimFrontmatter(raw: string): string {
-  const match = raw.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
-  if (!match) return raw;
-  const keep = new Set(['id', 'type', 'tags', 'confidence', 'depends_on']);
-  const lines = match[1].split(/\r?\n/).filter((line) => {
-    const key = line.split(':')[0].trim();
-    return keep.has(key);
-  });
-  return `---\n${lines.join('\n')}\n---\n${raw.slice(match[0].length)}`;
+  const parsed = parseFrontmatter(raw);
+  if (!parsed.rawBlock) return raw;
+  const keep = ['id', 'type', 'tags', 'confidence', 'authority', 'depends_on', 'evidence_refs'];
+  const selected = Object.fromEntries(
+    keep.filter((key) => parsed.data[key] !== undefined).map((key) => [key, parsed.data[key]])
+  );
+  return `${renderFrontmatter(selected)}${parsed.body}`;
 }
 
 function renameContentHeading(raw: string, config: EngramConfig, total: number): string {

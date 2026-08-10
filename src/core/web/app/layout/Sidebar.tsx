@@ -3,8 +3,12 @@ import type { TabName, PanelData, ShowToast } from "../types.js";
 import { Toggle } from "../components/Toggle.js";
 import { copyText } from "../utils/clipboard.js";
 
-const tabs: Array<[TabName, string]> = [
+const settingsTabs: Array<[TabName, string]> = [
   ["config", "Construct"],
+  ["author", "Git"],
+  ["upgrade", "Updates"],
+];
+const taskTabs: Array<[TabName, string]> = [
   ["recall", "Memories"],
   ["review", "Review"],
   ["maintain", "Maintain"],
@@ -24,6 +28,20 @@ function NavIcon({ tab }: { tab: TabName }) {
       <svg {...common} strokeLinecap="round" strokeLinejoin="round">
         <path d="M8 1L1.5 4.5v7L8 15l6.5-3.5v-7L8 1z" />
         <path d="M1.5 4.5L8 8l6.5-3.5M8 8v7" />
+      </svg>
+    );
+  if (tab === "author")
+    return (
+      <svg {...common} strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="6" cy="5" r="2.5" />
+        <path d="M1.5 13c.7-2.7 2.2-4 4.5-4s3.8 1.3 4.5 4M11 4.5h3.5M11 7h3.5M11 9.5h2.5" />
+      </svg>
+    );
+  if (tab === "upgrade")
+    return (
+      <svg {...common} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M8 1.5v8M5 6.5 8 9.5l3-3" />
+        <path d="M2 10.5v3h12v-3" />
       </svg>
     );
   if (tab === "review")
@@ -76,6 +94,11 @@ export function Sidebar({
 }) {
   const upgrade =
     "npm i -g @the-long-ride/engram@latest\nengram upgrade --latest";
+  const upgradeDescription = "Migrates active v1/v2 memories to schema v3";
+  const configUpgradeCount = data?.upgradePlan
+    ? data.upgradePlan.summary.workspace.outdated + data.upgradePlan.summary.workspace.conflict + data.upgradePlan.summary.workspace.invalid
+      + data.upgradePlan.summary.global.outdated + data.upgradePlan.summary.global.conflict + data.upgradePlan.summary.global.invalid
+    : 0;
   return (
     <nav className="sidebar">
       <div className="sb-logo">
@@ -103,24 +126,35 @@ export function Sidebar({
         id="sb-upgrade"
         style={{ display: data?.latestVersion ? "flex" : "none" }}
         onClick={() => copyText(upgrade, toast, "Copied upgrade command")}
-        title="Click to copy upgrade command"
+        title={`${upgradeDescription}. Click to copy upgrade command`}
       >
         <span className="sb-upgrade-title">
           New version available
           {data?.latestVersion ? " · v" + data.latestVersion : ""}
         </span>
+        <span className="sb-upgrade-detail">{upgradeDescription}</span>
         <code className="sb-upgrade-cmd">{upgrade}</code>
       </button>
+      {configUpgradeCount > 0 ? <div className="sb-upgrade sb-config-upgrade" id="sb-config-upgrade">
+        <button className="sb-config-upgrade-main" onClick={() => setActive('upgrade')} title="Preview outdated Engram-managed configuration">
+          <span className="sb-upgrade-title">Configuration update available · {configUpgradeCount}</span>
+          <span className="sb-upgrade-detail">Preview workspace and global changes before upgrading</span>
+        </button>
+        <div className="sb-upgrade-command-row">
+          <code className="sb-upgrade-cmd">engram upgrade --latest --plan</code>
+          <button className="sb-upgrade-copy" aria-label="Copy upgrade preview command" title="Copy upgrade preview command" onClick={(event) => { event.stopPropagation(); void copyText('engram upgrade --latest --plan', toast, 'Copied upgrade preview command'); }}>Copy</button>
+        </div>
+      </div> : null}
       <ul className="sb-nav" id="sb-nav">
-        {tabs.map(([tab, label]) => (
-          <li
-            key={tab}
-            className={"nav-item" + (active === tab ? " active" : "")}
-            data-tab={tab}
-            onClick={() => setActive(tab)}
-          >
-            <NavIcon tab={tab} />
-            {label}
+        <li className="nav-section" aria-disabled="true">Settings</li>
+        {settingsTabs.map(([tab, label]) => (
+          <li key={tab} className={"nav-item" + (active === tab ? " active" : "")} data-tab={tab} onClick={() => setActive(tab)}>
+            <NavIcon tab={tab} />{label}
+          </li>
+        ))}
+        {taskTabs.map(([tab, label]) => (
+          <li key={tab} className={"nav-item" + (active === tab ? " active" : "")} data-tab={tab} onClick={() => setActive(tab)}>
+            <NavIcon tab={tab} />{label}
           </li>
         ))}
       </ul>

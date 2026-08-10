@@ -44,6 +44,8 @@ export type AgentHookResult = {
   reason?: string;
 };
 
+export type AgentHookUpgradePreview = { host: AgentHookHost; file: string; current: string; expected: string; safe: boolean; reason?: string };
+
 const MANAGED_NAME = 'engram-auto-load';
 const TIMEOUT_MS = 10000;
 
@@ -167,6 +169,66 @@ export async function refreshInstalledAgentHooks(targetArg = 'all', options: { g
     results.push({ status: 'UPDATED', host: meta.host, file, events: meta.events });
   }
   return results;
+}
+
+/** Preview installed Engram hooks without writing files. Mixed user hook configs become conflicts. */
+export async function previewInstalledAgentHooks(options: { global?: boolean; cwd?: string } = {}): Promise<AgentHookUpgradePreview[]> {
+  const out: AgentHookUpgradePreview[] = [];
+  for (const host of Object.keys(TARGETS) as AgentHookHost[]) {
+    const meta = TARGETS[host];
+    const file = options.global ? meta.globalFile() : path.join(options.cwd ?? process.cwd(), meta.configFile);
+    if (!(await exists(file))) continue;
+    const current = await readText(file);
+    if (meta.kind === 'plugin') {
+      if (!isGeneratedOpenCodeHookPlugin(current)) continue;
+      const expected = renderOpenCodeHookPlugin();
+      out.push({ host, file, current, expected, safe: true });
+      continue;
+    }
+    const currentInstall = await hasManagedHookInstall(meta, file, false);
+    const staleInstall = currentInstall || await hasManagedHookInstall(meta, file, true);
+    if (!staleInstall) continue;
+    if (currentInstall) {
+      out.push({ host, file, current, expected: current, safe: true });
+      continue;
+    }
+    const config = await readJson<Record<string, any>>(file, {});
+    const next = JSON.parse(JSON.stringify(config));
+    mergeManagedHooks(next, meta, true);
+    const safe = hasOnlyManagedHookContent(config, meta);
+    out.push({
+      host,
+      file,
+      current,
+      expected: `${JSON.stringify(next, null, 2)}\n`,
+      safe,
+      reason: safe ? undefined : 'stale Engram hook shares a user-authored hook config; review required'
+    });
+  }
+  return out;
+}
+
+function hasOnlyManagedHookContent(config: Record<string, any>, meta: JsonHookTarget): boolean {
+  if (meta.schema === 'cursor') {
+    const allowed = new Set(meta.events);
+    if (Object.keys(config).some((key) => !allowed.has(key))) return false;
+    return meta.events.every((event) => !Array.isArray(config[event]) || config[event].every((entry: any) => isCursorManagedEntry(entry, true)));
+  }
+  if (meta.schema === 'windsurf') {
+    const allowed = new Set(meta.events);
+    if (Object.keys(config).some((key) => !allowed.has(key))) return false;
+    return meta.events.every((event) => !Array.isArray(config[event]) || config[event].every((entry: any) => isWindsurfManagedEntry(entry, true)));
+  }
+  if (Object.keys(config).some((key) => key !== 'hooks')) return false;
+  if (!isObject(config.hooks)) return true;
+  const allowed = new Set(meta.events);
+  if (Object.keys(config.hooks).some((key) => !allowed.has(key))) return false;
+  return meta.events.every((event) => {
+    const groups = Array.isArray(config.hooks[event]) ? config.hooks[event] : [];
+    return groups.every((group: any) => isObject(group)
+      && Array.isArray(group.hooks)
+      && group.hooks.every((hook: any) => isManagedHook(hook, meta.host, true)));
+  });
 }
 
 export async function detectInstalledHookTargets(options: { global?: boolean; cwd?: string; includeStale?: boolean } = {}): Promise<AgentHookHost[]> {

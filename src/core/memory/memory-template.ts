@@ -1,19 +1,28 @@
 /** Deterministic memory drafting for manual saves. */
-import type { Confidence, MemoryType, Scope } from '../runtime/types.js';
-import { frontmatter, parseMemory } from './schema.js';
+import type { Confidence, MemoryAuthority, MemoryType, Scope } from '../runtime/types.js';
+import { defaultMemoryAuthority, frontmatter, parseMemory } from './schema.js';
+import { frontmatterStringList } from './frontmatter.js';
 import { defaultRuleVariants, extractRuleVariants, ruleVariantsAreCustomized } from './rule-variants.js';
 import { slugify, tagsFrom, today } from '../system/text.js';
 import type { TaskType } from './task-classifier.js';
 
 export type MemoryDraftOptions = { ruleVariants?: boolean };
-export type MemorySourceMeta = { source?: string; sourceFiles?: string[]; sourceHashes?: string[] };
+export type MemorySourceMeta = {
+  source?: string;
+  sourceFiles?: string[];
+  sourceHashes?: string[];
+  evidenceRefs?: string[];
+  derivedFrom?: string[];
+  evidenceScope?: Scope;
+};
 
 /** Build a concise schema-compliant memory from user text. */
 export function draftMemory(input: {
   text: string;
   type: MemoryType;
   scope: Scope;
-  author: string;
+  authorName: string;
+  authorEmail: string;
   role?: string[];
   context?: string;
   dependsOn?: string[];
@@ -37,7 +46,8 @@ export function updateMemory(raw: string, input: {
   text: string;
   type: MemoryType;
   scope: Scope;
-  author: string;
+  authorName: string;
+  authorEmail: string;
   role?: string[];
   context?: string;
   dependsOn?: string[];
@@ -64,14 +74,19 @@ export function updateMemory(raw: string, input: {
     created: String(doc.frontmatter.created ?? today()),
     role: input.role?.length ? unique([...(doc.frontmatter.role ?? []), ...input.role]) : doc.frontmatter.role,
     context,
-    dependsOn: unique([...arrayFrontmatter(doc.frontmatter.depends_on), ...(input.dependsOn ?? [])]),
-    parent: unique([...arrayFrontmatter(doc.frontmatter.parent), ...(input.parent ?? [])]),
+    dependsOn: unique([...frontmatterStringList(doc.frontmatter.depends_on), ...(input.dependsOn ?? [])]),
+    parent: unique([...frontmatterStringList(doc.frontmatter.parent), ...(input.parent ?? [])]),
     level: input.level ?? String(doc.frontmatter.level ?? doc.frontmatter.dependency_depth ?? doc.frontmatter.depth ?? ''),
     source: mergeSourceMeta(doc.frontmatter, input.source),
     bodyText: bullets.join('\n'),
     variantText: text,
     variants,
-    confidence: input.confidence ?? doc.frontmatter.confidence as Confidence | undefined
+    confidence: input.confidence ?? doc.frontmatter.confidence as Confidence | undefined,
+    authority: (doc.frontmatter.authority ?? defaultMemoryAuthority(input.type)) as MemoryAuthority,
+    revision: nextRevision(doc.frontmatter.revision),
+    validFrom: String(doc.frontmatter.valid_from ?? doc.frontmatter.created ?? today()),
+    validUntil: doc.frontmatter.valid_until === null ? null : doc.frontmatter.valid_until === undefined ? undefined : String(doc.frontmatter.valid_until),
+    lastConfirmed: today()
   }, options);
 }
 
@@ -82,22 +97,31 @@ function titleFor(text: string, type: MemoryType): string {
 }
 
 function renderMemory(input: {
-  text: string; type: MemoryType; scope: Scope; author: string; id: string; title: string;
+  text: string; type: MemoryType; scope: Scope; authorName: string; authorEmail: string; id: string; title: string;
   tags: string[]; created: string; role?: string[]; context?: string; dependsOn?: string[]; parent?: string[]; level?: string; source?: MemorySourceMeta; bodyText?: string; variantText?: string; variants?: Partial<Record<'light' | 'balanced' | 'strict', string>>;
-  triggers?: string[]; confidence?: Confidence;
+  triggers?: string[]; confidence?: Confidence; authority?: MemoryAuthority; revision?: number; validFrom?: string; validUntil?: string | null; lastConfirmed?: string;
 }, options: MemoryDraftOptions): string {
   const now = today();
   const metadata: Record<string, any> = {
+    schema_version: 3,
     id: input.id, type: input.type, scope: input.scope, tags: input.tags,
-    created: input.created, updated: now, author: input.author,
-    source: input.source?.source ?? 'manual', confidence: input.confidence ?? 'high'
+    created: input.created, updated: now,
+    author_name: input.authorName, author_email: input.authorEmail,
+    source: input.source?.source ?? 'manual', confidence: input.confidence ?? 'high',
+    authority: input.authority ?? defaultMemoryAuthority(input.type),
+    revision: input.revision ?? 1,
+    valid_from: input.validFrom ?? now,
+    last_confirmed: input.lastConfirmed ?? now
   };
+  if (input.validUntil !== undefined) metadata.valid_until = input.validUntil;
   if (input.role?.length) metadata.role = input.role;
   if (input.dependsOn?.length) metadata.depends_on = unique(input.dependsOn);
   if (input.parent?.length) metadata.parent = unique(input.parent);
   if (input.level?.trim()) metadata.level = input.level.trim();
   if (input.source?.sourceFiles?.length) metadata.source_files = unique(input.source.sourceFiles);
-  if (input.source?.sourceHashes?.length) metadata.source_hashes = unique(input.source.sourceHashes);
+  if (input.source?.sourceHashes?.length) metadata.source_hashes = uniqueAll(input.source.sourceHashes);
+  if (input.source?.evidenceRefs?.length) metadata.evidence_refs = uniqueAll(input.source.evidenceRefs);
+  if (input.source?.derivedFrom?.length) metadata.derived_from = uniqueAll(input.source.derivedFrom);
   if (input.triggers?.length) metadata.triggers = unique(input.triggers);
   const meta = frontmatter(metadata);
   const originSection = input.context?.trim()
@@ -180,21 +204,35 @@ function preservedRuleVariants(raw: string, type: MemoryType, options: MemoryDra
 }
 
 function mergeSourceMeta(frontmatter: Record<string, any>, source?: MemorySourceMeta): MemorySourceMeta | undefined {
+  const existing: MemorySourceMeta = {
+    source: String(frontmatter.source ?? 'manual'),
+    sourceFiles: frontmatterStringList(frontmatter.source_files),
+    sourceHashes: frontmatterStringList(frontmatter.source_hashes),
+    evidenceRefs: frontmatterStringList(frontmatter.evidence_refs),
+    derivedFrom: frontmatterStringList(frontmatter.derived_from)
+  };
   if (!source) {
-    const existingFiles = arrayFrontmatter(frontmatter.source_files);
-    const existingHashes = arrayFrontmatter(frontmatter.source_hashes);
-    return existingFiles.length || existingHashes.length ? { source: String(frontmatter.source ?? 'manual'), sourceFiles: existingFiles, sourceHashes: existingHashes } : undefined;
+    return existing.sourceFiles?.length || existing.sourceHashes?.length || existing.evidenceRefs?.length || existing.derivedFrom?.length
+      ? existing
+      : undefined;
   }
   return {
-    source: source.source ?? String(frontmatter.source ?? 'manual'),
-    sourceFiles: unique([...arrayFrontmatter(frontmatter.source_files), ...(source.sourceFiles ?? [])]),
-    sourceHashes: unique([...arrayFrontmatter(frontmatter.source_hashes), ...(source.sourceHashes ?? [])])
+    source: source.source ?? existing.source,
+    sourceFiles: uniqueAll([...(existing.sourceFiles ?? []), ...(source.sourceFiles ?? [])]),
+    sourceHashes: uniqueAll([...(existing.sourceHashes ?? []), ...(source.sourceHashes ?? [])]),
+    evidenceRefs: uniqueAll([...(existing.evidenceRefs ?? []), ...(source.evidenceRefs ?? [])]),
+    derivedFrom: uniqueAll([...(existing.derivedFrom ?? []), ...(source.derivedFrom ?? [])]),
+    evidenceScope: source.evidenceScope
   };
 }
 
-function arrayFrontmatter(value: unknown): string[] {
-  if (Array.isArray(value)) return value.filter((item): item is string => typeof item === 'string' && Boolean(item.trim()));
-  return typeof value === 'string' && value.trim() ? [value] : [];
+function nextRevision(value: unknown): number {
+  const revision = Number(value ?? 1);
+  return Number.isInteger(revision) && revision >= 1 ? revision + 1 : 2;
+}
+
+function uniqueAll(values: string[]): string[] {
+  return [...new Set(values.map((value) => value.trim()).filter(Boolean))];
 }
 
 function formatInlineMarkdown(text: string): string {

@@ -7,7 +7,8 @@ import { duplicatePairs, searchEntries, semanticDuplicatePairs, semanticSearchEn
 import { healthData } from '../core/analysis/quality.js';
 import { assertFormat, exportBundle, renderFormat, writeSyncTarget } from '../core/integrations/exporter.js';
 import { readJson, readText } from '../core/system/fsx.js';
-import { resolveAuthor, syncGlobalMemoryGit, writeApprovedMemory } from '../core/memory/storage.js';
+import { syncGlobalMemoryGit, writeApprovedMemory } from '../core/memory/storage.js';
+import { requireResolvedAuthor } from '../core/author/resolve.js';
 import { applyApprovalEdit, requestApproval } from '../core/safety/approval.js';
 import { launchEntryUi } from '../core/web/entry-server.js';
 import { renderInitWordmark } from '../core/cli/banner.js';
@@ -194,6 +195,7 @@ export async function cmdImport(args: string[], flags: Record<string, any> = {})
   if (!file) throw new Error('import requires bundle.json');
   const bundle = await readJson<any>(path.resolve(file), { memories: [] });
   if (isAgentMemoryBundle(bundle)) return importAgentMemoryBundle(bundle, flags);
+  await requireResolvedAuthor(process.cwd());
   let count = 0;
   for (const item of bundle.memories ?? []) {
     const approval = await requestApproval(`Import ${item.entry.scope}:${item.entry.file}\n\n${item.content}`);
@@ -212,12 +214,12 @@ async function importAgentMemoryBundle(bundle: any, flags: Record<string, any>):
     : writeScopes(ctx.config.scope, ctx.config)).filter((scope) => Boolean(ctx.roots[scope]));
   if (requestedScope && !scopes.length) throw new Error(`import --scope ${requestedScope} is not available for active profile ${ctx.profile.active || '<none>'}`);
   if (!scopes.length) throw new Error('import --scope requires global memory; set ENGRAM_GLOBAL_DIR or run engram inject --global-path <path>');
-  const author = await resolveAuthor();
+  const author = await requireResolvedAuthor(process.cwd());
   const max = flags.all === true ? Number.POSITIVE_INFINITY : Number(flags.max ?? 50);
   const candidates = agentMemoryCandidates(bundle).slice(0, Number.isFinite(max) ? Math.max(0, max) : undefined);
   let count = 0;
   for (const candidate of candidates) {
-    const plans = await planMemorySave({ ctx, text: candidate.text, type: candidate.type, scopes, author, source: { source: 'agentmemory-import' } });
+    const plans = await planMemorySave({ ctx, text: candidate.text, type: candidate.type, scopes, authorName: author.name, authorEmail: author.email, source: { source: 'agentmemory-import' } });
     const approval = await requestApproval(previewSavePlans(plans));
     if (!approval.accepted) continue;
     await writePlans(plans, approval.edits);

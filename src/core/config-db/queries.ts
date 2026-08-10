@@ -78,6 +78,10 @@ export function getUserConfig(db: any): Record<string, string> {
   return Object.fromEntries(rows.map((row: any) => [String(row.key), String(row.value)]));
 }
 
+export function deleteUserConfigKey(db: any, key: string): void {
+  db.prepare('delete from user_config where key = ?').run(key);
+}
+
 export function setUserConfigKey(db: any, key: string, value: string): void {
   const now = isoNow();
   db.prepare('insert into user_config(key, value, updated_at) values (?, ?, ?) on conflict(key) do update set value = excluded.value, updated_at = excluded.updated_at')
@@ -195,6 +199,10 @@ export function flattenConfig(config: EngramConfig): Record<string, string> {
   out['global_git.auto_resolve'] = String(config.global_git.auto_resolve);
   out['memory.rule_line_target'] = String(config.memory?.rule_line_target ?? 70);
   out['memory.rule_line_hard_limit'] = String(config.memory?.rule_line_hard_limit ?? 100);
+  if (config.author) {
+    out['author.name'] = config.author.name;
+    out['author.email'] = config.author.email;
+  }
   return out;
 }
 
@@ -253,6 +261,9 @@ export function unflattenConfig(kv: Record<string, string>): Partial<EngramConfi
       case 'memory.rule_line_target': out.memory = { ...(out.memory ?? {}), rule_line_target: intOr(value, d.memory.rule_line_target) }; break;
       case 'memory.rule_line_hard_limit': out.memory = { ...(out.memory ?? {}), rule_line_hard_limit: intOr(value, d.memory.rule_line_hard_limit) }; break;
     }
+  }
+  if (typeof kv['author.name'] === 'string' && typeof kv['author.email'] === 'string' && kv['author.name'] && kv['author.email']) {
+    out.author = { name: kv['author.name'], email: kv['author.email'] };
   }
   return out;
 }

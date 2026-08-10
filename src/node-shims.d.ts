@@ -5,6 +5,7 @@ declare const process: {
   exit(code?: number): never;
   env: Record<string, string | undefined>;
   platform: string;
+  pid: number;
   stdin: any;
   stdout: any;
   stderr: any;
@@ -16,17 +17,18 @@ declare const console: {
 };
 declare const Buffer: any;
 declare module 'node:fs/promises' { const mod: any; export = mod; }
-declare module 'node:fs' { export const existsSync: any; export const mkdirSync: any; export const readFileSync: any; export const accessSync: any; export const constants: { W_OK: number; R_OK: number; X_OK: number; F_OK: number }; }
+declare module 'node:fs' { export const existsSync: any; export const mkdirSync: any; export const readFileSync: any; export const accessSync: any; export const statSync: any; export const constants: { W_OK: number; R_OK: number; X_OK: number; F_OK: number }; }
 declare module 'node:path' { const mod: any; export = mod; }
 declare module 'node:url' { export function fileURLToPath(url: string | URL): string; }
-declare module 'node:os' { export const homedir: any; export const hostname: any; export const EOL: string; export const platform: any; }
+declare module 'node:os' { export const homedir: any; export const hostname: any; export const tmpdir: any; export const EOL: string; export const platform: any; }
 declare module 'node:crypto' {
   export const createHash: any;
   export const createCipheriv: any;
   export const createDecipheriv: any;
   export const randomBytes: any;
+  export const randomUUID: any;
 }
-declare module 'node:child_process' { export const execFile: any; export const execSync: any; }
+declare module 'node:child_process' { export const execFile: any; export const execSync: any; export const spawn: any; }
 declare module 'node:readline/promises' { export const createInterface: any; }
 declare module 'node:readline' { export const createInterface: any; }
 declare module 'node:process' { export const stdin: any; export const stdout: any; }

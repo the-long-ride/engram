@@ -266,12 +266,8 @@
   z-index: 9999;
   max-width: 320px;
 }
-#toast.ok {
-  box-shadow: 0 1px var(--green-soft, rgba(0, 128, 0, 0.08)), 0 1px 3px rgba(0, 0, 0, 0.08);
-}
-#toast.err {
-  box-shadow: 0 1px var(--red-soft, rgba(255, 0, 0, 0.08)), 0 1px 3px rgba(0, 0, 0, 0.08);
-}
+#toast.ok { border-color: color-mix(in srgb, var(--green) 65%, var(--g300)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--green) 18%, transparent), 0 0 18px color-mix(in srgb, var(--green) 28%, transparent), 0 2px 6px rgba(0, 0, 0, 0.08); }
+#toast.err { border-color: color-mix(in srgb, var(--red) 65%, var(--g300)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--red) 18%, transparent), 0 0 18px color-mix(in srgb, var(--red) 28%, transparent), 0 2px 6px rgba(0, 0, 0, 0.08); }
 #toast.show {
   opacity: 1;
 }
@@ -524,3 +520,129 @@
 @media (max-width: 440px) {
   .memory-modal-properties { grid-template-columns: 1fr; }
 }
+
+/* ── Git author settings ── */
+.author-page { display: grid; gap: 18px; }
+.author-scope-tabs { display: inline-flex; width: fit-content; padding: 3px; border: 1px solid var(--g300); border-radius: var(--r8); background: var(--bg2); }
+.author-scope-tabs button { min-width: 112px; padding: 7px 12px; border-radius: var(--r6); color: var(--g700); font-size: 12px; font-weight: 600; }
+.author-scope-tabs button.active { background: var(--g1000); color: var(--bg); }
+.author-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.author-card { min-width: 0; padding: 16px; border: 1px solid var(--g300); border-radius: var(--r12); background: var(--bg); display: grid; gap: 14px; }
+.author-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.author-card h3 { font-size: 14px; }
+.author-card p { margin-top: 4px; color: var(--g600); font-size: 12px; line-height: 1.45; }
+.author-field { display: grid; gap: 6px; color: var(--g700); font-size: 11px; font-weight: 600; }
+.author-actions, .author-modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.author-resolved { display: grid; gap: 7px; }
+.author-resolved-head { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.author-resolved code { color: var(--g700); overflow-wrap: anywhere; }
+.author-source-badge { width: fit-content; padding: 2px 6px; border-radius: var(--r4); background: var(--g200); color: var(--g800); font-size: 9px; font-weight: 700; line-height: 1.25; text-transform: uppercase; }
+.source-workspace { background: var(--blue-bg); color: var(--blue); }
+.source-global { background: var(--green-bg); color: var(--green); }
+.source-git { background: var(--amber-bg); color: var(--amber-dk); }
+.author-error { padding: 9px 10px; border-radius: var(--r6); background: var(--red-bg); color: var(--red-dk); font-size: 12px; }
+.command-help { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 7px; color: var(--g600); font-size: 10px; }
+.command-help-copy code { color: var(--g800); }
+.author-confirm { display: grid; gap: 14px; }
+.author-file-list { max-height: 260px; overflow: auto; border: 1px solid var(--g200); border-radius: var(--r6); }
+.author-file-list > div { display: flex; justify-content: space-between; gap: 12px; padding: 8px 10px; border-bottom: 1px solid var(--g200); font-size: 11px; }
+.author-file-list > div:last-child { border-bottom: 0; }
+.author-file-list span { color: var(--g600); white-space: nowrap; }
+.author-migration-modal { width: min(760px, 100%); }
+@media (max-width: 768px) {
+  .author-grid { grid-template-columns: 1fr; }
+  .author-card-head { flex-direction: column; }
+  .author-scope-tabs { width: 100%; }
+  .author-scope-tabs button { flex: 1; }
+  .author-actions, .author-modal-actions { flex-wrap: wrap; }
+}
+
+/* Shared configuration-upgrade inventory and preview. */
+.upgrade-page { display: flex; flex-direction: column; gap: 18px; }
+.upgrade-status-banner { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border: 1px solid var(--g300); border-radius: var(--r8); background: var(--bg2); }
+.upgrade-status-banner--success { border-color: var(--green); background: var(--green-bg); color: var(--green-dk); } .upgrade-status-banner--warning { border-color: var(--amber); background: var(--amber-bg); color: var(--amber-dk); } .upgrade-status-banner--danger { border-color: var(--red); background: var(--red-bg); color: var(--red-dk); }
+.upgrade-summary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.upgrade-summary-card, .upgrade-result { min-width: 0; border: 1px solid var(--g300); border-radius: var(--r8); background: var(--bg); padding: 14px; display: flex; flex-direction: column; gap: 6px; }
+.upgrade-summary-card > span, .upgrade-summary-card small { color: var(--g600); } .upgrade-summary-card > span { font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; } .upgrade-summary-card strong { font-size: 26px; line-height: 1; }
+.upgrade-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.upgrade-preview { border: 1px solid var(--g300); border-radius: var(--r8); overflow: hidden; background: var(--bg); }
+.upgrade-preview-head { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--g300); }
+.upgrade-table-scroll { width: 100%; overflow-x: auto; overflow-y: hidden; }
+.upgrade-table { width: 100%; min-width: 860px; border-collapse: collapse; font-size: 11px; }
+.upgrade-table th, .upgrade-table td { padding: 10px 12px; border-bottom: 1px solid var(--g200); text-align: left; vertical-align: top; } .upgrade-table th { color: var(--g600); font-size: 9px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; background: var(--bg2); }
+.upgrade-table tbody tr:last-child td { border-bottom: 0; } .upgrade-table tbody tr:hover td, .upgrade-table tbody tr:focus-within td { background: var(--g100); } .upgrade-table-select-column, .upgrade-table-select-cell { width: 54px; text-align: center !important; }
+.upgrade-artifact-cell { min-width: 280px; } .upgrade-artifact-cell strong, .upgrade-artifact-path, .upgrade-artifact-detail { display: block; } .upgrade-artifact-path { margin-top: 3px; overflow-wrap: anywhere; color: var(--g900); }
+.upgrade-artifact-detail { margin-top: 4px; color: var(--g600); font-size: 10px; line-height: 1.45; } .upgrade-table-agents { min-width: 110px; color: var(--g700); } .upgrade-review-state { white-space: nowrap; color: var(--g700); font-weight: 600; }
+.upgrade-table-badge { display: inline-flex; align-items: center; padding: 2px 7px; border-radius: 999px; font-size: 9px; font-weight: 700; white-space: nowrap; } .upgrade-scope-badge--workspace { background: var(--blue-bg); color: var(--blue-dk); } .upgrade-scope-badge--global { background: var(--green-bg); color: var(--green-dk); } .upgrade-status-badge--outdated { background: var(--amber-bg); color: var(--amber-dk); } .upgrade-status-badge--conflict, .upgrade-status-badge--invalid { background: var(--red-bg); color: var(--red-dk); }
+.upgrade-table-actions { white-space: nowrap; } .upgrade-warning { margin: 10px 14px; padding: 10px; border-radius: var(--r8); border: 1px solid var(--amber); background: var(--amber-bg); color: var(--amber-dk); } .upgrade-confirm-summary { display: flex; gap: 12px; flex-wrap: wrap; margin: 12px 0; } .upgrade-result code { white-space: pre-wrap; }
+@media (max-width: 760px) { .upgrade-summary-grid { grid-template-columns: 1fr; } .upgrade-table { min-width: 760px; } }
+
+/* Configuration-update sidebar card keeps navigation and copy actions separate. */
+.sb-config-upgrade { cursor: default; }
+.sb-config-upgrade-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.sb-upgrade-command-row { display: flex; gap: 6px; align-items: stretch; min-width: 0; }
+.sb-upgrade-command-row .sb-upgrade-cmd { flex: 1; min-width: 0; }
+.sb-upgrade-copy {
+  flex: 0 0 auto;
+  padding: 4px 7px;
+  border: 1px solid var(--g300);
+  border-radius: var(--r4);
+  background: var(--bg);
+  color: var(--g800);
+  font-size: 9px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.sb-upgrade-copy:hover { background: var(--g100); }
+
+/* Git-scoped configuration and upgrade artifact filters. */
+.author-global-config { display: grid; grid-template-columns: 1fr; }
+.git-config-fields { display: grid; gap: 0; }
+.git-config-card .cfg-row:first-child { border-top: 0; }
+.upgrade-kind-tabs { display: flex; gap: 6px; padding: 10px 12px; overflow-x: auto; border-bottom: 1px solid var(--border); }
+.upgrade-kind-tabs button { flex: 0 0 auto; padding: 6px 10px; border: 1px solid var(--g300); border-radius: var(--r6); background: var(--bg); color: var(--g700); font-size: 11px; font-weight: 600; }
+.upgrade-kind-tabs button.active { background: var(--g1000); color: var(--bg); border-color: var(--g1000); }
+
+/* Per-conflict upgrade review: current/proposed/diff with explicit resolution gating. */
+.upgrade-review-progress { align-self: center; color: var(--g600); font-size: 11px; font-weight: 600; }
+.upgrade-batch-review-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 10px 12px; border-bottom: 1px solid var(--g300); background: var(--bg2); } .upgrade-select-all { display: inline-flex; gap: 6px; align-items: center; margin-right: auto; color: var(--g700); font-size: 11px; font-weight: 600; } .upgrade-select-all input { margin: 0; accent-color: var(--blue); }
+.upgrade-conflict-modal { width: min(980px, 96vw); }
+.upgrade-conflict-review { display: grid; gap: 12px; }
+.upgrade-review-meta { display: grid; gap: 4px; }
+.upgrade-review-meta > span { color: var(--g600); font-size: 11px; }
+.upgrade-review-file-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.upgrade-review-file-row code { flex: 1 1 320px; min-width: 0; overflow-wrap: anywhere; }
+.upgrade-review-tabs { display: inline-flex; width: fit-content; padding: 3px; border: 1px solid var(--g300); border-radius: var(--r8); background: var(--bg2); }
+.upgrade-review-tabs button { min-width: 90px; padding: 6px 10px; border-radius: var(--r6); color: var(--g700); font-size: 11px; font-weight: 600; }
+.upgrade-review-tabs button.active { background: var(--g1000); color: var(--bg); }
+.upgrade-review-content { min-height: 360px; border: 1px solid var(--g300); border-radius: var(--r8); overflow: hidden; background: var(--bg2); }
+.upgrade-code-view, .upgrade-proposed-editor { width: 100%; min-height: 360px; max-height: 55vh; margin: 0; padding: 14px; border: 0; background: transparent; color: var(--g900); font: 11px/1.55 var(--font-mono); white-space: pre; overflow: auto; resize: vertical; }
+.upgrade-proposed-editor:focus { outline: 2px solid var(--blue); outline-offset: -2px; }
+.upgrade-review-note { margin: 0; padding: 9px 10px; border-radius: var(--r6); background: var(--amber-bg); color: var(--amber-dk); font-size: 11px; }
+.upgrade-review-force-note { margin: 0; padding: 9px 10px; border: 1px solid var(--red); border-radius: var(--r6); background: var(--red-bg); color: var(--red-dk); font-size: 11px; }
+.upgrade-review-choice { color: var(--g700); font-size: 11px; }
+.upgrade-review-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.upgrade-review-action-spacer { flex: 1 1 auto; }
+@media (max-width: 680px) { .upgrade-review-content, .upgrade-code-view, .upgrade-proposed-editor { min-height: 280px; } .upgrade-review-tabs { width: 100%; } .upgrade-review-tabs button { flex: 1; } }
+
+/* Upgrade conflict diff layouts. */
+.upgrade-diff { display: grid; min-height: 360px; grid-template-rows: auto minmax(0, 1fr); }
+.upgrade-diff-mode-tabs { display: inline-flex; width: fit-content; margin: 10px 12px 0; padding: 3px; border: 1px solid var(--g300); border-radius: var(--r6); background: var(--bg); }
+.upgrade-diff-mode-tabs button { min-width: 78px; padding: 5px 9px; border-radius: var(--r6); color: var(--g700); font-size: 10px; font-weight: 600; } .upgrade-diff-mode-tabs button.active { background: var(--g1000); color: var(--bg); }
+.upgrade-diff-inline { min-height: 0; max-height: 55vh; margin-top: 10px; padding: 12px 14px 14px; overflow: auto; white-space: pre; font: 11px/1.55 var(--font-mono); } .upgrade-diff-empty { margin: 10px 12px 12px; padding: 14px; color: var(--g600); font: 11px/1.55 var(--font-mono); }
+.upgrade-diff-line { display: block; min-height: 1.55em; padding: 0 7px; margin: 0 -7px; border-left: 2px solid transparent; } .upgrade-diff-line--unchanged, .upgrade-diff-cell--unchanged { color: var(--g900); }
+.upgrade-diff-line--removed, .upgrade-diff-cell--removed { color: var(--red-dk); background: var(--red-bg); border-left-color: var(--red); } .upgrade-diff-line--added, .upgrade-diff-cell--added { color: var(--green-dk); background: var(--green-bg); border-left-color: var(--green); }
+.upgrade-diff-parallel { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); min-height: 0; max-height: 55vh; margin-top: 10px; overflow-x: hidden; overflow-y: auto; border-top: 1px solid var(--g300); }
+.upgrade-diff-pane { min-width: 0; } .upgrade-diff-pane + .upgrade-diff-pane { border-left: 1px solid var(--g300); } .upgrade-diff-column-header { position: sticky; top: 0; z-index: 1; padding: 8px 10px; border-bottom: 1px solid var(--g300); background: var(--bg2); color: var(--g700); font-size: 10px; font-weight: 700; }
+.upgrade-diff-column-body { display: grid; min-width: 0; overflow-x: hidden; } .upgrade-diff-cell { display: block; width: max-content; min-width: 100%; min-height: 1.55em; padding: 2px 10px; white-space: pre; color: var(--g900); font: 11px/1.55 var(--font-mono); border-bottom: 1px solid var(--g200); border-left: 2px solid transparent; } .upgrade-diff-cell--empty { background: var(--g100); } .upgrade-diff-sync-scroll { grid-column: 1 / -1; min-width: 0; overflow-x: auto; overflow-y: hidden; border-top: 1px solid var(--g300); background: var(--bg2); } .upgrade-diff-sync-scroll-content { height: 1px; }
+@media (max-width: 680px) { .upgrade-diff { min-height: 280px; } .upgrade-diff-mode-tabs { width: calc(100% - 24px); } .upgrade-diff-mode-tabs button { flex: 1; } .upgrade-diff-parallel { grid-template-columns: minmax(0, 1fr); max-height: 55vh; overflow-x: hidden; overflow-y: auto; } .upgrade-diff-pane + .upgrade-diff-pane { border-left: 0; border-top: 1px solid var(--g300); } .upgrade-diff-column-body { max-height: none; overflow-x: hidden; } }

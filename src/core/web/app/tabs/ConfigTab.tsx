@@ -34,7 +34,7 @@ const POLICY_SCOPE_OPTIONS = ['workspace', 'global'];
 const POLICY_SOURCE_OPTIONS = ['autosave', 'agent-hook', 'cli', 'mcp'];
 
 export function ConfigTab({ data, reload, toast }: { data: PanelData; reload: () => Promise<void>; toast: ShowToast }) {
-  const fields = data.configFields || [];
+  const fields = (data.configFields || []).filter((field) => !field.key.startsWith('global_git.'));
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [dirty, setDirty] = useState<Record<string, boolean>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});

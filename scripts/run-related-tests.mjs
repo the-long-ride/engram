@@ -21,6 +21,7 @@ const rules = [
   [/^src\/core\/memory\//, ['tests/core.test.mjs', 'tests/safety.test.mjs', 'tests/conflict.test.mjs', 'tests/init-migration.test.mjs']],
   [/^src\/core\/runtime\//, ['tests/core.test.mjs', 'tests/init-migration.test.mjs', 'tests/skillset.test.mjs', 'tests/cli/**/*.test.mjs']],
   [/^src\/core\/safety\//, ['tests/core.test.mjs', 'tests/safety.test.mjs', 'tests/tamper.test.mjs']],
+  [/^src\/core\/traces\//, ['tests/trace-store.test.mjs', 'tests/cli/transcript.test.mjs', 'tests/init-migration.test.mjs']],
   [/^src\/core\/system\//, ['tests/core.test.mjs']],
   [/^src\/core\/vcs\//, ['tests/conflict.test.mjs', 'tests/cli/clone.test.mjs']],
   [/^src\/core\/web\/app\//, ['tests/app/**/*.test.ts', 'tests/app/**/*.test.tsx']],

@@ -37,7 +37,7 @@ engram verify
 async function temp() {
   const { cwd, env } = await tempWorkspace('engram-safety-');
   process.env.ENGRAM_GLOBAL_DIR = env.ENGRAM_GLOBAL_DIR;
-  process.env.ENGRAM_CONFIG_DIR = env.ENGRAM_CONFIG_DIR;
+  Object.assign(process.env, env);
   await initWorkspace(cwd, true);
   return cwd;
 }
@@ -134,7 +134,10 @@ pnpm install
   await updateHash(workspaceMemoryRoot(cwd), 'rules/use-pnpm.md', raw);
   const [loaded] = await loadEntries(cwd, [{ id: 'use-pnpm', type: 'rule', scope: 'workspace', tags: ['node', 'package'], summary: 'Prefer pnpm.', file: 'rules/use-pnpm.md', author: 'test', confidence: 'high', ignored: false, updated: '2026-06-01' }], defaultConfig(), { forAgents: true });
   assert.equal(loaded.flagged, undefined);
-  assert.match(loaded.content, /^---\nid: use-pnpm\ntype: rule\ntags: \[node, package\]\nconfidence: high\n---/m);
+  assert.match(loaded.content, /^---\n/);
+  for (const field of ['id: use-pnpm', 'type: rule', 'tags: [node, package]', 'confidence: high']) {
+    assert.match(loaded.content, new RegExp('^' + field.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'm'));
+  }
   assert.doesNotMatch(loaded.content, /scope: workspace|created:|author:|source:/);
   assert.match(loaded.content, /## Rule variants \(1\/3 based on current: Balanced\)/);
   assert.match(loaded.content, /- Use pnpm\./);

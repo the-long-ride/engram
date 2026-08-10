@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { rm, writeFile, mkdir } from 'node:fs/promises';
+import { readFile, rm, writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { runEngram, tempWorkspace, workspaceMemoryRoot } from '../helpers.mjs';
 
@@ -132,6 +132,7 @@ test('review supersede marks old memory as superseded', async () => {
   await runEngram(cwd, env, ['inject', '--no-skillset']);
   await writeMemoryFile(cwd, 'knowledge/old-manual-deploy.md', oldMemory('old-manual-deploy', '2026-07-01', { summary: 'Old deploy method using manual scripts and shell commands', tags: ['deploy', 'manual'] }));
   await writeMemoryFile(cwd, 'knowledge/new-auto-deploy.md', oldMemory('new-auto-deploy', '2026-07-01', { summary: 'New deploy method using automated pipeline and CI', tags: ['deploy', 'automation'] }));
+  await writeMemoryFile(cwd, 'knowledge/older-shell-deploy.md', oldMemory('older-shell-deploy', '2026-07-01', { summary: 'Older shell deploy method', tags: ['deploy', 'shell'] }));
   await rehashAndRebuild(cwd, env);
   const oldId = 'old-manual-deploy';
   const newId = 'new-auto-deploy';
@@ -139,6 +140,15 @@ test('review supersede marks old memory as superseded', async () => {
   assert.equal(result.code, 0, result.stderr);
   const body = JSON.parse(result.stdout);
   assert.ok(body.ok);
+  const oldRaw = await readFile(path.join(workspaceMemoryRoot(cwd), 'knowledge', 'old-manual-deploy.md'), 'utf8');
+  const newRaw = await readFile(path.join(workspaceMemoryRoot(cwd), 'knowledge', 'new-auto-deploy.md'), 'utf8');
+  assert.match(oldRaw, /lifecycle:\s*superseded/);
+  assert.match(oldRaw, /superseded_by:\s*new-auto-deploy/);
+  assert.match(newRaw, /supersedes:[\s\S]*old-manual-deploy/);
+  const second = await runEngram(cwd, env, ['review', 'supersede', 'older-shell-deploy', newId, '--json']);
+  assert.equal(second.code, 0, second.stderr);
+  const twiceUpdated = await readFile(path.join(workspaceMemoryRoot(cwd), 'knowledge', 'new-auto-deploy.md'), 'utf8');
+  assert.match(twiceUpdated, /supersedes:[\s\S]*old-manual-deploy[\s\S]*older-shell-deploy|supersedes:[\s\S]*older-shell-deploy[\s\S]*old-manual-deploy/);
   const loadResult = await runEngram(cwd, env, ['load', '--dry-run', '--json', 'deploy method']);
   assert.equal(loadResult.code, 0, loadResult.stderr);
   const loadBody = JSON.parse(loadResult.stdout);

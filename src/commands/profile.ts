@@ -23,6 +23,7 @@ import { updateHash, verifyMemoryHash } from '../core/safety/hash.js';
 import { lexicalScore } from '../core/system/text.js';
 import { ensureGlobalGit, gitCommitGlobal } from '../core/vcs/git.js';
 import { resolveConflictsInRoot } from '../core/vcs/conflict.js';
+import { requireResolvedAuthor } from '../core/author/resolve.js';
 
 type MergeAction = 'copied' | 'planned' | 'skipped' | 'duplicate' | 'unsafe' | 'invalid';
 type MergeResult = { action: MergeAction; file: string; reason?: string };
@@ -73,6 +74,8 @@ async function profileStatus(): Promise<string> {
 }
 
 async function profileCreate(args: string[], flags: Record<string, any>): Promise<string> {
+  const cwd = process.cwd();
+  const commitContext = { cwd, author: await requireResolvedAuthor(cwd) };
   const name = requiredProfileName(args[0]);
   const globalPath = profilePathFromArgs(args, flags);
   const scope = typeof flags.scope === 'string' ? parseSaveTarget(flags.scope, 'profile create --scope') : 'global';
@@ -90,7 +93,7 @@ async function profileCreate(args: string[], flags: Record<string, any>): Promis
   const config = profileConfigForScope(loaded, profile);
   await createScope(globalPath, config, 'global', Boolean(flags.force), { scope: 'global', global_path: globalPath });
   const branch = await ensureGlobalGit(globalPath, config.global_git.branch);
-  await gitCommitGlobal(globalPath, `create profile ${name}`, config.global_git, () => resolveGlobalConflicts(globalPath));
+  await gitCommitGlobal(globalPath, `create profile ${name}`, config.global_git, () => resolveGlobalConflicts(globalPath), commitContext);
   if (flags.workspace === true) await writeWorkspaceDefault(name);
   return [
     `Profile created: ${name}`,
@@ -128,6 +131,8 @@ async function profileRemove(args: string[]): Promise<string> {
 }
 
 async function profileMerge(args: string[], flags: Record<string, any>): Promise<string> {
+  const cwd = process.cwd();
+  const commitContext = { cwd, author: await requireResolvedAuthor(cwd) };
   const store = await readProfileStore();
   const sourceName = requiredProfileName(typeof flags['from-profile'] === 'string' ? flags['from-profile'] : args[0]);
   const targetName = requiredProfileName(typeof flags['to-profile'] === 'string' ? flags['to-profile'] : args[1]);
@@ -154,7 +159,7 @@ async function profileMerge(args: string[], flags: Record<string, any>): Promise
     const index = await rebuildIndex(targetRoot, 'global');
     await rebuildGraph(targetRoot, 'global', index, config);
     await ensureVectorIndex(targetRoot, 'global', index.entries, config, { force: true });
-    await gitCommitGlobal(targetRoot, `merge profile ${sourceName} into ${targetName}`, config.global_git, () => resolveGlobalConflicts(targetRoot));
+    await gitCommitGlobal(targetRoot, `merge profile ${sourceName} into ${targetName}`, config.global_git, () => resolveGlobalConflicts(targetRoot), commitContext);
   }
   return renderMergeResult(sourceName, targetName, sourceRoot, targetRoot, results, dryRun, force);
 }

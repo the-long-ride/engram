@@ -7,6 +7,26 @@ import { runCli } from '../dist/cli.js';
 import { tempWorkspace, workspaceMemoryRoot } from './helpers.mjs';
 import { profileMemoryRaw, writeProfileMemory } from './cli/fixtures.mjs';
 
+const AUTHOR_TEST_ENV_KEYS = [
+  'ENGRAM_CONFIG_DIR', 'ENGRAM_GLOBAL_DIR',
+  'GIT_CONFIG_COUNT', 'GIT_CONFIG_KEY_0', 'GIT_CONFIG_VALUE_0',
+  'GIT_CONFIG_KEY_1', 'GIT_CONFIG_VALUE_1'
+];
+
+function applyAuthorTestEnv(env) {
+  const previous = Object.fromEntries(AUTHOR_TEST_ENV_KEYS.map((key) => [key, process.env[key]]));
+  for (const key of AUTHOR_TEST_ENV_KEYS) {
+    if (env[key] === undefined) delete process.env[key];
+    else process.env[key] = env[key];
+  }
+  return () => {
+    for (const key of AUTHOR_TEST_ENV_KEYS) {
+      if (previous[key] === undefined) delete process.env[key];
+      else process.env[key] = previous[key];
+    }
+  };
+}
+
 test('mcp protocol handshake lists tools and wraps tool call content', async () => {
   const initialized = await handleMcp({
     id: 1,
@@ -47,11 +67,8 @@ test('mcp protocol handshake lists tools and wraps tool call content', async () 
 test('mcp status and save proposal do not write silently', async () => {
   const { cwd, env } = await tempWorkspace('engram-mcp-');
   const previous = process.cwd();
-  const previousGlobalDir = process.env.ENGRAM_GLOBAL_DIR;
-  const previousConfigDir = process.env.ENGRAM_CONFIG_DIR;
+  const restoreAuthorEnv = applyAuthorTestEnv(env);
   process.chdir(cwd);
-  process.env.ENGRAM_CONFIG_DIR = env.ENGRAM_CONFIG_DIR;
-  process.env.ENGRAM_GLOBAL_DIR = env.ENGRAM_GLOBAL_DIR;
   try {
     await runCli(['inject']);
     const status = await handleMcp({ id: 1, method: 'engram_status', params: {} });
@@ -191,10 +208,7 @@ test('mcp status and save proposal do not write silently', async () => {
     assert.match(badType.error.message, /rule, skill, workflow, or knowledge/);
   } finally {
     process.chdir(previous);
-    if (previousConfigDir === undefined) delete process.env.ENGRAM_CONFIG_DIR;
-    else process.env.ENGRAM_CONFIG_DIR = previousConfigDir;
-    if (previousGlobalDir === undefined) delete process.env.ENGRAM_GLOBAL_DIR;
-    else process.env.ENGRAM_GLOBAL_DIR = previousGlobalDir;
+    restoreAuthorEnv();
     await rm(cwd, { recursive: true, force: true });
   }
 });
@@ -204,11 +218,8 @@ test('mcp load uses workspace default profile instead of active user profile', a
   const personalRoot = path.join(cwd, 'profiles', 'personal');
   const companyRoot = path.join(cwd, 'profiles', 'company');
   const previous = process.cwd();
-  const previousGlobalDir = process.env.ENGRAM_GLOBAL_DIR;
-  const previousConfigDir = process.env.ENGRAM_CONFIG_DIR;
+  const restoreAuthorEnv = applyAuthorTestEnv(env);
   process.chdir(cwd);
-  process.env.ENGRAM_CONFIG_DIR = env.ENGRAM_CONFIG_DIR;
-  process.env.ENGRAM_GLOBAL_DIR = env.ENGRAM_GLOBAL_DIR;
   try {
     assert.match(await runCli(['profile', 'create', 'personal', '--global-path', personalRoot]), /Profile created: personal/);
     assert.match(await runCli(['profile', 'create', 'company', '--global-path', companyRoot]), /Profile created: company/);
@@ -241,10 +252,7 @@ test('mcp load uses workspace default profile instead of active user profile', a
     assert.doesNotMatch(loaded.result.content[0].text, /Personal amber profile marker/);
   } finally {
     process.chdir(previous);
-    if (previousConfigDir === undefined) delete process.env.ENGRAM_CONFIG_DIR;
-    else process.env.ENGRAM_CONFIG_DIR = previousConfigDir;
-    if (previousGlobalDir === undefined) delete process.env.ENGRAM_GLOBAL_DIR;
-    else process.env.ENGRAM_GLOBAL_DIR = previousGlobalDir;
+    restoreAuthorEnv();
     await rm(cwd, { recursive: true, force: true });
   }
 });

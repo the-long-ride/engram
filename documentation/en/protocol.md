@@ -35,6 +35,25 @@ Agents can suggest memory, but humans own what becomes memory.
 
 Every active memory file has `Context`, `Content`, and `Example` sections. Rule memories also target concise line limits so loaded guidance stays useful.
 
+## Approved Memory Schema v3
+
+New approved memories use canonical YAML frontmatter:
+
+```yaml
+schema_version: 3
+authority: instruction | reference
+evidence_refs: [tr_...]
+derived_from: [session-id]
+revision: 1
+supersedes: [older-memory-id]
+superseded_by: newer-memory-id
+valid_from: YYYY-MM-DD
+valid_until: YYYY-MM-DD | null
+last_confirmed: YYYY-MM-DD
+```
+
+`authority` separates executable guidance (`instruction`) from factual reference material (`reference`). `evidence_refs` links approved memory to immutable traces, while `derived_from` records source sessions. Revision and validity fields make replacement and temporal status explicit. Legacy v1 and v2 files remain readable and are not silently rewritten.
+
 ## Write Flow
 
 1. Agent proposes one or more candidates.

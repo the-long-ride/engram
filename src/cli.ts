@@ -16,6 +16,7 @@ import { cmdReview } from './commands/review.js';
 import { cmdPolicy } from './commands/policy.js';
 import { cmdAutosave } from './commands/autosave.js';
 import { cmdCapabilities } from './commands/capabilities.js';
+import { cmdAuthor } from './commands/author-cmd.js';
 import { cmdAgentHook, cmdIgnore, cmdInstallHooks, cmdResolveConflicts, cmdSetLoadLimit, cmdSetProof, cmdSetRead, cmdSetRole, cmdSetRuleVariant, cmdSetSaveTarget, cmdUpdateGlobalFolder, cmdUpgrade } from './commands/admin.js';
 import { cmdLink, cmdUnlink } from './commands/skillset-link.js';
 import { maybeAutoUpgrade } from './core/runtime/auto-upgrade.js';
@@ -31,7 +32,10 @@ export async function runCli(argv: string[]): Promise<string> {
   if (typeof flags.profile === 'string' && flags.profile.trim()) process.env.ENGRAM_PROFILE = flags.profile.trim();
   try {
     if (flags.help || flags.h || command === '-h' || command === '--help' || rest.includes('-h') || rest.includes('--help')) {
-      const topic = (command !== '-h' && command !== '--help' && command !== 'help') ? command : rest.find((arg) => arg !== '-h' && arg !== '--help');
+      const subtopic = rest.find((arg) => arg !== '-h' && arg !== '--help' && !arg.startsWith('--'));
+      const topic = command === 'author' && subtopic
+        ? `author ${subtopic}`
+        : (command !== '-h' && command !== '--help' && command !== 'help') ? command : subtopic;
       return await cmdHelp(topic);
     }
     if (flags.version || flags.v || command === '--version' || command === '-v' || command === 'version') return VERSION;
@@ -42,6 +46,7 @@ export async function runCli(argv: string[]): Promise<string> {
       case 'llm': return await cmdLlm();
       case 'completion': return await cmdCompletion(rest[0]);
       case 'profile': return await cmdProfile(rest, flags);
+      case 'author': return await cmdAuthor(rest, flags, process.cwd());
       case 'save': return await cmdSave(rest, flags);
       case 'save-session': return await cmdSaveSession(rest, flags);
       case 'observe': return await cmdObserve(rest, flags);

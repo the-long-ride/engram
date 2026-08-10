@@ -303,6 +303,24 @@
   font-size: 18px;
 }
 
+.memory-provenance {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 10px;
+  border: 1px solid var(--g200);
+  border-radius: var(--r6);
+  background: var(--g100);
+  color: var(--g800);
+  font-size: 12px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.memory-provenance strong {
+  color: var(--g1000);
+}
+
 .memory-detail p {
   margin: 0 0 12px;
   color: var(--g700);

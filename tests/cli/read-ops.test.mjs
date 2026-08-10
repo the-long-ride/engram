@@ -321,6 +321,7 @@ test('graph routing, observe inbox, archive, and benchmark work', async () => {
   const observed = await runEngram(cwd, env, ['observe', '--scope', 'workspace', '--file', rawNote]);
   assert.equal(observed.code, 0, observed.stderr);
   assert.match(observed.stdout, /Observed ->/);
+  assert.match(observed.stdout, /Trace: tr_/);
   assert.match(observed.stdout, /sensitive finding\(s\) redacted/);
   assert.match(observed.stdout, /injection-like line\(s\) removed/);
   const inboxFiles = await readdir(path.join(workspaceMemoryRoot(cwd), 'inbox'));
@@ -337,6 +338,7 @@ test('graph routing, observe inbox, archive, and benchmark work', async () => {
   ].join('\n'));
   assert.equal(observedStdin.code, 0, observedStdin.stderr);
   assert.match(observedStdin.stdout, /Observed ->/);
+  assert.match(observedStdin.stdout, /Trace: tr_/);
   assert.match(observedStdin.stdout, /sensitive finding\(s\) redacted/);
   assert.match(observedStdin.stdout, /injection-like line\(s\) removed/);
   const inboxFilesAfter = await readdir(path.join(workspaceMemoryRoot(cwd), 'inbox'));

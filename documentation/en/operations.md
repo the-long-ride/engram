@@ -64,6 +64,19 @@ compact limit.
 `workflow` and `workflows` still route to skill memories, but generic type words
 do not make a broad match by themselves.
 
+## Immutable Evidence Traces
+
+- `traces/<trace-id>.jsonl` contains exactly one canonical record.
+- Trace writes use exclusive creation and cannot overwrite an existing ID.
+- `authority: evidence` is source data and never acts as an instruction.
+- Transcript and `engram observe` flows sanitize content before trace persistence.
+- Default transcript and observation metadata is `trust_level: human`, `sensitivity: private`, and `retention: 30d` unless configured otherwise.
+- Missing or expired trace references are rejected for new approved writes.
+- Existing observation wrappers remain review conveniences and point to immutable traces.
+- Initialization migrates eligible legacy observation wrappers once and does not index traces as memories.
+
+The CLI prints the trace ID created by `engram observe`. When an observation or transcript is promoted, `save-session` copies its trace IDs into `evidence_refs` and its session IDs into `derived_from`. Entry Web UI reads the same memory index as the CLI and exposes authority, evidence, revision, validity, and supersession metadata in the memory detail panel. The editable inbox wrapper is never the promotion source: Engram reloads the immutable trace, verifies its wrapper hash when present, and binds promotion to the trace's original workspace or global scope.
+
 ## Dependency Layers
 
 Use `depends_on` frontmatter when a memory should build on another memory instead
@@ -319,3 +332,25 @@ disabled unless `.agents/engram.policy.json` explicitly enables them; inspect
 receipts with `engram policy audit --json` and use `engram policy rollback <id>`
 for an archive-based rollback. Transcript capture is opt-in, sanitized, and
 inbox-only.
+
+### Legacy memory migration to schema v3
+
+`engram upgrade --latest` also migrates active v1/v2 memory files in the workspace and configured global roots to schema v3. Engram preserves each Markdown body exactly, creates `<memory-file>.pre-v3.bak`, fills only deterministic metadata, refreshes integrity hashes, and rebuilds the index, graph, and eligible vector sidecars. It never invents `evidence_refs`; a memory without verified trace links is marked `evidence_status: unverified`. Invalid memories are reported and skipped, archived memories are not rewritten, and a second run is idempotent.
+
+Preview all changes without writing:
+
+```bash
+engram upgrade --latest --plan
+```
+
+Run only the memory migration, without overwriting linked agent artifacts:
+
+```bash
+engram upgrade --migrate-memories
+```
+
+Skip memory migration during a latest upgrade:
+
+```bash
+engram upgrade --latest --no-migrate-memories
+```

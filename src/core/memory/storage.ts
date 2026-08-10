@@ -11,11 +11,16 @@ import { rebuildGraph } from './graph.js';
 import { ensureVectorIndex } from './vector-db.js';
 import { updateHash } from '../safety/hash.js';
 import { scanInjection, scanSensitive } from '../safety/security.js';
-import { validateMemoryRaw } from './schema.js';
-import { ensureGlobalGit, gitCommitGlobal, gitUserEmail, pullGlobalGit } from '../vcs/git.js';
+import { parseMemory, validateMemoryRaw } from './schema.js';
+import { frontmatterStringList } from './frontmatter.js';
+import { isTraceExpired } from '../traces/codec.js';
+import { readTrace } from '../traces/storage.js';
+import { ensureGlobalGit, gitCommitGlobal, pullGlobalGit } from '../vcs/git.js';
 import { resolveConflictsInRoot } from '../vcs/conflict.js';
+import { migrateLegacyObservations } from '../traces/migrate.js';
+import { requireResolvedAuthor } from '../author/resolve.js';
 
-type ReconcileResult = { dirs: number; files: number; config: boolean; migrated: number; index: boolean };
+type ReconcileResult = { dirs: number; files: number; config: boolean; migrated: number; traces: number; index: boolean };
 type InitOptions = { globalOnly?: boolean; saveTarget?: EngramConfig['scope'] };
 const SCOPE_GITIGNORE = `# Engram generated routing sidecars.
 memory.vec.sqlite
@@ -51,10 +56,12 @@ export async function initWorkspace(cwd: string, force = false, branch = 'main',
   const ignoreUpdated = await reconcileIgnoreFile(cwd, force, config.ignore.global_patterns);
   if (workspaceExisted || force) lines.push(...scopeRepairLines('workspace', workspace, ignoreUpdated));
   if (roots.global) {
+    const author = await requireResolvedAuthor(cwd);
+    const commitContext = { cwd, author };
     const global = await createScope(roots.global, config, 'global', force);
     if (globalExisted || force) lines.push(...scopeRepairLines('global', global, false));
     const detected = await ensureGlobalGit(roots.global, branch);
-    await gitCommitGlobal(roots.global, 'initialize global memory', config.global_git, () => resolveGlobalConflicts(roots.global));
+    await gitCommitGlobal(roots.global, 'initialize global memory', config.global_git, () => resolveGlobalConflicts(roots.global), commitContext);
     lines.push(`engram global ready at ${roots.global} (git branch: ${detected})`);
   } else {
     lines.push('engram global skipped (no global path configured)');
@@ -64,13 +71,16 @@ export async function initWorkspace(cwd: string, force = false, branch = 'main',
 
 async function initGlobalOnly(root: string, config: EngramConfig, force: boolean, branch: string, lines: string[]): Promise<string[]> {
   if (!root) throw new Error('global-only init requires ENGRAM_GLOBAL_DIR or --global-path <path>');
+  const cwd = process.cwd();
+  const author = await requireResolvedAuthor(cwd);
+  const commitContext = { cwd, author };
   const existed = await exists(root);
   const globalConfig = { ...config, global_path: root, scope: 'global' as const, global_git: { ...config.global_git, branch } };
   lines.push(existed && !force ? `engram global-only already initialized at ${root}` : `engram global-only initialized at ${root}`);
   const global = await createScope(root, globalConfig, 'global', force, { scope: 'global', global_path: root });
   if (existed || force) lines.push(...scopeRepairLines('global', global, false));
   const detected = await ensureGlobalGit(root, branch);
-  await gitCommitGlobal(root, 'initialize global memory', globalConfig.global_git, () => resolveGlobalConflicts(root));
+  await gitCommitGlobal(root, 'initialize global memory', globalConfig.global_git, () => resolveGlobalConflicts(root), commitContext);
   const userConfig = await writeUserConfig({ global_path: root, scope: 'global', global_git: globalConfig.global_git });
   lines.push(`engram global ready at ${root} (git branch: ${detected})`);
   lines.push(`engram user config ready at ${userConfig}`);
@@ -79,7 +89,7 @@ async function initGlobalOnly(root: string, config: EngramConfig, force: boolean
 
 /** Create the standard scope files and folders. */
 export async function createScope(root: string, config: EngramConfig, scope: Scope, force = true, configOverrides: Partial<EngramConfig> = {}): Promise<ReconcileResult> {
-  const result: ReconcileResult = { dirs: 0, files: 0, config: false, migrated: 0, index: false };
+  const result: ReconcileResult = { dirs: 0, files: 0, config: false, migrated: 0, traces: 0, index: false };
   await ensureDir(root);
   result.migrated = await migrateLegacyDirs(root);
   for (const dir of MEMORY_DIRS) {
@@ -87,13 +97,14 @@ export async function createScope(root: string, config: EngramConfig, scope: Sco
     if (!(await exists(target))) result.dirs += 1;
     await ensureDir(target);
   }
+  result.traces = (await migrateLegacyObservations(root, scope)).migrated;
   result.config = await writeMergedConfig(path.join(root, 'engram.config.json'), config, force, configOverrides);
   result.files += await writeJsonIfNeeded(path.join(root, HASH_FILE), {}, false) ? 1 : 0;
   result.files += await writeTextIfNeeded(path.join(root, HELP_FILE), renderHelp(), true) ? 1 : 0;
   result.files += await writeTextIfNeeded(path.join(root, README_FILE), renderMemoryReadme(), true) ? 1 : 0;
   result.files += await writeTextIfNeeded(path.join(root, CHANGELOG_FILE), `# Engram Changelog\n\n`, false) ? 1 : 0;
   result.files += await reconcileScopeGitignore(root) ? 1 : 0;
-  if (force || result.migrated || !(await exists(path.join(root, INDEX_FILE))) || await needsIndexRefresh(root)) {
+  if (force || result.migrated || result.traces || !(await exists(path.join(root, INDEX_FILE))) || await needsIndexRefresh(root)) {
     const index = await rebuildIndex(root, scope);
     await rebuildGraph(root, scope, index, config);
     await ensureVectorIndex(root, scope, index.entries, config, { force: true });
@@ -130,16 +141,23 @@ export async function writeApprovedMemory(input: {
   if (injection.length) throw new Error(`Injection pattern blocked on line ${injection[0].line}`);
   const { memory } = config;
   validateMemoryRaw(input.content, { ruleLineTarget: memory?.rule_line_target, ruleLineHardLimit: memory?.rule_line_hard_limit });
+  const document = parseMemory(input.content);
+  for (const traceId of frontmatterStringList(document.frontmatter.evidence_refs)) {
+    const trace = await readTrace(root, traceId);
+    if (!trace) throw new Error(`Missing evidence reference: ${traceId}`);
+    if (isTraceExpired(trace)) throw new Error(`Expired evidence reference: ${traceId}`);
+  }
   const full = inside(root, input.file);
   const globalGit = input.scope === 'global' ? config.global_git : undefined;
-  if (globalGit) await pullGlobalGit(root, globalGit, () => resolveGlobalConflicts(root));
+  const commitContext = globalGit ? { cwd: input.cwd, author: await requireResolvedAuthor(input.cwd) } : undefined;
+  if (globalGit) await pullGlobalGit(root, globalGit, () => resolveGlobalConflicts(root), commitContext);
   await writeText(full, input.content);
   await updateHash(root, input.file, input.content);
   const index = await rebuildIndex(root, input.scope);
   await rebuildGraph(root, input.scope, index, config);
   await ensureVectorIndex(root, input.scope, index.entries, config);
   await appendChangelog(root, input.file, input.message);
-  if (globalGit) await gitCommitGlobal(root, input.message, globalGit, () => resolveGlobalConflicts(root));
+  if (globalGit) await gitCommitGlobal(root, input.message, globalGit, () => resolveGlobalConflicts(root), commitContext);
   return full;
 }
 
@@ -149,9 +167,10 @@ export async function syncGlobalMemoryGit(cwd: string): Promise<string[]> {
   const config = loaded.global_git;
   const roots = scopeRootsForConfig(cwd, loaded);
   if (!roots.global) return ['global memory: not configured'];
+  const commitContext = { cwd, author: await requireResolvedAuthor(cwd) };
   const rows = [
-    ...await pullGlobalGit(roots.global, config, () => resolveGlobalConflicts(roots.global)),
-    ...await gitCommitGlobal(roots.global, 'sync global memory', config, () => resolveGlobalConflicts(roots.global))
+    ...await pullGlobalGit(roots.global, config, () => resolveGlobalConflicts(roots.global), commitContext),
+    ...await gitCommitGlobal(roots.global, 'sync global memory', config, () => resolveGlobalConflicts(roots.global), commitContext)
   ];
   return [...new Set(rows)];
 }
@@ -164,10 +183,6 @@ export async function appendChangelog(root: string, file: string, message: strin
   await writeText(target, `${current.trimEnd()}\n${line}\n`);
 }
 
-/** Return the author email used in memory frontmatter. */
-export async function resolveAuthor(): Promise<string> {
-  return await gitUserEmail().catch(() => process.env.USER || 'unknown');
-}
 
 async function resolveGlobalConflicts(root: string): Promise<number> {
   const results = await resolveConflictsInRoot(root, 'global');
@@ -282,6 +297,7 @@ function scopeRepairLines(scope: string, result: ReconcileResult, ignoreUpdated:
   if (result.files) parts.push(`${result.files} files`);
   if (result.config) parts.push('config');
   if (result.migrated) parts.push(`${result.migrated} migrated`);
+  if (result.traces) parts.push(`${result.traces} observations migrated to traces`);
   if (result.index) parts.push('index');
   if (ignoreUpdated) parts.push('.engramignore');
   return parts.length ? [`engram ${scope} reconciled: ${parts.join(', ')}`] : [];

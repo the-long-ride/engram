@@ -4,6 +4,9 @@ import { rm, writeFile, mkdir, readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { initGit, runEngram, tempWorkspace, workspaceMemoryRoot } from '../helpers.mjs';
 import { testMemory, duplicateFixtureMemory } from './fixtures.mjs';
+import { writeObservation } from '../../dist/core/memory/observe.js';
+import { renderFrontmatter } from '../../dist/core/memory/frontmatter.js';
+import { writeTrace } from '../../dist/core/traces/storage.js';
 
 test('save knowledge without text asks for generated agent knowledge', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
@@ -714,3 +717,83 @@ Use this memory when the task touches package management.
   await rm(cwd, { recursive: true, force: true });
 });
 
+
+test('new memories emit vNext authority revision and validity metadata', async () => {
+  const { cwd, env } = await tempWorkspace('engram-save-vnext-');
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
+  const saved = await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', '--force', 'Node 24 is required']);
+  assert.equal(saved.code, 0, saved.stderr);
+  const body = await readFile(path.join(workspaceMemoryRoot(cwd), 'knowledge', 'node-24-is-required.md'), 'utf8');
+  assert.match(body, /schema_version:\s*3/);
+  assert.match(body, /authority:\s*reference/);
+  assert.match(body, /revision:\s*1/);
+  assert.match(body, /valid_from:\s*\d{4}-\d{2}-\d{2}/);
+  assert.match(body, /last_confirmed:\s*\d{4}-\d{2}-\d{2}/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('save-session from a trace wrapper attaches evidence and session provenance', async () => {
+  const { cwd, env } = await tempWorkspace('engram-save-provenance-');
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
+  const root = workspaceMemoryRoot(cwd);
+  const observed = await writeObservation(root, 'TYPE: knowledge | TEXT: Durable release fact.', '', {
+    host: 'test', sessionId: 'session-7', eventTime: '2026-08-05T12:00:00.000Z'
+  });
+  const result = await runEngram(cwd, env, ['save-session', '--scope', 'workspace', '--force', '--file', observed.fullPath]);
+  assert.equal(result.code, 0, result.stderr);
+  const saved = await readFile(path.join(root, 'knowledge', 'durable-release-fact.md'), 'utf8');
+  assert.match(saved, new RegExp(`evidence_refs:[\\s\\S]*${observed.traceId}`));
+  assert.match(saved, /derived_from:[\s\S]*session-7/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('memory update merges evidence refs and increments revision', async () => {
+  const { cwd, env } = await tempWorkspace('engram-save-revision-');
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
+  await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', '--force', 'Release gate requires tests']);
+  await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', '--force', 'Release gate requires tests and health checks']);
+  const body = await readFile(path.join(workspaceMemoryRoot(cwd), 'knowledge', 'release-gate-requires-tests.md'), 'utf8');
+  assert.match(body, /revision:\s*2/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('save-session trusts immutable trace text instead of editable wrapper text', async () => {
+  const { cwd, env } = await tempWorkspace('engram-save-immutable-wrapper-');
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
+  const root = workspaceMemoryRoot(cwd);
+  const observed = await writeObservation(root, 'TYPE: knowledge | TEXT: Immutable source fact.', '', {
+    host: 'test', sessionId: 'session-source', eventTime: '2026-08-05T12:00:00.000Z'
+  });
+  const wrapper = await readFile(observed.fullPath, 'utf8');
+  await writeFile(observed.fullPath, wrapper.replace('TYPE: knowledge | TEXT: Immutable source fact.', 'TYPE: knowledge | TEXT: Editable wrapper lie.'));
+
+  const result = await runEngram(cwd, env, ['save-session', '--scope', 'workspace', '--force', '--file', observed.fullPath]);
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(await readFile(path.join(root, 'knowledge', 'immutable-source-fact.md'), 'utf8'), /Immutable source fact/);
+  await assert.rejects(() => readFile(path.join(root, 'knowledge', 'editable-wrapper-lie.md'), 'utf8'));
+  await rm(cwd, { recursive: true, force: true });
+});
+
+
+test('save-session binds colliding trace ids to the wrapper scope', async () => {
+  const { cwd, env } = await tempWorkspace('engram-save-scope-collision-');
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
+  const workspaceRoot = workspaceMemoryRoot(cwd);
+  const globalRoot = env.ENGRAM_GLOBAL_DIR;
+  const common = {
+    traceId: 'tr_same_id', host: 'test', eventTime: '2026-08-05T12:00:00.000Z', source: 'observe',
+    trustLevel: 'human', sensitivity: 'private', retention: '30d', redactedFindings: 0, removedInjectionLines: 0
+  };
+  await writeTrace(workspaceRoot, { ...common, sessionId: 'workspace-session', text: 'TYPE: knowledge | TEXT: Workspace collision fact.' });
+  const globalTrace = (await writeTrace(globalRoot, { ...common, sessionId: 'global-session', text: 'TYPE: knowledge | TEXT: Global collision fact.' })).trace;
+  const wrapper = path.join(globalRoot, 'inbox', 'global-collision.md');
+  await mkdir(path.dirname(wrapper), { recursive: true });
+  await writeFile(wrapper, `${renderFrontmatter({ authority: 'evidence', trace_id: globalTrace.traceId, source_hash: globalTrace.sourceHash })}\n# Observation\n\n## Raw Note\n\nTYPE: knowledge | TEXT: Editable lie.\n`);
+
+  const result = await runEngram(cwd, env, ['save-session', '--force', '--file', wrapper]);
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(await readFile(path.join(globalRoot, 'knowledge', 'global-collision-fact.md'), 'utf8'), /Global collision fact/);
+  await assert.rejects(() => readFile(path.join(workspaceRoot, 'knowledge', 'workspace-collision-fact.md'), 'utf8'));
+  await assert.rejects(() => readFile(path.join(workspaceRoot, 'knowledge', 'global-collision-fact.md'), 'utf8'));
+  await rm(cwd, { recursive: true, force: true });
+});

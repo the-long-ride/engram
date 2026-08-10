@@ -12,9 +12,10 @@ export const HELP_DATA: HelpSection[] = [
       { command: 'engram llm', purpose: 'Print the packaged AI agent usage guide from llm.txt' },
       { command: 'engram entry', alias: 'e', purpose: 'Open browser web UI showing runtime configurations and global Git repository status' },
       { command: 'engram profile status|list|create|use|merge', alias: 'pf', purpose: 'Manage isolated global memory profiles for company, personal, or team contexts' },
+      { command: 'engram author show|set|unset|sync-git-global|migrate-memories [--scope workspace|global|both] [--name name] [--email email] [--plan] [--confirm] [--json]', purpose: 'Configure Engram memory and Git commit authors, sync global Git identity, or migrate legacy memory author metadata' },
       { command: 'engram update-global-folder <new-path> [--move-from-path path]', alias: 'ugf', purpose: 'Update the configured global memory folder and optionally move an old global root' },
       { command: 'engram completion [bash|zsh|powershell]', alias: 'c', purpose: 'Generate shell completion support for Tab suggestions' },
-      { command: 'engram upgrade [--plan] [--latest] [--self] [--memory-only|--global-skillsets-only|--configs-only] [--target agent]', alias: 'up', purpose: 'Recommend package update and refresh generated help, indexes, graphs, linked agent configs/hooks, detected agent configs, global memory, and registered global agent skillsets' }
+      { command: 'engram upgrade [--plan] [--latest] [--migrate-memories|--no-migrate-memories] [--self] [--memory-only|--global-skillsets-only|--configs-only] [--target agent]', alias: 'up', purpose: 'Preview or apply the shared workspace/global upgrade inventory for memories and Engram-managed agent instructions, skillsets, configs, hooks, and plugins while preserving conflicts' }
     ]
   },
   {

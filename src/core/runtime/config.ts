@@ -77,6 +77,7 @@ export async function configFromDb(cwd: string, options: { profile?: string } = 
     const globalConfig = globalPath
       ? await readJson<Partial<EngramConfig>>(path.join(path.resolve(globalPath), 'engram.config.json'), {})
       : {};
+    delete globalConfig.author;
 
     let loaded = defaultConfig();
     for (const found of [globalConfig, ...configLayers]) loaded = mergeConfig(loaded, found);
@@ -175,6 +176,7 @@ export async function loadConfig(cwd = process.cwd(), options: { profile?: strin
       || stringValue(legacy.global_path)
       || stringValue(user.global_path);
   const global = globalPath ? await readJson<Partial<EngramConfig>>(path.join(path.resolve(globalPath), 'engram.config.json'), {}) : {};
+  delete global.author;
   let config = defaultConfig();
   for (const found of [global, user, profileConfig(profile), legacy, workspace]) config = mergeConfig(config, found);
   config.global_path = globalPath ? path.resolve(globalPath) : '';
@@ -187,6 +189,7 @@ export function mergeConfig(base: EngramConfig, found: Partial<EngramConfig>): E
   return {
     ...base,
     ...found,
+    author: found.author === undefined ? base.author : found.author,
     global_path: typeof found.global_path === 'string' ? found.global_path : base.global_path,
     ignore: { ...base.ignore, ...(found.ignore ?? {}) },
     live_sync: { ...base.live_sync, ...(found.live_sync ?? {}) },

@@ -1,12 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, rmSync } from 'node:fs';
+import { existsSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import {
   CONFIG_FIELDS,
   configFieldsForPanel,
   validateConfigPatch,
-  isRiskyConfigKey
+  isRiskyConfigKey,
+  isKnownConfigKey
 } from '../dist/core/web/config-schema.js';
 
 test('config field metadata has unique editable keys', () => {
@@ -25,6 +26,12 @@ test('panel metadata hides internal theme field from config editor', () => {
 });
 
 
+
+test('generic config editor cannot mutate author profile keys', () => {
+  assert.equal(configFieldsForPanel().some((field) => field.key.startsWith('author.')), false);
+  assert.equal(isKnownConfigKey('author.name'), false);
+  assert.equal(isKnownConfigKey('author.email'), false);
+});
 
 test('every visible config field has a unique explicit docs anchor', () => {
   const visible = configFieldsForPanel();
@@ -101,13 +108,19 @@ test('validateConfigPatch validates nonexistent global_path without creating it'
   try { rmSync(tempPath, { recursive: true, force: true }); } catch {}
 });
 
-test('validateConfigPatch fails on uncreatable global_path', () => {
-  const badPath = process.platform === 'win32' ? 'Z:\\nonexistent\\path\\dir' : '/root/nonexistent/path/dir';
-  const result = validateConfigPatch({
-    global_path: badPath
-  });
-  assert.equal(result.ok, false);
-  assert.match(result.issues.map((i) => i.message).join('\n'), /Failed to validate/);
+test('validateConfigPatch fails when global_path has a file ancestor', () => {
+  const blocker = path.join(process.cwd(), 'temp-test-global-path-file-12345');
+  rmSync(blocker, { recursive: true, force: true });
+  writeFileSync(blocker, 'not a directory');
+  try {
+    const result = validateConfigPatch({
+      global_path: path.join(blocker, 'child')
+    });
+    assert.equal(result.ok, false);
+    assert.match(result.issues.map((i) => i.message).join('\n'), /Failed to validate/);
+  } finally {
+    rmSync(blocker, { force: true });
+  }
 });
 
 test('validateConfigPatch validates global_git.remote_url', () => {

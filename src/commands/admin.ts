@@ -7,6 +7,10 @@ import { cmdMetacognize } from './metacognize.js';
 import { getContext } from '../core/memory/context.js';
 import { updateGlobalFolder } from '../core/memory/global-folder.js';
 import { createScope, initWorkspace } from '../core/memory/storage.js';
+import { migrateMemorySchema, planMemorySchemaMigration, type MemorySchemaMigrationResult } from '../core/memory/migrate-schema.js';
+import { rebuildIndex } from '../core/memory/index.js';
+import { rebuildGraph } from '../core/memory/graph.js';
+import { ensureVectorIndex } from '../core/memory/vector-db.js';
 import { loadConfig, parseSaveTarget, scopeRootsForConfig, workspaceRoot, writeConfig } from '../core/runtime/config.js';
 import { DEFAULT_LOAD_LIMIT, MAX_LOAD_LIMIT, MIN_LOAD_LIMIT, parseLoadLimit } from '../core/runtime/load-limit.js';
 import { defaultProfileLines, ensureDefaultProfile } from '../core/runtime/profile-migration.js';
@@ -31,7 +35,13 @@ import { git } from '../core/vcs/git.js';
 import { formatRecords, type RecordBlock } from '../core/cli/format.js';
 import { installResultRecords } from './skillset-link.js';
 import { needsMigration, runMigration, formatMigrationResult } from '../core/config-db/migrate.js';
-import type { RuleVariant } from '../core/runtime/types.js';
+import type { RuleVariant, Scope } from '../core/runtime/types.js';
+import { scanUpgradeInventory } from '../core/upgrade/inventory.js';
+import { buildUpgradePlan } from '../core/upgrade/planner.js';
+import { applyUpgradePlan } from '../core/upgrade/executor.js';
+import type { UpgradeApplyResult, UpgradeArtifactKind, UpgradePlan } from '../core/upgrade/types.js';
+import { loadUpgradeReview } from '../core/upgrade/review-store.js';
+import { confirmReviewedUpgrade, reviewUpgradeConflicts } from './upgrade-review.js';
 /** Inspect or update ignore patterns. */
 export async function cmdIgnore(args: string[]): Promise<string> {
   const ctx = await getContext();
@@ -219,12 +229,22 @@ async function gitHookDir(cwd: string): Promise<string> {
 export async function cmdUpgrade(args: string[] = [], flags: Record<string, any> = {}): Promise<string> {
   if (flags['memory-only'] === true && flags['global-skillsets-only'] === true) throw new Error('upgrade cannot use --memory-only and --global-skillsets-only together');
   if (flags['configs-only'] === true && (flags['memory-only'] === true || flags['global-skillsets-only'] === true)) throw new Error('upgrade cannot use --configs-only with --memory-only or --global-skillsets-only');
+  if (flags['migrate-memories'] === true && flags['no-migrate-memories'] === true) throw new Error('upgrade cannot use --migrate-memories and --no-migrate-memories together');
+  if (flags['migrate-memories'] === true && flags['configs-only'] === true) throw new Error('--migrate-memories cannot be used with --configs-only');
+  if (flags['migrate-memories'] === true && flags['global-skillsets-only'] === true) throw new Error('--migrate-memories cannot be used with --global-skillsets-only');
+  if (flags['migrate-memories'] === true && flags['db-migrate'] === true) throw new Error('--migrate-memories cannot be used with --db-migrate');
   const plan = flags.plan === true || flags['dry-run'] === true;
   const dbMigrate = flags['db-migrate'] === true;
   const overwriteLinked = flags.latest === true;
   const configsOnly = flags['configs-only'] === true;
+  const migrateMemories = !configsOnly && !dbMigrate && flags['global-skillsets-only'] !== true
+    && flags['no-migrate-memories'] !== true
+    && (overwriteLinked || flags['migrate-memories'] === true);
   const target = upgradeTarget(args, flags);
   const records: RecordBlock[] = [];
+  if (isSharedLatestUpgrade(args, flags)) {
+    return await runSharedLatestUpgrade(flags, plan);
+  }
   if (!configsOnly) records.push(await upgradePackageRecord(flags, plan));
   if (flags['global-skillsets-only'] !== true && !dbMigrate) {
     if (configsOnly) {
@@ -232,9 +252,11 @@ export async function cmdUpgrade(args: string[] = [], flags: Record<string, any>
       records.push(await workspaceSkillsetUpgradeRecord(plan, overwriteLinked));
       if (overwriteLinked) records.push(await workspaceDetectedSkillsetUpgradeRecord(plan));
     } else {
+      if (migrateMemories) records.push(await memorySchemaUpgradeRecord(workspaceRoot(process.cwd()), 'workspace', plan));
       records.push(await workspaceMemoryUpgradeRecord(plan, Boolean(flags.force)));
       records.push(await workspaceSkillsetUpgradeRecord(plan, overwriteLinked));
       if (overwriteLinked) records.push(await workspaceHookUpgradeRecord(plan));
+      if (migrateMemories) records.push(...await globalMemorySchemaUpgradeRecords(plan));
       records.push(...await globalMemoryUpgradeRecords(plan, Boolean(flags.force)));
       // Re-install skillsets for any installed agent that isn't already linked in this workspace.
       if (overwriteLinked) records.push(await workspaceDetectedSkillsetUpgradeRecord(plan));
@@ -275,6 +297,165 @@ export async function cmdUpgrade(args: string[] = [], flags: Record<string, any>
     '  npm install -g @the-long-ride/engram@latest',
     '  engram upgrade --latest'
   ].join('\n');
+}
+
+
+function isSharedLatestUpgrade(args: string[], flags: Record<string, any>): boolean {
+  return flags.latest === true
+    && flags['db-migrate'] !== true
+    && flags['configs-only'] !== true
+    && flags['memory-only'] !== true
+    && flags['global-skillsets-only'] !== true
+    && !upgradeTarget(args, flags);
+}
+
+async function runSharedLatestUpgrade(flags: Record<string, any>, previewOnly: boolean): Promise<string> {
+  const cwd = process.cwd();
+  const config = await loadConfig(cwd);
+  let inventory = await scanUpgradeInventory(cwd, config, VERSION);
+  if (flags['no-migrate-memories'] === true) inventory = { ...inventory, items: inventory.items.filter((item) => item.kind !== 'memory') };
+  const basePlan = buildUpgradePlan(inventory, VERSION);
+  let sharedPlan: UpgradePlan = { ...basePlan, review: await loadUpgradeReview(basePlan) };
+  if (previewOnly) return flags.json === true ? JSON.stringify(sharedPlan, null, 2) : formatSharedUpgradePlan(sharedPlan);
+  if (flags.review === true) {
+    if (flags.json === true) throw new Error('`--review` is interactive and cannot be combined with `--json`.');
+    const reviewed = await reviewUpgradeConflicts(cwd, config, sharedPlan);
+    sharedPlan = { ...sharedPlan, review: reviewed.review };
+    if (!reviewed.applyNow) return reviewed.summary;
+  }
+  const review = sharedPlan.review ?? await loadUpgradeReview(sharedPlan);
+  if (review.pendingReviewCount > 0 || review.staleCount > 0) {
+    throw new Error(`Upgrade requires review: ${review.pendingReviewCount} conflict file(s). Run engram upgrade --latest --review.`);
+  }
+  if (flags.review !== true && !(await confirmReviewedUpgrade(review, flags.yes === true))) return 'Upgrade cancelled. Reviewed decisions were preserved.';
+  const result = await applyUpgradePlan(cwd, config, sharedPlan, { confirmed: true, review });
+  const durableFailure = result.transactions.find((row) => row.status === 'failed' || row.status === 'rolled-back');
+  if (durableFailure) throw new Error(`upgrade transaction ${durableFailure.group} ${durableFailure.status}${durableFailure.message ? `: ${durableFailure.message}` : ''}`);
+  return flags.json === true ? JSON.stringify(result, null, 2) : formatSharedUpgradeResult(sharedPlan, result);
+}
+
+function scopeLines(sharedPlan: UpgradePlan, scope: Scope): string[] {
+  return sharedPlan.items.filter((item) => item.scope === scope).map((item) => `${item.status.toUpperCase()} ${item.kind}${item.agent ? ` ${item.agent}` : ''}: ${item.file} — ${item.reason}`);
+}
+
+const UPGRADE_KIND_ORDER: ReadonlyArray<{ kind: UpgradeArtifactKind; label: string }> = [
+  { kind: 'config', label: 'Config' },
+  { kind: 'instruction', label: 'Instructions' },
+  { kind: 'memory', label: 'Memories' },
+  { kind: 'skillset', label: 'Skillsets' },
+  { kind: 'hook', label: 'Hooks' },
+  { kind: 'plugin', label: 'Plugins' }
+];
+
+function kindRecords(sharedPlan: UpgradePlan): RecordBlock[] {
+  return UPGRADE_KIND_ORDER.flatMap(({ kind, label }) => {
+    const items = sharedPlan.items.filter((item) => item.kind === kind && item.status !== 'current');
+    if (!items.length) return [];
+    const workspace = items.filter((item) => item.scope === 'workspace').length;
+    const global = items.filter((item) => item.scope === 'global').length;
+    return [{
+      title: label,
+      fields: [['Workspace', workspace], ['Global', global]],
+      lines: items.map((item) => `${item.scope.toUpperCase()} ${item.status.toUpperCase()} ${item.kind}${item.agent ? ` ${item.agent}` : ''}: ${item.file} — ${item.reason}`)
+    }];
+  });
+}
+
+function formatSharedUpgradePlan(sharedPlan: UpgradePlan): string {
+  const conflicts = sharedPlan.items.filter((item) => item.status === 'conflict' || item.status === 'invalid');
+  const records: RecordBlock[] = [
+    { title: 'Workspace', fields: [['Outdated', sharedPlan.summary.workspace.outdated], ['Conflicts', sharedPlan.summary.workspace.conflict], ['Invalid', sharedPlan.summary.workspace.invalid]] },
+    { title: 'Global', fields: [['Outdated', sharedPlan.summary.global.outdated], ['Conflicts', sharedPlan.summary.global.conflict], ['Invalid', sharedPlan.summary.global.invalid]] },
+    { title: 'Review', fields: [['Reviewed', sharedPlan.review?.reviewedCount ?? 0], ['Pending review', sharedPlan.review?.pendingReviewCount ?? conflicts.length], ['Stale', sharedPlan.review?.staleCount ?? 0]], lines: conflicts.length ? ['Run `engram upgrade --latest --review` to resolve conflict files.'] : [] },
+    ...kindRecords(sharedPlan)
+  ];
+  const workspaceMemories = sharedPlan.items.filter((item) => item.scope === 'workspace' && item.kind === 'memory' && item.status === 'outdated');
+  const globalMemories = sharedPlan.items.filter((item) => item.scope === 'global' && item.kind === 'memory' && item.status === 'outdated');
+  if (workspaceMemories.length) records.push({ title: 'PLAN workspace memory schema', fields: [['Eligible', workspaceMemories.length]], lines: workspaceMemories.map((item) => `MIGRATE ${item.file}`) });
+  if (globalMemories.length) records.push({ title: 'PLAN global memory schema', fields: [['Eligible', globalMemories.length]], lines: globalMemories.map((item) => `MIGRATE ${item.file}`) });
+  if (sharedPlan.items.some((item) => item.scope === 'workspace' && item.kind !== 'memory' && item.kind !== 'hook' && item.kind !== 'plugin' && item.status === 'outdated')) records.push({ title: 'PLAN workspace skillsets', fields: [['Action', 'upgrade safe Engram-managed workspace artifacts']] });
+  if (sharedPlan.items.some((item) => item.scope === 'workspace' && (item.kind === 'hook' || item.kind === 'plugin') && item.status === 'outdated')) records.push({ title: 'PLAN workspace agent hooks', fields: [['Action', 'upgrade safe Engram-managed hooks']] });
+  if (sharedPlan.items.some((item) => item.scope === 'global' && item.kind !== 'memory' && item.kind !== 'hook' && item.kind !== 'plugin' && item.status === 'outdated')) records.push({ title: 'PLAN global skillsets', fields: [['Action', 'upgrade safe Engram-managed global artifacts']] });
+  if (sharedPlan.items.some((item) => item.scope === 'global' && (item.kind === 'hook' || item.kind === 'plugin') && item.status === 'outdated')) records.push({ title: 'PLAN global agent hooks', fields: [['Action', 'upgrade safe Engram-managed hooks']] });
+  records.push(
+    { title: 'Conflicts', fields: [['Count', conflicts.length]], lines: conflicts.map((item) => `${item.kind}${item.agent ? ` ${item.agent}` : ''}: ${item.file}`) },
+    { title: 'Warnings', fields: [['Count', sharedPlan.warnings.length]], lines: sharedPlan.warnings },
+    { title: 'Vector index', fields: [['Behavior', 'rebuilds are disposable and fail open; vector-only errors never abort durable upgrades']] }
+  );
+  return formatRecords('Upgrade plan', records);
+}
+
+function formatSharedUpgradeResult(sharedPlan: UpgradePlan, result: UpgradeApplyResult): string {
+  const updatedGroups = new Set(result.transactions.filter((row) => row.status === 'updated').map((row) => row.group));
+  const records: RecordBlock[] = [
+    { title: 'Workspace', fields: [['Outdated planned', sharedPlan.summary.workspace.outdated], ['Conflicts preserved', sharedPlan.summary.workspace.conflict]], lines: scopeLines(sharedPlan, 'workspace') },
+    { title: 'Global', fields: [['Outdated planned', sharedPlan.summary.global.outdated], ['Conflicts preserved', sharedPlan.summary.global.conflict]], lines: scopeLines(sharedPlan, 'global') }
+  ];
+  const workspaceMemories = sharedPlan.items.filter((item) => item.scope === 'workspace' && item.kind === 'memory' && item.status === 'outdated');
+  const globalMemories = sharedPlan.items.filter((item) => item.scope === 'global' && item.kind === 'memory' && item.status === 'outdated');
+  if (workspaceMemories.length && updatedGroups.has('workspace:memory')) records.push({ title: 'MIGRATED workspace memory schema', fields: [['Migrated', workspaceMemories.length]] });
+  if (globalMemories.length && updatedGroups.has('global:memory')) records.push({ title: 'MIGRATED global memory schema', fields: [['Migrated', globalMemories.length]] });
+  if ([...updatedGroups].some((group) => group.startsWith('workspace:') && !group.endsWith(':hooks') && group !== 'workspace:memory')) records.push({ title: 'UPDATED workspace skillsets', fields: [['Status', 'safe managed artifacts upgraded']] });
+  if ([...updatedGroups].some((group) => group.startsWith('workspace:') && group.endsWith(':hooks'))) records.push({ title: 'UPDATED workspace agent hooks', fields: [['Status', 'safe managed hooks upgraded']] });
+  if ([...updatedGroups].some((group) => group.startsWith('global:') && !group.endsWith(':hooks') && group !== 'global:memory')) records.push({ title: 'UPDATED global skillsets', fields: [['Status', 'safe managed artifacts upgraded']] });
+  if ([...updatedGroups].some((group) => group.startsWith('global:') && group.endsWith(':hooks'))) records.push({ title: 'UPDATED global agent hooks', fields: [['Status', 'safe managed hooks upgraded']] });
+  records.push(
+    { title: 'Conflicts', fields: [['Count', result.conflicts.length]], lines: result.conflicts.map((item) => `${item.kind}${item.agent ? ` ${item.agent}` : ''}: ${item.file}`) },
+    { title: 'Transactions', fields: [['Count', result.transactions.length]], lines: result.transactions.map((row) => `${row.status.toUpperCase()} ${row.group}: ${row.files.join(', ')}${row.message ? ` — ${row.message}` : ''}`) },
+    { title: 'Warnings', fields: [['Count', result.warnings.length]], lines: result.warnings },
+    { title: 'Vector index', fields: [['Status', result.vectorWarnings.length ? 'degraded' : 'ready or not required']], lines: result.vectorWarnings }
+  );
+  return formatRecords('Upgrade', records);
+}
+
+async function globalMemorySchemaUpgradeRecords(plan: boolean): Promise<RecordBlock[]> {
+  const config = await loadConfig(process.cwd());
+  const roots = scopeRootsForConfig(process.cwd(), config);
+  if (!roots.global) {
+    return [{ title: 'SKIPPED global memory schema', fields: [['Reason', 'global memory is not configured']] }];
+  }
+  return [await memorySchemaUpgradeRecord(roots.global, 'global', plan)];
+}
+
+async function memorySchemaUpgradeRecord(root: string, scope: Scope, plan: boolean): Promise<RecordBlock> {
+  if (!(await exists(root))) {
+    return { title: `SKIPPED ${scope} memory schema`, fields: [['Reason', 'memory root does not exist']] };
+  }
+  const result = plan
+    ? await planMemorySchemaMigration(root, scope)
+    : await migrateMemorySchema(root, scope);
+  if (!plan && result.migrated > 0) await rebuildMigratedScope(root, scope);
+  const title = plan
+    ? `PLAN ${scope} memory schema`
+    : result.migrated > 0
+      ? `MIGRATED ${scope} memory schema`
+      : `CHECKED ${scope} memory schema`;
+  return {
+    title,
+    fields: migrationFields(result, root),
+    lines: result.files
+      .filter((row) => row.action !== 'current')
+      .map((row) => `${row.action.toUpperCase()} ${row.file}${row.reason ? `: ${row.reason}` : ''}`)
+  };
+}
+
+async function rebuildMigratedScope(root: string, scope: Scope): Promise<void> {
+  const config = await loadConfig(process.cwd());
+  const index = await rebuildIndex(root, scope);
+  await rebuildGraph(root, scope, index, config);
+  await ensureVectorIndex(root, scope, index.entries, config, { force: true });
+}
+
+function migrationFields(result: MemorySchemaMigrationResult, root: string): Array<[string, string | number]> {
+  return [
+    ['Path', root],
+    ['Scanned', result.scanned],
+    ['Eligible', result.eligible],
+    ['Migrated', result.migrated],
+    ['Current', result.current],
+    ['Failed', result.failed],
+    ['Backup', '<memory>.pre-v3.bak']
+  ];
 }
 
 async function workspaceMemoryUpgradeRecord(plan: boolean, force: boolean): Promise<RecordBlock> {

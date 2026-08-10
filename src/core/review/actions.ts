@@ -14,6 +14,7 @@ import { visibleEntries } from '../memory/routing.js';
 import { deriveFindings } from './findings.js';
 import { loadReviewStore, writeReviewStore, seedAllRecords, resolveFinding, type ReviewStore, type ReviewRecord } from './records.js';
 import type { ReviewFinding } from './findings.js';
+import { frontmatterStringList, parseFrontmatter, updateFrontmatter } from '../memory/frontmatter.js';
 
 export type ActionResult = { ok: true; message: string; record?: ReviewRecord };
 export type ActionError = { ok: false; message: string };
@@ -55,7 +56,7 @@ export async function verifyAction(ctx: EngramContext, memoryId: string): Promis
   if (!root) return { ok: false, message: `${entry.scope} root not configured` };
   const filePath = entryPath(ctx, entry.scope, entry.file);
   const raw = await readText(filePath);
-  const updated = setFrontmatterField(setFrontmatterField(raw, 'last_verified', today()), 'lifecycle', 'active');
+  const updated = patchReviewedMemory(raw, { last_verified: today(), lifecycle: 'active' });
   await writeText(filePath, updated);
   await updateHash(root, entry.file, updated);
   const index = await rebuildIndex(root, entry.scope);
@@ -88,12 +89,14 @@ export async function supersedeAction(ctx: EngramContext, oldId: string, newId: 
   if (!root) return { ok: false, message: `${oldEntry.scope} root not configured` };
   const oldPath = entryPath(ctx, oldEntry.scope, oldEntry.file);
   const oldRaw = await readText(oldPath);
-  const oldUpdated = setFrontmatterField(oldRaw, 'lifecycle', 'superseded');
+  const oldUpdated = patchReviewedMemory(oldRaw, { lifecycle: 'superseded', superseded_by: newId });
   await writeText(oldPath, oldUpdated);
   await updateHash(root, oldEntry.file, oldUpdated);
   const newPath = entryPath(ctx, newEntry.scope, newEntry.file);
   const newRaw = await readText(newPath);
-  const newUpdated = setFrontmatterField(newRaw, 'supersedes', oldId);
+  const newParsed = parseFrontmatter(newRaw);
+  const supersedes = [...new Set([...frontmatterStringList(newParsed.data.supersedes), oldId])];
+  const newUpdated = patchReviewedMemory(newRaw, { supersedes });
   await writeText(newPath, newUpdated);
   await updateHash(root, newEntry.file, newUpdated);
   const index = await rebuildIndex(root, oldEntry.scope);
@@ -155,21 +158,16 @@ function guessKindFromFingerprint(fingerprint: string): ReviewFinding['kind'] {
   return kinds.find((k) => k === prefix) ?? 'stale';
 }
 
-/** Set or replace a frontmatter field on raw Markdown memory text. */
-function setFrontmatterField(raw: string, field: string, value: string): string {
-  const match = raw.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
-  if (!match) return raw;
-  const fmBlock = match[1];
-  const lines = fmBlock.split(/\r?\n/);
-  let found = false;
-  const updated = lines.map((line) => {
-    const i = line.indexOf(':');
-    if (i < 0) return line;
-    const key = line.slice(0, i).trim();
-    if (key !== field) return line;
-    found = true;
-    return `${field}: ${value}`;
+function nextRevision(data: Record<string, unknown>): number {
+  const current = Number(data.revision ?? 1);
+  return Number.isInteger(current) && current >= 1 ? current + 1 : 2;
+}
+
+function patchReviewedMemory(raw: string, patch: Record<string, unknown>): string {
+  const parsed = parseFrontmatter(raw);
+  return updateFrontmatter(raw, {
+    ...patch,
+    revision: nextRevision(parsed.data),
+    last_confirmed: today()
   });
-  if (!found) updated.push(`${field}: ${value}`);
-  return `---\n${updated.join('\n')}\n---\n${raw.slice(match[0].length)}`;
 }

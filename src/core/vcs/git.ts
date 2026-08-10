@@ -4,8 +4,10 @@ import path from 'node:path';
 import { CHANGELOG_FILE, GRAPH_FILE, HASH_FILE, HELP_FILE, INDEX_FILE, MEMORY_DIRS, README_FILE } from '../runtime/constants.js';
 import { ensureDir, exists } from '../system/fsx.js';
 import type { EngramConfig } from '../runtime/types.js';
+import type { ResolvedAuthor } from '../author/types.js';
 
 type GlobalGitConfig = EngramConfig['global_git'];
+export type GitCommitContext = { cwd: string; author: ResolvedAuthor };
 export type GlobalGitInfo = {
   repo: boolean; branch: string; remote: string; remoteUrl: string; dirty: boolean;
 };
@@ -16,8 +18,9 @@ const defaultGlobalGit: GlobalGitConfig = {
 
 /** Read the configured Git user email. */
 export function gitUserEmail(): Promise<string> {
-  return git(['config', '--global', 'user.email']).then((out) => out.trim() || 'unknown');
+  return gitConfigValue('user.email', { global: true }).then((out) => out || 'unknown');
 }
+
 
 /** Ensure the global memory folder is a Git repo on one branch. */
 export async function ensureGlobalGit(root: string, branch = 'main'): Promise<string> {
@@ -48,14 +51,15 @@ export async function configureGlobalRemote(root: string, url: string, branch = 
 export async function pullGlobalGit(
   root: string,
   config: GlobalGitConfig = defaultGlobalGit,
-  onResolve: () => Promise<number> = async () => 0
+  onResolve: () => Promise<number> = async () => 0,
+  commitContext?: GitCommitContext
 ): Promise<string[]> {
   if (!config.enabled || !config.auto_sync) return ['global git: sync disabled'];
   const branch = await ensureGlobalGit(root, config.branch);
   const remote = config.remote || 'origin';
   if (!(await remoteUrl(root, remote))) return [`global git: no ${remote} remote configured`];
   await gitAddEngramOwned(root);
-  await commitGlobal(root, 'save pending global memory changes').catch(() => undefined);
+  if (commitContext) await commitGlobal(root, 'save pending global memory changes', commitContext).catch(() => undefined);
   try {
     await git(['-C', root, 'pull', '--no-rebase', '--no-edit', '--allow-unrelated-histories', remote, branch]);
     return [`global git: pulled ${remote}/${branch}`];
@@ -64,7 +68,8 @@ export async function pullGlobalGit(
     const resolved = config.auto_resolve ? await onResolve() : 0;
     if (!resolved) throw error;
     await gitAddEngramOwned(root);
-    if (!await commitGlobal(root, 'resolve global memory conflicts')) {
+    if (!commitContext) throw new Error('Cannot commit resolved global memory conflicts without an author identity');
+    if (!await commitGlobal(root, 'resolve global memory conflicts', commitContext)) {
       throw new Error('global git conflict resolution needs manual review');
     }
     return [`global git: auto-resolved ${resolved} conflict(s)`];
@@ -76,14 +81,18 @@ export async function gitCommitGlobal(
   root: string,
   message: string,
   config: GlobalGitConfig = defaultGlobalGit,
-  onResolve: () => Promise<number> = async () => 0
+  onResolve: () => Promise<number> = async () => 0,
+  commitContext?: GitCommitContext
 ): Promise<string[]> {
   if (!config.enabled) return ['global git: disabled'];
   const branch = await ensureGlobalGit(root, config.branch);
   await gitAddEngramOwned(root);
-  const committed = await commitGlobal(root, message);
+  if (!commitContext && (await git(['-C', root, 'status', '--porcelain'])).trim()) {
+    throw new Error('Cannot create an Engram Git commit without a complete author identity');
+  }
+  const committed = commitContext ? await commitGlobal(root, message, commitContext) : false;
   if (!config.auto_sync) return [committed ? `global git: committed ${branch}` : 'global git: no local changes'];
-  return pushGlobalGit(root, branch, config, onResolve);
+  return pushGlobalGit(root, branch, config, onResolve, commitContext);
 }
 
 /** Return current global Git state without mutating the repository. */
@@ -128,21 +137,41 @@ export function normalizeBranchName(value = '', fallback = 'main'): string {
   return branch;
 }
 
+export type GitRunOptions = { cwd?: string; env?: Record<string, string | undefined> };
+
+export function gitIdentityEnv(author: ResolvedAuthor): Record<string, string> {
+  if (!author.complete || !author.name || !author.email) {
+    throw new Error('Cannot create an Engram Git commit without a complete author identity');
+  }
+  return {
+    GIT_AUTHOR_NAME: author.name,
+    GIT_AUTHOR_EMAIL: author.email,
+    GIT_COMMITTER_NAME: author.name,
+    GIT_COMMITTER_EMAIL: author.email
+  };
+}
+
 /** Run a Git command and capture stdout. */
-export function git(args: string[]): Promise<string> {
+export function git(args: string[], options: GitRunOptions = {}): Promise<string> {
   return new Promise((resolve, reject) => {
-    execFile('git', args, (error: any, stdout: string, stderr: string) => {
+    execFile('git', args, { cwd: options.cwd, env: { ...process.env, ...(options.env ?? {}) } }, (error: any, stdout: string, stderr: string) => {
       if (error) reject(new Error(stderr || String(error)));
       else resolve(stdout);
     });
   });
 }
 
+export async function gitConfigValue(key: 'user.name' | 'user.email', options: { cwd?: string; global?: boolean } = {}): Promise<string> {
+  const args = ['config', ...(options.global ? ['--global'] : []), '--get', key];
+  return git(args, { cwd: options.cwd }).then((out) => out.trim()).catch(() => '');
+}
+
 async function pushGlobalGit(
   root: string,
   branch: string,
   config: GlobalGitConfig,
-  onResolve: () => Promise<number>
+  onResolve: () => Promise<number>,
+  commitContext?: GitCommitContext
 ): Promise<string[]> {
   const remote = config.remote || 'origin';
   if (!(await remoteUrl(root, remote))) return [`global git: no ${remote} remote configured`];
@@ -152,18 +181,18 @@ async function pushGlobalGit(
     return [`global git: pushed ${remote}/${branch}`];
   } catch (error: any) {
     if (!/rejected|fetch first|non-fast-forward/i.test(error.message)) throw error;
-    await pullGlobalGit(root, config, onResolve);
+    await pullGlobalGit(root, config, onResolve, commitContext);
     await git(['-C', root, 'push', '-u', remote, branch]);
     return [`global git: merged and pushed ${remote}/${branch}`];
   }
 }
 
-async function commitGlobal(root: string, message: string): Promise<boolean> {
+async function commitGlobal(root: string, message: string, context: GitCommitContext): Promise<boolean> {
   if (!(await git(['-C', root, 'status', '--porcelain'])).trim()) return false;
-  await git([
-    '-C', root, '-c', 'user.name=Engram', '-c', 'user.email=engram@example.local',
-    'commit', '-m', `[engram] ${message}`
-  ]);
+  await git(['-C', root, 'commit', '-m', `[engram] ${message}`], {
+    cwd: context.cwd,
+    env: gitIdentityEnv(context.author)
+  });
   return true;
 }
 

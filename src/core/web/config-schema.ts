@@ -1,6 +1,6 @@
 /** Shared schema for control-panel config fields and risk classification. */
 import { homedir } from 'node:os';
-import { existsSync, accessSync, constants as fsConstants } from 'node:fs';
+import { existsSync, accessSync, statSync, constants as fsConstants } from 'node:fs';
 import path from 'node:path';
 import { isValidGitRemoteUrl } from '../vcs/git.js';
 
@@ -213,6 +213,7 @@ function canCreateDir(pathStr: string): boolean {
     while (true) {
       if (existsSync(current)) {
         try {
+          if (!statSync(current).isDirectory()) return false;
           accessSync(current, fsConstants.W_OK);
           return true;
         } catch {

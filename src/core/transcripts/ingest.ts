@@ -13,6 +13,24 @@ export async function ingestTranscript(root: string, event: TranscriptEvent, opt
   if (!text.trim()) return { status: 'empty', redacted: 0, removed_injection_lines: 0, truncated };
   const existing = (await listFiles(path.join(root, 'inbox'))).filter((file) => file.endsWith('.md')).length;
   if (existing >= Math.max(1, Math.min(options.max_files ?? 100, 1000))) return { status: 'limited', redacted: 0, removed_injection_lines: 0, truncated };
-  const observed = await writeObservation(root, text, event.source_file ?? `host:${event.host}`);
-  return { status: 'stored', file: observed.file, redacted: observed.redacted, removed_injection_lines: observed.removedInjectionLines, truncated };
+  const observed = await writeObservation(root, text, event.source_file ?? `host:${event.host}`, {
+    host: event.host,
+    sessionId: event.session_id ?? 'default',
+    turnId: event.turn_id,
+    speaker: event.speaker,
+    eventTime: event.event_time,
+    source: event.source ?? 'transcript',
+    trustLevel: event.trust_level ?? 'human',
+    sensitivity: event.sensitivity ?? options.sensitivity ?? 'private',
+    retention: event.retention ?? options.retention ?? '30d'
+  });
+  return {
+    status: 'stored',
+    file: observed.file,
+    trace_id: observed.traceId,
+    trace_file: observed.traceFile,
+    redacted: observed.redacted,
+    removed_injection_lines: observed.removedInjectionLines,
+    truncated
+  };
 }

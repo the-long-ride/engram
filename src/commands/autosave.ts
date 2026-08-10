@@ -8,7 +8,8 @@ import path from 'node:path';
 import { getContext } from '../core/memory/context.js';
 import { appendPolicyAudit, candidateHash, countWrittenToday, readPolicyAudit } from '../core/policy/audit.js';
 import { planMemorySave } from '../core/memory/save-plan.js';
-import { resolveAuthor, writeApprovedMemory } from '../core/memory/storage.js';
+import { writeApprovedMemory } from '../core/memory/storage.js';
+import { requireResolvedAuthor } from '../core/author/resolve.js';
 import { classifyTaskType } from '../core/memory/task-classifier.js';
 import { stagePolicySnapshots } from '../core/policy/snapshot.js';
 export async function cmdAutosave(args: string[], flags: Record<string, any> = {}): Promise<string> {
@@ -20,12 +21,14 @@ export async function cmdAutosave(args: string[], flags: Record<string, any> = {
   const ctx = await getContext();
   const root = ctx.roots[scope];
   if (!root) return isJsonMode(flags) ? jsonOk({ allowed: false, status: 'denied', reason: `scope unavailable: ${scope}` }) : `Autosave denied: scope unavailable: ${scope}`;
+  const author = await requireResolvedAuthor(process.cwd());
   const plans = await planMemorySave({
     ctx,
     text: candidate.text,
     type: candidate.type,
     scopes: [scope],
-    author: await resolveAuthor(),
+    authorName: author.name,
+    authorEmail: author.email,
     role: candidate.role,
     context: candidate.context,
     triggers: candidate.triggers,

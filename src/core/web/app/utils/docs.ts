@@ -72,3 +72,33 @@ export function entryConfigFieldDoc(
 ): string {
   return entryDoc('field-reference', anchor, version, versions);
 }
+
+
+const SUPPORTED_DOC_LOCALES = new Set(['en', 'vi', 'es', 'fr', 'zh', 'ko', 'ja', 'ru']);
+
+export function detectDocsLocale(): string {
+  // Entry's HTML shell is always lang="en"; prefer the user's browser locale
+  // so information links open the matching translated docs site.
+  if (typeof navigator !== 'undefined') {
+    const lang = navigator.language.split('-')[0].toLowerCase();
+    if (SUPPORTED_DOC_LOCALES.has(lang)) return lang;
+  }
+  if (typeof document !== 'undefined') {
+    const lang = document.documentElement.lang.split('-')[0].toLowerCase();
+    if (SUPPORTED_DOC_LOCALES.has(lang)) return lang;
+  }
+  return 'en';
+}
+
+export function operationDoc(
+  path: string,
+  anchor?: string,
+  locale: string = detectDocsLocale(),
+  version: string = VERSION,
+  versions: readonly string[] = DOCS_SITE_VERSIONS
+): string {
+  const prefix = docsPathPrefix(version, versions);
+  const resolvedLocale = SUPPORTED_DOC_LOCALES.has(locale) ? locale : 'en';
+  const localized = resolvedLocale === 'en' ? prefix : prefix.replace('/engram/docs', `/engram/${resolvedLocale}/docs`);
+  return `${localized}/operations/${path}${anchor ? `#${anchor}` : ''}`;
+}

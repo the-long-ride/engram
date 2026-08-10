@@ -23,8 +23,14 @@ const injectionPatterns = [
 export function scanSensitive(text: string): ScanFinding[] {
   const findings: ScanFinding[] = [];
   const lines = text.split(/\r?\n/);
+  let inFrontmatter = lines[0]?.trim() === '---';
   lines.forEach((line, index) => {
-    if (/^author:\s*/i.test(line.trim())) return;
+    const trimmed = line.trim();
+    if (index > 0 && inFrontmatter && trimmed === '---') {
+      inFrontmatter = false;
+      return;
+    }
+    if (inFrontmatter && /^(?:author|author_email):\s*/i.test(trimmed)) return;
     for (const [kind, reason, pattern] of sensitivePatterns) {
       pattern.lastIndex = 0;
       const match = pattern.exec(line);

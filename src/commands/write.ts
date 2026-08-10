@@ -8,8 +8,11 @@ import type { MemorySourceMeta } from '../core/memory/memory-template.js';
 import { planMemorySave, previewSavePlans, type SavePlan, type SavePreviewOptions } from '../core/memory/save-plan.js';
 import type { SaveRelatedHint } from '../core/memory/save-plan.js';
 import { parseMemory } from '../core/memory/schema.js';
+import { frontmatterStringList, parseFrontmatter } from '../core/memory/frontmatter.js';
 import { classifyTaskType, normalizeTaskType, TASK_TYPES, type TaskType } from '../core/memory/task-classifier.js';
-import { resolveAuthor, writeApprovedMemory } from '../core/memory/storage.js';
+import { writeApprovedMemory } from '../core/memory/storage.js';
+import { requireResolvedAuthor } from '../core/author/resolve.js';
+import type { ResolvedAuthor } from '../core/author/types.js';
 import type { EngramContext } from '../core/memory/context.js';
 import type { InboxCandidate } from '../core/runtime/types.js';
 import { buildReceipt, writeReceipt } from '../core/review/inbox.js';
@@ -18,6 +21,8 @@ import { parseSaveTarget, writeScopes } from '../core/runtime/config.js';
 import type { MemoryType, Scope } from '../core/runtime/types.js';
 import { applyApprovalEdit, queuePromptAnswer, readPipedPromptAnswer, requestApproval, requestGeneratedMemoryApproval, requestGeneratedSelectionApproval, requestGeneratedSelectionText, requestSelectionApproval, type SelectionApproval } from '../core/safety/approval.js';
 import { readText, readTextFromStdin } from '../core/system/fsx.js';
+import { isTraceExpired } from '../core/traces/codec.js';
+import { readTrace } from '../core/traces/storage.js';
 
 export type SaveSessionCandidateRunOptions = {
   ctx: Awaited<ReturnType<typeof getContext>>;
@@ -38,7 +43,7 @@ export async function cmdSave(args: string[], flags: Record<string, any>): Promi
   if (!explicitType && await shouldSwitchToSaveSession(text)) return cmdSaveSession([text], flags);
   const ctx = await getContext();
   const scopes = saveScopes(ctx, flags);
-  const author = await resolveAuthor();
+  const author = await requireResolvedAuthor(process.cwd());
   const role = rolesFromFlags(flags);
   const explicitTaskType = explicitTaskTypeFromFlags(flags);
   const previewOptions = previewOptionsFromFlags(flags);
@@ -50,7 +55,7 @@ export async function cmdSave(args: string[], flags: Record<string, any>): Promi
       type = candidate.type;
       text = candidate.text;
       const resolvedTaskType = await saveTaskType(text, flags, explicitTaskType);
-      plans = await planMemorySave({ ctx, text, type, scopes, author, role, context: candidate.context, triggers: candidate.triggers, dependsOn: candidate.dependsOn, level: candidate.level, updateId: candidate.updateId, parent: candidate.parent, taskType: resolvedTaskType, variants: candidate.variants });
+      plans = await planMemorySave({ ctx, text, type, scopes, authorName: author.name, authorEmail: author.email, role, context: candidate.context, triggers: candidate.triggers, dependsOn: candidate.dependsOn, level: candidate.level, updateId: candidate.updateId, parent: candidate.parent, taskType: resolvedTaskType, variants: candidate.variants });
       return previewSavePlans(plans, previewOptions);
     }, { explicitType, guidance: generatedMemoryGuidance(explicitType, { ruleLineTarget: ctx.config.memory.rule_line_target, ruleLineHardLimit: ctx.config.memory.rule_line_hard_limit }) });
     if (!captured) return 'Discarded. No file written.';
@@ -60,7 +65,7 @@ export async function cmdSave(args: string[], flags: Record<string, any>): Promi
     const candidate = parseMemoryCandidate(text, { explicitType });
     type = candidate.type;
     text = candidate.text;
-    plans = await planMemorySave({ ctx, text, type, scopes, author, role, context: candidate.context, triggers: candidate.triggers, dependsOn: candidate.dependsOn, level: candidate.level, updateId: candidate.updateId, parent: candidate.parent, taskType, variants: candidate.variants });
+    plans = await planMemorySave({ ctx, text, type, scopes, authorName: author.name, authorEmail: author.email, role, context: candidate.context, triggers: candidate.triggers, dependsOn: candidate.dependsOn, level: candidate.level, updateId: candidate.updateId, parent: candidate.parent, taskType, variants: candidate.variants });
     const force = flags.force === true || flags.f === true;
     approval = force ? { accepted: true } : await requestApproval(previewSavePlans(plans, previewOptions));
   }
@@ -69,17 +74,20 @@ export async function cmdSave(args: string[], flags: Record<string, any>): Promi
 }
 
 /** Propose multiple memories from a long session summary or agent brainstorm. */
-export async function cmdSaveSession(args: string[], flags: Record<string, any> = {}): Promise<string> {
+export async function cmdSaveSession(args: string[], flags: Record<string, any> = {}, source?: MemorySourceMeta): Promise<string> {
   const ctx = await getContext();
-  const scopes = saveScopes(ctx, flags);
-  const author = await resolveAuthor();
+  let scopes = saveScopes(ctx, flags);
+  const author = await requireResolvedAuthor(process.cwd());
   const role = rolesFromFlags(flags);
   const explicitTaskType = explicitTaskTypeFromFlags(flags);
   const force = flags.force === true || flags.f === true;
   const queryLevel = queryLevelFromFlags(flags);
   const guidance = saveSessionGuidance({ queryLevel, limits: { ruleLineTarget: ctx.config.memory.rule_line_target, ruleLineHardLimit: ctx.config.memory.rule_line_hard_limit } });
   const previewOptions = previewOptionsFromFlags(flags);
-  let text = await saveSessionInput(args, flags);
+  const sessionInput = await saveSessionInput(ctx, args, flags);
+  let text = sessionInput.text;
+  const sessionSource = mergeMemorySourceMeta(sessionInput.source, source);
+  scopes = evidenceBoundScopes(scopes, sessionSource?.evidenceScope, flags);
   let plans: SavePlan[] = [];
   let approval: SelectionApproval | undefined = force ? { accepted: true } : undefined;
   if (!text) {
@@ -90,17 +98,17 @@ export async function cmdSaveSession(args: string[], flags: Record<string, any> 
     else {
       const captured = await requestGeneratedSelectionApproval(async (generated) => {
         text = generated;
-        plans = await planSaveSessionCandidates(ctx, generated, scopes, author, role, undefined, explicitTaskType);
+        plans = await planSaveSessionCandidates(ctx, generated, scopes, author, role, sessionSource, explicitTaskType);
         return previewSavePlans(plans, previewOptions);
       }, { guidance });
       if (!captured) return 'Discarded. No file written.';
       approval = captured.approval;
     }
   } else {
-    plans = await planSaveSessionCandidates(ctx, text, scopes, author, role, undefined, explicitTaskType);
+    plans = await planSaveSessionCandidates(ctx, text, scopes, author, role, sessionSource, explicitTaskType);
     if (!force) approval = await requestSelectionApproval(previewSavePlans(plans, previewOptions));
   }
-  if (force && text && !plans.length) plans = await planSaveSessionCandidates(ctx, text, scopes, author, role, undefined, explicitTaskType);
+  if (force && text && !plans.length) plans = await planSaveSessionCandidates(ctx, text, scopes, author, role, sessionSource, explicitTaskType);
   if (!plans.length) return 'No memory candidates detected.';
   if (!approval?.accepted) return 'Discarded. No file written.';
   if (approval.selected?.length) plans = plans.filter((plan) => plan.candidateIndex === undefined || approval.selected?.includes(plan.candidateIndex));
@@ -115,7 +123,7 @@ export async function cmdSaveSession(args: string[], flags: Record<string, any> 
 
 /** Run supplied save-session candidate lines through the normal approval/write path. */
 export async function runSaveSessionCandidates(options: SaveSessionCandidateRunOptions): Promise<string> {
-  const author = await resolveAuthor();
+  const author = await requireResolvedAuthor(process.cwd());
   const role = rolesFromFlags(options.flags ?? {});
   const force = options.flags?.force === true || options.flags?.f === true;
   const previewOptions = previewOptionsFromFlags(options.flags ?? {});
@@ -149,7 +157,7 @@ export async function cmdTakeControl(args: string[], flags: Record<string, any> 
   if (flags['dry-run']) return guidance;
   if (!sources.length && !args.join(' ').trim()) return 'No workspace guidance files found. Try engram take-control --all or --file <path>.';
   const scopes = saveScopes(ctx, flags);
-  const author = await resolveAuthor();
+  const author = await requireResolvedAuthor(process.cwd());
   const role = rolesFromFlags(flags);
   const explicitTaskType = explicitTaskTypeFromFlags(flags);
   const previewOptions = previewOptionsFromFlags(flags);
@@ -186,7 +194,7 @@ export async function cmdTakeControl(args: string[], flags: Record<string, any> 
   return `${prefix}\n${saved}`;
 }
 
-async function planSaveSessionCandidates(ctx: Awaited<ReturnType<typeof getContext>>, text: string, scopes: Scope[], author: string, role?: string[], source?: MemorySourceMeta, explicitTaskType?: TaskType): Promise<SavePlan[]> {
+async function planSaveSessionCandidates(ctx: Awaited<ReturnType<typeof getContext>>, text: string, scopes: Scope[], author: ResolvedAuthor, role?: string[], source?: MemorySourceMeta, explicitTaskType?: TaskType): Promise<SavePlan[]> {
   const plans: SavePlan[] = [];
   let candidateIndex = 1;
   for (const candidate of parseMemoryCandidates(text)) {
@@ -196,7 +204,8 @@ async function planSaveSessionCandidates(ctx: Awaited<ReturnType<typeof getConte
       text: candidate.text,
       type: candidate.type,
       scopes,
-      author,
+      authorName: author.name,
+      authorEmail: author.email,
       role,
       context: candidate.context,
       triggers: candidate.triggers,
@@ -405,17 +414,87 @@ function takeControlMetacognizeRerunCommand(flags: Record<string, any>): string 
   return parts.join(' ');
 }
 
-async function saveSessionInput(args: string[], flags: Record<string, any>): Promise<string> {
+type SaveSessionInput = { text: string; source?: MemorySourceMeta };
+
+async function saveSessionInput(ctx: EngramContext, args: string[], flags: Record<string, any>): Promise<SaveSessionInput> {
   const files = [
     ...(Array.isArray(flags.file) ? flags.file : typeof flags.file === 'string' ? [flags.file] : []),
   ];
   if (files.length > 1) throw new Error('save-session accepts only one --file');
   const file = files[0] ?? '';
   const inline = args.join(' ').trim();
-  if (!file) return inline;
+  if (!file) return { text: inline };
   if (inline) throw new Error('save-session accepts either --file or inline text, not both');
-  if (file === '-') return readTextFromStdin();
-  return readText(path.resolve(file));
+  if (file === '-') return { text: await readTextFromStdin() };
+  const absolute = path.resolve(file);
+  const raw = await readText(absolute);
+  const parsed = parseFrontmatter(raw);
+  if (!parsed.rawBlock || parsed.data.authority !== 'evidence' || !parsed.data.trace_id) {
+    return {
+      text: raw,
+      source: { sourceFiles: [path.relative(process.cwd(), absolute).replace(/\\/g, '/')] }
+    };
+  }
+
+  const sourceScope = evidenceWrapperScope(ctx, absolute);
+  if (!sourceScope) throw new Error('Evidence wrapper must be inside a configured Engram inbox');
+  const traceIds = frontmatterStringList(parsed.data.trace_id);
+  if (traceIds.length !== 1) throw new Error('Evidence wrapper must reference exactly one trace');
+  const trace = await readTrace(ctx.roots[sourceScope], traceIds[0]);
+  if (!trace) throw new Error(`Missing evidence trace: ${traceIds[0]}`);
+  if (isTraceExpired(trace)) throw new Error(`Expired evidence trace: ${trace.traceId}`);
+  const wrapperHash = frontmatterStringList(parsed.data.source_hash);
+  if (wrapperHash.length && (wrapperHash.length !== 1 || wrapperHash[0] !== trace.sourceHash)) {
+    throw new Error(`Evidence wrapper source hash mismatch: ${trace.traceId}`);
+  }
+
+  return {
+    text: trace.text,
+    source: {
+      source: trace.source,
+      sourceFiles: [path.relative(process.cwd(), absolute).replace(/\\/g, '/')],
+      sourceHashes: [trace.sourceHash],
+      evidenceRefs: [trace.traceId],
+      derivedFrom: [trace.sessionId],
+      evidenceScope: sourceScope
+    }
+  };
+}
+
+function evidenceWrapperScope(ctx: EngramContext, absolute: string): Scope | undefined {
+  for (const scope of ['workspace', 'global'] as const) {
+    const root = ctx.roots[scope];
+    if (!root) continue;
+    const relative = path.relative(path.resolve(root), absolute);
+    const insideRoot = relative === '' || (!relative.startsWith(`..${path.sep}`) && relative !== '..' && !path.isAbsolute(relative));
+    if (insideRoot && relative.replace(/\\/g, '/').startsWith('inbox/')) return scope;
+  }
+  return undefined;
+}
+
+function evidenceBoundScopes(scopes: Scope[], evidenceScope: Scope | undefined, flags: Record<string, any>): Scope[] {
+  if (!evidenceScope) return scopes;
+  const explicit = typeof flags.scope === 'string' && Boolean(flags.scope.trim());
+  if (explicit && (scopes.length !== 1 || scopes[0] !== evidenceScope)) {
+    throw new Error(`Evidence belongs to ${evidenceScope} scope; rerun with --scope ${evidenceScope}`);
+  }
+  return [evidenceScope];
+}
+
+function mergeMemorySourceMeta(first?: MemorySourceMeta, second?: MemorySourceMeta): MemorySourceMeta | undefined {
+  if (!first && !second) return undefined;
+  if (first?.evidenceScope && second?.evidenceScope && first.evidenceScope !== second.evidenceScope) {
+    throw new Error('Cannot combine evidence from different scopes in one save-session operation');
+  }
+  const unique = (values: string[]) => [...new Set(values.map((value) => value.trim()).filter(Boolean))];
+  return {
+    source: second?.source ?? first?.source,
+    sourceFiles: unique([...(first?.sourceFiles ?? []), ...(second?.sourceFiles ?? [])]),
+    sourceHashes: unique([...(first?.sourceHashes ?? []), ...(second?.sourceHashes ?? [])]),
+    evidenceRefs: unique([...(first?.evidenceRefs ?? []), ...(second?.evidenceRefs ?? [])]),
+    derivedFrom: unique([...(first?.derivedFrom ?? []), ...(second?.derivedFrom ?? [])]),
+    evidenceScope: second?.evidenceScope ?? first?.evidenceScope
+  };
 }
 
 async function writeSavePlans(plans: SavePlan[], edits?: string): Promise<string> {

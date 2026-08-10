@@ -3,7 +3,9 @@ import path from 'node:path';
 import { ENGRAM_DIR } from '../runtime/constants.js';
 import { workspaceRoot } from '../runtime/config.js';
 import { ensureDir, exists } from '../system/fsx.js';
-import { git, isValidGitRemoteUrl, normalizeBranchName } from './git.js';
+import { git, gitIdentityEnv, isValidGitRemoteUrl, normalizeBranchName } from './git.js';
+import { requireResolvedAuthor } from '../author/resolve.js';
+import type { ResolvedAuthor } from '../author/types.js';
 
 export type WorkspaceSubmoduleOptions = { branch?: string; remoteUrl?: string };
 
@@ -15,13 +17,14 @@ export async function configureWorkspaceSubmodule(cwd: string, options: Workspac
   if (!await isGitRepo(cwd)) return ['workspace submodule: skipped (workspace is not a Git repo)'];
   const root = workspaceRoot(cwd);
   if (!await exists(root)) throw new Error('workspace memory must be initialized before submodule setup');
+  const author = await requireResolvedAuthor(cwd);
   await ensureLocalRepo(root, branch);
   const lines = [`workspace submodule: branch ${branch}`];
   if (remoteUrl) {
     await setRemote(root, remoteUrl);
     lines.push(`workspace submodule: origin -> ${redactRemote(remoteUrl)}`);
   }
-  await commitSubmodule(root);
+  await commitSubmodule(root, author);
   await ensureGitmodules(cwd, remoteUrl || `./${ENGRAM_DIR}`, branch);
   await ensureNotTrackedAsFiles(cwd);
   await git(['-C', cwd, 'add', '-f', '.gitmodules', ENGRAM_DIR]);
@@ -39,13 +42,10 @@ async function ensureLocalRepo(root: string, branch: string): Promise<void> {
   }
 }
 
-async function commitSubmodule(root: string): Promise<void> {
+async function commitSubmodule(root: string, author: ResolvedAuthor): Promise<void> {
   await git(['-C', root, 'add', '.']);
   if (!(await git(['-C', root, 'status', '--porcelain'])).trim()) return;
-  await git([
-    '-C', root, '-c', 'user.name=Engram', '-c', 'user.email=engram@example.local',
-    'commit', '-m', 'Initialize engram'
-  ]);
+  await git(['-C', root, 'commit', '-m', 'Initialize engram'], { env: gitIdentityEnv(author) });
 }
 
 async function ensureGitmodules(cwd: string, url: string, branch: string): Promise<void> {

@@ -3,6 +3,7 @@ import { openConfigDb, isConfigDbUsable } from '../config-db/schema.js';
 import { loadConfig, writeUserConfig, readProfileStore, writeProfileStore, workspaceRoot, legacyWorkspaceRoot, scopeRootsForConfig } from '../runtime/config.js';
 import { VERSION } from '../runtime/constants.js';
 import { exists, ensureDir, inside } from '../system/fsx.js';
+import { launchEditor, resolveEditorCommand } from '../system/editor.js';
 import { globalGitInfo, configureGlobalRemote } from '../vcs/git.js';
 import { homedir } from 'node:os';
 import { getContext } from '../memory/context.js';
@@ -13,7 +14,18 @@ import { loadIndex, rebuildIndex } from '../memory/index.js';
 import { parseMemory } from '../memory/schema.js';
 import { parseMemoryCandidate } from '../memory/memory-candidate.js';
 import { planMemorySave } from '../memory/save-plan.js';
-import { resolveAuthor, writeApprovedMemory } from '../memory/storage.js';
+import { writeApprovedMemory } from '../memory/storage.js';
+import { getAuthorState, requireResolvedAuthor } from '../author/resolve.js';
+import { setAuthorProfile, unsetAuthorProfile } from '../author/config.js';
+import { planGlobalGitAuthorSync, syncGlobalGitAuthor } from '../author/git-sync.js';
+import { migrateMemoryAuthors, planAuthorMemoryMigration } from '../author/migrate-memories.js';
+import { scanUpgradeInventory } from '../upgrade/inventory.js';
+import { buildUpgradePlan } from '../upgrade/planner.js';
+import { applyUpgradePlan } from '../upgrade/executor.js';
+import { getConflictProposal, validateConflictProposal } from '../upgrade/proposals.js';
+import { loadUpgradeReview, saveUpgradeResolution, saveUpgradeResolutions } from '../upgrade/review-store.js';
+import type { UpgradeApplyResult, UpgradeConflictProposal, UpgradeConflictResolution, UpgradePlan, UpgradeReviewItemState, UpgradeReviewSummary } from '../upgrade/types.js';
+import type { AuthorMigrationScope, AuthorMutationResult, AuthorScope, AuthorState, GitAuthorSyncPlan, GitAuthorSyncResult, AuthorMigrationPlan, AuthorMigrationResult } from '../author/types.js';
 import { archiveMemory, planArchiveSet } from '../memory/archive.js';
 import { filterMemoryGraph, type MemoriesSearchMode } from './memories-search.js';
 import { loadPolicy, writePolicy } from '../policy/load.js';
@@ -49,11 +61,14 @@ export interface PanelData {
   isInitialized: boolean;
   configFields: ReturnType<typeof configFieldsForPanel>;
   policy: Awaited<ReturnType<typeof loadPolicy>>;
+  author: AuthorState;
+  upgradePlan?: UpgradePlan;
 }
 
 export async function loadPanelData(cwd: string, entryText: string): Promise<PanelData> {
   const config = await loadConfig(cwd);
   const policy = await loadPolicy(cwd);
+  const author = await getAuthorState(cwd);
   const roots = scopeRootsForConfig(cwd, config);
   let remoteUrl = '';
   if (roots.global) {
@@ -68,18 +83,28 @@ export async function loadPanelData(cwd: string, entryText: string): Promise<Pan
   const version = VERSION;
   const isInitialized = await exists(workspaceRoot(cwd)) || await exists(legacyWorkspaceRoot(cwd));
   const latestVersion = await latestPackageVersion(version);
+  let upgradePlan: UpgradePlan | undefined;
+  try {
+    const baseUpgradePlan = buildUpgradePlan(await scanUpgradeInventory(cwd, config, VERSION), VERSION);
+    upgradePlan = { ...baseUpgradePlan, review: await loadUpgradeReview(baseUpgradePlan) };
+  } catch {
+    // Entry remains usable when an inventory source is temporarily unreadable.
+    upgradePlan = undefined;
+  }
   const dbh = await openConfigDb();
   if (!dbh) {
-    return { config, policy, workspaces: [], profiles: [], entry, sqliteAvailable: false, cwd, version, isInitialized, latestVersion, configFields: configFieldsForPanel() };
+    return { config, policy, author, upgradePlan, workspaces: [], profiles: [], entry, sqliteAvailable: false, cwd, version, isInitialized, latestVersion, configFields: configFieldsForPanel() };
   }
   try {
     if (!isConfigDbUsable(dbh.db)) {
-      return { config, policy, workspaces: [], profiles: [], entry, sqliteAvailable: false, cwd, version, isInitialized, latestVersion, configFields: configFieldsForPanel() };
+      return { config, policy, author, upgradePlan, workspaces: [], profiles: [], entry, sqliteAvailable: false, cwd, version, isInitialized, latestVersion, configFields: configFieldsForPanel() };
     }
     const q = await importQueries();
     return {
       config,
       policy,
+      author,
+      upgradePlan,
       workspaces: q.listWorkspaces(dbh.db),
       profiles: q.listProfiles(dbh.db),
       entry,
@@ -93,6 +118,154 @@ export async function loadPanelData(cwd: string, entryText: string): Promise<Pan
   } finally {
     dbh.close();
   }
+}
+
+export type UpgradeApplyRequest = { fingerprint: string; confirmed?: boolean };
+export type UpgradeOpenFileRequest = { fingerprint: string; itemId: string };
+export type UpgradeBatchResolveRequest = { fingerprint: string; itemIds: string[] };
+export type UpgradeResolveRequest = {
+  fingerprint: string;
+  itemId: string;
+  state: 'accept-latest' | 'edited' | 'keep-current' | 'force-latest';
+  proposedContent?: string;
+};
+export type UpgradeReviewResponse = { plan: UpgradePlan; proposal: UpgradeConflictProposal; review: UpgradeReviewSummary; saved: UpgradeReviewItemState };
+
+async function freshUpgradePlan(cwd: string): Promise<{ config: Awaited<ReturnType<typeof loadConfig>>; plan: UpgradePlan }> {
+  const config = await loadConfig(cwd);
+  const base = buildUpgradePlan(await scanUpgradeInventory(cwd, config, VERSION), VERSION);
+  return { config, plan: { ...base, review: await loadUpgradeReview(base) } };
+}
+
+export async function apiUpgradePlan(cwd: string): Promise<UpgradePlan> {
+  return (await freshUpgradePlan(cwd)).plan;
+}
+
+export async function apiUpgradeReview(cwd: string, fingerprint: string, itemId: string): Promise<UpgradeReviewResponse> {
+  const { config, plan } = await freshUpgradePlan(cwd);
+  if (!fingerprint || plan.fingerprint !== fingerprint) throw new Error('Upgrade preview is stale; refresh the preview before reviewing changes.');
+  const proposal = await getConflictProposal(cwd, config, plan, itemId);
+  const review = plan.review ?? await loadUpgradeReview(plan);
+  const saved = review.items.find((item) => item.itemId === itemId)
+    ?? { itemId, state: 'pending' as const, stale: false, sourceHash: proposal.sourceHash };
+  return { plan, proposal, review, saved };
+}
+
+export async function apiUpgradeOpenFile(
+  cwd: string,
+  request: UpgradeOpenFileRequest,
+  deps: { resolveEditor?: typeof resolveEditorCommand; launch?: typeof launchEditor } = {}
+): Promise<{ file: string }> {
+  const { plan } = await freshUpgradePlan(cwd);
+  if (!request.fingerprint || plan.fingerprint !== request.fingerprint) throw new Error('Upgrade preview is stale; refresh the preview before opening this file.');
+  const item = plan.items.find((row) => row.id === request.itemId && (row.status === 'conflict' || row.status === 'invalid'));
+  if (!item) throw new Error(`Upgrade conflict not found: ${request.itemId}`);
+  if (!await exists(item.file)) throw new Error(`Upgrade artifact file not found: ${item.file}`);
+  const resolveEditor = deps.resolveEditor ?? resolveEditorCommand;
+  const launch = deps.launch ?? launchEditor;
+  const command = resolveEditor({ web: true });
+  await launch(command, item.file, { wait: false, stdio: 'ignore' });
+  return { file: item.file };
+}
+
+export async function apiUpgradeResolve(cwd: string, request: UpgradeResolveRequest): Promise<{ review: UpgradeReviewSummary; saved: UpgradeReviewItemState }> {
+  const { config, plan } = await freshUpgradePlan(cwd);
+  if (!request.fingerprint || plan.fingerprint !== request.fingerprint) throw new Error('Upgrade preview is stale; refresh the preview before confirming changes.');
+  const item = plan.items.find((row) => row.id === request.itemId && (row.status === 'conflict' || row.status === 'invalid'));
+  if (!item) throw new Error(`Upgrade conflict not found: ${request.itemId}`);
+  let proposedContent: string | undefined;
+  let ownership = item.ownership;
+  let forceMode = item.forceMode;
+  if (request.state !== 'keep-current') {
+    const proposal = await getConflictProposal(cwd, config, plan, request.itemId);
+    ownership = proposal.ownership; forceMode = proposal.forceMode;
+    if (request.state === 'force-latest') {
+      if (proposal.forceMode === 'none') throw new Error('Force upgrade is unavailable because Engram cannot prove ownership of this artifact.');
+      proposedContent = proposal.latest || proposal.proposed;
+    } else {
+      if (!proposal.replaceable) throw new Error(`${item.kind} conflict requires Keep current or an explicit Force upgrade.`);
+      proposedContent = request.state === 'accept-latest' ? proposal.proposed : request.proposedContent;
+      if (proposedContent === undefined) throw new Error('Edited upgrade content is required.');
+      const validation = validateConflictProposal(proposal, proposedContent);
+      if (!validation.valid) throw new Error(validation.error ?? 'Proposed upgrade content is invalid.');
+    }
+  }
+  const review = await saveUpgradeResolution(plan, {
+    itemId: item.id,
+    state: request.state,
+    sourceHash: item.currentHash ?? '',
+    proposedContent,
+    ownership: request.state === 'force-latest' ? ownership : undefined,
+    forceMode: request.state === 'force-latest' ? forceMode : undefined,
+    updatedAt: new Date().toISOString()
+  });
+  const saved = review.items.find((row) => row.itemId === item.id) as UpgradeReviewItemState;
+  return { review, saved };
+}
+
+export async function apiUpgradeResolveBatch(cwd: string, request: UpgradeBatchResolveRequest): Promise<{ review: UpgradeReviewSummary; saved: UpgradeReviewItemState[] }> {
+  const { config, plan } = await freshUpgradePlan(cwd);
+  if (!request.fingerprint || plan.fingerprint !== request.fingerprint) throw new Error('Upgrade preview is stale; refresh the preview before confirming changes.');
+  if (!Array.isArray(request.itemIds) || request.itemIds.length === 0) throw new Error('Select at least one upgrade conflict to confirm.');
+  const itemIds = [...new Set(request.itemIds)];
+  const review = plan.review ?? await loadUpgradeReview(plan);
+  const resolutions: UpgradeConflictResolution[] = [];
+  const updatedAt = new Date().toISOString();
+  for (const itemId of itemIds) {
+    const item = plan.items.find((row) => row.id === itemId && (row.status === 'conflict' || row.status === 'invalid'));
+    if (!item) throw new Error(`Selected upgrade conflict no longer exists: ${itemId}`);
+    const saved = review.items.find((row) => row.itemId === itemId);
+    if (!saved || saved.state !== 'pending') throw new Error(`Selected upgrade conflict was already reviewed: ${item.file}`);
+    if (saved.stale) throw new Error(`Review this stale conflict individually before bulk confirmation: ${item.file}`);
+    const proposal = await getConflictProposal(cwd, config, plan, itemId);
+    if (!proposal.replaceable) throw new Error(`${item.kind} conflict can only be reviewed individually.`);
+    const validation = validateConflictProposal(proposal, proposal.proposed);
+    if (!validation.valid) throw new Error(validation.error ?? 'Proposed upgrade content is invalid.');
+    resolutions.push({ itemId, state: 'accept-latest' as const, sourceHash: proposal.sourceHash, proposedContent: proposal.proposed, updatedAt });
+  }
+  const nextReview = await saveUpgradeResolutions(plan, resolutions);
+  const saved = itemIds.map((itemId) => nextReview.items.find((row) => row.itemId === itemId) as UpgradeReviewItemState);
+  return { review: nextReview, saved };
+}
+
+export async function apiUpgradeApply(cwd: string, request: UpgradeApplyRequest): Promise<UpgradeApplyResult> {
+  if (request.confirmed !== true) throw new Error('Upgrade confirmation required.');
+  const { config, plan } = await freshUpgradePlan(cwd);
+  if (!request.fingerprint || plan.fingerprint !== request.fingerprint) throw new Error('Upgrade preview is stale; refresh the preview before applying changes.');
+  return applyUpgradePlan(cwd, config, plan, { confirmed: true, review: plan.review });
+}
+
+export type AuthorSetRequest = { scope: AuthorScope; name: string; email: string; confirmed?: boolean };
+export type AuthorUnsetRequest = { scope: AuthorScope; confirmed?: boolean };
+
+export async function apiAuthorState(cwd: string): Promise<AuthorState> {
+  return getAuthorState(cwd);
+}
+
+export async function apiAuthorSet(cwd: string, request: AuthorSetRequest): Promise<AuthorMutationResult> {
+  if (request.confirmed !== true) throw new Error('Author settings change requires explicit confirmation');
+  return setAuthorProfile(cwd, request.scope, { name: request.name, email: request.email });
+}
+
+export async function apiAuthorUnset(cwd: string, request: AuthorUnsetRequest): Promise<AuthorMutationResult> {
+  if (request.confirmed !== true) throw new Error('Author settings change requires explicit confirmation');
+  return unsetAuthorProfile(cwd, request.scope);
+}
+
+export async function apiAuthorSyncPlan(cwd: string): Promise<GitAuthorSyncPlan> {
+  return planGlobalGitAuthorSync(cwd);
+}
+
+export async function apiAuthorSync(cwd: string, confirmed: boolean): Promise<GitAuthorSyncResult> {
+  return syncGlobalGitAuthor(cwd, { confirmed });
+}
+
+export async function apiAuthorMigrationPlan(cwd: string, scope: AuthorMigrationScope): Promise<AuthorMigrationPlan> {
+  return planAuthorMemoryMigration(cwd, scope);
+}
+
+export async function apiAuthorMigration(cwd: string, scope: AuthorMigrationScope, confirmed: boolean): Promise<AuthorMigrationResult> {
+  return migrateMemoryAuthors(cwd, scope, { confirmed });
 }
 
 export function apiConfigValidate(patch: unknown): ConfigPatchValidation {
@@ -192,13 +365,14 @@ export async function apiReviewWrite(cwd: string, request: ReviewWriteRequest): 
   if (updates.length > 1) throw new Error('Choose only one replacement memory');
   const updateId = updates[0] ?? candidate.updateId;
   const ctx = await getContext(cwd);
-  const author = await resolveAuthor();
+  const author = await requireResolvedAuthor(cwd);
   const plans = await planMemorySave({
     ctx,
     text: candidate.text,
     type: candidate.type,
     scopes: [request.scope],
-    author,
+    authorName: author.name,
+    authorEmail: author.email,
     role: candidate.role,
     context: candidate.context,
     triggers: candidate.triggers,
@@ -720,6 +894,15 @@ export interface MemoriesGraphNode {
   tags?: string[];
   summary?: string;
   updated?: string;
+  authority?: 'instruction' | 'reference';
+  evidenceRefs?: string[];
+  derivedFrom?: string[];
+  revision?: number;
+  supersedes?: string[];
+  supersededBy?: string;
+  validFrom?: string;
+  validUntil?: string;
+  lastConfirmed?: string;
   dependencyDepth?: number;
   canView: boolean;
   canDelete: boolean;
@@ -1011,6 +1194,15 @@ function memoryGraphNode(entry: PanelMemoryEntry, activeProfile: string, workspa
     tags: entry.tags,
     summary: entry.summary,
     updated: entry.updated,
+    authority: entry.authority,
+    evidenceRefs: entry.evidenceRefs,
+    derivedFrom: entry.derivedFrom,
+    revision: entry.revision,
+    supersedes: entry.supersedes,
+    supersededBy: entry.supersededBy,
+    validFrom: entry.validFrom,
+    validUntil: entry.validUntil,
+    lastConfirmed: entry.lastConfirmed,
     dependencyDepth: entry.dependencyDepth,
     canView: true,
     canDelete: sourceScope !== 'profile' || entry.scope === 'global',
@@ -1312,7 +1504,7 @@ function corePrompts(filter: CoreScopeFilter, duplicates: CoreDuplicateCandidate
 export async function apiGetMemoryContent(cwd: string, profileName: string, scope: Scope, file: string): Promise<string> {
   const ctx = await getContext(cwd);
   const activeProfile = ctx.profile.active || '<none>';
-  
+
   let root = '';
   if (profileName === activeProfile) {
     root = scope === 'workspace' ? ctx.roots.workspace : ctx.roots.global;

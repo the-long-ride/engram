@@ -300,3 +300,37 @@
   .config-policy-intro { align-items: stretch; flex-direction: column; }
   .review-properties { grid-template-columns: 1fr; }
 }
+
+/* Shared checkbox treatment across the control panel. */
+input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  border: 1px solid var(--g500);
+  border-radius: 4px;
+  background: var(--bg);
+  appearance: none;
+  accent-color: var(--green);
+  cursor: pointer;
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-content: center;
+  transition: background 100ms, border-color 100ms, box-shadow 100ms;
+}
+input[type="checkbox"]::before {
+  width: 7px;
+  height: 4px;
+  border-bottom: 2px solid #fff;
+  border-left: 2px solid #fff;
+  content: "";
+  transform: translateY(-1px) rotate(-45deg) scale(0);
+  transform-origin: center;
+}
+input[type="checkbox"]:hover:not(:disabled) { border-color: var(--g800); }
+input[type="checkbox"]:checked { border-color: var(--green); background: var(--green); }
+input[type="checkbox"]:checked::before { transform: translateY(-1px) rotate(-45deg) scale(1); }
+input[type="checkbox"]:focus-visible { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 28%, transparent); }
+input[type="checkbox"]:disabled { cursor: not-allowed; opacity: .45; }
+@media (forced-colors: active) {
+  input[type="checkbox"] { appearance: auto; accent-color: AccentColor; }
+}

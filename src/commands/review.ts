@@ -12,7 +12,8 @@ import { style } from '../core/cli/format.js';
 import { planMemorySave, previewSavePlans, type SavePlan } from '../core/memory/save-plan.js';
 import { parseMemoryCandidate, type MemoryCandidate } from '../core/memory/memory-candidate.js';
 import { requestApproval, applyApprovalEdit } from '../core/safety/approval.js';
-import { resolveAuthor, writeApprovedMemory } from '../core/memory/storage.js';
+import { writeApprovedMemory } from '../core/memory/storage.js';
+import { requireResolvedAuthor } from '../core/author/resolve.js';
 import { flagValues } from '../cli/args.js';
 
 type Scope = 'workspace' | 'global';
@@ -245,12 +246,12 @@ async function cmdReviewApply(ctx: EngramContext, rest: string[], flags: Record<
     dependsOn,
     ...(updateValues.length ? { updateId: updateValues[updateValues.length - 1] } : {})
   };
-  const author = await resolveAuthor();
+  const author = await requireResolvedAuthor(process.cwd());
   const roleValue = typeof flags.role === 'string' ? flags.role : typeof flags.roles === 'string' ? flags.roles : '';
   const role = candidate.role?.length ? candidate.role : roleValue ? roleValue.split(',').map((r: string) => r.trim()).filter(Boolean) : undefined;
   const force = flags.force === true || flags.f === true;
   const plans = await planMemorySave({
-    ctx, text: candidate.text, type: candidate.type, scopes: [receipt.candidate.scope], author, role,
+    ctx, text: candidate.text, type: candidate.type, scopes: [receipt.candidate.scope], authorName: author.name, authorEmail: author.email, role,
     context: candidate.context, triggers: candidate.triggers,
     dependsOn: candidate.dependsOn, level: candidate.level,
     updateId: candidate.updateId, parent: candidate.parent, variants: candidate.variants

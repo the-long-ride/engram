@@ -1,5 +1,5 @@
 // Fetch helpers for the Engram React control panel API.
-import type { ApiResult, PanelData } from './types.js';
+import type { ApiResult, AuthorMigrationDto, AuthorStateDto, PanelData, UpgradeApplyResultDto, UpgradePlanDto, UpgradeReviewItemStateDto, UpgradeReviewResponseDto, UpgradeReviewSummaryDto } from './types.js';
 
 const CSRF_TOKEN_HEADER = 'X-Engram-CSRF';
 
@@ -58,3 +58,47 @@ export function policyStatus(): Promise<ApiResult> { return getJson('/api/policy
 export function savePolicyPatch(patch: Record<string, unknown>): Promise<ApiResult> { return postJson('/api/policy', { patch }); }
 export function capabilities(): Promise<ApiResult> { return getJson('/api/capabilities'); }
 export function doctorStatus(): Promise<ApiResult> { return getJson('/api/doctor'); }
+
+export function loadAuthorState(): Promise<ApiResult<AuthorStateDto>> { return getJson('/api/author'); }
+export function setAuthorProfile(body: { scope: 'global' | 'workspace'; name: string; email: string; confirmed: true }): Promise<ApiResult> { return postJson('/api/author/set', body); }
+export function unsetAuthorProfile(body: { scope: 'global' | 'workspace'; confirmed: true }): Promise<ApiResult> { return postJson('/api/author/unset', body); }
+export function planGlobalGitAuthorSync(): Promise<ApiResult> { return postJson('/api/author/sync-git-global/plan', {}); }
+export function syncGlobalGitAuthor(confirmed: true): Promise<ApiResult> { return postJson('/api/author/sync-git-global', { confirmed }); }
+export function planAuthorMemoryMigration(scope: 'workspace' | 'global' | 'both'): Promise<ApiResult<AuthorMigrationDto>> { return postJson('/api/author/migrate/plan', { scope }); }
+export function migrateMemoryAuthors(scope: 'workspace' | 'global' | 'both', confirmed: true): Promise<ApiResult<AuthorMigrationDto>> { return postJson('/api/author/migrate', { scope, confirmed }); }
+
+export async function loadUpgradePlan(): Promise<UpgradePlanDto> {
+  const response = await getJson<ApiResult<UpgradePlanDto>>('/api/upgrade/plan');
+  if (!response.data) throw new Error(response.error || 'Upgrade plan response is missing data');
+  return response.data;
+}
+export async function applyUpgradePlan(fingerprint: string, confirmed: true): Promise<UpgradeApplyResultDto> {
+  const response = await postJson<ApiResult<UpgradeApplyResultDto>>('/api/upgrade/apply', { fingerprint, confirmed });
+  if (!response.data) throw new Error(response.error || 'Upgrade result response is missing data');
+  return response.data;
+}
+
+
+export async function loadUpgradeReview(fingerprint: string, itemId: string): Promise<UpgradeReviewResponseDto> {
+  const response = await getJson<ApiResult<UpgradeReviewResponseDto>>(`/api/upgrade/review?fingerprint=${encodeURIComponent(fingerprint)}&item=${encodeURIComponent(itemId)}`);
+  if (!response.data) throw new Error(response.error || 'Upgrade review response is missing data');
+  return response.data;
+}
+
+export async function saveUpgradeReview(body: { fingerprint: string; itemId: string; state: 'accept-latest' | 'edited' | 'keep-current' | 'force-latest'; proposedContent?: string }): Promise<{ review: UpgradeReviewSummaryDto }> {
+  const response = await postJson<ApiResult<{ review: UpgradeReviewSummaryDto }>>('/api/upgrade/review', body);
+  if (!response.data) throw new Error(response.error || 'Upgrade review save response is missing data');
+  return response.data;
+}
+
+export async function saveUpgradeReviewsBatch(fingerprint: string, itemIds: string[]): Promise<{ review: UpgradeReviewSummaryDto; saved: UpgradeReviewItemStateDto[] }> {
+  const response = await postJson<ApiResult<{ review: UpgradeReviewSummaryDto; saved: UpgradeReviewItemStateDto[] }>>('/api/upgrade/review/batch', { fingerprint, itemIds });
+  if (!response.data) throw new Error(response.error || 'Upgrade batch review response is missing data');
+  return response.data;
+}
+
+export async function openUpgradeFile(fingerprint: string, itemId: string): Promise<{ file: string }> {
+  const response = await postJson<ApiResult<{ file: string }>>('/api/upgrade/open-file', { fingerprint, itemId });
+  if (!response.data) throw new Error(response.error || 'Upgrade open-file response is missing data');
+  return response.data;
+}

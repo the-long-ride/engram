@@ -17,16 +17,27 @@ export async function cmdObserve(args: string[], flags: Record<string, any> = {}
   const sourceFile = observeFile(flags);
   const text = sourceFile ? (sourceFile === '-' ? await readTextFromStdin() : await readText(path.resolve(sourceFile))) : args.join(' ').trim();
   if (!text) throw new Error('observe requires text or --file <path>');
-  const observed = await writeObservation(root, text, sourceFile ? path.relative(process.cwd(), path.resolve(sourceFile)) : '');
+  const observed = await writeObservation(
+    root,
+    text,
+    sourceFile ? path.relative(process.cwd(), path.resolve(sourceFile)) : '',
+    { host: 'cli', sessionId: String(flags.session ?? 'manual'), source: 'observe' }
+  );
   if (flags.propose === true) {
     const nextFlags = { ...flags };
     delete nextFlags.file;
     delete nextFlags.f;
     delete nextFlags.propose;
-    const saved = await cmdSaveSession([observed.text], nextFlags);
-    return `Observed -> ${observed.fullPath}\n${observeSafetyLine(observed)}\n${saved}`;
+    const saved = await cmdSaveSession([observed.text], nextFlags, {
+      source: 'observe',
+      sourceHashes: [observed.sourceHash],
+      evidenceRefs: [observed.traceId],
+      derivedFrom: [observed.sessionId],
+      evidenceScope: scope
+    });
+    return `Observed -> ${observed.fullPath}\nTrace: ${observed.traceId}\n${observeSafetyLine(observed)}\n${saved}`;
   }
-  return `Observed -> ${observed.fullPath}\n${observeSafetyLine(observed)}\nNext: engram save-session --file ${observed.fullPath}`;
+  return `Observed -> ${observed.fullPath}\nTrace: ${observed.traceId}\n${observeSafetyLine(observed)}\nNext: engram save-session --file ${observed.fullPath}`;
 }
 
 function observeFile(flags: Record<string, any>): string {

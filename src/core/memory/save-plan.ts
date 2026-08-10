@@ -44,7 +44,7 @@ export type SavePreviewOptions = {
 
 /** Choose whether each scope should add a new memory or update an existing one. */
 export async function planMemorySave(input: {
-  ctx: EngramContext; text: string; type: MemoryType; scopes: Scope[]; author: string; role?: string[]; context?: string; triggers?: string[]; dependsOn?: string[]; level?: string; updateId?: string; parent?: string[]; source?: MemorySourceMeta; taskType?: TaskType; variants?: Partial<Record<'light' | 'balanced' | 'strict', string>>; confidence?: Confidence;
+  ctx: EngramContext; text: string; type: MemoryType; scopes: Scope[]; authorName: string; authorEmail: string; role?: string[]; context?: string; triggers?: string[]; dependsOn?: string[]; level?: string; updateId?: string; parent?: string[]; source?: MemorySourceMeta; taskType?: TaskType; variants?: Partial<Record<'light' | 'balanced' | 'strict', string>>; confidence?: Confidence;
 }): Promise<SavePlan[]> {
   const plans: SavePlan[] = [];
   const options = { ruleVariants: true };
@@ -57,10 +57,10 @@ export async function planMemorySave(input: {
     const parentIds = normalizeParentRefs(input.parent ?? []);
     const related = relatedMemoryHints(input.ctx, input.text, input.type, scope, match?.entry, parentIds);
     if (match) {
-      const content = updateMemory(match.raw, { text: input.text, type: input.type, scope, author: input.author, role: input.role, context: input.context, triggers: input.triggers, dependsOn: input.dependsOn, level: input.level, parent: input.parent, source: input.source, taskType: input.taskType, variants: input.variants, confidence: input.confidence }, options);
+      const content = updateMemory(match.raw, { text: input.text, type: input.type, scope, authorName: input.authorName, authorEmail: input.authorEmail, role: input.role, context: input.context, triggers: input.triggers, dependsOn: input.dependsOn, level: input.level, parent: input.parent, source: input.source, taskType: input.taskType, variants: input.variants, confidence: input.confidence }, options);
       plans.push({ action: 'update', scope, file: match.entry.file, id: match.entry.id, content, previousContent: match.raw, matchScore: match.score, related, message: `update ${input.type}: ${match.entry.id}` });
     } else {
-      const draft = draftMemory({ text: input.text, type: input.type, scope, author: input.author, role: input.role, context: input.context, triggers: input.triggers, dependsOn: input.dependsOn, level: input.level, parent: input.parent, source: input.source, taskType: input.taskType, variants: input.variants, confidence: input.confidence }, options);
+      const draft = draftMemory({ text: input.text, type: input.type, scope, authorName: input.authorName, authorEmail: input.authorEmail, role: input.role, context: input.context, triggers: input.triggers, dependsOn: input.dependsOn, level: input.level, parent: input.parent, source: input.source, taskType: input.taskType, variants: input.variants, confidence: input.confidence }, options);
       const unique = await avoidCollision(input.ctx, scope, draft, input.text);
       plans.push({ action: 'add', scope, file: unique.file, id: unique.id, content: unique.content, related, message: `add ${input.type}: ${unique.id}` });
     }

@@ -16,12 +16,14 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
   const ignoreActions = ['status', 'check', 'add'].join(' ');
   const workspaceActions = ['list', 'info', 'set', 'unregister', 'link', 'unlink'].join(' ');
   const configActions = ['view', 'set'].join(' ');
+  const authorActions = ['show', 'set', 'unset', 'sync-git-global', 'migrate-memories'].join(' ');
+  const authorArgs = ['--scope', '--name', '--email', '--plan', '--confirm', '--json'].join(' ');
   const saveSessionArgs = ['--file', '--scope', '--profile', '--role', '--roles', '--query-level', '--force', '--inbox', '--show-rule-variants'].join(' ');
   const observeArgs = ['--file', '--scope', '--profile', '--role', '--roles', '--propose'].join(' ');
   const takeControlArgs = ['--file', '--dir', '--include', '--exclude', '--max-sources', '--max-chars', '--scope', '--profile', '--role', '--roles', '--all', '--force', '--metacognize', '--dry-run', '--plan'].join(' ');
   const metacognizeArgs = ['--workspace', '--global', '--all', '--force', '--dry-run'].join(' ');
   const resolveConflictArgs = ['--dry-run', '--metacognize', '--force'].join(' ');
-  const upgradeArgs = ['--plan', '--latest', '--self', '--memory-only', '--global-skillsets-only', '--configs-only', '--target', '--force', '--no-version-check', '--no-auto-upgrade'].join(' ');
+  const upgradeArgs = ['--plan', '--latest', '--migrate-memories', '--no-migrate-memories', '--self', '--memory-only', '--global-skillsets-only', '--configs-only', '--target', '--force', '--no-version-check', '--no-auto-upgrade'].join(' ');
   const globalFolderArgs = ['--move-from-path'].join(' ');
   const cloneMemoryArgs = ['workspace', 'global', '--force', '--dry-run', '--metacognize'].join(' ');
   const skillsetTargets = ['all', 'list', 'agents-md', 'codex', 'copilot', 'claude', 'cursor', 'gemini', 'cline', 'windsurf', 'opencode', 'open-code', 'mcp', 'slash'].join(' ');
@@ -41,6 +43,9 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       `      _arguments "--force" "--global-only" "--scope[default save target]:scope:(${scopes})" "--no-skillset" "--skillset=[target]" "--submodule" "--submodule-remote=[git-url]" "--no-global" "--global-path=[path]" "--global-remote=[git-url]" "--global-branch=[branch]"`,
       '      ;;',
       `    completion|c)\n      _arguments "1:shell:(${shells})"\n      ;;`,
+      '    author)',
+      `      _arguments "--scope[author scope]:scope:(${scopes})" "--name[author name]:name:" "--email[author email]:email:" "--plan[preview only]" "--confirm[confirm mutation]" "--json[JSON output]" "1:action:(${authorActions})"`,
+      '      ;;',
       '    profile|pf)',
       `      _arguments "--global-path[path]:path:_files -/" "--scope[default save target]:scope:(${scopes})" "--profile[run command with profile]:profile:" "--from-profile[source profile]:profile:" "--to-profile[target profile]:profile:" "--workspace[set workspace default]" "--user[set user default]" "--use[make created profile active]" "--force[overwrite profile or merge destination]" "--dry-run[preview merge only]" "1:action:(${profileActions})"`,
       '      ;;',
@@ -116,7 +121,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       `      _arguments "1:action:(${configActions})"`,
       '      ;;',
       '    upgrade|up)',
-      `      _arguments "--plan" "--latest" "--self" "--memory-only" "--global-skillsets-only" "--target=[agent]:agent:(${skillsetTargets})" "--force" "--no-version-check"`,
+      `      _arguments "--plan" "--latest" "--migrate-memories" "--no-migrate-memories" "--self" "--memory-only" "--global-skillsets-only" "--configs-only" "--target=[agent]:agent:(${skillsetTargets})" "--force" "--no-version-check"`,
       '      ;;',
       '  esac',
       '}',
@@ -141,6 +146,8 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       `$engramProfileActions = @(${profileActions.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
       `$engramWorkspaceActions = @(${workspaceActions.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
       `$engramConfigActions = @(${configActions.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
+      `$engramAuthorActions = @(${authorActions.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
+      `$engramAuthorArgs = @(${authorArgs.split(' ').map((arg) => `'${arg}'`).join(', ')})`,
       `$engramSkillsetTargets = @(${skillsetTargets.split(' ').map((target) => `'${target}'`).join(', ')})`,
       `$engramAgentHookTargets = @(${agentHookTargets.split(' ').map((target) => `'${target}'`).join(', ')})`,
       '$engramScopes = @(\'workspace\', \'global\', \'both\')',
@@ -171,6 +178,7 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
       '    default {',
       '      switch ($command) {',
       '        { $_ -in @(\'inject\', \'i\') } { $engramInjectArgs; break }',
+      '        { $_ -eq \'author\' } { $engramAuthorActions + $engramAuthorArgs; break }',
       '        { $_ -in @(\'profile\', \'pf\') } { $engramProfileActions + \'--global-path\' + \'--scope\' + \'--workspace\' + \'--user\' + \'--use\' + \'--force\' + \'--dry-run\' + \'--from-profile\' + \'--to-profile\'; break }',
       '        { $_ -in @(\'save\', \'s\') } { $engramSaveTypes; break }',
       '        { $_ -in @(\'save-session\', \'ss\') } { $engramSaveSessionArgs; break }',
@@ -228,6 +236,8 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
     `  local ignore_actions="${ignoreActions}"`,
     `  local workspace_actions="${workspaceActions}"`,
     `  local config_actions="${configActions}"`,
+    `  local author_actions="${authorActions}"`,
+    `  local author_args="${authorArgs}"`,
     `  local upgrade_args="${upgradeArgs}"`,
     `  local metacognize_args="${metacognizeArgs}"`,
     `  local resolve_conflict_args="${resolveConflictArgs}"`,
@@ -285,6 +295,10 @@ export function completionScript(shell: 'bash' | 'zsh' | 'powershell' = 'bash'):
     '    completion|c)',
     '      if [[ $cword -eq 2 ]]; then COMPREPLY=( $(compgen -W "$shells" -- "$cur") ); return; fi',
     '      COMPREPLY=()',
+    '      return',
+    '      ;;',
+    '    author)',
+    '      COMPREPLY=( $(compgen -W "$author_actions $author_args" -- "$cur") )',
     '      return',
     '      ;;',
     '    update-global-folder|ugf)',

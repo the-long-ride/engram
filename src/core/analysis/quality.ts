@@ -1,6 +1,6 @@
 /** Deterministic memory quality and health scoring. */
 import type { MemoryEntry } from '../runtime/types.js';
-import { effectiveMemoryLines, parseMemory, resolveMemoryLimits, type MemoryLimits } from '../memory/schema.js';
+import { effectiveMemoryLines, memorySchemaVersion, parseMemory, resolveMemoryLimits, type MemoryLimits } from '../memory/schema.js';
 import { style } from '../cli/format.js';
 
 /** Score one memory on specificity, completeness, and freshness. */
@@ -8,8 +8,15 @@ export function scoreMemory(raw: string, limits?: MemoryLimits): { score: number
   const doc = parseMemory(raw);
   const issues: string[] = [];
   let score = 100;
-  if (!doc.body.includes('## Example')) { score -= 25; issues.push('missing example'); }
-  if (!doc.body.includes('## Context')) { score -= 20; issues.push('missing context'); }
+  const version = memorySchemaVersion(doc);
+  if (version === 1) {
+    if (!doc.body.includes('## Example')) { score -= 25; issues.push('missing example'); }
+    if (!doc.body.includes('## Context')) { score -= 20; issues.push('missing context'); }
+  }
+  if (version === 3 && !doc.frontmatter.authority) {
+    score -= 20;
+    issues.push('missing authority');
+  }
   if (/usually|typically|maybe|might/i.test(doc.body)) { score -= 15; issues.push('vague wording'); }
   const { ruleLineTarget } = resolveMemoryLimits(limits);
   if (doc.frontmatter.type === 'rule' && effectiveMemoryLines(doc.raw) > ruleLineTarget) {

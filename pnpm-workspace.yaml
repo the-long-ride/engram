@@ -3,3 +3,16 @@ allowBuilds:
   esbuild: set this to true or false
   tesseract.js: set this to true or false
   unrs-resolver: set this to true or false
+
+overrides:
+  brace-expansion: '^2.0.2'
+  dompurify: '^3.4.13'
+  fast-uri: '^3.0.3'
+  js-yaml: '^5.2.3'
+  mermaid: '^11.16.1'
+  nanoid: '^5.1.5'
+  pdfjs-dist: '^4.10.38'
+  postcss: '^8.5.23'
+  postcss-svgo>svgo: '3.3.2'
+  svgo: '3.3.2'
+  undici: '^7.29.0'

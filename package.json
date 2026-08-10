@@ -108,6 +108,16 @@
     "react-dom": "^19.2.7"
   },
   "overrides": {
-    "js-yaml": "^3.14.2"
+    "brace-expansion": "^2.0.2",
+    "dompurify": "^3.4.13",
+    "fast-uri": "^3.0.3",
+    "image-size": "^2.0.0",
+    "js-yaml": "^4.1.0",
+    "mermaid": "^11.16.1",
+    "nanoid": "^5.1.5",
+    "pdfjs-dist": "^4.10.38",
+    "postcss": "^8.4.31",
+    "svgo": "^3.3.2",
+    "undici": "^6.21.1"
   }
 }

@@ -56,7 +56,7 @@ describe('Git settings', () => {
     expect(screen.getByRole('heading', { name: 'Git' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Global Git configuration' })).toBeInTheDocument();
     expect(screen.getByDisplayValue('main')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Workspace author' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Workspace author' }));
     expect(screen.queryByRole('heading', { name: 'Global Git configuration' })).not.toBeInTheDocument();
     expect(screen.queryByDisplayValue('main')).not.toBeInTheDocument();
   });
@@ -95,7 +95,7 @@ describe('Git settings', () => {
     expect(link).toHaveAttribute('rel', 'noopener noreferrer');
     expect(link.getAttribute('href')).toContain('/operations/git-author-settings#global-author');
     expect(screen.getAllByText('engram author set --help').length).toBeGreaterThan(0);
-    fireEvent.click(screen.getByRole('button', { name: 'Workspace author' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Workspace author' }));
     expect(screen.getByLabelText('Author name')).toHaveValue('Jane Work');
     expect(screen.queryByRole('button', { name: 'Sync to global Git' })).not.toBeInTheDocument();
   });
@@ -147,7 +147,7 @@ describe('Git settings', () => {
 
   test('workspace removal calls unset only after confirmation', async () => {
     const { modal } = setup();
-    fireEvent.click(screen.getByRole('button', { name: 'Workspace author' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Workspace author' }));
     fireEvent.click(screen.getByRole('button', { name: 'Remove profile' }));
     expect(api.unsetAuthorProfile).not.toHaveBeenCalled();
     render(modal.open.mock.calls[0][0].content);
@@ -184,7 +184,7 @@ describe('Git settings', () => {
       expect(link).toHaveAttribute('target', '_blank');
       expect(link).toHaveAttribute('rel', 'noopener noreferrer');
       expect(link).toHaveAttribute('aria-label');
-      expect(link.getAttribute('href')).toContain('/operations/git-author-settings#');
+      expect(link.getAttribute('href')).toMatch(/the-long-ride\.github\.io\/engram(?:\/[a-z]{2})?\/docs\/(?:operations\/git-author-settings|entry\/field-reference)#.+/);
     }
     for (const command of [
       'engram author set --help',

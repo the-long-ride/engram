@@ -10,7 +10,7 @@ test('defaults to inline and marks removed, added, and unchanged lines', () => {
   expect(screen.getByRole('tab', { name: 'Parallel' })).toHaveAttribute('aria-selected', 'false');
   expect(screen.getByText('- old')).toHaveClass('upgrade-diff-line--removed');
   expect(screen.getByText('+ new')).toHaveClass('upgrade-diff-line--added');
-  expect(screen.getByText('  keep')).toHaveClass('upgrade-diff-line--unchanged');
+  expect(screen.getByText('keep')).toHaveClass('upgrade-diff-line--unchanged');
 });
 
 test('parallel mode aligns current and proposed replacement cells', () => {

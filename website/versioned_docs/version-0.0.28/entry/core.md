@@ -1,12 +1,12 @@
 ---
-title: Maintain tab
+title: Core tab
 sidebar_position: 7
 description: Review duplicate and conflicting memories with scope and type filters.
 ---
 
-# Maintain tab
+# Core tab
 
-The Maintain tab reviews duplicate and conflicting memories. It is the metacognition workspace inside the Entry panel.
+The Core tab reviews duplicate and conflicting memories. It is the metacognition workspace inside the Entry panel.
 
 ## Scope chips: profile / global / workspace {#scope-chips-profile-global-workspace}
 

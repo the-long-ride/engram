@@ -9,6 +9,9 @@
 - Added exact version-aware reference links for every visible Construct config field and every Auto-save Policy control.
 - Added a canonical Auto-save Policy reference and automated config/policy anchor drift checks.
 - Documented compact default loads, broader `--full` loads, explicit force-save terminology, and dependency ordering updates.
+- Renamed Entry Web UI `Maintain` tab to `Core`, compacted Global author settings layout, and restructured the Core tab with a horizontal 3-column prompt row and full-width Duplicate Candidates card.
+- Standardized prompt action buttons, made panel Cards non-collapsible by default, and replaced native browser confirm popups with custom confirmation modal dialogs for AI agent unlinking.
+- Fixed workspace AI agent unlinking (`apiAgentUnlink`) to always clean workspace instruction blocks, files, and hooks even when `config.scope` is `global`.
 - Upgraded TypeScript to `7.0.2`, Docusaurus to `3.10.2`, `tsx` to `4.23.1`, Geist to `5.3.0`, and the requested GitHub Actions majors.
 
 ## 0.0.27

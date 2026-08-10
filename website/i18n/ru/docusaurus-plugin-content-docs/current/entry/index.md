@@ -38,14 +38,14 @@ Every visible control maps to a CLI command or config key. Where a CLI equivalen
 | [Construct](construct.md) | Configure every Engram runtime field |
 | [Memories](memories.md) | Search, inspect, and archive active memory |
 | [Review](review.md) | Resolve findings and confirm reviewed memory writes |
-| [Maintain](core.md) | Review duplicate and conflicting memories |
+| [Core](core.md) | Review duplicate and conflicting memories |
 | [Connections](connections.md) | Detect and link supported AI agents |
 
 ## Next steps
 
 - [Launching the control panel](launch.md)
 - [Construct tab](construct.md)
-- [Maintain tab](core.md)
+- [Core tab](core.md)
 - [Complete field reference](field-reference.md)
 
 ## Git author identity

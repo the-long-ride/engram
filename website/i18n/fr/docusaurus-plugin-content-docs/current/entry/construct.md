@@ -310,4 +310,4 @@ Encryption config exists, but encrypted storage is not implemented yet. Document
 
 - [Complete field reference](field-reference.md)
 - [Memories tab](memories.md)
-- [Maintain tab](core.md)
+- [Core tab](core.md)

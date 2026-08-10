@@ -67,5 +67,5 @@ engram archive --reason "<why>" <id-or-file>
 
 ## Next steps
 
-- [Maintain tab](core.md)
+- [Core tab](core.md)
 - [CLI: verify / repair / quality-check](../cli/verify-repair-quality.md)

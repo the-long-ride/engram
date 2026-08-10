@@ -131,7 +131,7 @@ See the per-tab pages for non-config controls:
 - [Construct tab](construct.md)
 - [Memories tab](memories.md)
 - [Review tab](review.md)
-- [Maintain tab](core.md)
+- [Core tab](core.md)
 - [Connections tab](connections.md)
 
 Profile and workspace management are available in the Construct tab and through `engram profile` and `engram workspace`. See [Profiles and scope resolution](../concepts/profiles.md).

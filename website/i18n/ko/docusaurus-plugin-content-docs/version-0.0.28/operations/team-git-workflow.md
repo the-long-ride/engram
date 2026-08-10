@@ -67,4 +67,4 @@ engram author migrate-memories --plan
 engram author migrate-memories --confirm
 ```
 
-Read the complete [Git author settings guide](../operations/git-author-settings.md).
+Read the complete [Git author settings guide](git-author-settings.md).

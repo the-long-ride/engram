@@ -176,6 +176,11 @@ describe('Toast', () => {
     expect(toastDiv).toHaveClass('show', 'ok');
   });
 
+  test('renders error toast with err class', () => {
+    render(<Toast toast={{ id: 2, message: 'Upgrade failed', ok: false }} />);
+    expect(screen.getByText('Upgrade failed')).toHaveClass('show', 'err');
+  });
+
   test('renders empty toast when null', () => {
     const { container } = render(<Toast toast={null} />);
     expect(container.firstChild).not.toHaveClass('show');

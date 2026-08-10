@@ -23,6 +23,15 @@ describe('MemoryDetail', () => {
     scope: 'global',
     file: 'file1.md',
     summary: 'Summary Text',
+    authority: 'reference',
+    evidenceRefs: ['tr_ui_evidence_1'],
+    derivedFrom: ['session-ui-1'],
+    revision: 3,
+    supersedes: ['mem-0'],
+    supersededBy: 'mem-2',
+    validFrom: '2026-08-01',
+    validUntil: '2027-08-01',
+    lastConfirmed: '2026-08-05',
     canEdit: true,
     canDelete: true,
   } as any;
@@ -72,6 +81,15 @@ describe('MemoryDetail', () => {
     await waitFor(() => {
       expect(screen.getByText('Detailed memory content here')).toBeInTheDocument();
     });
+
+    expect(screen.getByText('reference')).toBeInTheDocument();
+    expect(screen.getByText('Revision 3')).toBeInTheDocument();
+    expect(screen.getByText('tr_ui_evidence_1')).toBeInTheDocument();
+    expect(screen.getByText('session-ui-1')).toBeInTheDocument();
+    expect(screen.getByText('mem-0')).toBeInTheDocument();
+    expect(screen.getByText('mem-2')).toBeInTheDocument();
+    expect(screen.getByText('2026-08-01 → 2027-08-01')).toBeInTheDocument();
+    expect(screen.getByText('Confirmed 2026-08-05')).toBeInTheDocument();
 
     expect(api.getJson).toHaveBeenCalledWith(
       '/api/memory?profile=personal&scope=global&file=file1.md'

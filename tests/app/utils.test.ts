@@ -2,7 +2,7 @@ import { fmtDate, relTime } from '../../src/core/web/app/utils/format.js';
 import { gv, uiValue, parseFieldValue, clientValidationError, groupFields } from '../../src/core/web/app/utils/config.js';
 import { copyText } from '../../src/core/web/app/utils/clipboard.js';
 import { safeText } from '../../src/core/web/app/utils/html.js';
-import { entryConfigFieldDoc, entryDoc, entryFieldGroupDoc, latestDocsVersion, resolveDocsVersion } from '../../src/core/web/app/utils/docs.js';
+import { detectDocsLocale, entryConfigFieldDoc, entryDoc, entryFieldGroupDoc, latestDocsVersion, operationDoc, resolveDocsVersion } from '../../src/core/web/app/utils/docs.js';
 import type { ConfigField } from '../../src/core/web/app/types.js';
 
 describe('format utils', () => {
@@ -152,6 +152,20 @@ describe('docs utils', () => {
       .toBe('https://the-long-ride.github.io/engram/docs/entry/field-reference#global-git-branch');
     expect(entryConfigFieldDoc('global-git-branch', '0.0.27', ['0.0.25', '0.0.27', '0.0.28']))
       .toBe('https://the-long-ride.github.io/engram/docs/version-0.0.27/entry/field-reference#global-git-branch');
+  });
+
+
+  test('builds localized operation links and falls back to English', () => {
+    const originalLanguage = navigator.language;
+    Object.defineProperty(navigator, 'language', { value: 'vi-VN', configurable: true });
+    document.documentElement.lang = 'en';
+    expect(detectDocsLocale()).toBe('vi');
+    expect(operationDoc('git-author-settings', 'global-author', 'vi', '0.0.28', ['0.0.27', '0.0.28']))
+      .toBe('https://the-long-ride.github.io/engram/vi/docs/operations/git-author-settings#global-author');
+    expect(operationDoc('git-author-settings', 'global-author', 'de', '0.0.28', ['0.0.27', '0.0.28']))
+      .toBe('https://the-long-ride.github.io/engram/docs/operations/git-author-settings#global-author');
+    Object.defineProperty(navigator, 'language', { value: originalLanguage, configurable: true });
+    document.documentElement.lang = 'en';
   });
 
 });

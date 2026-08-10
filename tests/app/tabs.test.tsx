@@ -240,17 +240,15 @@ describe('ConfigTab', () => {
 
     const { container } = render(<ConfigTab data={mockData} reload={reloadMock} toast={toastMock} />);
 
-    // Check input displays default value
-    const input = container.querySelector('[data-key="global_git.branch"] input') as HTMLInputElement;
-    expect(input.value).toBe('main');
+    // Global Git fields moved to Git > Global and are no longer rendered in Construct.
+    expect(container.querySelector('[data-key="global_git.branch"]')).toBeNull();
+    const future = container.querySelector('[data-key="future.flag"] button') as HTMLButtonElement;
+    expect(future).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Open Construct docs' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/construct');
-    expect(screen.getByRole('link', { name: 'Open Branch docs' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/field-reference#global-git-branch');
     expect(screen.getByRole('link', { name: 'Open Future Flag docs' })).toHaveAttribute('href', 'https://the-long-ride.github.io/engram/docs/entry/field-reference#future-flag');
 
-    // Change input value and blur to trigger dirty state change
-    fireEvent.change(input, { target: { value: 'dev' } });
-    fireEvent.blur(input);
-    expect(input.value).toBe('dev');
+    // Toggle the remaining Construct field to trigger dirty state change.
+    fireEvent.click(future);
 
     // Check review button (named 'Save changes') is present and clickable
     const reviewBtn = screen.getByRole('button', { name: 'Save changes' });
@@ -271,7 +269,7 @@ describe('ConfigTab', () => {
 
 
     await waitFor(() => {
-      expect(api.saveConfigPatch).toHaveBeenCalledWith({ 'global_git.branch': 'dev' });
+      expect(api.saveConfigPatch).toHaveBeenCalledWith({ 'future.flag': true });
       expect(toastMock).toHaveBeenCalledWith('Saved successfully');
       expect(reloadMock).toHaveBeenCalled();
     });
@@ -280,37 +278,41 @@ describe('ConfigTab', () => {
   test('allows resetting a dirty field', () => {
     const { container } = render(<ConfigTab data={mockData} reload={jest.fn()} toast={jest.fn()} />);
 
-    const input = container.querySelector('[data-key="global_git.branch"] input') as HTMLInputElement;
-    fireEvent.change(input, { target: { value: 'dev' } });
-    fireEvent.blur(input);
-    expect(input.value).toBe('dev');
-
+    const toggle = container.querySelector('[data-key="future.flag"] button') as HTMLButtonElement;
+    fireEvent.click(toggle);
     const resetBtn = container.querySelector('.cfg-reset') as HTMLButtonElement;
+    expect(resetBtn).toBeTruthy();
     fireEvent.click(resetBtn);
-    expect(input.value).toBe('main');
+    expect(container.querySelector('.cfg-reset')).toBeNull();
+  });
+
+  test('does not render Global Git fields in Construct', () => {
+    const { container } = render(<ConfigTab data={mockData} reload={jest.fn()} toast={jest.fn()} />);
+    expect(container.querySelector('[data-key="global_git.branch"]')).toBeNull();
+    expect(screen.queryByText('Global Git')).not.toBeInTheDocument();
   });
 });
 
 
 
-test('renders a field-specific documentation link for each config field', () => {
+test('renders a field-specific documentation link for each Construct config field', () => {
   const data = {
-    config: { global_git: { branch: 'main' } },
+    config: { graph: { max_related: 8 } },
     configFields: [{
-      key: 'global_git.branch',
-      group: 'Global Git',
-      label: 'Branch',
-      docsAnchor: 'global-git-branch',
-      input: 'text',
-      risk: 'risky',
+      key: 'graph.max_related',
+      group: 'Graph',
+      label: 'Max related',
+      docsAnchor: 'graph-max-related',
+      input: 'number',
+      risk: 'normal',
     }],
   } as any;
 
   render(<ConfigTab data={data} reload={jest.fn()} toast={jest.fn()} />);
 
-  expect(screen.getByRole('link', { name: 'Open Branch docs' })).toHaveAttribute(
+  expect(screen.getByRole('link', { name: 'Open Max related docs' })).toHaveAttribute(
     'href',
-    expect.stringContaining('/entry/field-reference#global-git-branch'),
+    expect.stringContaining('/entry/field-reference#graph-max-related'),
   );
 });
 

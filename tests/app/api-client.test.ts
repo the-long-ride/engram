@@ -6,7 +6,13 @@ import {
   validateConfigPatch,
   initializeWorkspace,
   shutdownServer,
-  browseDirectories
+  browseDirectories,
+  loadUpgradePlan,
+  applyUpgradePlan,
+  loadUpgradeReview,
+  saveUpgradeReview,
+  saveUpgradeReviewsBatch,
+  openUpgradeFile
 } from '../../src/core/web/app/api-client.js';
 
 describe('api-client', () => {
@@ -131,6 +137,34 @@ describe('api-client', () => {
       headers: { 'Content-Type': 'application/json', 'X-Engram-CSRF': '' },
       body: JSON.stringify({}),
     });
+  });
+
+  test('upgrade client calls plan, apply, review, batch, and open-file endpoints with server identifiers', async () => {
+    mockFetch
+      .mockResolvedValueOnce({ ok: true, status: 200, text: () => Promise.resolve(JSON.stringify({ ok: true, data: { fingerprint: 'fp', items: [] } })) })
+      .mockResolvedValueOnce({ ok: true, status: 200, text: () => Promise.resolve(JSON.stringify({ ok: true, data: { fingerprint: 'fp', transactions: [] } })) })
+      .mockResolvedValueOnce({ ok: true, status: 200, text: () => Promise.resolve(JSON.stringify({ ok: true, data: { plan: {}, proposal: {}, review: {}, saved: null } })) })
+      .mockResolvedValueOnce({ ok: true, status: 200, text: () => Promise.resolve(JSON.stringify({ ok: true, data: { review: { pendingReviewCount: 0 } } })) })
+      .mockResolvedValueOnce({ ok: true, status: 200, text: () => Promise.resolve(JSON.stringify({ ok: true, data: { review: {}, saved: [] } })) })
+      .mockResolvedValueOnce({ ok: true, status: 200, text: () => Promise.resolve(JSON.stringify({ ok: true, data: { file: '/tmp/AGENTS.md' } })) });
+
+    await loadUpgradePlan();
+    await applyUpgradePlan('fp', true);
+    await loadUpgradeReview('fp value', 'item/id');
+    await saveUpgradeReview({ fingerprint: 'fp', itemId: 'item', state: 'force-latest' });
+    await saveUpgradeReviewsBatch('fp', ['a', 'b']);
+    await expect(openUpgradeFile('fp', 'item')).resolves.toEqual({ file: '/tmp/AGENTS.md' });
+
+    expect(mockFetch.mock.calls[0][0]).toBe('/api/upgrade/plan');
+    expect(mockFetch.mock.calls[1][0]).toBe('/api/upgrade/apply');
+    expect(mockFetch.mock.calls[1][1].body).toBe(JSON.stringify({ fingerprint: 'fp', confirmed: true }));
+    expect(mockFetch.mock.calls[2][0]).toBe('/api/upgrade/review?fingerprint=fp%20value&item=item%2Fid');
+    expect(mockFetch.mock.calls[3][0]).toBe('/api/upgrade/review');
+    expect(mockFetch.mock.calls[3][1].body).toBe(JSON.stringify({ fingerprint: 'fp', itemId: 'item', state: 'force-latest' }));
+    expect(mockFetch.mock.calls[4][0]).toBe('/api/upgrade/review/batch');
+    expect(mockFetch.mock.calls[4][1].body).toBe(JSON.stringify({ fingerprint: 'fp', itemIds: ['a', 'b'] }));
+    expect(mockFetch.mock.calls[5][0]).toBe('/api/upgrade/open-file');
+    expect(mockFetch.mock.calls[5][1].body).toBe(JSON.stringify({ fingerprint: 'fp', itemId: 'item' }));
   });
 
   test('shutdownServer calls correct endpoint', async () => {

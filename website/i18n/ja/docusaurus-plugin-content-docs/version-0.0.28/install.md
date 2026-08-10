@@ -1,75 +1,75 @@
 ---
-title: Install and configure
+title: インストールと構成
 sidebar_position: 3
-description: Install the Engram CLI, initialize a workspace, configure global memory, and link AI agents.
+description: Engram CLI のインストール、ワークスペースの初期化、グローバルメモリの構成、および AI エージェントのリンク。
 ---
 
-# Install and configure
+# インストールと構成
 
-## Requirements
+## 要件
 
 - Node.js `>=20`
-- A supported AI agent (Codex, Claude, Gemini, Cursor, Windsurf, OpenCode, Copilot, Cline, or any AGENTS.md-compatible host)
+- サポートされている AI エージェント (Codex、Claude、Gemini、Cursor、Windsurf、OpenCode、Copilot、Cline、または任意の AGENTS.md 互換ホスト)
 
-## Install the CLI
+## CLI のインストール
 
 ```bash
 npm install -g @the-long-ride/engram
 ```
 
-Verify:
+検証：
 
 ```bash
 engram --version
 ```
 
-Two binaries are installed:
+2 つのバイナリがインストールされます：
 
-- `engram` — main CLI
-- `engram-mcp` — MCP server binary for hosts that register external tool processes
+- `engram` — メイン CLI
+- `engram-mcp` — 外部ツールプロセスを登録するホスト用の MCP サーバーバイナリ
 
-## Initialize a workspace
+## ワークスペース (workspace) の初期化
 
-From the project root:
+プロジェクトのルートから：
 
 ```bash
 engram inject
 ```
 
-This creates `.agents/.engram/` and installs the compact Codex target by default: `AGENTS.md` plus `.agents/skills/engram/SKILL.md`.
+これにより `.agents/.engram/` が作成され、デフォルトでコンパクトな Codex ターゲットがインストールされます：`AGENTS.md` プラス `.agents/skills/engram/SKILL.md`。
 
-Use `engram inject --no-skillset` to skip agent files, or `engram inject --skillset all` to install every supported adapter during inject. Existing human-authored files are skipped.
+エージェントファイルをスキップするには `engram inject --no-skillset` を使用し、インジェクション中にサポートされているすべての アダプターをインストールするには `engram inject --skillset all` を使用します。人間が作成した既存のファイルはスキップされます。
 
-## Configure with the Entry Web UI
+## Entry Web UI による構成
 
-The friendliest setup path:
+最も簡単なセットアップパス：
 
 ```bash
 engram entry
 ```
 
-This launches a local-only control panel. Configure memory roots, link agents, and tune routing without editing JSON by hand. See [Entry Web UI](entry/index.md) for every tab and field.
+これにより、ローカル専用のコントロールパネルが起動します。手動で JSON を編集することなく、メモリルートを構成し、エージェントをリンクし、ルーティングを調整できます。各タブとフィールドについては、[Entry Web UI](entry/index.md) を参照してください。
 
-## Configure global memory
+## グローバルメモリの構成
 
-Global memory is optional and lives wherever you configure it. It holds preferences and team context that should follow you across repos.
+グローバルメモリはオプションであり、構成した場所に配置されます。リポジトリ間で引き継ぐべき設定やチームのコンテキストを保持します。
 
 ```bash
 engram inject --global-only --global-path ~/Documents/engram
 ```
 
-Or update the global folder later:
+または、後でグローバルフォルダを更新する：
 
 ```bash
 engram update-global-folder ~/Documents/engram
 engram ugf ~/Documents/engram
 ```
 
-Chat-style forms such as `engram set global memory path to <new-path>` and `engram move global folder from <old-path> to <new-path>` normalize to the same command. Add `--move-from-path <old-path>` when they also want Engram to move the whole old global root into the new location.
+`engram set global memory path to <new-path>` や `engram move global folder from <old-path> to <new-path>` などのチャット形式は、同じコマンドに正規化されます。古いグローバルルート全体を新しい場所に移動させたい場合は、`--move-from-path <old-path>` を追加します。
 
-## Link AI agents
+## AI エージェントのリンク
 
-Install agent hooks and MCP registration for a host:
+ホストのエージェント hook と MCP 登録をインストールします：
 
 ```bash
 engram link codex
@@ -81,29 +81,29 @@ engram link --global opencode
 engram set-proof compact
 ```
 
-`engram link all` installs the public target set and reports deterministic `SKIPPED` reasons for partial hosts across skillset instruction files, MCP config, slash adapters, and agent hooks in one unified install. `engram unlink` removes all of these together.
+`engram link all` は、パブリックターゲットセットをインストールし、スキルセット指示ファイル、MCP 構成、スラッシュアダプター、およびエージェント hook において、部分的なホストに対する決定論的な `SKIPPED` 理由を 1 つの統合インストールで報告します。`engram unlink` はこれらをすべてまとめて削除します。
 
-See [Agent Integrations](integrations/overview.md) for the full target matrix.
+完全なターゲットマトリックスについては、[エージェントの統合](integrations/overview.md)を参照してください。
 
-## Submodule workflow
+## サブモジュールワークフロー (Submodule)
 
-If the human wants `.agents/.engram` tracked as a separate repository:
+人間が `.agents/.engram` を別のリポジトリとして追跡したい場合：
 
 ```bash
 engram inject --submodule
 ```
 
-Add `--submodule-remote <git-url>` only after the human provides a URL. Engram validates the URL, initializes the submodule on `main`, and creates the first submodule commit as `Initialize engram`.
+人間が URL を提供した後にのみ、`--submodule-remote <git-url>` を追加します。Engram は URL を検証し、`main` でサブモジュールを初期化し、最初のサブモジュールコミットを `Initialize engram` として作成します。
 
-## Shared global Git origin
+## 共有グローバル Git オリジン
 
-If `engram entry` shows no `global_git_detected.remote_url`, ask the human whether global memory should be shared through Git. When they provide a URL:
+`engram entry` に `global_git_detected.remote_url` が表示されない場合は、グローバルメモリを Git を介して共有すべきかどうかを人間に確認してください。URL が提供された場合：
 
 ```bash
 engram inject --global-remote <git-url>
 ```
 
-## Verify the install
+## インストールの検証
 
 ```bash
 engram verify
@@ -111,10 +111,10 @@ engram load --dry-run "setup"
 engram llm
 ```
 
-`engram llm` prints the packaged AI-agent usage guide and does not require an injected workspace.
+`engram llm` は、パッケージ化された AI エージェントの使用ガイドを印刷します。インジェクトされたワークスペースは必要ありません。
 
-## Next steps
+## 次のステップ
 
-- [Daily workflow](daily-workflow.md)
+- [日常のワークフロー](daily-workflow.md)
 - [Entry Web UI](entry/index.md)
-- [Agent Integrations](integrations/overview.md)
+- [エージェントの統合](integrations/overview.md)

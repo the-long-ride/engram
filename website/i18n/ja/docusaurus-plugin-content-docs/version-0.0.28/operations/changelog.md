@@ -1,24 +1,24 @@
 ---
-title: Changelog
+title: 変更履歴
 sidebar_position: 5
-description: Engram release history.
+description: Engram のリリース履歴。
 ---
 
-# Changelog
+# 変更履歴 (Changelog)
 
-Engram release history lives in the repository [`CHANGELOG.md`](https://github.com/the-long-ride/engram/blob/main/CHANGELOG.md).
+Engram のリリース履歴は、リポジトリの [`CHANGELOG.md`](https://github.com/the-long-ride/engram/blob/main/CHANGELOG.md) にあります。
 
-For the current package version, see [`package.json`](https://github.com/the-long-ride/engram/blob/main/package.json).
+現在のパッケージバージョンについては、[`package.json`](https://github.com/the-long-ride/engram/blob/main/package.json) を参照してください。
 
-## Current version
+## 現在のバージョン
 
-The current released Engram version is `0.0.28`.
+現在リリースされている Engram のバージョンは `0.0.27` です。
 
-## Upgrade
+## アップグレード
 
 ```bash
 npm install -g @the-long-ride/engram@latest
 engram upgrade
 ```
 
-See [Release and upgrade process](release-upgrade.md) for details.
+詳細は [リリースおよびアップグレードプロセス](release-upgrade.md) を参照してください。

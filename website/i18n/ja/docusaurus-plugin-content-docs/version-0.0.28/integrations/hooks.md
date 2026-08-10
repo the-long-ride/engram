@@ -1,14 +1,14 @@
 ---
-title: Hooks and proof lines
+title: フックと検証行
 sidebar_position: 12
-description: Engram agent hooks inject routed memory at session start and prompt turns. Proof lines make injection visible.
+description: Engram エージェントフックは、セッション開始時およびプロンプト送信時にルーティングされたメモリを注入します。検証行により、注入が視覚化されます。
 ---
 
-# Hooks and proof lines
+# フックと検証行
 
-Agent hooks are opt-in host hooks that inject routed Engram context at session start and later task-change turns when the host exposes a safe prompt-time context channel.
+エージェントフックはオプトインのホストフックであり、ホストが安全なプロンプト送信時コンテキストチャネルを公開している場合に、セッション開始時およびその後のタスク変更時にルーティングされた Engram コンテキストを注入します。
 
-## Install hooks
+## フックのインストール
 
 ```bash
 engram link codex
@@ -20,37 +20,37 @@ engram link --global opencode
 engram set-proof compact
 ```
 
-Use `--global` for user-level config and `engram unlink` to remove only Engram-managed hook entries.
+ユーザーレベルの構成には `--global` を使用し、Engram が管理するフックエントリのみを削除するには `engram unlink` を使用します。
 
-## Read mode
+## 読み込みモード
 
-`engram set-read startup|auto|always|manual|off` controls runtime behavior:
+`engram set-read startup|auto|always|manual|off` はランタイム動作を制御します。
 
-- `auto` loads on session start and reinjects only when routed Engram context changes.
-- `startup` loads only at session start.
-- `always` reinjects on every eligible turn.
-- `manual` and `off` reduce automation.
+- `auto` はセッション開始時に読み込み、ルーティングされた Engram コンテキストが変更されたときにのみ再注入します。
+- `startup` はセッション開始時にのみ読み込みます。
+- `always` は対象となるすべてのターンで再注入します。
+- `manual` および `off` は自動化を削減します。
 
-The hook cache stores hashes, session ids, host, cwd, and routed signatures — never raw prompt text.
+フックキャッシュは、ハッシュ、セッション ID、ホスト、cwd、およびルーティングされた署名を保存し、生のプロンプトテキストは保存しません。
 
-## Proof mode
+## 検証モード
 
-`engram set-proof off|compact` controls whether supported hooks also append a compact `Engram proof:` line on each eligible turn. Proof visibility is separate from `set-read`: `compact` can report loaded, reused, or skipped turns without changing when full Engram memory is injected.
+`engram set-proof off|compact` は、サポートされているフックが、対象となる各ターンでコンパクトな `Engram proof:` 行を追加するかどうかを制御します。検証の可視性は `set-read` とは別です。`compact` は、完全な Engram メモリが注入されるタイミングを変更することなく、ロード、再利用、またはスキップされたターンを報告できます。
 
-## Hook capability matrix
+## フック機能マトリクス
 
-| Host | Config path | Events |
+| ホスト | 設定パス | イベント |
 | --- | --- | --- |
 | `codex` | `.codex/hooks.json`; global `~/.codex/hooks.json` | `SessionStart`, `UserPromptSubmit` |
 | `claude` | `.claude/settings.json`; global `~/.claude/settings.json` | `SessionStart`, `UserPromptSubmit` |
 | `gemini` | `.gemini/settings.json`; global `~/.gemini/settings.json` | `SessionStart`, `BeforeAgent` |
-| `cursor` | `.cursor/hooks.json`; global plugin `hooks/hooks.json` | `sessionStart` |
+| `cursor` | `.cursor/hooks.json`; グローバルプラグイン `hooks/hooks.json` | `sessionStart` |
 | `windsurf` / `cascade` | `.windsurf/hooks.json`; global `~/.codeium/windsurf/hooks.json` | `pre_user_prompt` |
 | `opencode` | `~/.config/opencode/plugins/engram.js` | `chat.message`, `experimental.chat.system.transform` |
-| `copilot` | None written | N/A |
-| `cline` | None written | N/A |
+| `copilot` | 書き込みなし | N/A |
+| `cline` | 書き込みなし | N/A |
 
-## Next steps
+## 次のステップ
 
-- [Agent Integrations overview](overview.md)
-- [CLI: inject / link / upgrade](../cli/inject-link-upgrade.md)
+- [エージェント統合の概要](overview.md)
+- [CLI: 注入 / リンク / アップグレード](../cli/inject-link-upgrade.md)

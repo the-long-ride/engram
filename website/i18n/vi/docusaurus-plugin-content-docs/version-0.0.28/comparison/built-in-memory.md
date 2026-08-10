@@ -1,23 +1,23 @@
 ---
-title: Built-in agent memory
+title: Bộ nhớ tác nhân tích hợp sẵn
 sidebar_position: 2
-description: Engram treats built-in agent memory as a convenience layer, not the authority.
+description: Engram coi bộ nhớ tác nhân tích hợp sẵn là một lớp tiện ích, không phải là cơ quan có thẩm quyền.
 ---
 
-# Built-in agent memory
+# Bộ nhớ tác nhân tích hợp sẵn
 
-Built-in agent memory is convenient, but often tied to one host. It can be hard to diff, export, review, or share with another agent.
+Bộ nhớ tác nhân tích hợp sẵn thì tiện lợi, nhưng thường bị gắn chặt vào một host. Nó có thể khó thực hiện diff, xuất, đánh giá hoặc chia sẻ với tác nhân khác.
 
-Engram treats built-in memory as a convenience layer, not the authority. The authority remains files the human owns.
+Engram coi bộ nhớ tích hợp sẵn là một lớp tiện ích, không phải là cơ quan có thẩm quyền. Quyền quyết định tối cao vẫn thuộc về các tệp mà con người sở hữu.
 
-| Dimension | Engram | Built-in agent memory |
+| Chiều hướng | Engram | Bộ nhớ tác nhân tích hợp sẵn |
 | --- | --- | --- |
-| Source of truth | Approved Markdown files | Vendor-owned hidden state |
-| Portability | Git-native, agent-agnostic | Tied to one app or account |
-| Review | Git diff and Markdown review | Hard to inspect or export |
-| Best fit | teams that need ownership and auditability | quick personal recall within one host |
+| Nguồn sự thật | Các tệp Markdown được phê duyệt | Trạng thái ẩn do nhà cung cấp sở hữu |
+| Tính di động | Git gốc, không phụ thuộc tác nhân | Bị ràng buộc vào một ứng dụng hoặc tài khoản |
+| Đánh giá | Git diff và đánh giá Markdown | Khó kiểm tra hoặc xuất ra |
+| Phù hợp nhất | Các nhóm cần quyền sở hữu và tính kiểm toán | Hồi tưởng cá nhân nhanh chóng trong một host |
 
-## Next steps
+## Các bước tiếp theo
 
 - [agentmemory](agentmemory.md)
-- [Comparison overview](overview.md)
+- [Tổng quan so sánh](overview.md)

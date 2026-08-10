@@ -1,24 +1,24 @@
 ---
-title: Slash adapters
+title: 斜杠适配器
 sidebar_position: 10
-description: Engram slash adapters expose /engram commands across Claude, Cursor, Gemini, and OpenCode.
+description: Engram 斜杠适配器在 Claude、Cursor、Gemini 和 OpenCode 之间提供 /engram 命令。
 ---
 
-# Slash adapters
+# 斜杠适配器
 
-The `slash` target writes native `/engram` slash adapters for hosts that support project slash commands or Agent Skills.
+`slash` 目标向支持项目斜杠命令或 Agent Skills 的主机写入原生 `/engram` 斜杠适配器。
 
-## Files written
+## 写入的文件
 
-| File | Host |
+| 文件 | 主机 |
 | --- | --- |
 | `.claude/commands/engram.md` | Claude Code |
-| `.claude/skills/engram/SKILL.md` | Claude Code (skill form) |
+| `.claude/skills/engram/SKILL.md` | Claude Code (skill 形式) |
 | `.cursor/commands/engram.md` | Cursor |
 | `.gemini/commands/engram.toml` | Gemini CLI |
 | `.opencode/commands/engram.md` | OpenCode |
 
-## Common commands
+## 常见命令
 
 ```text
 /engram
@@ -32,8 +32,8 @@ The `slash` target writes native `/engram` slash adapters for hosts that support
 /engram ss -f
 /engram ss -f last 50 sessions
 /engram take-control
-/engram take control force
-/engram restructure workspace memory force
+/engram take control accept all
+/engram restructure workspace memory accept all
 /engram resolve conflicts and metacognize
 /engram graph release workflow
 /engram archive --reason "Superseded" knowledge/old-fact.md
@@ -41,24 +41,25 @@ The `slash` target writes native `/engram` slash adapters for hosts that support
 /engram verify
 ```
 
-## Behavior
+## 行为
 
-If the host exposes only one visible `/engram` command, bare `/engram` should return a compact menu of `load`, `search`, `save`, `propose`, `entry`, and `help` instead of running the CLI. `/engram propose` is a slash-level alias: normalize it to `engram save-session` over the current chat/session.
+如果主机仅公开一个可见的 `/engram` 命令，那么单独的 `/engram` 应返回 `load`、`search`、`save`、`propose`、`entry` 和 `help` 的紧凑菜单，而不是运行 CLI。`/engram propose` 是斜杠级别的别名：将其规范化为当前聊天/会话中的 `engram save-session`。
 
-`/engram ss -f` is the force shortcut. Agents must not add `--force` unless the human requested it.
+`/engram ss -f` 是接受全部快捷方式。除非人类明确要求，否则 Agent 不得添加 `--force`。
 
-## Natural wording normalization
+## 自然语言规范化
 
-| Natural wording | Normalizes to |
+| 自然语言 | 规范化为 |
 | --- | --- |
 | `/engram auto save` | `engram save-session` |
-| `/engram take control force` | `engram take-control --force` |
-| `/engram restructure workspace memory force` | `engram metacognize --workspace --force` |
-| `/engram take control force metacognize` | `engram take-control --force --metacognize` |
+| `/engram take control accept all` | `engram take-control --force` |
+| `/engram restructure workspace memory accept all` | `engram metacognize --workspace --force` |
+| `/engram take control accept all metacognize` | `engram take-control --force --metacognize` |
 | `/engram resolve conflicts and metacognize` | `engram resolve-conflicts --metacognize` |
 | `/engram ss -f last 50 sessions` | `engram save-session --query-level 50 --force` |
 
-## Next steps
+## 后续步骤
 
-- [MCP tools](mcp.md)
-- [Hooks and proof lines](hooks.md)
+- [MCP 工具](mcp.md)
+- [Hook 和验证行](hooks.md)
+

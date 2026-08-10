@@ -1,34 +1,34 @@
 ---
-title: Maintain tab
+title: Вкладка Core (Ядро)
 sidebar_position: 7
-description: Review duplicate and conflicting memories with scope and type filters.
+description: Просмотр дублирующихся и конфликтующих воспоминаний с фильтрами области действия и типа.
 ---
 
-# Maintain tab
+# Вкладка Core
 
-The Maintain tab reviews duplicate and conflicting memories. It is the metacognition workspace inside the Entry panel.
+Вкладка Core проверяет дублирующиеся и конфликтующие воспоминания. Это метапознавательное рабочее пространство внутри панели Entry.
 
-## Scope chips: profile / global / workspace {#scope-chips-profile-global-workspace}
+## Фишки области действия (Scope chips): profile / global / workspace
 
-Filter duplicate/conflict analysis by memory source. Audit one scope or compare cross-scope duplicates. Keep at least one scope selected.
+Фильтрация анализа дубликатов/конфликтов по источнику памяти. Проверяйте одну область или сравнивайте дубликаты из разных областей. Держите выбранной хотя бы одну область.
 
-## Type chips: rule / skill / workflow / knowledge {#type-chips-rule-skill-workflow-knowledge}
+## Фишки типа (Type chips): rule / skill / workflow / knowledge
 
-Filter duplicate candidates by memory type. Focus cleanup on rules first or knowledge facts first. Document type meanings inline so users understand when duplicates are harmless.
+Фильтрация кандидатов на дублирование по типу памяти. Сосредоточьтесь сначала на очистке правил или сначала на фактах знаний. Документируйте значения типов inline, чтобы пользователи понимали, когда дубликаты безвредны.
 
-## Include semantic candidates {#include-semantic-candidates}
+## Включить семантических кандидатов (Include semantic candidates)
 
-Adds semantic duplicate search, not just exact/lexical matches. Use when cleaning mature memory stores; expect more false positives.
+Добавляет семантический поиск дубликатов, а не только точные/лексические соответствия. Используйте при очистке зрелых хранилищ памяти; ожидайте больше ложных срабатываний.
 
-## Copy prompt
+## Скопировать подсказку (Copy prompt)
 
-Copies an `/engram` prompt for a stronger agent or model to resolve duplicates. Use for human-guided cleanup and review. Remind users to review generated changes through approval gates.
+Копирует подсказку `/engram` для более сильного агента или модели для разрешения дубликатов. Используйте для очистки и проверки под руководством человека. Напомните пользователям о необходимости проверять сгенерированные изменения через этапы одобрения.
 
-## Preview
+## Предварительный просмотр (Preview)
 
-Shows the prompt before copying. Encourage preview for risky cleanup operations.
+Показывает подсказку перед копированием. Поощряйте предварительный просмотр для рискованных операций очистки.
 
-## CLI equivalent
+## Эквивалент в CLI
 
 ```bash
 engram resolve-conflicts --dry-run --metacognize
@@ -36,7 +36,8 @@ engram resolve-conflicts --metacognize
 engram metacognize --workspace --force
 ```
 
-## Next steps
+## Следующие шаги
 
-- [Memories tab](memories.md)
+- [Вкладка Memories](memories.md)
 - [CLI: verify / repair / quality-check](../cli/verify-repair-quality.md)
+

@@ -1,46 +1,38 @@
 ---
-title: Launching the control panel
+title: Khởi chạy bảng điều khiển
 sidebar_position: 2
-description: Run engram entry to launch the local-only Entry control panel.
+description: Chạy engram entry để khởi chạy bảng điều khiển Entry chỉ dành cho cục bộ.
 ---
 
-# Launching the control panel
+# Khởi chạy bảng điều khiển
 
-Launch the panel:
+Khởi chạy bảng điều khiển:
 
 ```bash
 engram entry
 ```
 
-`engram entry` starts a local server and opens your default browser at the panel URL. The command prints the Engram wordmark before the launch details.
+Lệnh này khởi động một máy chủ cục bộ và mở trình duyệt mặc định của bạn tại URL của bảng điều khiển.
 
-## Browser behavior
+## Hành vi trình duyệt
 
-The panel opens automatically in your default browser. If it does not, copy the printed URL into a browser manually.
+Bảng điều khiển sẽ tự động mở trong trình duyệt mặc định của bạn. Nếu không, hãy sao chép URL được in ra và dán vào trình duyệt theo cách thủ công.
 
-## Local server behavior
+## Hành vi máy chủ cục bộ
 
-The server binds locally so only your machine can reach it. It is not exposed to the network by default.
+Máy chủ chỉ liên kết nội bộ để chỉ máy tính của bạn mới có thể truy cập được. Nó không được tiếp xúc với mạng theo mặc định.
 
-## `--host-only`
+## Quy trình đóng máy chủ
 
-Use `--host-only` to start the server without opening a browser tab:
+Đóng máy chủ từ tab **Runtime** bằng hành động **Close server**, hoặc dừng tiến trình terminal đã khởi chạy `engram entry`. Việc đóng tab trình duyệt sẽ không làm dừng máy chủ.
 
-```bash
-engram entry --host-only
-```
+## Các lỗi khởi chạy thường gặp
 
-## Close server flow
+- **Port already in use (Cổng đã được sử dụng)** — một tiến trình khác đang sử dụng cổng của bảng điều khiển. Hãy dừng tiến trình đó hoặc làm theo hướng dẫn dự phòng được in ra.
+- **Browser did not open (Trình duyệt không mở)** — sao chép URL được in ra và dán vào trình duyệt theo cách thủ công.
+- **No workspace initialized (Không có không gian làm việc nào được khởi tạo)** — chạy lệnh `engram inject` trước, hoặc sử dụng `engram entry` từ thư mục gốc của dự án.
 
-Close the server from the **Close Server** button in the sidebar footer, or stop the terminal process that started `engram entry`. Closing the browser tab does not stop the server.
+## Các bước tiếp theo
 
-## Common launch errors
-
-- **Port already in use** — another process is using the panel port. Stop it or follow the printed fallback instructions.
-- **Browser did not open** — copy the printed URL into a browser manually.
-- **No workspace initialized** — run `engram inject` first, or use `engram entry` from a project root.
-
-## Next steps
-
-- [Connections tab](connections.md)
-- [Construct tab](construct.md)
+- [Tab Connections](connections.md)
+- [Tab Construct](construct.md)

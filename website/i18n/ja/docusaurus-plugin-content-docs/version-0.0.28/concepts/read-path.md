@@ -1,57 +1,58 @@
 ---
-title: Read path and routing
+title: 読み取りパスとルーティング
 sidebar_position: 5
-description: Engram loads workspace and global indexes, applies ignore rules and role filters, then routes a compact context pack.
+description: Engram はワークスペースとグローバルのインデックスをロードし、無視ルールとロールフィルターを適用した後に、コンパクトなコンテキストパックをルーティングします。
 ---
 
-# Read path and routing
+# 読み取りパスとルーティング
 
-The read flow decides which memory an agent sees for a given task.
+読み取りフローは、特定のタスクに対してエージェントがどのメモリを表示するかを決定します。
 
-## Read flow
+## 読み取りフロー
 
-1. Engram loads workspace and optional global indexes.
-2. Workspace entries win over global duplicates.
-3. Ignore rules and role filters hide irrelevant entries.
-4. Graph-aware routing selects a compact context pack.
-5. Hash and safety checks run before content is printed.
+1. Engram はワークスペースとオプションのグローバルインデックスをロードします。
+2. ワークスペースのエントリは、グローバルの重複エントリよりも優先されます。
+3. 無視ルールとロールフィルターにより、無関係なエントリが非表示になります。
+4. グラフを考慮したルーティングにより、コンパクトなコンテキストパックが選択されます。
+5. コンテンツが出力される前に、ハッシュと安全性のチェックが実行されます。
 
-## Anchor and refine
+## アンカーと洗練
 
-`load` first anchors routing on meaningful query terms, ignoring generic memory words such as `rule`, `knowledge`, and common stopwords. It then refines the wider candidate pool into a compact context pack.
+`load` は、まず `rule` や `knowledge` などの一般的なメモリ用語や一般的なストップワードを無視し、意味のある検索語に基づいてルーティングをアンカー（固定）します。その後、より広範な候補プールからコンパクトなコンテキストパックへと洗練させます。
 
-Normal load reports selected and total related counts, like `loaded 8 memory files / 14 total related memories`.
+通常のロードは、`loaded 8 memory files / 14 total related memories` のように、選択されたカウントと関連する合計カウントを報告します。
 
-- `load --dry-run` shows candidate counts, narrowing tags, and match reasons.
-- `load --all` returns every visible routed match instead of applying the compact limit.
-- Default `load` is the agent-facing compact route. Use `load --full` for broader legacy output.
+- `load --dry-run` は、候補数、絞り込みタグ、および一致理由を示します。
+- `load --all` は、コンパクト制限を適用せず、表示可能なすべてのルーティングされた一致を返します。
+- `load` は、エージェント向けのコンパクトなルートです。
 
-`workflow` and `workflows` still route to skill memories, but generic type words do not make a broad match by themselves.
+`workflow` や `workflows` は依然としてスキルメモリにルーティングされますが、一般的な型を表す単語自体だけでは広範な一致にはなりません。
 
-## Dependency layers
+## 依存関係のレイヤー
 
-Use `depends_on` frontmatter when a memory should build on another memory instead of repeating it:
+あるメモリが別のメモリを繰り返すのではなく、その上に構築されるべき場合は、フロントマターの `depends_on` を使用します：
 
 ```yaml
 depends_on: [release-foundation]
 level: advanced
 ```
 
-Run `engram graph --rebuild` after manual edits. The graph reports dependency layers, and `engram load` pulls routed prerequisites into the same compact context pack before deeper memories. Graph related edges and vector hits cannot load unrelated memories by themselves; they only help rerank or expand memories that already overlap meaningful query terms. Explicit `depends_on` prerequisites may still load without their own keyword overlap.
+手動編集の後は `engram graph --rebuild` を実行してください。グラフは依存関係 of のレイヤーを報告し、`engram load` はより深いメモリの前に、ルーティングされた前提条件を同じコンパクトなコンテキストパックに引き込みます。グラフの関連エッジやベクトルヒットは、それ単体で無関係なメモリをロードすることはできません。これらは、意味のある検索語と既に重複しているメモリの再ランク付けや拡張を支援するだけです。明示的な `depends_on` 前提条件は、独自のキーワードの重複がなくてもロードされる場合があります。
 
-## Routing diagram
+## ルーティング図
 
 ```mermaid
 flowchart LR
-  A[Agent request] --> B[Load workspace + global indexes]
-  B --> C[Workspace wins over global duplicates]
-  C --> D[Ignore rules + role filters]
-  D --> E[Graph-aware routing]
-  E --> F[Hash + safety checks]
-  F --> G[Compact context pack]
+  A[エージェントの要求] --> B[ワークスペースとグローバルインデックスのロード]
+  B --> C[ワークスペースがグローバルの重複に優先]
+  C --> D[無視ルールとロールフィルター]
+  D --> E[グラフを考慮したルーティング]
+  E --> F[ハッシュと安全性チェック]
+  F --> G[コンパクトなコンテキストパック]
 ```
 
-## Next steps
+## 次のステップ
 
-- [Write path and approval](write-path.md)
+- [書き込みパスと承認](write-path.md)
 - [CLI: load / search / graph](../cli/load-search-graph.md)
+

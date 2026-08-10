@@ -1,45 +1,45 @@
 ---
 title: Codex
 sidebar_position: 2
-description: Engram integration with OpenAI Codex via AGENTS.md and Agent Skills.
+description: AGENTS.md および Agent Skills を介した OpenAI Codex と Engram の統合。
 ---
 
 # Codex
 
-OpenAI Codex and other AGENTS.md-compatible agents use `AGENTS.md` as a project instruction file. The `codex` alias also writes `.agents/skills/engram/SKILL.md` so agents that discover Agent Skills can route Engram as an invokable skill.
+OpenAI Codex およびその他の AGENTS.md 互換エージェントは、プロジェクト指示ファイルとして `AGENTS.md` を使用します。また、`codex` エイリアスは `.agents/skills/engram/SKILL.md` も書き込むため、Agent Skills を検出したエージェントは Engram を呼び出し可能なスキルとしてルーティングできます。
 
-## Install
+## インストール
 
 ```bash
 engram link codex
 ```
 
-## Files written
+## 書き込まれるファイル
 
-| File | Purpose |
+| ファイル | 用途 |
 | --- | --- |
-| `AGENTS.md` | Project instructions bootstrap |
-| `.agents/skills/engram/SKILL.md` | Agent Skill with full write/approval workflow |
-| `.codex/hooks.json` | `SessionStart` and `UserPromptSubmit` hooks |
-| `.mcp.json` | MCP registration |
+| `AGENTS.md` | プロジェクト指示のブートストラップ |
+| `.agents/skills/engram/SKILL.md` | 完全な書き込み/承認ワークフローを備えた Agent Skill |
+| `.codex/hooks.json` | `SessionStart` および `UserPromptSubmit` フック |
+| `.mcp.json` | MCP 登録 |
 
-## Global install
+## グローバルインストール
 
 ```bash
 engram link --global codex
 ```
 
-Writes the Codex skill to `~/.codex/skills/engram/SKILL.md` and appends a managed block to shared Codex instruction files.
+Codex スキルを `~/.codex/skills/engram/SKILL.md` に書き込み、共有の Codex 指示ファイルに管理ブロックを追加します。
 
-## Hook behavior
+## フックの動作
 
-Codex supports startup and prompt-time additional context injection. `SessionStart` loads routed memory at startup; `UserPromptSubmit` reinjects only when routed Engram context changes.
+Codex は、起動時およびプロンプト送信時の追加コンテキスト注入をサポートしています。`SessionStart` は起動時にルーティングされたメモリをロードし、`UserPromptSubmit` はルーティングされた Engram コンテキストが変更されたときにのみ再注入します。
 
-## Runtime-first target
+## ランタイム優先ターゲット
 
-Codex is a runtime-first target. `AGENTS.md` contains short bootstrap instructions that rely on MCP tools and hooks for detailed protocol; the Agent Skill file carries the full write/approval workflow.
+Codex はランタイム優先のターゲットです。`AGENTS.md` には、詳細なプロトコルについて MCP ツールとフックに依存する短いブートストラップ指示が含まれています。実際の書き込み/承認ワークフローは Agent Skill ファイルが担います。
 
-## Next steps
+## 次のステップ
 
-- [Agent Integrations overview](overview.md)
-- [Hooks and proof lines](hooks.md)
+- [エージェント統合の概要](overview.md)
+- [フックと検証行](hooks.md)

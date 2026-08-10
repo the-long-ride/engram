@@ -40,13 +40,13 @@ The Updates page now uses a compact dashboard: a **status banner** reports wheth
 
 Open `engram entry`, then **Settings → Updates**. The sidebar **copy command** action copies `engram upgrade --latest --plan` without navigating away. The preview has `All` plus only actionable kind tabs: `Config`, `Instructions`, `Memories`, `Skillsets`, `Hooks`, and `Plugins`.
 
-Every conflict has a **Review** action. The modal provides **Current**, **Proposed**, and **Diff** views. **Current** is read-only. **Proposed** is editable for replaceable Config/Instruction/Skillset items and starts from Engram's type-aware merged/replacement result. **Diff** defaults to **Inline** and can switch to **Parallel**. Inline marks removed lines with `-` on a red background and added lines with `+` on a green background; Parallel aligns **Current** and **Proposed** rows with the same red/green highlighting. Use **Use latest**, **Reset proposed**, **Keep current**, or—when Engram can prove ownership—**Force upgrade**, then **Confirm change**.
+Every conflict has a **Review** action. The modal provides **Current**, **Proposed**, and **Diff** views. **Current** is read-only. **Proposed** is editable for replaceable Config/Instruction/Skillset items and starts from Engram's type-aware merged/replacement result. **Diff** defaults to **Inline** and can switch to **Parallel**. Inline marks removed lines with `-` на красном фоне and added lines with `+` на зелёном фоне; Parallel aligns **Current** and **Proposed** rows with the same красно-зелёной подсветкой. Use **Use latest**, **Reset proposed**, **Keep current**, or—when Engram can prove ownership—**Force upgrade**, then **Confirm change**.
 
 **Open in editor** opens the exact current artifact resolved by the server, using `$VISUAL`, then `$EDITOR`, then the platform fallback. The browser never supplies a filesystem path. For **Instructions**, **Proposed** contains only the managed `<!-- engram:start -->` block; the full global skillset stays in the companion `.agents/engram.md` guide. If the external edit changes the file, the preview/source hash becomes stale and the review must be refreshed before confirmation.
 
 Eligible pending replaceable conflicts have selection checkboxes. **Select all visible** selects eligible rows in the active kind tab; selection persists when switching tabs. **Confirm selected changes** accepts **Use latest** for the checked rows, while **Confirm all changes** accepts **Use latest** for every eligible pending conflict in the full preview. Non-replaceable, stale, and already-reviewed rows cannot be selected. The server validates the complete batch against the preview fingerprint, current source hashes, review states, and generated proposals before one atomic review-store write. If any selected item fails validation, zero batch decisions are saved.
 
-Entry uses the same custom checkbox treatment across upgrade review: checked, keyboard-focus, and disabled states are visibly distinct. Result toast feedback uses a green border/glow for success and a red border/glow for errors.
+Entry uses the same custom checkbox treatment across upgrade review: checked, keyboard-focus, and disabled states are visibly distinct. Result toast feedback uses a зелёной рамкой/свечением for success and a красной рамкой/свечением for errors.
 
 The page shows review progress. The final Upgrade action remains disabled until every conflict is explicitly resolved as accepted latest, edited proposal, **Force upgrade**, or **Keep current**. A final confirmation summarizes automatic updates, accepted proposals, edited proposals, forced replacements, kept-current files, and backups.
 
@@ -116,3 +116,13 @@ engram upgrade --latest
 ```
 
 Re-running the upgrade is idempotent for current artifacts. Reviewed `Keep current` files remain untouched unless their state changes and requires a new review.
+
+## Согласование конфигурации с учётом владения
+
+Инвентаризация обновлений устраняет дублирование зарегистрированных интеграций по физическому файлу. Если несколько хостов используют одно и то же руководство Engram, Engram рендерит и записывает этот файл один раз.
+
+Когда ручные правки делают нормальную замену артефакта Engram небезопасной, Entry предлагает **Force upgrade** только в том случае, если владение можно доказать. Для отмеченного блока Engram принудительное обновление заменяет только этот блок Engram и сохраняет окружающий пользовательский текст. Для зарегистрированного/сгенерированного файла Engram принудительное обновление может заменить весь сгенерированный файл. Неизвестное владение никогда не может быть принудительным, и пакетное подтверждение никогда не выполняет принудительных действий.
+
+Успешное применение проверяется повторным сканированием после записи. Ожидаемые обновлённые артефакты, которые не сходятся к current, регистрируются как ошибки проверки.
+
+Страница обновлений использует компактную панель: **баннер состояния** сообщает о статусе, а карточки **Workspace**, **Global** и **Conflicts** показывают количество. Элементы отображаются в **таблице** с совместной **горизонтальной прокруткой**. Используются **флажки**, а **уведомление** показывает зелёную рамку для **успеха** и красную для **ошибки**.

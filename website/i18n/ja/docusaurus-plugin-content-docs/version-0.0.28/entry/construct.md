@@ -1,313 +1,262 @@
 ---
-title: Construct tab
+title: Construct タブ (構築)
 sidebar_position: 4
-description: Configure every Engram runtime field from the Construct tab. Each field has a use case, safe default, validation, and risk warning.
+description: Construct タブからすべての Engram 実行時フィールドを構成します。各フィールドには、ユースケース、安全なデフォルト値、検証、およびリスクの警告があります。
 ---
 
 import RiskCallout from '@site/src/components/RiskCallout';
 
-# Construct tab
+# Construct タブ
 
-The Construct tab exposes every Engram runtime config field, grouped exactly like the UI. Each field has a description, use cases, safe default, validation, and risk warning.
+Construct タブは、すべての Engram 実行時構成フィールドを公開し、UI とまったく同じようにグループ化されています。各フィールドには、説明、ユースケース、安全なデフォルト値、検証、およびリスクの警告があります。
 
 <RiskCallout level="caution">
-Fields marked **risky** can disable Engram, change save targets, change Git behavior, or affect memory security. Read the warning before changing them.
+**risky** とマークされたフィールドは、Engram を無効にしたり、保存先を変更したり、Git の動作を変更したり、メモリのセキュリティに影響を与えたりする可能性があります。変更する前に警告をお読みください。
 </RiskCallout>
 
-## Core group
+## Core グループ (コア)
 
-### Enabled
+### Enabled (有効化)
 
-**Config key:** `enabled`  
-**Control:** toggle  
-**Default:** `true`  
-**Risk:** risky
+**構成キー:** `enabled`  
+**コントロール:** 切り替え  
+**デフォルト:** `true`  
+**リスク:** risky
 
-Master switch. Disabling it stops Engram behavior entirely. Use only for temporary shutdown or testing.
+マスターマスタースイッチ。無効にすると、Engram の動作が完全に停止します。一時的なシャットダウンまたはテスト目的でのみ使用してください。
 
-### Save Target
+### Save Target (保存先スコープ)
 
-**Config key:** `scope`  
-**Control:** select — `workspace`, `global`, `both`  
-**Default:** `both`  
-**Risk:** risky
+**構成キー:** `scope`  
+**コントロール:** 選択 — `workspace`, `global`, `both`  
+**デフォルト:** `both`  
+**リスク:** risky
 
-Controls where new approved memories are saved. Use `workspace` for repo-specific memory, `global` for personal/team memory, `both` for fresh installs that want both.
+新たに承認されたメモリが保存される場所を制御します。リポジトリ固有のメモリには `workspace`、個人/チームのメモリには `global`、両方を使用したい新規インストールの場合は `both` を使用します。
 
-### Update Mode
+### Read Mode (読み込みモード)
 
-**Config key:** `update`  
-**Control:** select — `auto`, `manual`, `off`  
-**Default:** `auto`  
-**Risk:** normal
+**構成キー:** `read`  
+**コントロール:** 選択 — `auto`, `startup`, `always`, `manual`, `off`  
+**デフォルト:** `auto`  
+**リスク:** normal
 
-Controls the quiet one-time package upgrade check run by normal commands. Use `manual` or `off` only when upgrades are managed outside Engram.
+エージェントフックがメモリコンテキストを挿入するタイミングを制御します。`auto` はセッション開始時にロードし、ルーティングされたコンテキストが変更された場合にのみ再挿入します。`manual` および `off` は、コンテキストの肥大化を防ぐ代わりに自動化を減らします。
 
-### Read Mode
+### Proof Mode (検証証明モード)
 
-**Config key:** `read`  
-**Control:** select — `auto`, `startup`, `always`, `manual`, `off`  
-**Default:** `auto`  
-**Risk:** normal
+**構成キー:** `proof`  
+**コントロール:** 選択 — `off`, `compact`  
+**デフォルト:** `off`  
+**リスク:** normal
 
-Controls when agent hooks inject memory context. `auto` loads on session start and reinjects only when routed context changes. `manual` and `off` reduce automation at the cost of context bloat.
+適合する会話ターンごとに対象となるエージェントフックが簡潔な `Engram proof:` 行を追加するかどうかを指定します。デバッグと監査の可視性に役立ちます。
 
-### Proof Mode
+### Global Memory Path (グローバルメモリパス)
 
-**Config key:** `proof`  
-**Control:** select — `off`, `compact`  
-**Default:** `off`  
-**Risk:** normal
+**構成キー:** `global_path`  
+**コントロール:** テキスト/パス  
+**デフォルト:** 構成するまで空  
+**リスク:** risky
 
-Whether hooks append a compact `Engram proof:` line on each eligible turn. Useful for debugging and audit visibility.
-
-### Global Memory Path
-
-**Config key:** `global_path`  
-**Control:** text/path  
-**Default:** empty until configured  
-**Risk:** risky
-
-Filesystem path for global memory. Use a stable, user-owned folder such as `~/Documents/engram`. Avoid temp folders, synced public folders, and directories you cannot write to.
+グローバルメモリのファイルシステムパス。`~/Documents/engram` などのユーザーが所有する安定したフォルダを使用してください。一時フォルダ、同期されたパブリックフォルダ、書き込み権限のないディレクトリは避けてください。
 
 <RiskCallout level="risky">
-Using a cloud-synced public folder for private memory can leak secrets. Use a private path or a private Git repo.
+プライベートメモリにクラウド同期されたパブリックフォルダを使用すると、機密情報が漏洩する危険があります。非公開のパスまたはプライベートの Git リポジトリを使用してください。
 </RiskCallout>
 
-**CLI equivalent:**
+**CLI 等価コマンド:**
 
 ```bash
 engram update-global-folder ~/Documents/engram
 engram ugf ~/Documents/engram
 ```
 
-### Default Profile
+### Default Profile (デフォルトプロファイル)
 
-**Config key:** `default_profile`  
-**Control:** select  
-**Default:** empty  
-**Risk:** risky
+**構成キー:** `default_profile`  
+**コントロール:** 選択  
+**デフォルト:** 空  
+**リスク:** risky
 
-Profile used when none is explicitly set. See [Profiles and scope resolution](../concepts/profiles.md).
+明示的に設定されていない場合に使用されるプロファイル。[プロファイルとスコープの解決](../concepts/profiles.md)を参照してください。
 
-### Active Roles
+### Active Roles (アクティブロール)
 
-**Config key:** `roles`  
-**Control:** roles/comma input  
-**Default:** empty list  
-**Risk:** normal
+**構成キー:** `roles`  
+**コントロール:** ロール名入力 (カンマ区切り)  
+**デフォルト:** 空のリスト  
+**リスク:** normal
 
-Restricts and reranks memories by role. Use safe names matching `^[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$`.
+ロールごとにメモリを制限し、再ランク付けします。`^[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$` に一致する安全な名前を使用してください。
 
-## Ignore Rules group
+## Load Routing グループ (ロードルーティング)
 
-| Field | Control | Default | Notes |
-| --- | --- | --- | --- |
-| `ignore.source` | select | `engramignore` | Choose `engramignore`, `gitignore`, `both`, or `off` as scan-rule sources. |
-| `ignore.gitignore_path` | text | `.gitignore` | Git ignore file to use when enabled. |
-| `ignore.engramignore_path` | text | `.engramignore` | Engram ignore file to use when enabled. |
-| `ignore.global_engramignore` | toggle | `true` | Apply global ignore rules when global memory is configured. |
-| `ignore.also_ignore` | list | `*.secret`, `private/**` | Additional comma-separated glob patterns. |
+### Load Limit (ロード制限)
 
-### Global Ignore Patterns
+**構成キー:** `load.limit`  
+**コントロール:** 数値 1–32  
+**デフォルト:** `8`  
+**リスク:** normal
 
-**Config key:** `ignore.global_patterns`  
-**Control:** textarea, one glob pattern per line  
-**Default:** empty list  
-**Risk:** normal
+通常のロードで返される最大メモリ数。低い値を設定すると、コンテキスト制限の低いモデルのコンテキスト肥大化が抑えられます。高い値を設定すると、深いアーキテクチャタスクに役立ちます。
 
-Patterns apply to global memory reads. Every `engram inject` synchronizes them into a managed block in the workspace `.engramignore`; human-authored lines outside that block are preserved.
+## Memory Limits グループ (メモリ制限)
 
-### Auto-save policy
+### Rule Line Target (ルール行の目標値)
 
-The **Auto-save policy** editor writes `.agents/engram.policy.json`. It controls whether policy-approved candidates can save without an interactive prompt; normal saves remain approval-based.
+**構成キー:** `memory.rule_line_target`  
+**コントロール:** 数値 50–200, 10ステップ  
+**デフォルト:** `70`  
+**リスク:** normal
 
-See the [Auto-save Policy reference](policy.md) for every control, default, allowed value, review gate, quota, and rollback setting.
+ルールメモリの推奨行数。簡潔なルールの方が、長すぎるポリシーよりも適切にルーティングされます。
 
-## Load Routing group
+### Rule Line Hard Limit (ルール行のハード制限)
 
-### Load Limit
+**構成キー:** `memory.rule_line_hard_limit`  
+**コントロール:** 数値 50–200, 10ステップ  
+**デフォルト:** `100`  
+**リスク:** risky
 
-**Config key:** `load.limit`  
-**Control:** number 1–32  
-**Default:** `8`  
-**Risk:** normal
-
-Max memories returned by normal load. Lower values reduce context bloat for low-context models; higher values help deep architecture tasks.
-
-## Memory Limits group
-
-### Rule Line Target
-
-**Config key:** `memory.rule_line_target`  
-**Control:** number 50–200, step 10  
-**Default:** `70`  
-**Risk:** normal
-
-Recommended size for rule memories. Concise rules route better than overlong policies.
-
-### Rule Line Hard Limit
-
-**Config key:** `memory.rule_line_hard_limit`  
-**Control:** number 50–200, step 10  
-**Default:** `100`  
-**Risk:** risky
-
-Hard maximum for rule memories.
+ルールメモリに対する厳格な最大行数。
 
 <RiskCallout level="risky">
-Raising this can increase context bloat and reduce routing quality. Keep rules concise.
+この制限を引き上げると、コンテキストの肥大化が進み、ルーティング品質が低下する可能性があります。ルールは常に簡潔に保ってください。
 </RiskCallout>
 
-## Graph group
+## Graph グループ (グラフ)
 
 ### graph.enabled
 
-**Control:** toggle  
-**Default:** `true`  
-**Risk:** normal
+**コントロール:** 切り替え  
+**デフォルト:** `true`  
+**リスク:** normal
 
-Enables dependency/relationship routing via `depends_on`, related memories, and the graph view.
+`depends_on`、関連メモリ、およびグラフビューを介した依存関係/関係性ルーティングを有効にします。
 
 ### graph.max_related
 
-**Control:** number 1–20  
-**Default:** `4`  
-**Risk:** normal
+**コントロール:** 数値 1–20  
+**デフォルト:** `4`  
+**リスク:** normal
 
-Limits related memories pulled through graph signals.
+グラフシグナルを介して取得される関連メモリの数を制限します。
 
 ### graph.min_related_score
 
-**Control:** number 0–1, step 0.01  
-**Default:** `0.22`  
-**Risk:** normal
+**コントロール:** 数値 0–1, 0.01ステップ  
+**デフォルト:** `0.22`  
+**リスク:** normal
 
-Minimum similarity score for related edges. Raise for precision, lower for recall.
+関連エッジの最小類似度スコア。精度を高めるにはこの値を上げ、再現率を高めるには下げます。
 
-## Vector Search group
-
-### vector.provider
-
-**Control:** select — `sqlite-vec`  
-**Default:** `sqlite-vec`  
-**Risk:** normal
-
-Selects the local vector provider. `sqlite-vec` is the only supported provider.
+## Vector Search グループ (ベクトル検索)
 
 ### vector.enabled
 
-**Control:** toggle  
-**Default:** `true`  
-**Risk:** normal
+**コントロール:** 切り替え  
+**デフォルト:** `true`  
+**リスク:** normal
 
-Enables optional local vector routing. No cloud dependency.
+オプションのローカルベクトルルーティングを有効にします。クラウドへの依存はありません。
 
 ### vector.auto_threshold
 
-**Control:** number 10–1000  
-**Default:** `100`  
-**Risk:** normal
+**コントロール:** 数値 10–1000  
+**デフォルト:** `100`  
+**リスク:** normal
 
-Memory count where vector search activates. Small vaults may not need vector search.
+ベクトル検索がアクティブになるメモリ数のしきい値。規模の小さい保管庫ではベクトル検索が不要な場合があります。
 
 ### vector.candidate_pool
 
-**Control:** number 8–100  
-**Default:** `24`  
-**Risk:** normal
+**コントロール:** 数値 8–100  
+**デフォルト:** `24`  
+**リスク:** normal
 
-How many candidates vector search considers before reranking. Higher improves recall at latency cost.
+再ランク付けを行う前にベクトル検索が考慮する候補の数。値を高くすると再現率は向上しますが、レイテンシコストが発生します。
 
 ### vector.dimensions
 
-**Control:** number 16–512  
-**Default:** `64`  
-**Risk:** normal
+**コントロール:** 数値 16–512  
+**デフォルト:** `64`  
+**リスク:** normal
 
-Embedding dimensions for the local vector sidecar. Changing this requires a rebuild.
+ローカルベクトルサイドカーの埋め込み（embeddings）次元数。これを変更した場合は、再構築が必要です。
 
-## Rule Variants group
+## Rule Variants グループ (ルールバリアント)
 
 ### rule_variants.enabled
 
-**Control:** toggle  
-**Default:** `false`  
-**Risk:** normal
+**コントロール:** 切り替え  
+**デフォルト:** `false`  
+**リスク:** normal
 
-Enables role/strictness variants. Use when teams need light/balanced/strict routing.
+ロール/厳格性のバリアントを有効にします。チームで軽量、バランス、厳格などの異なるルーティングを使い分けたい場合に使用します。
 
 ### rule_variants.active
 
-**Control:** select — `light`, `balanced`, `strict`  
-**Default:** `balanced`  
-**Risk:** normal
+**コントロール:** 選択 — `light`, `balanced`, `strict`  
+**デフォルト:** `balanced`  
+**リスク:** normal
 
-Controls strictness of loaded rules. `strict` helps lower-tier models; `light`/`balanced` usually suit stronger models.
+ロードされるルールの厳格度を制御します。`strict` は能力の低いモデルに役立ちます。`light`/`balanced` は通常、より強力なモデルに適しています。
 
-## Live Sync group
+## Live Sync グループ (ライブ同期)
 
 ### live_sync.enabled
 
-**Control:** toggle  
-**Default:** `false`  
-**Risk:** normal
+**コントロール:** 切り替え  
+**デフォルト:** `false`  
+**リスク:** normal
 
-Syncs generated agent context files on save.
+保存時に生成されたエージェントコンテキストファイルを同期します。
 
-### live_sync.targets
-
-**Control:** list  
-**Default:** `agents-md`, `claude-md`, `cursorrules`
-
-Comma-separated generated context targets refreshed when live sync runs.
-
-## Global Git group
+## Global Git グループ (グローバル Git)
 
 <RiskCallout level="risky">
-All Global Git fields are risky. They control audit history and team sync behavior for global memory. Review each before enabling.
+グローバル Git のすべてのフィールドはリスクを伴います。グローバルメモリに対する変更履歴の監査とチーム同期の動作を制御します。有効にする前にそれぞれ確認してください。
 </RiskCallout>
 
-| Field | Control | Default | Notes |
+| フィールド | コントロール | デフォルト | 備考 |
 | --- | --- | --- | --- |
-| `global_git.enabled` | toggle | `true` | Enables Git behavior for global memory |
-| `global_git.remote` | text | `origin` | Git remote name; cannot contain whitespace |
-| `global_git.remote_url` | text | empty | Shared global memory remote URL; HTTPS/SSH accepted |
-| `global_git.branch` | text | `main` | Target branch for sync |
-| `global_git.auto_sync` | toggle | `true` | Auto pull/push behavior |
-| `global_git.auto_resolve` | toggle | `true` | Auto conflict handling — review memory diffs |
+| `global_git.enabled` | 切り替え | `true` | グローバルメモリに対する Git 連携の動作を有効にします |
+| `global_git.remote` | テキスト | `origin` | Git リモート名; 空白文字を含めることはできません |
+| `global_git.remote_url` | テキスト | 空 | 共有グローバルメモリのリモート URL; HTTPS/SSH をサポート |
+| `global_git.branch` | テキスト | `main` | 同期のターゲットブランチ |
+| `global_git.auto_sync` | 切り替え | `true` | 自動 pull/push の動作 |
+| `global_git.auto_resolve` | 切り替え | `true` | 競合の自動処理 — メモリの差分を事前に確認してください |
 
-## Pattern Mining group
+## Pattern Mining グループ (パターンマイニング)
 
-| Field | Control | Default | Notes |
+| フィールド | コントロール | デフォルト | 備考 |
 | --- | --- | --- | --- |
-| `pattern_mining.enabled` | toggle | `false` | Experimental recurring-pattern extraction |
-| `pattern_mining.threshold` | number 1–20 | `3` | Repetitions before a pattern candidate matters |
-| `pattern_mining.lookback_sessions` | number 1–100 | `20` | Recent sessions to inspect |
+| `pattern_mining.enabled` | 切り替え | `false` | 繰り返しパターンの自動抽出を行う実験的機能 |
+| `pattern_mining.threshold` | 数値 1–20 | `3` | パターン候補として処理されるために必要な繰り返しの回数 |
+| `pattern_mining.lookback_sessions` | 数値 1–100 | `20` | スキャン対象とする直近のセッション数 |
 
-## PR Workflow group
+## PR Workflow グループ (PR ワークフロー)
 
-| Field | Control | Default | Notes |
+| フィールド | コントロール | デフォルト | 備考 |
 | --- | --- | --- | --- |
-| `pr_workflow.enabled` | toggle | `false` | Experimental team PR workflow for memory changes |
-| `pr_workflow.provider` | text | empty | Provider identifier for an already configured team workflow |
-| `pr_workflow.repo` | text | empty | Repository identifier for an already configured team workflow |
-| `pr_workflow.target_branch` | text | `main` | Branch receiving memory PRs |
+| `pr_workflow.enabled` | 切り替え | `false` | メモリの変更に対するチーム内 PR 型の実験的ワークフロー |
+| `pr_workflow.target_branch` | テキスト | `main` | メモリの PR を受け取るブランチ |
 
-## Encryption group
+## Encryption グループ (暗号化)
 
 <RiskCallout level="risky">
-Encryption config exists, but encrypted storage is not implemented yet. Document current limitations clearly to users.
+暗号化構成は存在しますが、暗号化ストレージはまだ実装されていません。現在の制限事項をユーザーに明確にドキュメントで通知してください。
 </RiskCallout>
 
-| Field | Control | Default | Notes |
+| フィールド | コントロール | デフォルト | 備考 |
 | --- | --- | --- | --- |
-| `encryption.enabled` | toggle | `false` | Future/advanced encryption mode |
-| `encryption.scope` | select — `workspace`, `global` | `global` | Which scope encryption applies to |
-| `encryption.key_source` | select — `portable-file` | `portable-file` | Key source strategy; backup loss risk |
+| `encryption.enabled` | 切り替え | `false` | 将来的な高度な暗号化モード |
+| `encryption.scope` | 選択 — `workspace`, `global` | `global` | 暗号化が適用されるスコープ |
+| `encryption.key_source` | 選択 — `portable-file` | `portable-file` | キーのソース戦略; バックアップ紛失時の復旧不可のリスクを伴います |
 
-## Next steps
+## 次のステップ
 
-- [Complete field reference](field-reference.md)
-- [Memories tab](memories.md)
-- [Maintain tab](core.md)
+- [完全なフィールドリファレンス](field-reference.md)
+- [Profiles タブ](profiles.md)
+- [Runtime タブ](runtime.md)

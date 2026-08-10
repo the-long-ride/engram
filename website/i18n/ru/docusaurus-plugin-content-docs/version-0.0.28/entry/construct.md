@@ -1,313 +1,262 @@
 ---
-title: Construct tab
+title: Вкладка Construct (Конструктор)
 sidebar_position: 4
-description: Configure every Engram runtime field from the Construct tab. Each field has a use case, safe default, validation, and risk warning.
+description: Настройте каждое поле времени выполнения Engram на вкладке Construct. Для каждого поля указаны вариант использования, безопасное значение по умолчанию, валидация и предупреждение о рисках.
 ---
 
 import RiskCallout from '@site/src/components/RiskCallout';
 
-# Construct tab
+# Вкладка Construct
 
-The Construct tab exposes every Engram runtime config field, grouped exactly like the UI. Each field has a description, use cases, safe default, validation, and risk warning.
+На вкладке Construct представлены все поля конфигурации времени выполнения Engram, сгруппированные точно так же, как в пользовательском интерфейсе. Каждое поле имеет описание, варианты использования, безопасное значение по умолчанию, валидацию и предупреждение о рисках.
 
 <RiskCallout level="caution">
-Fields marked **risky** can disable Engram, change save targets, change Git behavior, or affect memory security. Read the warning before changing them.
+Поля с пометкой **risky** (рискованные) могут отключить Engram, изменить цели сохранения, изменить поведение Git или повлиять на безопасность памяти. Прочтите предупреждение перед их изменением.
 </RiskCallout>
 
-## Core group
+## Группа Core (Ядро)
 
-### Enabled
+### Enabled (Включено)
 
-**Config key:** `enabled`  
-**Control:** toggle  
-**Default:** `true`  
-**Risk:** risky
+**Ключ конфигурации:** `enabled`  
+**Элемент управления:** переключатель  
+**По умолчанию:** `true`  
+**Риск:** risky
 
-Master switch. Disabling it stops Engram behavior entirely. Use only for temporary shutdown or testing.
+Главный выключатель. Его отключение полностью прекращает работу Engram. Используйте только для временного отключения или тестирования.
 
-### Save Target
+### Save Target (Цель сохранения)
 
-**Config key:** `scope`  
-**Control:** select — `workspace`, `global`, `both`  
-**Default:** `both`  
-**Risk:** risky
+**Ключ конфигурации:** `scope`  
+**Элемент управления:** выбор — `workspace`, `global`, `both`  
+**По умолчанию:** `both`  
+**Риск:** risky
 
-Controls where new approved memories are saved. Use `workspace` for repo-specific memory, `global` for personal/team memory, `both` for fresh installs that want both.
+Контролирует, куда сохраняются новые одобренные воспоминания. Используйте `workspace` для памяти конкретного репозитория, `global` для личной/командной памяти и `both` для новых установок, где требуется и то, и другое.
 
-### Update Mode
+### Read Mode (Режим чтения)
 
-**Config key:** `update`  
-**Control:** select — `auto`, `manual`, `off`  
-**Default:** `auto`  
-**Risk:** normal
+**Ключ конфигурации:** `read`  
+**Элемент управления:** выбор — `auto`, `startup`, `always`, `manual`, `off`  
+**По умолчанию:** `auto`  
+**Риск:** normal
 
-Controls the quiet one-time package upgrade check run by normal commands. Use `manual` or `off` only when upgrades are managed outside Engram.
+Контролирует, когда хуки агента внедряют контекст памяти. `auto` загружает при запуске сессии и повторно внедряет только при изменении маршрутизируемого контекста. `manual` и `off` снижают автоматизацию взамен на предотвращение раздувания контекста.
 
-### Read Mode
+### Proof Mode (Режим подтверждения)
 
-**Config key:** `read`  
-**Control:** select — `auto`, `startup`, `always`, `manual`, `off`  
-**Default:** `auto`  
-**Risk:** normal
+**Ключ конфигурации:** `proof`  
+**Элемент управления:** выбор — `off`, `compact`  
+**По умолчанию:** `off`  
+**Риск:** normal
 
-Controls when agent hooks inject memory context. `auto` loads on session start and reinjects only when routed context changes. `manual` and `off` reduce automation at the cost of context bloat.
+Будут ли хуки добавлять компактную строку `Engram proof:` при каждом подходящем действии. Полезно для отладки и видимости при аудите.
 
-### Proof Mode
+### Global Memory Path (Путь к глобальной памяти)
 
-**Config key:** `proof`  
-**Control:** select — `off`, `compact`  
-**Default:** `off`  
-**Risk:** normal
+**Ключ конфигурации:** `global_path`  
+**Элемент управления:** текст/путь  
+**По умолчанию:** пусто до настройки  
+**Риск:** risky
 
-Whether hooks append a compact `Engram proof:` line on each eligible turn. Useful for debugging and audit visibility.
-
-### Global Memory Path
-
-**Config key:** `global_path`  
-**Control:** text/path  
-**Default:** empty until configured  
-**Risk:** risky
-
-Filesystem path for global memory. Use a stable, user-owned folder such as `~/Documents/engram`. Avoid temp folders, synced public folders, and directories you cannot write to.
+Путь в файловой системе для глобальной памяти. Используйте стабильную папку, принадлежащую пользователю, например `~/Documents/engram`. Избегайте временных папок, синхронизируемых публичных папок и каталогов, в которые вы не можете писать.
 
 <RiskCallout level="risky">
-Using a cloud-synced public folder for private memory can leak secrets. Use a private path or a private Git repo.
+Использование облачной синхронизируемой публичной папки для приватной памяти может привести к утечке секретов. Используйте приватный путь или приватный Git-репозиторий.
 </RiskCallout>
 
-**CLI equivalent:**
+**Эквивалент в CLI:**
 
 ```bash
 engram update-global-folder ~/Documents/engram
 engram ugf ~/Documents/engram
 ```
 
-### Default Profile
+### Default Profile (Профиль по умолчанию)
 
-**Config key:** `default_profile`  
-**Control:** select  
-**Default:** empty  
-**Risk:** risky
+**Ключ конфигурации:** `default_profile`  
+**Элемент управления:** выбор  
+**По умолчанию:** пусто  
+**Риск:** risky
 
-Profile used when none is explicitly set. See [Profiles and scope resolution](../concepts/profiles.md).
+Профиль, используемый, когда ни один не задан явно. См. [Профили и разрешение областей действия](../concepts/profiles.md).
 
-### Active Roles
+### Active Roles (Активные роли)
 
-**Config key:** `roles`  
-**Control:** roles/comma input  
-**Default:** empty list  
-**Risk:** normal
+**Ключ конфигурации:** `roles`  
+**Элемент управления:** роли/ввод через запятую  
+**По умолчанию:** пустой список  
+**Риск:** normal
 
-Restricts and reranks memories by role. Use safe names matching `^[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$`.
+Ограничивает и переранжирует воспоминания по ролям. Используйте безопасные имена, соответствующие шаблону `^[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$`.
 
-## Ignore Rules group
+## Группа Load Routing (Маршрутизация загрузки)
 
-| Field | Control | Default | Notes |
-| --- | --- | --- | --- |
-| `ignore.source` | select | `engramignore` | Choose `engramignore`, `gitignore`, `both`, or `off` as scan-rule sources. |
-| `ignore.gitignore_path` | text | `.gitignore` | Git ignore file to use when enabled. |
-| `ignore.engramignore_path` | text | `.engramignore` | Engram ignore file to use when enabled. |
-| `ignore.global_engramignore` | toggle | `true` | Apply global ignore rules when global memory is configured. |
-| `ignore.also_ignore` | list | `*.secret`, `private/**` | Additional comma-separated glob patterns. |
+### Load Limit (Лимит загрузки)
 
-### Global Ignore Patterns
+**Ключ конфигурации:** `load.limit`  
+**Элемент управления:** число от 1 до 32  
+**По умолчанию:** `8`  
+**Риск:** normal
 
-**Config key:** `ignore.global_patterns`  
-**Control:** textarea, one glob pattern per line  
-**Default:** empty list  
-**Risk:** normal
+Максимальное количество воспоминаний, возвращаемых при обычной загрузке. Более низкие значения снижают раздувание контекста для моделей с небольшим контекстом; более высокие значения помогают при задачах глубокой архитектуры.
 
-Patterns apply to global memory reads. Every `engram inject` synchronizes them into a managed block in the workspace `.engramignore`; human-authored lines outside that block are preserved.
+## Группа Memory Limits (Лимиты памяти)
 
-### Auto-save policy
+### Rule Line Target (Целевой размер строк правил)
 
-The **Auto-save policy** editor writes `.agents/engram.policy.json`. It controls whether policy-approved candidates can save without an interactive prompt; normal saves remain approval-based.
+**Ключ конфигурации:** `memory.rule_line_target`  
+**Элемент управления:** число от 50 до 200, шаг 10  
+**По умолчанию:** `70`  
+**Риск:** normal
 
-See the [Auto-save Policy reference](policy.md) for every control, default, allowed value, review gate, quota, and rollback setting.
+Рекомендуемый размер воспоминаний о правилах. Краткие правила маршрутизируются лучше, чем слишком длинные политики.
 
-## Load Routing group
+### Rule Line Hard Limit (Жесткий лимит строк правил)
 
-### Load Limit
+**Ключ конфигурации:** `memory.rule_line_hard_limit`  
+**Элемент управления:** число от 50 до 200, шаг 10  
+**По умолчанию:** `100`  
+**Риск:** risky
 
-**Config key:** `load.limit`  
-**Control:** number 1–32  
-**Default:** `8`  
-**Risk:** normal
-
-Max memories returned by normal load. Lower values reduce context bloat for low-context models; higher values help deep architecture tasks.
-
-## Memory Limits group
-
-### Rule Line Target
-
-**Config key:** `memory.rule_line_target`  
-**Control:** number 50–200, step 10  
-**Default:** `70`  
-**Risk:** normal
-
-Recommended size for rule memories. Concise rules route better than overlong policies.
-
-### Rule Line Hard Limit
-
-**Config key:** `memory.rule_line_hard_limit`  
-**Control:** number 50–200, step 10  
-**Default:** `100`  
-**Risk:** risky
-
-Hard maximum for rule memories.
+Жесткий максимум для воспоминаний о правилах.
 
 <RiskCallout level="risky">
-Raising this can increase context bloat and reduce routing quality. Keep rules concise.
+Повышение этого лимита может увеличить раздувание контекста и снизить качество маршрутизации. Держите правила краткими.
 </RiskCallout>
 
-## Graph group
+## Группа Graph (Граф)
 
 ### graph.enabled
 
-**Control:** toggle  
-**Default:** `true`  
-**Risk:** normal
+**Элемент управления:** переключатель  
+**По умолчанию:** `true`  
+**Риск:** normal
 
-Enables dependency/relationship routing via `depends_on`, related memories, and the graph view.
+Включает маршрутизацию зависимостей и отношений через `depends_on`, связанные воспоминания и представление графа.
 
 ### graph.max_related
 
-**Control:** number 1–20  
-**Default:** `4`  
-**Risk:** normal
+**Элемент управления:** число от 1 до 20  
+**По умолчанию:** `4`  
+**Риск:** normal
 
-Limits related memories pulled through graph signals.
+Ограничивает количество связанных воспоминаний, извлекаемых через сигналы графа.
 
 ### graph.min_related_score
 
-**Control:** number 0–1, step 0.01  
-**Default:** `0.22`  
-**Risk:** normal
+**Элемент управления:** число от 0 до 1, шаг 0.01  
+**По умолчанию:** `0.22`  
+**Риск:** normal
 
-Minimum similarity score for related edges. Raise for precision, lower for recall.
+Минимальный показатель схожести для связанных связей (edges). Поднимите для точности, опустите для полноты охвата.
 
-## Vector Search group
-
-### vector.provider
-
-**Control:** select — `sqlite-vec`  
-**Default:** `sqlite-vec`  
-**Risk:** normal
-
-Selects the local vector provider. `sqlite-vec` is the only supported provider.
+## Группа Vector Search (Векторный поиск)
 
 ### vector.enabled
 
-**Control:** toggle  
-**Default:** `true`  
-**Risk:** normal
+**Элемент управления:** переключатель  
+**По умолчанию:** `true`  
+**Риск:** normal
 
-Enables optional local vector routing. No cloud dependency.
+Включает дополнительную локальную векторную маршрутизацию. Без облачных зависимостей.
 
 ### vector.auto_threshold
 
-**Control:** number 10–1000  
-**Default:** `100`  
-**Risk:** normal
+**Элемент управления:** число от 10 до 1000  
+**По умолчанию:** `100`  
+**Риск:** normal
 
-Memory count where vector search activates. Small vaults may not need vector search.
+Количество воспоминаний, при котором активируется векторный поиск. Для небольших хранилищ векторный поиск может не потребоваться.
 
 ### vector.candidate_pool
 
-**Control:** number 8–100  
-**Default:** `24`  
-**Risk:** normal
+**Элемент управления:** число от 8 до 100  
+**По умолчанию:** `24`  
+**Риск:** normal
 
-How many candidates vector search considers before reranking. Higher improves recall at latency cost.
+Сколько кандидатов рассматривает векторный поиск перед переранжированием. Более высокие значения улучшают полноту поиска за счет задержки.
 
 ### vector.dimensions
 
-**Control:** number 16–512  
-**Default:** `64`  
-**Risk:** normal
+**Элемент управления:** число от 16 до 512  
+**По умолчанию:** `64`  
+**Риск:** normal
 
-Embedding dimensions for the local vector sidecar. Changing this requires a rebuild.
+Размерность эмбеддингов для локального векторного сайдкара. Изменение этого параметра требует пересборки.
 
-## Rule Variants group
+## Группа Rule Variants (Варианты правил)
 
 ### rule_variants.enabled
 
-**Control:** toggle  
-**Default:** `false`  
-**Risk:** normal
+**Элемент управления:** переключатель  
+**По умолчанию:** `false`  
+**Риск:** normal
 
-Enables role/strictness variants. Use when teams need light/balanced/strict routing.
+Включает варианты ролей/строгости. Используйте, когда командам нужна легкая, сбалансированная или строгая маршрутизация.
 
 ### rule_variants.active
 
-**Control:** select — `light`, `balanced`, `strict`  
-**Default:** `balanced`  
-**Risk:** normal
+**Элемент управления:** выбор — `light`, `balanced`, `strict`  
+**По умолчанию:** `balanced`  
+**Риск:** normal
 
-Controls strictness of loaded rules. `strict` helps lower-tier models; `light`/`balanced` usually suit stronger models.
+Контролирует строгость загружаемых правил. Режим `strict` помогает моделям более низкого уровня; `light`/`balanced` обычно лучше подходят для более сильных моделей.
 
-## Live Sync group
+## Группа Live Sync (Живая синхронизация)
 
 ### live_sync.enabled
 
-**Control:** toggle  
-**Default:** `false`  
-**Risk:** normal
+**Элемент управления:** переключатель  
+**По умолчанию:** `false`  
+**Риск:** normal
 
-Syncs generated agent context files on save.
+Синхронизирует сгенерированные файлы контекста агента при сохранении.
 
-### live_sync.targets
-
-**Control:** list  
-**Default:** `agents-md`, `claude-md`, `cursorrules`
-
-Comma-separated generated context targets refreshed when live sync runs.
-
-## Global Git group
+## Группа Global Git (Глобальный Git)
 
 <RiskCallout level="risky">
-All Global Git fields are risky. They control audit history and team sync behavior for global memory. Review each before enabling.
+Все поля Global Git являются рискованными. Они контролируют историю аудита и поведение синхронизации команды для глобальной памяти. Проверьте каждое поле перед включением.
 </RiskCallout>
 
-| Field | Control | Default | Notes |
+| Поле | Контроль | По умолчанию | Примечания |
 | --- | --- | --- | --- |
-| `global_git.enabled` | toggle | `true` | Enables Git behavior for global memory |
-| `global_git.remote` | text | `origin` | Git remote name; cannot contain whitespace |
-| `global_git.remote_url` | text | empty | Shared global memory remote URL; HTTPS/SSH accepted |
-| `global_git.branch` | text | `main` | Target branch for sync |
-| `global_git.auto_sync` | toggle | `true` | Auto pull/push behavior |
-| `global_git.auto_resolve` | toggle | `true` | Auto conflict handling — review memory diffs |
+| `global_git.enabled` | переключатель | `true` | Включает поведение Git для глобальной памяти |
+| `global_git.remote` | текст | `origin` | Имя удаленного Git-репозитория; не может содержать пробелы |
+| `global_git.remote_url` | text | пусто | Удаленный URL-адрес общей глобальной памяти; принимаются HTTPS/SSH |
+| `global_git.branch` | текст | `main` | Целевая ветка для синхронизации |
+| `global_git.auto_sync` | переключатель | `true` | Поведение автоматического pull/push |
+| `global_git.auto_resolve` | переключатель | `true` | Автоматическое разрешение конфликтов — проверяйте разницу памяти |
 
-## Pattern Mining group
+## Группа Pattern Mining (Анализ паттернов)
 
-| Field | Control | Default | Notes |
+| Поле | Контроль | По умолчанию | Примечания |
 | --- | --- | --- | --- |
-| `pattern_mining.enabled` | toggle | `false` | Experimental recurring-pattern extraction |
-| `pattern_mining.threshold` | number 1–20 | `3` | Repetitions before a pattern candidate matters |
-| `pattern_mining.lookback_sessions` | number 1–100 | `20` | Recent sessions to inspect |
+| `pattern_mining.enabled` | переключатель | `false` | Экспериментальное извлечение повторяющихся паттернов |
+| `pattern_mining.threshold` | число от 1 до 20 | `3` | Повторения перед тем, как кандидат на паттерн станет значимым |
+| `pattern_mining.lookback_sessions` | число от 1 до 100 | `20` | Последние сессии для проверки |
 
-## PR Workflow group
+## Группа PR Workflow (Рабочий процесс PR)
 
-| Field | Control | Default | Notes |
+| Поле | Контроль | По умолчанию | Примечания |
 | --- | --- | --- | --- |
-| `pr_workflow.enabled` | toggle | `false` | Experimental team PR workflow for memory changes |
-| `pr_workflow.provider` | text | empty | Provider identifier for an already configured team workflow |
-| `pr_workflow.repo` | text | empty | Repository identifier for an already configured team workflow |
-| `pr_workflow.target_branch` | text | `main` | Branch receiving memory PRs |
+| `pr_workflow.enabled` | переключатель | `false` | Экспериментальный командный рабочий процесс PR для изменений памяти |
+| `pr_workflow.target_branch` | текст | `main` | Ветка, получающая PR изменений памяти |
 
-## Encryption group
+## Группа Encryption (Шифрование)
 
 <RiskCallout level="risky">
-Encryption config exists, but encrypted storage is not implemented yet. Document current limitations clearly to users.
+Конфигурация шифрования существует, но зашифрованное хранилище еще не реализовано. Четко задокументируйте текущие ограничения для пользователей.
 </RiskCallout>
 
-| Field | Control | Default | Notes |
+| Поле | Контроль | По умолчанию | Примечания |
 | --- | --- | --- | --- |
-| `encryption.enabled` | toggle | `false` | Future/advanced encryption mode |
-| `encryption.scope` | select — `workspace`, `global` | `global` | Which scope encryption applies to |
-| `encryption.key_source` | select — `portable-file` | `portable-file` | Key source strategy; backup loss risk |
+| `encryption.enabled` | переключатель | `false` | Будущий/расширенный режим шифрования |
+| `encryption.scope` | выбор — `workspace`, `global` | `global` | К какой области применяется шифрование |
+| `encryption.key_source` | выбор — `portable-file` | `portable-file` | Стратегия источника ключа; риск потери резервной копии |
 
-## Next steps
+## Следующие шаги
 
-- [Complete field reference](field-reference.md)
-- [Memories tab](memories.md)
-- [Maintain tab](core.md)
+- [Полный справочник полей](field-reference.md)
+- [Вкладка Profiles](profiles.md)
+- [Вкладка Runtime](runtime.md)

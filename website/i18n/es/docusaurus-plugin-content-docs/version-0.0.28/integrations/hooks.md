@@ -1,14 +1,14 @@
 ---
-title: Hooks and proof lines
+title: Hooks y líneas de verificación
 sidebar_position: 12
-description: Engram agent hooks inject routed memory at session start and prompt turns. Proof lines make injection visible.
+description: Los hooks de agente de Engram inyectan memoria enrutada al inicio de la sesión y en los turnos de prompt. Las líneas de verificación hacen visible la inyección.
 ---
 
-# Hooks and proof lines
+# Hooks y líneas de verificación
 
-Agent hooks are opt-in host hooks that inject routed Engram context at session start and later task-change turns when the host exposes a safe prompt-time context channel.
+Los hooks de agente son hooks del host opcionales que inyectan el contexto de Engram enrutado en el inicio de la sesión y en los turnos posteriores de cambio de tarea cuando el host expone un canal de contexto seguro en el momento del prompt.
 
-## Install hooks
+## Instalar hooks
 
 ```bash
 engram link codex
@@ -20,37 +20,37 @@ engram link --global opencode
 engram set-proof compact
 ```
 
-Use `--global` for user-level config and `engram unlink` to remove only Engram-managed hook entries.
+Use `--global` para la configuración a nivel de usuario y `engram unlink` para eliminar solo las entradas de hooks gestionadas por Engram.
 
-## Read mode
+## Modo de lectura
 
-`engram set-read startup|auto|always|manual|off` controls runtime behavior:
+`engram set-read startup|auto|always|manual|off` controla el comportamiento en tiempo de ejecución:
 
-- `auto` loads on session start and reinjects only when routed Engram context changes.
-- `startup` loads only at session start.
-- `always` reinjects on every eligible turn.
-- `manual` and `off` reduce automation.
+- `auto` se carga al inicio de la sesión y se vuelve a inyectar solo cuando cambia el contexto de Engram enrutado.
+- `startup` se carga solo al inicio de la sesión.
+- `always` vuelve a inyectar en cada turno elegible.
+- `manual` y `off` reducen la automatización.
 
-The hook cache stores hashes, session ids, host, cwd, and routed signatures — never raw prompt text.
+La caché de hooks almacena hashes, ids de sesión, host, cwd y firmas enrutadas, nunca texto de prompt sin procesar.
 
-## Proof mode
+## Modo de verificación
 
-`engram set-proof off|compact` controls whether supported hooks also append a compact `Engram proof:` line on each eligible turn. Proof visibility is separate from `set-read`: `compact` can report loaded, reused, or skipped turns without changing when full Engram memory is injected.
+`engram set-proof off|compact` controla si los hooks compatibles también añaden una línea compacta `Engram proof:` en cada turno elegible. La visibilidad de la verificación es independiente de `set-read`: `compact` puede reportar turnos cargados, reutilizados o omitidos sin cambiar cuándo se inyecta la memoria completa de Engram.
 
-## Hook capability matrix
+## Matriz de capacidad de hooks
 
-| Host | Config path | Events |
+| Host | Ruta de configuración | Eventos |
 | --- | --- | --- |
 | `codex` | `.codex/hooks.json`; global `~/.codex/hooks.json` | `SessionStart`, `UserPromptSubmit` |
 | `claude` | `.claude/settings.json`; global `~/.claude/settings.json` | `SessionStart`, `UserPromptSubmit` |
 | `gemini` | `.gemini/settings.json`; global `~/.gemini/settings.json` | `SessionStart`, `BeforeAgent` |
-| `cursor` | `.cursor/hooks.json`; global plugin `hooks/hooks.json` | `sessionStart` |
+| `cursor` | `.cursor/hooks.json`; plugin global `hooks/hooks.json` | `sessionStart` |
 | `windsurf` / `cascade` | `.windsurf/hooks.json`; global `~/.codeium/windsurf/hooks.json` | `pre_user_prompt` |
 | `opencode` | `~/.config/opencode/plugins/engram.js` | `chat.message`, `experimental.chat.system.transform` |
-| `copilot` | None written | N/A |
-| `cline` | None written | N/A |
+| `copilot` | Ninguno escrito | N/A |
+| `cline` | Ninguno escrito | N/A |
 
-## Next steps
+## Siguientes pasos
 
-- [Agent Integrations overview](overview.md)
-- [CLI: inject / link / upgrade](../cli/inject-link-upgrade.md)
+- [Descripción general de las integraciones de agentes](overview.md)
+- [CLI: inject / link / actualización](../cli/inject-link-upgrade.md)

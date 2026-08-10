@@ -69,7 +69,6 @@ Normal read/write commands fall back to JSON config snapshots. DB-specific comma
 - [FAQ](faq.md)
 - [CLI: verify / repair / quality-check](../cli/verify-repair-quality.md)
 
-
 ## Git author identity
 
 Engram can store a global author and an optional workspace override. Resolution is workspace, global, then read-only Git fallback. Settings affect future memories only; a workspace override never changes global Git configuration. Use explicit plan and confirmation for global Git sync or legacy-memory migration.
@@ -84,14 +83,4 @@ engram author migrate-memories --plan
 engram author migrate-memories --confirm
 ```
 
-Read the complete [Git author settings guide](git-author-settings.md).
-
-## Vector primary-key error during upgrade
-
-Older vector-sidecar code could surface this sqlite-vec error while `engram upgrade --latest` rebuilt `memory_vectors`:
-
-```text
-Only integers are allowed for primary key values on memory_vectors
-```
-
-Current Engram binds vec0 row IDs with integer-compatible `BigInt` values. Vector search is a disposable acceleration layer: if sqlite-vec still fails, Engram removes the incomplete sidecar/WAL/SHM files, reports vector status as **degraded**, and continues the durable upgrade through lexical/graph retrieval. Use `engram upgrade --latest --plan` to preview the durable configuration changes. See [Configuration upgrades](configuration-upgrades.md).
+Read the complete [Git author settings guide](../operations/git-author-settings.md).

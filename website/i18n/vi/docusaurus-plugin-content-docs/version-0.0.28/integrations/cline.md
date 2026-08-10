@@ -1,29 +1,29 @@
 ---
 title: Cline
 sidebar_position: 9
-description: Engram integration with Cline via workspace rules.
+description: Tích hợp Engram với Cline thông qua các quy tắc workspace.
 ---
 
 # Cline
 
-Cline reads workspace rules from `.clinerules`.
+Cline đọc các quy tắc workspace từ `.clinerules`.
 
-## Install
+## Cài đặt
 
 ```bash
 engram link cline
 ```
 
-## Files written
+## Các tệp được ghi
 
-| File | Purpose |
+| Tệp | Mục đích |
 | --- | --- |
-| `.clinerules` | Cline-style workspace rules |
+| `.clinerules` | Các quy tắc workspace kiểu Cline |
 
-## Compact/manual fallback target
+## Mục tiêu dự phòng thu gọn/thủ công
 
-Cline is a compact/manual fallback target. Hook support is plugin-based and not aligned with Engram's file-first adapter installer in v1, so hook install is skipped and no hook config is written.
+Cline là một mục tiêu dự phòng thu gọn/thủ công. Hỗ trợ hook dựa trên plugin và không phù hợp với trình cài đặt bộ điều hợp ưu tiên tệp của Engram trong v1, vì vậy cài đặt hook bị bỏ qua và không có cấu hình hook nào được ghi.
 
-## Next steps
+## Các bước tiếp theo
 
-- [Agent Integrations overview](overview.md)
+- [Tổng quan về tích hợp Agent](overview.md)

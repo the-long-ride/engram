@@ -1,63 +1,63 @@
 ---
-title: Daily workflow
+title: 日常工作流
 sidebar_position: 4
-description: The everyday Engram loop — load, work, search, save, and keep memory healthy.
+description: Engram 日常循环 — 加载、工作、搜索、保存并保持内存健康。
 ---
 
-# Daily workflow
+# 日常工作流
 
-The Engram daily loop is intentionally boring: load memory at the start, search when you need more, save when something durable emerges, and audit at the end.
+Engram 日常循环故意设计得很简单：在开始时加载内存，在需要时进行搜索，在出现持久内容时保存，并在结束时进行审计。
 
-## Start of session
-
-```text
-/engram load "current task"
-```
-
-Or from the terminal:
-
-```bash
-engram load "<task>"
-```
-
-The agent should reply with a compact count line such as `Engram loaded: 8 memories / 24 total related memories.` unless the human asks for IDs, rules, or raw output.
-
-## During work
-
-Search when the task changes or you suspect project knowledge is missing:
+## 启动会话
 
 ```text
-/engram search "topic I might be missing"
+/engram load "当前任务"
 ```
 
-Preview which memory files would route without printing their contents:
+或者从终端运行：
 
 ```bash
-engram load --dry-run "<query>"
+engram load "<任务>"
 ```
 
-Return every visible routed match instead of the compact limit:
+Agent 应当回复一条紧凑的计数行，例如 `Engram loaded: 8 memories / 24 total related memories.`，除非人类要求提供 ID、规则或原始输出。
+
+## 在工作期间
+
+当任务改变或你怀疑缺少项目知识时进行搜索：
+
+```text
+/engram search "我可能缺失的主题"
+```
+
+预览哪些内存文件将被路由而不打印其内容：
 
 ```bash
-engram load --all "<query>"
+engram load --dry-run "<查询>"
 ```
 
-## Save one durable fact
+返回每个可见的路由匹配，而不是紧凑限制：
+
+```bash
+engram load --all "<查询>"
+```
+
+## 保存一个持久事实
 
 ```text
 /engram save knowledge
 ```
 
-`engram save` captures the best single memory candidate, automatically updates a matching memory or creates a new one, and always shows the A/B/C approval gate before writing.
+`engram save` 捕获最佳的单个内存候选，自动更新匹配的内存或创建新内存，并在写入前始终显示 A/B/C 审批门。
 
-## Save several memories from a session
+## 保存一个会话的多个内存
 
 ```text
 /engram save-session
 /engram ss
 ```
 
-Provide candidates in this shape:
+提供此形式的候选：
 
 ```text
 TYPE: rule | TEXT: Always run tests before release. | CONTEXT: Created from release planning so future agents preserve the test gate.
@@ -65,42 +65,42 @@ TYPE: knowledge | TEXT: Release notes live in CHANGELOG.md.
 TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
 ```
 
-`CONTEXT: ...` is optional. Add it only when it explains why the memory exists.
+`CONTEXT: ...` 是可选的。仅在解释内存存在的原因时添加它。
 
-## Mine recent chats
+## 挖掘最近的聊天记录
 
 ```text
 /engram save-session --query-level 3
 /engram ss -f last 50 sessions
 ```
 
-`--query-level` must be a positive integer. The agent may use up to that many recent human-agent chat sessions, including the current one, and must not invent unavailable history.
+`--query-level` 必须是正整数。Agent 可以使用多达该数量的最近的人与 Agent 的聊天会话（包括当前会话），且不得编造不可用的历史记录。
 
-## Accept-all shortcut
+## 接受全部快捷方式
 
 ```text
 /engram ss -f
 ```
 
-`-f` means the human explicitly approves every agent-recommended candidate. Agents must not add `--force` unless the human requested it.
+`-f` 意味着人类明确批准 Agent 推荐的每个候选。除非人类要求，否则 Agent 不得添加 `--force`。
 
-When an accept-all run reports related memories before writing, no file was saved yet. The agent should rerun with structured candidates:
+当“接受全部”运行在写入前报告相关内存时，说明尚未保存任何文件。Agent 应当使用结构化候选重新运行：
 
 ```text
 TYPE: rule | TEXT: OAuth rotation follows release foundations. | DEPENDS_ON: release-foundation | LEVEL: advanced
 TYPE: knowledge | TEXT: Invoice retries use exponential backoff. | UPDATE: invoice-retry-baseline
 ```
 
-## Role routing
+## 角色路由 (Role routing)
 
-Save role-specific memory:
+保存特定角色的内存：
 
 ```bash
 engram save --role frontend ...
 engram save-session --role backend ...
 ```
 
-Tune role routing:
+调整角色路由：
 
 ```bash
 engram set-role frontend
@@ -108,27 +108,28 @@ engram set-role backend security
 engram set-role
 ```
 
-When `engram set-role ...` or `engram set-rule-variant ...` succeeds, the CLI returns an `Agent action:` line. Engram-aware slash adapters and MCP hosts should immediately rerun `engram load "<current task/request>"` and treat that result as replacing prior Engram-loaded context.
+当 `engram set-role ...` 或 `engram set-rule-variant ...` 成功时，CLI 返回一行 `Agent action:`。支持 Engram 的斜杠适配器和 MCP 主机应立即重新运行 `engram load "<当前任务/请求>"` 并将该结果视为替换先前加载的 Engram 上下文。
 
-## End of meaningful work
+## 结束有意义的工作
 
 ```text
 Check Engram health, report invalid memories, and propose anything worth saving from this session.
 ```
 
-Useful commands:
+常用命令：
 
 ```bash
 engram upgrade
 engram verify
 engram repair
-engram graph "<topic>"
+engram graph "<主题>"
 engram quality-check
-engram archive --reason "<why>" <id-or-file>
+engram archive --reason "<原因>" <id或文件>
 ```
 
-## Next steps
+## 下一步
 
-- [CLI Reference](cli/overview.md)
-- [Operations troubleshooting](operations/troubleshooting.md)
+- [CLI 参考](cli/overview.md)
+- [运行故障排除](operations/troubleshooting.md)
 - [Entry Web UI](entry/index.md)
+

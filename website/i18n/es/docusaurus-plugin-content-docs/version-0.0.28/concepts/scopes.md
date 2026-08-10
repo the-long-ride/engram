@@ -1,43 +1,43 @@
 ---
-title: Workspace vs global memory
+title: Memoria de espacio de trabajo frente a memoria global
 sidebar_position: 3
-description: Workspace memory wins. Global memory is fallback for reusable preferences and team context across projects.
+description: La memoria del espacio de trabajo prevalece. La memoria global es alternativa para preferencias reutilizables y contexto de equipo entre proyectos.
 ---
 
-# Workspace vs global memory
+# Memoria de espacio de trabajo frente a memoria global
 
-Engram resolves memory in two scopes.
+Engram resuelve la memoria en dos alcances.
 
-## Workspace memory
+## Memoria del espacio de trabajo
 
-Workspace memory lives in:
+La memoria del espacio de trabajo vive en:
 
 ```text
 <project>/.agents/.engram/
 ```
 
-It holds project-specific rules, decisions, and workflows. Workspace memory wins over global duplicates.
+Contiene reglas, decisiones y flujos de trabajo específicos del proyecto. La memoria del espacio de trabajo prevalece sobre los duplicados globales.
 
-## Global memory
+## Memoria global
 
-Global memory is optional and lives wherever the user configures it. It holds preferences and team context that should follow you across repos.
+La memoria global es opcional y vive donde el usuario la configure. Contiene preferencias y contexto de equipo que deben seguirlo a través de los repositorios.
 
 ```bash
 engram inject --global-only --global-path ~/Documents/engram
 ```
 
-Global memory is fallback for reusable preferences, personal habits, or team-wide defaults.
+La memoria global es alternativa para preferencias reutilizables, hábitos personales o valores predeterminados de todo el equipo.
 
-## Scope priority
+## Prioridad de alcance
 
-1. Workspace memory: `<project>/.agents/.engram/`
-2. Global memory: `$ENGRAM_GLOBAL_DIR` or `engram inject --global-path <path>`
+1. Memoria del espacio de trabajo: `<project>/.agents/.engram/`
+2. Memoria global: `$ENGRAM_GLOBAL_DIR` o `engram inject --global-path <path>`
 
-Workspace memory wins. Global memory is fallback for reusable preferences and team context across projects.
+La memoria del espacio de trabajo prevalece. La memoria global es alternativa para preferencias reutilizables y contexto de equipo entre proyectos.
 
-## Choose a save target
+## Elegir un destino de guardado
 
-Use `set-save-target` to choose where normal saves go:
+Use `set-save-target` para elegir a dónde van los guardados normales:
 
 ```bash
 engram set-save-target status
@@ -46,11 +46,11 @@ engram set-save-target global
 engram set-save-target both
 ```
 
-Fresh workspace installs default normal saves to both workspace and global when global memory is configured. Agents can override one write with `--scope workspace|global|both`.
+Las instalaciones de nuevos espacios de trabajo guardan por defecto las operaciones normales tanto en el espacio de trabajo como en el global cuando se configura la memoria global. Los agentes pueden anular una escritura con `--scope workspace|global|both`.
 
-If the active configuration scope is set to `global` (`scope: "global"`), workspace-level skillset linking is disabled and skipped to prevent writing files to the running folder. To link agents in a global-scope setup, use `engram link --global`.
+Si el alcance de configuración activo está establecido en `global` (`scope: "global"`), la vinculación de skillset a nivel de espacio de trabajo se deshabilita y se omite para evitar escribir archivos en la carpeta de ejecución. Para vincular agentes en una configuración de alcance global, use `engram link --global`.
 
-## Next steps
+## Siguientes pasos
 
-- [Profiles and scope resolution](profiles.md)
-- [Read path and routing](read-path.md)
+- [Perfiles y resolución de alcance](profiles.md)
+- [Ruta de lectura y enrutamiento](read-path.md)

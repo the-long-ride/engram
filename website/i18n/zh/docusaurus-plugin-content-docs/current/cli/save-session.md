@@ -57,18 +57,6 @@ engram save-session --file .agents/.engram/inbox/<note>.md
 
 `observe` stores sanitized raw notes in `inbox/`. Inbox notes are not active memory. Use this when you want to preserve rough notes before deciding what should become durable memory.
 
-<!-- evidence-foundation:v3:start -->
-## Evidence-backed memory
-
-```bash
-engram observe --file session.md
-# Output includes Trace: tr_... and the inbox wrapper path
-engram save-session --file .agents/.engram/inbox/<observation>.md
-```
-
-The immutable source lives at `.agents/.engram/traces/<trace-id>.jsonl`; the inbox Markdown is only a review wrapper. Promotion reopens the trace and writes approved memory with `evidence_refs` and `derived_from`. `engram observe --propose --file session.md` may immediately enter the normal approval flow, but it still uses the trace as source evidence.
-<!-- evidence-foundation:v3:end -->
-
 ## Related-memory hints
 
 When an accept-all run reports related memories before writing, no file was saved yet. The agent should rerun with structured candidates:
@@ -83,6 +71,11 @@ TYPE: knowledge | TEXT: Invoice retries use exponential backoff. | UPDATE: invoi
 - [inject / link / upgrade](inject-link-upgrade.md)
 - [Concepts: write path and approval](../concepts/write-path.md)
 
+<!-- evidence-foundation:v3:start -->
+## 证据支持的记忆
+
+New files use `schema_version: 3`. Rule and skill memories default to `authority: instruction`; knowledge defaults to `authority: reference`. `revision` starts at 1 and increments on updates. Trace IDs belong in `evidence_refs`, while session or source identities belong in `derived_from`. Legacy v1 (`Context` + `Content` + `Example`) and v2 (`Content`, optional `Origin`) remain readable. Traces live in `.agents/.engram/traces/` with `traces/<trace-id>.jsonl` files recording `engram observe --file` and `save-session --file` provenance, `trust_level`, `sensitivity`, and `retention`.
+<!-- evidence-foundation:v3:end -->
 
 ## Git author identity
 

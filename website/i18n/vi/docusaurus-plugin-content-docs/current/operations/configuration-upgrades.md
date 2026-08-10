@@ -40,13 +40,13 @@ The Updates page now uses a compact dashboard: a **status banner** reports wheth
 
 Open `engram entry`, then **Settings → Updates**. The sidebar **copy command** action copies `engram upgrade --latest --plan` without navigating away. The preview has `All` plus only actionable kind tabs: `Config`, `Instructions`, `Memories`, `Skillsets`, `Hooks`, and `Plugins`.
 
-Every conflict has a **Review** action. The modal provides **Current**, **Proposed**, and **Diff** views. **Current** is read-only. **Proposed** is editable for replaceable Config/Instruction/Skillset items and starts from Engram's type-aware merged/replacement result. **Diff** defaults to **Inline** and can switch to **Parallel**. Inline marks removed lines with `-` on a red background and added lines with `+` on a green background; Parallel aligns **Current** and **Proposed** rows with the same red/green highlighting. Use **Use latest**, **Reset proposed**, **Keep current**, or—when Engram can prove ownership—**Force upgrade**, then **Confirm change**.
+Every conflict has a **Review** action. The modal provides **Current**, **Proposed**, and **Diff** views. **Current** is read-only. **Proposed** is editable for replaceable Config/Instruction/Skillset items and starts from Engram's type-aware merged/replacement result. **Diff** defaults to **Inline** and can switch to **Parallel**. Inline marks removed lines with `-` trên nền đỏ and added lines with `+` trên nền xanh; Parallel aligns **Current** and **Proposed** rows with the same nổi bật đỏ/xanh. Use **Use latest**, **Reset proposed**, **Keep current**, or—when Engram can prove ownership—**Force upgrade**, then **Confirm change**.
 
 **Open in editor** opens the exact current artifact resolved by the server, using `$VISUAL`, then `$EDITOR`, then the platform fallback. The browser never supplies a filesystem path. For **Instructions**, **Proposed** contains only the managed `<!-- engram:start -->` block; the full global skillset stays in the companion `.agents/engram.md` guide. If the external edit changes the file, the preview/source hash becomes stale and the review must be refreshed before confirmation.
 
 Eligible pending replaceable conflicts have selection checkboxes. **Select all visible** selects eligible rows in the active kind tab; selection persists when switching tabs. **Confirm selected changes** accepts **Use latest** for the checked rows, while **Confirm all changes** accepts **Use latest** for every eligible pending conflict in the full preview. Non-replaceable, stale, and already-reviewed rows cannot be selected. The server validates the complete batch against the preview fingerprint, current source hashes, review states, and generated proposals before one atomic review-store write. If any selected item fails validation, zero batch decisions are saved.
 
-Entry uses the same custom checkbox treatment across upgrade review: checked, keyboard-focus, and disabled states are visibly distinct. Result toast feedback uses a green border/glow for success and a red border/glow for errors.
+Entry uses the same custom checkbox treatment across upgrade review: checked, keyboard-focus, and disabled states are visibly distinct. Result toast feedback uses a viền/hào quang xanh for success and a viền/hào quang đỏ for errors.
 
 The page shows review progress. The final Upgrade action remains disabled until every conflict is explicitly resolved as accepted latest, edited proposal, **Force upgrade**, or **Keep current**. A final confirmation summarizes automatic updates, accepted proposals, edited proposals, forced replacements, kept-current files, and backups.
 
@@ -116,3 +116,13 @@ engram upgrade --latest
 ```
 
 Re-running the upgrade is idempotent for current artifacts. Reviewed `Keep current` files remain untouched unless their state changes and requires a new review.
+
+## Đối soát cấu hình nhận biết quyền sở hữu
+
+Danh mục nâng cấp loại bỏ trùng lặp các tích hợp đã đăng ký theo tệp vật lý. Nếu nhiều host chia sẻ cùng một hướng dẫn Engram, Engram sẽ render và ghi tệp đó một lần.
+
+Khi việc chỉnh sửa thủ công khiến tệp không an toàn để thay thế bình thường, Entry chỉ cung cấp **Force upgrade** khi có thể chứng minh quyền sở hữu. Đối với khối Engram được đánh dấu, việc buộc thay thế chỉ thay thế khối Engram đó và giữ nguyên văn bản người dùng xung quanh. Đối với tệp được sinh/tạo bởi Engram, việc buộc thay thế có thể thay thế toàn bộ tệp được sinh ra. Quyền sở hữu không rõ ràng không bao giờ có thể buộc thay thế, và xác nhận hàng loạt không bao giờ thực hiện hành động buộc.
+
+Việc áp dụng thành công được xác minh bằng cách quét lại sau khi ghi. Các tệp mong đợi cập nhật không hội tụ về current sẽ được báo cáo là lỗi xác minh.
+
+Trang cập nhật sử dụng bảng điều khiển gọn gàng: **biểu ngữ trạng thái** báo cáo tình trạng, các thẻ **Workspace**, **Global** và **Conflicts** hiển thị số lượng. Các phần tử hiển thị trong **bảng** với **cuộn ngang** chia sẻ. Sử dụng **ô chọn** tùy chỉnh và **thông báo** kết quả hiển thị viền xanh cho **thành công** và viền đỏ cho **lỗi**.

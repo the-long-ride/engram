@@ -1,24 +1,24 @@
 ---
-title: Changelog
+title: Nhật ký thay đổi
 sidebar_position: 5
-description: Engram release history.
+description: Lịch sử phát hành của Engram.
 ---
 
-# Changelog
+# Nhật ký thay đổi (Changelog)
 
-Engram release history lives in the repository [`CHANGELOG.md`](https://github.com/the-long-ride/engram/blob/main/CHANGELOG.md).
+Lịch sử phát hành Engram nằm trong kho lưu trữ [`CHANGELOG.md`](https://github.com/the-long-ride/engram/blob/main/CHANGELOG.md).
 
-For the current package version, see [`package.json`](https://github.com/the-long-ride/engram/blob/main/package.json).
+Đối với phiên bản gói hiện tại, xem tại [`package.json`](https://github.com/the-long-ride/engram/blob/main/package.json).
 
-## Current version
+## Phiên bản hiện tại
 
-The current released Engram version is `0.0.28`.
+Phiên bản Engram đã được phát hành hiện tại là `0.0.27`.
 
-## Upgrade
+## Nâng cấp
 
 ```bash
 npm install -g @the-long-ride/engram@latest
 engram upgrade
 ```
 
-See [Release and upgrade process](release-upgrade.md) for details.
+Xem chi tiết tại phần [Quy trình phát hành và nâng cấp](release-upgrade.md).

@@ -62,16 +62,14 @@ Engram includes:
 - `benchmark` for retrieval regression checks
 - agent skillsets, slash adapters, and MCP-style proposal tools
 
-<!-- evidence-foundation:v3:start -->
-## Evidence-backed memory
-
-Engram now keeps two distinct durable layers: immutable sanitized evidence traces under `traces/`, and human-approved schema v3 Markdown memory. A trace has `authority: evidence` and can never instruct the agent. Active memory uses `authority: instruction` or `authority: reference`, and links back through `evidence_refs` and `derived_from`. The CLI and Entry Web UI display the same provenance fields.
-
-New approved files carry `schema_version: 3`.
-<!-- evidence-foundation:v3:end -->
-
 ## Next steps
 
 - [AI-agent quickstart](quickstart.md)
 - [Install and configure](install.md)
 - [Human-owned protocol](concepts/protocol.md)
+
+<!-- evidence-foundation:v3:start -->
+## Bộ nhớ có bằng chứng
+
+New files use `schema_version: 3`. Rule and skill memories default to `authority: instruction`; knowledge defaults to `authority: reference`. `revision` starts at 1 and increments on updates. Trace IDs belong in `evidence_refs`, while session or source identities belong in `derived_from`. Legacy v1 (`Context` + `Content` + `Example`) and v2 (`Content`, optional `Origin`) remain readable. Traces live in `.agents/.engram/traces/` with `traces/<trace-id>.jsonl` files recording `engram observe --file` and `save-session --file` provenance, `trust_level`, `sensitivity`, and `retention`.
+<!-- evidence-foundation:v3:end -->

@@ -1,30 +1,29 @@
 ---
 title: load / search / graph
 sidebar_position: 2
-description: Read commands — load routed memory, search the vault, and inspect graph routing.
+description: Команды чтения — загрузка маршрутизированной памяти, поиск по хранилищу и проверка маршрутизации графа.
 ---
 
 # load / search / graph
 
-Read commands load routed memory, search the vault, and inspect graph routing.
+Команды чтения загружают маршрутизированную память, ищут по хранилищу и проверяют маршрутизацию графа.
 
 ## load
 
 ```bash
 engram load "<task>"
-engram load --full "<task>"
+engram load "<task>"
 engram load --dry-run "<task>"
 engram load --all "<task>"
 ```
 
-`load` first anchors routing on meaningful query terms, ignoring generic memory words such as `rule`, `knowledge`, and common stopwords. It then refines the wider candidate pool into a compact context pack. Normal load reports selected and total related counts, like `loaded 8 memory files / 14 total related memories`.
+`load` сначала привязывает маршрутизацию к значимым поисковым терминам, игнорируя общие слова памяти, такие как `rule`, `knowledge`, и обычные стоп-слова. Затем он очищает более широкий пул кандидатов в компактный пакет контекста. Обычная загрузка сообщает о выбранных и общих связанных подсчетах, например `loaded 8 memory files / 14 total related memories`.
 
-- default `load` — compact agent-facing route (only `id`, `type`, `tags`, `confidence`, `depends_on` in frontmatter; one selected rule variant)
-- `--full` — broader legacy output with full frontmatter and full rule variants
-- `--dry-run` — show candidate counts, narrowing tags, and match reasons without printing content
-- `--all` — return every visible routed match instead of the compact limit
+- `--full` — компактный маршрут, ориентированный на агента (только `id`, `type`, `tags`, `confidence`, `depends_on` во frontmatter; один выбранный вариант правила)
+- `--dry-run` — показать количество кандидатов, сужающие теги и причины совпадения без вывода содержимого
+- `--all` — вернуть все видимые совпадения маршрутизации вместо компактного лимита
 
-`workflow` and `workflows` still route to skill memories, but generic type words do not make a broad match by themselves.
+`workflow` и `workflows` по-прежнему маршрутизируют в память навыков, но слова общего типа сами по себе не обеспечивают широкого совпадения.
 
 ## search
 
@@ -33,7 +32,7 @@ engram search "<topic>"
 engram search --semantic "<topic>"
 ```
 
-Default search is deterministic lexical search. `search --semantic` adds deterministic local similarity, not embedding-backed semantic search.
+Поиск по умолчанию — это детерминированный лексический поиск. `search --semantic` добавляет детерминированное локальное сходство, а не семантический поиск на основе эмбеддингов.
 
 ## graph
 
@@ -42,20 +41,21 @@ engram graph "<topic>"
 engram graph --rebuild
 ```
 
-Inspect graph routing. Run `engram graph --rebuild` after manual edits. The graph reports dependency layers, and `engram load` pulls routed prerequisites into the same compact context pack before deeper memories.
+Проверить маршрутизацию графа. Запустите `engram graph --rebuild` после ручного редактирования. Граф сообщает о слоях зависимостей, и `engram load` извлекает маршрутизированные предварительные условия в тот же компактный пакет контекста перед более глубокими воспоминаниями.
 
-Graph related edges and vector hits cannot load unrelated memories by themselves; they only help rerank or expand memories that already overlap meaningful query terms. Explicit `depends_on` prerequisites may still load without their own keyword overlap.
+Связанные ребра графа и векторные совпадения не могут загружать несвязанные воспоминания сами по себе; они лишь помогают переранжировать или расширить воспоминания, которые уже перекрывают значимые условия запроса. Явные предварительные условия `depends_on` все еще могут загружаться без собственного перекрытия ключевых слов.
 
-## Dependency layers
+## Слои зависимостей (Dependency layers)
 
 ```yaml
 depends_on: [release-foundation]
 level: advanced
 ```
 
-Use `depends_on` frontmatter when a memory should build on another memory instead of repeating it.
+Используйте frontmatter `depends_on`, когда память должна основываться на другой памяти, а не дублировать ее.
 
-## Next steps
+## Следующие шаги
 
 - [save / save-session / observe](save-session.md)
-- [Concepts: read path and routing](../concepts/read-path.md)
+- [Концепции: путь чтения и маршрутизация](../concepts/read-path.md)
+

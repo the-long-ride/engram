@@ -1,57 +1,58 @@
 ---
-title: Read path and routing
+title: Путь чтения и маршрутизация
 sidebar_position: 5
-description: Engram loads workspace and global indexes, applies ignore rules and role filters, then routes a compact context pack.
+description: Engram загружает индексы рабочего пространства и глобальные индексы, применяет правила игнорирования и фильтры ролей, а затем направляет компактный пакет контекста.
 ---
 
-# Read path and routing
+# Путь чтения и маршрутизация
 
-The read flow decides which memory an agent sees for a given task.
+Поток чтения определяет, какую память видит агент для данной задачи.
 
-## Read flow
+## Поток чтения
 
-1. Engram loads workspace and optional global indexes.
-2. Workspace entries win over global duplicates.
-3. Ignore rules and role filters hide irrelevant entries.
-4. Graph-aware routing selects a compact context pack.
-5. Hash and safety checks run before content is printed.
+1. Engram загружает индексы рабочего пространства и дополнительные глобальные индексы.
+2. Записи рабочего пространства имеют приоритет над глобальными дубликатами.
+3. Правила игнорирования и фильтры ролей скрывают нерелевантные записи.
+4. Маршрутизация с учетом графа зависимостей выбирает компактный пакет контекста.
+5. Проверки хэша и безопасности выполняются перед выводом содержимого.
 
-## Anchor and refine
+## Привязка и уточнение
 
-`load` first anchors routing on meaningful query terms, ignoring generic memory words such as `rule`, `knowledge`, and common stopwords. It then refines the wider candidate pool into a compact context pack.
+`load` сначала привязывает маршрутизацию к значимым условиям запроса, игнорируя общие слова памяти, такие как `rule`, `knowledge`, и стандартные стоп-слова. Затем он сужает более широкий пул кандидатов до компактного пакета контекста.
 
-Normal load reports selected and total related counts, like `loaded 8 memory files / 14 total related memories`.
+Обычная загрузка сообщает о выбранном и общем количестве связанных записей, например `loaded 8 memory files / 14 total related memories`.
 
-- `load --dry-run` shows candidate counts, narrowing tags, and match reasons.
-- `load --all` returns every visible routed match instead of applying the compact limit.
-- Default `load` is the agent-facing compact route. Use `load --full` for broader legacy output.
+- `load --dry-run` показывает количество кандидатов, сужающие теги и причины соответствия.
+- `load --all` возвращает каждое видимое сопоставление маршрутизации вместо применения ограничения компактности.
+- `load` — это компактный маршрут, ориентированный на агента.
 
-`workflow` and `workflows` still route to skill memories, but generic type words do not make a broad match by themselves.
+`workflow` и `workflows` по-прежнему направляют к памяти навыков (skill memories), но общие слова типов сами по себе не вызывают широкого совпадения.
 
-## Dependency layers
+## Слои зависимостей
 
-Use `depends_on` frontmatter when a memory should build on another memory instead of repeating it:
+Используйте свойство `depends_on` во frontmatter, когда одна запись памяти должна опираться на другую, а не дублировать её:
 
 ```yaml
 depends_on: [release-foundation]
 level: advanced
 ```
 
-Run `engram graph --rebuild` after manual edits. The graph reports dependency layers, and `engram load` pulls routed prerequisites into the same compact context pack before deeper memories. Graph related edges and vector hits cannot load unrelated memories by themselves; they only help rerank or expand memories that already overlap meaningful query terms. Explicit `depends_on` prerequisites may still load without their own keyword overlap.
+Запускайте `engram graph --rebuild` после ручных изменений. Граф сообщает о слоях зависимостей, и `engram load` подтягивает маршрутизируемые необходимые условия в тот же компактный пакет контекста перед более глубокими записями памяти. Связанные ребра графа и векторные совпадения не могут загружать несвязанные записи памяти сами по себе; они лишь помогают переранжировать или расширять записи памяти, которые уже пересекаются со значимыми условиями запроса. Явные предварительные требования `depends_on` все же могут загружаться без совпадения их собственных ключевых слов.
 
-## Routing diagram
+## Схема маршрутизации
 
 ```mermaid
 flowchart LR
-  A[Agent request] --> B[Load workspace + global indexes]
-  B --> C[Workspace wins over global duplicates]
-  C --> D[Ignore rules + role filters]
-  D --> E[Graph-aware routing]
-  E --> F[Hash + safety checks]
-  F --> G[Compact context pack]
+  A[Запрос агента] --> B[Загрузка индексов workspace + global]
+  B --> C[Workspace побеждает глобальные дубликаты]
+  C --> D[Правила игнорирования + фильтры ролей]
+  D --> E[Маршрутизация с учетом графа]
+  E --> F[Проверки хэша + безопасности]
+  F --> G[Компактный пакет контекста]
 ```
 
-## Next steps
+## Следующие шаги
 
-- [Write path and approval](write-path.md)
+- [Путь записи и утверждение](write-path.md)
 - [CLI: load / search / graph](../cli/load-search-graph.md)
+

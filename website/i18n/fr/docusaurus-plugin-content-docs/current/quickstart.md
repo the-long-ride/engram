@@ -124,19 +124,6 @@ To mine recent accessible chats and force-save generated candidates in one reque
 
 That normalizes to `engram save-session --query-level 50 --force`.
 
-<!-- evidence-foundation:v3:start -->
-## Evidence-backed memory
-
-Capture a source before deciding what should become durable:
-
-```bash
-engram observe --file session.md
-engram save-session --file .agents/.engram/inbox/<observation>.md
-```
-
-Review the wrapper before promotion. The wrapper is editable, but approved content is recovered from the immutable trace. The final memory carries `evidence_refs`, so future CLI and Web UI review can follow its provenance.
-<!-- evidence-foundation:v3:end -->
-
 ## Import existing knowledge
 
 For a repo that already has `AGENTS.md`, `CLAUDE.md`, Cursor rules, notes, or docs:
@@ -193,8 +180,8 @@ engram archive --reason "<why>" <id-or-file>
 - [Install and configure](install.md)
 - [Human-owned protocol](concepts/protocol.md)
 
+<!-- evidence-foundation:v3:start -->
+## Mémoire étayée par des preuves
 
-<!-- configuration-upgrade-inventory -->
-## Configuration upgrade inventory
-
-After a package update, run `engram upgrade --latest --plan` before `engram upgrade --latest`. The shared inventory scans workspace and global Engram-managed memories, instructions, skillsets, configs, hooks, and plugins. User-authored bytes are preserved; ambiguous mixed files are reported as conflicts. See [Configuration upgrades](operations/configuration-upgrades.md).
+New files use `schema_version: 3`. Rule and skill memories default to `authority: instruction`; knowledge defaults to `authority: reference`. `revision` starts at 1 and increments on updates. Trace IDs belong in `evidence_refs`, while session or source identities belong in `derived_from`. Legacy v1 (`Context` + `Content` + `Example`) and v2 (`Content`, optional `Origin`) remain readable. Traces live in `.agents/.engram/traces/` with `traces/<trace-id>.jsonl` files recording `engram observe --file` and `save-session --file` provenance, `trust_level`, `sensitivity`, and `retention`.
+<!-- evidence-foundation:v3:end -->

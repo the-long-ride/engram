@@ -1,34 +1,34 @@
 ---
-title: Maintain tab
+title: Core 탭 (핵심)
 sidebar_position: 7
-description: Review duplicate and conflicting memories with scope and type filters.
+description: 범위 및 유형 필터로 중복 및 충돌하는 메모리를 검토합니다.
 ---
 
-# Maintain tab
+# Core 탭
 
-The Maintain tab reviews duplicate and conflicting memories. It is the metacognition workspace inside the Entry panel.
+Core 탭은 중복되고 충돌하는 메모리를 검토합니다. Entry 패널 내부의 메타인지(metacognition) 워크스페이스입니다.
 
-## Scope chips: profile / global / workspace {#scope-chips-profile-global-workspace}
+## 범위 칩 (Scope chips): profile / global / workspace
 
-Filter duplicate/conflict analysis by memory source. Audit one scope or compare cross-scope duplicates. Keep at least one scope selected.
+메모리 소스별로 중복/충돌 분석 필터를 적용합니다. 단일 범위를 감사하거나 범위 간 중복을 비교할 수 있습니다. 최소한 하나의 범위는 선택된 상태를 유지해야 합니다.
 
-## Type chips: rule / skill / workflow / knowledge {#type-chips-rule-skill-workflow-knowledge}
+## 유형 칩 (Type chips): rule / skill / workflow / knowledge
 
-Filter duplicate candidates by memory type. Focus cleanup on rules first or knowledge facts first. Document type meanings inline so users understand when duplicates are harmless.
+메모리 유형별로 중복 후보 필터를 적용합니다. 규칙(rule) 정리 또는 지식(knowledge) 사실 정리에 먼저 집중하십시오. 유형별 의미를 인라인 문서로 제공하여 사용자가 어떤 중복이 무해한지 이해하도록 도우십시오.
 
-## Include semantic candidates {#include-semantic-candidates}
+## 의미론적 후보 포함 (Include semantic candidates)
 
-Adds semantic duplicate search, not just exact/lexical matches. Use when cleaning mature memory stores; expect more false positives.
+정확한 단어 일치뿐만 아니라 의미론적 중복 검색을 추가합니다. 잘 관리된 메모리 저장소를 정리할 때 사용하되, 오탐지가 더 많이 발생할 수 있음을 염두에 두십시오.
 
-## Copy prompt
+## 프롬프트 복사 (Copy prompt)
 
-Copies an `/engram` prompt for a stronger agent or model to resolve duplicates. Use for human-guided cleanup and review. Remind users to review generated changes through approval gates.
+성능이 더 우수한 에이전트 또는 모델이 중복을 해결할 수 있도록 `/engram` 프롬프트를 복사합니다. 사람이 직접 검토하고 진행하는 정리에 적합합니다. 생성된 변경 사항은 승인 게이트를 통해 검토하도록 사용자에게 상기시키십시오.
 
-## Preview
+## 미리보기 (Preview)
 
-Shows the prompt before copying. Encourage preview for risky cleanup operations.
+복사하기 전에 프롬프트를 보여줍니다. 위험한 정리 작업의 경우 미리보기를 권장합니다.
 
-## CLI equivalent
+## CLI 동등 명령
 
 ```bash
 engram resolve-conflicts --dry-run --metacognize
@@ -36,7 +36,8 @@ engram resolve-conflicts --metacognize
 engram metacognize --workspace --force
 ```
 
-## Next steps
+## 다음 단계
 
-- [Memories tab](memories.md)
+- [Memories 탭](memories.md)
 - [CLI: verify / repair / quality-check](../cli/verify-repair-quality.md)
+

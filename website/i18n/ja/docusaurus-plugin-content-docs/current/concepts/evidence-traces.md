@@ -4,7 +4,7 @@ sidebar_position: 7
 description: How Engram preserves immutable evidence, links approved memory to its source, and exposes the same metadata in CLI and Web UI.
 ---
 
-# Evidence traces and provenance
+# 証拠トレースと来歴
 
 Engram separates evidence from approved memory. A trace preserves the sanitized source record; a memory remains a human-approved instruction or reference that cites that evidence.
 

@@ -1,61 +1,61 @@
 ---
-title: Field authoring guidelines
+title: Руководство по созданию полей
 sidebar_position: 11
-description: Rules for maintainers documenting new Entry UI fields.
+description: Правила для сопровождающих, документирующих новые поля интерфейса Entry UI.
 ---
 
-# Field authoring guidelines
+# Руководство по созданию полей
 
-Rules for maintainers documenting new Entry UI fields.
+Правила для сопровождающих, документирующих новые поля интерфейса Entry UI.
 
-## When you add a field
+## Когда вы добавляете поле
 
-1. Add the field to `CONFIG_FIELDS` in `src/core/web/config-schema.ts` with a short `description`, `options`, `min`/`max`/`step`, and `risk`.
-2. Add a docs entry to `website/src/data/entryFields.ts` with `shortDescription`, `useCases`, and `guidelines` at minimum.
-3. Document the field on the [Construct tab](construct.md) page and in the [Complete field reference](field-reference.md).
-4. Run the field docs coverage check:
+1. Добавьте поле в `CONFIG_FIELDS` в `src/core/web/config-schema.ts` с кратким описанием (`description`), параметрами (`options`), значениями `min`/`max`/`step` и риском (`risk`).
+2. Добавьте запись документации в `website/src/data/entryFields.ts` как минимум с `shortDescription`, `useCases` и `guidelines`.
+3. Задокументируйте поле на странице [Вкладка Construct](construct.md) и в [Полном справочнике полей](field-reference.md).
+4. Запустите проверку охвата документации полей:
 
    ```bash
    npm --prefix website run check:entry-fields
    ```
 
-5. If the field is risky, add at least one recovery/troubleshooting note.
+5. Если поле рискованное, добавьте как минимум одно примечание по восстановлению/устранению неполадок.
 
-## Required doc items per field
+## Обязательные элементы документации для каждого поля
 
-| Item | Required |
+| Элемент | Обязательно |
 | --- | --- |
-| Plain-language description | Yes |
-| Use cases | Yes (1+) |
-| Recommended default | Yes |
-| Allowed values / range | Yes |
-| Risk level | Yes |
-| Side effects | When relevant |
-| CLI equivalent | When relevant |
-| Example values | For text/path fields |
-| Troubleshooting notes | For risky fields |
+| Простая формулировка описания | Да |
+| Варианты использования | Да (1+) |
+| Рекомендуемое значение по умолчанию | Да |
+| Допустимые значения / диапазон | Да |
+| Уровень риска | Да |
+| Побочные эффекты | При необходимости |
+| Эквивалент в CLI | При необходимости |
+| Примеры значений | Для текстовых полей и путей |
+| Примечания по устранению неполадок | Для рискованных полей |
 
-## Writing rules
+## Правила написания
 
-- Write for a user configuring an AI-agent memory system, not a maintainer reading source code.
-- Name the real effect on memory ownership, routing, context size, privacy, or Git sync.
-- Prefer examples from Engram workflows: Codex, Claude, Gemini, Cursor, OpenCode, personal memory, client profile, team repo.
-- Do not recommend high limits by default; explain context bloat tradeoffs.
-- Mark settings as risky when they can disable Engram, change save location, change Git sync, archive memory, or affect encryption/security.
-- Include recovery commands for risky settings.
-- Keep in-app descriptions short; put detailed guidance in Docusaurus.
+- Пишите для пользователя, настраивающего систему памяти ИИ-агента, а не для разработчика, читающего исходный код.
+- Указывайте реальное влияние на право собственности на память, маршрутизацию, размер контекста, конфиденциальность или синхронизацию Git.
+- Отдавайте предпочтение примерам из рабочих процессов Engram: Codex, Claude, Gemini, Cursor, OpenCode, личная память, профиль клиента, репозиторий команды.
+- Не рекомендуйте высокие лимиты по умолчанию; объясняйте компромиссы раздувания контекста.
+- Помечайте настройки как рискованные, если они могут отключить Engram, изменить место сохранения, изменить синхронизацию Git, архивировать память или повлиять на шифрование/безопасность.
+- Включайте команды восстановления для рискованных настроек.
+- Держите описания в приложении краткими; подробное руководство размещайте в Docusaurus.
 
-## CI coverage
+## Охват CI
 
-`website/scripts/check-entry-field-docs.mjs` fails when:
+Скрипт `website/scripts/check-entry-field-docs.mjs` завершается с ошибкой, если:
 
-1. A visible `CONFIG_FIELDS` key lacks a docs entry.
-2. A docs entry references a field no longer in `CONFIG_FIELDS`.
-3. A field lacks `shortDescription`, `useCases`, or `guidelines`.
-4. A risky field lacks at least one troubleshooting note.
-5. A numeric field omits allowed range in rendered docs.
+1. Для видимого ключа `CONFIG_FIELDS` отсутствует запись в документации.
+2. Запись документации ссылается на поле, которого больше нет в `CONFIG_FIELDS`.
+3. Для поля отсутствует `shortDescription`, `useCases` или `guidelines`.
+4. Для рискованного поля отсутствует как минимум одно примечание по устранению неполадок.
+5. Для числового поля упущен допустимый диапазон в отрендеренных документах.
 
-## Next steps
+## Следующие шаги
 
-- [Complete field reference](field-reference.md)
-- [Construct tab](construct.md)
+- [Полный справочник полей](field-reference.md)
+- [Вкладка Construct](construct.md)

@@ -1,45 +1,45 @@
 ---
-title: Confidentialité, règles d'exclusion et sécurité
+title: Privacy, ignore rules, and safety
 sidebar_position: 7
-description: Les règles d'exclusion, les validations d'approbation, les hachages et les profils protègent le contexte privé contre la capture accidentelle.
+description: Ignore rules, approval gates, hashes, and profiles protect private context from accidental capture.
 ---
 
-# Confidentialité, règles d'exclusion et sécurité
+# Privacy, ignore rules, and safety
 
-Engram est privé par défaut. Plusieurs couches empêchent le contexte privé de fuir dans la mémoire durable ou de franchir les limites des profils.
+Engram is private by default. Several layers keep private context from leaking into durable memory or across profile boundaries.
 
-## Validation d'approbation (Approval gate)
+## Approval gate
 
-Les écritures nécessitent une approbation humaine. Les agents proposent des candidats ; les humains les approuvent, les rejettent, les modifient ou les archivent. L'interface CLI directe en terminal utilise le système A/B/C. Le chat de l'agent d'IA utilise `yes` / `audit` / `cancel`.
+Writes require human approval. Agents propose candidates; humans approve, reject, edit, or archive. Direct terminal CLI uses A/B/C. AI-agent chat uses `yes` / `audit` / `cancel`.
 
-## Regles d'exclusion (Ignore rules)
+## Ignore rules
 
-Les règles d'exclusion constituent des contrôles de confidentialité. Elles masquent les entrées non pertinentes ou sensibles lors du routage. Configurez-les dans le fichier `.engramignore` et dans la configuration de mémoire de l'espace de travail pour que les chemins et motifs privés ne soient jamais intégrés à l'index.
+Ignore rules are privacy controls. They hide irrelevant or sensitive entries from routing. Configure them in `.engramignore` and workspace memory config so private paths and patterns never enter the index.
 
-## Hachages (Hashes)
+## Hashes
 
-Les hachages sont des contrôles d'intégrité. Ils sont exécutés avant l'affichage du contenu et révèlent les modifications non sécurisées ayant contourné le flux d'écriture normal.
+Hashes are integrity checks. They run before content is printed and reveal unsafe edits that bypassed the normal write flow.
 
-## Profils
+## Profiles
 
-Les profils isolent la mémoire de l'entreprise, des clients et personnelle afin que les API externes ou les agents d'entreprise ne fassent pas fuir le contexte d'un projet à l'autre. Voir [Profils et résolution de portée](profiles.md).
+Profiles isolate company, client, and personal memory so external APIs or company-provided agents do not leak context across projects. See [Profiles and scope resolution](profiles.md).
 
-## Détection de secrets et d'injections
+## Secrets and injection scanning
 
-Au moment de la sauvegarde, Engram vérifie :
+At save time Engram checks:
 
-- la validation du schéma
-- la détection de secrets (secrets scan)
-- les motifs d'injection de requêtes (prompt injection)
-- la sécurité des chemins
+- schema validation
+- secret scan
+- prompt-injection patterns
+- path safety
 
-## Limites à connaître
+## Limits to know
 
-La recherche par défaut d'Engram est une recherche lexicale déterministe. `engram search --semantic` ajoute une similarité locale déterministe, et non une recherche sémantique basée sur des plongements (embeddings). Les vecteurs du graphe sont des vecteurs de mots hachés locaux, pas des plongements sémantiques. La détection de contradictions est purement indicative. La configuration du chiffrement existe, mais le stockage chiffré n'est pas encore implémenté.
+Default Engram search is deterministic lexical search. `engram search --semantic` adds deterministic local similarity, not embedding-backed semantic search. Graph vectors are local hashed word vectors, not semantic embeddings. Contradiction detection is advisory. Encryption config exists, but encrypted storage is not implemented yet.
 
-Ces limites sont affichées de manière intentionnelle. Engram doit informer clairement les utilisateurs sur ce qui est disponible aujourd'hui et sur les travaux futurs.
+These limits are intentional to state clearly. Engram should tell users what is real today and what is future work.
 
-## Étapes suivantes
+## Next steps
 
-- [Chemin d'écriture et approbation](./write-path.md)
-- [Résolution des problèmes d'exploitation](../operations/troubleshooting.md)
+- [Write path and approval](./write-path.md)
+- [Operations troubleshooting](../operations/troubleshooting.md)

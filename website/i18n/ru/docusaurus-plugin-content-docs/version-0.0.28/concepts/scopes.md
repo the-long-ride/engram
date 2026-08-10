@@ -1,43 +1,43 @@
 ---
-title: Память Workspace против глобальной памяти
+title: Workspace vs global memory
 sidebar_position: 3
-description: Память рабочего пространства имеет приоритет. Глобальная память является резервной для многократно используемых настроек и контекста команды.
+description: Workspace memory wins. Global memory is fallback for reusable preferences and team context across projects.
 ---
 
-# Память Workspace против глобальной памяти
+# Workspace vs global memory
 
-Engram разрешает конфликты памяти в двух областях видимости.
+Engram resolves memory in two scopes.
 
-## Память рабочего пространства (Workspace memory)
+## Workspace memory
 
-Память рабочего пространства хранится в:
+Workspace memory lives in:
 
 ```text
 <project>/.agents/.engram/
 ```
 
-Она содержит правила, решения и рабочие процессы, специфичные для конкретного проекта. Память рабочего пространства имеет приоритет над глобальными дубликатами.
+It holds project-specific rules, decisions, and workflows. Workspace memory wins over global duplicates.
 
-## Глобальная память (Global memory)
+## Global memory
 
-Глобальная память является необязательной и хранится там, где укажет пользователь. Она содержит предпочтения и контекст команды, которые должны сопровождать вас в различных репозиториях.
+Global memory is optional and lives wherever the user configures it. It holds preferences and team context that should follow you across repos.
 
 ```bash
 engram inject --global-only --global-path ~/Documents/engram
 ```
 
-Глобальная память служит резервным вариантом для многократно используемых настроек, личных привычек или значений по умолчанию для всей команды.
+Global memory is fallback for reusable preferences, personal habits, or team-wide defaults.
 
-## Приоритет областей видимости
+## Scope priority
 
-1. Память рабочего пространства: `<project>/.agents/.engram/`
-2. Глобальная память: `$ENGRAM_GLOBAL_DIR` или `engram inject --global-path <path>`
+1. Workspace memory: `<project>/.agents/.engram/`
+2. Global memory: `$ENGRAM_GLOBAL_DIR` or `engram inject --global-path <path>`
 
-Память рабочего пространства имеет приоритет. Глобальная память является резервной для многократно используемых настроек и контекста команды во всех проектах.
+Workspace memory wins. Global memory is fallback for reusable preferences and team context across projects.
 
-## Выбор цели сохранения
+## Choose a save target
 
-Используйте `set-save-target` для выбора места по умолчанию для обычных сохранений:
+Use `set-save-target` to choose where normal saves go:
 
 ```bash
 engram set-save-target status
@@ -46,11 +46,11 @@ engram set-save-target global
 engram set-save-target both
 ```
 
-При свежей настройке рабочего пространства обычные сохранения по умолчанию производятся как в рабочее пространство, так и в глобальную память (если она настроена). Агенты могут переопределить одно конкретное сохранение с помощью флага `--scope workspace|global|both`.
+Fresh workspace installs default normal saves to both workspace and global when global memory is configured. Agents can override one write with `--scope workspace|global|both`.
 
-Если в текущей конфигурации область видимости установлена в значение `global` (`scope: "global"`), связывание наборов навыков на уровне рабочего пространства отключается и пропускается во избежание записи файлов в рабочую папку. Для связывания агентов при глобальной области видимости используйте `engram link --global`.
+If the active configuration scope is set to `global` (`scope: "global"`), workspace-level skillset linking is disabled and skipped to prevent writing files to the running folder. To link agents in a global-scope setup, use `engram link --global`.
 
-## Следующие шаги
+## Next steps
 
-- [Профили и разрешение областей видимости](profiles.md)
-- [Путь чтения и маршрутизация](read-path.md)
+- [Profiles and scope resolution](profiles.md)
+- [Read path and routing](read-path.md)

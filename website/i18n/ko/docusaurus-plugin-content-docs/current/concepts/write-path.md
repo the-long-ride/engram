@@ -33,6 +33,19 @@ When `engram save` finds related active memories, the approval preview reports t
 
 For `save-session --force`, Engram pauses before writing when those related memory hints appear. The agent should use the response to brainstorm a structured rerun: add `DEPENDS_ON: memory-id` for dependencies, `LEVEL: advanced` when a memory is deeper than its prerequisite, or `UPDATE: memory-id` when a candidate should merge into a possible duplicate.
 
+<!-- evidence-foundation:v3:start -->
+## Evidence-backed memory
+
+For source material that should be reviewed before it becomes active memory:
+
+```bash
+engram observe --file session.md
+engram save-session --file .agents/.engram/inbox/<observation>.md
+```
+
+The first command sanitizes the source and writes an immutable trace identified by `trace_id` plus an editable inbox wrapper. The second command resolves the wrapper to its trace, verifies hash and scope, then writes only human-approved schema v3 memory with `evidence_refs`. Editing `## Raw Note` cannot replace the trace evidence.
+<!-- evidence-foundation:v3:end -->
+
 ## Safety checks at save time
 
 - Schema validation

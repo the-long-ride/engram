@@ -103,7 +103,7 @@ export const translations: Record<string, TranslationSet> = {
       subheading: "Agents propose durable rules, workflows, and knowledge. Humans approve what becomes memory. Engram stores it as Markdown, indexes it, and keeps it portable through Git.",
       items: [
         { title: "Human-approved writes", desc: "Agents propose new knowledge. Humans approve, edit, reject, or archive before it is committed." },
-        { title: "File-first memory", desc: "Markdown is the source of truth. Transparent, plain-text memory folder structure you fully control." },
+        { title: "Evidence-backed file memory", desc: "Immutable sanitized traces preserve source evidence; approved Markdown memories cite it through explicit provenance fields." },
         { title: "Context-optimized loading", desc: "Loads and routes only the relevant memory pack instead of sending everything, saving context tokens." },
         { title: "Cross-agent routing", desc: "Your memory layer lives locally in your repo. Sync, query, and edit it using any LLM or IDE." }
       ]
@@ -217,7 +217,7 @@ export const translations: Record<string, TranslationSet> = {
       subheading: "Tác nhân đề xuất quy tắc bền vững, quy trình và kiến thức. Con người phê duyệt những gì trở thành bộ nhớ. Engram lưu trữ dưới dạng Markdown, lập chỉ mục và duy trì khả năng di động qua Git.",
       items: [
         { title: "Ghi nhớ có duyệt", desc: "Tác nhân đề xuất kiến thức mới. Con người duyệt, sửa, từ chối hoặc lưu trữ trước khi ghi nhận." },
-        { title: "Bộ nhớ dạng tệp tin", desc: "Markdown là nguồn sự thật. Cấu trúc thư mục bộ nhớ dạng văn bản thuần trong suốt do bạn kiểm soát." },
+        { title: "Bộ nhớ tệp có bằng chứng", desc: "Dấu vết bất biến đã làm sạch giữ bằng chứng nguồn; bộ nhớ Markdown đã duyệt trích dẫn nguồn bằng các trường provenance rõ ràng." },
         { title: "Tải tối ưu ngữ cảnh", desc: "Chỉ tải và định tuyến gói bộ nhớ có liên quan thay vì gửi tất cả, tiết kiệm token ngữ cảnh." },
         { title: "Định tuyến đa tác nhân", desc: "Lớp bộ nhớ nằm cục bộ trong repo của bạn. Đồng bộ, truy vấn và chỉnh sửa bằng bất kỳ LLM hoặc IDE nào." }
       ]
@@ -331,7 +331,7 @@ export const translations: Record<string, TranslationSet> = {
       subheading: "Los agentes proponen reglas duraderas, flujos de trabajo y conocimiento. Los humanos aprueban lo que se convierte en memoria. Engram lo almacena como Markdown y lo mantiene portátil a través de Git.",
       items: [
         { title: "Escrituras aprobadas", desc: "Los agentes proponen nuevo conocimiento. Los humanos aprueban, editan, rechazan o archivan antes de confirmar." },
-        { title: "Memoria basada en archivos", desc: "Markdown es la fuente de verdad. Estructura de carpetas transparente en texto plano que controlas por completo." },
+        { title: "Memoria de archivos con evidencia", desc: "Las trazas inmutables y saneadas conservan la evidencia; la memoria Markdown aprobada la cita mediante procedencia explícita." },
         { title: "Carga optimizada", desc: "Carga y enruta solo el paquete de memoria relevante en lugar de enviar todo, ahorrando tokens de contexto." },
         { title: "Ruteo multi-agente", desc: "Tu capa de memoria vive localmente en tu repositorio. Sincroniza, consulta y edita con cualquier LLM o IDE." }
       ]
@@ -445,7 +445,7 @@ export const translations: Record<string, TranslationSet> = {
       subheading: "Les agents proposent des règles durables, des flux et des connaissances. Les humains approuvent ce qui devient de la mémoire. Engram la stocke en Markdown et la garde portable via Git.",
       items: [
         { title: "Écritures approuvées", desc: "Les agents proposent de nouvelles connaissances. L'humain approuve, modifie, rejette ou archive avant validation." },
-        { title: "Mémoire fichier", desc: "Le Markdown est la source de vérité. Structure de dossiers transparente en texte brut que vous contrôlez." },
+        { title: "Mémoire fichier étayée par des preuves", desc: "Des traces immuables et assainies conservent la source ; la mémoire Markdown approuvée la cite avec une provenance explicite." },
         { title: "Chargement optimisé", desc: "Charge et achemine uniquement le pack de mémoire pertinent au lieu de tout envoyer, économisant les tokens." },
         { title: "Routage multi-agent", desc: "Votre couche de mémoire vit localement dans votre dépôt. Synchronisez, interrogez et modifiez avec n'importe quel LLM ou IDE." }
       ]
@@ -559,7 +559,7 @@ export const translations: Record<string, TranslationSet> = {
       subheading: "智能体提出持久的规则、工作流和知识。人类批准什么成为记忆。Engram 将其存储为 Markdown，通过 Git 保持其可移植性。",
       items: [
         { title: "人工审核写入", desc: "智能体提出新知识。人类在提交之前进行批准、编辑、拒绝或归档。" },
-        { title: "本地文件记忆", desc: "Markdown 是真实的源头。完全由您控制的透明纯文本记忆文件夹结构。" },
+        { title: "证据支持的文件记忆", desc: "不可变且已清理的追踪记录保留来源证据；已批准 Markdown 记忆通过明确的来源字段引用它。" },
         { title: "上下文优化加载", desc: "仅加载和路由相关的内存包，而不是发送所有内容，从而节省上下文 Token。" },
         { title: "跨智能体路由", desc: "您的记忆层本地保存在您的 repo 中。使用任何 LLM 或 IDE 进行同步、查询和编辑。" }
       ]
@@ -673,7 +673,7 @@ export const translations: Record<string, TranslationSet> = {
       subheading: "에이전트는 지속 가능한 규칙, 워크플로 및 지식을 제안합니다. 인간은 무엇이 기억으로 기록될지 승인합니다. Engram은 이를 마크다운으로 저장하고 Git을 통해 이동성을 유지합니다.",
       items: [
         { title: "인간 승인 기반 기록", desc: "에이전트가 새로운 지식을 제안합니다. 인간은 커밋되기 전에 승인, 편집, 거부 또는 아카이브합니다." },
-        { title: "파일 기반 기억", desc: "마크다운이 진실의 원천입니다. 사용자가 직접 제어하는 투명한 일반 텍스트 메모리 폴더 구조입니다." },
+        { title: "증거 기반 파일 메모리", desc: "정제된 불변 추적이 원본 증거를 보존하고 승인된 Markdown 메모리가 명시적 출처 필드로 이를 인용합니다." },
         { title: "컨텍스트 최적화 로드", desc: "모든 것을 보내는 대신 관련된 메모리 팩만 로드하고 라우팅하여 컨텍스트 토큰을 절약합니다." },
         { title: "크로스 에이전트 라우팅", desc: "메모리 레이어가 리포지토리에 로컬로 유지됩니다. 모든 LLM 또는 IDE를 사용하여 동기화, 쿼리 및 편집할 수 있습니다." }
       ]
@@ -787,7 +787,7 @@ export const translations: Record<string, TranslationSet> = {
       subheading: "エージェントは永続的なルール、ワークフロー、および知識を提案します。人間はどれを記憶として残すかを承認します。EngramはそれをMarkdownとして保存し、Gitを通じて移植性を維持します。",
       items: [
         { title: "承認された書き込み", desc: "エージェントが新しい知識を提案します。人間は、コミットされる前に承認、編集、拒否、またはアーカイブします。" },
-        { title: "ファイルベース of 記憶", desc: "Markdownが真実のソースです。完全に制御可能な、透明なプレーンテキストのメモリフォルダ構造です." },
+        { title: "証拠に基づくファイルメモリ", desc: "サニタイズ済みの不変トレースが出典を保持し、承認済み Markdown メモリが明示的な来歴フィールドで参照します。" },
         { title: "最適化された読み込み", desc: "すべてを送信する代わりに、関連するメモリパックのみをロードしてルーティングし、コンテキストトークンを節約します。" },
         { title: "クロスエージェントルーティング", desc: "メモリレイヤーはリポジトリのローカルに保持されます。任意のLLMまたはIDEを使用して同期、照会、編集が可能です。" }
       ]
@@ -901,7 +901,7 @@ export const translations: Record<string, TranslationSet> = {
       subheading: "Агенты предлагают долгосрочные правила, рабочие процессы и знания. Люди одобряют то, что становится памятью. Engram сохраняет её в Markdown и делает переносимой через Git.",
       items: [
         { title: "Запись с одобрения человека", desc: "Агенты предлагают новые знания. Люди одобряют, редактируют, отклоняют или архивируют их перед записью." },
-        { title: "Память в виде файлов", desc: "Markdown — это источник истины. Прозрачная папка с текстовыми файлами памяти, которую вы полностью контролируете." },
+        { title: "Файловая память с доказательствами", desc: "Неизменяемые очищенные следы сохраняют источник, а утверждённая Markdown-память ссылается на него через явные поля происхождения." },
         { title: "Оптимизация контекста", desc: "Загружает и пересылает только релевантный пакет памяти вместо отправки всего объема, экономя контекстные токены." },
         { title: "Кросс-агентная маршрутизация", desc: "Ваш слой памяти находится локально в вашем репозитории. Синхронизируйте, запрашивайте и редактируйте с любым LLM или IDE." }
       ]

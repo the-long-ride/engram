@@ -1,52 +1,63 @@
 ---
-title: Tab Memories (Bộ nhớ)
-sidebar_position: 8
-description: Kiểm tra biểu đồ bộ nhớ, xem trước bộ nhớ, chỉnh sửa và lưu trữ.
+title: Memories tab
+sidebar_position: 6
+description: Inspect the memory graph, preview memories, edit, and archive.
 ---
 
 import RiskCallout from '@site/src/components/RiskCallout';
 
-# Tab Memories
+# Memories tab
 
-Tab Memories dùng để kiểm tra đồ thị bộ nhớ và thực hiện các hành động bảo trì bộ nhớ.
+The Memories tab inspects active memory, explores its graph, and performs maintenance actions.
 
-## Các thẻ phạm vi (Scope chips)
+## Search
 
-Lọc đồ thị theo nguồn bộ nhớ. So sánh bộ nhớ không gian làm việc so với bộ nhớ toàn cục. Hãy bắt đầu với chỉ không gian làm việc hiện tại khi đồ thị có vẻ quá nhiều thông tin gây nhiễu.
+Use the search field to match text anywhere in each Markdown memory file. The search is case-insensitive and works together with the scope and type filters.
 
-## Các thẻ loại (Type chips)
+The search mode menu has two options:
 
-Lọc đồ thị theo loại bộ nhớ. Kiểm tra riêng các quy tắc (rules), kỹ năng (skills) hoặc kiến thức (knowledge).
+- **Text matches only** shows memories whose file content or metadata directly matches the query.
+- **Text matches + related memories** also shows connected dependency, duplicate, and semantic memories.
 
-## Bật tắt liên kết ngữ nghĩa (Semantic links toggle)
+Clear the field to restore the full graph for the selected filters.
 
-Hiển thị các cạnh đồ thị ngữ nghĩa. Hãy tắt đi khi đồ thị quá nhiễu về mặt hình ảnh.
+## Scope chips {#scope-chips}
 
-## Làm mới / Xây dựng lại (Refresh / rebuild)
+Filter the graph by memory source. Compare workspace vs global memory. Start with the current workspace only when the graph feels noisy.
 
-Tải lại hoặc xây dựng lại dữ liệu đồ thị. Sử dụng sau khi chỉnh sửa, nhập dữ liệu, lưu trữ hoặc thay đổi cấu hình.
+## Type chips {#type-chips}
 
-## Xem trước bộ nhớ (Memory preview)
+Filter the graph by memory type. Inspect rules, skills, or knowledge separately.
 
-Đọc nội dung bộ nhớ được chọn. Hữu ích để kiểm tra những gì tác nhân sẽ nhận được.
+## Semantic links toggle {#semantic-links-toggle}
+
+Shows semantic graph edges. Turn off when the graph is visually noisy.
+
+## Refresh / rebuild
+
+Reloads or rebuilds graph data. Use after edits, imports, archive actions, or config changes.
+
+## Memory preview
+
+Reads selected memory content. Useful to audit what the agent will receive.
 
 <RiskCallout level="caution">
-Nội dung nhạy cảm cục bộ có thể hiển thị trong trình duyệt. Hãy coi bảng điều khiển là công khai khi đang xem trước.
+Sensitive local content may be visible in the browser. Treat the panel as open while previewing.
 </RiskCallout>
 
-## Chỉnh sửa bộ nhớ (Edit memory)
+## Edit memory
 
-Mở tệp trong một trình soạn thảo và sao chép đường dẫn. Sử dụng cho việc chỉnh sửa thủ công hoặc xem xét. Nguồn dữ liệu chuẩn luôn là tệp Markdown.
+Opens the file in an editor and copies the path. Use for manual correction or review. The source of truth is the Markdown file.
 
-## Lưu trữ bộ nhớ (Archive memory)
+## Archive memory
 
-Loại bỏ bộ nhớ khỏi định tuyến hoạt động trong khi vẫn bảo tồn nó dưới thư mục `archive/`. Hãy sử dụng lưu trữ (archive), không phải xóa (delete), để có khả năng kiểm tra lại lịch sử.
+Removes memory from active routing while preserving it under `archive/`. Use archive, not delete, for auditability.
 
 <RiskCallout level="caution">
-Lưu trữ sẽ thay đổi định tuyến ngay lập tức. Hãy sử dụng lưu trữ, không phải xóa thủ công, để lịch sử được bảo tồn.
+Archiving changes routing immediately. Use archive, not manual deletion, so history is preserved.
 </RiskCallout>
 
-## Tương đương CLI
+## CLI equivalent
 
 ```bash
 engram graph "<topic>"
@@ -54,7 +65,7 @@ engram quality-check
 engram archive --reason "<why>" <id-or-file>
 ```
 
-## Các bước tiếp theo
+## Next steps
 
-- [Tab Core](core.md)
-- [Tab Runtime](runtime.md)
+- [Maintain tab](core.md)
+- [CLI: verify / repair / quality-check](../cli/verify-repair-quality.md)

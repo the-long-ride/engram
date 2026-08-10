@@ -1,123 +1,111 @@
 ---
-title: "Giao thức bộ nhớ do con người sở hữu"
+title: Human-owned memory protocol
 sidebar_position: 1
-description: "Engram là một giao thức giúp bộ nhớ của tác nhân AI có thể kiểm tra, di động và được quản lý bởi con người."
+description: Engram is a protocol that makes AI agent memory inspectable, portable, and governed by humans.
 ---
 
-# Hiểu Về Engram
+# Human-owned memory protocol
 
-Hãy đọc tài liệu này trước khi xem hướng dẫn sử dụng lệnh. Engram thực sự hữu ích vì lý do ai là người sở hữu bộ nhớ, chứ không phải vì nó có nhiều câu lệnh.
+Engram is not just "agent memory." It is a protocol that makes memory inspectable, portable, and governed by humans.
 
-## Mô Hình Trong Một Câu
+## The contract
 
-Engram là một giao thức tệp tin cho phép các tác nhân AI sử dụng bộ nhớ bền vững trong khi con người quyết định những gì sẽ trở nên bền vững.
+- Markdown is durable memory.
+- JSON index and graph files are acceleration layers.
+- Approval is the trust boundary.
+- Hashes are integrity checks.
+- Ignore rules are privacy controls.
+- Git is portability and audit history.
+- Agent adapters are convenience, not authority.
 
-## Engram Là Gì
+Agents can suggest memory, but humans own what becomes memory.
 
-Engram là một trung tâm lưu trữ bộ nhớ kiến thức dành cho:
+## One-sentence model
 
-- các quy tắc dự án (project rules)
-- các quyết định của nhóm (team decisions)
-- các quy trình làm việc có thể lặp lại (repeatable workflows)
-- các sự thật bền vững (durable facts)
-- các tùy chọn cá nhân đi kèm xuyên suốt các dự án
+Engram is a file protocol that lets AI agents use durable memory while humans decide what becomes durable.
 
-Bộ nhớ được lưu trữ dưới dạng Markdown thông thường. Chỉ mục, đồ thị, mã băm và các tệp bộ điều hợp (adapter) tồn tại nhằm giúp cho việc sử dụng Markdown đó trở nên dễ dàng và an toàn hơn.
+## What Engram is
 
-## Engram Không Phải Là Gì
+Engram is a knowledge memory center for:
 
-Engram không phải là:
+- project rules
+- team decisions
+- repeatable workflows
+- durable facts
+- personal preferences that should travel across projects
 
-- bộ não ẩn của tác nhân AI
-- kho lưu trữ bộ nhớ độc quyền của bên thứ ba
-- tài liệu thay thế hoàn toàn cho tài liệu dự án
-- cơ sở dữ liệu vector tự xưng là nguồn chân lý duy nhất
-- máy ghi âm tự động lưu lại mọi thứ mãi mãi
+The memory is plain Markdown. The index, graph, hashes, and adapter files exist to make that Markdown easier and safer to use.
 
-Tác nhân AI có thể đề xuất bộ nhớ. Nhưng con người mới là bên phê duyệt, từ chối, chỉnh sửa, lưu trữ (archive) và sở hữu bộ nhớ đó.
+## What Engram is not
 
-## Lời Hứa Cốt Lõi
+Engram is not:
 
-Engram cố gắng làm cho bộ nhớ AI trở nên:
+- a hidden brain for an agent
+- a vendor-owned memory silo
+- a replacement for project documentation
+- a vector database pretending to be authority
+- an automatic recorder that saves everything forever
 
-- có thể xem xét: bạn có thể đọc bộ nhớ bằng bất kỳ trình soạn thảo thông thường nào
-- có tính di động: bạn có thể đồng bộ hóa qua Git và sử dụng trên nhiều tác nhân AI khác nhau
-- có thể sửa đổi: bộ nhớ sai lệch có thể được lưu trữ (archive) kèm lý do rõ ràng thay vì âm thầm gây ảnh hưởng tiêu cực đến công việc trong tương lai
-- riêng tư theo mặc định: các quy tắc bỏ qua (ignore rules) và cổng phê duyệt ngăn chặn việc ghi nhận thông tin ngoài ý muốn
-- đơn giản một cách có chủ đích: định dạng Markdown dễ tin cậy hơn so với trạng thái ẩn kín của nền tảng
+Agents may suggest memory. Humans approve, reject, edit, archive, and own memory.
 
-## Các Lớp Hệ Thống
+## The core promise
 
-| Lớp | Ý nghĩa |
+Engram tries to make AI memory:
+
+- **reviewable**: you can read it in a normal editor
+- **portable**: you can sync it with Git and use it across agents
+- **correctable**: wrong memory can be archived instead of silently haunting future work
+- **private by default**: ignore rules and approval gates stop accidental capture
+- **boring on purpose**: Markdown is easier to trust than invisible platform state
+
+## The layers
+
+| Layer | Meaning |
 | --- | --- |
-| Markdown | Nguồn sự thật bền vững duy nhất |
-| JSON index | Lớp tra cứu nhanh chóng |
-| JSON graph | Lớp định tuyến chủ đề và các mối quan hệ |
-| Hashes | Kiểm tra tính toàn vẹn của tệp |
-| Approval | Ranh giới tin cậy trước khi ghi bộ nhớ |
-| Ignore rules | Kiểm soát quyền riêng tư |
-| Git | Lịch sử thay đổi, tính di động, xem xét và phục hồi |
-| Agent adapters | Lớp tiện ích cho Codex, Claude, Cursor, Gemini và các tác nhân AI khác |
+| Markdown | durable source of truth |
+| JSON index | fast lookup layer |
+| JSON graph | topic and relationship routing layer |
+| Hashes | integrity checks |
+| Approval | trust boundary before writes |
+| Ignore rules | privacy controls |
+| Git | history, portability, review, recovery |
+| Agent adapters | convenience layer for Codex, Claude, Cursor, Gemini, and other agents |
 
-Các tệp JSON được tạo ra nhằm giúp tác nhân AI tìm kiếm bộ nhớ nhanh hơn, nhưng chúng không có quyền lực cao nhất. Nếu có sự không nhất quán giữa tệp JSON và Markdown, Markdown luôn luôn thắng.
+Generated JSON helps agents find memory faster, but it is not the authority. If generated files disagree with Markdown, Markdown wins.
 
-## Vòng Đời Của Bộ Nhớ
+Memory files may declare `depends_on: [...]` in frontmatter when one rule, skill, or knowledge item needs another as a prerequisite. The graph derives foundation-to-deep layers from those dependencies, and default `engram load` keeps prerequisites before dependent memories inside the compact agent-facing route. SessionStart hooks call that routed load path at startup and inject only changed context, while prompt-turn hooks reuse or skip unchanged routes.
 
-1. Một phiên làm việc, tệp tin hoặc ghi chú của con người chứa đựng kiến thức hữu ích.
-2. Tác nhân AI đề xuất các ứng viên bộ nhớ ngắn gọn.
-3. Con người duyệt tất cả, chọn một vài mục, thêm ghi chú hoặc từ chối chúng.
-4. Engram ghi bộ nhớ Markdown đã được phê duyệt.
-5. Engram cập nhật mã băm, chỉ mục, đồ thị và nhật ký thay đổi (changelog).
-6. Các tác nhân AI tương lai chỉ tải các bộ nhớ liên quan đến tác vụ hiện tại.
-7. Nếu bộ nhớ không còn chính xác, Engram sẽ lưu trữ (archive) nó kèm theo lý do cụ thể.
+## Memory lifecycle
 
-Vòng đời này giữ cho bộ nhớ luôn hoạt động hiệu quả mà không bị ẩn giấu khỏi tầm mắt con người.
+1. A session, file, or human note contains useful knowledge.
+2. An agent proposes concise memory candidates.
+3. A human approves all, selects some, adds a note, or rejects them.
+4. Engram writes approved Markdown memory.
+5. Engram refreshes hashes, index, graph, and changelog.
+6. Future agents load only the memory relevant to the current task.
+7. If memory becomes wrong, Engram archives it with a reason.
 
-## Con Người, Tác Nhân AI, Engram, Git
+This lifecycle keeps memory active without making it invisible.
 
-| Bên tham gia | Vai trò |
+## Human, Agent, Engram, Git
+
+| Actor | Role |
 | --- | --- |
-| Con người | Lựa chọn những gì sẽ trở thành bộ nhớ bền vững |
-| Tác nhân AI | Nhận biết các mẫu thông tin và đề xuất ứng viên |
-| Engram | Thực thi cấu trúc dữ liệu, bảo mật, định tuyến, phê duyệt và bảo trì |
-| Git | Truyền tải bộ nhớ giữa các máy tính và cung cấp lịch sử kiểm duyệt |
+| Human | chooses what becomes durable memory |
+| Agent | notices patterns and proposes candidates |
+| Engram | enforces schema, safety, routing, approval, and maintenance |
+| Git | carries memory between machines and gives review history |
 
-Tác nhân AI rất hữu ích, nhưng không phải là chủ sở hữu bộ nhớ.
+The agent is helpful, but the agent is not the owner.
 
-## Bộ Nhớ Tốt
+## Why not only built-in agent memory
 
-Bộ nhớ Engram tốt phải:
+Built-in memory is convenient, but it can be hard to inspect, diff, export, share, or correct. It often belongs to one app or account.
 
-- đủ ổn định để vẫn còn giá trị vào tuần tới
-- đủ cụ thể để có thể định tuyến sau này
-- đủ ngắn để tải vào ngữ cảnh của tác nhân AI
-- đủ an toàn để chia sẻ trong phạm vi dự kiến
-- được viết dưới dạng một quy tắc (rule), quy trình (skill) hoặc kiến thức (knowledge)
+Engram makes the durable layer visible. Built-in memory can still help, but Engram should be the owned source when the knowledge matters.
 
-Bộ nhớ xấu là những tạp âm trò chuyện tạm thời, thông tin nhạy cảm, mật khẩu hoặc khóa API, các suy đoán nhất thời hoặc các sự thật chưa được ai phê duyệt.
+## Next steps
 
-## Phạm Vi (Scope)
-
-Bộ nhớ không gian làm việc (workspace) nằm tại:
-
-```text
-<project>/.agents/.engram/
-```
-
-Bộ nhớ toàn cục (global) là tùy chọn và nằm ở bất kỳ đâu người dùng thiết lập.
-
-Bộ nhớ workspace giành chiến thắng. Bộ nhớ global là phương án dự phòng cho các tùy chọn có thể tái sử dụng, thói quen cá nhân hoặc các giá trị mặc định của toàn nhóm.
-
-## Tại Sao Không Chỉ Dùng Bộ Nhớ Tích Hợp Sẵn Của Tác Nhân AI
-
-Bộ nhớ tích hợp sẵn rất tiện lợi, nhưng có thể khó kiểm tra, so sánh (diff), xuất dữ liệu, chia sẻ hoặc sửa đổi. Nó thường bị ràng buộc chặt chẽ vào một ứng dụng hoặc tài khoản duy nhất.
-
-Engram làm cho lớp bộ nhớ bền vững hiển thị rõ ràng trước mắt bạn. Bộ nhớ tích hợp sẵn vẫn có thể hỗ trợ, nhưng Engram nên là nguồn sở hữu chính khi kiến thức đó thực sự quan trọng.
-
-## Các Giới Hạn Cần Biết
-
-Tìm kiếm mặc định của Engram là tìm kiếm từ vựng mang tính quyết định (lexical search). `engram search --semantic` bổ sung so khớp độ tương đồng cục bộ, chứ không phải tìm kiếm ngữ nghĩa được hỗ trợ bởi các mô hình embedding đầy đủ. Các vector trong đồ thị là các vector từ băm cục bộ (local hashed word vectors). Việc phát hiện mâu thuẫn chỉ mang tính chất tham khảo. Cấu hình mã hóa có tồn tại, nhưng lưu trữ mã hóa chưa được hiện thực hóa.
-
-Các giới hạn này được tuyên bố rõ ràng một cách có chủ đích. Engram luôn muốn người dùng biết rõ những gì đang hoạt động hiện tại và những gì thuộc về tương lai phát triển.
-
-Tiếp theo: [Bắt đầu nhanh với tác nhân AI](../quickstart.md).
+- [Memory types](memory-types.md)
+- [Read path and routing](read-path.md)
+- [Write path and approval](write-path.md)

@@ -1,71 +1,53 @@
 ---
-title: "Quy trình ghi và phê duyệt"
+title: Write path and approval
 sidebar_position: 6
-description: "Tác nhân đề xuất, con người phê duyệt. Chỉ bộ nhớ được phê duyệt mới được ghi, sau đó các chỉ mục, đồ thị và mã băm sẽ được cập nhật."
+description: Agents propose, humans approve. Only approved memory is written, then indexes, graph, hashes, and changelog refresh.
 ---
 
-# Giao Thức Bộ Nhớ Do Con Người Sở Hữu
+# Write path and approval
 
-## Phe duyet trong chat AI
+The write flow is the trust boundary. Agents propose, humans approve.
 
-Trong chat voi tac nhan AI, phe duyet Engram la dang hoi dap. Tac nhan truoc tien hien thi cac ung vien da duoc bien tap `TYPE: ... | TEXT: ...`, va voi rule thi kem theo cac bien the Light/Balanced/Strict. Tra loi `yes` de luu dung cac ung vien do, `audit` de sua lai, hoac `cancel` de dung. Sau `yes`, tac nhan dung `engram save-session --force` voi chinh cac ung vien da duoc phe duyet. Cac lan luu truc tiep tren CLI van dung A/B/C tru khi lenh accept-all da duoc goi ro rang.
+## Write flow
 
+1. Agent proposes one or more candidates.
+   With `save-session --query-level <n>`, the agent may consider up to n recent accessible human-agent chats, but only as proposal context.
+   Natural `/engram ss -f last 50 sessions` is the same scope plus explicit force approval: `engram save-session --query-level 50 --force`.
+2. Engram parses candidate type and target scope.
+3. Engram checks schema, secrets, prompt-injection patterns, and path safety.
+4. Human sees a preview.
+5. Direct CLI replies use `A`, `A 1,3`, `B <note>`, or `C`.
+6. AI-agent chat replies use `yes`, `audit`, or `cancel` after the exact displayed candidates.
+7. Only approved memory is written.
+8. Index, graph, hashes, and changelog are refreshed.
 
-Engram không chỉ đơn thuần là "bộ nhớ của tác nhân AI". Nó là một giao thức giúp bộ nhớ có thể được kiểm tra, di chuyển và quản lý bởi con người.
+## Approval words
 
-## Hợp Đồng Giao Thức
+Approval words are `yes`, `approve`, `confirm`, or `save`. Audit words are `audit`, `revise`, `correct`, or edited replacement text. Cancel words are `cancel`, `stop`, or rejection. Only approval after exact candidate display authorizes `engram save-session --force` for those candidates.
 
-Markdown là bộ nhớ bền vững.
+Direct terminal CLI remains A/B/C. MCP proposal tools remain no-write.
 
-Các tệp chỉ mục (index) và đồ thị (graph) JSON là các lớp tăng tốc.
+## Related-memory hints
 
-Phê duyệt (Approval) là ranh giới tin cậy.
+When `engram save` finds related active memories, the approval preview reports them with a suggested `depends_on` or possible-duplicate warning. Accepting saves the preview as-is; reject first if you want to restructure dependencies or archive duplicates before saving.
 
-Mã băm (Hashes) là các bước kiểm tra tính toàn vẹn.
+For `save-session --force`, Engram pauses before writing when those related memory hints appear. The agent should use the response to brainstorm a structured rerun: add `DEPENDS_ON: memory-id` for dependencies, `LEVEL: advanced` when a memory is deeper than its prerequisite, or `UPDATE: memory-id` when a candidate should merge into a possible duplicate.
 
-Các quy tắc bỏ qua (Ignore rules) là các chốt kiểm soát quyền riêng tư.
+## Safety checks at save time
 
-Git mang lại tính di động và lịch sử kiểm duyệt thay đổi.
+- Schema validation
+- Secret scan
+- Prompt-injection scan
+- Path safety
+- Hash integrity
 
-Các bộ điều hợp (Agent adapters) mang tính chất tiện ích, không có quyền lực cao nhất.
+## Why this matters
 
-Các tác nhân AI có thể đề xuất bộ nhớ, nhưng con người mới sở hữu những gì được đưa vào bộ nhớ.
+Without a protocol, memory can become invisible state. Invisible state is hard to review, hard to share, and easy for agents to poison by accident.
 
-## Các Loại Bộ Nhớ
+Engram makes memory boring on purpose: files, diffs, hashes, review gates, and commands a human can rerun.
 
-| Loại | Mục đích sử dụng |
-| --- | --- |
-| Rule | tùy chọn ưu tiên của người dùng, sửa lỗi, ràng buộc, hướng dẫn "luôn luôn/không bao giờ" |
-| Skill | quy trình làm việc có thể lặp lại, danh sách kiểm tra (checklist), thủ tục, sổ tay vận hành (runbook) |
-| Knowledge | sự thật khách quan của dự án, quyết định, chi tiết triển khai |
+## Next steps
 
-Mỗi tệp bộ nhớ đang hoạt động đều có các phần `Context`, `Content`, và `Example`. Các bộ nhớ thuộc loại Quy tắc (Rule) cũng hướng tới giới hạn dòng ngắn gọn để đảm bảo hướng dẫn được tải luôn hữu ích.
-
-## Quy Trình Ghi Bộ Nhớ
-
-1. Tác nhân AI đề xuất một hoặc nhiều ứng viên.
-   Với `save-session --query-level <n>`, tác nhân AI có thể xem xét tối đa n phiên chat người-tác nhân gần đây có thể truy cập, nhưng chỉ làm ngữ cảnh đề xuất.
-   Cách nói tự nhiên `/engram ss -f last 50 sessions` dùng cùng phạm vi đó kèm phê duyệt rõ ràng toàn bộ ứng viên: `engram save-session --query-level 50 --force`.
-2. Engram phân tích loại ứng viên và phạm vi ghi mục tiêu (scope).
-3. Engram kiểm tra cấu trúc (schema), thông tin nhạy cảm (secrets), các mẫu tấn công prompt-injection và tính an toàn của đường dẫn tệp.
-4. Con người xem trước bản đề xuất.
-5. Con người phản hồi `A`, `A 1,3`, `B <ghi chú>`, hoặc `C`.
-6. Chỉ các bộ nhớ được phê duyệt mới được ghi lại.
-7. Chỉ mục, đồ thị, mã băm và nhật ký thay đổi (changelog) được làm mới.
-
-## Quy Trình Đọc Bộ Nhớ
-
-1. Engram tải các chỉ mục không gian làm việc và chỉ mục toàn cục tùy chọn.
-2. Các mục trong không gian làm việc ghi đè lên các mục trùng lặp toàn cục.
-3. Các quy tắc bỏ qua và bộ lọc vai trò (role filters) ẩn các mục không liên quan.
-4. Định tuyến dựa trên đồ thị lựa chọn một gói ngữ cảnh nhỏ gọn.
-5. Việc kiểm tra mã băm và an toàn bảo mật được chạy trước khi in nội dung.
-
-## Tại Sao Điều Này Quan Trọng
-
-Nếu không có một giao thức rõ ràng, bộ nhớ có thể trở thành một trạng thái ẩn (invisible state). Trạng thái ẩn rất khó xem xét, khó chia sẻ và dễ bị các tác nhân AI làm sai lệch thông tin một cách vô tình.
-
-Engram làm cho bộ nhớ trở nên đơn giản một cách có chủ đích: quản lý bằng tệp tin, các bản so sánh sự khác biệt (diffs), mã băm, cổng phê duyệt và các lệnh mà con người có thể chạy lại bất cứ lúc nào.
-
-Tiếp theo: [Hướng dẫn vận hành](../cli/overview.md).
-
+- [Privacy, ignore rules, and safety](safety.md)
+- [CLI: save / save-session / observe](../cli/save-session.md)

@@ -1,42 +1,43 @@
 ---
 title: OpenCode
 sidebar_position: 7
-description: AGENTS.md、Agent Skills、MCP、カスタムコマンド、およびローカルプラグインを介した OpenCode と Engram の統合。
+description: Engram integration with OpenCode via AGENTS.md, Agent Skills, MCP, custom commands, and a local plugin.
 ---
 
 # OpenCode
 
-OpenCode は、ルールのためにプロジェクトの `AGENTS.md` およびグローバルの `~/.config/opencode/AGENTS.md` を読み込みます。Engram はそこに管理ブロックを書き込み、完全なガイドを `.opencode/engram.md` または `~/.config/opencode/engram.md` に書き込み、完全なスキルを `.opencode/skills/engram/SKILL.md` または `~/.config/opencode/skills/engram/SKILL.md` に書き込み、プロジェクトの `opencode.json`（または既存の `opencode.jsonc`）およびグローバルの `~/.config/opencode/opencode.jsonc` を MCP 登録用に予約します。
+OpenCode reads project `AGENTS.md` and global `~/.config/opencode/AGENTS.md` for rules. Engram writes a managed block there, writes the full guide to `.opencode/engram.md` or `~/.config/opencode/engram.md`, writes the full skill to `.opencode/skills/engram/SKILL.md` or `~/.config/opencode/skills/engram/SKILL.md`, and reserves project `opencode.json` (or an existing `opencode.jsonc`) and global `~/.config/opencode/opencode.jsonc` for MCP registration.
 
-## インストール
+## Install
 
 ```bash
 engram link opencode
 ```
 
-## 書き込まれるファイル
+## Files written
 
-| ファイル | 用途 |
+| File | Purpose |
 | --- | --- |
-| `AGENTS.md` | 管理ブロック付きのプロジェクトルール |
-| `.opencode/engram.md` | 完全なガイド |
-| `.opencode/skills/engram/SKILL.md` | エージェントスキル |
-| `.opencode/commands/engram.md` | `/engram` スラッシュアダプター |
-| `opencode.json` / `opencode.jsonc` | MCP 登録 (`mcp.engram`) |
+| `AGENTS.md` | Project rules with managed block |
+| `.opencode/engram.md` | Full guide |
+| `.opencode/skills/engram/SKILL.md` | Agent Skill |
+| `.opencode/commands/engram.md` | `/engram` slash adapter |
+| `.opencode/plugins/engram.js` | Local plugin for hook context injection |
+| `opencode.json` / `opencode.jsonc` | MCP registration (`mcp.engram`) |
 
-## グローバルインストール
+## Global install
 
 ```bash
 engram link --global opencode
 ```
 
-また、`~/.config/opencode/plugins/engram.js` に管理されたローカルの JavaScript プラグインをインストールします。このプラグインは、`chat.message` を使用して現在のユーザープロンプトをルーティングし、`experimental.chat.system.transform` を使用して各 LLM リクエストの前にルーティングされたメモリを注入します。
+Also installs a managed local JavaScript plugin at `~/.config/opencode/plugins/engram.js`. The plugin uses `chat.message` to route the current user prompt and `experimental.chat.system.transform` to inject routed memory before each LLM request.
 
 :::warning
-ローカルプラグインファイルは起動時に読み込まれるため、`link`/`unlink` 後は OpenCode を再起動または再読み込みする必要があります。
+OpenCode must be restarted or reloaded after `link`/`unlink` because local plugin files are loaded at startup.
 :::
 
-## MCP 登録
+## MCP registration
 
 ```json
 "engram": {
@@ -47,14 +48,14 @@ engram link --global opencode
 }
 ```
 
-MCP サーバーは、OpenCode が Engram ツールを検出して呼び出すことができるように、標準の JSON-RPC ハンドシェイク（`initialize`、`notifications/initialized`、`tools/list`、および `tools/call`）を実装しています。
+The MCP server implements the standard JSON-RPC handshake (`initialize`, `notifications/initialized`, `tools/list`, and `tools/call`) so OpenCode can discover and call Engram tools.
 
-## プラグインの動作
+## Plugin behavior
 
-プラグインはフェイルオープンし（正常に実行を継続し）、生のルーティングされたメモリは実行中の OpenCode プロセス内にのみ保持されます。Engram のディスクフックキャッシュは、ハッシュ、セッション ID、ホスト、cwd、およびルーティングされた署名のみのままです。`engram unlink --global opencode` は、Engram が生成したプラグインのみを削除します。人間が作成した `engram.js` は、`--force` が明示されない限り保持されます。
+The plugin fails open and keeps raw routed memory only in the running OpenCode process. Engram's disk hook cache remains hashes, session IDs, host, cwd, and routed signatures only. `engram unlink --global opencode` removes only the Engram-generated plugin; a human-authored `engram.js` is preserved unless `--force` is explicit.
 
-## 次のステップ
+## Next steps
 
-- [エージェント統合の概要](overview.md)
-- [MCP ツール](mcp.md)
-- [フックと検証行](hooks.md)
+- [Agent Integrations overview](overview.md)
+- [MCP tools](mcp.md)
+- [Hooks and proof lines](hooks.md)

@@ -123,6 +123,21 @@ Each field lists:
 | <span id="encryption-scope"></span>`encryption.scope` | select | `global` | risky | Scope: `workspace`, `global`. |
 | <span id="encryption-key-source"></span>`encryption.key_source` | select | `portable-file` | risky | Key source strategy; backup loss risk. |
 
+<!-- evidence-foundation:v3:start -->
+## Evidence-backed memory
+
+| Field | Meaning |
+| --- | --- |
+| `schema_version` | `3` for newly created or updated memories; legacy v1/v2 remain readable. |
+| `authority` | `instruction` for rules/skills, `reference` for knowledge. Trace records use `authority: evidence`. |
+| `evidence_refs` | Immutable `tr_...` trace IDs supporting the memory. |
+| `derived_from` | Session or source identifiers from which the memory was distilled. |
+| `revision` | Positive integer incremented when an existing memory is updated. |
+| `supersedes` / `superseded_by` | Explicit replacement relationships. |
+| `valid_from` / `valid_until` | Time range in which the memory is valid; `valid_until` may be open. |
+| `last_confirmed` | Date on which the memory was most recently confirmed. |
+<!-- evidence-foundation:v3:end -->
+
 ## Non-config controls
 
 See the per-tab pages for non-config controls:
@@ -139,3 +154,26 @@ Profile and workspace management are available in the Construct tab and through 
 
 - [Construct tab](construct.md)
 - [Field authoring guidelines](field-authoring-guidelines.md)
+
+
+## Git author identity
+
+Engram can store a global author and an optional workspace override. Resolution is workspace, global, then read-only Git fallback. Settings affect future memories only; a workspace override never changes global Git configuration. Use explicit plan and confirmation for global Git sync or legacy-memory migration.
+
+```bash
+engram author show
+engram author set --name "Jane Doe" --email "jane@example.com"
+engram author unset --scope workspace
+engram author sync-git-global --plan
+engram author sync-git-global --confirm
+engram author migrate-memories --plan
+engram author migrate-memories --confirm
+```
+
+Read the complete [Git author settings guide](../operations/git-author-settings.md).
+
+
+<!-- configuration-upgrade-inventory -->
+## Configuration upgrade inventory
+
+After a package update, run `engram upgrade --latest --plan` before `engram upgrade --latest`. The shared inventory scans workspace and global Engram-managed memories, instructions, skillsets, configs, hooks, and plugins. User-authored bytes are preserved; ambiguous mixed files are reported as conflicts. See [Configuration upgrades](../operations/configuration-upgrades.md).

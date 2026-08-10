@@ -19,7 +19,7 @@ engram load --all "<task>"
 
 `load` first anchors routing on meaningful query terms, ignoring generic memory words such as `rule`, `knowledge`, and common stopwords. It then refines the wider candidate pool into a compact context pack. Normal load reports selected and total related counts, like `loaded 8 memory files / 14 total related memories`.
 
-- default `load` — compact agent-facing route (only `id`, `type`, `tags`, `confidence`, `depends_on` in frontmatter; one selected rule variant)
+- default `load` — compact agent-facing route (only `id`, `type`, `tags`, `confidence`, `authority`, `depends_on`, and `evidence_refs` in frontmatter; one selected rule variant)
 - `--full` — broader legacy output with full frontmatter and full rule variants
 - `--dry-run` — show candidate counts, narrowing tags, and match reasons without printing content
 - `--all` — return every visible routed match instead of the compact limit

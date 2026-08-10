@@ -1,71 +1,53 @@
 ---
-title: "写入路径与批准"
+title: Write path and approval
 sidebar_position: 6
-description: "智能体建议，人类批准。仅写入经批准的内存，然后刷新索引、图、哈希和变更日志。"
+description: Agents propose, humans approve. Only approved memory is written, then indexes, graph, hashes, and changelog refresh.
 ---
 
-# 人类掌控的内存协议
+# Write path and approval
 
-## AI 聊天审批
+The write flow is the trust boundary. Agents propose, humans approve.
 
-在 AI 代理聊天中，Engram 的审批是对话式的。代理会先展示整理后的 `TYPE: ... | TEXT: ...` 候选内容；如果是规则记忆，还会同时展示 Light/Balanced/Strict 变体。回复 `yes` 表示按当前候选原样保存，回复 `audit` 表示继续修改，回复 `cancel` 表示取消。收到 `yes` 后，代理会使用 `engram save-session --force` 写入刚刚获批的候选内容。直接在 CLI 中保存时，除非明确调用了 accept-all 命令，否则仍然使用 A/B/C。
+## Write flow
 
+1. Agent proposes one or more candidates.
+   With `save-session --query-level <n>`, the agent may consider up to n recent accessible human-agent chats, but only as proposal context.
+   Natural `/engram ss -f last 50 sessions` is the same scope plus explicit force approval: `engram save-session --query-level 50 --force`.
+2. Engram parses candidate type and target scope.
+3. Engram checks schema, secrets, prompt-injection patterns, and path safety.
+4. Human sees a preview.
+5. Direct CLI replies use `A`, `A 1,3`, `B <note>`, or `C`.
+6. AI-agent chat replies use `yes`, `audit`, or `cancel` after the exact displayed candidates.
+7. Only approved memory is written.
+8. Index, graph, hashes, and changelog are refreshed.
 
-Engram 不仅仅是“智能体内存”。它是一个使内存可检查、可移植且由人类治理的协议。
+## Approval words
 
-## 契约
+Approval words are `yes`, `approve`, `confirm`, or `save`. Audit words are `audit`, `revise`, `correct`, or edited replacement text. Cancel words are `cancel`, `stop`, or rejection. Only approval after exact candidate display authorizes `engram save-session --force` for those candidates.
 
-Markdown 是持久的内存。
+Direct terminal CLI remains A/B/C. MCP proposal tools remain no-write.
 
-JSON 索引和图谱文件是加速层。
+## Related-memory hints
 
-批准（Approval）是信任的边界。
+When `engram save` finds related active memories, the approval preview reports them with a suggested `depends_on` or possible-duplicate warning. Accepting saves the preview as-is; reject first if you want to restructure dependencies or archive duplicates before saving.
 
-哈希（Hashes）是完整性检查。
+For `save-session --force`, Engram pauses before writing when those related memory hints appear. The agent should use the response to brainstorm a structured rerun: add `DEPENDS_ON: memory-id` for dependencies, `LEVEL: advanced` when a memory is deeper than its prerequisite, or `UPDATE: memory-id` when a candidate should merge into a possible duplicate.
 
-忽略规则（Ignore rules）是隐私控制。
+## Safety checks at save time
 
-Git 是可移植性和审计历史。
+- Schema validation
+- Secret scan
+- Prompt-injection scan
+- Path safety
+- Hash integrity
 
-智能体适配器（Agent adapters）是便利层，而不是权威来源。
+## Why this matters
 
-智能体可以建议内存，但人类拥有并决定什么成为内存。
+Without a protocol, memory can become invisible state. Invisible state is hard to review, hard to share, and easy for agents to poison by accident.
 
-## 内存类型
+Engram makes memory boring on purpose: files, diffs, hashes, review gates, and commands a human can rerun.
 
-| 类型 | 用途 |
-| --- | --- |
-| Rule | 用户偏好、修正、约束、“总是/绝不”的指导原则 |
-| Skill | 可重复的工作流、清单、步骤、操作手册（runbook） |
-| Knowledge | 客观的项目事实、决策、实现细节 |
+## Next steps
 
-每个激活的内存文件都必须有 `Context`、`Content` 和 `Example` 部分。规则内存还针对简明的行数限制，以便加载的指南能保持实用价值。
-
-## 写入流 (Write Flow)
-
-1. 智能体提议一个或多个候选。
-   使用 `save-session --query-level <n>` 时，智能体可以考虑最多 n 个可访问的最近人类-智能体聊天，但这只作为候选提议的上下文。
-   自然写法 `/engram ss -f last 50 sessions` 使用相同范围并带有显式一键批准：`engram save-session --query-level 50 --force`。
-2. Engram 解析候选类型和目标作用域（scope）。
-3. Engram 检查 Schema、秘密信息、提示词注入模式和路径安全。
-4. 人类看到预览。
-5. 人类回复 `A`（全部批准）、`A 1,3`（批准指定）、`B <说明>`（添加注释批准）或 `C`（拒绝）。
-6. 只有获得批准的内存才会被写入。
-7. 索引、图谱、哈希和变更历史（changelog）会被刷新。
-
-## 读取流 (Read Flow)
-
-1. Engram 加载工作区和可选的全局索引。
-2. 当 ID 重复时，工作区条目胜过全局条目。
-3. 忽略规则和角色过滤器隐藏无关条目。
-4. 图谱感知路由选择一个紧凑的上下文包。
-5. 在输出内容之前运行哈希和安全检查。
-
-## 为什么这很重要
-
-如果没有协议，内存可能会变成不可见的状态（invisible state）。不可见的状态难以评审、难以共享，并且极易被智能体意外污染。
-
-Engram 故意让内存管理变得简单无趣：文件、差异对比（diffs）、哈希、评审门槛以及人类可以重新运行的的命令。
-
-下一步：[操作指南](../cli/overview.md)。
-
+- [Privacy, ignore rules, and safety](safety.md)
+- [CLI: save / save-session / observe](../cli/save-session.md)

@@ -57,6 +57,18 @@ engram save-session --file .agents/.engram/inbox/<note>.md
 
 `observe` stores sanitized raw notes in `inbox/`. Inbox notes are not active memory. Use this when you want to preserve rough notes before deciding what should become durable memory.
 
+<!-- evidence-foundation:v3:start -->
+## Evidence-backed memory
+
+```bash
+engram observe --file session.md
+# Output includes Trace: tr_... and the inbox wrapper path
+engram save-session --file .agents/.engram/inbox/<observation>.md
+```
+
+The immutable source lives at `.agents/.engram/traces/<trace-id>.jsonl`; the inbox Markdown is only a review wrapper. Promotion reopens the trace and writes approved memory with `evidence_refs` and `derived_from`. `engram observe --propose --file session.md` may immediately enter the normal approval flow, but it still uses the trace as source evidence.
+<!-- evidence-foundation:v3:end -->
+
 ## Related-memory hints
 
 When an accept-all run reports related memories before writing, no file was saved yet. The agent should rerun with structured candidates:
@@ -70,3 +82,20 @@ TYPE: knowledge | TEXT: Invoice retries use exponential backoff. | UPDATE: invoi
 
 - [inject / link / upgrade](inject-link-upgrade.md)
 - [Concepts: write path and approval](../concepts/write-path.md)
+
+
+## Git author identity
+
+Engram can store a global author and an optional workspace override. Resolution is workspace, global, then read-only Git fallback. Settings affect future memories only; a workspace override never changes global Git configuration. Use explicit plan and confirmation for global Git sync or legacy-memory migration.
+
+```bash
+engram author show
+engram author set --name "Jane Doe" --email "jane@example.com"
+engram author unset --scope workspace
+engram author sync-git-global --plan
+engram author sync-git-global --confirm
+engram author migrate-memories --plan
+engram author migrate-memories --confirm
+```
+
+Read the complete [Git author settings guide](../operations/git-author-settings.md).

@@ -14,7 +14,7 @@ Every active Engram memory has a type. The type controls routing, review, and ho
 | Skill | repeatable workflow, checklist, procedure, runbook |
 | Knowledge | objective project fact, decision, implementation detail |
 
-Every active memory file has `Context`, `Content`, and `Example` sections. Rule memories also target concise line limits so loaded guidance stays useful.
+New files use `schema_version: 3`. Rule and skill memories default to `authority: instruction`; knowledge defaults to `authority: reference`. `revision` starts at 1 and increments on updates. Trace IDs belong in `evidence_refs`, while session or source identities belong in `derived_from`.
 
 ## Good memory
 
@@ -47,13 +47,42 @@ When `engram load "<task>"` runs, the output is slimmed for AI agents by default
 
 | Aspect | Default (`engram load`) | Full (`engram load --full`) |
 | --- | --- | --- |
-| Frontmatter | Only `id`, `type`, `tags`, `confidence`, `depends_on` | All fields (id, type, tags, confidence, scope, author, created, updated, depends_on, etc.) |
+| Frontmatter | `id`, `type`, `tags`, `confidence`, `authority`, `depends_on`, `evidence_refs` | Full schema v3 and legacy fields, including provenance, revision, supersession, and validity |
 | Rule body | One selected variant under `## Rule variants (1/3 based on current: <active>)` | Full `## Rule Variants` section with all three variants |
 | Non-rule content | Same content, unchanged heading | Same content, unchanged heading |
 
 MCP `engram_load` and SessionStart hooks use compact output by default. Pass `full: true` on the MCP tool or `engram load --full "<task>"` when broader legacy output is needed.
 
+<!-- evidence-foundation:v3:start -->
+## Evidence-backed memory
+
+New files use `schema_version: 3`. Rule and skill memories default to `authority: instruction`; knowledge defaults to `authority: reference`. `revision` starts at 1 and increments on updates. Trace IDs belong in `evidence_refs`, while session or source identities belong in `derived_from`. Legacy v1 (`Context` + `Content` + `Example`) and v2 (`Content`, optional `Origin`) remain readable.
+<!-- evidence-foundation:v3:end -->
+
 ## Next steps
 
 - [Workspace vs global memory](scopes.md)
 - [Read path and routing](read-path.md)
+
+
+## Git author identity
+
+Engram can store a global author and an optional workspace override. Resolution is workspace, global, then read-only Git fallback. Settings affect future memories only; a workspace override never changes global Git configuration. Use explicit plan and confirmation for global Git sync or legacy-memory migration.
+
+```bash
+engram author show
+engram author set --name "Jane Doe" --email "jane@example.com"
+engram author unset --scope workspace
+engram author sync-git-global --plan
+engram author sync-git-global --confirm
+engram author migrate-memories --plan
+engram author migrate-memories --confirm
+```
+
+Read the complete [Git author settings guide](../operations/git-author-settings.md).
+
+
+<!-- configuration-upgrade-inventory -->
+## Configuration upgrade inventory
+
+After a package update, run `engram upgrade --latest --plan` before `engram upgrade --latest`. The shared inventory scans workspace and global Engram-managed memories, instructions, skillsets, configs, hooks, and plugins. User-authored bytes are preserved; ambiguous mixed files are reported as conflicts. See [Configuration upgrades](../operations/configuration-upgrades.md).

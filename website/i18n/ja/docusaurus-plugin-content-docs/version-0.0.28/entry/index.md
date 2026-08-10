@@ -1,50 +1,49 @@
 ---
-title: Entry Web UI の概要
+title: Entry Web UI overview
 sidebar_position: 1
-description: Entry Web UI は、Engram メモリ、プロファイル、ワークスペース、およびエージェント接続を構成するためのローカル専用コントロールパネルです。
+description: The Entry Web UI is the local-only control panel for configuring Engram memory and agent connections.
 ---
 
 import RiskCallout from '@site/src/components/RiskCallout';
 
-# Entry Web UI の概要
+# Entry Web UI overview
 
-Entry Web UI は、Engram 用のローカル専用コントロールパネルです。これを使用して、メモリルートを構成し、AI エージェントをリンクし、ルーティングを調整し、重複メモリを確認し、メモリグラフを検査し、JSON ファイルを手動で編集することなく実行構成をデバッグできます。
+The Entry Web UI is the local-only control panel for Engram. Use it to configure memory roots, link AI agents, tune routing, review findings, inspect the memory graph, and debug resolved config without editing JSON by hand.
 
-## 使用するタイミング
+## When to use it
 
-- ワークスペースまたはグローバルメモリルートの初期設定時
-- CLI フラグを覚えることなく AI エージェントの接続を有効/無効化したいとき
-- ルーティング、グラフ、ベクトル、ルールバリアント設定を調整するとき
-- 重複するメモリや競合するメモリを確認するとき
-- メモリの関連性グラフをシ覚的に確認するとき
-- 適用された最終設定、パス、Git 連携検出状態をデバッグするとき
+- First-time setup of a workspace or global memory root
+- Linking or unlinking AI agents without remembering CLI flags
+- Tuning routing, graph, vector, and rule variant settings
+- Reviewing duplicate or conflicting memories
+- Inspecting the memory graph
+- Debugging resolved config, paths, and Git detection
 
-## ローカル専用アクセスモデル (Local-only)
+## Local-only access model
 
-このパネルはローカルの PC 内で実行されます。クラウドサービスではありません。セキュリティ上の理由から、構成作業が完了したらサーバーを停止してください。
+The panel runs on your machine. It is not a cloud service. Close the server when you are done for security hygiene.
 
 <RiskCallout level="risky">
-Entry パネルはローカル単独で実行されます。メモリを設定している間のみ稼働させ、終了したら Runtime タブからすぐにサーバーを停止してください。
+The Entry panel is local-only. Treat it as open while you are configuring memory, then close the server from the sidebar footer when finished.
 </RiskCallout>
 
-## CLI コマンドとの関係
+## Relationship to CLI commands
 
-UI に表示されるすべてのコントロールは、CLI コマンドまたは設定キーに対応しています。対応する CLI コマンドは、フィールドリファレンスガイドに記載されています。自動化やスクリプト作成の基準となるのは、常に CLI 環境です。
+Every visible control maps to a CLI command or config key. Where a CLI equivalent exists, the field reference lists it. The CLI remains the source of truth for scripting and automation.
 
-## タブの要約
+## Tabs at a glance
 
-| タブ | 役割 |
+| Tab | Job |
 | --- | --- |
-| [Connections](connections.md) | サポートされている AI エージェントの検出とリンク |
-| [Construct](construct.md) | すべての Engram 実行時フィールドの構成 |
-| [Profiles](profiles.md) | 分離されたグローバルメモリプロファイルの管理 |
-| [Workspaces](workspaces.md) | プロジェクトリポジトリの登録とリンク状態の管理 |
-| [Core](core.md) | 重複するメモリや競合するメモリの確認 |
-| [Memories](memories.md) | メモリグラフの検査とメモリのアーカイブ |
-| [Runtime](runtime.md) | 最終解決された構成情報と物理パスの表示（読み取り専用） |
+| [Construct](construct.md) | Configure every Engram runtime field |
+| [Memories](memories.md) | Search, inspect, and archive active memory |
+| [Review](review.md) | Resolve findings and confirm reviewed memory writes |
+| [Maintain](core.md) | Review duplicate and conflicting memories |
+| [Connections](connections.md) | Detect and link supported AI agents |
 
-## 次のステップ
+## Next steps
 
-- [コントロールパネルの起動](launch.md)
-- [Construct タブ](construct.md)
-- [完全なフィールドリファレンス](field-reference.md)
+- [Launching the control panel](launch.md)
+- [Construct tab](construct.md)
+- [Maintain tab](core.md)
+- [Complete field reference](field-reference.md)

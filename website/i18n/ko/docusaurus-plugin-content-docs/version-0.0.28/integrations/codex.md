@@ -1,45 +1,45 @@
 ---
 title: Codex
 sidebar_position: 2
-description: AGENTS.md 및 Agent Skills를 통한 Engram과 OpenAI Codex의 통합.
+description: Engram integration with OpenAI Codex via AGENTS.md and Agent Skills.
 ---
 
 # Codex
 
-OpenAI Codex 및 기타 AGENTS.md 호환 에이전트는 `AGENTS.md`를 프로젝트 지침 파일로 사용합니다. `codex` 별칭은 에이전트가 Agent Skills를 발견할 때 Engram을 호출 가능한 스킬로 라우팅할 수 있도록 `.agents/skills/engram/SKILL.md`도 작성합니다.
+OpenAI Codex and other AGENTS.md-compatible agents use `AGENTS.md` as a project instruction file. The `codex` alias also writes `.agents/skills/engram/SKILL.md` so agents that discover Agent Skills can route Engram as an invokable skill.
 
-## 설치
+## Install
 
 ```bash
 engram link codex
 ```
 
-## 작성된 파일
+## Files written
 
-| 파일 | 목적 |
+| File | Purpose |
 | --- | --- |
-| `AGENTS.md` | 프로젝트 지침 부트스트랩 |
-| `.agents/skills/engram/SKILL.md` | 전체 작성/승인 워크플로우를 갖춘 Agent Skill |
-| `.codex/hooks.json` | `SessionStart` 및 `UserPromptSubmit` 훅 |
-| `.mcp.json` | MCP 등록 |
+| `AGENTS.md` | Project instructions bootstrap |
+| `.agents/skills/engram/SKILL.md` | Agent Skill with full write/approval workflow |
+| `.codex/hooks.json` | `SessionStart` and `UserPromptSubmit` hooks |
+| `.mcp.json` | MCP registration |
 
-## 글로벌 설치
+## Global install
 
 ```bash
 engram link --global codex
 ```
 
-Codex 스킬을 `~/.codex/skills/engram/SKILL.md`에 작성하고 공유 Codex 지침 파일에 관리형 블록을 추가합니다.
+Writes the Codex skill to `~/.codex/skills/engram/SKILL.md` and appends a managed block to shared Codex instruction files.
 
-## 훅 동작
+## Hook behavior
 
-Codex는 시작 시점 및 프롬프트 시점의 추가 컨텍스트 주입을 지원합니다. `SessionStart`는 시작할 때 라우팅된 메모리를 로드하고, `UserPromptSubmit`은 라우팅된 Engram 컨텍스트가 변경될 때만 다시 주입합니다.
+Codex supports startup and prompt-time additional context injection. `SessionStart` loads routed memory at startup; `UserPromptSubmit` reinjects only when routed Engram context changes.
 
-## 런타임 우선 대상
+## Runtime-first target
 
-Codex는 런타임 우선 대상입니다. `AGENTS.md`에는 자세한 프로토콜을 위해 MCP 도구 및 훅에 의존하는 짧은 부트스트랩 지침이 포함되어 있으며, Agent Skill 파일이 전체 작성/승인 워크플로우를 전달합니다.
+Codex is a runtime-first target. `AGENTS.md` contains short bootstrap instructions that rely on MCP tools and hooks for detailed protocol; the Agent Skill file carries the full write/approval workflow.
 
-## 다음 단계
+## Next steps
 
-- [에이전트 통합 개요](overview.md)
-- [훅 및 검증 라인](hooks.md)
+- [Agent Integrations overview](overview.md)
+- [Hooks and proof lines](hooks.md)

@@ -1,45 +1,45 @@
 ---
-title: 개인 정보 보호, 무시 규칙 및 안전
+title: Privacy, ignore rules, and safety
 sidebar_position: 7
-description: 무시 규칙, 승인 게이트, 해시 및 프로필은 개인 컨텍스트가 실수로 캡처되는 것을 방지합니다.
+description: Ignore rules, approval gates, hashes, and profiles protect private context from accidental capture.
 ---
 
-# 개인 정보 보호, 무시 규칙 및 안전
+# Privacy, ignore rules, and safety
 
-Engram은 기본적으로 비공개(private)입니다. 여러 레이어가 비공개 컨텍스트가 영구 메모리로 유출되거나 프로필 경계를 넘어가지 않도록 방지합니다.
+Engram is private by default. Several layers keep private context from leaking into durable memory or across profile boundaries.
 
-## 승인 게이트 (Approval gate)
+## Approval gate
 
-쓰기 작업에는 사람의 승인이 필요합니다. 에이전트가 후보를 제안하면 사람이 승인, 거부, 편집 또는 아카이브합니다. 직접 터미널 CLI는 A/B/C를 사용합니다. AI 에이전트 채팅은 `yes` / `audit` / `cancel`을 사용합니다.
+Writes require human approval. Agents propose candidates; humans approve, reject, edit, or archive. Direct terminal CLI uses A/B/C. AI-agent chat uses `yes` / `audit` / `cancel`.
 
-## 무시 규칙 (Ignore rules)
+## Ignore rules
 
-무시 규칙은 개인 정보 제어 도구입니다. 이 규칙은 라우팅에서 관련이 없거나 중요한 항목을 숨깁니다. `.engramignore` 및 작업 공간 메모리 설정에 이 규칙을 구성하여 비공개 경로와 패턴이 인덱스에 들어가지 않도록 하십시오.
+Ignore rules are privacy controls. They hide irrelevant or sensitive entries from routing. Configure them in `.engramignore` and workspace memory config so private paths and patterns never enter the index.
 
-## 해시 (Hashes)
+## Hashes
 
-해시는 무결성 검사입니다. 콘텐츠가 인쇄되기 전에 실행되어 일반적인 쓰기 흐름을 우회한 안전하지 않은 편집을 찾아냅니다.
+Hashes are integrity checks. They run before content is printed and reveal unsafe edits that bypassed the normal write flow.
 
-## 프로필 (Profiles)
+## Profiles
 
-프로필은 회사, 고객 및 개인 메모리를 격리하여 외부 API 또는 회사에서 제공하는 에이전트가 프로젝트 전체에서 컨텍스트를 유출하지 않도록 합니다. [프로필 및 범위 확인](profiles.md)을 참조하십시오.
+Profiles isolate company, client, and personal memory so external APIs or company-provided agents do not leak context across projects. See [Profiles and scope resolution](profiles.md).
 
-## 비밀 정보 및 인젝션 스캔 (Secrets and injection scanning)
+## Secrets and injection scanning
 
-저장 시 Engram은 다음을 검사합니다.
+At save time Engram checks:
 
-- 스키마 유효성 검사 (schema validation)
-- 비밀 정보 검사 (secret scan)
-- 프롬프트 인젝션 패턴 (prompt-injection patterns)
-- 경로 안전성 (path safety)
+- schema validation
+- secret scan
+- prompt-injection patterns
+- path safety
 
-## 알아두어야 할 제한 사항
+## Limits to know
 
-기본 Engram 검색은 결정론적 어휘 검색입니다. `engram search --semantic`은 임베딩 지원 의미 체계 검색이 아닌 결정론적 로컬 유사성을 추가합니다. 그래프 벡터는 의미 체계 임베딩이 아닌 로컬 해시 단어 벡터입니다. 모순 감지는 권고 사항입니다. 암호화 설정이 존재하지만 암호화된 저장소는 아직 구현되지 않았습니다.
+Default Engram search is deterministic lexical search. `engram search --semantic` adds deterministic local similarity, not embedding-backed semantic search. Graph vectors are local hashed word vectors, not semantic embeddings. Contradiction detection is advisory. Encryption config exists, but encrypted storage is not implemented yet.
 
-이러한 한계는 의도적으로 명확하게 기재되어 있습니다. Engram은 사용자에게 현재 구현된 실질적인 기능과 향후 진행할 작업을 구분하여 알려야 합니다.
+These limits are intentional to state clearly. Engram should tell users what is real today and what is future work.
 
-## 다음 단계
+## Next steps
 
-- [쓰기 경로 및 승인](./write-path.md)
-- [운영 문제 해결](../operations/troubleshooting.md)
+- [Write path and approval](./write-path.md)
+- [Operations troubleshooting](../operations/troubleshooting.md)

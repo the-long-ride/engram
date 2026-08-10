@@ -1,34 +1,34 @@
 ---
-title: Onglet Core (Cœur)
+title: Maintain tab
 sidebar_position: 7
-description: Examinez les mémoires en doublon et en conflit avec des filtres de portée et de type.
+description: Review duplicate and conflicting memories with scope and type filters.
 ---
 
-# Onglet Core
+# Maintain tab
 
-L'onglet Core examine les mémoires en doublon et en conflit. C'est l'espace de travail de métacognition à l'intérieur du panneau Entry.
+The Maintain tab reviews duplicate and conflicting memories. It is the metacognition workspace inside the Entry panel.
 
-## Jetons de portée (Scope chips) : profile / global / workspace
+## Scope chips: profile / global / workspace {#scope-chips-profile-global-workspace}
 
-Filtrez l'analyse des doublons/conflits par source de mémoire. Auditez une portée ou comparez des doublons entre portées. Conservez au moins une portée sélectionnée.
+Filter duplicate/conflict analysis by memory source. Audit one scope or compare cross-scope duplicates. Keep at least one scope selected.
 
-## Jetons de type (Type chips) : rule / skill / workflow / knowledge
+## Type chips: rule / skill / workflow / knowledge {#type-chips-rule-skill-workflow-knowledge}
 
-Filtrez les candidats en doublon par type de mémoire. Concentrez le nettoyage sur les règles en premier ou sur les faits de connaissance en premier. Documentez la signification des types en ligne afin que les utilisateurs comprennent quand les doublons sont inoffensifs.
+Filter duplicate candidates by memory type. Focus cleanup on rules first or knowledge facts first. Document type meanings inline so users understand when duplicates are harmless.
 
-## Inclure les candidats sémantiques (Include semantic candidates)
+## Include semantic candidates {#include-semantic-candidates}
 
-Ajoute la recherche de doublons sémantiques, et pas seulement les correspondances exactes/lexicales. À utiliser lors du nettoyage de magasins de mémoire matures ; attendez-vous à plus de faux positifs.
+Adds semantic duplicate search, not just exact/lexical matches. Use when cleaning mature memory stores; expect more false positives.
 
-## Copier l'invite (Copy prompt)
+## Copy prompt
 
-Copie une invite `/engram` pour qu'un agent ou un modèle plus fort résolve les doublons. À utiliser pour le nettoyage et l'examen guidés par l'homme. Rappelez aux utilisateurs d'examiner les modifications générées à travers les barrières d'approbation.
+Copies an `/engram` prompt for a stronger agent or model to resolve duplicates. Use for human-guided cleanup and review. Remind users to review generated changes through approval gates.
 
-## Aperçu (Preview)
+## Preview
 
-Affiche l'invite avant la copie. Encouragez l'aperçu pour les opérations de nettoyage risquées.
+Shows the prompt before copying. Encourage preview for risky cleanup operations.
 
-## Équivalent CLI
+## CLI equivalent
 
 ```bash
 engram resolve-conflicts --dry-run --metacognize
@@ -36,8 +36,7 @@ engram resolve-conflicts --metacognize
 engram metacognize --workspace --force
 ```
 
-## Étapes suivantes
+## Next steps
 
-- [Onglet Memories](memories.md)
-- [CLI : verify / repair / quality-check](../cli/verify-repair-quality.md)
-
+- [Memories tab](memories.md)
+- [CLI: verify / repair / quality-check](../cli/verify-repair-quality.md)

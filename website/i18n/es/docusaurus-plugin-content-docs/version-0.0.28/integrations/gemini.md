@@ -1,51 +1,51 @@
 ---
 title: Gemini
 sidebar_position: 4
-description: Integración de Engram con Gemini CLI y superficies compatibles con Gemini de Antigravity.
+description: Engram integration with Gemini CLI and Antigravity Gemini-compatible surfaces.
 ---
 
 # Gemini
 
-Gemini CLI busca archivos `GEMINI.md` como contexto. El objetivo `slash` escribe `.gemini/commands/engram.toml` para que `/engram <args>` se convierta en un comando personalizado del proyecto en Gemini CLI.
+Gemini CLI searches for `GEMINI.md` files as context. The `slash` target writes `.gemini/commands/engram.toml` so `/engram <args>` becomes a project custom command in Gemini CLI.
 
-Engram también trata a `gemini` como el objetivo anunciado para Antigravity 2.0, Antigravity CLI y Antigravity IDE porque los documentos actuales de Google todavía vinculan el contexto y las habilidades de Antigravity a ubicaciones compatibles con Gemini. Los nombres de objetivos ocultos `antigravity` y `antigravity-cli` siguen siendo rutas de compatibilidad explícitas, pero no se muestran en `engram link list`, ayuda, autocompletado o `all`.
+Engram also treats `gemini` as the advertised target for Antigravity 2.0, Antigravity CLI, and Antigravity IDE because current Google docs still tie Antigravity context and skills to Gemini-compatible locations. The hidden `antigravity` and `antigravity-cli` target names remain explicit compatibility paths, but they are not shown in `engram link list`, help, completion, or `all`.
 
-## Instalación
+## Install
 
 ```bash
 engram link gemini
 ```
 
-## Archivos escritos
+## Files written
 
-| Archivo | Propósito |
+| File | Purpose |
 | --- | --- |
-| `GEMINI.md` | Bootstrap de contexto de proyecto |
-| `.gemini/commands/engram.toml` | Adaptador slash `/engram` |
-| `.gemini/settings.json` | Hooks `SessionStart` y `BeforeAgent` |
-| Gemini MCP config | Registro de MCP |
+| `GEMINI.md` | Project context bootstrap |
+| `.gemini/commands/engram.toml` | `/engram` slash adapter |
+| `.gemini/settings.json` | `SessionStart` and `BeforeAgent` hooks |
+| Gemini MCP config | MCP registration |
 
-## Instalación global
+## Global install
 
 ```bash
 engram link --global gemini
 ```
 
-Escribe `~/.gemini/GEMINI.md`, `~/.gemini/skills/engram/SKILL.md` y el archivo de configuración MCP de Gemini.
+Writes `~/.gemini/GEMINI.md`, `~/.gemini/skills/engram/SKILL.md`, and the Gemini MCP config file.
 
-## Objetivo centrado en tiempo de ejecución
+## Runtime-first target
 
-Gemini es un objetivo centrado en el tiempo de ejecución. `GEMINI.md` contiene instrucciones breves de bootstrap que dependen de herramientas y hooks de MCP para el protocolo detallado; el archivo Agent Skill maneja todo el flujo de escritura/aprobación.
+Gemini is a runtime-first target. `GEMINI.md` contains short bootstrap instructions that rely on MCP tools and hooks for detailed protocol; the Agent Skill file carries the full write/approval workflow.
 
-## Comportamiento de los hooks
+## Hook behavior
 
-Gemini admite la inyección en el inicio y en el momento del prompt de `hookSpecificOutput.additionalContext` a través de los eventos `SessionStart` y `BeforeAgent`.
+Gemini supports startup and prompt-time `hookSpecificOutput.additionalContext` injection via `SessionStart` and `BeforeAgent` events.
 
-## Compatibilidad con Antigravity
+## Antigravity compatibility
 
-Para los hooks, `gemini` es también el respaldo público de Antigravity. Los objetivos de hooks ocultos `antigravity` y `antigravity-cli` se normalizan al comportamiento y rutas de los hooks de Gemini hasta que Google publique documentación oficial y estable sobre hooks/configuraciones de Antigravity.
+For hooks, `gemini` is also the public Antigravity fallback. The hidden `antigravity` and `antigravity-cli` hook targets normalize to Gemini hook behavior and paths until Google publishes stable primary Antigravity hook/config documentation.
 
-## Siguientes pasos
+## Next steps
 
-- [Descripción general de las integraciones de agentes](overview.md)
-- [Hooks y líneas de verificación](hooks.md)
+- [Agent Integrations overview](overview.md)
+- [Hooks and proof lines](hooks.md)

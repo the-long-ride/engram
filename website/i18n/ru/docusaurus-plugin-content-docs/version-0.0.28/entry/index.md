@@ -1,50 +1,49 @@
 ---
-title: Обзор Entry Web UI
+title: Entry Web UI overview
 sidebar_position: 1
-description: Entry Web UI — это локальная панель управления для настройки памяти Engram, профилей, рабочих областей и подключений агентов.
+description: The Entry Web UI is the local-only control panel for configuring Engram memory and agent connections.
 ---
 
 import RiskCallout from '@site/src/components/RiskCallout';
 
-# Обзор Entry Web UI
+# Entry Web UI overview
 
-Entry Web UI — это локальная панель управления для Engram. Используйте ее для настройки корней памяти, привязки ИИ-агентов, точной настройки маршрутизации, просмотра дубликатов, проверки графа памяти и отладки конфигурации времени выполнения без ручного редактирования файлов JSON.
+The Entry Web UI is the local-only control panel for Engram. Use it to configure memory roots, link AI agents, tune routing, review findings, inspect the memory graph, and debug resolved config without editing JSON by hand.
 
-## Когда использовать
+## When to use it
 
-- Первая настройка рабочей области или корня глобальной памяти
-- Привязка или отвязка ИИ-агентов без необходимости помнить флаги CLI
-- Настройка параметров маршрутизации, графа, векторного поиска и вариантов правил
-- Просмотр дублирующихся или конфликтующих воспоминаний
-- Инспектирование графа памяти
-- Отладка разрешенной конфигурации, путей и обнаружения Git
+- First-time setup of a workspace or global memory root
+- Linking or unlinking AI agents without remembering CLI flags
+- Tuning routing, graph, vector, and rule variant settings
+- Reviewing duplicate or conflicting memories
+- Inspecting the memory graph
+- Debugging resolved config, paths, and Git detection
 
-## Локальная модель доступа (Local-only)
+## Local-only access model
 
-Панель работает на вашем компьютере. Это не облачный сервис. Закрывайте сервер по окончании работы в целях безопасности.
+The panel runs on your machine. It is not a cloud service. Close the server when you are done for security hygiene.
 
 <RiskCallout level="risky">
-Панель управления Entry является локальной. Считайте ее открытой во время настройки памяти, а затем закройте сервер на вкладке Runtime по завершении работы.
+The Entry panel is local-only. Treat it as open while you are configuring memory, then close the server from the sidebar footer when finished.
 </RiskCallout>
 
-## Отношение к командам CLI
+## Relationship to CLI commands
 
-Каждый видимый элемент управления сопоставляется с командой CLI или ключом конфигурации. Если существует эквивалент CLI, справочник полей указывает его. CLI остается источником истины для сценариев и автоматизации.
+Every visible control maps to a CLI command or config key. Where a CLI equivalent exists, the field reference lists it. The CLI remains the source of truth for scripting and automation.
 
-## Обзор вкладок
+## Tabs at a glance
 
-| Вкладка | Назначение |
+| Tab | Job |
 | --- | --- |
-| [Connections](connections.md) | Обнаружение и привязка поддерживаемых ИИ-агентов |
-| [Construct](construct.md) | Настройка каждого поля времени выполнения Engram |
-| [Profiles](profiles.md) | Управление изолированными глобальными профилями памяти |
-| [Workspaces](workspaces.md) | Регистрация и привязка репозиториев проектов |
-| [Core](core.md) | Просмотр дублирующихся и конфликтующих воспоминаний |
-| [Memories](memories.md) | Просмотр графа памяти и архивирование воспоминаний |
-| [Runtime](runtime.md) | Разрешенная конфигурация и пути только для чтения |
+| [Construct](construct.md) | Configure every Engram runtime field |
+| [Memories](memories.md) | Search, inspect, and archive active memory |
+| [Review](review.md) | Resolve findings and confirm reviewed memory writes |
+| [Maintain](core.md) | Review duplicate and conflicting memories |
+| [Connections](connections.md) | Detect and link supported AI agents |
 
-## Следующие шаги
+## Next steps
 
-- [Запуск панели управления](launch.md)
-- [Вкладка Construct](construct.md)
-- [Полный справочник полей](field-reference.md)
+- [Launching the control panel](launch.md)
+- [Construct tab](construct.md)
+- [Maintain tab](core.md)
+- [Complete field reference](field-reference.md)

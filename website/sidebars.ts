@@ -19,6 +19,7 @@ const sidebars: SidebarsConfig = {
         'concepts/profiles',
         'concepts/read-path',
         'concepts/write-path',
+        'concepts/evidence-traces',
         'concepts/safety',
       ],
     },
@@ -78,6 +79,8 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       items: [
         'operations/team-git-workflow',
+        'operations/git-author-settings',
+        'operations/configuration-upgrades',
         'operations/release-upgrade',
         'operations/troubleshooting',
         'operations/faq',

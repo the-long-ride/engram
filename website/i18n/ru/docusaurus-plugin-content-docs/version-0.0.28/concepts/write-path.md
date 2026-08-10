@@ -1,71 +1,53 @@
 ---
-title: "Путь записи и одобрение"
+title: Write path and approval
 sidebar_position: 6
-description: "Агенты предлагают, люди одобряют. Записывается только одобренная память, после чего обновляются индексы, граф, хэши и журнал изменений."
+description: Agents propose, humans approve. Only approved memory is written, then indexes, graph, hashes, and changelog refresh.
 ---
 
-# Протокол памяти, контролируемый человеком
+# Write path and approval
 
-## Одобрение в чате с ИИ
+The write flow is the trust boundary. Agents propose, humans approve.
 
-В чате с ИИ-агентом одобрение Engram является разговорным. Сначала агент показывает уточненные кандидаты `TYPE: ... | TEXT: ...`, а для правил также варианты Light/Balanced/Strict. Ответьте `yes`, чтобы сохранить именно эти кандидаты, `audit`, чтобы их исправить, или `cancel`, чтобы остановить процесс. После `yes` агент использует `engram save-session --force` с точно одобренными кандидатами. Прямые сохранения через CLI по-прежнему используют A/B/C, если только команда accept-all не была вызвана явно.
+## Write flow
 
+1. Agent proposes one or more candidates.
+   With `save-session --query-level <n>`, the agent may consider up to n recent accessible human-agent chats, but only as proposal context.
+   Natural `/engram ss -f last 50 sessions` is the same scope plus explicit force approval: `engram save-session --query-level 50 --force`.
+2. Engram parses candidate type and target scope.
+3. Engram checks schema, secrets, prompt-injection patterns, and path safety.
+4. Human sees a preview.
+5. Direct CLI replies use `A`, `A 1,3`, `B <note>`, or `C`.
+6. AI-agent chat replies use `yes`, `audit`, or `cancel` after the exact displayed candidates.
+7. Only approved memory is written.
+8. Index, graph, hashes, and changelog are refreshed.
 
-Engram — это не просто «память агента». Это протокол, который делает память проверяемой, переносимой и управляемой людьми.
+## Approval words
 
-## Соглашение
+Approval words are `yes`, `approve`, `confirm`, or `save`. Audit words are `audit`, `revise`, `correct`, or edited replacement text. Cancel words are `cancel`, `stop`, or rejection. Only approval after exact candidate display authorizes `engram save-session --force` for those candidates.
 
-Markdown — это долговечная память.
+Direct terminal CLI remains A/B/C. MCP proposal tools remain no-write.
 
-JSON-файлы индекса и графа — это слои ускорения работы.
+## Related-memory hints
 
-Одобрение человеком — это граница доверия (trust boundary).
+When `engram save` finds related active memories, the approval preview reports them with a suggested `depends_on` or possible-duplicate warning. Accepting saves the preview as-is; reject first if you want to restructure dependencies or archive duplicates before saving.
 
-Хэши — это средства проверки целостности.
+For `save-session --force`, Engram pauses before writing when those related memory hints appear. The agent should use the response to brainstorm a structured rerun: add `DEPENDS_ON: memory-id` for dependencies, `LEVEL: advanced` when a memory is deeper than its prerequisite, or `UPDATE: memory-id` when a candidate should merge into a possible duplicate.
 
-Правила исключения (ignore rules) — это средства контроля приватности.
+## Safety checks at save time
 
-Git обеспечивает переносимость и историю аудита изменений.
+- Schema validation
+- Secret scan
+- Prompt-injection scan
+- Path safety
+- Hash integrity
 
-Адаптеры агентов обеспечивают удобство, но не являются источником власти.
+## Why this matters
 
-Агенты могут предлагать информацию для памяти, но люди владеют тем, что в итоге записывается.
+Without a protocol, memory can become invisible state. Invisible state is hard to review, hard to share, and easy for agents to poison by accident.
 
-## Типы записей памяти
+Engram makes memory boring on purpose: files, diffs, hashes, review gates, and commands a human can rerun.
 
-| Тип | Назначение |
-| --- | --- |
-| Rule | предпочтение пользователя, исправление, ограничение, руководство класса «всегда/никогда» |
-| Skill | повторяющийся рабочий процесс, чек-лист, процедура, инструкция (runbook) |
-| Knowledge | объективный факт проекта, архитектурное решение, деталь реализации |
+## Next steps
 
-Каждый активный файл памяти содержит разделы `Context`, `Content` и `Example`. Для правил (Rule) также устанавливаются строгие ограничения на количество строк, чтобы загружаемые инструкции оставались лаконичными и полезными.
-
-## Поток записи (Write Flow)
-
-1. Агент предлагает одного или нескольких кандидатов.
-   С `save-session --query-level <n>` агент может учитывать до n доступных недавних сессий человек-агент, но только как контекст для предложений.
-   Естественная форма `/engram ss -f last 50 sessions` использует ту же область и явное одобрение всех кандидатов: `engram save-session --query-level 50 --force`.
-2. Engram анализирует тип кандидата и целевую область видимости (scope).
-3. Engram проверяет схему разметки, ищет секреты, шаблоны промпт-инъекций и проверяет безопасность путей файлов.
-4. Человек видит превью предлагаемых изменений.
-5. Человек отвечает `A` (принять всё), `A 1,3` (принять выбранные), `B <комментарий>` (добавить заметку к принятому) или `C` (отклонить).
-6. Записывается только одобренная память.
-7. Индекс, граф, хэши и журнал изменений (changelog) обновляются.
-
-## Поток чтения (Read Flow)
-
-1. Engram загружает индекс проекта и опциональный глобальный индекс.
-2. Записи из проекта переопределяют глобальные дубликаты с тем же `id`.
-3. Правила исключения и фильтры ролей скрывают нерелевантные записи.
-4. Маршрутизация на основе графа выбирает компактный пакет контекста.
-5. Перед выводом содержимого выполняются проверки хэшей и безопасности.
-
-## Почему это важно
-
-Без протокола память ИИ-агентов превращается в скрытое состояние (invisible state). Скрытое состояние трудно анализировать, им тяжело делиться, и агенты могут легко и незаметно отравить его некорректными данными.
-
-Engram делает память намеренно простой: файлы, дифы (diffs), хэши, шлюзы одобрения человеком и команды, которые человек может запустить повторно в терминале.
-
-Далее: [Руководство по операциям](../cli/overview.md).
-
+- [Privacy, ignore rules, and safety](safety.md)
+- [CLI: save / save-session / observe](../cli/save-session.md)

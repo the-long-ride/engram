@@ -1,58 +1,57 @@
 ---
-title: よくある質問
+title: FAQ
 sidebar_position: 4
-description: Engram に関するよくある質問。
+description: Frequently asked questions about Engram.
 ---
 
-# よくある質問 (FAQ)
+# FAQ
 
-## Engram はベクトルデータベースですか？
+## Is Engram a vector database?
 
-いいえ。デフォルトの Engram 検索は決定論的な語彙検索です。`engram search --semantic` は決定論的なローカル類似度を追加しますが、埋め込み（embeddings）ベース of のセマンティック検索ではありません。グラフベクトルはローカルなハッシュ語ベクトルであり、セマンティック埋め込みではありません。オプションのローカル sqlite-vec はアクセラレーション（加速）レイヤーであり、信頼できる唯一の情報源（ソースオブトゥルース）ではありません。
+No. Default Engram search is deterministic lexical search. `engram search --semantic` adds deterministic local similarity, not embedding-backed semantic search. Graph vectors are local hashed word vectors, not semantic embeddings. Optional local sqlite-vec is an acceleration layer, not the source of truth.
 
-## Engram は自動的にメモリを書き込みますか？
+## Does Engram write memory automatically?
 
-いいえ。エージェントが提案し、人間が承認します。直接のターミナル CLI は A/B/C を使用します。AI エージェントのチャットは `yes`/`audit`/`cancel` を使用します。明示的な一括受け入れ（accept-all）要求（`ss -f`）のみがすべての提案例を保存します。エージェントは人間が要求しない限り `--force` を追加してはなりません。
+No. Agents propose candidates; humans approve. Direct terminal CLI uses A/B/C. AI-agent chat uses `yes`/`audit`/`cancel`. Only explicit force requests (`ss -f`) save every candidate, and agents must not add `--force` unless the human requested it.
 
-## メモリはどこに保存されますか？
+## Where does memory live?
 
-- ワークスペースメモリ：`<project>/.agents/.engram/`
-- グローバルメモリ：構成した任意の場所（構成されるまではデフォルトで空）
+- Workspace memory: `<project>/.agents/.engram/`
+- Global memory: wherever you configure it (default empty until configured)
 
-ワークスペースメモリが優先されます。グローバルメモリは、再利用可能な設定やチームのコンテキストのフォールバックです。
+Workspace memory wins. Global memory is fallback for reusable preferences and team context.
 
-## どのエージェントがサポートされていますか？
+## Which agents are supported?
 
-Codex、Claude、Gemini（および Antigravity Gemini 互換のインターフェース）、Cursor、Windsurf/Cascade、OpenCode、Copilot、Cline、一般的な AGENTS.md 互換ホスト、MCP 対応ホスト、およびスラッシュコマンドホスト。詳細は [エージェント統合の概要](../integrations/overview.md) を参照してください。
+Codex, Claude, Gemini (and Antigravity Gemini-compatible surfaces), Cursor, Windsurf/Cascade, OpenCode, Copilot, Cline, generic AGENTS.md-compatible hosts, MCP-capable hosts, and slash-command hosts. See [Agent Integrations overview](../integrations/overview.md).
 
-## 暗号化は実装されていますか？
+## Is encryption implemented?
 
-暗号化の構成は存在しますが、暗号化ストレージはまだ実装されていません。現在の制限事項を明確に記載してください。
+Encryption config exists, but encrypted storage is not implemented yet. Document current limitations clearly.
 
-## Git なしで Engram を使用できますか？
+## Can I use Engram without Git?
 
-はい。Git はオプションですが、監査履歴、ポータビリティ、およびチームレビューのために推奨されます。
+Yes. Git is optional but recommended for audit history, portability, and team review.
 
-## 誤ったメモリをアーカイブするにはどうすればよいですか？
-
-```bash
-engram archive --reason "<理由>" <id-または-ファイル>
-```
-
-ファイルは承認後にのみアクティブなルーティングから外れ、`archive/` の下に保存されたままになります。監査可能性を高めるために、削除ではなくアーカイブを使用してください。
-
-## グローバルメモリを移動するにはどうすればよいですか？
+## How do I archive wrong memory?
 
 ```bash
-engram update-global-folder <新しいパス>
-engram ugf <新しいパス>
-engram move global folder from <古いパス> to <新しいパス>
+engram archive --reason "<why>" <id-or-file>
 ```
 
-古いグローバルルート全体を新しい場所に移動することも希望する場合は、`--move-from-path <古いパス>` を追加します。
+The file leaves active routing only after approval and remains preserved under `archive/`. Use archive, not delete, for auditability.
 
-## 次のステップ
+## How do I move global memory?
 
-- [トラブルシューティング](troubleshooting.md)
-- [比較とロードマップ](../comparison/overview.md)
+```bash
+engram update-global-folder <new-path>
+engram ugf <new-path>
+engram move global folder from <old-path> to <new-path>
+```
 
+Add `--move-from-path <old-path>` when they also want Engram to move the whole old global root into the new location.
+
+## Next steps
+
+- [Troubleshooting](troubleshooting.md)
+- [Comparison and roadmap](../comparison/overview.md)

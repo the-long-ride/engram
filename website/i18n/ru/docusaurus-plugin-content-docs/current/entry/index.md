@@ -47,3 +47,20 @@ Every visible control maps to a CLI command or config key. Where a CLI equivalen
 - [Construct tab](construct.md)
 - [Maintain tab](core.md)
 - [Complete field reference](field-reference.md)
+
+
+## Git author identity
+
+Engram can store a global author and an optional workspace override. Resolution is workspace, global, then read-only Git fallback. Settings affect future memories only; a workspace override never changes global Git configuration. Use explicit plan and confirmation for global Git sync or legacy-memory migration.
+
+```bash
+engram author show
+engram author set --name "Jane Doe" --email "jane@example.com"
+engram author unset --scope workspace
+engram author sync-git-global --plan
+engram author sync-git-global --confirm
+engram author migrate-memories --plan
+engram author migrate-memories --confirm
+```
+
+Read the complete [Git author settings guide](../operations/git-author-settings.md).

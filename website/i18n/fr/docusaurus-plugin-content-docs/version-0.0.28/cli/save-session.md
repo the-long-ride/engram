@@ -1,12 +1,12 @@
 ---
 title: save / save-session / observe
 sidebar_position: 3
-description: Commandes d'écriture — enregistrer une mémoire, en enregistrer plusieurs d'une session et capturer des notes brutes.
+description: Write commands — save one memory, save several from a session, and capture raw notes.
 ---
 
 # save / save-session / observe
 
-Les commandes d'écriture proposent de la mémoire via la validation de l'approbation.
+Write commands propose memory through the approval gate.
 
 ## save
 
@@ -16,9 +16,9 @@ engram save --role frontend "<text>"
 engram save --scope global "<text>"
 ```
 
-`engram save` capture le meilleur candidat de mémoire unique, met à jour automatiquement une mémoire correspondante ou en crée une nouvelle, et affiche toujours la validation d'approbation A/B/C avant d'écrire.
+`engram save` captures the best single memory candidate, automatically updates a matching memory or creates a new one, and always shows the A/B/C approval gate before writing.
 
-Lorsque `engram save` trouve des mémoires actives associées, l'aperçu de l'approbation les signale avec un `depends_on` suggéré ou un avertissement de doublon possible.
+When `engram save` finds related active memories, the approval preview reports them with a suggested `depends_on` or possible-duplicate warning.
 
 ## save-session
 
@@ -32,7 +32,7 @@ engram save-session --file transcript.md
 engram save-session --force
 ```
 
-Utilisez `save-session` lorsqu'une longue interaction a produit plusieurs candidats :
+Use `save-session` when a long interaction produced multiple candidates:
 
 ```text
 TYPE: rule | TEXT: Always run tests before release. | CONTEXT: Created from release planning so future agents preserve the test gate.
@@ -40,13 +40,13 @@ TYPE: knowledge | TEXT: Release notes live in CHANGELOG.md.
 TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
 ```
 
-`CONTEXT: ...` est facultatif. Ajoutez-le uniquement lorsqu'il explique pourquoi la mémoire existe. Les candidats peuvent également ajouter des champs `DEPENDS_ON`, `LEVEL` ou `UPDATE` lors de la restructuration d'une mémoire associée.
+`CONTEXT: ...` is optional. Add it only when it explains why the memory exists. Candidates may also add `DEPENDS_ON`, `LEVEL`, or `UPDATE` fields when restructuring related memory.
 
-- `--query-level <n>` — extrait jusqu'à n discussions récentes accessibles entre l'humain et l'agent ; doit être un entier positif ; les agents ne doivent pas inventer d'historique non disponible
-- `--force` / `-f` — chaque candidat généré est enregistré parce que l'humain a explicitement approuvé ce raccourci
-- `--file <path>` — pour les transcriptions ou les longs résumés déjà présents sur le disque
+- `--query-level <n>` — mine up to n recent accessible human-agent chats; must be a positive integer; agents must not invent unavailable history
+- `--force` / `-f` — every generated candidate is saved because the human explicitly approved that shortcut
+- `--file <path>` — for transcripts or long summaries already on disk
 
-Pour `/engram take-control --force` ou le `/engram take control accept all` naturel, l'adaptateur normalise la formulation, génère uniquement des candidats concis `TYPE: ... | TEXT: ...` et laisse Engram les enregistrer sans invite d'approbation secondaire.
+For `/engram take-control --force` or natural `/engram take control force`, the slash adapter normalizes the wording, generates only concise `TYPE: ... | TEXT: ...` candidates, and lets Engram save them without a second approval prompt.
 
 ## observe
 
@@ -55,19 +55,18 @@ engram observe --file session.md
 engram save-session --file .agents/.engram/inbox/<note>.md
 ```
 
-`observe` stocke des notes brutes nettoyées dans `inbox/`. Les notes de la boîte de réception ne sont pas des mémoires actives. Utilisez ceci lorsque vous souhaitez préserver des notes brutes avant de décider ce qui doit devenir une mémoire durable.
+`observe` stores sanitized raw notes in `inbox/`. Inbox notes are not active memory. Use this when you want to preserve rough notes before deciding what should become durable memory.
 
-## Indices de mémoire associée
+## Related-memory hints
 
-Lorsqu'une exécution de type tout accepter signale des mémoires associées avant d'écrire, aucun fichier n'a été enregistré. L'agent doit relancer avec des candidats structurés :
+When an accept-all run reports related memories before writing, no file was saved yet. The agent should rerun with structured candidates:
 
 ```text
 TYPE: rule | TEXT: OAuth rotation follows release foundations. | DEPENDS_ON: release-foundation | LEVEL: advanced
 TYPE: knowledge | TEXT: Invoice retries use exponential backoff. | UPDATE: invoice-retry-baseline
 ```
 
-## Étapes suivantes
+## Next steps
 
 - [inject / link / upgrade](inject-link-upgrade.md)
-- [Concepts : chemin d'écriture et approbation](../concepts/write-path.md)
-
+- [Concepts: write path and approval](../concepts/write-path.md)

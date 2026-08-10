@@ -1,40 +1,40 @@
 ---
-title: トラブルシューティング
+title: Troubleshooting
 sidebar_position: 3
-description: Engram の一般的な問題と回復方法。
+description: Common Engram problems and how to recover.
 ---
 
-# トラブルシューティング
+# Troubleshooting
 
-最初のステップ：`engram entry` を開き、**Runtime** タブを確認します。解決されたプロファイル、メモリのルート、コア構成、ルーティング、グラフ、および Git 検出の状態が表示されます。
+First step: open `engram entry` and read the **Runtime** tab. It shows the resolved profile, memory roots, core config, routing, graph, and Git detection.
 
-## メモリがロードされない
+## Memory did not load
 
-- `engram load --dry-run "<タスク>"` を実行して、候補数と絞り込みタグを検査します。
-- `engram config view` で `enabled`、`read`、`load.limit` を確認します。
-- `.agents/.engram/` の下にワークスペースメモリが存在することを確認します。
-- `engram verify` を実行してハッシュをチェックします。
+- Run `engram load --dry-run "<task>"` to inspect candidate counts and narrowing tags.
+- Check `engram config view` for `enabled`, `read`, and `load.limit`.
+- Confirm workspace memory exists under `.agents/.engram/`.
+- Run `engram verify` to check hashes.
 
-## フックが注入されない
+## Hooks not injecting
 
-- `engram set-read status` が `off` または `manual` になっていないことを確認します。
-- ホストがリンクされていることを確認します：`engram link <ターゲット>`。
-- `link`/`unlink` の後、ホストを再起動または再ロードします（特に OpenCode）。
-- 整合性行（proof line）の表示状態について `engram set-proof status` を確認します。
+- Confirm `engram set-read status` is not `off` or `manual`.
+- Confirm the host is linked: `engram link <target>`.
+- Restart or reload the host after `link`/`unlink` (especially OpenCode).
+- Check `engram set-proof status` for proof line visibility.
 
-## 保存に失敗した
+## Save failed
 
-- 関連メモリに関するヒントを得るため、承認プレビューを確認します。
-- 一括受け入れ（accept-all）で関連メモリが報告された場合、ファイルは保存されませんでした。`DEPENDS_ON` または `UPDATE` の候補を指定して再実行してください。
-- CLI 出力で、スキーマ、シークレット、およびインジェクションスキャンのエラーを確認します。
+- Read the approval preview for related-memory hints.
+- If accept-all reported related memories, no file was saved. Rerun with `DEPENDS_ON` or `UPDATE` candidates.
+- Check schema, secret, and injection scan errors in the CLI output.
 
-## プロファイルの混同
+## Profile confusion
 
-- `engram profile status` を実行します。
-- ワークスペースの `default_profile` とアクティブなユーザープロファイルを確認します。
-- 注意：ワークスペースのデフォルトと異なる明示的なプロファイルを指定すると、そのコマンドに対するワークスペースメモリは無効になります。
+- Run `engram profile status`.
+- Confirm the workspace `default_profile` and active user profile.
+- Remember: an explicit profile different from the workspace default disables workspace memory for that command.
 
-## 無効なメモリファイル
+## Invalid memory files
 
 ```bash
 engram verify
@@ -43,7 +43,7 @@ engram rebuild-index
 engram graph --rebuild
 ```
 
-## パッケージ更新後の古いアダプター
+## Stale adapters after package update
 
 ```bash
 engram upgrade
@@ -51,20 +51,20 @@ engram upgrade --latest
 engram link all
 ```
 
-生成された Engram アダプターファイルを意図的に置き換える場合にのみ `--force` を使用してください。
+Use `--force` only when replacing generated Engram adapter files intentionally.
 
-## SQLite 設定 DB が利用不可
+## SQLite config DB unavailable
 
-通常の読み取り/書き込みコマンドは JSON 設定のスナップショットにフォールバックします。DB 固有のコマンドは、通常のメモリ使用をブロックする代わりに SQLite が利用不可であることを報告します。
+Normal read/write commands fall back to JSON config snapshots. DB-specific commands report SQLite as unavailable instead of blocking normal memory use.
 
-## グローバル Git の同期問題
+## Global Git sync issues
 
-- `global_git.enabled` が `true` であることを確認します。
-- `global_git.remote_url` が有効な Git リモート URL であることを確認します。
-- `global_git.auto_resolve` を確認してください。自動衝突解決はメモリの差分を隠蔽してしまう可能性があります。
-- `engram entry` の Runtime タブを実行して `global_git_detected` を検査します。
+- Confirm `global_git.enabled` is `true`.
+- Check `global_git.remote_url` is a valid Git remote URL.
+- Review `global_git.auto_resolve` — auto conflict handling can mask memory diffs.
+- Run `engram entry` and open the Construct tab, or run `engram config view`, to inspect resolved Git detection.
 
-## 次 củaステップ
+## Next steps
 
-- [よくある質問](faq.md)
+- [FAQ](faq.md)
 - [CLI: verify / repair / quality-check](../cli/verify-repair-quality.md)

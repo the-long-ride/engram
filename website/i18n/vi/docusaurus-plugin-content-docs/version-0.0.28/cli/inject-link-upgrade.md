@@ -1,30 +1,33 @@
 ---
 title: inject / link / upgrade
 sidebar_position: 4
-description: Các lệnh thiết lập và adapter — khởi tạo không gian làm việc, liên kết tác nhân và đối soát sau khi cập nhật gói.
+description: Setup and adapter commands — initialize workspaces, link agents, and reconcile after package updates.
 ---
 
 # inject / link / upgrade
 
-Các lệnh thiết lập và adapter khởi tạo không gian làm việc, liên kết tác nhân và đối soát sau khi cập nhật gói.
+Setup and adapter commands initialize workspaces, link agents, and reconcile after package updates.
 
 ## inject
 
 ```bash
 engram inject
+engram inject --scope workspace|global|both
 engram inject --global-only --global-path <path>
 engram inject --submodule
 engram inject --submodule-remote <git-url>
 engram inject --global-remote <git-url>
+engram inject --global-branch <branch>
 engram inject --no-skillset
 engram inject --skillset all
+engram inject --no-global
 ```
 
-`engram inject` tạo ra `.agents/.engram/` và cài đặt mục tiêu Codex thu gọn theo mặc định. Các tệp hiện tại do con người viết sẽ được bỏ qua.
+`engram inject` creates `.agents/.engram/` and installs the compact Codex target by default. Existing human-authored files are skipped.
 
-Lệnh inject tương tác sẽ hỏi theo thứ tự này: có muốn thêm `./.agents/.engram` dưới dạng submodule hay không, có sử dụng đường dẫn Engram toàn cục hay không, và có muốn thêm nguồn Git toàn cục dùng chung hay không.
+Interactive inject asks in this order: whether to add `./.agents/.engram` as a submodule, whether to use a global Engram path, and whether to add a shared global Git origin.
 
-Sử dụng `engram update-global-folder <new-path>` hoặc `engram ugf <new-path>` để chỉ cập nhật đường dẫn toàn cục đã được cấu hình. Các dạng chat như `engram set global memory path to <new-path>` và `engram move global folder from <old-path> to <new-path>` được chuẩn hóa về cùng một lệnh. Thêm `--move-from-path <old-path>` khi họ cũng muốn Engram di chuyển toàn bộ thư mục gốc toàn cục cũ.
+Use `engram update-global-folder <new-path>` or `engram ugf <new-path>` to update only the configured global path. Chat-style forms such as `engram set global memory path to <new-path>` and `engram move global folder from <old-path> to <new-path>` normalize to the same command. Add `--move-from-path <old-path>` when they also want Engram to move the whole old global root.
 
 ## link
 
@@ -36,10 +39,12 @@ engram link cursor
 engram link windsurf
 engram link --global opencode
 engram link all
+engram link list
+engram link --all-supported
 engram unlink
 ```
 
-`engram link all` cài đặt tập hợp mục tiêu công khai và báo cáo lý do `SKIPPED` mang tính quyết định cho các host chưa hoàn thiện trên các tệp hướng dẫn bộ kỹ năng, cấu hình MCP, bộ chuyển đổi slash và hook tác nhân trong một lần cài đặt thống nhất. `engram unlink` gỡ bỏ toàn bộ chúng cùng nhau. `engram unlink --global <target>` chỉ gỡ bỏ plugin toàn cục do Engram tạo ra; tệp do con người viết sẽ được bảo tồn trừ khi có cờ `--force` rõ ràng.
+`engram link all` installs the public target set and reports deterministic `SKIPPED` reasons for partial hosts across skillset instruction files, MCP config, slash adapters, and agent hooks in one unified install. `engram unlink` removes all of these together. `engram unlink --global <target>` removes only the Engram-generated global plugin; a human-authored file is preserved unless `--force` is explicit.
 
 ## upgrade
 
@@ -47,15 +52,19 @@ engram unlink
 engram upgrade
 engram upgrade --plan
 engram upgrade --latest
+engram upgrade --self
+engram upgrade --memory-only
+engram upgrade --global-skillsets-only
+engram upgrade --target codex
 ```
 
-Sử dụng `engram upgrade` sau khi cài đặt gói Engram mới hơn. Lệnh này so sánh các thư mục gốc bộ nhớ đã khởi tạo từ phiên bản v0.0.8 trở đi với lược đồ phát hành hiện tại và làm mới các tệp `HELP.md` được tạo, chỉ mục bộ nhớ, tệp đồ thị, sidecar vector đủ điều kiện, bộ kỹ năng không gian làm việc được tạo, khung bộ nhớ toàn cục và bộ kỹ năng tác nhân toàn cục đã đăng ký trong khi bảo tồn các tệp do con người viết.
+Use `engram upgrade` after installing a newer Engram package. The command compares initialized memory roots from v0.0.8 onward to the current release schema and refreshes generated `HELP.md`, memory indexes, graph files, eligible vector sidecars, generated workspace skillsets, global memory scaffolding, and registered global agent skillsets while preserving human-authored files.
 
-Các lệnh thông thường cũng chạy đối soát thư mục gốc một cách âm thầm một lần cho mỗi phiên bản gói trừ khi `--no-auto-upgrade` hoặc `ENGRAM_NO_AUTO_UPGRADE=1` được thiết lập.
+Normal commands also run the same root reconciliation quietly once per package version unless `--no-auto-upgrade` or `ENGRAM_NO_AUTO_UPGRADE=1` is set.
 
-Sử dụng `engram upgrade --latest` khi kết quả đầu ra của gói mới phải ghi đè lên các cấu phần tác nhân liên kết hiện tại do Engram quản lý. Đường dẫn đó sẽ áp dụng lại các tệp hướng dẫn không gian làm việc, quy tắc, cấu hình MCP/plugin và các hook được quản lý, đồng thời làm mới các cài đặt tác nhân toàn cục đã đăng ký với các tệp mới nhất được tạo.
+Use `engram upgrade --latest` when the new package output must overwrite current Engram-managed linked agent artifacts. That path reapplies linked workspace instruction files, rules, MCP/plugin config, and managed hooks, and also refreshes registered global agent installs with the latest generated files.
 
-Chỉ sử dụng `--force` khi cố tình thay thế các tệp adapter do Engram tạo ra.
+Use `--force` only when replacing generated Engram adapter files intentionally.
 
 ## take-control
 
@@ -69,9 +78,9 @@ engram take-control --max-sources 5 --max-chars 900
 engram take-control --all --metacognize --force
 ```
 
-`take-control` là quy trình tiếp quản có hỗ trợ của tác nhân dành cho các hướng dẫn không gian làm việc hiện có. Nó xây dựng một gói nguồn nhỏ gọn từ các tệp như `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, quy tắc Cursor, ghi chú ngân hàng bộ nhớ và các thư mục cấp cao nhất như `rules/`, `skills/`, `workflows/`, `knowledge/` hoặc `notes/`, bao gồm cả các ghi chú `.txt`.
+`take-control` is the agent-assisted takeover flow for existing workspace guidance. It builds a compact source pack from files such as `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, Cursor rules, memory-bank notes, and top-level `rules/`, `skills/`, `workflows/`, `knowledge/`, or `notes/` folders, including `.txt` notes.
 
-Các bộ nhớ được lưu bởi take-control ghi lại `source_files` và `source_hashes` để các nguồn không thay đổi sẽ được bỏ qua sau đó.
+Saved take-control memories record `source_files` and `source_hashes`, so unchanged sources are skipped later.
 
 ## metacognize
 
@@ -81,10 +90,9 @@ engram metacognize --global --dry-run
 engram metacognize --all --force
 ```
 
-Sử dụng `metacognize` khi bạn muốn tác nhân AI xem xét một thư mục bộ nhớ Engram hiện có và đề xuất cấu trúc an toàn hơn thông qua cùng một luồng phê duyệt của save-session. Tác nhân nên sử dụng `UPDATE: memory-id` để hợp nhất hoặc dọn dẹp cách diễn đạt và `DEPENDS_ON: memory-id` cho các bộ nhớ phân lớp.
+Use `metacognize` when you want an AI agent to review an existing Engram memory folder and propose safer structure through the same save-session approval flow. Agents should use `UPDATE: memory-id` for consolidation or wording cleanup and `DEPENDS_ON: memory-id` for layered memories.
 
-## Các bước tiếp theo
+## Next steps
 
 - [profiles / workspaces / config](profiles-workspaces-config.md)
-- [Tổng quan về tích hợp tác nhân](../integrations/overview.md)
-
+- [Agent Integrations overview](../integrations/overview.md)

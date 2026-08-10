@@ -22,8 +22,33 @@ Full documentation lives on the website: [@the-long-ride/engram docs-site](https
 - **Git-Native & Portable**: Plain Markdown files stored in `.agents/.engram/` synced via Git—completely vendor-agnostic and offline-first.
 - **Privacy & Security Control**: Runs 100% locally and scans for PII/secrets before writing.
 - **Prerequisite Graphs**: Declares dependencies (`depends_on`) so agents load foundational rules before advanced tasks automatically.
+- **Evidence-Backed Provenance**: `observe` writes a sanitized immutable evidence trace plus an editable inbox review wrapper; approved schema v3 memories cite source traces through `evidence_refs`.
+- **Authority Separation**: Raw evidence is always `authority: evidence`; active memory is explicitly `instruction` or `reference`, preventing source material from silently becoming commands.
 
 ---
+
+
+### Evidence-Backed Memory Foundation
+
+Engram separates source evidence from approved memory:
+
+```text
+engram observe --file session.md
+  -> .agents/.engram/traces/<trace-id>.jsonl   # immutable evidence trace
+  -> .agents/.engram/inbox/<observation>.md    # editable review wrapper
+
+engram save-session --file .agents/.engram/inbox/<observation>.md
+  -> approved schema v3 Markdown memory
+  -> authority: instruction | reference
+  -> evidence_refs: [tr_...]
+  -> derived_from: [session-id]
+```
+
+The wrapper is review material, not authority. During promotion Engram reopens the immutable trace, validates its hash and scope, and uses the trace content rather than edited wrapper text. Legacy v1 and v2 memories remain readable; newly created or updated memories use schema v3 with revision and validity metadata.
+
+The CLI and Entry Web UI expose the same memory provenance: `authority`, `revision`, `evidence_refs`, `derived_from`, supersession links, validity dates, and `last_confirmed`.
+
+See [Evidence traces and provenance](https://the-long-ride.github.io/engram/docs/concepts/evidence-traces).
 
 ### High-Level System Flow
 
@@ -54,16 +79,18 @@ graph TD
 
     subgraph Write ["Write Path"]
         Proposal["Proposal / preview flows\n(save, save-session / propose,\ntake-control, metacognize,\nresolve-conflicts)"]:::action
-        Observe["Observe writes\nsanitized inbox notes only"]:::action
+        Observe["Observe sanitizes source\nand creates trace + wrapper"]:::action
         Scan["Safety checks\n(PII, secrets, prompt injection)"]:::action
         Review["Human approval gate\n(A / B / C or yes / audit / cancel,\nplus explicit accept-all flows)"]:::action
-        Persist["Write approved Markdown memory"]:::action
+        Persist["Write approved schema v3 memory\nwith evidence_refs"]:::action
         Rebuild["Refresh hashes, index, graph,\noptional sqlite-vec"]:::action
     end
 
     subgraph Memory ["Memory Layer"]
         Workspace["📁 Workspace memory\n(.agents/.engram/)"]:::storage
         Global["🌐 Global memory and profiles\n($ENGRAM_GLOBAL_DIR)"]:::storage
+        TraceStore["🔒 Immutable evidence traces\n(traces/<trace-id>.jsonl)"]:::storage
+        Inbox["📝 Editable review wrappers\n(inbox/*.md, non-indexed)"]:::storage
         Derived["🧠 Derived data\n(hashes, index, graph, sqlite-vec)"]:::storage
         Sync["☁️ Git / cloud sync"]:::storage
     end
@@ -93,8 +120,10 @@ graph TD
     Scan --> Review
     User -->|Approve, reject, or edit| Review
     Review --> Persist
-    Observe --> Workspace
-    Observe --> Global
+    Observe --> TraceStore
+    Observe --> Inbox
+    Inbox --> Review
+    TraceStore -->|Verified source| Review
     Persist --> Workspace
     Persist --> Global
     Persist --> Rebuild
@@ -120,6 +149,8 @@ flowchart TB
 
     WorkspaceMD["Workspace Markdown memories\n(.agents/.engram/)"]:::source
     GlobalMD["Global/profile Markdown memories\n($ENGRAM_GLOBAL_DIR)"]:::source
+    TraceJSONL["Immutable evidence traces\ntraces/<trace-id>.jsonl"]:::source
+    InboxMD["Editable inbox wrappers\nnon-indexed review material"]:::source
 
     Rebuild["Rebuild derived layers"]:::derived
     Hashes["Hashes"]:::derived
@@ -128,8 +159,9 @@ flowchart TB
     Vec["Optional sqlite-vec"]:::derived
     ConfigDB["Optional SQLite config DB\n(settings, not source of truth)"]:::derived
 
+    ObserveWrite["Observe + sanitize"]:::write
     Approve["Human approval"]:::write
-    Persist["Write approved Markdown"]:::write
+    Persist["Write approved schema v3 Markdown\nwith evidence_refs"]:::write
 
     Agent --> Query --> Rank
     Rank --> WorkspaceMD
@@ -145,6 +177,10 @@ flowchart TB
     Index --> Rank
     Graph --> Rank
     Vec --> Rank
+    Agent --> ObserveWrite --> TraceJSONL
+    ObserveWrite --> InboxMD
+    InboxMD --> Approve
+    TraceJSONL --> Approve
     Agent --> Approve --> Persist
     Persist --> WorkspaceMD
     Persist --> GlobalMD
@@ -202,6 +238,8 @@ flowchart TD
 ## What It Is (The Contract)
 
 - **Markdown is durable memory** — no hidden binary or proprietary formats.
+- **Immutable traces preserve evidence** — each `traces/<trace-id>.jsonl` file contains one canonical sanitized source record.
+- **Schema v3 links memory to evidence** — `authority`, `evidence_refs`, `derived_from`, `revision`, supersession, and validity fields make provenance explicit.
 - **JSON index, graph, and optional sqlite-vec sidecars** act as acceleration layers.
 - **Approval is the trust boundary** — the core principle is that agents suggest, humans approve.
 - **Hashes check integrity** and **Ignore rules handle privacy**.
@@ -211,6 +249,17 @@ flowchart TD
 - **Runtime-capable hosts get bootstrap instructions** — short `AGENTS.md`/`CLAUDE.md`/`GEMINI.md` text plus MCP tools and Agent Skills for the full workflow. Fallback targets get complete compact protocol.
 - **Strict rules govern agent output** to prevent context drift and hallucinations.
 - **SQLite config DB is optional** — if the DB cannot be opened or initialized, commands fall back to JSON config snapshots.
+
+### Git author metadata
+
+Engram resolves the workspace author, then the global Engram author, then read-only Git fallback values. New memories write separate identity fields:
+
+```yaml
+author_name: Jane Doe
+author_email: jane@example.com
+```
+
+Author settings affect future memories only. A workspace override never changes global Git configuration. Use `engram author sync-git-global --confirm` only after reviewing `--plan`; use `engram author migrate-memories --plan` before explicitly migrating existing memories. See the [Git author settings guide](https://the-long-ride.github.io/engram/docs/operations/git-author-settings).
 
 ---
 
@@ -226,6 +275,7 @@ Standard rule files get sent with every single message, bloating context, causin
 | **No offline access** | Runs locally as a lightweight file-based protocol—no server or internet required. |
 | **Context drift in team projects** | Synchronizes rules and guidelines team-wide via Git. |
 | **Broken or outdated memory** | Provides validation and cleanup utilities (`engram repair`, `engram quality-check`). |
+| **Summaries lose source evidence** | Keeps the immutable sanitized trace and lets approved memory cite it, instead of treating an editable summary as the original source. |
 
 ---
 
@@ -251,11 +301,13 @@ engram entry
 ```
 - **Connect Tab**: Scan and link Engram to your local AI agents (installs skillsets and hooks automatically).
   ![Engram Connect](media/demo/demo-engram-entry-connections.png)
-- **Construct Tab**: Configure core settings, load limits, rule variant preferences, global Git settings, and rule memory line limits.
+- **Construct Tab**: Configure core settings, load limits, rule variant preferences, and rule memory line limits. Global Git settings live under Git → Global.
   ![Engram Construct Tab](media/demo/engram-entry-Constuct-tab.png)
+- **Git Tab**: Configure global and workspace author profiles, preview the resolved identity, manage Global Git configuration from the Global scope, explicitly sync the global profile to Git, and migrate legacy author metadata. The resolved name carries a compact source badge (`WORKSPACE`, `GLOBAL`, `GIT`, or `UNRESOLVED`) instead of a large scope tag. Global Git configuration is not shown in Workspace scope. Every info button links to localized docs and its matching CLI `--help`.
+- **Updates Tab**: Detect outdated workspace/global memories, instructions, skillsets, configs, hooks, and plugins; preview the exact shared upgrade plan before applying changes. Preview uses `All`, `Config`, `Instructions`, `Memories`, `Skillsets`, `Hooks`, and `Plugins` kind tabs, hiding empty kind tabs. The sidebar update card can copy `engram upgrade --latest --plan` without opening Updates. Conflicts open a review modal with **Current**, editable **Proposed**, and **Diff** views. **Diff** opens in **Inline** mode by default and can switch to **Parallel**: removed lines use `-` with a red background, added lines use `+` with a green background, and Parallel aligns **Current** with **Proposed** using the same red/green semantics. Resolve individually with **Use latest**, an edited proposal, **Keep current**, or **Force upgrade** when Engram can prove the file is an Engram-managed block or generated Engram file. Eligible pending conflicts also have checkboxes: **Select all visible** selects eligible rows in the active kind tab, **Confirm selected changes** accepts latest for the checked rows, and **Confirm all changes** accepts latest for every eligible pending conflict in the preview. Batch confirmation validates the whole selection first and writes all decisions atomically; one invalid, stale, or already-reviewed item means no batch decisions are saved. Bulk confirmation never forces manual edits. Upgrade-review checkbox controls share clear checked, keyboard-focus, and disabled states, while result toast feedback uses a green border/glow for success and a red border/glow for errors. **Force upgrade** is per-item: managed-block force replaces only the Engram block and preserves surrounding user bytes; generated-file force replaces the whole proven Engram-owned file. For file-backed conflicts, **Open in editor** opens the exact current artifact using `$VISUAL`, then `$EDITOR`, then the platform fallback; external edits make the saved preview/source hash stale and require a refresh. Instructions previews contain only the managed `<!-- engram:start -->` block, while the full global skillset stays in the companion `.agents/engram.md` guide. The final Upgrade button still requires every blocker to be reviewed, and a post-apply rescan must confirm expected-updated files converged to current before success is reported.
 - **Maintain Tab**: Review and resolve duplicate memory candidates across workspace, global, and profile scopes, or run metacognitive analysis.
   ![Engram Maintain Settings](media/demo/engram-entry-Core-tab.png)
-- **Memories Tab**: Visualize active memories, search full Markdown content, include related matches, and inspect dependency edges using the interactive memory graph.
+- **Memories Tab**: Visualize active memories, search full Markdown content, include related matches, inspect dependency edges, and review the same provenance fields shown by CLI (`authority`, `revision`, `evidence_refs`, `derived_from`, supersession, and validity).
   ![Engram Memories Graph View](media/demo/Memories-graph-view.png)
 
 Alternatively, you can manually link Engram to your agent:
@@ -264,9 +316,32 @@ Alternatively, you can manually link Engram to your agent:
 engram link codex
 ```
 
-After upgrading the npm package, run `engram upgrade --latest` when you want
-Engram to overwrite current linked agent instruction files, rules, MCP/plugin
-config, and managed hooks with the new package version.
+After upgrading the npm package, preview configuration changes first:
+
+```bash
+engram upgrade --latest --plan
+engram upgrade --latest --review
+engram upgrade --latest
+```
+
+To migrate legacy v1/v2 memory files to schema v3 with `.pre-v3.bak` backups and default `evidence_status: unverified` for unlinked observations, run:
+
+```bash
+engram upgrade --migrate-memories
+```
+
+Pass `--no-migrate-memories` alongside `engram upgrade --latest --no-migrate-memories` to upgrade configs without modifying legacy memories.
+
+The same inventory powers CLI and Entry Web UI. Config, instruction, and skillset
+conflicts receive a type-aware proposed replacement/merge. In Entry, review **Current**,
+**Proposed**, and **Diff**. Diff defaults to **Inline** and can switch to **Parallel**; Inline keeps `-` removed / `+` added markers with red/green backgrounds, while Parallel aligns **Current** and **Proposed** with the same colors. Edit Proposed if needed, choose **Use latest**, choose **Keep current**, or choose **Force upgrade** only when Engram shows a proven managed-block/generated-file ownership boundary. For bulk review, use **Select all visible**, **Confirm selected changes**, or **Confirm all changes**; only eligible pending replaceable conflicts participate, and the server validates the full batch before one atomic review write. Bulk actions never perform Force upgrade. Shared physical integration files are canonicalized into one upgrade item/write, and apply rescans expected-updated files before reporting success. In the CLI,
+`engram upgrade --latest --review` uses `[V]` diff, `[E]` edit, `[L]` latest, `[K]` Keep
+current, and `[Q]` save/quit. Editing uses `$VISUAL`, then `$EDITOR`. Reviews are
+resumable and guarded by the file's source hash. `pendingReviewCount` must reach zero
+before apply; `engram upgrade --latest --yes` refuses unresolved/stale conflicts instead
+of guessing. Engram preserves user-authored bytes outside managed content. Vector indexing
+is a fail-open acceleration layer and cannot block an otherwise valid upgrade.
+See the [configuration upgrades guide](https://the-long-ride.github.io/engram/docs/operations/configuration-upgrades).
 
 For Gemini / Antigravity surfaces:
 ```bash
@@ -355,6 +430,7 @@ If the host exposes only one visible `/engram` command, send bare `/engram` firs
 - **Save key decisions/facts**: `/engram save knowledge "Webhook secret is process.env.STRIPE_WEBHOOK"`
 - **Brainstorm proposed memories**: `/engram propose`
 - **Summarize & save session**: `/engram save-session` (or `--query-level 3`, or `ss -f last 50 sessions` to force-save approved candidates)
+- **Capture evidence before approval**: `engram observe --file session.md`, review the inbox wrapper, then run `engram save-session --file .agents/.engram/inbox/<observation>.md`
 
 When an agent asks how to use Engram, run `engram llm`. It prints the packaged
 `llm.txt` AI-agent guide, which is safe to use before `engram inject`.
@@ -375,6 +451,8 @@ When an AI agent proposes `TYPE: ... | TEXT: ...` memory candidates, it may add 
 | **Dry Run Load** | `engram load --dry-run "<task>"` | `/engram load --dry-run "<task>"` |
 | **Save Single Memory** | `engram save <type> "<text>"` | `/engram save <type> "<text>"` |
 | **Propose Memories** | `engram save-session` | `/engram propose` or `/engram ss` |
+| **Capture Evidence** | `engram observe --file <path>` | Ask the agent to observe a file or session note |
+| **Promote Observed Evidence** | `engram save-session --file .agents/.engram/inbox/<observation>.md` | Review the wrapper, then approve exact candidates |
 | **Mine Recent Sessions** | `engram save-session --query-level <n>` | `/engram save-session --query-level <n>` |
 | **Force Saves** | `engram save-session --force` | `/engram ss -f` |
 | **Import Files / Docs** | `engram take-control --all` | `/engram take-control --all` |
@@ -384,6 +462,11 @@ When an AI agent proposes `TYPE: ... | TEXT: ...` memory candidates, it may add 
 | **Check Config / Paths** | `engram entry` | `/engram entry` |
 | **Show Agent Guide** | `engram llm` | Run once when an agent needs Engram usage guidance |
 | **Manage Profiles** | `engram profile status` / `create` / `use` | `/engram profile status` |
+| **Show Author Identity** | `engram author show` | Inspect workspace, global, Git fallback, and resolved identity |
+| **Set Author Profile** | `engram author set --name "Jane Doe" --email "jane@example.com"` | Configure the global or workspace author |
+| **Remove Author Profile** | `engram author unset --scope workspace` | Remove one Engram-owned author profile |
+| **Sync Global Git Author** | `engram author sync-git-global --plan` / `--confirm` | Preview, then explicitly update global Git config |
+| **Migrate Memory Authors** | `engram author migrate-memories --plan` / `--confirm` | Backfill legacy metadata with backups |
 | **Configure Save Target** | `engram set-save-target <workspace/global/both>` | `/engram set-save-target <target>` |
 | **Configure Load Limit** | `engram set-load-limit <1..32>` | `/engram set-load-limit <count>` |
 | **Configure Auto Read** | `engram set-read startup|auto|always|manual|off` | `/engram set-read auto` |
@@ -410,12 +493,11 @@ write immediately. Autonomous writes remain disabled until a
 reviewed policy explicitly enables them; quota and local JSONL audit receipts
 apply per memory scope.
 
-Transcript ingestion is opt-in and inbox-only. Sanitized events must be passed
-through a host integration; they never become active memories automatically.
+Transcript ingestion is opt-in and evidence-only. Sanitized events create an immutable trace plus a non-indexed inbox review wrapper; they never become active memories automatically. Promotion reopens the trace, verifies its hash and scope, and writes approved schema v3 memory with `evidence_refs`.
 `engram capabilities --json` reports host-specific support without claiming
 prompt injection where a host cannot provide it.
 
-The Entry UI groups work by task: Construct, Memories, Review, Maintain, and Connect. Review
+The Entry UI groups work by task: Construct, Git, Updates, Memories, Review, Maintain, and Connect. Review
 previews show a memory diff and ID-only dependency choices before any approval
 flow can write.
 

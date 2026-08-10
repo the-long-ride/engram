@@ -1,45 +1,45 @@
 ---
 title: Cursor
 sidebar_position: 5
-description: Интеграция Engram с Cursor через правила, MCP, локальный плагин, слэш-команды и хуки начала сессии.
+description: Engram integration with Cursor via rules, MCP, local plugin, slash commands, and session-start hooks.
 ---
 
 # Cursor
 
-Cursor считывает правила проекта из файлов `.cursor/rules/*.mdc`. Engram записывает `.cursor/rules/engram.mdc` с валидным фронтматером (`alwaysApply: true`) и блоком инструкций по начальной загрузке.
+Cursor reads project rules from `.cursor/rules/*.mdc` files. Engram writes `.cursor/rules/engram.mdc` with valid frontmatter (`alwaysApply: true`) and a bootstrap instruction block.
 
-## Установка
+## Install
 
 ```bash
 engram link cursor
 ```
 
-## Записанные файлы
+## Files written
 
-| Файл | Назначение |
+| File | Purpose |
 | --- | --- |
-| `.cursor/rules/engram.mdc` | Правила проекта с `alwaysApply: true` |
-| `.cursor/mcp.json` | Регистрация MCP (`type: "stdio"`) |
-| `.cursor/hooks.json` | Хук `sessionStart` |
-| `.cursor/commands/engram.md` | Слэш-адаптер `/engram` |
+| `.cursor/rules/engram.mdc` | Project rules with `alwaysApply: true` |
+| `.cursor/mcp.json` | MCP registration (`type: "stdio"`) |
+| `.cursor/hooks.json` | `sessionStart` hook |
+| `.cursor/commands/engram.md` | `/engram` slash adapter |
 
-## Глобальная установка
+## Global install
 
 ```bash
 engram link --global cursor
 ```
 
-Engram создает локальный плагин в директории `~/.cursor/plugins/local/engram/`, содержащий манифест плагина, правила, навыки, команды, конфигурацию MCP и хуки.
+Engram creates a local plugin at `~/.cursor/plugins/local/engram/` containing the plugin manifest, rules, skills, commands, MCP config, and hooks.
 
-## Runtime-first цель
+## Runtime-first target
 
-Cursor является runtime-first целью. Правила проекта содержат краткие инструкции по загрузке, которые полагаются на инструменты MCP и хуки для детального протокола; файл Agent Skill содержит полный рабочий процесс записи/утверждения.
+Cursor is a runtime-first target. Project rules contain short bootstrap instructions that rely on MCP tools and hooks for detailed protocol; the Agent Skill file carries the full write/approval workflow.
 
-## Поведение хуков
+## Hook behavior
 
-Хук `sessionStart` внедряет контекст запуска Engram через выходное поле `additional_context`. `beforeSubmitPrompt` предназначен только для разрешения/блокировки и не используется для внедрения контекста.
+The `sessionStart` hook injects Engram startup context through the `additional_context` output field. `beforeSubmitPrompt` is allow/block-only and is not used for context injection.
 
-## Дальнейшие шаги
+## Next steps
 
-- [Обзор интеграций с агентами](overview.md)
-- [Хуки и строки подтверждения](hooks.md)
+- [Agent Integrations overview](overview.md)
+- [Hooks and proof lines](hooks.md)

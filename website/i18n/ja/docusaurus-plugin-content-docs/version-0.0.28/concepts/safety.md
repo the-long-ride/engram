@@ -1,45 +1,45 @@
 ---
-title: プライバシー、無視ルール、および安全性
+title: Privacy, ignore rules, and safety
 sidebar_position: 7
-description: 無視ルール、承認ゲート、ハッシュ、およびプロファイルにより、プライベートなコンテキストが誤って取得されるのを防ぎます。
+description: Ignore rules, approval gates, hashes, and profiles protect private context from accidental capture.
 ---
 
-# プライバシー、無視ルール、および安全性
+# Privacy, ignore rules, and safety
 
-Engram はデフォルトで非公開（プライベート）です。複数のレイヤーにより、プライベートなコンテキストが永続的なメモリに漏洩したり、プロファイルの境界を越えたりするのを防ぎます。
+Engram is private by default. Several layers keep private context from leaking into durable memory or across profile boundaries.
 
-## 承認ゲート
+## Approval gate
 
-書き込みには人間の承認が必要です。エージェントが候補を提案し、人間が承認、拒否、編集、またはアーカイブします。直接のターミナル CLI は A/B/C を使用します。AI エージェントのチャットは `yes` / `audit` / `cancel` を使用します。
+Writes require human approval. Agents propose candidates; humans approve, reject, edit, or archive. Direct terminal CLI uses A/B/C. AI-agent chat uses `yes` / `audit` / `cancel`.
 
-## 無視ルール
+## Ignore rules
 
-無視ルールはプライバシー管理のための機能です。ルーティングから無関係または機密性の高いエントリを非表示にします。プライベートなパスやパターンがインデックスに入らないよう、`.engramignore` やワークスペースのメモリ設定で構成します。
+Ignore rules are privacy controls. They hide irrelevant or sensitive entries from routing. Configure them in `.engramignore` and workspace memory config so private paths and patterns never enter the index.
 
-## ハッシュ
+## Hashes
 
-ハッシュは整合性チェックです。コンテンツが出力される前に実行され、通常の書き込みフローをバイパスした安全でない編集を明らかにします。
+Hashes are integrity checks. They run before content is printed and reveal unsafe edits that bypassed the normal write flow.
 
-## プロファイル
+## Profiles
 
-プロファイルは、企業、クライアント、および個人のメモリを分離し、外部 API や企業提供のエージェントがプロジェクト間でコンテキストを漏洩させないようにします。[プロファイルとスコープの解決](profiles.md) を参照してください。
+Profiles isolate company, client, and personal memory so external APIs or company-provided agents do not leak context across projects. See [Profiles and scope resolution](profiles.md).
 
-## シークレットとインジェクションのスキャン
+## Secrets and injection scanning
 
-保存時に Engram は以下をチェックします：
+At save time Engram checks:
 
-- スキーマの検証
-- シークレットスキャン
-- プロンプトインジェクションのパターン
-- パスの安全性
+- schema validation
+- secret scan
+- prompt-injection patterns
+- path safety
 
-## 知っておくべき制限事項
+## Limits to know
 
-デフォルトの Engram 検索は決定論的な語彙検索です。`engram search --semantic` は決定論的なローカル類似度を追加しますが、埋め込み（embeddings）ベースのセマンティック検索ではありません。グラフベクトルはローカルなハッシュ語ベクトルであり、セマンティック埋め込みではありません。矛盾の検出は推奨事項（アドバイザリ）です。暗号化の構成は存在しますが、暗号化ストレージはまだ実装されていません。
+Default Engram search is deterministic lexical search. `engram search --semantic` adds deterministic local similarity, not embedding-backed semantic search. Graph vectors are local hashed word vectors, not semantic embeddings. Contradiction detection is advisory. Encryption config exists, but encrypted storage is not implemented yet.
 
-これらの制限は意図的に明確に記載されています。Engram は、現在何が実現可能で、何が今後の課題であるかをユーザーに伝える必要があります。
+These limits are intentional to state clearly. Engram should tell users what is real today and what is future work.
 
-## 次のステップ
+## Next steps
 
-- [書き込みパスと承認](./write-path.md)
-- [運用のトラブルシューティング](../operations/troubleshooting.md)
+- [Write path and approval](./write-path.md)
+- [Operations troubleshooting](../operations/troubleshooting.md)

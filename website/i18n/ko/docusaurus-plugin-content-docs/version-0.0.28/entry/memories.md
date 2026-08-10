@@ -1,52 +1,63 @@
 ---
-title: Memories 탭 (메모리)
-sidebar_position: 8
-description: 메모리 그래프를 검사하고 메모리를 미리 보며, 편집하고 아카이브합니다.
+title: Memories tab
+sidebar_position: 6
+description: Inspect the memory graph, preview memories, edit, and archive.
 ---
 
 import RiskCallout from '@site/src/components/RiskCallout';
 
-# Memories 탭
+# Memories tab
 
-Memories 탭은 저장된 메모리 간의 관계 그래프를 분석하고 개별 유지 관리 태스크를 지원합니다.
+The Memories tab inspects active memory, explores its graph, and performs maintenance actions.
 
-## 범위 칩 (Scope chips)
+## Search
 
-메모리 소스 기준 그래프 필터를 활용하여 워크스페이스용 메모리와 글로벌용 메모리를 비교 분석할 수 있습니다. 그래프 관계망이 너무 혼잡할 때는 먼저 현재 워크스페이스 단독 검색 조건으로 시작하십시오.
+Use the search field to match text anywhere in each Markdown memory file. The search is case-insensitive and works together with the scope and type filters.
 
-## 유형 칩 (Type chips)
+The search mode menu has two options:
 
-규칙, 기술, 또는 일반 지식 등 메모리 유형별로 필터링하여 그래프를 상세 검사합니다.
+- **Text matches only** shows memories whose file content or metadata directly matches the query.
+- **Text matches + related memories** also shows connected dependency, duplicate, and semantic memories.
 
-## 의미론적 엣지 토글
+Clear the field to restore the full graph for the selected filters.
 
-의미론적 연결성을 나타내는 그래프 선을 보거나 숨깁니다. 구조가 너무 복잡하게 얽혀 보일 때는 토글을 끄십시오.
+## Scope chips {#scope-chips}
 
-## 새로고침 / 재생성
+Filter the graph by memory source. Compare workspace vs global memory. Start with the current workspace only when the graph feels noisy.
 
-수동 수정, 가져오기, 아카이빙 처리, 또는 설정을 수정한 뒤에는 그래프 데이터를 새로 고치거나 다시 구축하십시오.
+## Type chips {#type-chips}
 
-## 메모리 내용 미리보기
+Filter the graph by memory type. Inspect rules, skills, or knowledge separately.
 
-선택된 개별 메모리의 본문 텍스트를 검토하여 에이전트에 실제 주입될 전체 포맷을 사전 감사할 수 있습니다.
+## Semantic links toggle {#semantic-links-toggle}
+
+Shows semantic graph edges. Turn off when the graph is visually noisy.
+
+## Refresh / rebuild
+
+Reloads or rebuilds graph data. Use after edits, imports, archive actions, or config changes.
+
+## Memory preview
+
+Reads selected memory content. Useful to audit what the agent will receive.
 
 <RiskCallout level="caution">
-브라우저 화면을 통해 기밀 정보가 표시될 수 있습니다. 미리보기를 활성화하고 사용할 때는 기기 화면 보안에 주의하십시오.
+Sensitive local content may be visible in the browser. Treat the panel as open while previewing.
 </RiskCallout>
 
-## 메모리 편집
+## Edit memory
 
-해당 Markdown 메모리 파일을 연결된 시스템 편집기로 열어 직접 수동 수정을 할 수 있도록 돕습니다. 원천 파일 포맷은 언제나 로컬 마크다운 파일입니다.
+Opens the file in an editor and copies the path. Use for manual correction or review. The source of truth is the Markdown file.
 
-## 메모리 아카이빙 (보관 처리)
+## Archive memory
 
-주입 대상 런타임 라우팅에서는 일시 배제하되 원천 데이터를 완전히 영구 삭제하지 않고 `archive/` 하위 영역에 아카이빙 보존합니다. 이력 관리를 위해 직접 삭제하기보다 아카이브를 권장합니다.
+Removes memory from active routing while preserving it under `archive/`. Use archive, not delete, for auditability.
 
 <RiskCallout level="caution">
-아카이빙 조치 즉시 라우팅 결과가 바뀝니다. 직접적인 물리적 파일 삭제는 기록 유실을 초래하므로 아카이빙 처리를 권장합니다.
+Archiving changes routing immediately. Use archive, not manual deletion, so history is preserved.
 </RiskCallout>
 
-## CLI 동등 명령
+## CLI equivalent
 
 ```bash
 engram graph "<topic>"
@@ -54,7 +65,7 @@ engram quality-check
 engram archive --reason "<why>" <id-or-file>
 ```
 
-## 다음 단계
+## Next steps
 
-- [Core 탭](core.md)
-- [Runtime 탭](runtime.md)
+- [Maintain tab](core.md)
+- [CLI: verify / repair / quality-check](../cli/verify-repair-quality.md)

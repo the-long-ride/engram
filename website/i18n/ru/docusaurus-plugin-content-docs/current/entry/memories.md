@@ -57,6 +57,12 @@ Removes memory from active routing while preserving it under `archive/`. Use arc
 Archiving changes routing immediately. Use archive, not manual deletion, so history is preserved.
 </RiskCallout>
 
+<!-- evidence-foundation:v3:start -->
+## Evidence-backed memory
+
+The detail panel mirrors CLI/index metadata. It shows `authority`, `revision`, `evidence_refs`, `derived_from`, `supersedes`, `superseded_by`, `valid_from`, `valid_until`, and `last_confirmed` when present. These fields explain why a memory exists and which immutable trace supports it; the Web UI does not turn evidence into an instruction.
+<!-- evidence-foundation:v3:end -->
+
 ## CLI equivalent
 
 ```bash

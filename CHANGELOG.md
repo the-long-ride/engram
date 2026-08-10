@@ -2,6 +2,9 @@
 
 ## 0.0.28
 
+- Added canonical YAML frontmatter and schema-aware quality scoring for memory schema v3 while retaining read compatibility for v1/v2 files.
+- Added immutable, sanitized, hash-verified evidence traces with session provenance, explicit authority labels, evidence references, revision arrays, and idempotent legacy observation migration.
+- Synchronized evidence, revision, validity, and supersession metadata across CLI and Entry Web UI, with documentation translated for every supported docs locale.
 - Released the enhancement-branch behavior and documentation as version `0.0.28`.
 - Added exact version-aware reference links for every visible Construct config field and every Auto-save Policy control.
 - Added a canonical Auto-save Policy reference and automated config/policy anchor drift checks.

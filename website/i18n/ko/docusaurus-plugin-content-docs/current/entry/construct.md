@@ -1,14 +1,14 @@
 ---
 title: Construct tab
 sidebar_position: 4
-description: Configure every Engram runtime field from the Construct tab. Each field has a use case, safe default, validation, and risk warning.
+description: Configure Engram runtime fields from Construct; Global Git configuration is managed from Git → Global.
 ---
 
 import RiskCallout from '@site/src/components/RiskCallout';
 
 # Construct tab
 
-The Construct tab exposes every Engram runtime config field, grouped exactly like the UI. Each field has a description, use cases, safe default, validation, and risk warning.
+The Construct tab exposes Engram runtime config fields grouped like the UI, except **Global Git configuration**, which is intentionally managed from **Git → Global**. Each Construct field has a description, use cases, safe default, validation, and risk warning.
 
 <RiskCallout level="caution">
 Fields marked **risky** can disable Engram, change save targets, change Git behavior, or affect memory security. Read the warning before changing them.
@@ -262,20 +262,11 @@ Syncs generated agent context files on save.
 
 Comma-separated generated context targets refreshed when live sync runs.
 
-## Global Git group
+## Global Git configuration moved to Git
 
-<RiskCallout level="risky">
-All Global Git fields are risky. They control audit history and team sync behavior for global memory. Review each before enabling.
-</RiskCallout>
+Global Git configuration no longer appears in Construct. Open **Git → Global** to edit the existing `global_git.*` settings with the same validation and risk-review backend. The Workspace tab under Git never exposes these global controls.
 
-| Field | Control | Default | Notes |
-| --- | --- | --- | --- |
-| `global_git.enabled` | toggle | `true` | Enables Git behavior for global memory |
-| `global_git.remote` | text | `origin` | Git remote name; cannot contain whitespace |
-| `global_git.remote_url` | text | empty | Shared global memory remote URL; HTTPS/SSH accepted |
-| `global_git.branch` | text | `main` | Target branch for sync |
-| `global_git.auto_sync` | toggle | `true` | Auto pull/push behavior |
-| `global_git.auto_resolve` | toggle | `true` | Auto conflict handling — review memory diffs |
+For key-by-key details, use the [field reference](field-reference.md#global-git-enabled) or the [Git settings guide](../operations/git-author-settings.md#global-git-configuration).
 
 ## Pattern Mining group
 

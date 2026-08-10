@@ -1,49 +1,49 @@
 ---
 title: Claude
 sidebar_position: 3
-description: Tích hợp Engram với Claude Code thông qua CLAUDE.md, các lệnh slash, Agent Skills, MCP, và hook.
+description: Engram integration with Claude Code via CLAUDE.md, slash commands, Agent Skills, MCP, and hooks.
 ---
 
 # Claude
 
-Claude Code đọc `CLAUDE.md` để lấy hướng dẫn dự án và hỗ trợ cấu hình công cụ bên ngoài thông qua `.mcp.json`.
+Claude Code reads `CLAUDE.md` for project guidance and supports external tool configuration through `.mcp.json`.
 
-## Cài đặt
+## Install
 
 ```bash
 engram link claude
 ```
 
-## Các tệp được ghi
+## Files written
 
-| Tệp | Mục đích |
+| File | Purpose |
 | --- | --- |
-| `CLAUDE.md` | Khởi tạo hướng dẫn dự án |
-| `.claude/commands/engram.md` | Lệnh slash `/engram` cổ điển |
-| `.claude/skills/engram/SKILL.md` | Agent Skill cho việc gọi lệnh slash |
-| `.claude/settings.json` | Các hook `SessionStart` và `UserPromptSubmit` |
-| `.mcp.json` | Đăng ký MCP |
+| `CLAUDE.md` | Project guidance bootstrap |
+| `.claude/commands/engram.md` | Classic `/engram` slash command |
+| `.claude/skills/engram/SKILL.md` | Agent Skill for slash invocation |
+| `.claude/settings.json` | `SessionStart` and `UserPromptSubmit` hooks |
+| `.mcp.json` | MCP registration |
 
-Claude nhận cả `.claude/commands/engram.md` và `.claude/skills/engram/SKILL.md` để `/engram` xuất hiện trong các menu lệnh cũ và các phiên Claude Code mới có nhận biết skill.
+Claude receives both `.claude/commands/engram.md` and `.claude/skills/engram/SKILL.md` so `/engram` appears in older command menus and newer skill-aware Claude Code sessions.
 
-## Cài đặt toàn cục
+## Global install
 
 ```bash
 engram link --global claude
 ```
 
-Engram thêm một khối được quản lý vào `~/.claude/CLAUDE.md` (giữ nguyên văn bản của người dùng) và ghi skill Claude vào `~/.claude/skills/engram/SKILL.md`. MCP toàn cục ghi vào `~/.claude/mcp.json`.
+Engram appends a managed block to `~/.claude/CLAUDE.md` (preserving user text) and writes the Claude skill to `~/.claude/skills/engram/SKILL.md`. Global MCP writes to `~/.claude/mcp.json`.
 
-## Mục tiêu ưu tiên runtime
+## Runtime-first target
 
-Claude là một mục tiêu ưu tiên runtime. `CLAUDE.md` chứa các hướng dẫn khởi tạo ngắn gọn dựa vào các công cụ MCP và hook để thực hiện giao thức chi tiết; tệp Agent Skill đảm nhận toàn bộ luồng ghi/phê duyệt.
+Claude is a runtime-first target. `CLAUDE.md` contains short bootstrap instructions that rely on MCP tools and hooks for detailed protocol; the Agent Skill file carries the full write/approval workflow.
 
-## Hành vi hook
+## Hook behavior
 
-Claude hỗ trợ khởi động và đưa thêm ngữ cảnh tại thời điểm prompt. `SessionStart` tải bộ nhớ được định tuyến lúc khởi động; `UserPromptSubmit` chỉ đưa lại ngữ cảnh khi ngữ cảnh Engram được định tuyến thay đổi.
+Claude supports startup and prompt-time additional context injection. `SessionStart` loads routed memory at startup; `UserPromptSubmit` reinjects only when routed Engram context changes.
 
-## Các bước tiếp theo
+## Next steps
 
-- [Tổng quan về tích hợp Agent](overview.md)
-- [Bộ điều hợp slash](slash.md)
-- [Công cụ MCP](mcp.md)
+- [Agent Integrations overview](overview.md)
+- [Slash adapters](slash.md)
+- [MCP tools](mcp.md)

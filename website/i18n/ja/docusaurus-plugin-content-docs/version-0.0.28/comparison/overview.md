@@ -1,118 +1,48 @@
 ---
-title: "比較概要"
+title: Comparison overview
 sidebar_position: 1
-description: "Engramとビルトインエージェントメモリ、agentmemory、Obsidian、Tolaria、およびHermes Agentの比較。"
+description: How Engram compares to built-in agent memory, agentmemory, Obsidian, Tolaria, and Hermes Agent.
 ---
 
-# 比較、メリット、デメリット、およびロードマップ
+# Comparison overview
 
-Engram は、自動メモリエンジンとはメモリスペースの異なる部分に位置しています。人間の所有権、レビューの容易さ、およびポータビリティを最適化します。
+Engram sits in a different part of the memory space than automatic memory engines. It optimizes for human ownership, reviewability, and portability.
 
-## Engram の強み
+## Engram strengths
 
-- プレーンな Markdown による信頼できる唯一の情報源（source of truth）。
-- 永続的な書き込みが行われる前の、人間による承認ステップ。
-- Git ネイティブな変更履歴の監査と同期。
-- ワークスペース優先、グローバルをフォールバックとするメモリ構成。
-- エージェントに依存しない構成：すべてのエージェントが Markdown を読み込み可能。
-- 安全レイヤー：スキーマ検証、機密情報のスキャン、インジェクションのスキャン、ハッシュ、除外ルール。
-- 常駐プロセス（daemon）、データベース、またはクラウドのアカウントが不要。
-- インポート、オブザーブ、アーカイブ、グラフ、ベンチマーク、修復のフローによる長期メンテナンスの支援。
+- Plain Markdown source of truth.
+- Human approval before durable writes.
+- Git-native audit history and sync.
+- Workspace-first, global-fallback memory.
+- Agent-agnostic: any agent can read Markdown.
+- Safety layers: schema validation, secret scan, injection scan, hashes, ignore rules.
+- No required daemon, database, or cloud account.
+- Import, observe, archive, graph, benchmark, and repair flows support long-term maintenance.
 
-## Engram のトレードオフ
+## Engram tradeoffs
 
-- 常駐プロセス（daemon）ベースのメモリシステムに比べ、自動化の度合いが低い。
-- デフォルトの検索は決定論的なレキシカル（文字）検索です。`search --semantic` は決定論的なローカル類似度を追加しますが、外部の埋め込み（embeddings）を利用した意味検索ではありません。
-- グラフのベクトルはローカルでハッシュ化された単語ベクトルであり、セマンティックな埋め込みではありません。
-- 矛盾の検出はアドバイザリー（助言）およびヘルスチェックとしての位置づけです。
-- `deduplicate --semantic` はローカル類似度を使用し、外部の埋め込みは使用しません。
-- パターンマイニング、暗号化設定、および PR ワークフローの設計アセットは存在しますが、実行時のフルワークフローはまだ接続されていません。
-- グラフ構造は生成されたタグと要約に依存します。
+- Less automatic than daemon-based memory systems.
+- Default search is deterministic lexical search; `search --semantic` adds deterministic local similarity, not embedding-backed semantic search.
+- Graph vectors are local hashed word vectors, not semantic embeddings.
+- Contradiction detection is heuristic and advisory.
+- `deduplicate --semantic` uses deterministic local similarity, not external embeddings.
+- Pattern mining, encryption config, and PR workflow assets exist, but full runtime workflows are not wired yet.
+- The graph depends on generated tags and summaries.
 
-## Agentmemory との比較
+## Roadmap ideas
 
-[rohitg00/agentmemory](https://github.com/rohitg00/agentmemory) は、コーディングエージェントのための強力な自動メモリエンジンです。その README では、サーバーベースのメモリ、MCP/フック/REST 統合、多数のエージェントアダプター、ベンチマーク性能、ビューアー、リプレイ機能、ハイブリッド検索、および Hermes との統合が説明されています。
+- Optional local embedding provider for graph vectors and search.
+- Better graph diagnostics explaining why a memory routed.
+- Benchmark fixtures checked into the repo for regression tracking.
+- Stronger contradiction review workflow combining graph, quality-check, and archive.
+- More import tests for agentmemory export variants.
+- Optional external embedding provider for semantic duplicate detection.
+- Repair workflows that can propose fixes after reporting invalid memory files.
 
-自動キャプチャ、リアルタイムビューアー/リプレイ、ベクトル検索、多くの MCP ツール、およびサーバー型の共有メモリが必要な場合は、`agentmemory` を使用してください。
+## Next steps
 
-メモリをリポジトリ内に保持し、読み取り可能なプロトコルとしたい場合は `Engram` を使用してください：Markdown ファーストであり、人間が承認し、Git でレビューでき、サーバーが動作していなくてもエージェント間で共有可能です。
-
-| 次元 | Engram | agentmemory |
-| --- | --- | --- |
-| 信頼できる唯一の情報源 | 承認済みの Markdown ファイル | メモリサーバー / ストア |
-| 信頼の境界 | 人間による A/B/C の承認 | 自動キャプチャとツールの統治 |
-| デフォルトモード | ファイルプロトコル、常駐不要 | 常駐サービスの実行を推奨 |
-| レビュー | Git diff と Markdown のレビュー | ビューアー/API と保存されたセッション |
-| 最適な用途 | 所有権と監査性を必要とするチーム | 自動的な思い出しやリプレイを望むユーザー |
-| リスク | より手動の規律（ディシプリン）が必要 | 慎重に管理しない限り不可視な状態が増える |
-
-## Hermes Agent との比較
-
-### 概要 (TL;DR)
-
-| | Engram | Hermes Agent |
-|---|---|---|
-| **設計思想** | 人間が所有するファイルファーストのプロトコル (自動保存も可能) | 自律的で常に有効なメモリ |
-| **記憶域** | `.agents/.engram/` 内の型付き Markdown ファイル | `MEMORY.md` + `USER.md` (厳格な文字数制限) |
-| **書き込みモデル** | デフォルトは人間の承認 (A/B/C ゲート; ルールによる自動化可能) | エージェントが自律的に書き込む |
-| **呼び出し** | オンデマンド：`engram load "<タスク>"` が関連ファイルを挿入 | 常時有効：セッション開始時にコアファイルがシステムプロンプトに固定される |
-| **ベクトル検索** | オプションのローカル sqlite-vec (決定論的、エンベッディング非対応) | 外部プロバイダー経由 (例：agentmemory — BM25 + ベクトル) |
-| **クロスエージェント** | ファイル読み込み可能なすべてのエージェントが Engram メモリを使用可能 | Hermes コア is 単一エージェント用、agentmemory プラグインによるクロスエージェント対応 |
-| **移植性** | Git ネイティブ、オフラインファースト、プレーンな Markdown | ローカルファイル、外部プロバイダーによるクラウドロックインの可能性 |
-| **オーバーヘッド** | デーモン不要、保存時の規律が必要 (自動化しない場合) | サーバープロセス + ビューア UI、REST API、MCP サーバー |
-
----
-
-### ストレージフォーマット
-
-**Engram** は、各メモリを YAML フロントマター、ハッシュ整合性チェック、およびオプションの依存関係グラフ（`depends_on`）を含む型付き Markdown ファイルとして保存します。JSON インデックス、グラフ、および sqlite-vec サイドカーはアクセラレーションレイヤーとして機能し、Markdown が信頼できる唯一の情報源（source of truth）です。
-
-**Hermes** は、すべての永続メモリを次の 2 つ di 制限付きファイルに圧縮します。
-- `~/.hermes/memories/MEMORY.md` — エージェントのメモ（2,200文字制限）
-- `~/.hermes/memories/USER.md` — ユーザープロファイル（1,375文字制限）
-
-厳格な文字数制限により、エージェントは蓄積するのではなく厳選することを強制されます。セッション履歴は SQLite FTS5 を介して検索可能です。
-
----
-
-### 書き込みモデル
-
-**Engram** — デフォルトで明示的な人間による承認ゲートです。エージェントは候補を提案し、人間がディスクに書き込む前に承認する必要があります。保存時にシークレットおよびプロンプトインジェクションのスキャンが行われます。 *(注：ユーザーは、応答が完了したときにエージェントが新しく提案したメモリを自動的に保存するルールを設定することで、このプロセスを自動化し、自動保存フローを作成できます)*
-
-**Hermes** — 自律的。エージェントが文字制限の範囲内で何をいつ書き込むかを決定します。コアのループに人間による承認は含まれません。
-
----
-
-### 呼び出しモデル
-
-**Engram** — オンデマンドルーティング。`engram load "<タスク>"` は、タグ、タイプ、鮮度、グラフ、およびオプションのベクトルシグナルによって候補を再ランク付けし、コンパクトなパック（デフォルト：8 ファイル）をコンテキストに挿入します。
-
-**Hermes** — 常時有効なインジェクション。セッション開始時にコアファイルがシステムプロンプトに固定されます。オプションの外部プロバイダー（例：agentmemory）は、各 LLM ターンの前にプリフェッチを実行し、実行後に同期します。
-
----
-
-### どちらを使うべきか
-
-監査可能で人間がレビューしたメモリ、Git によるチーム共有、プライバシー保証、またはツール間のエージェントに依存しない移植性必要時、**Engram を使用してください** (カスタムルールによる自動保存のオプションもあります)。
-
-保存時の規律を必要とせずに自動的に蓄積されるメモリ、常時オンのコンテキストインジェクション、またはビューア、REST API、プラグイン可能なベクトルバックエンドを備えたより充実したランタイムが必要な場合は、**Hermes を使用してください**。
-
----
-
-## 内蔵のエージェントメモリとの比較
-
-内蔵のメモリは便利ですが、特定のホストに縛られがちです。差分（diff）をとったり、エクスポートしたり、レビューしたり、他のエージェントと共有したりするのが難しい場合があります。
-
-Engram は内蔵メモリを「利便性のためのレイヤー」として扱い、権威とはみなしません。権威は常に、人間が所有する Markdown ファイルにあります。
-
-## ロードマップ案
-
-- グラフベクトルおよび検索用の、オプションのローカル埋め込み（embedding）プロバイダ。
-- なぜ特定のメモリがルーティングされたのかを説明する、より良いグラフ診断。
-- レグレス追跡のためにリポジトリにコミットされたベンチマークテストデータ。
-- グラフ、品質チェック、アーカイブを組み合わせた、より強力な矛盾レビューワークフロー。
-- 様々な形式の `agentmemory` エクスポートに対するインポートテストの強化。
-- セマンティックな重複検出用の、オプションの外部埋め込みプロバイダ。
-- 無効なメモリファイルを報告した後に修正案を提示できる修復（repair）ワークフロー。
-
-次へ：[ホーム](../intro.md)に戻る。
+- [Built-in agent memory](built-in-memory.md)
+- [agentmemory](agentmemory.md)
+- [Obsidian](obsidian.md)
+- [Tolaria](tolaria.md)
+- [Hermes Agent](hermes-agent.md)

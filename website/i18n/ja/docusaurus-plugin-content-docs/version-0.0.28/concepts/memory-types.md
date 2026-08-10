@@ -1,60 +1,59 @@
 ---
-title: メモリの種類
+title: Memory types
 sidebar_position: 2
-description: Engram メモリには型（Rule、Skill、Knowledge）があり、ルーティングとレビューの焦点を絞ることができます。
+description: Engram memory is typed — Rule, Skill, and Knowledge — so routing and review stay focused.
 ---
 
-# メモリの種類
+# Memory types
 
-アクティブなすべての Engram メモリには型（種類）があります。この型は、ルーティング、レビュー、およびエージェントに対してメモリがどのようにレンダリングされるかを制御します。
+Every active Engram memory has a type. The type controls routing, review, and how the memory is rendered to agents.
 
-| 型 | 用途 |
+| Type | Use |
 | --- | --- |
-| Rule | ユーザー設定、修正、制約、常に/決して行わないガイダンス |
-| Skill | 繰り返し可能なワークフロー、チェックリスト、手順、ランブック |
-| Knowledge | 客観的なプロジェクトの事実、決定、実装の詳細 |
+| Rule | user preference, correction, constraint, always/never guidance |
+| Skill | repeatable workflow, checklist, procedure, runbook |
+| Knowledge | objective project fact, decision, implementation detail |
 
-アクティブなメモリファイルには、それぞれ `Context`、`Content`、`Example` セクションがあります。Rule メモリは、ロードされたガイダンスが有用であり続けるよう、簡潔な行数制限も目標としています。
+Every active memory file has `Context`, `Content`, and `Example` sections. Rule memories also target concise line limits so loaded guidance stays useful.
 
-## 良いメモリ
+## Good memory
 
-良い Engram メモリとは：
+Good Engram memory is:
 
-- 翌週になっても意味があるほど十分に安定している
-- 後でルーティングできるほど十分に具体的である
-- エージェントのコンテキストにロードできるほど十分に短い
-- 意図したスコープで共有できるほど十分に安全である
-- ルール、ワークフロー、またはナレッジ項目として記述されている
+- stable enough to matter next week
+- specific enough to route later
+- short enough to load into an agent context
+- safe enough to share with the intended scope
+- written as a rule, workflow, or knowledge item
 
-悪いメモリとは、一時的なチャットのノイズ、シークレット、資格情報、一回限りの推測、または誰も承認していない事実です。
+Bad memory is temporary chat noise, secrets, credentials, one-off speculation, or facts that nobody has approved.
 
-## ルールのバリアント
+## Rule variants
 
-Engram は、ルールメモリを常にライト（light）、バランス（balanced）、厳格（strict）のバージョンで保存します。ルールバリアントモードは、エージェント向けメモリ of のレンダリングレンズです：
+Engram always saves rule memories with light, balanced, and strict versions. Rule variant mode is a render lens for agent-facing memory:
 
-- **Strict** は、下位層のモデルが制御された状態を維持するのに役立ちます。
-- **Light** または **balanced** な表現は、通常、ルールが推論を制限しないようにするため、より強力なモデルに役立ちます。
+- **Strict** helps lower-tier models stay controlled.
+- **Light** or **balanced** wording usually helps stronger models so rules do not limit their reasoning.
 
-バリアントがオフの場合、Engram はデフォルトでバランスの取れたルールの表現をレンダリングします。調整するには以下を実行します：
+When variants are off, Engram renders balanced rule wording by default. Tune with:
 
 ```bash
 engram set-rule-variant strict|balanced|light|off
 ```
 
-## エージェント向け出力 (`--full`)
+## Compact output by default
 
-`engram load "<task>"` が実行されると、出力は AI エージェント向けにスリム化されます：
+When `engram load "<task>"` runs, the output is slimmed for AI agents by default:
 
-| 側面 | 人間 (`engram load`) | エージェント (`--full`) |
+| Aspect | Default (`engram load`) | Full (`engram load --full`) |
 | --- | --- | --- |
-| フロントマター | すべてのフィールド (id, type, tags, confidence, scope, author, created, updated, depends_on など) | `id`、`type`、`tags`、`confidence`、`depends_on` のみ |
-| ルール本文 | 3つのバリアントすべてを含む完全な `## Rule Variants` セクション | `## Rule variants (1/3 based on current: <active>)` の下で選択された1つのバリアント |
-| ルール以外のコンテンツ | 完全な `## Content` セクション | 同じコンテンツ、見出しは変更なし |
+| Frontmatter | Only `id`, `type`, `tags`, `confidence`, `depends_on` | All fields (id, type, tags, confidence, scope, author, created, updated, depends_on, etc.) |
+| Rule body | One selected variant under `## Rule variants (1/3 based on current: <active>)` | Full `## Rule Variants` section with all three variants |
+| Non-rule content | Same content, unchanged heading | Same content, unchanged heading |
 
-MCP の `engram_load` および SessionStart フックは、デフォルトで `--full` になります（MCP ツールで `full: true` を指定することでオプトアウト可能）。スキルセットアダプターは、生成する命令内に `--full` をハードコードします。
+MCP `engram_load` and SessionStart hooks use compact output by default. Pass `full: true` on the MCP tool or `engram load --full "<task>"` when broader legacy output is needed.
 
-## 次のステップ
+## Next steps
 
-- [ワークスペースメモリとグローバルメモリ](scopes.md)
-- [読み取りパスとルーティング](read-path.md)
-
+- [Workspace vs global memory](scopes.md)
+- [Read path and routing](read-path.md)

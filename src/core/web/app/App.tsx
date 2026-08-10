@@ -58,7 +58,7 @@ export function App() {
   const pane = useMemo(() => {
     if (active === 'review') return <ReviewTab active toast={toast} modal={modalApi} />;
     if (active === 'maintain') return <CoreTab active toast={toast} modal={modalApi} />;
-    if (active === 'connect') return <ConnectionsTab active toast={toast} />;
+    if (active === 'connect') return <ConnectionsTab active toast={toast} modal={modalApi} />;
     if (active === 'config') return data ? <ConfigTab data={data} reload={reload} toast={toast} /> : null;
     if (active === 'author') return data ? <AuthorTab data={data} reload={reload} toast={toast} modal={modalApi} /> : null;
     if (active === 'upgrade') return data ? <UpgradeTab data={data} reload={reload} toast={toast} modal={modalApi} /> : null;

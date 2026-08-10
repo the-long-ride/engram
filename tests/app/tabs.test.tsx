@@ -710,10 +710,17 @@ describe('ConnectionsTab', () => {
       expect(toastMock).toHaveBeenCalledWith('Connected');
     });
     
-    // Unlink Global agent
+    // Unlink Global agent with custom modal confirmation
     (api.postJson as jest.Mock).mockResolvedValueOnce({ message: 'Disconnected' });
-    window.confirm = jest.fn().mockReturnValue(true);
-    fireEvent.click(toggles[1]);
+    const modalMock = { open: jest.fn(), close: jest.fn() };
+    const { container: modalConnContainer } = render(<ConnectionsTab active={true} toast={toastMock} modal={modalMock} />);
+    await waitFor(() => expect(screen.getByText('Agent One')).toBeInTheDocument());
+    const modalToggles = modalConnContainer.querySelectorAll('.tgl');
+    fireEvent.click(modalToggles[1]);
+    expect(modalMock.open).toHaveBeenCalledWith(expect.objectContaining({ title: 'Unlink Agent One?' }));
+    const confirmation = modalMock.open.mock.calls[0][0];
+    render(confirmation.actions);
+    fireEvent.click(screen.getByRole('button', { name: 'Unlink agent' }));
     await waitFor(() => {
       expect(api.postJson).toHaveBeenCalledWith('/api/agents/unlink', { agentId: 'agent-1', global: true });
       expect(toastMock).toHaveBeenCalledWith('Disconnected');

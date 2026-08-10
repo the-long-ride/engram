@@ -1,13 +1,14 @@
 // Connections tab for linking Engram instructions to AI agents.
 import { useEffect, useState } from 'react';
-import type { ShowToast } from '../types.js';
+import type { ModalController, ShowToast } from '../types.js';
 import { getJson, postJson } from '../api-client.js';
 import { Button } from '../components/Button.js';
 import { Toggle } from '../components/Toggle.js';
 import { SectionHeader } from '../components/SectionHeader.js';
+import { ConfirmActions, ConfirmBody } from '../components/ConfirmModal.js';
 import { entryDoc } from '../utils/docs.js';
 
-export function ConnectionsTab({ active, toast }: { active: boolean; toast: ShowToast }) {
+export function ConnectionsTab({ active, toast, modal }: { active: boolean; toast: ShowToast; modal?: ModalController }) {
   const [agents, setAgents] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -30,11 +31,44 @@ export function ConnectionsTab({ active, toast }: { active: boolean; toast: Show
     await scanAgents();
   }
 
-  async function unlinkAgent(agentId: string, isGlobal: boolean) {
-    if (!window.confirm('Unlink AI agent?')) return;
-    const res: any = await postJson('/api/agents/unlink', { agentId, global: isGlobal });
-    toast(res.message || 'Disconnected');
-    await scanAgents();
+  function unlinkAgent(agent: any, isGlobal: boolean) {
+    const targetScope = isGlobal ? 'Global' : 'Workspace';
+    const message = `Disconnect ${agent.name || agent.id} from ${targetScope} Engram instructions?`;
+
+    if (!modal) {
+      if (typeof window !== 'undefined' && window.confirm && !window.confirm(`Unlink ${agent.name || agent.id}?`)) return;
+      void (async () => {
+        const res: any = await postJson('/api/agents/unlink', { agentId: agent.id, global: isGlobal });
+        toast(res.message || 'Disconnected');
+        await scanAgents();
+      })();
+      return;
+    }
+
+    modal.open({
+      title: `Unlink ${agent.name || agent.id}?`,
+      className: 'modal-panel confirm-panel',
+      content: <ConfirmBody message={message} />,
+      actions: (
+        <ConfirmActions
+          cancel={modal.close}
+          confirm={() => {
+            modal.close();
+            void (async () => {
+              try {
+                const res: any = await postJson('/api/agents/unlink', { agentId: agent.id, global: isGlobal });
+                toast(res.message || 'Disconnected');
+                await scanAgents();
+              } catch (e: any) {
+                toast(e.message || String(e), false);
+              }
+            })();
+          }}
+          confirmText="Unlink agent"
+          danger
+        />
+      )
+    });
   }
 
   function toggleExpand(agentId: string) {
@@ -103,11 +137,11 @@ export function ConnectionsTab({ active, toast }: { active: boolean; toast: Show
               <div className="conn-actions">
                 <div className="conn-row">
                   <span>Workspace</span>
-                  <Toggle on={Boolean(agent.workspaceLinked)} onClick={() => agent.workspaceLinked ? unlinkAgent(agent.id, false) : linkAgent(agent.id, false)} />
+                  <Toggle on={Boolean(agent.workspaceLinked)} onClick={() => agent.workspaceLinked ? unlinkAgent(agent, false) : linkAgent(agent.id, false)} />
                 </div>
                 <div className="conn-row">
                   <span>Global</span>
-                  <Toggle on={Boolean(agent.globalLinked)} onClick={() => agent.globalLinked ? unlinkAgent(agent.id, true) : linkAgent(agent.id, true)} />
+                  <Toggle on={Boolean(agent.globalLinked)} onClick={() => agent.globalLinked ? unlinkAgent(agent, true) : linkAgent(agent.id, true)} />
                 </div>
               </div>
             </div>

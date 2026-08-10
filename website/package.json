@@ -27,7 +27,7 @@
     "@docusaurus/plugin-content-docs": "3.10.2",
     "@docusaurus/preset-classic": "3.10.2",
     "@docusaurus/theme-mermaid": "3.10.2",
-    "@easyops-cn/docusaurus-search-local": "^0.52.3",
+    "@easyops-cn/docusaurus-search-local": "^0.55.3",
     "@fontsource-variable/geist": "^5.3.0",
     "@fontsource-variable/geist-mono": "^5.3.0",
     "@mdx-js/react": "^3.1.1",

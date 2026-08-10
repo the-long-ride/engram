@@ -526,8 +526,8 @@
 .author-scope-tabs { display: inline-flex; width: fit-content; padding: 3px; border: 1px solid var(--g300); border-radius: var(--r8); background: var(--bg2); }
 .author-scope-tabs button { min-width: 112px; padding: 7px 12px; border-radius: var(--r6); color: var(--g700); font-size: 12px; font-weight: 600; }
 .author-scope-tabs button.active { background: var(--g1000); color: var(--bg); }
-.author-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-.author-card { min-width: 0; padding: 16px; border: 1px solid var(--g300); border-radius: var(--r12); background: var(--bg); display: grid; gap: 14px; }
+.author-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
+.author-card { min-width: 0; padding: 14px 16px; border: 1px solid var(--g300); border-radius: var(--r12); background: var(--bg); display: flex; flex-direction: column; gap: 12px; align-self: start; }
 .author-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 .author-card h3 { font-size: 14px; }
 .author-card p { margin-top: 4px; color: var(--g600); font-size: 12px; line-height: 1.45; }

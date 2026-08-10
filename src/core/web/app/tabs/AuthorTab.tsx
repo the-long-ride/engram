@@ -136,6 +136,7 @@ export function AuthorTab({ data, reload, toast, modal }: { data: PanelData; rel
   const currentHelp = scope === 'global'
     ? <CommandHelp href={operationDoc('git-author-settings', 'global-author')} label="Open global author documentation" command="engram author set --help" />
     : <CommandHelp href={operationDoc('git-author-settings', 'workspace-override')} label="Open workspace author documentation" command="engram author set --help" />;
+  const unsetHelp = <CommandHelp href={operationDoc('git-author-settings', 'remove-an-author-profile')} label="Open remove author profile documentation" command="engram author unset --help" />;
 
   return <section className="author-page" aria-labelledby="author-title">
     <div className="section-header"><div><h2 id="author-title">Git</h2><p>Control Engram Git identity and global Git-backed memory configuration.</p></div></div>
@@ -144,20 +145,30 @@ export function AuthorTab({ data, reload, toast, modal }: { data: PanelData; rel
       <button role="tab" aria-selected={scope === 'workspace'} aria-label="Workspace author" className={scope === 'workspace' ? 'active' : ''} onClick={() => setScope('workspace')}>Workspace</button>
     </div>
     <div className="author-grid">
-      <div className="author-card">
-        <div className="author-card-head"><div><h3>{scope === 'global' ? 'Global author' : 'Workspace override'}</h3><p>{scope === 'global' ? 'Default identity for all workspaces.' : 'Identity used only in this workspace.'}</p></div>{currentHelp}</div>
+      <div className="author-card author-compact-profile">
+        <div className="author-card-head">
+          <div><h3>{scope === 'global' ? 'Global author' : 'Workspace override'}</h3><p>{scope === 'global' ? 'Default identity for all workspaces.' : 'Identity used only in this workspace.'}</p></div>
+          <div className="author-resolved-head" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span className={`badge author-source-badge source-${resolved?.source ?? 'unresolved'}`}>{sourceLabel(resolved?.source ?? 'unresolved')}</span>
+            <CommandHelp href={operationDoc('git-author-settings', 'resolution-order')} label="Open author resolution documentation" command="engram author show --help" />
+          </div>
+        </div>
         <label className="author-field"><span>Author name</span><input className="form-input" aria-label="Author name" value={name} onChange={(event: ChangeEvent<HTMLInputElement>) => setName(event.target.value)} autoComplete="name" /></label>
         <label className="author-field"><span>Author email</span><input className="form-input" aria-label="Author email" type="email" value={email} onChange={(event: ChangeEvent<HTMLInputElement>) => setEmail(event.target.value)} autoComplete="email" /></label>
         {fieldError ? <div className="author-error" role="alert">{fieldError}</div> : null}
-        <div className="author-actions"><Button variant="primary" aria-label="Save author" onClick={openSaveReview}>Save author</Button>{profile ? <Button variant="danger" onClick={openRemoveReview}>Remove profile</Button> : null}</div>
-        {profile ? <CommandHelp href={operationDoc('git-author-settings', 'remove-an-author-profile')} label="Open remove author profile documentation" command="engram author unset --help" /> : null}
+        <div className="author-actions" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+          <div className="author-help-left" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            {currentHelp}
+            {unsetHelp}
+          </div>
+          <div className="author-buttons" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Button variant="primary" aria-label="Save author" onClick={openSaveReview}>Save author</Button>
+            {profile ? <Button variant="danger" onClick={openRemoveReview}>Remove profile</Button> : null}
+          </div>
+        </div>
       </div>
-      <div className="author-card">
-        <div className="author-card-head"><div><h3>Resolved identity</h3><p>Workspace overrides global, then Engram falls back to Git.</p></div><CommandHelp href={operationDoc('git-author-settings', 'resolution-order')} label="Open author resolution documentation" command="engram author show --help" /></div>
-        <div className="author-resolved"><div className="author-resolved-head"><strong>{resolved?.complete ? resolved.name : 'No complete identity'}</strong><span className={`badge author-source-badge source-${resolved?.source ?? 'unresolved'}`}>{sourceLabel(resolved?.source ?? 'unresolved')}</span></div><code>{resolved?.complete ? resolved.email : 'Configure an Engram or Git author'}</code></div>
-      </div>
+      {scope === 'global' ? <ConfigFieldGroupEditor data={data} fields={globalGitFields} reload={reload} toast={toast} modal={modal} title="Global Git configuration" description="Git settings for shared global memory. These controls are available only in Global scope." /> : null}
     </div>
-    {scope === 'global' ? <div className="author-global-config"><ConfigFieldGroupEditor data={data} fields={globalGitFields} reload={reload} toast={toast} modal={modal} title="Global Git configuration" description="Git settings for shared global memory. These controls are available only in Global scope." /></div> : null}
     <div className="author-grid author-operations">
       {scope === 'global' ? <div className="author-card"><div className="author-card-head"><div><h3>Sync to global Git</h3><p>Preview and explicitly confirm changes to global Git configuration.</p></div><CommandHelp href={operationDoc('git-author-settings', 'sync-to-global-git')} label="Open global Git sync documentation" command="engram author sync-git-global --help" /></div><Button aria-label="Sync to global Git" onClick={() => void openSyncReview()}>Sync to global Git</Button></div> : null}
       <div className="author-card"><div className="author-card-head"><div><h3>Existing memories</h3><p>Preview deterministic backfill of legacy author metadata.</p></div><CommandHelp href={operationDoc('git-author-settings', 'migrate-existing-memories')} label="Open memory author migration documentation" command="engram author migrate-memories --help" /></div><Button aria-label="Preview memory migration" onClick={() => void openMigrationReview()}>Preview memory migration</Button></div>

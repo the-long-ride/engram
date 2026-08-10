@@ -69,8 +69,8 @@ describe('Sidebar', () => {
     expect(screen.getByText('New version available · v0.0.21')).toBeInTheDocument();
 
     // Click on current task-oriented nav item
-    const maintainTab = screen.getByText('Maintain');
-    fireEvent.click(maintainTab);
+    const coreTab = screen.getByText('Core');
+    fireEvent.click(coreTab);
     expect(setActiveMock).toHaveBeenCalledWith('maintain');
 
     // Click close server

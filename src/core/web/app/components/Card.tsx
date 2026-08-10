@@ -8,7 +8,7 @@ export function Card({
   children,
   helpHref,
   helpLabel,
-  collapsible = true,
+  collapsible = false,
   defaultExpanded = true,
 }: {
   title: string;
@@ -36,7 +36,7 @@ export function Card({
         style={collapsible ? { cursor: 'pointer' } : undefined}
       >
         <span className="card-title-wrap">
-          <span className="card-title">{title}</span>
+          <h3 className="card-title">{title}</h3>
           {helpHref ? <HelpLink href={helpHref} label={helpLabel || `Open ${title} docs`} /> : null}
         </span>
         <div className="card-hdr-right" onClick={(e) => e.stopPropagation()}>

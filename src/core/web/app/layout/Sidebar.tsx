@@ -11,7 +11,7 @@ const settingsTabs: Array<[TabName, string]> = [
 const taskTabs: Array<[TabName, string]> = [
   ["recall", "Memories"],
   ["review", "Review"],
-  ["maintain", "Maintain"],
+  ["maintain", "Core"],
   ["connect", "Connect"],
 ];
 

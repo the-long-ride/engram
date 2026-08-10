@@ -280,8 +280,8 @@
   padding-left: 10px;
 }
 .core-prompts {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
 }
 .core-prompt-body {
@@ -305,7 +305,8 @@
   padding: 20px 16px;
 }
 @media (max-width: 900px) {
-  .core-grid {
+  .core-grid,
+  .core-prompts {
     grid-template-columns: 1fr;
   }
 }

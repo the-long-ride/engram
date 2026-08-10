@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { ConfigField, ModalController, PanelData, ShowToast } from '../types.js';
 import { saveConfigPatch, validateConfigPatch } from '../api-client.js';
 import { Button } from './Button.js';
+import { Card } from './Card.js';
 import { HelpLink } from './HelpLink.js';
 import { Toggle } from './Toggle.js';
 import { clientValidationError, gv, parseFieldValue, uiValue } from '../utils/config.js';
@@ -128,12 +129,12 @@ export function ConfigFieldGroupEditor({ data, fields, reload, toast, modal, tit
   }
 
   if (!fields.length) return null;
-  return <div className="author-card git-config-card">
-    <div className="author-card-head"><div><h3>{title}</h3><p>{description}</p></div><HelpLink href={entryFieldGroupDoc('Global Git')} label="Open Global Git configuration documentation" /></div>
+  return <Card title={title} helpHref={entryFieldGroupDoc('Global Git')} helpLabel="Open Global Git configuration documentation">
+    <p className="git-config-desc" style={{ padding: '12px 16px 4px', color: 'var(--g600)', fontSize: 11, margin: 0 }}>{description}</p>
     <div className="git-config-fields">{fields.map((field) => <div key={field.key} className={'cfg-row' + (dirty[field.key] ? ' dirty' : '')} data-key={field.key}>
       <div className="cfg-lbl"><span className="cfg-label-title"><span>{field.label}</span><HelpLink href={entryConfigFieldDoc(field.docsAnchor)} label={`Open ${field.label} docs`} /></span>{field.description ? <span className="cfg-desc">{field.description}</span> : null}{errors[field.key] ? <span className="cfg-error">{errors[field.key]}</span> : null}</div>
       <div className="cfg-ctl">{renderControl(field)}{dirty[field.key] ? <button className="cfg-reset" onClick={() => resetField(field)}>Reset</button> : null}</div>
     </div>)}</div>
-    <div className="author-actions"><Button variant="primary" aria-label={saveLabel} disabled={!dirtyKeys.length} onClick={() => void openReview()}>{saveLabel}</Button></div>
-  </div>;
+    <div className="author-actions" style={{ padding: '12px 16px' }}><Button variant="primary" aria-label={saveLabel} disabled={!dirtyKeys.length} onClick={() => void openReview()}>{saveLabel}</Button></div>
+  </Card>;
 }

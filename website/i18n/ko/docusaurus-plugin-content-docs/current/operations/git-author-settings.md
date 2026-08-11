@@ -1,10 +1,12 @@
 ---
-title: Git author settings
+title: Git 작성자 설정
 sidebar_position: 2
 description: Configure the identity written to future Engram memories and Engram-created Git commits.
 ---
 
-# Git author settings
+# Git 작성자 설정
+
+Engram은 이식 가능한 작성자 프로필을 유지하며 확인된 ID는 향후 메모리에만 적용되고 저장소 Git 설정은 바꾸지 않습니다.
 
 Engram owns an author profile so memory authorship is explicit and portable. The resolved identity is written to future memory frontmatter and supplied to Engram-created Git commits through process-local environment variables. Repository Git configuration is not changed.
 

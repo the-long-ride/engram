@@ -6,6 +6,10 @@ description: Preview, review, and safely upgrade Engram-managed memories and con
 
 # Configuration upgrades
 
+## Localized Updates summary
+
+Updates hiển thị **biểu ngữ trạng thái** với `Workspace · Global · Conflicts`, một **bảng** hiện vật và một vùng **cuộn ngang**. Mỗi **ô chọn** phân biệt trạng thái; **thông báo** toast dùng màu xanh cho thành công và màu đỏ cho lỗi, còn Diff dùng đỏ cho phần xóa và xanh cho phần thêm. **Force upgrade** chỉ buộc cập nhật **khối Engram** hoặc **tệp được tạo** khi chứng minh được quyền sở hữu; xác nhận hàng loạt không buộc thay đổi và sau khi ghi Engram xác minh hội tụ.
+
 Engram uses one upgrade inventory engine for the CLI and Entry Web UI. It scans the configured **workspace** and **global** scopes, classifies Engram-managed artifacts, builds a deterministic plan, and uses hashes/fingerprints to prevent stale writes.
 
 ```bash

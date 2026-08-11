@@ -58,7 +58,7 @@ Archiving changes routing immediately. Use archive, not manual deletion, so hist
 </RiskCallout>
 
 <!-- evidence-foundation:v3:start -->
-## Evidence-backed memory
+## 証拠に基づくメモリ
 
 The detail panel mirrors CLI/index metadata. It shows `authority`, `revision`, `evidence_refs`, `derived_from`, `supersedes`, `superseded_by`, `valid_from`, `valid_until`, and `last_confirmed` when present. These fields explain why a memory exists and which immutable trace supports it; the Web UI does not turn evidence into an instruction.
 <!-- evidence-foundation:v3:end -->

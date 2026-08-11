@@ -58,7 +58,7 @@ engram save-session --file .agents/.engram/inbox/<note>.md
 `observe` stores sanitized raw notes in `inbox/`. Inbox notes are not active memory. Use this when you want to preserve rough notes before deciding what should become durable memory.
 
 <!-- evidence-foundation:v3:start -->
-## Evidence-backed memory
+## Bộ nhớ có bằng chứng
 
 ```bash
 engram observe --file session.md

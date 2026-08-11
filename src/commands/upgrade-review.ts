@@ -19,10 +19,13 @@ export async function reviewUpgradeConflicts(cwd: string, config: EngramConfig, 
   const interactive = Boolean(input.isTTY && output.isTTY);
   const rl = interactive ? createInterface({ input, output }) : undefined;
   const pipedAnswers = interactive ? [] : await readPipedAnswers();
-  const ask = async (prompt: string) => {
+  const ask = async (prompt: string, required = false) => {
     if (rl) return rl.question(prompt);
     output.write(prompt);
-    return pipedAnswers.shift() ?? '';
+    const answer = pipedAnswers.shift();
+    if (answer !== undefined) return answer;
+    if (required) throw new Error('Non-interactive upgrade review input ended before all conflicts were resolved.');
+    return '';
   };
   try {
     for (;;) {
@@ -34,7 +37,7 @@ export async function reviewUpgradeConflicts(cwd: string, config: EngramConfig, 
       const proposal = await getConflictProposal(cwd, config, plan, pending.id);
       output.write(`\n[${review.reviewedCount + 1}/${review.reviewableCount}] ${pending.kind} · ${pending.agent ?? pending.scope}\n${pending.file}\nStatus: ${pending.reason}\n`);
       output.write(proposal.replaceable ? '\n[V] View diff\n[E] Edit proposed content\n[L] Accept latest proposal\n[K] Keep current\n[Q] Save and quit\n' : '\n[V] View current/diff\n[K] Keep current\n[Q] Save and quit\n');
-      const choice = (await ask('Choice: ')).trim().toLowerCase();
+      const choice = (await ask('Choice: ', true)).trim().toLowerCase();
       if (choice === 'q') return { review, applyNow: false, summary: formatReviewSummary(review, false) };
       if (choice === 'v') { output.write(`\n${proposal.diff}\n`); continue; }
       if (choice === 'k') {

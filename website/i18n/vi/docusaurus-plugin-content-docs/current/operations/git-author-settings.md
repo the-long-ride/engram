@@ -1,10 +1,12 @@
 ---
-title: Git author settings
+title: Cài đặt tác giả Git
 sidebar_position: 2
 description: Configure the identity written to future Engram memories and Engram-created Git commits.
 ---
 
-# Git author settings
+# Cài đặt tác giả Git
+
+Engram lưu hồ sơ tác giả có thể mang theo; danh tính đã phân giải chỉ áp dụng cho bộ nhớ trong tương lai và không thay đổi cấu hình Git của repository.
 
 Engram owns an author profile so memory authorship is explicit and portable. The resolved identity is written to future memory frontmatter and supplied to Engram-created Git commits through process-local environment variables. Repository Git configuration is not changed.
 

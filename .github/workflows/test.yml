@@ -46,16 +46,19 @@ permissions:
   contents: read
 
 jobs:
-  # Full test suite on every supported Node LTS line that can fire on push/pull_request/scheduled.
-  # The reusable `workflow_call` from release.yml also runs this job, so a successful release
-  # always has a complete suite behind it.
+  # Shard the full suite across both supported Node lines. Each test still runs on Node 20 and 24,
+  # but independent shards finish in parallel and every job has a hard upper bound.
   verify:
-    name: Full suite (Node ${{ matrix.node }})
+    name: Full suite (Node ${{ matrix.node }}, shard ${{ matrix.shard }})
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
         node: [20, 24]
+        shard: ['1/2', '2/2']
+    env:
+      TEST_SHARD: ${{ matrix.shard }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -69,17 +72,46 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Typecheck
-        run: npm run typecheck
+      # build already runs tsc, so a separate typecheck would duplicate the compiler pass.
+      - name: Build and typecheck
+        run: npm run build
 
       - name: Line check
+        if: matrix.node == 24 && matrix.shard == '1/2'
         run: npm run lint:lines
 
-      - name: Run full test suite
-        run: npm test
+      - name: Run sharded full test suite
+        run: npm run test:built
+
+  # Coverage already executes its selected tests, so keep it out of every full-suite matrix job.
+  coverage:
+    name: Coverage (Node 24)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Run coverage
         run: npm run coverage
+
+  # Website checks are Node-24-only and no longer repeated once per root Node matrix entry.
+  website:
+    name: Website tests & coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -101,21 +133,18 @@ jobs:
         working-directory: website
         run: pnpm typecheck
 
-      - name: Run website tests
-        working-directory: website
-        run: pnpm test
-
+      # Coverage executes the website test files too; do not run pnpm test immediately before it.
       - name: Run website coverage
         working-directory: website
         run: |
           node --input-type=module -e "import('../scripts/run-related-tests.mjs').then(async ({ websiteTestFiles }) => console.log((await websiteTestFiles()).join('\n')))" > /tmp/website-tests.txt
-          node --experimental-test-coverage --import tsx --test --test-isolation=none $(cat /tmp/website-tests.txt)
+          node --experimental-test-coverage --import tsx --test --test-isolation=none --test-timeout=120000 --test-force-exit $(cat /tmp/website-tests.txt)
 
-  # Cross-platform smoke job: catches path/config/CLI regressions on the operating systems the
-  # package supports but does not run the full suite (keeps cost bounded).
+  # Cross-platform smoke job: catches path/config/CLI regressions without rerunning the full suite.
   smoke:
     name: Smoke (Node ${{ matrix.node }} on ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -134,8 +163,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Typecheck
-        run: npm run typecheck
-
+      # test:core builds first, which already performs the TypeScript compiler pass.
       - name: Core smoke tests
         run: npm run test:core

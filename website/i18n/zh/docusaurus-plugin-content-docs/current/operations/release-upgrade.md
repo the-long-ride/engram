@@ -6,6 +6,10 @@ description: Upgrade Engram packages and reconcile memory roots safely.
 
 # Release and upgrade process
 
+## Localized upgrade safety summary
+
+Diff 用红表示删除、绿表示新增。**Force upgrade** 仅对已证明所有权的 **Engram 块**或**生成文件**执行强制更新；批量操作不会强制更新，写入后会验证收敛。
+
 ## After an npm package update
 
 The next normal Engram command quietly reconciles already-initialized workspace/global roots once for the new version. This covers release-to-release memory schema changes from v0.0.8 onward by refreshing generated help, memory indexes, graph files, and eligible vector sidecars when older metadata is detected.

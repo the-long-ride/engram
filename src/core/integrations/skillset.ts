@@ -356,6 +356,9 @@ export async function previewLinkedWorkspaceSkillsets(cwd: string): Promise<Skil
         if (!current) {
           expected = isFrontmatterFile ? block : `${block}
 `;
+        } else if (isFrontmatterFile && hasWorkspaceManagedBlock(current)) {
+          const merged = ensureRequiredFrontmatter(current, target);
+          expected = replaceWorkspaceManagedBlockInPlace(merged.text, renderMinimalInstructionBlock(guidePath));
         } else if (!isGenerated(current, relativeFile) && !hasWorkspaceManagedBlock(current)) {
           if (isFrontmatterFile) {
             const merged = ensureRequiredFrontmatter(current, target);
@@ -365,7 +368,7 @@ export async function previewLinkedWorkspaceSkillsets(cwd: string): Promise<Skil
           }
         } else if (isFrontmatterFile && isGenerated(current, relativeFile)) {
           expected = block;
-        } else if (hasWorkspaceManagedBlock(current) && !isFrontmatterFile) {
+        } else if (hasWorkspaceManagedBlock(current)) {
           expected = replaceWorkspaceManagedBlockInPlace(current, block);
         } else {
           expected = upsertWorkspaceManagedBlock(current, block).text;
@@ -409,7 +412,7 @@ async function detectUpgradeWorkspaceTargets(cwd: string): Promise<SkillsetTarge
       const relativeFile = await resolveWorkspaceRelativeFile(cwd, requested);
       const existing = await readText(path.join(cwd, relativeFile));
       if (!existing) continue;
-      if (isLinkedWorkspaceArtifact(relativeFile, existing)) { linked.push(target); break; }
+      if (isUpgradeLinkedWorkspaceArtifact(target, relativeFile, existing)) { linked.push(target); break; }
     }
   }
   return linked;
@@ -483,6 +486,16 @@ function workspaceDetectionFilesForTarget(target: SkillsetTarget): string[] {
     ])];
   }
   return files;
+}
+
+function isUpgradeLinkedWorkspaceArtifact(target: SkillsetTarget, relativeFile: string, existing: string): boolean {
+  if (target === 'agents-md'
+      && normalizePath(relativeFile) === 'AGENTS.md'
+      && hasWorkspaceManagedBlock(existing)
+      && existing.includes('Full guide: `.opencode/engram.md`')) {
+    return false;
+  }
+  return isLinkedWorkspaceArtifact(relativeFile, existing);
 }
 
 function isLinkedWorkspaceArtifact(relativeFile: string, existing: string): boolean {

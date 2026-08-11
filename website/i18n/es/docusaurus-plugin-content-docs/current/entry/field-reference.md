@@ -124,7 +124,7 @@ Each field lists:
 | <span id="encryption-key-source"></span>`encryption.key_source` | select | `portable-file` | risky | Key source strategy; backup loss risk. |
 
 <!-- evidence-foundation:v3:start -->
-## Evidence-backed memory
+## Memoria respaldada por evidencia
 
 | Field | Meaning |
 | --- | --- |

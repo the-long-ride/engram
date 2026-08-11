@@ -29,7 +29,7 @@ test('requested dependency versions are pinned in manifests', async () => {
   ]) assert.equal(website.devDependencies[name], '3.10.2');
 
   assert.equal(website.dependencies['@fontsource-variable/geist'], '^5.3.0');
-  assert.equal(website.devDependencies.tsx, '^4.23.1');
+  assert.equal(website.devDependencies.tsx, '^4.23.11');
 });
 
 test('requested GitHub Action majors are used everywhere', async () => {
@@ -54,4 +54,19 @@ test('requested GitHub Action majors are used everywhere', async () => {
     /pnpm\/action-setup@v4/,
     /actions\/download-artifact@v4/,
   ]) assert.doesNotMatch(all, stale);
+});
+
+test('website replaces vulnerable image-size registry package with bounded local shim', async () => {
+  const workspace = await text('website/pnpm-workspace.yaml');
+  const lock = await text('website/pnpm-lock.yaml');
+  const shim = JSON.parse(await text('website/vendor/image-size-safe/package.json'));
+
+  assert.match(workspace, /image-size: ['\"]link:\.\/vendor\/image-size-safe['\"]/);
+  assert.doesNotMatch(workspace, /patchedDependencies:[\s\S]*image-size@2\.0\.2/);
+  assert.doesNotMatch(lock, /image-size@2\.0\.2/);
+  assert.doesNotMatch(lock, /image-size: 2\.0\.2\(patch_hash=/);
+  assert.match(lock, /image-size: link:vendor\/image-size-safe/);
+  assert.equal(shim.name, 'image-size');
+  assert.equal(shim.version, '2.0.3-engram-safe.1');
+  assert.equal(shim.private, true);
 });

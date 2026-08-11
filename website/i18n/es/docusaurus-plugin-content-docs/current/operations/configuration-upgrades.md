@@ -6,6 +6,10 @@ description: Preview, review, and safely upgrade Engram-managed memories and con
 
 # Configuration upgrades
 
+## Localized Updates summary
+
+La página Updates usa un **banner de estado** con `Workspace · Global · Conflicts`, una **tabla de artefactos** y un único **desplazamiento horizontal**. Cada **casilla** distingue sus estados y la **notificación** toast muestra éxito verde y error rojo; Diff usa rojo para eliminaciones y verde para adiciones. **Force upgrade** permite forzar solo un **bloque Engram** o un **archivo generado** con propiedad demostrada; la confirmación masiva no fuerza cambios y la verificación de convergencia detecta fallos.
+
 Engram uses one upgrade inventory engine for the CLI and Entry Web UI. It scans the configured **workspace** and **global** scopes, classifies Engram-managed artifacts, builds a deterministic plan, and uses hashes/fingerprints to prevent stale writes.
 
 ```bash

@@ -1,10 +1,12 @@
 ---
-title: Evidence traces and provenance
+title: 証拠トレースと来歴
 sidebar_position: 7
 description: How Engram preserves immutable evidence, links approved memory to its source, and exposes the same metadata in CLI and Web UI.
 ---
 
-# Evidence traces and provenance
+# 証拠トレースと来歴
+
+Engram は証拠と承認済みメモリを分離し、トレースはサニタイズ済みの不変な出典を保持します。
 
 Engram separates evidence from approved memory. A trace preserves the sanitized source record; a memory remains a human-approved instruction or reference that cites that evidence.
 

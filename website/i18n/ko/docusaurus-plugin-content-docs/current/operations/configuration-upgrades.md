@@ -6,6 +6,10 @@ description: Preview, review, and safely upgrade Engram-managed memories and con
 
 # Configuration upgrades
 
+## Localized Updates summary
+
+Updates는 **상태 배너**에 `Workspace · Global · Conflicts`를 표시하고 항목을 **테이블**과 하나의 **가로 스크롤**에 모읍니다. **체크박스**는 상태를 구분하고 **토스트**는 성공을 초록, 오류를 빨강으로 표시하며 Diff도 삭제는 빨강, 추가는 초록입니다. **Force upgrade** 강제 대상은 소유권을 증명한 **Engram 블록** 또는 **생성 파일**뿐이며 일괄 작업은 강제하지 않고 쓰기 후 수렴을 검증합니다.
+
 Engram uses one upgrade inventory engine for the CLI and Entry Web UI. It scans the configured **workspace** and **global** scopes, classifies Engram-managed artifacts, builds a deterministic plan, and uses hashes/fingerprints to prevent stale writes.
 
 ```bash

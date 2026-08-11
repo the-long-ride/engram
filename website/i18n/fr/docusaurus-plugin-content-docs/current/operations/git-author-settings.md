@@ -1,10 +1,12 @@
 ---
-title: Git author settings
+title: Paramètres de l’auteur Git
 sidebar_position: 2
 description: Configure the identity written to future Engram memories and Engram-created Git commits.
 ---
 
-# Git author settings
+# Paramètres de l’auteur Git
+
+Engram conserve un profil d’auteur portable ; l’identité résolue s’applique aux mémoires futures sans modifier la configuration Git du dépôt.
 
 Engram owns an author profile so memory authorship is explicit and portable. The resolved identity is written to future memory frontmatter and supplied to Engram-created Git commits through process-local environment variables. Repository Git configuration is not changed.
 

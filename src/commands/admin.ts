@@ -395,10 +395,13 @@ function formatSharedUpgradeResult(sharedPlan: UpgradePlan, result: UpgradeApply
   const globalMemories = sharedPlan.items.filter((item) => item.scope === 'global' && item.kind === 'memory' && item.status === 'outdated');
   if (workspaceMemories.length && updatedGroups.has('workspace:memory')) records.push({ title: 'MIGRATED workspace memory schema', fields: [['Migrated', workspaceMemories.length]] });
   if (globalMemories.length && updatedGroups.has('global:memory')) records.push({ title: 'MIGRATED global memory schema', fields: [['Migrated', globalMemories.length]] });
-  if ([...updatedGroups].some((group) => group.startsWith('workspace:') && !group.endsWith(':hooks') && group !== 'workspace:memory')) records.push({ title: 'UPDATED workspace skillsets', fields: [['Status', 'safe managed artifacts upgraded']] });
-  if ([...updatedGroups].some((group) => group.startsWith('workspace:') && group.endsWith(':hooks'))) records.push({ title: 'UPDATED workspace agent hooks', fields: [['Status', 'safe managed hooks upgraded']] });
-  if ([...updatedGroups].some((group) => group.startsWith('global:') && !group.endsWith(':hooks') && group !== 'global:memory')) records.push({ title: 'UPDATED global skillsets', fields: [['Status', 'safe managed artifacts upgraded']] });
-  if ([...updatedGroups].some((group) => group.startsWith('global:') && group.endsWith(':hooks'))) records.push({ title: 'UPDATED global agent hooks', fields: [['Status', 'safe managed hooks upgraded']] });
+  const updatedItems = sharedPlan.items.filter((item) => item.transactionGroup && updatedGroups.has(item.transactionGroup));
+  const hasUpdatedSkillset = (scope: 'workspace' | 'global') => updatedItems.some((item) => item.scope === scope && item.kind !== 'memory' && item.kind !== 'hook' && item.kind !== 'plugin');
+  const hasUpdatedHook = (scope: 'workspace' | 'global') => updatedItems.some((item) => item.scope === scope && (item.kind === 'hook' || item.kind === 'plugin'));
+  if (hasUpdatedSkillset('workspace')) records.push({ title: 'UPDATED workspace skillsets', fields: [['Status', 'safe managed artifacts upgraded']] });
+  if (hasUpdatedHook('workspace')) records.push({ title: 'UPDATED workspace agent hooks', fields: [['Status', 'safe managed hooks upgraded']] });
+  if (hasUpdatedSkillset('global')) records.push({ title: 'UPDATED global skillsets', fields: [['Status', 'safe managed artifacts upgraded']] });
+  if (hasUpdatedHook('global')) records.push({ title: 'UPDATED global agent hooks', fields: [['Status', 'safe managed hooks upgraded']] });
   records.push(
     { title: 'Conflicts', fields: [['Count', result.conflicts.length]], lines: result.conflicts.map((item) => `${item.kind}${item.agent ? ` ${item.agent}` : ''}: ${item.file}`) },
     { title: 'Transactions', fields: [['Count', result.transactions.length]], lines: result.transactions.map((row) => `${row.status.toUpperCase()} ${row.group}: ${row.files.join(', ')}${row.message ? ` — ${row.message}` : ''}`) },

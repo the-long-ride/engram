@@ -1,10 +1,12 @@
 ---
-title: Evidence traces and provenance
+title: Следы доказательств и происхождение
 sidebar_position: 7
 description: How Engram preserves immutable evidence, links approved memory to its source, and exposes the same metadata in CLI and Web UI.
 ---
 
-# Evidence traces and provenance
+# Следы доказательств и происхождение
+
+Engram отделяет доказательства от утверждённой памяти; след сохраняет очищенный неизменяемый источник.
 
 Engram separates evidence from approved memory. A trace preserves the sanitized source record; a memory remains a human-approved instruction or reference that cites that evidence.
 

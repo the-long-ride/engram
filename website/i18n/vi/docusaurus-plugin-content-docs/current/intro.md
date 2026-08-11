@@ -63,7 +63,7 @@ Engram includes:
 - agent skillsets, slash adapters, and MCP-style proposal tools
 
 <!-- evidence-foundation:v3:start -->
-## Evidence-backed memory
+## Bộ nhớ có bằng chứng
 
 Engram now keeps two distinct durable layers: immutable sanitized evidence traces under `traces/`, and human-approved schema v3 Markdown memory. A trace has `authority: evidence` and can never instruct the agent. Active memory uses `authority: instruction` or `authority: reference`, and links back through `evidence_refs` and `derived_from`. The CLI and Entry Web UI display the same provenance fields.
 

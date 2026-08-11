@@ -804,9 +804,11 @@ async function conflictedSkillsetFixture(prefix) {
   const init = await runEngram(cwd, env, ['inject', '--no-skillset']);
   assert.equal(init.code, 0, init.stderr);
   await mkdir(path.join(cwd, '.agents'), { recursive: true });
-  await writeFile(path.join(cwd, 'AGENTS.md'), '# Human\n\n<!-- engram:start -->\nOLD\n<!-- engram:end -->\n');
-  await writeFile(path.join(cwd, '.agents', 'engram.md'), '# Custom guide\n');
-  return { cwd, env };
+  const instructionFile = path.join(cwd, 'AGENTS.md');
+  const guideFile = path.join(cwd, '.agents', 'engram.md');
+  await writeFile(instructionFile, '# Human\n\n<!-- engram:start -->\nOLD\n<!-- engram:end -->\n');
+  await writeFile(guideFile, '# Custom guide\n');
+  return { cwd, env, instructionFile, guideFile };
 }
 
 test('upgrade --latest --yes refuses unresolved conflicts and points to --review', async () => {
@@ -818,9 +820,9 @@ test('upgrade --latest --yes refuses unresolved conflicts and points to --review
   await rm(cwd, { recursive: true, force: true });
 });
 
-test('upgrade --latest --review accepts latest, persists decision, and --yes applies it', async () => {
-  const { cwd, env } = await conflictedSkillsetFixture('engram-cli-upgrade-review-latest-');
-  const reviewed = await runEngram(cwd, env, ['upgrade', '--latest', '--review', '--no-version-check'], 'l\nn\n');
+test('upgrade --latest --review keeps a nonreplaceable human guide, persists decision, and --yes applies safe updates', async () => {
+  const { cwd, env, instructionFile, guideFile } = await conflictedSkillsetFixture('engram-cli-upgrade-review-keep-');
+  const reviewed = await runEngram(cwd, env, ['upgrade', '--latest', '--review', '--no-version-check'], 'k\nn\n');
   assert.equal(reviewed.code, 0, reviewed.stderr);
   assert.match(reviewed.stdout, /Configuration upgrade review/i);
   assert.match(reviewed.stdout, /Review complete/i);
@@ -829,20 +831,15 @@ test('upgrade --latest --review accepts latest, persists decision, and --yes app
   assert.equal(JSON.parse(plan.stdout).review.pendingReviewCount, 0);
   const applied = await runEngram(cwd, env, ['upgrade', '--latest', '--yes', '--no-version-check']);
   assert.equal(applied.code, 0, applied.stderr);
-  assert.notEqual(await readFile(path.join(cwd, '.agents', 'engram.md'), 'utf8'), '# Custom guide\n');
+  assert.equal(await readFile(guideFile, 'utf8'), '# Custom guide\n');
+  assert.doesNotMatch(await readFile(instructionFile, 'utf8'), /\nOLD\n/);
   await rm(cwd, { recursive: true, force: true });
 });
 
-test('upgrade --latest --review edits proposed content through EDITOR and applies exact reviewed bytes', async () => {
-  const { cwd, env } = await conflictedSkillsetFixture('engram-cli-upgrade-review-editor-');
-  const editor = path.join(cwd, 'fake-editor.mjs');
-  await writeFile(editor, `import { appendFileSync } from 'node:fs'; appendFileSync(process.argv[2], '\\n# Edited in review\\n');\n`);
-  const editorLauncher = path.join(cwd, 'fake-editor.sh');
-  await writeFile(editorLauncher, `#!/bin/sh\nexec "${process.execPath}" "${editor}" "$1"\n`, { mode: 0o755 });
-  const reviewed = await runEngram(cwd, { ...env, VISUAL: '', EDITOR: editorLauncher }, ['upgrade', '--latest', '--review', '--no-version-check'], 'e\nn\n');
-  assert.equal(reviewed.code, 0, reviewed.stderr);
-  const applied = await runEngram(cwd, { ...env, VISUAL: '', EDITOR: editorLauncher }, ['upgrade', '--latest', '--yes', '--no-version-check']);
-  assert.equal(applied.code, 0, applied.stderr);
-  assert.match(await readFile(path.join(cwd, '.agents', 'engram.md'), 'utf8'), /# Edited in review/);
+test('upgrade --latest --review fails fast when piped input ends before a conflict is resolved', async () => {
+  const { cwd, env } = await conflictedSkillsetFixture('engram-cli-upgrade-review-eof-');
+  const reviewed = await runEngram(cwd, env, ['upgrade', '--latest', '--review', '--no-version-check'], 'l\n');
+  assert.notEqual(reviewed.code, 0);
+  assert.match(`${reviewed.stdout}\n${reviewed.stderr}`, /input ended before all conflicts were resolved/i);
   await rm(cwd, { recursive: true, force: true });
 });

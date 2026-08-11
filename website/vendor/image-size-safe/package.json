@@ -1,0 +1,35 @@
+{
+  "name": "image-size",
+  "version": "2.0.3-engram-safe.1",
+  "description": "Bounded image dimension reader used by the Engram documentation build",
+  "private": true,
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "main": "./index.cjs",
+  "module": "./index.mjs",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./index.d.ts",
+        "default": "./index.mjs"
+      },
+      "require": {
+        "types": "./index.d.ts",
+        "default": "./index.cjs"
+      }
+    },
+    "./fromFile": {
+      "import": {
+        "types": "./fromFile.d.ts",
+        "default": "./fromFile.mjs"
+      },
+      "require": {
+        "types": "./fromFile.d.ts",
+        "default": "./fromFile.cjs"
+      }
+    }
+  }
+}

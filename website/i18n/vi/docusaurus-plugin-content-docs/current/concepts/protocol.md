@@ -105,7 +105,7 @@ Built-in memory is convenient, but it can be hard to inspect, diff, export, shar
 Engram makes the durable layer visible. Built-in memory can still help, but Engram should be the owned source when the knowledge matters.
 
 <!-- evidence-foundation:v3:start -->
-## Evidence-backed memory
+## Bộ nhớ có bằng chứng
 
 `engram observe --file <path>` creates exactly one canonical record in `traces/<trace-id>.jsonl` plus a non-indexed inbox wrapper. Promotion with `save-session --file` reopens the trace, verifies its hash and scope, and ignores edits that try to replace the trace text. New memory uses schema v3 with `authority`, `evidence_refs`, `derived_from`, `revision`, supersession, validity dates, and `last_confirmed`. Legacy v1 and v2 files remain readable. `authority: evidence` is data only.
 <!-- evidence-foundation:v3:end -->

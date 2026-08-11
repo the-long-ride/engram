@@ -34,7 +34,7 @@ When `engram save` finds related active memories, the approval preview reports t
 For `save-session --force`, Engram pauses before writing when those related memory hints appear. The agent should use the response to brainstorm a structured rerun: add `DEPENDS_ON: memory-id` for dependencies, `LEVEL: advanced` when a memory is deeper than its prerequisite, or `UPDATE: memory-id` when a candidate should merge into a possible duplicate.
 
 <!-- evidence-foundation:v3:start -->
-## Evidence-backed memory
+## 증거 기반 메모리
 
 For source material that should be reviewed before it becomes active memory:
 

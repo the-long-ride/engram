@@ -1,10 +1,12 @@
 ---
-title: Evidence traces and provenance
+title: Traces de preuve et provenance
 sidebar_position: 7
 description: How Engram preserves immutable evidence, links approved memory to its source, and exposes the same metadata in CLI and Web UI.
 ---
 
-# Evidence traces and provenance
+# Traces de preuve et provenance
+
+Engram sépare les preuves de la mémoire approuvée ; la trace conserve une source nettoyée et immuable.
 
 Engram separates evidence from approved memory. A trace preserves the sanitized source record; a memory remains a human-approved instruction or reference that cites that evidence.
 

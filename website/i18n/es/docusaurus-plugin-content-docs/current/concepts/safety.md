@@ -34,7 +34,7 @@ At save time Engram checks:
 - path safety
 
 <!-- evidence-foundation:v3:start -->
-## Evidence-backed memory
+## Memoria respaldada por evidencia
 
 Every trace records `trust_level`, `sensitivity`, and `retention` together with its source hash and scope. Engram removes injection-like lines and redacts detected sensitive findings before the trace is written. A trace-backed promotion is bound to the trace's workspace or global scope; a conflicting explicit scope is rejected. Evidence remains data because `authority: evidence` is never loaded as an instruction.
 <!-- evidence-foundation:v3:end -->

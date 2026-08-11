@@ -7,6 +7,7 @@ overrides:
   dompurify: '^3.4.13'
   fast-uri: '^3.0.3'
   js-yaml: '^5.2.3'
+  image-size: 'link:./vendor/image-size-safe'
   mermaid: '^11.16.1'
   nanoid: '^5.1.5'
   pdfjs-dist: '^6.2.108'
@@ -18,9 +19,6 @@ overrides:
   uuid: '^11.1.1'
 packages:
   - '.'
-
-patchedDependencies:
-  image-size@2.0.2: patches/image-size@2.0.2.patch
 
 onlyBuiltDependencies:
   - '@swc/core'

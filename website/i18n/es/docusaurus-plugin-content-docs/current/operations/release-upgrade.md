@@ -6,6 +6,10 @@ description: Upgrade Engram packages and reconcile memory roots safely.
 
 # Release and upgrade process
 
+## Localized upgrade safety summary
+
+Diff muestra eliminaciones en rojo y adiciones en verde. **Force upgrade** permite forzar solo un **bloque Engram** o un **archivo generado** con propiedad demostrada; la operación masiva no fuerza cambios y la verificación de convergencia evita éxitos falsos.
+
 ## After an npm package update
 
 The next normal Engram command quietly reconciles already-initialized workspace/global roots once for the new version. This covers release-to-release memory schema changes from v0.0.8 onward by refreshing generated help, memory indexes, graph files, and eligible vector sidecars when older metadata is detected.

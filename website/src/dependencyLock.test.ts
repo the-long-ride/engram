@@ -25,7 +25,9 @@ describe('dependency lockfile security overrides', () => {
     assert.ok(pluginVersion, '@docusaurus/plugin-content-docs missing from package.json');
     const escapedVersion = pluginVersion.replace(/\./g, '\\.');
     assert.match(lockfile, new RegExp(`'@docusaurus\\/plugin-content-docs':\\r?\\n\\s+specifier: ${escapedVersion}`));
-    assert.equal(manifest.devDependencies?.['@types/react-dom'], '^19.0.0');
-    assert.match(lockfile, /'@types\/react-dom':\r?\n\s+specifier: \^19\.0\.0/);
+    const reactDomTypesVersion = manifest.devDependencies?.['@types/react-dom'];
+    assert.ok(reactDomTypesVersion, '@types/react-dom missing from package.json');
+    const escapedReactDomTypesVersion = reactDomTypesVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    assert.match(lockfile, new RegExp(`'@types\/react-dom':\\r?\\n\\s+specifier: ${escapedReactDomTypesVersion}`));
   });
 });

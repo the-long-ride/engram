@@ -125,7 +125,7 @@ To mine recent accessible chats and force-save generated candidates in one reque
 That normalizes to `engram save-session --query-level 50 --force`.
 
 <!-- evidence-foundation:v3:start -->
-## Evidence-backed memory
+## Mémoire étayée par des preuves
 
 Capture a source before deciding what should become durable:
 

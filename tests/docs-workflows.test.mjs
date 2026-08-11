@@ -42,7 +42,14 @@ test('test workflow runs the full suite on pull_request/push and exposes node + 
   assert.equal(workflow.includes('steps.scope.outputs.force'), false, 'workflow must drop the force/changed-files gate');
   assert.equal(workflow.includes('steps.changed.outputs.any_changed'), false);
   assert.equal(workflow.includes('Run related tests'), false);
-  assert.match(workflow, /name: Run full test suite\n\s+run: npm test/);
+  assert.match(workflow, /name: Run sharded full test suite\n\s+run: npm run test:built/);
+  assert.match(workflow, /TEST_SHARD: \$\{\{ matrix\.shard \}\}/);
+  assert.match(workflow, /shard: \['1\/2', '2\/2'\]/);
+  assert.match(workflow, /timeout-minutes: 20/);
+  assert.match(workflow, /^  coverage:\n/m);
+  assert.match(workflow, /^  website:\n/m);
+  assert.equal((workflow.match(/name: Install website dependencies/g) ?? []).length, 1, 'website install must run once, not once per Node matrix job');
+  assert.equal(workflow.includes('name: Run website tests'), false, 'coverage already executes website tests');
   // Node matrix covers declared minimum (>=20) plus the latest CI runtime.
   assert.match(workflow, /node: \[20, 24\]/);
   // Cross-platform smoke matrix

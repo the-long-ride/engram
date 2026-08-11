@@ -26,8 +26,12 @@ test('npm publish metadata declares a package README', async () => {
   assert.match(llm, /Engram LLM Guide/);
   assert.match(llm, /AI agents/);
   assert.equal(manifest.files.filter((file) => file === 'README.md').length, 1);
-  assert.equal(manifest.scripts['test:package'], 'npm run build && node --test tests/publish/*.test.mjs');
-  assert.doesNotMatch(manifest.scripts['test:package'], /test-isolation/);
+  const packageTest = manifest.scripts['test:package'];
+  assert.match(packageTest, /^npm run build && node --test /);
+  assert.match(packageTest, /--test-timeout=120000/);
+  assert.match(packageTest, /--test-force-exit/);
+  assert.match(packageTest, /tests\/publish\/\*\.test\.mjs$/);
+  assert.doesNotMatch(packageTest, /test-isolation/);
   assert.equal(manifest.scripts.publish, 'npm publish --access public --ignore-scripts');
   assert.equal(manifest.scripts.prepublishOnly, 'npm run test:package');
   assert.equal(manifest.scripts.preinstall, undefined);

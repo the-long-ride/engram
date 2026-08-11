@@ -54,7 +54,7 @@ When `engram load "<task>"` runs, the output is slimmed for AI agents by default
 MCP `engram_load` and SessionStart hooks use compact output by default. Pass `full: true` on the MCP tool or `engram load --full "<task>"` when broader legacy output is needed.
 
 <!-- evidence-foundation:v3:start -->
-## Evidence-backed memory
+## Mémoire étayée par des preuves
 
 New files use `schema_version: 3`. Rule and skill memories default to `authority: instruction`; knowledge defaults to `authority: reference`. `revision` starts at 1 and increments on updates. Trace IDs belong in `evidence_refs`, while session or source identities belong in `derived_from`. Legacy v1 (`Context` + `Content` + `Example`) and v2 (`Content`, optional `Origin`) remain readable.
 <!-- evidence-foundation:v3:end -->

@@ -6,6 +6,10 @@ description: Preview, review, and safely upgrade Engram-managed memories and con
 
 # Configuration upgrades
 
+## Localized Updates summary
+
+Updates 用 **状态横幅** 显示 `Workspace · Global · Conflicts`，并使用工件**表**和一个**水平滚动**区域。每个**复选框**区分不同状态，**提示** toast 用绿表示成功、红表示错误；Diff 也用红表示删除、绿表示新增。**Force upgrade** 仅对已证明所有权的 **Engram 块**或**生成文件**执行强制更新；批量确认不会强制更新，写入后会验证收敛。
+
 Engram uses one upgrade inventory engine for the CLI and Entry Web UI. It scans the configured **workspace** and **global** scopes, classifies Engram-managed artifacts, builds a deterministic plan, and uses hashes/fingerprints to prevent stale writes.
 
 ```bash

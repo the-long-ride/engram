@@ -300,15 +300,19 @@ To configure your settings, manage profiles, and connect AI agents in a local we
 engram entry
 ```
 - **Connect Tab**: Scan and link Engram to your local AI agents (installs skillsets and hooks automatically).
-  ![Engram Connect](media/demo/demo-engram-entry-connections.png)
+  ![Engram Connect Tab](media/demo/engram-webui-Connect-tab.png)
 - **Construct Tab**: Configure core settings, load limits, rule variant preferences, and rule memory line limits. Global Git settings live under Git → Global.
-  ![Engram Construct Tab](media/demo/engram-entry-Constuct-tab.png)
+  ![Engram Construct Tab](media/demo/engram-webui-Constuct-tab.png)
 - **Git Tab**: Configure global and workspace author profiles, preview the resolved identity, manage Global Git configuration from the Global scope, explicitly sync the global profile to Git, and migrate legacy author metadata. The resolved name carries a compact source badge (`WORKSPACE`, `GLOBAL`, `GIT`, or `UNRESOLVED`) instead of a large scope tag. Global Git configuration is not shown in Workspace scope. Every info button links to localized docs and its matching CLI `--help`.
+  ![Engram Git Tab](media/demo/engram-webui-Git-tab.png)
 - **Updates Tab**: Detect outdated workspace/global memories, instructions, skillsets, configs, hooks, and plugins; preview the exact shared upgrade plan before applying changes. Preview uses `All`, `Config`, `Instructions`, `Memories`, `Skillsets`, `Hooks`, and `Plugins` kind tabs, hiding empty kind tabs. The sidebar update card can copy `engram upgrade --latest --plan` without opening Updates. Conflicts open a review modal with **Current**, editable **Proposed**, and **Diff** views. **Diff** opens in **Inline** mode by default and can switch to **Parallel**: removed lines use `-` with a red background, added lines use `+` with a green background, and Parallel aligns **Current** with **Proposed** using the same red/green semantics. Resolve individually with **Use latest**, an edited proposal, **Keep current**, or **Force upgrade** when Engram can prove the file is an Engram-managed block or generated Engram file. Eligible pending conflicts also have checkboxes: **Select all visible** selects eligible rows in the active kind tab, **Confirm selected changes** accepts latest for the checked rows, and **Confirm all changes** accepts latest for every eligible pending conflict in the preview. Batch confirmation validates the whole selection first and writes all decisions atomically; one invalid, stale, or already-reviewed item means no batch decisions are saved. Bulk confirmation never forces manual edits. Upgrade-review checkbox controls share clear checked, keyboard-focus, and disabled states, while result toast feedback uses a green border/glow for success and a red border/glow for errors. **Force upgrade** is per-item: managed-block force replaces only the Engram block and preserves surrounding user bytes; generated-file force replaces the whole proven Engram-owned file. For file-backed conflicts, **Open in editor** opens the exact current artifact using `$VISUAL`, then `$EDITOR`, then the platform fallback; external edits make the saved preview/source hash stale and require a refresh. Instructions previews contain only the managed `<!-- engram:start -->` block, while the full global skillset stays in the companion `.agents/engram.md` guide. The final Upgrade button still requires every blocker to be reviewed, and a post-apply rescan must confirm expected-updated files converged to current before success is reported.
+  ![Engram Updates Tab](media/demo/engram-webui-Update-tab.png)
+- **Review Tab**: Preview memory diffs, inspect evidence traces, and select ID-only dependency choices before approving proposals.
+  ![Engram Review Tab](media/demo/engram-webui-Review-tab.png)
 - **Core Tab**: Review and resolve duplicate memory candidates across workspace, global, and profile scopes, or run metacognitive analysis.
-  ![Engram Core Settings](media/demo/engram-entry-Core-tab.png)
+  ![Engram Core Tab](media/demo/engram-webui-Core-tab.png)
 - **Memories Tab**: Visualize active memories, search full Markdown content, include related matches, inspect dependency edges, and review the same provenance fields shown by CLI (`authority`, `revision`, `evidence_refs`, `derived_from`, supersession, and validity).
-  ![Engram Memories Graph View](media/demo/Memories-graph-view.png)
+  ![Engram Memories Tab](media/demo/engram-webui-Memories-tab.png)
 
 Alternatively, you can manually link Engram to your agent:
 ```bash

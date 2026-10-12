@@ -2,7 +2,7 @@
 
 ## AI-Agent Chat Approval
 
-In AI-agent chat, Engram approval is conversational. The agent shows refined `TYPE: ... | TEXT: ...` candidates first, including Light/Balanced/Strict variants for rules. Reply `yes` to save the exact candidates, `audit` to revise them, or `cancel` to stop. After `yes`, the agent uses `engram save-session --force` with the exact approved candidates. Direct terminal CLI saves still use A/B/C unless a force command was explicitly invoked.
+In AI-agent chat, Engram approval is conversational. The agent shows refined `TYPE: ... | TEXT: ...` candidates first, each with its `Verdict:` line, and the balanced wording for rules (Light and Strict are derived when the rule is rendered, unless a candidate supplies custom variants). Reply `yes` to save the exact candidates, `audit` to revise them, or `cancel` to stop. After `yes`, the agent uses `engram save-session --force` with the exact approved candidates. Direct terminal CLI saves still use A/B/C unless a force command was explicitly invoked.
 
 
 This page holds detailed usage so the README can stay short.
@@ -15,6 +15,8 @@ This page holds detailed usage so the README can stay short.
 | Load compact task memory | `engram load "<task>"` |
 | Load with a compact token budget | `engram load --budget-tokens 800 "<task>"` |
 | Load broader legacy output | `engram load --full "<task>"` |
+| Load every packed body (no cards) | `engram load --disclosure full "<task>"` |
+| Fetch cards by id | `engram load --id <id,...>` |
 | Print AI-agent usage guide | `engram llm` |
 | Preview routed memory files | `engram load --dry-run "<task>"` |
 | Search memory | `engram search "<topic>"` |
@@ -24,8 +26,17 @@ This page holds detailed usage so the README can stay short.
 | Force-save session candidates | `engram ss -f` |
 | Mine and force-save recent chats | `engram ss -f last 50 sessions` |
 | Capture raw note | `engram observe --file session.md` |
+| Drain the opt-in SessionEnd transcript queue | `engram observe --queue --dry-run` |
 | Convert existing docs/guidance | `engram take-control --all` |
 | Preview source takeover | `engram take-control --plan` |
+| Digest code or config (repo map) | `engram take-control --kind code\|config\|all [--objective "<text>"]` |
+| Check source freshness | `engram verify --sources` |
+| Refresh stale code-derived memory | `engram take-control --refresh` |
+| Import host-local memories | `engram take-control --from claude-auto-memory\|codex-memories [--plan]` |
+| Keep a working memory | `engram promote <id>` |
+| Save a task note | `engram working note "<text>"` |
+| Prune expired working memory | `engram working prune [--dry-run]` |
+| See fetch and inject counts | `engram stats --usage` |
 | Import and metacognize guidance | `engram take-control --all --metacognize --force` |
 | Restructure existing memory folder | `engram metacognize --workspace\|--global\|--all` |
 | Resolve conflicts and metacognize | `engram resolve-conflicts --metacognize` |
@@ -47,13 +58,54 @@ Use `--query-level <n>` when the human wants the agent to mine up to n recent ac
 
 Use `load --dry-run` when you want to inspect which memory files would route
 without printing their contents.
-Default `load` is the AI-agent context route: it keeps only `id`, `type`,
-`tags`, and `confidence` in frontmatter, renders one selected rule variant, and
-labels it as `## Rule variants (1/3 based on current: <active>)`.
-Use `load --full` when a human wants the broader legacy output. The MCP
-`engram_load` method uses compact output by default, and `full: true` opts into
-the broader output. SessionStart hooks call the same routed load path at startup,
-then reuse or skip it when the routed signature is unchanged.
+Default `load` is the AI-agent context route and uses tiered disclosure: the top
+`load.expand_top` hits (default 3) print as bodies under
+`### <id> [<type>, <authority>]` (plus `requires: <ids>` when the memory has
+`depends_on`), every other selected hit and up to 5 omitted candidates print as
+one-line cards `- <id> [<type>] <directive-or-summary>` (with ` (stale)` when its
+sources changed), and the output ends with `fetch: engram load --id <ids>`.
+Frontmatter, `## Context`, `## Example`, and `## Origin` are not rendered, and
+rules show one selected variant. Set `load.disclosure` to `full`, or pass
+`--disclosure full`, `--full`, or `--all`, to skip tiering. `--budget-tokens`
+caps the complete output; cards are shed last-ranked-first only when the cards
+alone exceed the cap, and shed ids are listed as `omitted_ids` in MCP results.
+The MCP `engram_load` method uses the same output by default, and `full: true`
+opts into the broader output. SessionStart hooks call the same routed load path
+at startup; later prompt turns inject only memory bodies not yet delivered in the
+session and end with `already loaded: <ids>`. `SessionStart` and `PreCompact`
+reset the delivered set. Memories with `applies_to` globs are also injected on
+`PreToolUse` file events (Claude `Read|Edit|Write|MultiEdit`, Codex `apply_patch`),
+at most 3 bodies per event. Under `hooks.path_rules native` (the default) Claude and
+Cursor load those memories as generated rule files instead: `engram link claude`
+writes `.claude/rules/engram/<id>.md` and `engram link cursor` writes
+`.cursor/rules/engram/<id>.mdc` (workspace-scope, non-working memories only), and
+Claude registers `InstructionsLoaded` (matcher `path_glob_match`) rather than
+`PreToolUse`, so the delivered set and `usage.json` still count the injection.
+`engram sync`, `rebuild-index`, `set-read`, and `upgrade --latest` refresh the
+files; `engram unlink` removes them. Files without the Engram marker comment are
+never touched. `engram link --global claude` also writes global memories to
+`~/.claude/rules/engram/`. Set `hooks.path_rules hook` and run `engram link claude`
+to keep the Claude `PreToolUse` hook and drop the Claude rule files.
+
+Opt-in `SessionEnd` queue: `engram link claude|codex --session-end` registers a plain
+`SessionEnd` command hook (Claude timeout 5 s, Codex 3 s) that only appends the transcript
+path, host, and session to the gitignored `session-queue.json` (newest 50, deduped) and
+injects nothing. `upgrade` never adds it and Gemini is not registered. Drain it with
+`engram observe --queue [--dry-run] [--limit n]`: each transcript must be a regular file
+(not a link) of at most 5 MiB, is redacted and stripped of injection-like lines, and becomes
+a trace plus an inbox wrapper; no memory is written, so promotion still goes through
+`save-session`. Do not run `--queue` from an async Codex hook.
+
+Other hook events: Claude and Codex also register `SubagentStart` (matcher `*`), which
+injects the routed `current session` context into every subagent under its own
+delivered set (`<session_id>#agent:<agent_id>`), and Gemini registers `AfterTool`
+(matcher `read_file|write_file|replace`) for `applies_to` memories plus `PreCompress`
+to reset the delivered set. Hook output stays under each host's payload cap: 2,400
+tokens on Codex (UTF-8 bytes / 4), 9,500 characters on Claude, and `load.max_tokens`
+elsewhere. Over the cap, bodies demote to cards and the lowest-ranked cards are left
+out; a body is never cut mid-text, and only what was sent counts as delivered. Hooks
+never return permission decisions and fail open. Run `engram upgrade --latest` (or
+`engram link <host>`) to add the new events to an existing install.
 `load` first anchors routing on meaningful query terms, ignoring generic memory
 words such as `rule`, `knowledge`, and common stopwords. It then refines the
 wider candidate pool into a compact context pack. Normal load reports selected
@@ -94,6 +146,35 @@ load unrelated memories by themselves; they only help rerank or expand memories
 that already overlap meaningful query terms. Explicit `depends_on` prerequisites
 may still load without their own keyword overlap.
 
+## Working Memory And Freshness
+
+A candidate marked `OBJECTIVE: task` is saved to the gitignored working tier
+(`.agents/.engram/working/`, or `<global>/working/`) with `tier: working`, the
+`take-control --objective` text, and `valid_until` = today + `load.working_ttl_days`
+(default 14, range 1 to 365). Working memories route like durable ones until
+`valid_until` passes, then drop out of `load` with the omission reason `lifecycle`.
+`engram promote <id>` moves one to durable memory after the same A/B/C approval,
+`engram working note "<text>"` saves a redacted task note (`source: note`) after one
+yes/cancel approval, and `engram working prune [--dry-run]` deletes expired ones.
+SessionStart shows a note only when `ENGRAM_SESSION_OBJECTIVE` matches its
+objective. Working memory never
+reaches Git and its index, graph, and hash entries stay in local sidecars.
+
+`take-control --kind code|config|all` saves `source_files` and `source_hashes` for
+code-derived memory. `engram verify --sources` re-hashes those sources and records
+changed or missing ones in the gitignored `.agents/.engram/stale.json`; stale
+memories rank lower and their cards end with ` (stale)`. `engram take-control
+--refresh` re-digests only those sources and proposes one `UPDATE: <id>` candidate per
+stale memory. `engram stats --usage` reports which memories agents fetch with
+`load --id` and which were injected but never fetched, from the gitignored
+`usage.json`.
+
+Load configuration keys: `load.disclosure` (`auto` or `full`, default `auto`),
+`load.expand_top` (bodies expanded under `auto`, default 3), and
+`load.working_ttl_days`. `load.working_ttl_days` is editable in the Entry Construct tab;
+all three live in the `load` block of `.agents/.engram/engram.config.json`
+(`engram config set` does not accept them).
+
 ## Upgrade Reconciliation
 
 Use `engram upgrade` after installing a newer Engram package. The command
@@ -115,6 +196,31 @@ instead of the full protocol. Hooks provide routed task context, MCP tools
 provide load/search/proposal behavior, and slash adapters or Agent Skills carry
 detailed command workflows. Fallback targets without reliable runtime context
 injection still receive compact manual instructions.
+
+Claude Code's bootstrap is AGENTS.md-first: `engram link claude` writes the managed
+block to `AGENTS.md` and adds a block to `CLAUDE.md` (or `.claude/CLAUDE.md`) only when
+that file already exists; an existing block is refreshed and never removed. Generated
+`SKILL.md` files follow the Agent Skills spec, and `engram doctor` reports
+`host.skill_frontmatter` and `host.agents_md_chain` (the Codex AGENTS.md chain against
+its 32 KiB limit). `engram export --format cursor-rules` replaces `cursorrules`, which
+stays an accepted alias for one release.
+
+### MCP Server
+
+`engram-mcp` serves MCP 2026-07-28 (stateless requests carrying
+`io.modelcontextprotocol/protocolVersion`, `server/discover`) and the legacy
+`initialize` handshake (`2024-11-05` to `2025-11-25`) from one process. Both return short
+`instructions`, advertise `resources` (`engram://index`, `engram://memory/{id}`, listing
+the top `mcp.resource_limit` memories) and one prompt (`propose`). `engram_commit` carries
+`_meta["anthropic/requiresUserInteraction"]` so Claude Code prompts on every call, the
+managed Codex block sets its `approval_mode` to `approve`, and `engram doctor` warns when
+a Gemini entry sets `trust: true`. When the client supports elicitation, `engram_save` and
+`engram_save_session` ask the human in the host's own dialog (`accept` writes the selected
+candidates; `decline` revokes the proposal; `cancel` falls back to the `approval_token`
+flow); `engram-mcp --no-elicitation` keeps the token flow. `engram-mcp --always-load`
+marks `engram_load` for Claude Code's tool search. `engram_note` saves a redacted
+working-tier note after one yes/cancel approval (the same dialog, `input_required`,
+or `approval_token` flow) and returns `{id, file, valid_until}`; cancel writes nothing.
 
 ### SQLite Config DB Fallback
 
@@ -211,6 +317,17 @@ TYPE: rule | TEXT: OAuth rotation follows release foundations. | DEPENDS_ON: rel
 TYPE: knowledge | TEXT: Invoice retries use exponential backoff. | UPDATE: invoice-retry-baseline
 ```
 
+Every preview prints one `Verdict:` line per candidate, right after `File:`:
+
+```text
+Verdict: ADD
+Verdict: UPDATE frontend-uses-react-and-pnpm
+Verdict: SUPERSEDE use-pnpm-for-package-installs (approving marks it superseded)
+Verdict: NOOP duplicate of invoice-webhook-retry-baseline (skipped unless selected)
+```
+
+The verdict comes from the existing dedupe and related-memory scores, with no model call: `NOOP` when a same-type memory scores 1.00 (or an automatic upsert would change nothing), `UPDATE` for an explicit `UPDATE:` or an automatic upsert, `SUPERSEDE` when a same-type, same-tier memory scores at least 0.6 and the candidate carries a different `DIRECTIVE` on overlapping `APPLIES_TO` globs or tags, otherwise `ADD`. `A` and `B` skip `NOOP` candidates and list them as skipped; `A 1,3` writes exactly the numbered ones. Approving a `SUPERSEDE` writes `supersedes: [old]` on the new memory and `lifecycle: superseded` plus `superseded_by` on the old one, so `engram load` drops the old memory. `--force` and autosave never apply a `SUPERSEDE`; it is deferred until you rerun without `--force` and review it.
+
 `--query-level` must be a positive integer. Agents should include only chats they can actually access and must not invent unavailable history. `engram ss -f last 50 sessions` uses `50` as the query level and `-f` as explicit human force approval.
 
 ## Take Control
@@ -232,6 +349,22 @@ engram take-control --all --metacognize --force
 Saved take-control memories record `source_files` and `source_hashes`, so unchanged sources are skipped later.
 Use `--metacognize` with human-requested force mode when related-memory hints
 should pause the write and let the agent rerun with `UPDATE` or `DEPENDS_ON`.
+
+### Import host-local memories
+
+Claude auto memory and Codex memories are machine-local. `--from` imports one of those stores for review instead of scanning the workspace:
+
+```bash
+engram take-control --from claude-auto-memory --plan
+engram take-control --from codex-memories --dir ~/.codex/memories
+```
+
+- Claude: `~/.claude/projects/<project>/memory/` (`CLAUDE_CONFIG_DIR` replaces `~/.claude`), or `autoMemoryDirectory` from your user or local Claude settings. A value that only appears in the repository `.claude/settings.json` is ignored; pass `--dir` to use it. `type: feedback` proposes a rule, `project` and `reference` propose knowledge; `type: user` (personal profile data), untyped files, and the `MEMORY.md` index are skipped.
+- Codex: `~/.codex/memories/` (or `CODEX_HOME`), Markdown files up to two levels deep; the text decides the type.
+- `--dir <path>` (absolute or `~/`) overrides the store, and a store that cannot be found unambiguously asks for it. `--from` cannot be combined with `--file`, `--include`, `--exclude`, `--kind`, `--all`, `--budget-tokens`, or `--refresh`.
+- Engram never writes into a host store. Every file is redacted and injection-filtered like any other source, and the normal approval gate applies.
+- Saved memories record `source: host-memory`, preset-relative `source_files` (for example `claude-auto-memory/feedback_testing.md`), raw `source_hashes`, and a `source_origin` hash of the store path, so no home path or user name reaches a memory file. `engram verify --sources` checks drift only on the machine that holds the store and skips them elsewhere (`host memory store not on this machine`); `take-control --refresh` leaves them alone. A store imported with `--dir` is verified only when the default store resolves to the same directory.
+- There is no Gemini preset: its inbox is already reviewed and the docs scan already covers `GEMINI.md`.
 
 ## Resolve Conflicts With Metacognition
 
@@ -279,17 +412,20 @@ To view and manage runtime settings, use the `config` commands:
 | --- | --- | --- | --- |
 | `memory.rule_line_target` | Recommended line count target for rule memories | `70` | `50` to `200` |
 | `memory.rule_line_hard_limit` | Maximum allowed line count for rule memories | `100` | `50` to `200` |
+| `memory.include_author_email` | Write `author_email` into new memory frontmatter (`author_name` is always written) | `false` | `true`, `false` |
+| `mcp.resource_limit` | Memories MCP `resources/list` returns besides `engram://index`, ranked by injected + fetched usage (JSON config only; not set by `engram config set`) | `20` | `0` to `200` |
 | `load.limit` | Max memories returned by normal load | `8` | `1` to `32` |
+| `hooks.path_rules` | How `applies_to` memories reach Claude: `native` writes `.claude/rules/engram/` rule files and registers `InstructionsLoaded`; `hook` keeps the Engram `PreToolUse` hook. Codex always uses `PreToolUse`; Cursor rule files are written in both modes | `native` | `native`, `hook` |
 | `update` | Quiet one-time package upgrade check | `auto` | `auto`, `manual`, `off` |
 | `ignore.global_patterns` | Global glob patterns synchronized into each workspace `.engramignore` managed block on `engram inject` | empty | One glob per line |
-| `rule_variants.enabled` | Enable or disable rule variants generation | `true` | `true`, `false` |
+| `rule_variants.enabled` | Render rule variants (light, balanced, strict) derived from the rule's Content; off renders balanced | `false` | `true`, `false` |
 | `rule_variants.active` | Active rule variant mode | `balanced` | `light`, `balanced`, `strict` |
 | `graph.enabled` | Enable or disable graph-aware routing | `true` | `true`, `false` |
 | `graph.max_related` | Max related memories to fetch from graph edges | `8` | `1` to `20` |
 | `graph.min_related_score` | Min similarity score to add graph edges | `0.3` | `0.0` to `1.0` |
-| `vector.enabled` | Enable or disable vector search fallback | `true` | `true`, `false` |
+| `vector.enabled` | Experimental hashed-vector search fallback (not semantic embeddings) | `false` | `true`, `false` |
 | `live_sync.enabled` | Sync generated agent context files on save | `true` | `true`, `false` |
-| `live_sync.targets` | Generated agent context targets refreshed by live sync | `agents-md`, `claude-md`, `cursorrules` | Comma-separated target names |
+| `live_sync.targets` | Generated agent context targets refreshed by live sync | `agents-md`, `claude-md`, `cursor-rules` | Comma-separated target names |
 | `global_git.enabled` | Enable global Git repo sync automation | `false` | `true`, `false` |
 | `global_git.remote` | Git remote name for global sync | `origin` | String |
 | `global_git.branch` | Git branch name for global sync | `main` | String |
@@ -314,6 +450,8 @@ engram rebuild-index
 engram verify
 ```
 
+Migration backups (`*.pre-v3.bak`, `*.pre-author-v3.bak`, `*.engram-upgrade-<version>.bak`) live in the gitignored `backups/<kind>-<label>/` folder of the scope, not beside the memories. `engram doctor` warns about older `*.bak` files left in `rules`, `skills`, or `knowledge`. `engram repair --move-backups` plans moving them into `backups/`; add `--confirm` to move them. A different file already at the destination is reported as a conflict and left in place.
+
 Use graph and quality checks before archiving:
 
 ```bash
@@ -335,7 +473,7 @@ inbox-only.
 
 ### Legacy memory migration to schema v3
 
-`engram upgrade --latest` also migrates active v1/v2 memory files in the workspace and configured global roots to schema v3. Engram preserves each Markdown body exactly, creates `<memory-file>.pre-v3.bak`, fills only deterministic metadata, refreshes integrity hashes, and rebuilds the index, graph, and eligible vector sidecars. It never invents `evidence_refs`; a memory without verified trace links is marked `evidence_status: unverified`. Invalid memories are reported and skipped, archived memories are not rewritten, and a second run is idempotent.
+`engram upgrade --latest` also migrates active v1/v2 memory files in the workspace and configured global roots to schema v3. Engram preserves each Markdown body exactly, writes `backups/schema-v3/<memory-file>.pre-v3.bak` (a gitignored folder; `engram repair --move-backups` relocates older backups left beside memories), fills only deterministic metadata, refreshes integrity hashes, and rebuilds the index, graph, and eligible vector sidecars. It never invents `evidence_refs`; a memory without verified trace links is marked `evidence_status: unverified`. Invalid memories are reported and skipped, archived memories are not rewritten, and a second run is idempotent.
 
 Preview all changes without writing:
 

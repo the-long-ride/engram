@@ -16,9 +16,19 @@ Full documentation lives on the website: [@the-long-ride/engram docs-site](https
 
 ## Key Highlights
 
-- **Human in the Loop**: Direct CLI saves use A/B/C approval. AI-agent chat saves use an exact-candidate `yes` / `audit` / `cancel` loop before the agent writes with `save-session --force`.
+- **Human in the Loop**: Direct CLI saves use A/B/C approval. AI-agent chat saves use an exact-candidate `yes` / `audit` / `cancel` loop before the agent writes with `save-session --force`. Every candidate preview carries one deterministic `Verdict:` line (`ADD`, `UPDATE <id>`, `SUPERSEDE <id>`, or `NOOP duplicate of <id>`); a `SUPERSEDE` is applied only after interactive approval, never by `--force` or autosave.
 - **Partial Force Safety**: `save-session --force` saves unrelated ready candidates, but defers candidates that need dependency or duplicate review with ID-only `engram load --id ...` guidance.
 - **Context-Optimized**: Routes meaningful task matches plus prerequisites into a compact pack (default: 8 files) to avoid context bloat.
+- **Tiered Load Disclosure**: Agents get the top `load.expand_top` hits (default 3) as bodies and every other selected hit as a one-line card, followed by `fetch: engram load --id <ids>`. Frontmatter, `## Context`, `## Example`, and `## Origin` are never rendered for agents; `--disclosure full`, `--full`, and `--all` keep the untiered output. On the routing-v2 benchmark, mean tokens per load fell from 904 to 389 with recall at 1.0 and no forbidden hits.
+- **Ranked Retrieval**: BM25 with light stemming over id, tags, `directive`, summary, triggers, and content terms, scaled by lifecycle, staleness, confidence, and scope. Vector hits without a term overlap no longer admit a memory.
+- **Delta Hook Injection**: Hooks track the memory keys already delivered per session (`deliveredKeys`) and inject only new bodies; repeats collapse into one `already loaded: <ids>` line. `SessionStart` and `PreCompact` reset the set. Hook output stays under each host's payload cap (Codex 2,400 tokens, Claude 9,500 characters): over the cap, bodies demote to cards and are never cut mid-text.
+- **Host-Native Hooks**: Claude and Codex also register `SubagentStart`, so every subagent starts with the routed context under its own delivered set; Gemini registers `AfterTool` and `PreCompress`. `engram upgrade --latest` or `engram link <host>` adds the new events to an existing install.
+- **Path-Scoped Memory**: A memory with `applies_to` globs reaches the host just in time through the host's native mechanism: Claude loads a generated `.claude/rules/engram/<id>.md` rule file (Engram registers `InstructionsLoaded` so the load counts as delivered), Cursor loads `.cursor/rules/engram/<id>.mdc`, Gemini uses an `AfterTool` hook on `read_file|write_file|replace`, and Codex uses `PreToolUse` on `apply_patch` edits (at most 3 bodies per hook event). `hooks.path_rules hook` keeps the older Claude `PreToolUse` path.
+- **Working-Memory Tier**: `OBJECTIVE: task` candidates are saved to the gitignored `.agents/.engram/working/` with a `valid_until` TTL (`load.working_ttl_days`, default 14). Keep one with `engram promote <id>`; clear expired ones with `engram working prune`. `engram working note "<text>"` (or MCP `engram_note`) saves a redacted task note after one yes/cancel approval.
+- **Take-Control Beyond Docs**: `engram take-control --kind code|config|all` digests code (a per-directory repo map of symbol names and imports), config keys, and build manifests, `--objective "<text>"` asks for task-scoped and durable candidates, and `engram verify --sources` plus `take-control --refresh` keep code-derived memories fresh.
+- **MCP Without a Shell**: The server speaks MCP `2026-07-28` and the legacy handshake (`2024-11-05` to `2025-11-25`) from one process and sends short `instructions`. Structured `engram_load`, `engram_search`, and `engram_route` results, memories as resources (`engram://index`, `engram://memory/{id}`), a `propose` prompt, and an `engram_commit` for hosts that only have MCP. `engram_commit` carries `_meta["anthropic/requiresUserInteraction"]` (Claude Code prompts on every call) and the managed Codex block sets its `approval_mode` to `approve`; keep that per-call prompt on, because the approval token proves a proposal exists, not that a human approved it. When the client supports elicitation, `engram_save` and `engram_save_session` ask the human in the host's own approval dialog instead (`engram-mcp --no-elicitation` opts out). MCP config is written where each host reads it.
+- **AGENTS.md-First Bootstrap**: `engram link claude` writes the managed block to `AGENTS.md` and adds a `CLAUDE.md` block only when a `CLAUDE.md` already exists. Generated `SKILL.md` files follow the Agent Skills spec, and `engram doctor` validates them and the AGENTS.md size against Codex's 32 KiB limit.
+- **Clean Repos**: New memories store `author_name` only (`memory.include_author_email` opts the email back in), migration backups go to the gitignored `backups/` folder, and the hashed vector layer is experimental and off by default for new configs.
 - **Git-Native & Portable**: Plain Markdown files stored in `.agents/.engram/` synced via Git—completely vendor-agnostic and offline-first.
 - **Privacy & Security Control**: Runs 100% locally and scans for PII/secrets before writing.
 - **Prerequisite Graphs**: Declares dependencies (`depends_on`) so agents load foundational rules before advanced tasks automatically.
@@ -64,16 +74,18 @@ graph TD
 
     subgraph Entry ["How Engram Reaches the Agent"]
         Links["Linked instructions,\nslash commands, MCP"]:::action
-        Hooks["Optional hooks\n(SessionStart and prompt turns)"]:::action
+        Hooks["Optional hooks\n(SessionStart, prompt turns,\nSubagentStart, PreCompact reset)"]:::action
+        PreTool["Path triggers for applies_to globs\n(native rule files for Claude and Cursor,\nAfterTool for Gemini, PreToolUse for Codex)"]:::action
     end
 
     subgraph Read ["Read Path"]
         Trigger["Task request or prompt turn"]:::action
         Load["Load/search request\n(engram load, search, graph)"]:::action
-        Route["Anchor on meaningful terms\nthen rerank by tags, recency,\ndependency graph, sqlite-vec"]:::action
+        Route["Anchor on meaningful terms\nthen rank with BM25, lifecycle,\nusage, dependency graph\n(optional experimental sqlite-vec)"]:::action
         Refine["Refine to compact top-N pack\n(default 8 unless --all)"]:::action
-        Cache["Hook cache checks routed signature"]:::action
-        Inject["Inject compact memory pack"]:::action
+        Tier["Tiered disclosure\ntop 3 bodies + one-line cards\n+ fetch hint"]:::action
+        Cache["Hook session keeps deliveredKeys"]:::action
+        Inject["Inject only undelivered bodies\n(already loaded: ids)"]:::action
         Proof["Proof line\nloaded, reused, or skipped"]:::action
     end
 
@@ -88,6 +100,7 @@ graph TD
 
     subgraph Memory ["Memory Layer"]
         Workspace["📁 Workspace memory\n(.agents/.engram/)"]:::storage
+        Working["⏳ Working tier\n(working/, gitignored, TTL)"]:::storage
         Global["🌐 Global memory and profiles\n($ENGRAM_GLOBAL_DIR)"]:::storage
         TraceStore["🔒 Immutable evidence traces\n(traces/<trace-id>.jsonl)"]:::storage
         Inbox["📝 Editable review wrappers\n(inbox/*.md, non-indexed)"]:::storage
@@ -98,19 +111,23 @@ graph TD
     User <-->|Chat and collaborate| AI
     AI --> Links
     AI --> Hooks
+    AI --> PreTool
     Links --> Trigger
     Hooks --> Trigger
+    PreTool --> Route
     Trigger --> Load
     Load --> Route
     Route --> Workspace
+    Route --> Working
     Route --> Global
     Workspace --> Derived
     Global --> Derived
     Derived -->|Ranking signals| Route
     Route --> Refine
-    Refine --> Cache
-    Cache -->|New or changed context| Inject
-    Cache -->|Same routed context| Proof
+    Refine --> Tier
+    Tier --> Cache
+    Cache -->|New bodies| Inject
+    Cache -->|All bodies already delivered| Proof
     Inject -->|Memory pack| AI
     Inject --> Proof
     Proof -->|Visibility only| AI
@@ -125,12 +142,15 @@ graph TD
     Inbox --> Review
     TraceStore -->|Verified source| Review
     Persist --> Workspace
+    Persist -->|OBJECTIVE: task| Working
     Persist --> Global
     Persist --> Rebuild
     Rebuild --> Derived
     Workspace --> Sync
     Global --> Sync
 ```
+
+The working tier, `usage.json`, `stale.json`, and the hook cache stay local; only durable memory reaches Git.
 
 ---
 
@@ -156,7 +176,7 @@ flowchart TB
     Hashes["Hashes"]:::derived
     Index["JSON index"]:::derived
     Graph["Dependency graph"]:::derived
-    Vec["Optional sqlite-vec"]:::derived
+    Vec["Optional sqlite-vec\n(experimental, off by default)"]:::derived
     ConfigDB["Optional SQLite config DB\n(settings, not source of truth)"]:::derived
 
     ObserveWrite["Observe + sanitize"]:::write
@@ -240,13 +260,13 @@ flowchart TD
 - **Markdown is durable memory** — no hidden binary or proprietary formats.
 - **Immutable traces preserve evidence** — each `traces/<trace-id>.jsonl` file contains one canonical sanitized source record.
 - **Schema v3 links memory to evidence** — `authority`, `evidence_refs`, `derived_from`, `revision`, supersession, and validity fields make provenance explicit.
-- **JSON index, graph, and optional sqlite-vec sidecars** act as acceleration layers.
+- **JSON index, graph, and optional sqlite-vec sidecars** act as acceleration layers (the hashed-vector sidecar is experimental and off by default; opt in with `vector.enabled: true`).
 - **Approval is the trust boundary** — the core principle is that agents suggest, humans approve.
 - **Hashes check integrity** and **Ignore rules handle privacy**.
 - **Profiles isolate memory contexts** (personal, client, and corporate). Resolution order is explicit `--profile`/`ENGRAM_PROFILE`, workspace default, then user default; a workspace-pinned profile controls all CLI, MCP, and agent-hook loads in that workspace.
 - **Git provides portability and audit history** — share rules across the team.
 - **Agent adapters are convenience, not authority**.
-- **Runtime-capable hosts get bootstrap instructions** — short `AGENTS.md`/`CLAUDE.md`/`GEMINI.md` text plus MCP tools and Agent Skills for the full workflow. Fallback targets get complete compact protocol.
+- **Runtime-capable hosts get bootstrap instructions** — short `AGENTS.md` (Claude Code also gets a `CLAUDE.md` block when that file already exists) or `GEMINI.md` text plus MCP tools and Agent Skills for the full workflow. Fallback targets get complete compact protocol.
 - **Strict rules govern agent output** to prevent context drift and hallucinations.
 - **SQLite config DB is optional** — if the DB cannot be opened or initialized, commands fall back to JSON config snapshots.
 
@@ -256,8 +276,10 @@ Engram resolves the workspace author, then the global Engram author, then read-o
 
 ```yaml
 author_name: Jane Doe
-author_email: jane@example.com
+author_email: jane@example.com   # opt-in: only with memory.include_author_email: true
 ```
+
+By default new and updated memories store `author_name` only; the email stays in your author profile and in Engram-created Git commits. Set `memory.include_author_email true` (`engram config set memory.include_author_email true`) to also write `author_email`. Existing legacy `author:` and `author_email` fields keep loading; run `engram author migrate-memories --strip-email --scope both` to preview and then `--confirm` to remove the emails already in committed files.
 
 Author settings affect future memories only. A workspace override never changes global Git configuration. Use `engram author sync-git-global --confirm` only after reviewing `--plan`; use `engram author migrate-memories --plan` before explicitly migrating existing memories. See the [Git author settings guide](https://the-long-ride.github.io/engram/docs/operations/git-author-settings).
 
@@ -328,7 +350,7 @@ engram upgrade --latest --review
 engram upgrade --latest
 ```
 
-To migrate legacy v1/v2 memory files to schema v3 with `.pre-v3.bak` backups and default `evidence_status: unverified` for unlinked observations, run:
+To migrate legacy v1/v2 memory files to schema v3 with `.pre-v3.bak` backups in the gitignored `backups/schema-v3/` folder and default `evidence_status: unverified` for unlinked observations, run:
 
 ```bash
 engram upgrade --migrate-memories
@@ -372,7 +394,7 @@ and `experimental.chat.system.transform` to inject routed memory before each
 LLM request. OpenCode must be restarted or reloaded after `link`/`unlink`
 because local plugin files are loaded at startup. The plugin fails open and
 keeps raw routed memory only in the running OpenCode process; Engram's disk hook
-cache remains hashes, session IDs, host, cwd, and routed signatures only.
+cache remains hashes, session IDs, host, cwd, and delivered memory keys only.
 Workspace OpenCode links write `AGENTS.md`, `.opencode/engram.md`,
 `.opencode/skills/engram/SKILL.md`, and `opencode.json`; if an existing
 `opencode.jsonc` is already present, Engram updates that file instead of
@@ -406,6 +428,15 @@ injection. Windsurf/Cascade hooks can audit/preload/block on `pre_user_prompt`
 but cannot inject model context; rules and MCP provide the reliable AI context
 channels. Copilot and Cline remain instruction/skillset/manual-load driven
 until their hook surfaces support reliable prompt-time context injection.
+Hook events per host: Codex `SessionStart`, `UserPromptSubmit`, `PreToolUse`
+(`apply_patch` edits), `PreCompact`, `SubagentStart`; Claude `SessionStart`,
+`UserPromptSubmit`, `InstructionsLoaded`, `PreCompact`, `SubagentStart` (with
+`hooks.path_rules hook`, `PreToolUse` replaces `InstructionsLoaded`); Gemini
+`SessionStart`, `BeforeAgent`, `AfterTool`, `PreCompress`. Hook output respects
+host payload caps (Codex 2,400 tokens, Claude 9,500 characters), and hooks never
+return permission decisions. After upgrading the package, `engram upgrade --latest`
+or `engram link <host>` adds new events to an existing install.
+
 Use `engram set-proof compact` when you want supported hooks to append a short
 `Engram proof:` line on each eligible turn showing whether Engram memory was
 loaded, reused, or skipped without changing `set-read` injection behavior.
@@ -420,7 +451,7 @@ engram inject
 ---
 
 ## AI-Agent Quickstart
-When you ask an AI agent to save memory, the agent should first show the refined `TYPE: ... | TEXT: ...` candidate. For rule memories it should also show Light, Balanced, and Strict variants. Reply `yes` to save the exact candidate, `audit` to revise it, or `cancel` to stop. After `yes`, the agent writes the exact shown candidate with `engram save-session --force`.
+When you ask an AI agent to save memory, the agent should first show the refined `TYPE: ... | TEXT: ...` candidate and its `Verdict:` line. For rule memories it shows the balanced wording; Light and Strict are derived when the rule is rendered, unless the candidate carries custom `LIGHT:`/`BALANCED:`/`STRICT:` text. Reply `yes` to save the exact candidate, `audit` to revise it, or `cancel` to stop. After `yes`, the agent writes the exact shown candidate with `engram save-session --force`.
 
 When the agent notices a durable rule, workflow, skill, or knowledge item during normal work, it should propose it at the end of its response only if it passes the value gate: durable, reusable, objective, triggerable, and not already covered by existing memory.
 
@@ -453,6 +484,8 @@ When an AI agent proposes `TYPE: ... | TEXT: ...` memory candidates, it may add 
 | **Budgeted Load** | `engram load --budget-tokens 800 "<task>"` | `/engram load --budget-tokens 800 "<task>"` |
 | **Full Load** | `engram load --full "<task>"` | `/engram load --full "<task>"` |
 | **Dry Run Load** | `engram load --dry-run "<task>"` | `/engram load --dry-run "<task>"` |
+| **Fetch Cards by ID** | `engram load --id <id,...>` | Follow the `fetch:` hint in the compact output |
+| **Load Without Tiering** | `engram load --disclosure full "<task>"` | `/engram load --disclosure full "<task>"` |
 | **Save Single Memory** | `engram save <type> "<text>"` | `/engram save <type> "<text>"` |
 | **Propose Memories** | `engram save-session` | `/engram propose` or `/engram ss` |
 | **Capture Evidence** | `engram observe --file <path>` | Ask the agent to observe a file or session note |
@@ -460,6 +493,14 @@ When an AI agent proposes `TYPE: ... | TEXT: ...` memory candidates, it may add 
 | **Mine Recent Sessions** | `engram save-session --query-level <n>` | `/engram save-session --query-level <n>` |
 | **Force Saves** | `engram save-session --force` | `/engram ss -f` |
 | **Import Files / Docs** | `engram take-control --all` | `/engram take-control --all` |
+| **Import Code / Config** | `engram take-control --kind code --objective "<task>"` | `/engram take-control --kind code --objective "<task>"` |
+| **Import Host Memories** | `engram take-control --from claude-auto-memory\|codex-memories --plan` | `/engram take-control --from claude-auto-memory --plan` |
+| **Check Source Freshness** | `engram verify --sources` | `/engram verify --sources` |
+| **Refresh Stale Memories** | `engram take-control --refresh` | `/engram take-control --refresh` |
+| **Keep a Working Memory** | `engram promote <id>` | `/engram promote <id>` |
+| **Save a Task Note** | `engram working note "<text>"` | `/engram working note "<text>"` |
+| **Prune Expired Working Memory** | `engram working prune --dry-run` | Run from terminal |
+| **See Memory Usage** | `engram stats --usage` | `/engram stats --usage` |
 | **Import & Metacognize** | `engram take-control --all --metacognize --force` | `/engram take control force metacognize` |
 | **Restructure Memory** | `engram metacognize --workspace --force` | `/engram restructure workspace memory force` |
 | **Resolve Conflicts** | `engram resolve-conflicts --metacognize` | `/engram resolve conflicts and metacognize` |
@@ -471,6 +512,8 @@ When an AI agent proposes `TYPE: ... | TEXT: ...` memory candidates, it may add 
 | **Remove Author Profile** | `engram author unset --scope workspace` | Remove one Engram-owned author profile |
 | **Sync Global Git Author** | `engram author sync-git-global --plan` / `--confirm` | Preview, then explicitly update global Git config |
 | **Migrate Memory Authors** | `engram author migrate-memories --plan` / `--confirm` | Backfill legacy metadata with backups |
+| **Strip Author Emails** | `engram author migrate-memories --strip-email --scope both` / `--confirm` | Remove `author_email` from memory files (plan-first, backed up) |
+| **Move Stray Backups** | `engram repair --move-backups` / `--confirm` | Move old `*.bak` files from memory folders into `backups/` (plan-first) |
 | **Configure Save Target** | `engram set-save-target <workspace/global/both>` | `/engram set-save-target <target>` |
 | **Configure Load Limit** | `engram set-load-limit <1..32>` | `/engram set-load-limit <count>` |
 | **Configure Auto Read** | `engram set-read startup|auto|always|manual|off` | `/engram set-read auto` |
@@ -551,7 +594,7 @@ Hermes Agent uses an autonomous, always-on memory structure with hard caps, wher
 | **Storage** | Typed Markdown files in `.agents/.engram/` | `MEMORY.md` + `USER.md` (hard char caps) |
 | **Write model** | Human-approved by default (A/B/C gate; automatable via rules) | Agent writes autonomously |
 | **Recall** | On-demand: `engram load "<task>"` injects relevant files | Always-on: core files frozen into system prompt each session |
-| **Vector search** | Optional local sqlite-vec | Via external provider (agentmemory) |
+| **Vector search** | Optional, experimental local sqlite-vec (off by default) | Via external provider (agentmemory) |
 | **Overhead** | No daemon, requires save discipline (unless automated) | Server process + viewer UI, REST API, MCP server |
 
 ### Compared With Built-In Agent Memory

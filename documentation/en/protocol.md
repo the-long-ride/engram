@@ -2,7 +2,7 @@
 
 ## AI-Agent Chat Approval
 
-In AI-agent chat, Engram approval is conversational. The agent shows refined `TYPE: ... | TEXT: ...` candidates first, including Light/Balanced/Strict variants for rules. Reply `yes` to save the exact candidates, `audit` to revise them, or `cancel` to stop. After `yes`, the agent uses `engram save-session --force` with the exact approved candidates. Direct terminal CLI saves still use A/B/C unless a force command was explicitly invoked.
+In AI-agent chat, Engram approval is conversational. The agent shows refined `TYPE: ... | TEXT: ...` candidates first, each with its `Verdict:` line, and the balanced wording for rules (Light and Strict are derived when the rule is rendered, unless a candidate supplies custom variants). Reply `yes` to save the exact candidates, `audit` to revise them, or `cancel` to stop. After `yes`, the agent uses `engram save-session --force` with the exact approved candidates. Direct terminal CLI saves still use A/B/C unless a force command was explicitly invoked.
 
 
 Engram is not just "agent memory." It is a protocol that makes memory inspectable, portable, and governed by humans.
@@ -61,10 +61,10 @@ last_confirmed: YYYY-MM-DD
    Natural `/engram ss -f last 50 sessions` is the same scope plus explicit force approval: `engram save-session --query-level 50 --force`.
 2. Engram parses candidate type and target scope.
 3. Engram checks schema, secrets, prompt-injection patterns, and path safety.
-4. Human sees a preview.
+4. Human sees a preview. Each candidate carries one `Verdict:` line: `ADD`, `UPDATE <id>`, `SUPERSEDE <id>`, or `NOOP duplicate of <id>`. The verdict is deterministic (the existing dedupe and related-memory scores; no model call).
 5. Direct CLI replies use `A`, `A 1,3`, `B <note>`, or `C`.
 6. AI-agent chat replies use `yes`, `audit`, or `cancel` after the exact displayed candidates.
-7. Only approved memory is written. In `save-session --force`, ready candidates write immediately; candidates with unresolved related-memory hints are deferred with ID-only `engram load --id ...` guidance and require rerun with `DEPENDS_ON` or `UPDATE`.
+7. Only approved memory is written. `A` and `B` skip `NOOP` candidates (they are listed); `A 1,3` writes exactly the numbered ones. Approving a `SUPERSEDE` writes `supersedes: [old]` on the new memory and marks the old one `lifecycle: superseded`; `--force` never applies it. In `save-session --force`, ready candidates write immediately; candidates with unresolved related-memory hints (including a `SUPERSEDE`) are deferred with ID-only `engram load --id ...` guidance and require rerun with `DEPENDS_ON` or `UPDATE`, or without `--force` to review the `SUPERSEDE`.
 8. Index, graph, hashes, and changelog are refreshed for written memories.
 ## Read Flow
 

@@ -69,7 +69,7 @@ When `engram load "<task>"` runs, the output is slimmed for AI agents by default
 | Aspect | Default (`engram load`) | Full (`engram load --full`) |
 | --- | --- | --- |
 | Frontmatter | Only `id`, `type`, `tags`, `confidence`, `depends_on` | All fields (id, type, tags, confidence, scope, author, created, updated, depends_on, etc.) |
-| Rule body | One selected variant under `## Rule variants (1/3 based on current: <active>)` | Full `## Rule Variants` section with all three variants |
+| Rule body | One selected variant under `## Rule variants (1/3 based on current: <active>)` | The stored `## Rule Variants` section only when the file has custom variants |
 | Non-rule content | Same content, unchanged heading | Same content, unchanged heading |
 
 MCP `engram_load` and SessionStart hooks now use this compact output by default. Pass `full: true` on the MCP tool or `engram load --full "<task>"` when a human wants the broader legacy output.

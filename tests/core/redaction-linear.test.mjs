@@ -112,3 +112,8 @@ test('sanitizeSource strips URL passwords and secret flag values but keeps passw
   assert.match(out, /--client-secret <redacted>/);
   assert.match(out, /Clone ssh:\/\/deploy@build-host:22\/repo and https:\/\/example\.com\/docs\./);
 });
+
+test('non-secret flags never consume an adjacent secret flag before redaction', () => {
+  assert.equal(safeClip('deploy --verbose --client-secret abc'), 'deploy --verbose --client-secret <redacted>');
+  assert.equal(sanitizeSource('deploy --verbose --client-secret abc'), 'deploy --verbose --client-secret <redacted>');
+});

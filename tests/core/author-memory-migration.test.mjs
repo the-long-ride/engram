@@ -81,7 +81,9 @@ test('author migration omits author_email by default and writes it when memory.i
   const off = await readFile(path.join(root, 'knowledge', 'default-off.md'), 'utf8');
   assert.match(off, /^author_name:/m);
   assert.doesNotMatch(off, /^author_email:/m);
-  await writeFile(path.join(root, 'engram.config.json'), JSON.stringify({ memory: { include_author_email: true } }));
+  const configFile = path.join(root, 'engram.config.json');
+  const config = JSON.parse(await readFile(configFile, 'utf8'));
+  await writeFile(configFile, JSON.stringify({ ...config, memory: { ...config.memory, include_author_email: true } }));
   await writeFile(path.join(root, 'knowledge', 'opt-in.md'), legacy('opt-in'));
   await migrateMemoryAuthors(cwd, 'workspace', { confirmed: true });
   assert.match(await readFile(path.join(root, 'knowledge', 'opt-in.md'), 'utf8'), /^author_email:\s*workspace@example\.com$/m);

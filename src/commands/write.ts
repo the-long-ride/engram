@@ -343,8 +343,8 @@ async function commitApprovedNotes(ctx: EngramContext, candidates: PlannedCandid
 }
 
 /**
- * A plan whose pinned or recomputed verdict is SUPERSEDE must match the pin exactly; one that drifted is dropped with a
- * line. Without a pin a SUPERSEDE stays unapproved, so the related-memory check defers it.
+ * Every pinned verdict must match its recomputed kind and target; any drift invalidates the approval.
+ * Without a pin a SUPERSEDE stays unapproved, so the related-memory check defers it.
  */
 function checkPinnedVerdicts(plans: SavePlan[], expected?: PinnedVerdict[]): { kept: SavePlan[]; changed: string[] } {
   const changed: string[] = [];
@@ -356,7 +356,6 @@ function checkPinnedVerdicts(plans: SavePlan[], expected?: PinnedVerdict[]): { k
       if (plan.verdict.kind === 'SUPERSEDE') plan.supersedeApproved = true;
       return true;
     }
-    if (pinned.kind !== 'SUPERSEDE' && plan.verdict.kind !== 'SUPERSEDE') return true;
     const now = plan.verdict.target ? `${plan.verdict.kind} ${plan.verdict.target}` : plan.verdict.kind;
     changed.push(`Candidate ${plan.candidateIndex ?? 1}: not written. Verdict changed since the proposal (now ${now}); propose again.`);
     return false;

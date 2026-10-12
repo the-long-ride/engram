@@ -1,7 +1,7 @@
 ---
 title: load / search / graph
 sidebar_position: 2
-description: Comandos de lectura: cargue memoria enrutada, busque en el almacén e inspeccione el enrutamiento de grafos.
+description: "Comandos de lectura: cargue memoria enrutada, busque en el almacén e inspeccione el enrutamiento de grafos."
 ---
 
 # load / search / graph

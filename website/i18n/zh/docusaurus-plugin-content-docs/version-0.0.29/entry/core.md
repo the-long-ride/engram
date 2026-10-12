@@ -33,7 +33,7 @@ Core 标签页用于审查重复和冲突的内存。它是 Entry 面板内部�
 ```bash
 engram resolve-conflicts --dry-run --metacognize
 engram resolve-conflicts --metacognize
-engram metacognize --workspace --accept-all
+engram metacognize --workspace --force
 ```
 
 ## 后续步骤

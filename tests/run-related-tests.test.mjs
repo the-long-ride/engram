@@ -25,6 +25,7 @@ test('related test selection covers current workflow and website changes', async
     'website/src/components/DocPageCopyNavbarItem.test.tsx',
     'website/src/config.test.ts',
     'website/src/dependencyLock.test.ts',
+    'website/src/security/braces-safe.test.ts',
     'website/src/theme/NavbarItem/LocaleDropdownNavbarItem/localeUtils.test.ts',
     'website/src/utils/rawDocSource.test.ts'
   ]);

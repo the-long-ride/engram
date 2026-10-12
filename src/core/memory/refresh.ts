@@ -48,7 +48,12 @@ export async function planRefresh(ctx: EngramContext, flags: Record<string, any>
   const plan = files.length
     ? await planTakeControlSources(ctx.cwd, ctx.ignorePatterns, { file: files, kind: 'all', 'max-sources': REFRESH_MAX_SOURCES, ...(flags['max-chars'] !== undefined ? { 'max-chars': flags['max-chars'] } : {}), plan: flags.plan })
     : emptyPlan();
-  const targets = memories.map(({ key, entry, changed, files: memoryFiles }): RefreshTarget => {
+  // Rejected sources were inspected and can be dropped; limit omissions must retain provenance and stale state.
+  const selected = new Set([
+    ...plan.sources.map((source) => source.file),
+    ...plan.skipped.filter((source) => !source.reason.startsWith('over --')).map((source) => source.file)
+  ]);
+  const targets = memories.filter((memory) => memory.files.every((file) => selected.has(file))).map(({ key, entry, changed, files: memoryFiles }): RefreshTarget => {
     const sources = plan.sources.filter((source) => memoryFiles.includes(source.file));
     return {
       key, id: entry.id, type: entry.type, scope: entry.scope, file: entry.file, summary: entry.summary, changed,

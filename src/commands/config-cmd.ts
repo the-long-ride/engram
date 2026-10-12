@@ -2,8 +2,9 @@
 import path from 'node:path';
 import { formatRecords } from '../core/cli/format.js';
 import { openConfigDb, isConfigDbUsable } from '../core/config-db/schema.js';
-import { writeUserConfig, loadConfig, defaultConfig } from '../core/runtime/config.js';
+import { writeUserConfig, loadConfig, defaultConfig, userConfigPath } from '../core/runtime/config.js';
 import type { EngramConfig } from '../core/runtime/types.js';
+import { readJson } from '../core/system/fsx.js';
 
 export async function cmdConfig(args: string[], flags: Record<string, any> = {}): Promise<string> {
   const [rawAction = 'view', ...rest] = args;
@@ -83,13 +84,17 @@ async function configSet(args: string[], flags: Record<string, any>): Promise<st
   const key = args[0]?.trim().toLowerCase();
   const value = args[1] ?? '';
   if (!key) throw new Error('config set requires <key> <value>');
+  const q = await importQueries();
+  const column = q.configKeyToColumn(key);
+  if (!column) throw new Error(`unknown config key: ${key}`);
   const dbh = await openConfigDb();
-  if (!dbh) return 'SQLite unavailable; install better-sqlite3 or use Node >=22.5';
   try {
-    if (!isConfigDbUsable(dbh.db)) return 'SQLite unavailable; using JSON config snapshots';
-    const q = await importQueries();
-    const column = q.configKeyToColumn(key);
-    if (!column) throw new Error(`unknown config key: ${key}`);
+    if (!dbh || !isConfigDbUsable(dbh.db)) {
+      const config = await readJson<Partial<EngramConfig>>(userConfigPath(), {});
+      applyDottedKey(config, column, value);
+      await writeUserConfig(config);
+      return `User config set: ${column} = ${value} (JSON snapshot; SQLite unavailable)`;
+    }
     q.setUserConfigKey(dbh.db, column, value);
     // Also export JSON snapshot for backward compat
     const config = await loadConfig();
@@ -98,7 +103,7 @@ async function configSet(args: string[], flags: Record<string, any>): Promise<st
     await writeUserConfig(config);
     return `User config set: ${column} = ${value}`;
   } finally {
-    dbh.close();
+    dbh?.close();
   }
 }
 

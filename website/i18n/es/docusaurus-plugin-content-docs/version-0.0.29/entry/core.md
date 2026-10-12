@@ -33,7 +33,7 @@ Muestra la sugerencia antes de copiarla. Fomente la vista previa para operacione
 ```bash
 engram resolve-conflicts --dry-run --metacognize
 engram resolve-conflicts --metacognize
-engram metacognize --workspace --accept-all
+engram metacognize --workspace --force
 ```
 
 ## Siguientes pasos

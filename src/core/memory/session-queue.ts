@@ -70,12 +70,12 @@ export async function enqueueSession(root: string, entry: SessionQueueEntry): Pr
   }
 }
 
-/** Remove drained entries by (host, session), so an entry appended while a drain runs survives. */
+/** Remove only the exact drained records, preserving replacements queued during the drain. */
 async function removeEntries(root: string, done: SessionQueueEntry[]): Promise<void> {
   if (!done.length) return;
   const file = path.join(root, SESSION_QUEUE_FILE);
   await withFileLock(file, async () => {
-    const entries = validEntries(await readJsonForUpdate<unknown>(file, {})).filter((item) => !done.some((gone) => sameSession(item, gone)));
+    const entries = validEntries(await readJsonForUpdate<unknown>(file, {})).filter((item) => !done.some((gone) => sameSession(item, gone) && item.transcript_path === gone.transcript_path && item.at === gone.at));
     await writeJsonAtomic(file, { version: 1, entries } satisfies SessionQueueFile);
   });
 }

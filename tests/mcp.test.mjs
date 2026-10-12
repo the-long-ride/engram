@@ -1097,3 +1097,43 @@ test('engram_commit with a token that pinned no verdicts defers a SUPERSEDE', as
     await rm(cwd, { recursive: true, force: true });
   }
 });
+
+for (const transition of ['ADD to NOOP', 'ADD to UPDATE', 'UPDATE to ADD', 'UPDATE to NOOP', 'NOOP to ADD', 'NOOP to UPDATE', 'UPDATE target changes']) {
+  test(`engram_commit rejects stale approval when ${transition}`, async () => {
+    const { cwd, env } = await tempWorkspace('engram-mcp-verdict-drift-');
+    const previous = process.cwd();
+    const restore = applyAuthorTestEnv(env);
+    process.chdir(cwd);
+    try {
+      await runCli(['inject', '--no-skillset']);
+      const text = 'Payments service owns refund reconciliation and validates every invoice against the billing ledger before exporting monthly reports';
+      const similar = text + ' nightly';
+      const save = (value) => runEngram(cwd, env, ['save-session', '--scope', 'workspace', '--force', `TYPE: knowledge | TEXT: ${value}`]);
+      const dir = path.join(workspaceMemoryRoot(cwd), 'knowledge');
+      const call = (id, name, args) => handleMcp({ id, method: 'tools/call', params: { name, arguments: args } });
+      const initial = transition.split(' ')[0];
+      if (initial !== 'ADD') await save(initial === 'NOOP' ? text : similar);
+      const proposal = await call(1, 'engram_save_session', { text: `TYPE: knowledge | TEXT: ${text}`, scope: 'workspace' });
+      assert.equal(proposal.result.structuredContent.data.verdicts[0].kind, initial);
+      if (initial === 'ADD') await save(transition.endsWith('NOOP') ? text : similar);
+      else {
+        const [name] = await readdir(dir);
+        const raw = await readFile(path.join(dir, name), 'utf8');
+        await rm(path.join(dir, name));
+        if (transition === 'UPDATE target changes') await writeFile(path.join(dir, 'replacement.md'), raw.replace(/^id: .+$/m, 'id: replacement'));
+        await runEngram(cwd, env, ['rebuild-index']);
+        if (transition.endsWith('NOOP')) await save(text);
+        if (transition.endsWith('UPDATE')) await save(similar);
+      }
+      const snapshot = async () => Promise.all((await readdir(dir)).sort().map(async (name) => [name, await readFile(path.join(dir, name), 'utf8')]));
+      const before = await snapshot();
+      const committed = await call(2, 'engram_commit', { approval_token: proposal.result.structuredContent.data.approval_token, approve: 'all' });
+      assert.match(committed.result.content[0].text, /Verdict changed since the proposal/);
+      assert.deepEqual(await snapshot(), before, 'stale approval must leave every memory untouched');
+    } finally {
+      process.chdir(previous);
+      restore();
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+}

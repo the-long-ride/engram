@@ -35,6 +35,7 @@ export function scanSensitive(text: string): ScanFinding[] {
     }
     if (inFrontmatter && /^(?:author|author_email):\s*/i.test(trimmed)) return;
     for (const [kind, reason, pattern] of sensitivePatterns) {
+      if (kind === 'email' && !line.includes('@')) continue;
       pattern.lastIndex = 0;
       const match = pattern.exec(line);
       if (match) findings.push({ line: index + 1, reason, value: match[0], kind });
@@ -46,7 +47,9 @@ export function scanSensitive(text: string): ScanFinding[] {
 /** Replace sensitive values with safe placeholders. */
 export function redactSensitive(text: string): string {
   let output = text;
-  for (const [, , pattern, replacement] of sensitivePatterns) {
+  for (const [kind, , pattern, replacement] of sensitivePatterns) {
+    // Skip bounded email backtracking when the input cannot contain an address.
+    if (kind === 'email' && !output.includes('@')) continue;
     pattern.lastIndex = 0;
     output = output.replace(pattern, replacement);
   }

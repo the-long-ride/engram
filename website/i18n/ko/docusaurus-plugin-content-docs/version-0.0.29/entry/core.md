@@ -33,7 +33,7 @@ Core 탭은 중복되고 충돌하는 메모리를 검토합니다. Entry 패널
 ```bash
 engram resolve-conflicts --dry-run --metacognize
 engram resolve-conflicts --metacognize
-engram metacognize --workspace --accept-all
+engram metacognize --workspace --force
 ```
 
 ## 다음 단계

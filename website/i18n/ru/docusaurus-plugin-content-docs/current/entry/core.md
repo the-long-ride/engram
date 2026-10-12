@@ -33,7 +33,7 @@ description: Просмотр дублирующихся и конфликтую
 ```bash
 engram resolve-conflicts --dry-run --metacognize
 engram resolve-conflicts --metacognize
-engram metacognize --workspace --accept-all
+engram metacognize --workspace --force
 ```
 
 ## Следующие шаги

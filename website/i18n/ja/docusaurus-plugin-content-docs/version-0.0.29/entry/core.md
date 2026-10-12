@@ -33,7 +33,7 @@ Core タブは、重複および競合するメモリを確認します。Entry 
 ```bash
 engram resolve-conflicts --dry-run --metacognize
 engram resolve-conflicts --metacognize
-engram metacognize --workspace --accept-all
+engram metacognize --workspace --force
 ```
 
 ## 次のステップ

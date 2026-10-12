@@ -256,8 +256,10 @@ function git(cwd, args) {
 }
 
 function commitAll(cwd) {
-  git(cwd, ['add', '-A']);
-  git(cwd, ['commit', '-q', '-m', 'baseline']);
+  const staged = git(cwd, ['add', '-A']);
+  assert.equal(staged.status, 0, staged.stderr);
+  const committed = git(cwd, ['-c', 'user.name=Engram Test', '-c', 'user.email=engram-test@example.com', 'commit', '-q', '-m', 'baseline']);
+  assert.equal(committed.status, 0, committed.stderr);
 }
 
 function assertNothingStagedNames(cwd, patterns) {

@@ -1,11 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { installSkillset, installGlobalSkillset, previewRegisteredGlobalSkillsets, unlinkSkillset, unlinkGlobalSkillset, skillsetTargets, resolveLinkTargets } from '../dist/core/integrations/skillset.js';
+import { estimateTokens } from '../dist/core/memory/payload-plan.js';
+import { installSkillset, installGlobalSkillset, previewLinkedWorkspaceSkillsets, previewRegisteredGlobalSkillsets, unlinkSkillset, unlinkGlobalSkillset, skillsetTargets, resolveLinkTargets } from '../dist/core/integrations/skillset.js';
 import { detectInstalledAgents, resolveAllTargets, allSupportedTargets } from '../dist/core/integrations/agent-detect.js';
+import { hookHostsForTarget } from '../dist/core/integrations/agent-hooks.js';
+import { parseFrontmatter } from '../dist/core/memory/frontmatter.js';
 import { VERSION } from '../dist/core/runtime/version.js';
-import { runEngram, tempWorkspace } from './helpers.mjs';
+import { initGit, makeEngramMcpBin, pathWithoutEngramMcp, runEngram, tempWorkspace, withPath } from './helpers.mjs';
+import { mcpCommandLine, renderCodexMcpBlock, resolveMcpCommand } from '../dist/core/integrations/mcp-config.js';
+
+// In-process installs resolve the MCP command from this process's PATH; keep it free of a real engram-mcp.
+process.env.PATH = pathWithoutEngramMcp();
 import {
   renderCursorRule,
   renderWindsurfRule,
@@ -17,7 +24,9 @@ import {
   hasWorkspaceManagedBlock,
   removeWorkspaceManagedBlock,
   upsertWorkspaceManagedBlock,
-  isGenerated
+  isGenerated,
+  validateSkillFrontmatter,
+  validateSkillFile
 } from '../dist/core/integrations/skillset-render.js';
 
 function assertSimpleOpenCodeMcp(server) {
@@ -28,6 +37,9 @@ function assertSimpleOpenCodeMcp(server) {
     enabled: true
   });
 }
+
+/** The npx fallback pins the running Engram version so a host never launches an unreviewed release. */
+const PINNED_PACKAGE = `@the-long-ride/engram@${VERSION}`;
 
 test('skillset installer writes all supported agent adapter files (--all-supported)', async () => {
   const { cwd } = await tempWorkspace('engram-skillset-');
@@ -57,44 +69,46 @@ assert.match(guide, /engram save-session --force/);
   assert.match(mcpConfig, /engram-mcp/);
   assert.equal(JSON.parse(mcpConfig).mcpServers.engram.command, 'npx');
   await assert.rejects(readFile(path.join(cwd, '.antigravity/skills/engram/SKILL.md'), 'utf8'));
-  assert.match(await readFile(path.join(cwd, '.claude/commands/engram.md'), 'utf8'), /Engram Slash Command/);
-  assert.match(await readFile(path.join(cwd, '.claude/commands/engram.md'), 'utf8'), /any `engram` CLI arguments/);
-  assert.match(await readFile(path.join(cwd, '.claude/commands/engram.md'), 'utf8'), /current AI agent chat\/session/);
-  assert.match(await readFile(path.join(cwd, '.claude/commands/engram.md'), 'utf8'), /recent accessible human-agent chat sessions/);
-assert.match(await readFile(path.join(cwd, '.claude/commands/engram.md'), 'utf8'), /save-session --query-level 50 --force/);
-  assert.match(await readFile(path.join(cwd, '.claude/commands/engram.md'), 'utf8'), /metacognize --workspace/);
-  assert.match(await readFile(path.join(cwd, '.claude/commands/engram.md'), 'utf8'), /restructure workspace memory/);
-  assert.match(await readFile(path.join(cwd, '.claude/commands/engram.md'), 'utf8'), /Agent action:/);
-  assert.match(await readFile(path.join(cwd, '.claude/commands/engram.md'), 'utf8'), /replace prior Engram-loaded context/i);
-  assert.match(await readFile(path.join(cwd, '.claude/commands/engram.md'), 'utf8'), /If the request is only .*\/engram.*with no args/);
-  assert.match(await readFile(path.join(cwd, '.claude/commands/engram.md'), 'utf8'), /\/engram propose/);
-  assert.match(await readFile(path.join(cwd, '.claude/skills/engram/SKILL.md'), 'utf8'), /any `engram` CLI arguments/);
-  assert.match(await readFile(path.join(cwd, '.claude/skills/engram/SKILL.md'), 'utf8'), /Your knowledge memory manager, synced across every device with Git/);
-  assert.match(await readFile(path.join(cwd, '.claude/skills/engram/SKILL.md'), 'utf8'), /take-control/);
-  assert.match(await readFile(path.join(cwd, '.claude/skills/engram/SKILL.md'), 'utf8'), /take control` means `take-control/);
-  assert.match(await readFile(path.join(cwd, '.claude/skills/engram/SKILL.md'), 'utf8'), /source pack token-light/);
-assert.match(await readFile(path.join(cwd, '.claude/skills/engram/SKILL.md'), 'utf8'), /ss -f/);
-assert.match(await readFile(path.join(cwd, '.claude/skills/engram/SKILL.md'), 'utf8'), /Never use `--force`/);
-  assert.match(await readFile(path.join(cwd, '.claude/skills/engram/SKILL.md'), 'utf8'), /compact menu/);
-  assert.match(await readFile(path.join(cwd, '.claude/skills/engram/SKILL.md'), 'utf8'), /what should we save to engram\?/);
-  assert.match(await readFile(path.join(cwd, '.cursor/commands/engram.md'), 'utf8'), /Engram Slash Command/);
-  assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /\/engram \{\{args\}\}/);
-  assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /Your knowledge memory manager, synced across every device with Git/);
-  assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /take-control/);
-  assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /"take control" to "take-control"/);
-  assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /"restructure workspace memory" to "metacognize --workspace"/);
-  assert.doesNotMatch(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /autosave|auto save|legacy "autosave"/);
-  assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /current AI agent chat\/session/);
-  assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /recent accessible human-agent chat sessions/);
-  assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /source pack token-light/);
-assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /ss -f/);
-assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /ss -f last 50 sessions/);
-assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /save-session --force/);
-  assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /metacognize force mode/);
-  assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /Agent action:/);
-  assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /replace prior Engram-loaded context/i);
-  assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /If the request is only .*\/engram.*with no args/);
-  assert.match(await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8'), /\/engram propose/);
+  // D13: slash adapters are thin pointers (command map + guide path); the protocol lives once in the host guide.
+  const claudeCommand = await readFile(path.join(cwd, '.claude/commands/engram.md'), 'utf8');
+  assert.match(claudeCommand, /Engram Slash Command/);
+  assert.match(claudeCommand, /any `engram` CLI arguments/);
+  assert.match(claudeCommand, /save-session/);
+  assert.match(claudeCommand, /metacognize/);
+  assert.match(claudeCommand, /Agent action:/);
+  assert.match(claudeCommand, /`\/engram` alone: show a compact menu/);
+  assert.match(claudeCommand, /`propose` = `save-session` over the current chat/);
+  assert.match(claudeCommand, /Full protocol: `\.claude\/engram\.md`/);
+  const claudeSkill = await readFile(path.join(cwd, '.claude/skills/engram/SKILL.md'), 'utf8');
+  assert.match(claudeSkill, /any `engram` CLI arguments/);
+  assert.match(claudeSkill, /Your knowledge memory manager, synced across every device with Git/);
+  assert.match(claudeSkill, /take-control/);
+  assert.match(claudeSkill, /Never add `--force`/);
+  assert.match(claudeSkill, /compact menu/);
+  assert.match(claudeSkill, /Full protocol: `\.claude\/engram\.md`/);
+  const claudeGuide = await readFile(path.join(cwd, '.claude/engram.md'), 'utf8');
+  assert.match(claudeGuide, /current AI agent chat\/session/);
+  assert.match(claudeGuide, /recent accessible human-agent chat sessions/);
+  assert.match(claudeGuide, /ss -f` = `save-session --force/);
+  assert.match(claudeGuide, /metacognize --workspace/);
+  assert.match(claudeGuide, /source pack token-light/);
+  assert.match(claudeGuide, /replace earlier Engram context/i);
+  assert.match(claudeGuide, /what should we save to engram\?/);
+  assert.match(claudeGuide, /Never use `--force`/);
+  // Natural-language aliases are normalized by src/cli/args.ts, so adapters no longer teach them.
+  assert.doesNotMatch(claudeSkill, /take control` means/);
+  assert.match(await readFile(path.join(cwd, '.cursor/commands/engram.md'), 'utf8'), /Full protocol: `\.cursor\/engram\.md`/);
+  const geminiCommand = await readFile(path.join(cwd, '.gemini/commands/engram.toml'), 'utf8');
+  assert.match(geminiCommand, /\/engram \{\{args\}\}/);
+  assert.match(geminiCommand, /Your knowledge memory manager, synced across every device with Git/);
+  assert.match(geminiCommand, /take-control/);
+  assert.doesNotMatch(geminiCommand, /autosave|auto save|legacy "autosave"/);
+  assert.match(geminiCommand, /save-session \(ss\)/);
+  assert.match(geminiCommand, /Agent action:/);
+  assert.match(geminiCommand, /If there are no args, do not run the CLI/);
+  assert.match(geminiCommand, /propose = save-session over the current chat/);
+  assert.match(geminiCommand, /Full protocol: \.gemini\/engram\.md/);
+  assert.ok(geminiCommand.trimEnd().split(/\r?\n/).length <= 40);
   const opencodeAgentsMd = await readFile(path.join(cwd, 'AGENTS.md'), 'utf8');
   assert.match(opencodeAgentsMd, /<!-- engram:start -->/);
   assert.match(opencodeAgentsMd, /Full guide: `\.opencode\/engram\.md`/);
@@ -134,7 +148,7 @@ test('cli installs a single skillset target', async () => {
   const result = await runEngram(cwd, env, ['link', 'gemini']);
   assert.equal(result.code, 0, result.stderr);
   assert.match(result.stdout, /WRITTEN gemini: GEMINI.md/);
-  assert.match(result.stdout, /WRITTEN gemini: \.mcp\.json/);
+  assert.match(result.stdout, /WRITTEN gemini: \.gemini[\\\/]settings\.json/);
   assert.match(result.stdout, /gemini also covers current Antigravity 2\.0, Antigravity CLI, and Antigravity IDE/);
   // GEMINI.md gets minimal block
   const geminiMd = await readFile(path.join(cwd, 'GEMINI.md'), 'utf8');
@@ -143,7 +157,8 @@ test('cli installs a single skillset target', async () => {
   assert.doesNotMatch(geminiMd, /Default agent mode: compact/);
   // Guide file written
   assert.match(await readFile(path.join(cwd, '.gemini/engram.md'), 'utf8'), /Save flow:/);
-  assert.equal(JSON.parse(await readFile(path.join(cwd, '.mcp.json'), 'utf8')).mcpServers.engram.command, 'npx');
+  assert.equal(JSON.parse(await readFile(path.join(cwd, '.gemini/settings.json'), 'utf8')).mcpServers.engram.command, 'npx');
+  await assert.rejects(readFile(path.join(cwd, '.mcp.json'), 'utf8'), 'Gemini CLI does not read .mcp.json');
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -203,8 +218,9 @@ test('cli installs codex alias as AGENTS.md skillset file', async () => {
   assert.doesNotMatch(agentsMd, /Runtime Bootstrap/);
   assert.doesNotMatch(agentsMd, /Save flow:/);
   assert.doesNotMatch(agentsMd, /clone-memory/);
-  // .agents/engram.md: full guide
-  assert.match(await readFile(path.join(cwd, '.agents/skills/engram/SKILL.md'), 'utf8'), /Default agent mode: compact/);
+  // .agents/engram.md: full guide; the Codex skill points at it (D13)
+  assert.match(await readFile(path.join(cwd, '.agents/skills/engram/SKILL.md'), 'utf8'), /Full protocol: `\.agents\/engram\.md`/);
+  assert.match(await readFile(path.join(cwd, '.agents/engram.md'), 'utf8'), /Default agent mode: compact/);
   assert.match(await readFile(path.join(cwd, '.agents/engram.md'), 'utf8'), /Save flow:/);
   assert.match(await readFile(path.join(cwd, '.agents/engram.md'), 'utf8'), /Rule memories:/);
   await rm(cwd, { recursive: true, force: true });
@@ -221,6 +237,166 @@ test('cli installs slash command adapters', async () => {
   assert.match(result.stdout, /WRITTEN slash: \.opencode\/commands\/engram\.md/);
   assert.match(result.stdout, /if \/engram is not visible/);
   await rm(cwd, { recursive: true, force: true });
+});
+
+/**
+ * Files a Claude session can read: other hosts' slash adapters are never loaded by Claude. `link claude` writes AGENTS.md
+ * instead of CLAUDE.md (same size), so AGENTS.md is the auto-loaded bootstrap. `.agents/engram.md`, the AGENTS.md
+ * pointer target, is a near-twin of `.claude/engram.md` and Claude reads one guide per session, so only `.claude/**` is counted.
+ */
+const CLAUDE_SURFACE = /^(?:CLAUDE\.md|AGENTS\.md|\.mcp\.json|\.claude\/)/;
+const SESSION_START_LOAD = /session start[^\n]*engram load/i;
+
+async function workspaceFiles(root, dir = '') {
+  const out = [];
+  for (const entry of await readdir(path.join(root, dir), { withFileTypes: true })) {
+    const rel = dir ? `${dir}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) out.push(...await workspaceFiles(root, rel));
+    else out.push(rel);
+  }
+  return out;
+}
+
+/** `link` has no --slash flag (it is ignored), so the slash adapters are linked explicitly. */
+async function linkClaudeWithSlash(cwd, env) {
+  for (const args of [['link', 'claude', '--slash'], ['link', 'slash']]) {
+    const result = await runEngram(cwd, env, args);
+    assert.equal(result.code, 0, result.stderr);
+  }
+}
+
+// Before D13 the Claude surface after `engram link claude --slash` + `engram link slash` was 7,158 tokens:
+// CLAUDE.md 147, .claude/engram.md 2,265, .claude/commands/engram.md 2,148, .claude/skills/engram/SKILL.md 2,173,
+// .claude/settings.json 378, .mcp.json 47. The budget rose from 2,500 to 2,550 when the SubagentStart hook group landed in settings.json,
+// and to 2,600 when the Claude skill gained when_to_use + user-invocable and the command file gained description frontmatter (T13).
+test('D13: Claude surface (CLAUDE.md, .claude/**, .mcp.json) after link claude + link slash stays within 2,600 tokens', async () => {
+  const { cwd, env } = await tempWorkspace('engram-skillset-budget-');
+  try {
+    await linkClaudeWithSlash(cwd, env);
+    const files = (await workspaceFiles(cwd)).filter((file) => CLAUDE_SURFACE.test(file));
+    assert.ok(files.includes('.claude/engram.md') && files.includes('.claude/commands/engram.md') && files.includes('.claude/skills/engram/SKILL.md'), files.join(', '));
+    let total = 0;
+    for (const file of files) total += estimateTokens(await readFile(path.join(cwd, file), 'utf8'));
+    assert.ok(total <= 2600, `Claude surface is ${total} estimated tokens`);
+  } finally {
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('D13: Claude skill and slash command are thin pointers to the canonical guide', async () => {
+  const { cwd, env } = await tempWorkspace('engram-skillset-pointer-');
+  try {
+    await linkClaudeWithSlash(cwd, env);
+    for (const file of ['.claude/skills/engram/SKILL.md', '.claude/commands/engram.md']) {
+      const text = await readFile(path.join(cwd, file), 'utf8');
+      assert.ok(text.trimEnd().split(/\r?\n/).length <= 40, `${file} must be at most 40 lines`);
+      assert.match(text, /Full protocol: `\.claude\/engram\.md`/, file);
+      assert.match(text, /save-session/, `${file} keeps the command map`);
+      assert.match(text, /take-control/, `${file} keeps the command map`);
+      assert.doesNotMatch(text, /AI-agent chat save protocol|Memory value gate/, `${file} must not restate the approval protocol`);
+    }
+    const guide = await readFile(path.join(cwd, '.claude/engram.md'), 'utf8');
+    assert.equal((guide.match(/AI-agent chat save protocol/g) ?? []).length, 1, 'approval protocol is stated once in the guide');
+    assert.match(guide, /engram load --id <id>/);
+    assert.match(guide, /already loaded:/);
+  } finally {
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('D13: with hooks installed no managed file tells the agent to load at session start', async () => {
+  const { cwd, env } = await tempWorkspace('engram-skillset-hooked-');
+  try {
+    await linkClaudeWithSlash(cwd, env);
+    assert.match(await readFile(path.join(cwd, '.claude/settings.json'), 'utf8'), /engram agent-hook/);
+    for (const file of (await workspaceFiles(cwd)).filter((rel) => CLAUDE_SURFACE.test(rel))) {
+      assert.doesNotMatch(await readFile(path.join(cwd, file), 'utf8'), SESSION_START_LOAD, file);
+    }
+    assert.match(await readFile(path.join(cwd, '.claude/engram.md'), 'utf8'), /hooks auto-inject/i);
+  } finally {
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('D13: without hooks the guide still says to load at session start', async () => {
+  const { cwd, env } = await tempWorkspace('engram-skillset-unhooked-');
+  const previousConfigDir = process.env.ENGRAM_CONFIG_DIR;
+  process.env.ENGRAM_CONFIG_DIR = env.ENGRAM_CONFIG_DIR;
+  try {
+    await installSkillset(cwd, 'claude');
+    const guide = await readFile(path.join(cwd, '.claude/engram.md'), 'utf8');
+    assert.match(guide, SESSION_START_LOAD);
+    assert.doesNotMatch(guide, /hooks auto-inject/i);
+  } finally {
+    if (previousConfigDir === undefined) delete process.env.ENGRAM_CONFIG_DIR; else process.env.ENGRAM_CONFIG_DIR = previousConfigDir;
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('D13: read mode manual or off renders the unhooked wording even with hooks installed', async () => {
+  for (const mode of ['manual', 'off']) {
+    const { cwd, env } = await tempWorkspace(`engram-skillset-read-${mode}-`);
+    try {
+      assert.equal((await runEngram(cwd, env, ['inject', '--no-skillset'])).code, 0);
+      assert.equal((await runEngram(cwd, env, ['set-read', mode])).code, 0);
+      const linked = await runEngram(cwd, env, ['link', 'claude']);
+      assert.equal(linked.code, 0, linked.stderr);
+      assert.match(await readFile(path.join(cwd, '.claude/settings.json'), 'utf8'), /engram agent-hook/);
+      const guide = await readFile(path.join(cwd, '.claude/engram.md'), 'utf8');
+      assert.match(guide, SESSION_START_LOAD, mode);
+      assert.doesNotMatch(guide, /hooks auto-inject/i, mode);
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  }
+});
+
+test('D13: hookHostsForTarget excludes hookless copilot and cline', () => {
+  assert.deepEqual(hookHostsForTarget('copilot'), []);
+  assert.deepEqual(hookHostsForTarget('cline'), []);
+  assert.deepEqual(hookHostsForTarget(''), []);
+  const all = hookHostsForTarget('all');
+  assert.ok(!all.includes('copilot') && !all.includes('cline'), all.join(', '));
+  assert.deepEqual([...all].sort(), ['claude', 'codex', 'cursor', 'gemini', 'opencode', 'windsurf']);
+});
+
+test('D13: link claude then upgrade --plan shows no guide diff (no hook wording flip-flop)', async () => {
+  const { cwd, env } = await tempWorkspace('engram-skillset-flipflop-');
+  const previousConfigDir = process.env.ENGRAM_CONFIG_DIR;
+  process.env.ENGRAM_CONFIG_DIR = env.ENGRAM_CONFIG_DIR;
+  try {
+    assert.equal((await runEngram(cwd, env, ['inject', '--no-skillset'])).code, 0);
+    assert.equal((await runEngram(cwd, env, ['link', 'claude'])).code, 0);
+    const plan = await runEngram(cwd, env, ['upgrade', '--plan', '--no-version-check']);
+    assert.equal(plan.code, 0, plan.stderr);
+    assert.doesNotMatch(plan.stdout, /\.claude[\\/]engram\.md/);
+    assert.doesNotMatch(plan.stdout, /PLANNED claude: CLAUDE\.md/);
+    assert.doesNotMatch(plan.stdout, /AGENTS\.md/, 'a freshly linked AGENTS.md block is already current');
+    const previews = await previewLinkedWorkspaceSkillsets(cwd);
+    const guide = previews.find((row) => path.normalize(row.file) === path.normalize('.claude/engram.md'));
+    assert.ok(guide, 'guide preview should exist');
+    assert.equal(guide.current, guide.expected, 'freshly linked guide must equal its upgrade preview');
+  } finally {
+    if (previousConfigDir === undefined) delete process.env.ENGRAM_CONFIG_DIR; else process.env.ENGRAM_CONFIG_DIR = previousConfigDir;
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('D13: shared .agents/engram.md hedges hook wording for hookless readers', async () => {
+  const { cwd, env } = await tempWorkspace('engram-skillset-shared-guide-');
+  try {
+    for (const target of ['codex', 'copilot']) {
+      const linked = await runEngram(cwd, env, ['link', target]);
+      assert.equal(linked.code, 0, linked.stderr);
+    }
+    assert.match(await readFile(path.join(cwd, '.github/copilot-instructions.md'), 'utf8'), /Full guide: `\.agents\/engram\.md`/);
+    const guide = await readFile(path.join(cwd, '.agents/engram.md'), 'utf8');
+    assert.doesNotMatch(guide, /do not load it yourself/i);
+    assert.match(guide, /If no Engram context was injected, run `engram load "<current task>"`/);
+    assert.doesNotMatch(guide, SESSION_START_LOAD);
+  } finally {
+    await rm(cwd, { recursive: true, force: true });
+  }
 });
 
 test('global skillset installer writes managed rules, skills, and registry', async () => {
@@ -241,12 +417,14 @@ test('global skillset installer writes managed rules, skills, and registry', asy
   const guide = await readFile(path.join(agentHome, '.agents', 'engram.md'), 'utf8');
   assert.match(guide, /Global Startup/);
 assert.match(guide, /engram load "<current task>"/);
+  assert.match(guide, /Default agent mode: compact/);
   const skill = await readFile(path.join(agentHome, '.agents', 'skills', 'engram', 'SKILL.md'), 'utf8');
   assert.match(skill, /name: engram/);
-  assert.match(skill, /Default agent mode: compact/);
+  assert.match(skill, /Full protocol: `~\/\.agents\/engram\.md`/);
 
   const registry = JSON.parse(await readFile(path.join(globalEnv.ENGRAM_CONFIG_DIR, 'global-skillsets.json'), 'utf8'));
-  assert.equal(registry.installs.codex.files.length, 3);
+  assert.equal(registry.installs.codex.files.length, 4);
+  assert.ok(registry.installs.codex.files.some((file) => file.path.endsWith('.codex/config.toml')), 'codex MCP config.toml is registered for unlink/upgrade');
   assert.equal(registry.installs.codex.engram_version, VERSION);
 
   const updated = await runEngram(cwd, globalEnv, ['link', '--global', 'codex']);
@@ -287,9 +465,12 @@ test('global antigravity install writes 2.0, CLI, and IDE skill folders', async 
   assert.match(result.stdout, /WRITTEN antigravity: .*\.gemini[\\\/]skills[\\\/]engram[\\\/]SKILL\.md/);
   assert.match(result.stdout, /WRITTEN antigravity: .*\.gemini[\\\/]config[\\\/]mcp_config\.json/);
   assert.match(result.stdout, /WRITTEN antigravity: .*\.gemini[\\\/]config[\\\/]hooks\.json/);
-  assert.match(await readFile(path.join(agentHome, '.gemini', 'antigravity', 'skills', 'engram', 'SKILL.md'), 'utf8'), /name: engram/);
-  assert.match(await readFile(path.join(agentHome, '.gemini', 'skills', 'engram', 'SKILL.md'), 'utf8'), /Default agent mode: compact/);
-  assert.match(await readFile(path.join(agentHome, '.gemini', 'skills', 'engram', 'SKILL.md'), 'utf8'), /save-session --force/);
+  // Antigravity has no separate global guide, so its own skill carries the full protocol (D13).
+  const antigravitySkill = await readFile(path.join(agentHome, '.gemini', 'antigravity', 'skills', 'engram', 'SKILL.md'), 'utf8');
+  assert.match(antigravitySkill, /name: engram/);
+  assert.match(antigravitySkill, /Default agent mode: compact/);
+  assert.match(antigravitySkill, /save-session --force/);
+  assert.match(await readFile(path.join(agentHome, '.gemini', 'skills', 'engram', 'SKILL.md'), 'utf8'), /Full protocol: /);
   assert.equal(JSON.parse(await readFile(path.join(agentHome, '.gemini', 'config', 'mcp_config.json'), 'utf8')).mcpServers.engram.command, 'npx');
   assert.match(await readFile(path.join(agentHome, '.gemini', 'config', 'hooks.json'), 'utf8'), /engram-auto-load/);
   const registry = JSON.parse(await readFile(path.join(globalEnv.ENGRAM_CONFIG_DIR, 'global-skillsets.json'), 'utf8'));
@@ -307,11 +488,11 @@ test('global skill-capable targets write host skill folders', async () => {
   assert.equal(gemini.code, 0, gemini.stderr);
   assert.match(gemini.stdout, /WRITTEN gemini: .*\.gemini[\\\/]GEMINI\.md/);
   assert.match(gemini.stdout, /WRITTEN gemini: .*\.gemini[\\\/]skills[\\\/]engram[\\\/]SKILL\.md/);
-  assert.match(gemini.stdout, /WRITTEN gemini: .*\.gemini[\\\/]config[\\\/]mcp_config\.json/);
+  assert.match(gemini.stdout, /WRITTEN gemini: .*\.gemini[\\\/]settings\.json/);
   assert.match(gemini.stdout, /WRITTEN gemini: .*\.gemini[\\\/]config[\\\/]hooks\.json/);
   assert.match(gemini.stdout, /gemini also covers current Antigravity 2\.0, Antigravity CLI, and Antigravity IDE/);
   assert.match(await readFile(path.join(agentHome, '.gemini', 'skills', 'engram', 'SKILL.md'), 'utf8'), /Engram Memory Management Skill/);
-  assert.equal(JSON.parse(await readFile(path.join(agentHome, '.gemini', 'config', 'mcp_config.json'), 'utf8')).mcpServers.engram.command, 'npx');
+  assert.equal(JSON.parse(await readFile(path.join(agentHome, '.gemini', 'settings.json'), 'utf8')).mcpServers.engram.command, 'npx');
 
   const opencode = await runEngram(cwd, globalEnv, ['link', '--global', 'open-code']);
   assert.equal(opencode.code, 0, opencode.stderr);
@@ -323,7 +504,8 @@ test('global skill-capable targets write host skill folders', async () => {
   const globalAgents = await readFile(path.join(opencodeHome, 'AGENTS.md'), 'utf8');
   assert.match(globalAgents, /Full guide: `~\/\.config\/opencode\/engram\.md`/);
   assert.match(await readFile(path.join(opencodeHome, 'engram.md'), 'utf8'), /Global Startup/);
-  assert.match(await readFile(path.join(opencodeHome, 'skills', 'engram', 'SKILL.md'), 'utf8'), /Default agent mode: compact/);
+  assert.match(await readFile(path.join(opencodeHome, 'engram.md'), 'utf8'), /Default agent mode: compact/);
+  assert.match(await readFile(path.join(opencodeHome, 'skills', 'engram', 'SKILL.md'), 'utf8'), /Full protocol: `~\/\.config\/opencode\/engram\.md`/);
   const globalOpencodeConfig = JSON.parse(await readFile(path.join(opencodeHome, 'opencode.jsonc'), 'utf8'));
   assert.ok(globalOpencodeConfig.mcp && globalOpencodeConfig.mcp.engram, 'global opencode.jsonc should include engram MCP config');
   assertSimpleOpenCodeMcp(globalOpencodeConfig.mcp.engram);
@@ -559,11 +741,13 @@ test('global claude install appends CLAUDE.md and writes Claude skill path', asy
   assert.match(skill, /name: engram/);
   assert.match(skill, /Engram Slash Skill/);
   assert.match(skill, /When the human types `\/engram <args>`/);
-  const mcp = JSON.parse(await readFile(path.join(agentHome, '.claude', 'mcp.json'), 'utf8'));
-  assert.equal(mcp.mcpServers.engram.command, 'npx');
+  assert.match(skill, /Full protocol: `~\/\.agents\/engram\.md`/);
+  // Claude Code reads user MCP servers from ~/.claude.json, so Engram prints the `claude mcp add` hint and writes no mcp.json.
+  assert.match(result.stdout, /claude mcp add --scope user engram -- /);
+  await assert.rejects(readFile(path.join(agentHome, '.claude', 'mcp.json'), 'utf8'));
 
   const registry = JSON.parse(await readFile(path.join(globalEnv.ENGRAM_CONFIG_DIR, 'global-skillsets.json'), 'utf8'));
-  assert.equal(registry.installs.claude.files.length, 4);
+  assert.equal(registry.installs.claude.files.length, 3);
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -684,16 +868,17 @@ test('global link installs MCP config for supported targets', async () => {
   const globalEnv = { ...env, ENGRAM_AGENT_HOME: agentHome, ENGRAM_AGENT_CONFIG_HOME: path.join(cwd, 'agent-config') };
   const result = await runEngram(cwd, globalEnv, ['link', '--global', 'mcp']);
   assert.equal(result.code, 0, result.stderr);
-  const claudeMcp = await readFile(path.join(agentHome, '.claude', 'mcp.json'), 'utf8');
-  assert.match(claudeMcp, /engram-mcp/);
-  assert.equal(JSON.parse(claudeMcp).mcpServers.engram.command, 'npx');
+  assert.match(result.stdout, /claude mcp add --scope user engram -- /);
+  await assert.rejects(readFile(path.join(agentHome, '.claude', 'mcp.json'), 'utf8'));
+  assert.equal(JSON.parse(await readFile(path.join(agentHome, '.gemini', 'settings.json'), 'utf8')).mcpServers.engram.command, 'npx');
+  assert.match(await readFile(path.join(agentHome, '.codex', 'config.toml'), 'utf8'), /\[mcp_servers\.engram\]/);
   await rm(cwd, { recursive: true, force: true });
 });
 
 const BOOTSTRAP_MAX_CHARS = 1800;
 const LEGACY_MIN_CHARS = 2500;
 
-test('codex alias writes minimal AGENTS.md block and full SKILL.md', async () => {
+test('codex alias writes minimal AGENTS.md block and pointer SKILL.md', async () => {
   const { cwd, env } = await tempWorkspace('engram-skillset-bootstrap-');
   const result = await runEngram(cwd, env, ['link', 'codex']);
   assert.equal(result.code, 0, result.stderr);
@@ -707,15 +892,18 @@ test('codex alias writes minimal AGENTS.md block and full SKILL.md', async () =>
   assert.doesNotMatch(agentsMd, /take-control/);
   assert.doesNotMatch(agentsMd, /Rule memories:/);
   assert.doesNotMatch(agentsMd, /Runtime Bootstrap/);
-  // SKILL.md still has full compact instructions
+  // SKILL.md is a thin pointer (D13): command map plus the guide path
   const skill = await readFile(path.join(cwd, '.agents/skills/engram/SKILL.md'), 'utf8');
-  assert.match(skill, /Save flow:/);
-  assert.match(skill, /Never use `--force`/i);
-  assert.match(skill, /Default agent mode: compact/);
-  // Full guide at .agents/engram.md
+  assert.match(skill, /Full protocol: `\.agents\/engram\.md`/);
+  assert.match(skill, /Never add `--force`/i);
+  assert.match(skill, /save-session/);
+  assert.doesNotMatch(skill, /Save flow:/);
+  // Full guide at .agents/engram.md holds the protocol once
   const guide = await readFile(path.join(cwd, '.agents/engram.md'), 'utf8');
   assert.match(guide, /Save flow:/);
   assert.match(guide, /Rule memories:/);
+  assert.match(guide, /Never use `--force`/i);
+  assert.match(guide, /Default agent mode: compact/);
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -932,9 +1120,9 @@ test('codex alias keeps SKILL.md plus minimal AGENTS.md and guide', async () => 
   assert.match(guide, /Generated by Engram skillset installer/);
 
   const skill = await readFile(path.join(cwd, '.agents/skills/engram/SKILL.md'), 'utf8');
-  // SKILL.md is a proper agent skill with frontmatter
+  // SKILL.md is a proper agent skill with frontmatter, pointing at the guide
   assert.match(skill, /name: engram/);
-  assert.match(skill, /Default agent mode: compact/);
+  assert.match(skill, /Full protocol: `\.agents\/engram\.md`/);
 
   assert.match(await readFile(path.join(cwd, '.mcp.json'), 'utf8'), /engram-mcp/);
   await rm(cwd, { recursive: true, force: true });
@@ -1072,7 +1260,7 @@ test('workspace refresh updates only engram server in user cursor mcp.json', asy
 
   const updated = JSON.parse(await readFile(mcpPath, 'utf8'));
   assert.ok(updated.mcpServers?.other, 'other MCP servers should be preserved');
-  assert.deepEqual(updated.mcpServers.engram.args, ['-y', '--package', '@the-long-ride/engram', 'engram-mcp']);
+  assert.deepEqual(updated.mcpServers.engram.args, ['-y', '--package', PINNED_PACKAGE, 'engram-mcp']);
   assert.equal(updated.mcpServers.engram.env, undefined);
   await rm(cwd, { recursive: true, force: true });
 });
@@ -1461,7 +1649,7 @@ test('cursor global link MCP config has type stdio', async () => {
   const mcp = JSON.parse(await readFile(path.join(pluginDir, 'mcp.json'), 'utf8'));
   assert.equal(mcp.mcpServers.engram.type, 'stdio');
   assert.equal(mcp.mcpServers.engram.command, 'npx');
-  assert.deepEqual(mcp.mcpServers.engram.args, ['-y', '--package', '@the-long-ride/engram', 'engram-mcp']);
+  assert.deepEqual(mcp.mcpServers.engram.args, ['-y', '--package', PINNED_PACKAGE, 'engram-mcp']);
 
   await rm(cwd, { recursive: true, force: true });
 });
@@ -1475,7 +1663,7 @@ test('windsurf global MCP config has type stdio and correct command', async () =
   const mcp = JSON.parse(await readFile(path.join(agentHome, '.codeium', 'windsurf', 'mcp_config.json'), 'utf8'));
   assert.equal(mcp.mcpServers.engram.type, 'stdio');
   assert.equal(mcp.mcpServers.engram.command, 'npx');
-  assert.deepEqual(mcp.mcpServers.engram.args, ['-y', '--package', '@the-long-ride/engram', 'engram-mcp']);
+  assert.deepEqual(mcp.mcpServers.engram.args, ['-y', '--package', PINNED_PACKAGE, 'engram-mcp']);
 
   await rm(cwd, { recursive: true, force: true });
 });
@@ -1548,7 +1736,7 @@ test('cursor hooks.json command uses --host cursor', async () => {
   assert.ok(engramEntry, 'should find engram entry');
   assert.match(engramEntry.command, /engram agent-hook --host cursor/);
   assert.equal(engramEntry.type, 'command');
-  assert.equal(engramEntry.timeout, 10000);
+  assert.equal(engramEntry.timeout, 10, 'Cursor reads the hook timeout in seconds');
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -1999,6 +2187,723 @@ test('global Codex instruction preview uses the same minimal block renderer as i
     process.chdir(previous.cwd);
     if (previous.configDir === undefined) delete process.env.ENGRAM_CONFIG_DIR; else process.env.ENGRAM_CONFIG_DIR = previous.configDir;
     if (previous.agentHome === undefined) delete process.env.ENGRAM_AGENT_HOME; else process.env.ENGRAM_AGENT_HOME = previous.agentHome;
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('engram link claude registers InstructionsLoaded and codex PreToolUse, both with PreCompact and SubagentStart hooks', async () => {
+  const { cwd, env } = await tempWorkspace('engram-skillset-pretool-');
+  try {
+    for (const [host, file] of [['claude', path.join('.claude', 'settings.json')], ['codex', path.join('.codex', 'hooks.json')]]) {
+      const linked = await runEngram(cwd, env, ['link', host]);
+      assert.equal(linked.code, 0, linked.stderr);
+      const { hooks } = JSON.parse(await readFile(path.join(cwd, file), 'utf8'));
+      const managed = (event) => (hooks[event] ?? []).filter((group) => group.hooks.some((hook) => hook.name === 'engram-auto-load'));
+      if (host === 'claude') {
+        // E13: native path rules replace Claude's PreToolUse with InstructionsLoaded.
+        assert.deepEqual(managed('InstructionsLoaded').map((group) => group.matcher), ['path_glob_match'], host);
+        assert.equal(managed('PreToolUse').length, 0, host);
+      } else {
+        assert.deepEqual(managed('PreToolUse').map((group) => group.matcher), ['Read|Edit|Write|MultiEdit'], host);
+        assert.equal(managed('InstructionsLoaded').length, 0, host);
+      }
+      assert.equal(managed('PreCompact').length, 1, host);
+      assert.equal(managed('PreCompact')[0].hooks[0].command, `engram agent-hook --host ${host}`);
+      assert.equal(managed('UserPromptSubmit').length, 1, host);
+      assert.equal(managed('SubagentStart').length, 1, host);
+      assert.equal(managed('SubagentStart')[0].matcher, '*');
+    }
+  } finally {
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('claude and codex hooks use a timeout in seconds', async () => {
+  const { cwd, env } = await tempWorkspace('engram-skillset-hook-timeout-');
+  try {
+    for (const [host, file] of [['claude', path.join('.claude', 'settings.json')], ['codex', path.join('.codex', 'hooks.json')]]) {
+      assert.equal((await runEngram(cwd, env, ['link', host])).code, 0);
+      const { hooks } = JSON.parse(await readFile(path.join(cwd, file), 'utf8'));
+      const timeouts = Object.values(hooks).flat().flatMap((group) => group.hooks).filter((hook) => hook.name === 'engram-auto-load').map((hook) => hook.timeout);
+      assert.ok(timeouts.length >= 4 && timeouts.every((value) => value === 10), `${host}: ${timeouts}`);
+    }
+  } finally {
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+// B5: each host reads MCP config from a different place (Claude project .mcp.json, Gemini settings.json, Codex config.toml).
+const NPX_MCP = { command: 'npx', args: ['-y', '--package', PINNED_PACKAGE, 'engram-mcp'] };
+
+async function globalMcpEnv(prefix) {
+  const { cwd, env } = await tempWorkspace(prefix);
+  const agentHome = path.join(cwd, 'agent-home');
+  return { cwd, agentHome, env: { ...env, ENGRAM_AGENT_HOME: agentHome, ENGRAM_AGENT_CONFIG_HOME: path.join(cwd, 'agent-config') } };
+}
+
+async function envWithEngramMcp(cwd, env) {
+  const bin = await makeEngramMcpBin(cwd);
+  return withPath(env, `${bin}${path.delimiter}${pathWithoutEngramMcp()}`);
+}
+
+test('MCP command is engram-mcp when it resolves on PATH, otherwise npx (PATH and platform are injectable)', async () => {
+  const { cwd } = await tempWorkspace('engram-mcp-command-');
+  try {
+    const bin = await makeEngramMcpBin(cwd);
+    const platform = process.platform;
+    assert.deepEqual(resolveMcpCommand({ pathEnv: bin, platform }), { command: 'engram-mcp', args: [] });
+    assert.deepEqual(resolveMcpCommand({ pathEnv: `${path.join(cwd, 'nowhere')}${path.delimiter}${bin}`, platform }), { command: 'engram-mcp', args: [] });
+    assert.deepEqual(resolveMcpCommand({ pathEnv: path.join(cwd, 'nowhere'), platform }), NPX_MCP);
+    assert.deepEqual(resolveMcpCommand({ pathEnv: '', platform }), NPX_MCP);
+    assert.equal(mcpCommandLine({ pathEnv: '', platform }), `npx -y --package ${PINNED_PACKAGE} engram-mcp`);
+  } finally {
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('resolveMcpCommand appends --always-load only when asked, for both launchers', async () => {
+  const { cwd } = await tempWorkspace('engram-mcp-always-load-');
+  try {
+    const bin = await makeEngramMcpBin(cwd);
+    assert.equal(resolveMcpCommand({ pathEnv: '', alwaysLoad: true }).args.at(-1), '--always-load');
+    assert.deepEqual(resolveMcpCommand({ pathEnv: '', alwaysLoad: true }).args, [...NPX_MCP.args, '--always-load']);
+    assert.deepEqual(resolveMcpCommand({ pathEnv: bin, platform: process.platform, alwaysLoad: true }), { command: 'engram-mcp', args: ['--always-load'] });
+    assert.deepEqual(resolveMcpCommand({ pathEnv: '', alwaysLoad: false }), NPX_MCP);
+    assert.equal(mcpCommandLine({ pathEnv: '', alwaysLoad: true }), `npx -y --package ${PINNED_PACKAGE} engram-mcp --always-load`);
+    // Codex has no alwaysLoad: its managed block never carries the flag.
+    assert.doesNotMatch(renderCodexMcpBlock({ pathEnv: '', alwaysLoad: true }), /always-load/);
+  } finally {
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('workspace link mcp without Claude hooks launches engram-mcp --always-load', async () => {
+  const { cwd, env } = await tempWorkspace('engram-t7-link-mcp-');
+  try {
+    const linked = await runEngram(cwd, env, ['link', 'mcp']);
+    assert.equal(linked.code, 0, linked.stderr);
+    const config = JSON.parse(await readFile(path.join(cwd, '.mcp.json'), 'utf8'));
+    assert.deepEqual(config.mcpServers.engram.args, ['-y', '--package', PINNED_PACKAGE, 'engram-mcp', '--always-load']);
+  } finally {
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('workspace link claude keeps args without --always-load', async () => {
+  const { cwd, env } = await tempWorkspace('engram-t7-link-claude-');
+  try {
+    const linked = await runEngram(cwd, env, ['link', 'claude']);
+    assert.equal(linked.code, 0, linked.stderr);
+    const config = JSON.parse(await readFile(path.join(cwd, '.mcp.json'), 'utf8'));
+    assert.deepEqual(config.mcpServers.engram.args, NPX_MCP.args);
+  } finally {
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('cursor and gemini MCP configs never get --always-load', async () => {
+  const { cwd, env } = await tempWorkspace('engram-t7-cursor-gemini-');
+  try {
+    assert.equal((await runEngram(cwd, env, ['link', 'cursor'])).code, 0);
+    assert.equal((await runEngram(cwd, env, ['link', 'gemini'])).code, 0);
+    const cursor = JSON.parse(await readFile(path.join(cwd, '.cursor', 'mcp.json'), 'utf8'));
+    assert.deepEqual(cursor.mcpServers.engram.args, NPX_MCP.args);
+    const gemini = JSON.parse(await readFile(path.join(cwd, '.gemini', 'settings.json'), 'utf8'));
+    assert.deepEqual(gemini.mcpServers.engram.args, NPX_MCP.args);
+  } finally {
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('global Claude MCP hint carries --always-load only without Engram Claude hooks', async () => {
+  const { cwd, env } = await globalMcpEnv('engram-t7-claude-hint-');
+  try {
+    const hookless = await runEngram(cwd, env, ['link', '--global', 'mcp']);
+    assert.equal(hookless.code, 0, hookless.stderr);
+    assert.ok(hookless.stdout.includes(`claude mcp add --scope user engram -- npx -y --package ${PINNED_PACKAGE} engram-mcp --always-load`), hookless.stdout);
+    const hooked = await runEngram(cwd, env, ['link', '--global', 'claude']);
+    assert.equal(hooked.code, 0, hooked.stderr);
+    assert.ok(hooked.stdout.includes(`claude mcp add --scope user engram -- npx -y --package ${PINNED_PACKAGE} engram-mcp`), hooked.stdout);
+    assert.doesNotMatch(hooked.stdout, /claude mcp add[^\n]*--always-load/);
+  } finally {
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('workspace link claude writes .mcp.json mcpServers.engram and keeps other servers', async () => {
+  const { cwd, env } = await tempWorkspace('engram-b5-claude-ws-');
+  try {
+    await writeFile(path.join(cwd, '.mcp.json'), `${JSON.stringify({ mcpServers: { other: { command: 'other-bin' } } }, null, 2)}\n`);
+    const linked = await runEngram(cwd, env, ['link', 'claude']);
+    assert.equal(linked.code, 0, linked.stderr);
+    const config = JSON.parse(await readFile(path.join(cwd, '.mcp.json'), 'utf8'));
+    assert.deepEqual(config.mcpServers.other, { command: 'other-bin' });
+    assert.deepEqual(config.mcpServers.engram, NPX_MCP);
+    await assert.rejects(readFile(path.join(cwd, '.claude', 'mcp.json'), 'utf8'));
+    const unlinked = await runEngram(cwd, env, ['unlink', 'claude']);
+    assert.equal(unlinked.code, 0, unlinked.stderr);
+    assert.deepEqual(JSON.parse(await readFile(path.join(cwd, '.mcp.json'), 'utf8')), { mcpServers: { other: { command: 'other-bin' } } });
+  } finally {
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('workspace link claude uses engram-mcp when it is on PATH and removes the file it created on unlink', async () => {
+  const { cwd, env } = await tempWorkspace('engram-b5-claude-path-');
+  try {
+    const pathEnv = await envWithEngramMcp(cwd, env);
+    assert.equal((await runEngram(cwd, pathEnv, ['link', 'claude'])).code, 0);
+    assert.deepEqual(JSON.parse(await readFile(path.join(cwd, '.mcp.json'), 'utf8')), { mcpServers: { engram: { command: 'engram-mcp', args: [] } } });
+    assert.equal((await runEngram(cwd, pathEnv, ['unlink', 'claude'])).code, 0);
+    await assert.rejects(readFile(path.join(cwd, '.mcp.json'), 'utf8'));
+  } finally {
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('workspace link gemini merges mcpServers.engram into .gemini/settings.json, not .mcp.json', async () => {
+  const { cwd, env } = await tempWorkspace('engram-b5-gemini-ws-');
+  try {
+    await mkdir(path.join(cwd, '.gemini'), { recursive: true });
+    await writeFile(path.join(cwd, '.gemini', 'settings.json'), `${JSON.stringify({ theme: 'dark', mcpServers: { other: { command: 'other-bin' } } }, null, 2)}\n`);
+    const linked = await runEngram(cwd, env, ['link', 'gemini']);
+    assert.equal(linked.code, 0, linked.stderr);
+    const settings = JSON.parse(await readFile(path.join(cwd, '.gemini', 'settings.json'), 'utf8'));
+    assert.equal(settings.theme, 'dark');
+    assert.deepEqual(settings.mcpServers.other, { command: 'other-bin' });
+    assert.deepEqual(settings.mcpServers.engram, NPX_MCP);
+    await assert.rejects(readFile(path.join(cwd, '.mcp.json'), 'utf8'), 'gemini does not read .mcp.json');
+    assert.equal((await runEngram(cwd, env, ['unlink', 'gemini'])).code, 0);
+    assert.deepEqual(JSON.parse(await readFile(path.join(cwd, '.gemini', 'settings.json'), 'utf8')), { theme: 'dark', mcpServers: { other: { command: 'other-bin' } } });
+  } finally {
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('global link gemini merges mcpServers.engram into ~/.gemini/settings.json and keeps other keys', async () => {
+  const { cwd, agentHome, env } = await globalMcpEnv('engram-b5-gemini-global-');
+  try {
+    const settingsFile = path.join(agentHome, '.gemini', 'settings.json');
+    await mkdir(path.dirname(settingsFile), { recursive: true });
+    await writeFile(settingsFile, `${JSON.stringify({ theme: 'dark', mcpServers: { other: { command: 'other-bin' } } }, null, 2)}\n`);
+    const linked = await runEngram(cwd, env, ['link', '--global', 'gemini']);
+    assert.equal(linked.code, 0, linked.stderr);
+    const settings = JSON.parse(await readFile(settingsFile, 'utf8'));
+    assert.equal(settings.theme, 'dark');
+    assert.deepEqual(settings.mcpServers.other, { command: 'other-bin' });
+    assert.deepEqual(settings.mcpServers.engram, NPX_MCP);
+    const again = await runEngram(cwd, env, ['link', '--global', 'gemini']);
+    assert.equal(again.code, 0, again.stderr);
+    assert.deepEqual(JSON.parse(await readFile(settingsFile, 'utf8')).mcpServers, settings.mcpServers, 're-link is idempotent');
+    const unlinked = await runEngram(cwd, env, ['unlink', '--global', 'gemini']);
+    assert.equal(unlinked.code, 0, unlinked.stderr);
+    const after = JSON.parse(await readFile(settingsFile, 'utf8'));
+    assert.equal(after.theme, 'dark');
+    assert.deepEqual(after.mcpServers, { other: { command: 'other-bin' } });
+  } finally {
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('global gemini unlink never deletes a shared settings.json that holds no Engram entry, even with --force', async () => {
+  const { cwd, agentHome, env } = await globalMcpEnv('engram-b5-gemini-created-');
+  try {
+    const settingsFile = path.join(agentHome, '.gemini', 'settings.json');
+    assert.equal((await runEngram(cwd, env, ['link', '--global', 'gemini'])).code, 0);
+    assert.ok(JSON.parse(await readFile(settingsFile, 'utf8')).mcpServers.engram);
+    await writeFile(settingsFile, `${JSON.stringify({ theme: 'dark' })}\n`);
+    assert.equal((await runEngram(cwd, env, ['unlink', '--global', 'gemini', '--force'])).code, 0);
+    assert.deepEqual(JSON.parse(await readFile(settingsFile, 'utf8')), { theme: 'dark' });
+  } finally {
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('global link codex writes a managed [mcp_servers.engram] block in ~/.codex/config.toml, idempotently', async () => {
+  const { cwd, agentHome, env } = await globalMcpEnv('engram-b5-codex-global-');
+  try {
+    const tomlFile = path.join(agentHome, '.codex', 'config.toml');
+    const human = 'model = "gpt-5"\n\n[mcp_servers.other]\ncommand = "other-bin"\nargs = ["--flag"]\n';
+    await mkdir(path.dirname(tomlFile), { recursive: true });
+    await writeFile(tomlFile, human);
+    const linked = await runEngram(cwd, env, ['link', '--global', 'codex']);
+    assert.equal(linked.code, 0, linked.stderr);
+    const first = await readFile(tomlFile, 'utf8');
+    assert.ok(first.startsWith(human), 'user content stays untouched');
+    assert.ok(first.includes(`# BEGIN ENGRAM MANAGED MCP
+[mcp_servers.engram]
+command = "npx"
+args = ["-y", "--package", "${PINNED_PACKAGE}", "engram-mcp"]
+[mcp_servers.engram.tools.engram_commit]
+approval_mode = "approve"
+# END ENGRAM MANAGED MCP
+`), first);
+    assert.equal((first.match(/\[mcp_servers\.engram\]/g) ?? []).length, 1);
+    const again = await runEngram(cwd, env, ['link', '--global', 'codex']);
+    assert.equal(again.code, 0, again.stderr);
+    assert.equal(await readFile(tomlFile, 'utf8'), first, 're-link is idempotent');
+    const unlinked = await runEngram(cwd, env, ['unlink', '--global', 'codex']);
+    assert.equal(unlinked.code, 0, unlinked.stderr);
+    assert.equal(await readFile(tomlFile, 'utf8'), human, 'unlink removes only the managed block');
+  } finally {
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('global codex link creates config.toml when absent, removes it on unlink, and leaves a user-owned engram table alone', async () => {
+  const { cwd, agentHome, env } = await globalMcpEnv('engram-b5-codex-created-');
+  try {
+    const tomlFile = path.join(agentHome, '.codex', 'config.toml');
+    const pathEnv = await envWithEngramMcp(cwd, env);
+    assert.equal((await runEngram(cwd, pathEnv, ['link', '--global', 'codex'])).code, 0);
+    assert.equal(await readFile(tomlFile, 'utf8'), '# BEGIN ENGRAM MANAGED MCP\n[mcp_servers.engram]\ncommand = "engram-mcp"\nargs = []\n[mcp_servers.engram.tools.engram_commit]\napproval_mode = "approve"\n# END ENGRAM MANAGED MCP\n');
+    assert.equal((await runEngram(cwd, pathEnv, ['unlink', '--global', 'codex'])).code, 0);
+    await assert.rejects(readFile(tomlFile, 'utf8'));
+
+    const owned = '[mcp_servers.engram]\ncommand = "my-own"\n';
+    await writeFile(tomlFile, owned);
+    const skipped = await runEngram(cwd, env, ['link', '--global', 'codex']);
+    assert.equal(skipped.code, 0, skipped.stderr);
+    assert.match(skipped.stdout, /SKIPPED codex: .*config\.toml/);
+    assert.equal(await readFile(tomlFile, 'utf8'), owned, 'a user-owned [mcp_servers.engram] is never duplicated');
+  } finally {
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('global link claude prints the `claude mcp add --scope user` hint instead of writing ~/.claude/mcp.json', async () => {
+  const { cwd, agentHome, env } = await globalMcpEnv('engram-b5-claude-global-');
+  try {
+    const linked = await runEngram(cwd, await envWithEngramMcp(cwd, env), ['link', '--global', 'claude']);
+    assert.equal(linked.code, 0, linked.stderr);
+    assert.match(linked.stdout, /claude mcp add --scope user engram -- engram-mcp/);
+    await assert.rejects(readFile(path.join(agentHome, '.claude', 'mcp.json'), 'utf8'));
+    const npx = await runEngram(cwd, env, ['link', '--global', 'claude']);
+    assert.ok(npx.stdout.includes(`claude mcp add --scope user engram -- npx -y --package ${PINNED_PACKAGE} engram-mcp`), npx.stdout);
+  } finally {
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('global codex link refuses every user-owned spelling of mcp_servers.engram instead of writing duplicate-key TOML', async () => {
+  const { cwd, agentHome, env } = await globalMcpEnv('engram-b5-codex-spellings-');
+  try {
+    const tomlFile = path.join(agentHome, '.codex', 'config.toml');
+    await mkdir(path.dirname(tomlFile), { recursive: true });
+    const spellings = {
+      'bare table': '[mcp_servers.engram]\ncommand = "mine"\n',
+      'quoted table': '[mcp_servers."engram"]\ncommand = "mine"\n',
+      'literal-quoted table': "[mcp_servers.'engram']\ncommand = \"mine\"\n",
+      'spaced table': '[ mcp_servers . engram ]\ncommand = "mine"\n',
+      'sub-table': 'model = "x"\n\n[mcp_servers.engram.env]\nK = "v"\n',
+      'key under [mcp_servers]': '[mcp_servers]\nengram = { command = "mine" }\n',
+      'quoted key under [mcp_servers]': '[mcp_servers]\n"engram" = { command = "mine" }\n',
+      'dotted key at top level': 'mcp_servers.engram.command = "mine"\n',
+      'dotted key under [mcp_servers]': '[mcp_servers]\nengram.command = "mine"\n',
+      'inline mcp_servers': 'mcp_servers = { engram = { command = "mine" } }\n'
+    };
+    for (const [name, content] of Object.entries(spellings)) {
+      await writeFile(tomlFile, content);
+      const result = await runEngram(cwd, env, ['link', '--global', 'codex']);
+      assert.equal(result.code, 0, `${name}: ${result.stderr}`);
+      assert.match(result.stdout, /SKIPPED codex: .*config\.toml/, name);
+      assert.equal(await readFile(tomlFile, 'utf8'), content, `${name}: file must be left untouched`);
+    }
+    const lookalike = '[mcp_servers.engramx]\ncommand = "other"\n';
+    await writeFile(tomlFile, lookalike);
+    assert.equal((await runEngram(cwd, env, ['link', '--global', 'codex'])).code, 0);
+    assert.match(await readFile(tomlFile, 'utf8'), /^\[mcp_servers\.engramx\]\ncommand = "other"\n\n# BEGIN ENGRAM MANAGED MCP\n/, 'a different server name does not block the link');
+  } finally {
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('unparseable MCP JSON is left untouched and reported as unparseable, not as already present', async () => {
+  const { cwd, agentHome, env } = await globalMcpEnv('engram-b5-unparseable-');
+  try {
+    const broken = '{ "mcpServers": { ';
+    await writeFile(path.join(cwd, '.mcp.json'), broken);
+    const workspace = await runEngram(cwd, env, ['link', 'claude']);
+    assert.equal(workspace.code, 0, workspace.stderr);
+    assert.match(workspace.stdout, /SKIPPED claude: \.mcp\.json\s+Reason: could not parse existing file; left untouched/);
+    assert.equal(await readFile(path.join(cwd, '.mcp.json'), 'utf8'), broken);
+
+    // `mcp` has no hook installer, so the shared Gemini settings.json is only touched by the MCP merge.
+    const settingsFile = path.join(agentHome, '.gemini', 'settings.json');
+    await mkdir(path.dirname(settingsFile), { recursive: true });
+    await writeFile(settingsFile, broken);
+    const global = await runEngram(cwd, env, ['link', '--global', 'mcp']);
+    assert.equal(global.code, 0, global.stderr);
+    assert.match(global.stdout.replace(/\s+/g, ' '), /SKIPPED mcp: \S*settings\.json Mode: file Reason: could not parse existing file; left untouched/);
+    assert.doesNotMatch(global.stdout, /already present/);
+    assert.equal(await readFile(settingsFile, 'utf8'), broken);
+  } finally {
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('upgrade refresh re-pins an unpinned npx launcher in .mcp.json, .gemini/settings.json, and the Codex managed block', async () => {
+  const { cwd, agentHome, env } = await globalMcpEnv('engram-mcp-pin-refresh-');
+  try {
+    const unpinned = { command: 'npx', args: ['-y', '--package', '@the-long-ride/engram', 'engram-mcp'] };
+    await writeFile(path.join(cwd, '.mcp.json'), `${JSON.stringify({ mcpServers: { engram: unpinned, other: { command: 'other-bin' } } }, null, 2)}\n`);
+    await mkdir(path.join(cwd, '.gemini'), { recursive: true });
+    await writeFile(path.join(cwd, '.gemini', 'settings.json'), `${JSON.stringify({ theme: 'dark', mcpServers: { engram: unpinned } }, null, 2)}\n`);
+    const { refreshGeneratedWorkspaceSkillsets } = await import('../dist/core/integrations/skillset.js');
+    const refreshed = await refreshGeneratedWorkspaceSkillsets(cwd);
+    assert.ok(refreshed.some((item) => item.file === '.gemini/settings.json'), JSON.stringify(refreshed));
+    const claude = JSON.parse(await readFile(path.join(cwd, '.mcp.json'), 'utf8'));
+    // No Engram Claude hook is installed here, so a refresh adds the E5 always-load flag to the Claude-read file only.
+    assert.deepEqual(claude.mcpServers.engram.args, [...NPX_MCP.args, '--always-load']);
+    assert.ok(claude.mcpServers.other);
+    const gemini = JSON.parse(await readFile(path.join(cwd, '.gemini', 'settings.json'), 'utf8'));
+    assert.deepEqual(gemini.mcpServers.engram.args, NPX_MCP.args);
+    assert.equal(gemini.theme, 'dark');
+
+    const tomlFile = path.join(agentHome, '.codex', 'config.toml');
+    await mkdir(path.dirname(tomlFile), { recursive: true });
+    await writeFile(tomlFile, 'model = "gpt-5"\n\n# BEGIN ENGRAM MANAGED MCP\n[mcp_servers.engram]\ncommand = "npx"\nargs = ["-y", "--package", "@the-long-ride/engram", "engram-mcp"]\n# END ENGRAM MANAGED MCP\n');
+    const linked = await runEngram(cwd, env, ['link', '--global', 'codex']);
+    assert.equal(linked.code, 0, linked.stderr);
+    const toml = await readFile(tomlFile, 'utf8');
+    assert.ok(toml.includes(`"${PINNED_PACKAGE}"`), toml);
+    assert.equal((toml.match(/\[mcp_servers\.engram\]/g) ?? []).length, 1);
+  } finally {
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+// Task 12 (E10): AGENTS.md-first bootstrap for Claude.
+
+const AGENTS_BLOCK_START = /<!-- engram:start -->/g;
+
+function blockCount(text) {
+  return (text.match(AGENTS_BLOCK_START) ?? []).length;
+}
+
+test('link claude in a repo without CLAUDE.md writes AGENTS.md and creates no CLAUDE.md', async () => {
+  const { cwd, env } = await tempWorkspace('engram-t12-no-claude-md-');
+  try {
+    const linked = await runEngram(cwd, env, ['link', 'claude']);
+    assert.equal(linked.code, 0, linked.stderr);
+    const agents = await readFile(path.join(cwd, 'AGENTS.md'), 'utf8');
+    assert.match(agents, /<!-- engram:start -->/);
+    assert.match(agents, /Full guide: `\.agents\/engram\.md`/);
+    await assert.rejects(readFile(path.join(cwd, 'CLAUDE.md'), 'utf8'));
+    await assert.rejects(readFile(path.join(cwd, '.claude', 'CLAUDE.md'), 'utf8'));
+    assert.match(await readFile(path.join(cwd, '.claude', 'engram.md'), 'utf8'), /Save flow:/);
+    assert.match(await readFile(path.join(cwd, '.agents', 'engram.md'), 'utf8'), /Save flow:/);
+  } finally {
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('link claude in a repo with CLAUDE.md writes the block to both files', async () => {
+  const { cwd, env } = await tempWorkspace('engram-t12-both-');
+  try {
+    await writeFile(path.join(cwd, 'CLAUDE.md'), '# Team\n');
+    const linked = await runEngram(cwd, env, ['link', 'claude']);
+    assert.equal(linked.code, 0, linked.stderr);
+    const agents = await readFile(path.join(cwd, 'AGENTS.md'), 'utf8');
+    const claude = await readFile(path.join(cwd, 'CLAUDE.md'), 'utf8');
+    assert.equal(blockCount(agents), 1);
+    assert.equal(blockCount(claude), 1);
+    assert.match(claude, /# Team/);
+    assert.match(claude, /Full guide: `\.claude\/engram\.md`/);
+    assert.match(agents, /Full guide: `\.agents\/engram\.md`/);
+    assert.match(linked.stdout, /CLAUDE\.md block kept/);
+    const relinked = await runEngram(cwd, env, ['link', 'claude']);
+    assert.equal(relinked.code, 0, relinked.stderr);
+    assert.equal(blockCount(await readFile(path.join(cwd, 'CLAUDE.md'), 'utf8')), 1, 'relinking never duplicates the block');
+    assert.equal(blockCount(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8')), 1);
+  } finally {
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('link claude refreshes a block in .claude/CLAUDE.md and leaves the root CLAUDE.md absent', async () => {
+  const { cwd, env } = await tempWorkspace('engram-t12-dot-claude-md-');
+  try {
+    await mkdir(path.join(cwd, '.claude'), { recursive: true });
+    await writeFile(path.join(cwd, '.claude', 'CLAUDE.md'), '# Dot team\n');
+    const linked = await runEngram(cwd, env, ['link', 'claude']);
+    assert.equal(linked.code, 0, linked.stderr);
+    const dotClaude = await readFile(path.join(cwd, '.claude', 'CLAUDE.md'), 'utf8');
+    assert.equal(blockCount(dotClaude), 1);
+    assert.match(dotClaude, /# Dot team/);
+    await assert.rejects(readFile(path.join(cwd, 'CLAUDE.md'), 'utf8'));
+    assert.equal(blockCount(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8')), 1);
+  } finally {
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('link claude skips a CLAUDE.md that imports AGENTS.md', async () => {
+  const { cwd, env } = await tempWorkspace('engram-t12-import-');
+  try {
+    await writeFile(path.join(cwd, 'CLAUDE.md'), '@AGENTS.md\n');
+    const linked = await runEngram(cwd, env, ['link', 'claude']);
+    assert.equal(linked.code, 0, linked.stderr);
+    assert.equal(await readFile(path.join(cwd, 'CLAUDE.md'), 'utf8'), '@AGENTS.md\n');
+    assert.match(linked.stdout, /imports AGENTS\.md/);
+    assert.equal(blockCount(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8')), 1);
+  } finally {
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('link claude hints when only CLAUDE.local.md exists', async () => {
+  const { cwd, env } = await tempWorkspace('engram-t12-local-');
+  try {
+    await writeFile(path.join(cwd, 'CLAUDE.local.md'), '# My notes\n');
+    const linked = await runEngram(cwd, env, ['link', 'claude']);
+    assert.equal(linked.code, 0, linked.stderr);
+    assert.equal(await readFile(path.join(cwd, 'CLAUDE.local.md'), 'utf8'), '# My notes\n');
+    assert.match(linked.stdout, /CLAUDE\.local\.md present/);
+    assert.match(linked.stdout, /@AGENTS\.md/);
+    await assert.rejects(readFile(path.join(cwd, 'CLAUDE.md'), 'utf8'));
+  } finally {
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('link claude hints when a CLAUDE.md in a parent directory up to the git root hides AGENTS.md', async () => {
+  const { cwd: root, env } = await tempWorkspace('engram-t12-ancestor-');
+  try {
+    initGit(root);
+    await writeFile(path.join(root, 'CLAUDE.md'), '# Monorepo team\n');
+    const pkg = path.join(root, 'packages', 'app');
+    await mkdir(pkg, { recursive: true });
+    const linked = await runEngram(pkg, env, ['link', 'claude']);
+    assert.equal(linked.code, 0, linked.stderr);
+    assert.match(linked.stdout, /CLAUDE\.md present in a parent directory/);
+    assert.equal(await readFile(path.join(root, 'CLAUDE.md'), 'utf8'), '# Monorepo team\n');
+    assert.equal(blockCount(await readFile(path.join(pkg, 'AGENTS.md'), 'utf8')), 1);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test('link codex then link claude leaves one identical AGENTS.md block and upgrade --plan reports no conflict', async () => {
+  const { cwd, env: baseEnv } = await tempWorkspace('engram-t12-codex-claude-');
+  const env = { ...baseEnv, ENGRAM_AGENT_HOME: path.join(cwd, 'agent-home') };
+  try {
+    assert.equal((await runEngram(cwd, env, ['inject', '--no-skillset'])).code, 0);
+    assert.equal((await runEngram(cwd, env, ['link', 'codex'])).code, 0);
+    const afterCodex = await readFile(path.join(cwd, 'AGENTS.md'), 'utf8');
+    assert.equal((await runEngram(cwd, env, ['link', 'claude'])).code, 0);
+    const agents = await readFile(path.join(cwd, 'AGENTS.md'), 'utf8');
+    assert.equal(blockCount(agents), 1);
+    assert.equal(agents, afterCodex, 'claude writes the byte-identical block codex wrote');
+    const plan = await runEngram(cwd, env, ['upgrade', '--latest', '--plan', '--json', '--no-version-check']);
+    assert.equal(plan.code, 0, plan.stderr);
+    const items = JSON.parse(plan.stdout).items;
+    const agentsItems = items.filter((item) => path.basename(item.file) === 'AGENTS.md');
+    assert.ok(agentsItems.length >= 1, 'AGENTS.md is inventoried');
+    assert.ok(agentsItems.every((item) => item.status !== 'conflict'), JSON.stringify(agentsItems));
+    assert.ok(!items.some((item) => path.basename(item.file) === 'CLAUDE.md'), 'upgrade never plans a CLAUDE.md');
+    assert.ok(!items.some((item) => item.status === 'conflict'), JSON.stringify(items.filter((item) => item.status === 'conflict')));
+  } finally {
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('upgrade keeps an existing CLAUDE.md block and reports it', async () => {
+  const { cwd, env: baseEnv } = await tempWorkspace('engram-t12-legacy-claude-');
+  const env = { ...baseEnv, ENGRAM_AGENT_HOME: path.join(cwd, 'agent-home') };
+  try {
+    assert.equal((await runEngram(cwd, env, ['inject', '--no-skillset'])).code, 0);
+    await writeFile(path.join(cwd, 'CLAUDE.md'), '# Team\n');
+    assert.equal((await runEngram(cwd, env, ['link', 'claude'])).code, 0);
+    // Recreate an install made by the old `link claude`: CLAUDE.md block, Claude guide, no AGENTS.md.
+    await rm(path.join(cwd, 'AGENTS.md'), { force: true });
+    await rm(path.join(cwd, '.agents', 'engram.md'), { force: true });
+    const upgraded = await runEngram(cwd, env, ['upgrade', '--latest', '--yes', '--no-version-check']);
+    assert.equal(upgraded.code, 0, upgraded.stderr);
+    assert.match(upgraded.stdout.replace(/\s+/g, ' '), /CLAUDE\.md block kept/, 'the upgrade output wraps long lines');
+    assert.equal(blockCount(await readFile(path.join(cwd, 'CLAUDE.md'), 'utf8')), 1);
+    assert.match(await readFile(path.join(cwd, 'CLAUDE.md'), 'utf8'), /# Team/);
+    assert.equal(blockCount(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8')), 1);
+  } finally {
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('plain upgrade keeps the AGENTS.md guide pointer of a linked codex install', async () => {
+  const { cwd, env: baseEnv } = await tempWorkspace('engram-t12-refresh-pointer-');
+  const env = { ...baseEnv, ENGRAM_AGENT_HOME: path.join(cwd, 'agent-home') };
+  try {
+    assert.equal((await runEngram(cwd, env, ['inject', '--no-skillset'])).code, 0);
+    assert.equal((await runEngram(cwd, env, ['link', 'claude'])).code, 0);
+    const before = await readFile(path.join(cwd, 'AGENTS.md'), 'utf8');
+    const upgraded = await runEngram(cwd, env, ['upgrade', '--no-version-check']);
+    assert.equal(upgraded.code, 0, upgraded.stderr);
+    assert.equal(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), before, 'a refresh must not repoint the shared block at the OpenCode guide');
+    await assert.rejects(readFile(path.join(cwd, '.opencode', 'engram.md'), 'utf8'));
+  } finally {
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('unlink claude removes its AGENTS.md block and guides, but keeps AGENTS.md while codex is linked', async () => {
+  const solo = await tempWorkspace('engram-t12-unlink-solo-');
+  try {
+    assert.equal((await runEngram(solo.cwd, solo.env, ['link', 'claude'])).code, 0);
+    const unlinked = await runEngram(solo.cwd, solo.env, ['unlink', 'claude']);
+    assert.equal(unlinked.code, 0, unlinked.stderr);
+    await assert.rejects(readFile(path.join(solo.cwd, 'AGENTS.md'), 'utf8'));
+    await assert.rejects(readFile(path.join(solo.cwd, '.agents', 'engram.md'), 'utf8'));
+    await assert.rejects(readFile(path.join(solo.cwd, '.claude', 'engram.md'), 'utf8'));
+  } finally {
+    await rm(solo.cwd, { recursive: true, force: true });
+  }
+  const shared = await tempWorkspace('engram-t12-unlink-shared-');
+  try {
+    assert.equal((await runEngram(shared.cwd, shared.env, ['link', 'codex'])).code, 0);
+    assert.equal((await runEngram(shared.cwd, shared.env, ['link', 'claude'])).code, 0);
+    const unlinked = await runEngram(shared.cwd, shared.env, ['unlink', 'claude']);
+    assert.equal(unlinked.code, 0, unlinked.stderr);
+    assert.equal(blockCount(await readFile(path.join(shared.cwd, 'AGENTS.md'), 'utf8')), 1, 'codex still needs the block');
+    assert.match(await readFile(path.join(shared.cwd, '.agents', 'engram.md'), 'utf8'), /Save flow:/);
+    await assert.rejects(readFile(path.join(shared.cwd, '.claude', 'engram.md'), 'utf8'));
+  } finally {
+    await rm(shared.cwd, { recursive: true, force: true });
+  }
+});
+
+test('unlink claude keeps a human CLAUDE.md and removes only the block', async () => {
+  const { cwd, env } = await tempWorkspace('engram-t12-unlink-human-');
+  try {
+    await writeFile(path.join(cwd, 'CLAUDE.md'), '# Team\n');
+    assert.equal((await runEngram(cwd, env, ['link', 'claude'])).code, 0);
+    assert.equal((await runEngram(cwd, env, ['unlink', 'claude'])).code, 0);
+    assert.equal((await readFile(path.join(cwd, 'CLAUDE.md'), 'utf8')).trim(), '# Team');
+  } finally {
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('global claude install creates ~/.claude/CLAUDE.md when missing (Claude reads no user-level AGENTS.md)', async () => {
+  const { cwd, env } = await tempWorkspace('engram-t12-global-claude-');
+  try {
+    const agentHome = path.join(cwd, 'agent-home');
+    const globalEnv = { ...env, ENGRAM_AGENT_HOME: agentHome, ENGRAM_AGENT_CONFIG_HOME: path.join(cwd, 'agent-config') };
+    const result = await runEngram(cwd, globalEnv, ['link', '--global', 'claude']);
+    assert.equal(result.code, 0, result.stderr);
+    assert.match(result.stdout, /WRITTEN claude: .*CLAUDE\.md/);
+    const claude = await readFile(path.join(agentHome, '.claude', 'CLAUDE.md'), 'utf8');
+    assert.equal(blockCount(claude), 1);
+    assert.match(claude, /Full guide: `~\/\.agents\/engram\.md`/);
+    await assert.rejects(readFile(path.join(agentHome, '.claude', 'AGENTS.md'), 'utf8'));
+  } finally {
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+// T13: spec-valid SKILL.md (E11).
+const SPEC_SKILL_KEYS = new Set(['name', 'description', 'license', 'compatibility', 'metadata', 'allowed-tools']);
+const SLASH_DESCRIPTION_TEXT = 'Your knowledge memory manager, synced across every device with Git.';
+const GENERATED_HEADER = '<!-- Generated by Engram skillset installer. Edit with care. -->';
+
+async function skillFilesUnder(root, dir = '') {
+  const out = [];
+  for (const entry of await readdir(path.join(root, dir), { withFileTypes: true })) {
+    const rel = dir ? `${dir}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) out.push(...await skillFilesUnder(root, rel));
+    else if (entry.name === 'SKILL.md') out.push(path.join(root, rel));
+  }
+  return out;
+}
+
+test('every generated SKILL.md passes validateSkillFrontmatter', async () => {
+  const { cwd, env } = await tempWorkspace('engram-t13-valid-');
+  try {
+    const agentHome = path.join(cwd, 'agent-home');
+    const globalEnv = { ...env, ENGRAM_AGENT_HOME: agentHome, ENGRAM_AGENT_CONFIG_HOME: path.join(cwd, 'agent-config') };
+    await installSkillset(cwd, 'all-supported');
+    for (const target of ['claude', 'slash', 'gemini', 'cursor', 'opencode', 'codex', 'antigravity']) {
+      const result = await runEngram(cwd, env, ['link', target]);
+      assert.equal(result.code, 0, `${target}: ${result.stderr}`);
+      const global = await runEngram(cwd, globalEnv, ['link', '--global', target]);
+      assert.equal(global.code, 0, `global ${target}: ${global.stderr}`);
+    }
+    const files = await skillFilesUnder(cwd);
+    assert.ok(files.some((file) => file.replace(/\\/g, '/').includes('/agent-home/.claude/skills/engram/')), 'global Claude skill exists');
+    assert.ok(files.some((file) => file.replace(/\\/g, '/').includes('/agent-home/.agents/skills/engram/')), 'global codex skill exists');
+    assert.ok(files.some((file) => file.replace(/\\/g, '/').endsWith('/.claude/skills/engram/SKILL.md')), 'workspace Claude skill exists');
+    for (const file of files) {
+      const host = file.replace(/\\/g, '/').includes('/.claude/skills/') ? 'claude' : 'spec';
+      assert.deepEqual(validateSkillFile(host, await readFile(file, 'utf8'), file), [], file);
+    }
+  } finally {
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('invalid SKILL.md fixtures fail naming the exact field', () => {
+  const base = { name: 'engram', description: 'A skill.' };
+  const first = (host, fm, dir = 'engram') => validateSkillFrontmatter(host, fm, dir)[0]?.field;
+  assert.deepEqual(validateSkillFrontmatter('spec', base, 'engram'), []);
+  assert.equal(first('spec', { ...base, name: 'Engram' }), 'name');
+  assert.equal(first('spec', { ...base, name: 'other' }), 'name');
+  assert.equal(first('spec', { ...base, name: '-x-' }, '-x-'), 'name');
+  assert.equal(first('spec', { ...base, name: 'a--b' }, 'a--b'), 'name');
+  assert.equal(first('spec', { ...base, name: 'x'.repeat(65) }, 'x'.repeat(65)), 'name');
+  assert.equal(first('spec', { ...base, description: '' }), 'description');
+  assert.equal(first('spec', { ...base, description: 'd'.repeat(1025) }), 'description');
+  assert.equal(first('spec', { ...base, when_to_use: 'x' }), 'when_to_use');
+  assert.equal(first('spec', { ...base, 'user-invocable': true }), 'user-invocable');
+  assert.equal(first('spec', { ...base, compatibility: 'c'.repeat(501) }), 'compatibility');
+  assert.equal(first('spec', { ...base, metadata: { a: 1 } }), 'metadata');
+  assert.equal(first('spec', { ...base, 'allowed-tools': ['Read'] }), 'allowed-tools');
+  assert.equal(first('claude', { ...base, description: 'd'.repeat(1000), when_to_use: 'w'.repeat(600) }), 'when_to_use');
+  assert.equal(first('claude', { ...base, 'user-invocable': 'yes' }), 'user-invocable');
+  assert.deepEqual(validateSkillFrontmatter('claude', { ...base, when_to_use: 'Use it.', 'user-invocable': true }, 'engram'), []);
+  const noFrontmatter = validateSkillFile('spec', `\n---\nname: engram\ndescription: x\n---\nbody\n`, '.agents/skills/engram/SKILL.md');
+  assert.equal(noFrontmatter[0]?.field, 'frontmatter');
+  const broken = validateSkillFile('spec', '---\nname: engram\n  bad: [\n---\n', '.agents/skills/engram/SKILL.md');
+  assert.equal(broken[0]?.field, 'frontmatter');
+  assert.equal(validateSkillFile('spec', '---\nname: engram\ndescription: ok\n---\n', 'C:\\x\\skills\\other\\SKILL.md')[0]?.field, 'name');
+});
+
+test('Claude pointer skill has when_to_use and user-invocable; non-Claude skills carry only spec fields', async () => {
+  const { cwd, env } = await tempWorkspace('engram-t13-pointer-');
+  try {
+    await linkClaudeWithSlash(cwd, env);
+    for (const target of ['codex', 'opencode']) {
+      const result = await runEngram(cwd, env, ['link', target]);
+      assert.equal(result.code, 0, result.stderr);
+    }
+    const claude = parseFrontmatter(await readFile(path.join(cwd, '.claude/skills/engram/SKILL.md'), 'utf8')).data;
+    assert.equal(claude['user-invocable'], true);
+    assert.match(String(claude.when_to_use), /\/engram/);
+    assert.equal(claude['disable-model-invocation'], undefined);
+    assert.ok(String(claude.description).length + String(claude.when_to_use).length <= 1536);
+    for (const file of ['.agents/skills/engram/SKILL.md', '.opencode/skills/engram/SKILL.md']) {
+      const keys = Object.keys(parseFrontmatter(await readFile(path.join(cwd, file), 'utf8')).data);
+      assert.ok(keys.length >= 2 && keys.every((key) => SPEC_SKILL_KEYS.has(key)), `${file}: ${keys.join(',')}`);
+    }
+  } finally {
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('.claude/commands/engram.md starts with description frontmatter; Cursor command stays plain', async () => {
+  const { cwd, env } = await tempWorkspace('engram-t13-command-');
+  try {
+    await linkClaudeWithSlash(cwd, env);
+    for (const file of ['.claude/commands/engram.md', '.opencode/commands/engram.md']) {
+      const text = await readFile(path.join(cwd, file), 'utf8');
+      assert.equal(text.split(/\r?\n/)[0], '---', file);
+      const parsed = parseFrontmatter(text);
+      assert.equal(parsed.data.description, SLASH_DESCRIPTION_TEXT, file);
+      assert.deepEqual(Object.keys(parsed.data), ['description'], file);
+      assert.ok(text.includes(GENERATED_HEADER), `${file} keeps the generated header`);
+      assert.ok(isGenerated(text, file), file);
+    }
+    const cursor = await readFile(path.join(cwd, '.cursor/commands/engram.md'), 'utf8');
+    assert.ok(cursor.startsWith(GENERATED_HEADER), 'Cursor command has no frontmatter');
+  } finally {
     await rm(cwd, { recursive: true, force: true });
   }
 });

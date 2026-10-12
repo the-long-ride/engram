@@ -25,6 +25,38 @@ test('export, health, search, stats, load dry-run, and conflict dry-run work', a
   await rm(cwd, { recursive: true, force: true });
 });
 
+test('stats and doctor report vector off (experimental)', async () => {
+  const { cwd, env } = await tempWorkspace('engram-vector-off-');
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
+  const config = JSON.parse(await readFile(path.join(workspaceMemoryRoot(cwd), 'engram.config.json'), 'utf8'));
+  assert.equal(config.vector.enabled, false);
+  assert.match((await runEngram(cwd, env, ['stats'])).stdout, /Vector: off \(experimental\)/);
+  const stats = await runEngram(cwd, env, ['stats', '--json']);
+  assert.equal(JSON.parse(stats.stdout).data.vector.enabled, false);
+  const doctor = await runEngram(cwd, env, ['doctor', '--json']);
+  const checks = JSON.parse(doctor.stdout).data.checks;
+  const check = checks.find((row) => row.id === 'vector.workspace');
+  assert.ok(check, 'doctor reports a vector.workspace check');
+  assert.match(check.message, /vector: off \(experimental\)/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('legacy author: files still audit and filter by their email', async () => {
+  const { cwd, env } = await tempWorkspace('engram-legacy-author-');
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
+  const file = path.join(workspaceMemoryRoot(cwd), 'knowledge', 'legacy-author.md');
+  await writeFile(file, ['---', 'id: legacy-author', 'type: knowledge', 'scope: workspace', 'tags: [legacy]', 'created: 2025-01-01', 'updated: 2025-01-01', 'author: old@example.com', 'confidence: medium', '---', '# Legacy author', '', '## Content', '', '- Old memory keeps its author.', ''].join('\n'));
+  const rebuilt = await runEngram(cwd, env, ['rebuild-index']);
+  assert.equal(rebuilt.code, 0, rebuilt.stderr);
+  const audit = await runEngram(cwd, env, ['audit', '--author', 'old@example.com', '--json']);
+  assert.equal(audit.code, 0, audit.stderr);
+  const rows = JSON.parse(audit.stdout).data.memories;
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].author, 'old@example.com');
+  assert.match((await runEngram(cwd, env, ['audit'])).stdout, /Author:\s+old@example\.com/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
 test('deduplicate semantic reports normalized local duplicate candidates', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
   await runEngram(cwd, env, ['inject', '--no-skillset']);
@@ -107,7 +139,9 @@ test('load dry-run reports broad-match refinement and --all loads every visible 
 
   const loaded = await runEngram(cwd, env, ['load', 'deploy']);
   assert.equal(loaded.code, 0, loaded.stderr);
-  assert.match(loaded.stdout, /loaded 8 memory files \/ 10 total related memories/);
+  assert.match(loaded.stdout, /loaded 3 memory files \/ 10 total related memories/);
+  const loadedFull = await runEngram(cwd, env, ['load', '--disclosure', 'full', 'deploy']);
+  assert.match(loadedFull.stdout, /loaded 8 memory files \/ 10 total related memories/);
 
   const status = await runEngram(cwd, env, ['set-load-limit', 'status']);
   assert.equal(status.code, 0, status.stderr);
@@ -118,7 +152,7 @@ test('load dry-run reports broad-match refinement and --all loads every visible 
   const limitedDry = await runEngram(cwd, env, ['load', '--dry-run', 'deploy']);
   assert.equal(limitedDry.code, 0, limitedDry.stderr);
   assert.match(limitedDry.stdout, /Routed memories \(5 of 10\)/);
-  const limitedLoad = await runEngram(cwd, env, ['load', 'deploy']);
+  const limitedLoad = await runEngram(cwd, env, ['load', '--disclosure', 'full', 'deploy']);
   assert.equal(limitedLoad.code, 0, limitedLoad.stderr);
   assert.match(limitedLoad.stdout, /loaded 5 memory files \/ 10 total related memories/);
   const reset = await runEngram(cwd, env, ['ll', 'reset']);
@@ -153,7 +187,9 @@ test('load enforces string token budgets for compact output and preserves full b
 
   const compact = await runEngram(cwd, env, ['load', '--budget-tokens', '200', 'budgetenforcement']);
   assert.equal(compact.code, 0, compact.stderr);
-  assert.doesNotMatch(compact.stdout, /BUDGET_SENTINEL/);
+  assert.doesNotMatch(compact.stdout, /^### budgeted-memory/m);
+  assert.doesNotMatch(compact.stdout, /(payload ){40}/, 'body text stays out of the capped output');
+  assert.match(compact.stdout, /^- budgeted-memory \[knowledge\]/m);
 
   const full = await runEngram(cwd, env, ['load', '--full', '--budget-tokens', '200', 'budgetenforcement']);
   assert.equal(full.code, 0, full.stderr);
@@ -173,14 +209,15 @@ test('budgeted JSON reports the same payload selection as compact text output', 
   await writeFile(file, testMemory({
     id: 'json-budgeted-memory',
     tags: ['jsonbudget'],
-    content: `JSON_BUDGET_SENTINEL ${'payload '.repeat(70)}`
+    content: `JSON_BUDGET_SENTINEL ${'payload '.repeat(160)}`
   }));
   await runEngram(cwd, env, ['rebuild-index']);
   await runEngram(cwd, env, ['rehash', 'workspace']);
 
   const compact = await runEngram(cwd, env, ['load', '--budget-tokens', '200', 'jsonbudget']);
   assert.equal(compact.code, 0, compact.stderr);
-  assert.doesNotMatch(compact.stdout, /JSON_BUDGET_SENTINEL/);
+  assert.doesNotMatch(compact.stdout, /^### json-budgeted-memory/m);
+  assert.doesNotMatch(compact.stdout, /(payload ){40}/, 'body text stays out of the capped output');
 
   const json = await runEngram(cwd, env, ['load', '--json', '--budget-tokens', '200', 'jsonbudget']);
   assert.equal(json.code, 0, json.stderr);
@@ -269,6 +306,67 @@ test('repair reports invalid memory files skipped by index rebuild', async () =>
   await rm(cwd, { recursive: true, force: true });
 });
 
+test('doctor warns about stray .bak files beside memories', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-doctor-bak-');
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
+  const rules = path.join(workspaceMemoryRoot(cwd), 'rules');
+  await mkdir(rules, { recursive: true });
+  await writeFile(path.join(rules, 'x.md.pre-v3.bak'), 'old');
+  const result = await runEngram(cwd, env, ['doctor', '--json']);
+  const body = JSON.parse(result.stdout);
+  const check = body.data.checks.find((item) => item.id === 'memory.stray_backups' && item.scope === 'workspace');
+  assert.ok(check, result.stdout);
+  assert.equal(check.status, 'warn');
+  assert.equal(check.metadata.count, 1);
+  assert.match(check.remediation, /engram repair workspace --move-backups --confirm/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('repair --move-backups plans by default and moves on --confirm', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-repair-bak-');
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
+  const root = workspaceMemoryRoot(cwd);
+  await mkdir(path.join(root, 'rules'), { recursive: true });
+  const stray = path.join(root, 'rules', 'keep.md.pre-v3.bak');
+  await writeFile(stray, 'old');
+  const plain = await runEngram(cwd, env, ['repair', 'workspace']);
+  assert.equal(plain.code, 0, plain.stderr);
+  assert.equal(await readFile(stray, 'utf8'), 'old');
+  const planText = await runEngram(cwd, env, ['repair', 'workspace', '--move-backups']);
+  assert.match(planText.stdout, /PLAN workspace:rules\/keep\.md\.pre-v3\.bak -> backups\/schema-v3\/rules\/keep\.md\.pre-v3\.bak/);
+  const plan = JSON.parse((await runEngram(cwd, env, ['repair', 'workspace', '--move-backups', '--json'])).stdout);
+  assert.equal(plan.data.planned, 1);
+  assert.equal(plan.data.moved, 0);
+  assert.equal(await readFile(stray, 'utf8'), 'old');
+  const done = JSON.parse((await runEngram(cwd, env, ['repair', 'workspace', '--move-backups', '--confirm', '--json'])).stdout);
+  assert.equal(done.data.moved, 1);
+  assert.equal(done.data.conflicts, 0);
+  assert.equal(await readFile(path.join(root, 'backups', 'schema-v3', 'rules', 'keep.md.pre-v3.bak'), 'utf8'), 'old');
+  await assert.rejects(readFile(stray, 'utf8'));
+  assert.match(await readFile(path.join(root, '.gitignore'), 'utf8'), /^backups\/$/m);
+  const again = JSON.parse((await runEngram(cwd, env, ['repair', 'workspace', '--move-backups', '--json'])).stdout);
+  assert.equal(again.data.planned, 0);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('repair --move-backups leaves a conflicting destination and its source untouched', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-repair-bak-conflict-');
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
+  const root = workspaceMemoryRoot(cwd);
+  await mkdir(path.join(root, 'rules'), { recursive: true });
+  await mkdir(path.join(root, 'backups', 'schema-v3', 'rules'), { recursive: true });
+  const stray = path.join(root, 'rules', 'clash.md.pre-v3.bak');
+  const dest = path.join(root, 'backups', 'schema-v3', 'rules', 'clash.md.pre-v3.bak');
+  await writeFile(stray, 'old');
+  await writeFile(dest, 'different');
+  const done = JSON.parse((await runEngram(cwd, env, ['repair', 'workspace', '--move-backups', '--confirm', '--json'])).stdout);
+  assert.equal(done.data.conflicts, 1);
+  assert.equal(done.data.moved, 0);
+  assert.equal(await readFile(stray, 'utf8'), 'old');
+  assert.equal(await readFile(dest, 'utf8'), 'different');
+  await rm(cwd, { recursive: true, force: true });
+});
+
 test('ignored memory stays hidden from search, export, and stats', async () => {
   const { cwd, env } = await tempWorkspace('engram-cli-');
   await runEngram(cwd, env, ['inject']);
@@ -297,7 +395,47 @@ test('live sync respects enabled flag and writes configured target when enabled'
   const enabled = await runEngram(cwd, env, ['sync']);
   assert.equal(enabled.code, 0, enabled.stderr);
   assert.match(enabled.stdout, /\.cursor\/rules\/engram\.mdc/);
-  assert.match(await readFile(path.join(cwd, '.cursor', 'rules', 'engram.mdc'), 'utf8'), /Cursor Rules/);
+  const target = path.join(cwd, '.cursor', 'rules', 'engram.mdc');
+  const written = await readFile(target, 'utf8');
+  assert.match(written, /Cursor Rules/);
+  assert.ok(written.replace(/\r\n/g, '\n').startsWith('---\ndescription:'), written.slice(0, 80));
+  assert.equal(enabled.stderr, '');
+
+  // The sync guard recognises its own frontmatter-first file, and a file from any other Engram version.
+  const again = await runEngram(cwd, env, ['sync']);
+  assert.equal(again.code, 0, again.stderr);
+  await writeFile(target, written.replace(/<!-- Auto-generated by engram v[^ ]+ /, '<!-- Auto-generated by engram v0.0.1 '));
+  const older = await runEngram(cwd, env, ['sync']);
+  assert.equal(older.code, 0, older.stderr);
+  assert.match(await readFile(target, 'utf8'), /Auto-generated by engram v(?!0\.0\.1 )/);
+
+  // The canonical name works as a persisted target too, and human-authored files are never overwritten.
+  config.live_sync = { enabled: true, targets: ['cursor-rules'] };
+  await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`);
+  const human = '---\ndescription: mine\n---\n# mine';
+  await writeFile(target, human);
+  const refused = await runEngram(cwd, env, ['sync']);
+  assert.notEqual(refused.code, 0);
+  assert.match(refused.stderr, /Refusing to overwrite non-generated/);
+  assert.equal(await readFile(target, 'utf8'), human);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('export cursor-rules and the cursorrules alias produce identical output; only the alias warns', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-');
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
+  await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Cursor export memory'], 'A\n');
+  const a = await runEngram(cwd, env, ['export', '--format', 'cursor-rules']);
+  const b = await runEngram(cwd, env, ['export', '--format', 'cursorrules']);
+  assert.equal(a.code, 0, a.stderr);
+  assert.equal(b.code, 0, b.stderr);
+  assert.equal(a.stdout, b.stdout);
+  assert.doesNotMatch(a.stderr, /deprecated/);
+  assert.match(b.stderr, /cursorrules is deprecated; use --format cursor-rules/);
+  assert.match(a.stdout.replace(/\r\n/g, '\n'), /^---\ndescription: ".+"\nalwaysApply: false\n---\n<!-- Auto-generated by engram v/);
+  assert.match(a.stdout, /Cursor export memory/);
+  const bad = await runEngram(cwd, env, ['export', '--format', 'nope']);
+  assert.notEqual(bad.code, 0);
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -637,7 +775,8 @@ test('doctor --json produces structured diagnostics for healthy workspace', asyn
 });
 
 test('doctor --strict --json fails on hash mismatch with remediation', async () => {
-  const { cwd, env } = await tempWorkspace('engram-cli-doctor-fail-');
+  const { cwd, env: baseEnv } = await tempWorkspace('engram-cli-doctor-fail-');
+  const env = { ...baseEnv, ENGRAM_AGENT_HOME: path.join(cwd, 'agent-home') };
   await runEngram(cwd, env, ['inject']);
   await runEngram(cwd, env, ['save', 'rule', '--scope', 'workspace', '--skip-task-type-prompt', 'Doctor hash test rule'], 'A\n');
   const file = path.join(workspaceMemoryRoot(cwd), 'rules', 'doctor-hash-test-rule.md');
@@ -649,6 +788,42 @@ test('doctor --strict --json fails on hash mismatch with remediation', async () 
   assert.ok(body.diagnostics.some((d) => d.id === 'hash.mismatch'));
   assert.match(JSON.stringify(body), /engram rehash/);
   await rm(cwd, { recursive: true, force: true });
+});
+
+test('doctor warns when a Gemini engram MCP entry has trust: true', async () => {
+  const { cwd, env: baseEnv } = await tempWorkspace('engram-cli-doctor-gemini-trust-');
+  const agentHome = path.join(cwd, 'agent-home');
+  const env = { ...baseEnv, ENGRAM_AGENT_HOME: agentHome };
+  const workspaceFile = path.join(cwd, '.gemini', 'settings.json');
+  const globalFile = path.join(agentHome, '.gemini', 'settings.json');
+  const writeSettings = async (file, trust) => {
+    await mkdir(path.dirname(file), { recursive: true });
+    await writeFile(file, JSON.stringify({ mcpServers: { engram: { command: 'engram-mcp', trust } } }));
+  };
+  const trustCheck = async () => {
+    const result = await runEngram(cwd, env, ['doctor', '--json']);
+    assert.equal(result.code, 0, result.stderr);
+    return JSON.parse(result.stdout).data.checks.find((c) => c.id === 'host.gemini_trust');
+  };
+  try {
+    await runEngram(cwd, env, ['inject', '--no-global', '--no-skillset']);
+    assert.equal(await trustCheck(), undefined, 'no settings file, no check');
+    await writeSettings(workspaceFile, true);
+    const workspaceCheck = await trustCheck();
+    assert.equal(workspaceCheck.status, 'warn');
+    assert.match(workspaceCheck.message, /trust: true; engram_commit would run without confirmation/);
+    assert.match(workspaceCheck.remediation, /Remove "trust": true from mcpServers\.engram/);
+    await writeSettings(workspaceFile, false);
+    assert.equal(await trustCheck(), undefined, 'trust: false is silent');
+    await writeSettings(globalFile, true);
+    const globalCheck = await trustCheck();
+    assert.equal(globalCheck.status, 'warn');
+    assert.match(globalCheck.message, /trust: true; engram_commit would run without confirmation/);
+    await writeFile(globalFile, '{ not json');
+    assert.equal(await trustCheck(), undefined, 'a broken settings file never fails doctor');
+  } finally {
+    await rm(cwd, { recursive: true, force: true });
+  }
 });
 
 test('load --explain omits only actual routed candidates, not all visible memory', async () => {
@@ -669,8 +844,43 @@ test('load --explain omits only actual routed candidates, not all visible memory
   await rm(cwd, { recursive: true, force: true });
 });
 
+test('doctor warns on an invalid generated SKILL.md and ignores user-authored skills', async () => {
+  const { cwd, env: baseEnv } = await tempWorkspace('engram-cli-doctor-skill-');
+  const env = { ...baseEnv, ENGRAM_AGENT_HOME: path.join(cwd, 'agent-home') };
+  const skillChecks = async () => {
+    const result = await runEngram(cwd, env, ['doctor', '--json']);
+    assert.equal(result.code, 0, result.stderr);
+    return JSON.parse(result.stdout).data.checks.filter((c) => c.id === 'host.skill_frontmatter');
+  };
+  try {
+    await runEngram(cwd, env, ['inject', '--no-global', '--no-skillset']);
+    assert.deepEqual((await skillChecks()).map((c) => c.status), ['skip'], 'no generated skills, nothing to validate');
+    const linked = await runEngram(cwd, env, ['link', 'slash']);
+    assert.equal(linked.code, 0, linked.stderr);
+    const valid = await skillChecks();
+    assert.deepEqual(valid.map((c) => c.status), ['pass']);
+    assert.match(valid[0].message, /Engram SKILL\.md files valid: [1-9]/);
+    const skillFile = path.join(cwd, '.claude', 'skills', 'engram', 'SKILL.md');
+    const text = await readFile(skillFile, 'utf8');
+    assert.match(text, /Generated by Engram skillset installer/, 'header stays so the file is still generated');
+    await writeFile(skillFile, text.replace('name: engram', 'name: Engram'));
+    const mine = path.join(cwd, '.claude', 'skills', 'mine', 'SKILL.md');
+    await mkdir(path.dirname(mine), { recursive: true });
+    await writeFile(mine, '---\nname: Mine\ndescription: my own skill\nextra: yes\n---\nhuman text\n');
+    const checks = await skillChecks();
+    assert.equal(checks.length, 1, JSON.stringify(checks));
+    assert.equal(checks[0].status, 'warn');
+    assert.match(checks[0].message, /name must be lowercase/);
+    assert.match(checks[0].message, /skills[\\/]engram[\\/]SKILL\.md/);
+    assert.match(checks[0].remediation, /engram link <agent> --force/);
+  } finally {
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
 test('doctor --strict passes on valid workspace-only install without global profile', async () => {
-  const { cwd, env } = await tempWorkspace('engram-cli-doctor-strict-');
+  const { cwd, env: baseEnv } = await tempWorkspace('engram-cli-doctor-strict-');
+  const env = { ...baseEnv, ENGRAM_AGENT_HOME: path.join(cwd, 'agent-home') };
   await runEngram(cwd, env, ['inject', '--no-global', '--no-skillset']);
   await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Valid workspace memory'], 'A\n');
   const result = await runEngram(cwd, env, ['doctor', '--strict', '--json']);
@@ -811,4 +1021,179 @@ test('load --explain reports blended scores, not raw directScore', async () => {
     assert.ok(scoreVal > 0, `entry ${sel.id} score ${scoreVal} > 0`);
   }
   await rm(cwd, { recursive: true, force: true });
+});
+
+// Ten small memories sharing one tag, with the load limit raised so all ten route.
+async function tieredWorkspace(prefix) {
+  const { cwd, env } = await tempWorkspace(prefix);
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
+  const dir = path.join(workspaceMemoryRoot(cwd), 'knowledge');
+  await mkdir(dir, { recursive: true });
+  for (let i = 0; i < 10; i += 1) {
+    const id = `tier-memory-${String(i).padStart(2, '0')}`;
+    await writeFile(path.join(dir, `${id}.md`), testMemory({ id, tags: ['tierfixture'], content: `${id} tiered body sentinel.` }));
+  }
+  await runEngram(cwd, env, ['rebuild-index']);
+  await runEngram(cwd, env, ['rehash', 'workspace']);
+  assert.equal((await runEngram(cwd, env, ['set-load-limit', '10'])).code, 0);
+  return { cwd, env };
+}
+
+test('load expands the top rows, cards the rest, and ends with a fetch hint', async () => {
+  const { cwd, env } = await tieredWorkspace('engram-cli-tiered-');
+  const result = await runEngram(cwd, env, ['load', 'tierfixture']);
+  assert.equal(result.code, 0, result.stderr);
+  const out = result.stdout.trim();
+  assert.equal((out.match(/^### tier-memory-/gm) ?? []).length, 3, out);
+  const cardIds = [...out.matchAll(/^- (tier-memory-\d+) \[knowledge\]/gm)].map((match) => match[1]);
+  assert.equal(cardIds.length, 7, out);
+  assert.match(out, /^related:$/m);
+  assert.ok(out.endsWith(`fetch: engram load --id ${cardIds.join(',')}`), out);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('load --exclude-keys leaves excluded rows out of bodies and reports them as already loaded', async () => {
+  const { cwd, env } = await tieredWorkspace('engram-cli-exclude-');
+  const first = JSON.parse((await runEngram(cwd, env, ['load', '--json', 'tierfixture'])).stdout).data.entries[0];
+  const key = `${first.scope}:${first.file}`;
+  const text = await runEngram(cwd, env, ['load', '--exclude-keys', key, 'tierfixture']);
+  assert.equal(text.code, 0, text.stderr);
+  assert.doesNotMatch(text.stdout, new RegExp(`^### ${first.id} `, 'm'));
+  assert.doesNotMatch(text.stdout, new RegExp(`^- ${first.id} `, 'm'));
+  assert.doesNotMatch(text.stdout.split('fetch:')[1] ?? '', new RegExp(`\\b${first.id}\\b`));
+  const json = JSON.parse((await runEngram(cwd, env, ['load', '--json', '--exclude-keys', key, 'tierfixture'])).stdout).data;
+  assert.deepEqual(json.already_loaded, [key]);
+  assert.ok(!json.entries.some((entry) => entry.id === first.id));
+  assert.ok(!json.cards.some((entry) => entry.id === first.id));
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('load --disclosure full keeps the untiered compact output', async () => {
+  const { cwd, env } = await tieredWorkspace('engram-cli-disclosure-full-');
+  const result = await runEngram(cwd, env, ['load', '--disclosure', 'full', 'tierfixture']);
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal((result.stdout.match(/^### tier-memory-/gm) ?? []).length, 10, result.stdout);
+  assert.match(result.stdout, /\n---\n/);
+  assert.doesNotMatch(result.stdout, /^related:$/m);
+  assert.doesNotMatch(result.stdout, /fetch: engram load --id/);
+  const invalid = await runEngram(cwd, env, ['load', '--disclosure', 'sometimes', 'tierfixture']);
+  assert.notEqual(invalid.code, 0);
+  assert.match(invalid.stderr, /--disclosure/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('load --budget-tokens caps the complete tiered output when many rows are selected', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-tiered-cap-');
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
+  const dir = path.join(workspaceMemoryRoot(cwd), 'knowledge');
+  await mkdir(dir, { recursive: true });
+  for (let i = 0; i < 10; i += 1) {
+    const id = `capped-memory-${String(i).padStart(2, '0')}`;
+    await writeFile(path.join(dir, `${id}.md`), testMemory({ id, tags: ['tiercap'], content: `${id} ${'detail '.repeat(60)}` }));
+  }
+  await runEngram(cwd, env, ['rebuild-index']);
+  await runEngram(cwd, env, ['rehash', 'workspace']);
+  assert.equal((await runEngram(cwd, env, ['set-load-limit', '10'])).code, 0);
+
+  const top = JSON.parse((await runEngram(cwd, env, ['load', '--dry-run', '--json', 'tiercap'])).stdout).data.entries[0].id;
+  const result = await runEngram(cwd, env, ['load', '--budget-tokens', '200', 'tiercap']);
+  assert.equal(result.code, 0, result.stderr);
+  const out = result.stdout.trim();
+  assert.ok(Math.ceil(out.length / 4) <= 200, `${Math.ceil(out.length / 4)} tokens:\n${out}`);
+  const shown = [...out.matchAll(/^(?:### |- )(capped-memory-\d+) /gm)].map((match) => match[1]);
+  assert.ok(shown.includes(top), `top row ${top} missing:\n${out}`);
+  assert.ok(shown.length < 10, 'lowest-ranked rows are shed to honour the cap');
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('load --id records fetched usage; stats --usage lists never-fetched memories; usage.json is gitignored', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-usage-');
+  await runEngram(cwd, env, ['inject']);
+  await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Billing exports run nightly via the batch worker'], 'A\n');
+  await runEngram(cwd, env, ['save', 'knowledge', '--scope', 'workspace', 'Invoice retries use exponential backoff'], 'A\n');
+  const root = workspaceMemoryRoot(cwd);
+  const usageFile = path.join(root, 'usage.json');
+
+  assert.match(await readFile(path.join(root, '.gitignore'), 'utf8'), /^usage\.json$/m);
+
+  // dry-run and explain never count as a fetch.
+  await runEngram(cwd, env, ['load', '--dry-run', '--id', 'billing-exports-run-nightly-via-the-batch-worker']);
+  await runEngram(cwd, env, ['load', '--explain', '--id', 'billing-exports-run-nightly-via-the-batch-worker']);
+  await assert.rejects(readFile(usageFile, 'utf8'));
+
+  for (let i = 0; i < 2; i += 1) {
+    const loaded = await runEngram(cwd, env, ['load', '--id', 'billing-exports-run-nightly-via-the-batch-worker']);
+    assert.equal(loaded.code, 0, loaded.stderr);
+  }
+  const usage = JSON.parse(await readFile(usageFile, 'utf8'));
+  const [billingKey] = Object.keys(usage).filter((key) => key.includes('billing-exports'));
+  assert.equal(usage[billingKey].fetched, 2);
+  assert.equal(usage[billingKey].injected, 0);
+  assert.ok(Number.isFinite(Date.parse(usage[billingKey].last)));
+
+  // Injected 40 days ago and never fetched => reported; recently injected => not.
+  const old = new Date(Date.now() - 40 * 864e5).toISOString();
+  usage['workspace:knowledge/invoice-retries-use-exponential-backoff.md'] = { injected: 3, fetched: 0, last: old };
+  usage['workspace:knowledge/recent-never-fetched.md'] = { injected: 1, fetched: 0, last: new Date().toISOString() };
+  await writeFile(usageFile, JSON.stringify(usage));
+  const text = await runEngram(cwd, env, ['stats', '--usage']);
+  assert.equal(text.code, 0, text.stderr);
+  assert.match(text.stdout, /Never fetched:/);
+  const neverSection = text.stdout.split('Never fetched:')[1] ?? '';
+  assert.match(neverSection, /invoice-retries-use-exponential-backoff/);
+  assert.doesNotMatch(neverSection, /recent-never-fetched|billing-exports/);
+
+  const json = JSON.parse((await runEngram(cwd, env, ['stats', '--usage', '--json'])).stdout);
+  assert.equal(json.data.total, 2);
+  assert.deepEqual(json.data.usage.never_fetched.map((item) => item.key), ['workspace:knowledge/invoice-retries-use-exponential-backoff.md']);
+
+  // Plain stats stays unchanged.
+  assert.doesNotMatch((await runEngram(cwd, env, ['stats'])).stdout, /Never fetched:/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('doctor warns when the AGENTS.md chain passes 80% of 32 KiB', async () => {
+  const { cwd, env: baseEnv } = await tempWorkspace('engram-cli-doctor-agents-chain-');
+  const agentHome = path.join(cwd, 'agent-home');
+  const codexHome = path.join(agentHome, '.codex');
+  const env = { ...baseEnv, ENGRAM_AGENT_HOME: agentHome, CODEX_HOME: codexHome };
+  const chainCheck = async () => {
+    const result = await runEngram(cwd, env, ['doctor', '--json']);
+    assert.equal(result.code, 0, result.stderr);
+    return JSON.parse(result.stdout).data.checks.find((c) => c.id === 'host.agents_md_chain');
+  };
+  try {
+    initGit(cwd);
+    await runEngram(cwd, env, ['inject', '--no-global', '--no-skillset']);
+    assert.equal((await chainCheck()).status, 'skip', 'no AGENTS.md anywhere');
+    await writeFile(path.join(cwd, 'AGENTS.md'), 'x'.repeat(27000));
+    const warned = await chainCheck();
+    assert.equal(warned.status, 'warn');
+    assert.ok(warned.metadata.bytes >= 27000, JSON.stringify(warned));
+    assert.equal(warned.metadata.limit, 32 * 1024);
+    assert.match(warned.message, /AGENTS\.md chain \d+ of 32768 bytes \(1 file\)/);
+    assert.match(warned.remediation, /project_doc_max_bytes/);
+    await writeFile(path.join(cwd, 'AGENTS.md'), 'x'.repeat(1000));
+    const passed = await chainCheck();
+    assert.equal(passed.status, 'pass');
+    assert.equal(passed.metadata.bytes, 1000);
+    await mkdir(codexHome, { recursive: true });
+    await writeFile(path.join(codexHome, 'config.toml'), 'project_doc_max_bytes = 2048\n');
+    await writeFile(path.join(cwd, 'AGENTS.md'), 'x'.repeat(1700));
+    const tight = await chainCheck();
+    assert.equal(tight.status, 'warn');
+    assert.equal(tight.metadata.limit, 2048);
+    // The chain counts the global file, a git-root file and the cwd file, one file per directory, skipping empty ones.
+    await writeFile(path.join(codexHome, 'AGENTS.md'), 'g'.repeat(100));
+    const nested = path.join(cwd, 'packages', 'app');
+    await mkdir(nested, { recursive: true });
+    await writeFile(path.join(nested, 'AGENTS.md'), 'n'.repeat(50));
+    await writeFile(path.join(nested, 'AGENTS.override.md'), '   \n');
+    const nestedResult = await runEngram(nested, env, ['doctor', '--json']);
+    const nestedCheck = JSON.parse(nestedResult.stdout).data.checks.find((c) => c.id === 'host.agents_md_chain');
+    assert.equal(nestedCheck.metadata.files, 3);
+    assert.equal(nestedCheck.metadata.bytes, 100 + 1700 + 50);
+  } finally {
+    await rm(cwd, { recursive: true, force: true });
+  }
 });

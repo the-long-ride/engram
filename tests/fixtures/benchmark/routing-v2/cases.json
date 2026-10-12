@@ -1,0 +1,41 @@
+{
+  "version": 2,
+  "cases": [
+    { "id": "zero-nonsense-token", "category": "zero-match", "query": "unrelated non-existent query term xyz1239999", "expect": [], "forbid": [], "depends_on": [] },
+    { "id": "zero-offtopic-cooking", "category": "zero-match", "query": "sourdough starter hydration ratio for rye bread", "expect": [], "forbid": [], "depends_on": [] },
+    { "id": "zero-expired-soap-gateway", "category": "zero-match", "query": "legacy soap gateway partner order submission endpoint", "expect": [], "forbid": ["legacy-soap-gateway-endpoint"], "depends_on": [] },
+
+    { "id": "paraphrase-install-packages", "category": "paraphrase", "query": "how do I install the project dependencies", "expect": ["use-pnpm-for-installs"], "forbid": [], "depends_on": [] },
+    { "id": "paraphrase-refresh-login", "category": "paraphrase", "query": "renew an expiring login token in the browser client", "expect": ["auth-token-refresh-flow"], "forbid": [], "depends_on": [] },
+    { "id": "paraphrase-schema-change", "category": "paraphrase", "query": "apply a database schema change with entity framework", "expect": ["ef-core-migrations-workflow"], "forbid": [], "depends_on": [] },
+    { "id": "paraphrase-pdf-invoices", "category": "paraphrase", "query": "generate printable invoice documents for finance", "expect": ["billing-invoice-export-pdf"], "forbid": ["legacy-soap-gateway-endpoint"], "depends_on": [] },
+    { "id": "paraphrase-nuget-review-due", "category": "paraphrase", "query": "restore private nuget packages from the team feed", "expect": ["nuget-feed-configuration"], "forbid": [], "depends_on": [] },
+
+    { "id": "negation-no-npm", "category": "negation", "query": "install packages but do not use npm or yarn", "expect": ["use-pnpm-for-installs"], "forbid": [], "depends_on": [] },
+    { "id": "negation-no-console-log", "category": "negation", "query": "avoid console log statements in frontend code", "expect": ["no-console-output-in-production"], "forbid": [], "depends_on": [] },
+
+    { "id": "dependency-session-middleware", "category": "dependency-chain", "query": "session middleware validates auth tokens", "expect": ["session-middleware-validates-auth-tokens"], "forbid": [], "depends_on": ["jwt-signing-key-rotation"] },
+    { "id": "dependency-token-refresh-chain", "category": "dependency-chain", "query": "auth token refresh flow before expiry", "expect": ["auth-token-refresh-flow"], "forbid": [], "depends_on": ["session-middleware-validates-auth-tokens"] },
+
+    { "id": "isolation-workspace-only-reviews", "category": "profile-isolation", "query": "pull request review feedback etiquette", "scope": "workspace", "expect": [], "forbid": ["code-review-etiquette"], "depends_on": [] },
+    { "id": "isolation-global-reviews", "category": "profile-isolation", "query": "code review pull request feedback etiquette", "scope": "global", "expect": ["code-review-etiquette"], "forbid": [], "depends_on": [] },
+    { "id": "isolation-workspace-secrets", "category": "profile-isolation", "query": "never commit secrets credentials to the repository", "scope": "workspace", "expect": ["never-commit-secrets"], "forbid": [], "depends_on": [] },
+
+    { "id": "duplicate-payment-retry", "category": "duplicate", "query": "payment retry exponential backoff with jitter", "expect": ["payment-retry-backoff-policy"], "forbid": [], "depends_on": [] },
+    { "id": "duplicate-invoice-retry", "category": "duplicate", "query": "retry failed invoice payment calls backoff", "expect": ["payment-retry-backoff-copy"], "forbid": [], "depends_on": [] },
+
+    { "id": "mixed-angular-and-tests", "category": "mixed-intent", "query": "add a standalone angular component and write unit tests", "expect": ["angular-standalone-components", "run-tests-before-commit"], "forbid": [], "depends_on": [] },
+    { "id": "mixed-api-async-logging", "category": "mixed-intent", "query": "new async api endpoint with cancellation token and structured logging", "expect": ["dotnet-async-and-cancellation", "structured-logging-with-serilog"], "forbid": [], "depends_on": [] },
+    { "id": "mixed-hotfix-commit", "category": "mixed-intent", "query": "deploy a production hotfix and write the commit message", "expect": ["hotfix-deployment-skill", "conventional-commit-messages"], "forbid": [], "depends_on": [] },
+
+    { "id": "disagreement-package-manager", "category": "disagreement", "query": "which package manager should installs use", "expect": ["use-pnpm-for-installs"], "forbid": [], "depends_on": [] },
+    { "id": "disagreement-exact-id", "category": "disagreement", "query": "typescript-naming-conventions", "expect": ["typescript-naming-conventions"], "forbid": [], "depends_on": [] },
+
+    { "id": "security-secrets-in-config", "category": "security", "query": "where do connection strings and passwords go", "expect": ["never-commit-secrets"], "forbid": ["dotnet-nullable-reference-types"], "depends_on": [] },
+    { "id": "security-owasp-injection", "category": "security", "query": "check for injection and broken access control", "expect": ["owasp-security-checklist"], "forbid": [], "depends_on": [] },
+    { "id": "security-token-logging", "category": "security", "query": "do not log tokens or personal data", "expect": ["structured-logging-with-serilog"], "forbid": [], "depends_on": [] },
+
+    { "id": "session-start-startup", "category": "session-start", "query": "session start startup", "expect": ["workspace-startup-orientation"], "forbid": [], "depends_on": [] },
+    { "id": "session-start-current", "category": "session-start", "query": "current session", "expect": ["workspace-startup-orientation"], "forbid": [], "depends_on": [] }
+  ]
+}

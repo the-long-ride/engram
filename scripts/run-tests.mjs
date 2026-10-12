@@ -2,15 +2,16 @@
 import { spawn } from 'node:child_process';
 import { readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { selectWeightedShard } from './test-shard-planner.mjs';
 
-async function getTestFiles(dir) {
+export async function getTestFiles(dir) {
   const entries = await readdir(dir, { withFileTypes: true });
   const files = [];
   for (const entry of entries) {
     const res = path.resolve(dir, entry.name);
     if (entry.isDirectory()) {
-      if (['cli', 'publish'].includes(entry.name)) {
+      if (['cli', 'publish', 'core', 'conformance'].includes(entry.name)) {
         files.push(...await getTestFiles(res));
       }
     } else if (entry.name.endsWith('.test.mjs')) {
@@ -61,4 +62,4 @@ async function main() {
   }
 }
 
-main();
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main();

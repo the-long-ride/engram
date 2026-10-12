@@ -46,6 +46,7 @@ test('vector rebuild failure degrades and removes incomplete sidecars', async ()
   const file = path.join(root, 'memory.vec.sqlite');
   for (const suffix of ['', '-wal', '-shm']) await writeFile(`${file}${suffix}`, 'partial');
   const config = defaultConfig();
+  config.vector.enabled = true;
   config.vector.auto_threshold = 1;
   const status = await ensureVectorIndex(root, 'workspace', [entry()], config, {
     force: true,

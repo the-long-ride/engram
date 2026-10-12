@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { rm } from 'node:fs/promises';
+import { readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { runEngram, tempWorkspace } from '../helpers.mjs';
+import { runEngram, tempWorkspace, workspaceMemoryRoot } from '../helpers.mjs';
 
 test('author CLI sets global and workspace profiles and reports resolved JSON', async () => {
   const { cwd, env } = await tempWorkspace('engram-author-cli-');
@@ -34,6 +34,28 @@ test('author CLI validates scopes, values, and confirmations without persistence
   assert.notEqual((await runEngram(cwd, env, ['author', 'sync-git-global'])).code, 0);
   assert.notEqual((await runEngram(cwd, env, ['author', 'migrate-memories'])).code, 0);
   assert.equal((await runEngram(cwd, env, ['author', 'migrate-memories', '--scope', 'both', '--plan'])).code, 0);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('author migrate-memories --strip-email is plan-first', async () => {
+  const { cwd, env } = await tempWorkspace('engram-author-strip-cli-');
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
+  await runEngram(cwd, env, ['author', 'set', '--name', 'Jane Doe', '--email', 'jane@example.com']);
+  const file = path.join(workspaceMemoryRoot(cwd), 'knowledge', 'strip-cli.md');
+  const raw = ['---', 'schema_version: 3', 'id: strip-cli', 'type: knowledge', 'scope: workspace', 'tags: [test]', 'created: 2025-01-01', 'updated: 2025-01-01', 'author_name: Jane Doe', 'author_email: jane@example.com', 'source: manual', 'confidence: high', 'authority: reference', 'revision: 1', 'valid_from: 2025-01-01', 'last_confirmed: 2025-01-01', '---', '# Strip cli', '', '## Content', '', '- Strip email check.', ''].join('\n');
+  await writeFile(file, raw);
+  const plan = await runEngram(cwd, env, ['author', 'migrate-memories', '--strip-email', '--scope', 'workspace', '--json']);
+  assert.equal(plan.code, 0, plan.stderr);
+  const planned = JSON.parse(plan.stdout).data;
+  assert.equal(planned.eligible, 1);
+  assert.equal(planned.migrated, undefined);
+  assert.equal(await readFile(file, 'utf8'), raw);
+  const applied = await runEngram(cwd, env, ['author', 'migrate-memories', '--strip-email', '--scope', 'workspace', '--confirm', '--json']);
+  assert.equal(applied.code, 0, applied.stderr);
+  assert.equal(JSON.parse(applied.stdout).data.migrated, 1);
+  const after = await readFile(file, 'utf8');
+  assert.doesNotMatch(after, /^author_email:/m);
+  assert.match(after, /^author_name:/m);
   await rm(cwd, { recursive: true, force: true });
 });
 

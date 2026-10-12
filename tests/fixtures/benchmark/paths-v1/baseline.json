@@ -1,0 +1,145 @@
+{
+  "version": 1,
+  "limit": 8,
+  "cases": [
+    {
+      "id": "path-sql-migration",
+      "query": "db/migrations/20260101_add_index.sql",
+      "expected": [
+        "sql-migration-file-naming"
+      ],
+      "routed": [
+        "workspace:rules/sql-migration-file-naming.md"
+      ],
+      "matched": [
+        "sql-migration-file-naming"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 55,
+      "category": "path-trigger"
+    },
+    {
+      "id": "path-terraform-module",
+      "query": "infra\\network\\main.tf",
+      "expected": [
+        "terraform-module-pinning"
+      ],
+      "routed": [
+        "workspace:rules/terraform-module-pinning.md"
+      ],
+      "matched": [
+        "terraform-module-pinning"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 45,
+      "category": "path-trigger"
+    },
+    {
+      "id": "path-protobuf-field",
+      "query": "proto/billing/invoice.proto",
+      "expected": [
+        "protobuf-field-numbering"
+      ],
+      "routed": [
+        "workspace:knowledge/protobuf-field-numbering.md"
+      ],
+      "matched": [
+        "protobuf-field-numbering"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 50,
+      "category": "path-trigger"
+    },
+    {
+      "id": "path-storybook-story",
+      "query": "src/components/Button.stories.tsx",
+      "expected": [
+        "storybook-story-layout"
+      ],
+      "routed": [
+        "workspace:knowledge/storybook-story-layout.md"
+      ],
+      "matched": [
+        "storybook-story-layout"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 54,
+      "category": "path-trigger"
+    },
+    {
+      "id": "expired-kafka-probe",
+      "query": "flaky kafka consumer probe",
+      "expected": [],
+      "routed": [],
+      "matched": [],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 26,
+      "category": "working-expired",
+      "omitted_lifecycle": [
+        "workspace:working/knowledge/flaky-kafka-consumer-probe.md"
+      ],
+      "omitted_correct": true
+    },
+    {
+      "id": "expired-flamegraph-notes",
+      "query": "temp perf flamegraph notes",
+      "expected": [],
+      "routed": [],
+      "matched": [],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 26,
+      "category": "working-expired",
+      "omitted_lifecycle": [
+        "workspace:working/knowledge/temp-perf-flamegraph-notes.md"
+      ],
+      "omitted_correct": true
+    }
+  ],
+  "metrics": {
+    "precision_at_k": 0,
+    "recall_at_k": 1,
+    "forbidden_hits": 0,
+    "dependency_failures": 0,
+    "isolation_failures": 0,
+    "zero_result_correctness": 1,
+    "tokens_mean": 0,
+    "tokens_p95": 0,
+    "hook_tokens_mean": 0,
+    "hook_tokens_p95": 0
+  },
+  "path_trigger": {
+    "cases": 4,
+    "precision_at_k": 1,
+    "recall_at_k": 1,
+    "forbidden_hits": 0,
+    "tokens_mean": 51
+  },
+  "lifecycle": {
+    "cases": 2,
+    "omitted_correctness": 1
+  }
+}

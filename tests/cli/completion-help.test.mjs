@@ -150,3 +150,41 @@ test('help agent-hook mentions Cursor and Windsurf capabilities', async () => {
   assert.match(help.stdout, /Windsurf/);
   await rm(cwd, { recursive: true, force: true });
 });
+
+test('completion lists cursor-rules for --format', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-cursor-rules-');
+  for (const shell of ['bash', 'powershell']) {
+    const script = await runEngram(cwd, env, ['completion', shell]);
+    assert.equal(script.code, 0, script.stderr);
+    assert.match(script.stdout, /cursor-rules/);
+    assert.doesNotMatch(script.stdout, /cursorrules/);
+  }
+  const help = await runEngram(cwd, env, ['help', 'export']);
+  assert.match(help.stdout, /cursor-rules/);
+  assert.match(help.stdout, /cursorrules` is a deprecated alias/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('take-control --from is listed in the usage line, the help topic, and every completion script', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-take-control-from-');
+  const help = (await runEngram(cwd, env, ['help', 'take-control'])).stdout;
+  assert.match(help, /engram take-control --from claude-auto-memory --plan/);
+  assert.match(help, /engram take-control --from codex-memories --dir ~\/\.codex\/memories/);
+  assert.match(help, /no Gemini preset/);
+  assert.match((await runEngram(cwd, env, ['-h'])).stdout.replace(/\x1b\[[0-9;]*m/g, ''), /\[--from claude-auto-memory\|codex-memories\]/);
+  assert.match((await runEngram(cwd, env, ['completion', 'bash'])).stdout, /compgen -W "--file --dir --from --include/);
+  assert.match((await runEngram(cwd, env, ['completion', 'zsh'])).stdout, /"--from\[import a host-local memory store\]:preset:\(claude-auto-memory codex-memories\)"/);
+  assert.match((await runEngram(cwd, env, ['completion', 'powershell'])).stdout, /\$engramTakeControlArgs = @\('--file', '--dir', '--from'/);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('load --id is listed in the usage line, the load help topic, and every completion script', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-load-id-');
+  const help = await runEngram(cwd, env, ['-h']);
+  assert.match(help.stdout.replace(/\x1b\[[0-9;]*m/g, ''), /engram load \[--id id\[,id\]\]/);
+  assert.match((await runEngram(cwd, env, ['help', 'load'])).stdout, /--id <id>\[,<id>\]/);
+  assert.match((await runEngram(cwd, env, ['completion', 'bash'])).stdout, /compgen -W "--id --all --budget-tokens/);
+  assert.match((await runEngram(cwd, env, ['completion', 'zsh'])).stdout, /"--id\[fetch memories by id, comma-separated\]:ids:"/);
+  assert.match((await runEngram(cwd, env, ['completion', 'powershell'])).stdout, /\{ \$_ -in @\('load', 'ld'\) \} \{ @\('--id', /);
+  await rm(cwd, { recursive: true, force: true });
+});

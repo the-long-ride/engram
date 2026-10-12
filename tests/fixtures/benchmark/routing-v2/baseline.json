@@ -1,0 +1,631 @@
+{
+  "version": 1,
+  "limit": 8,
+  "cases": [
+    {
+      "id": "zero-nonsense-token",
+      "query": "unrelated non-existent query term xyz1239999",
+      "expected": [],
+      "routed": [
+        "workspace:knowledge/docker-compose-local-dev.md",
+        "workspace:knowledge/ef-core-migrations-workflow.md"
+      ],
+      "matched": [],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": false,
+      "tokens": 191
+    },
+    {
+      "id": "zero-offtopic-cooking",
+      "query": "sourdough starter hydration ratio for rye bread",
+      "expected": [],
+      "routed": [],
+      "matched": [],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 26
+    },
+    {
+      "id": "zero-expired-soap-gateway",
+      "query": "legacy soap gateway partner order submission endpoint",
+      "expected": [],
+      "routed": [
+        "workspace:knowledge/docker-compose-local-dev.md",
+        "workspace:rules/api-layering-thin-controllers.md"
+      ],
+      "matched": [],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": false,
+      "tokens": 196
+    },
+    {
+      "id": "paraphrase-install-packages",
+      "query": "how do I install the project dependencies",
+      "expected": [
+        "use-pnpm-for-installs"
+      ],
+      "routed": [
+        "global:rules/prefer-npm-for-installs.md",
+        "workspace:rules/use-pnpm-for-installs.md"
+      ],
+      "matched": [
+        "use-pnpm-for-installs"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 163
+    },
+    {
+      "id": "paraphrase-refresh-login",
+      "query": "renew an expiring login token in the browser client",
+      "expected": [
+        "auth-token-refresh-flow"
+      ],
+      "routed": [
+        "workspace:knowledge/jwt-signing-key-rotation.md",
+        "global:knowledge/owasp-security-checklist.md",
+        "workspace:knowledge/session-middleware-validates-auth-tokens.md",
+        "workspace:knowledge/auth-token-refresh-flow.md"
+      ],
+      "matched": [
+        "auth-token-refresh-flow"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 390
+    },
+    {
+      "id": "paraphrase-schema-change",
+      "query": "apply a database schema change with entity framework",
+      "expected": [
+        "ef-core-migrations-workflow"
+      ],
+      "routed": [
+        "workspace:knowledge/ef-core-migrations-workflow.md",
+        "workspace:knowledge/docker-compose-local-dev.md",
+        "global:knowledge/owasp-security-checklist.md"
+      ],
+      "matched": [
+        "ef-core-migrations-workflow"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 272
+    },
+    {
+      "id": "paraphrase-pdf-invoices",
+      "query": "generate printable invoice documents for finance",
+      "expected": [
+        "billing-invoice-export-pdf"
+      ],
+      "routed": [
+        "global:knowledge/architecture-decision-record-template.md",
+        "workspace:knowledge/billing-invoice-export-pdf.md",
+        "workspace:knowledge/payment-retry-backoff-copy.md",
+        "workspace:knowledge/payment-retry-backoff-policy.md"
+      ],
+      "matched": [
+        "billing-invoice-export-pdf"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 309
+    },
+    {
+      "id": "paraphrase-nuget-review-due",
+      "query": "restore private nuget packages from the team feed",
+      "expected": [
+        "nuget-feed-configuration"
+      ],
+      "routed": [
+        "workspace:knowledge/nuget-feed-configuration.md"
+      ],
+      "matched": [
+        "nuget-feed-configuration"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 108
+    },
+    {
+      "id": "negation-no-npm",
+      "query": "install packages but do not use npm or yarn",
+      "expected": [
+        "use-pnpm-for-installs"
+      ],
+      "routed": [
+        "workspace:rules/use-pnpm-for-installs.md",
+        "global:rules/prefer-npm-for-installs.md",
+        "workspace:knowledge/nuget-feed-configuration.md"
+      ],
+      "matched": [
+        "use-pnpm-for-installs"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 246
+    },
+    {
+      "id": "negation-no-console-log",
+      "query": "avoid console log statements in frontend code",
+      "expected": [
+        "no-console-output-in-production"
+      ],
+      "routed": [
+        "workspace:rules/no-console-output-in-production.md",
+        "workspace:rules/angular-standalone-components.md",
+        "global:rules/code-review-etiquette.md"
+      ],
+      "matched": [
+        "no-console-output-in-production"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 259
+    },
+    {
+      "id": "dependency-session-middleware",
+      "query": "session middleware validates auth tokens",
+      "expected": [
+        "session-middleware-validates-auth-tokens"
+      ],
+      "routed": [
+        "workspace:knowledge/jwt-signing-key-rotation.md",
+        "global:knowledge/owasp-security-checklist.md",
+        "workspace:knowledge/session-middleware-validates-auth-tokens.md",
+        "workspace:knowledge/auth-token-refresh-flow.md",
+        "workspace:rules/run-tests-before-commit.md",
+        "workspace:skills/write-xunit-tests-skill.md",
+        "workspace:rules/never-commit-secrets.md",
+        "workspace:rules/api-layering-thin-controllers.md",
+        "workspace:knowledge/workspace-startup-orientation.md",
+        "workspace:knowledge/docker-compose-local-dev.md",
+        "workspace:knowledge/release-pipeline-artifact-validation.md"
+      ],
+      "matched": [
+        "session-middleware-validates-auth-tokens"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 765
+    },
+    {
+      "id": "dependency-token-refresh-chain",
+      "query": "auth token refresh flow before expiry",
+      "expected": [
+        "auth-token-refresh-flow"
+      ],
+      "routed": [
+        "workspace:knowledge/jwt-signing-key-rotation.md",
+        "global:knowledge/owasp-security-checklist.md",
+        "workspace:knowledge/session-middleware-validates-auth-tokens.md",
+        "workspace:knowledge/auth-token-refresh-flow.md",
+        "workspace:rules/never-commit-secrets.md"
+      ],
+      "matched": [
+        "auth-token-refresh-flow"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 447
+    },
+    {
+      "id": "isolation-workspace-only-reviews",
+      "query": "pull request review feedback etiquette",
+      "expected": [],
+      "routed": [
+        "workspace:skills/hotfix-deployment-skill.md",
+        "workspace:rules/run-tests-before-commit.md"
+      ],
+      "matched": [],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [
+        "global:rules/code-review-etiquette.md",
+        "global:knowledge/git-branching-strategy.md"
+      ],
+      "zero_result_correct": false,
+      "tokens": 301
+    },
+    {
+      "id": "isolation-global-reviews",
+      "query": "code review pull request feedback etiquette",
+      "expected": [
+        "code-review-etiquette"
+      ],
+      "routed": [
+        "global:rules/code-review-etiquette.md",
+        "global:knowledge/git-branching-strategy.md"
+      ],
+      "matched": [
+        "code-review-etiquette"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [
+        "workspace:rules/no-console-output-in-production.md",
+        "workspace:rules/run-tests-before-commit.md",
+        "workspace:skills/hotfix-deployment-skill.md"
+      ],
+      "zero_result_correct": true,
+      "tokens": 327
+    },
+    {
+      "id": "isolation-workspace-secrets",
+      "query": "never commit secrets credentials to the repository",
+      "expected": [
+        "never-commit-secrets"
+      ],
+      "routed": [
+        "workspace:knowledge/jwt-signing-key-rotation.md",
+        "workspace:rules/never-commit-secrets.md",
+        "workspace:rules/conventional-commit-messages.md",
+        "workspace:knowledge/session-middleware-validates-auth-tokens.md",
+        "workspace:knowledge/auth-token-refresh-flow.md",
+        "workspace:rules/run-tests-before-commit.md",
+        "workspace:rules/use-pnpm-for-installs.md",
+        "workspace:rules/api-layering-thin-controllers.md",
+        "workspace:knowledge/nuget-feed-configuration.md"
+      ],
+      "matched": [
+        "never-commit-secrets"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [
+        "global:knowledge/owasp-security-checklist.md"
+      ],
+      "zero_result_correct": true,
+      "tokens": 750
+    },
+    {
+      "id": "duplicate-payment-retry",
+      "query": "payment retry exponential backoff with jitter",
+      "expected": [
+        "payment-retry-backoff-policy"
+      ],
+      "routed": [
+        "workspace:knowledge/payment-retry-backoff-copy.md",
+        "workspace:knowledge/payment-retry-backoff-policy.md",
+        "workspace:knowledge/angular-http-interceptor-error-handling.md"
+      ],
+      "matched": [
+        "payment-retry-backoff-policy"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 259
+    },
+    {
+      "id": "duplicate-invoice-retry",
+      "query": "retry failed invoice payment calls backoff",
+      "expected": [
+        "payment-retry-backoff-copy"
+      ],
+      "routed": [
+        "workspace:knowledge/payment-retry-backoff-copy.md",
+        "workspace:knowledge/payment-retry-backoff-policy.md",
+        "workspace:knowledge/billing-invoice-export-pdf.md",
+        "workspace:knowledge/angular-http-interceptor-error-handling.md"
+      ],
+      "matched": [
+        "payment-retry-backoff-copy"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 332
+    },
+    {
+      "id": "mixed-angular-and-tests",
+      "query": "add a standalone angular component and write unit tests",
+      "expected": [
+        "angular-standalone-components",
+        "run-tests-before-commit"
+      ],
+      "routed": [
+        "workspace:rules/angular-standalone-components.md",
+        "workspace:rules/run-tests-before-commit.md",
+        "workspace:skills/write-xunit-tests-skill.md",
+        "workspace:rules/no-console-output-in-production.md",
+        "workspace:knowledge/angular-http-interceptor-error-handling.md",
+        "workspace:rules/conventional-commit-messages.md",
+        "workspace:skills/hotfix-deployment-skill.md"
+      ],
+      "matched": [
+        "angular-standalone-components",
+        "run-tests-before-commit"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 518
+    },
+    {
+      "id": "mixed-api-async-logging",
+      "query": "new async api endpoint with cancellation token and structured logging",
+      "expected": [
+        "dotnet-async-and-cancellation",
+        "structured-logging-with-serilog"
+      ],
+      "routed": [
+        "workspace:knowledge/jwt-signing-key-rotation.md",
+        "workspace:rules/dotnet-async-and-cancellation.md",
+        "workspace:knowledge/structured-logging-with-serilog.md",
+        "workspace:knowledge/session-middleware-validates-auth-tokens.md",
+        "workspace:knowledge/auth-token-refresh-flow.md",
+        "global:knowledge/owasp-security-checklist.md",
+        "workspace:rules/no-console-output-in-production.md",
+        "workspace:knowledge/docker-compose-local-dev.md",
+        "workspace:rules/api-layering-thin-controllers.md"
+      ],
+      "matched": [
+        "dotnet-async-and-cancellation",
+        "structured-logging-with-serilog"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 676
+    },
+    {
+      "id": "mixed-hotfix-commit",
+      "query": "deploy a production hotfix and write the commit message",
+      "expected": [
+        "hotfix-deployment-skill",
+        "conventional-commit-messages"
+      ],
+      "routed": [
+        "workspace:skills/hotfix-deployment-skill.md",
+        "workspace:rules/conventional-commit-messages.md",
+        "workspace:rules/run-tests-before-commit.md",
+        "workspace:rules/no-console-output-in-production.md",
+        "workspace:rules/never-commit-secrets.md",
+        "workspace:knowledge/ef-core-migrations-workflow.md",
+        "workspace:skills/write-xunit-tests-skill.md"
+      ],
+      "matched": [
+        "hotfix-deployment-skill",
+        "conventional-commit-messages"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 483
+    },
+    {
+      "id": "disagreement-package-manager",
+      "query": "which package manager should installs use",
+      "expected": [
+        "use-pnpm-for-installs"
+      ],
+      "routed": [
+        "global:rules/prefer-npm-for-installs.md",
+        "workspace:rules/use-pnpm-for-installs.md",
+        "workspace:knowledge/workspace-startup-orientation.md"
+      ],
+      "matched": [
+        "use-pnpm-for-installs"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 240
+    },
+    {
+      "id": "disagreement-exact-id",
+      "query": "typescript-naming-conventions",
+      "expected": [
+        "typescript-naming-conventions"
+      ],
+      "routed": [
+        "workspace:rules/typescript-naming-conventions.md",
+        "workspace:rules/dotnet-async-and-cancellation.md"
+      ],
+      "matched": [
+        "typescript-naming-conventions"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 181
+    },
+    {
+      "id": "security-secrets-in-config",
+      "query": "where do connection strings and passwords go",
+      "expected": [
+        "never-commit-secrets"
+      ],
+      "routed": [
+        "workspace:knowledge/jwt-signing-key-rotation.md",
+        "workspace:rules/never-commit-secrets.md",
+        "workspace:knowledge/session-middleware-validates-auth-tokens.md",
+        "workspace:knowledge/auth-token-refresh-flow.md",
+        "global:knowledge/owasp-security-checklist.md"
+      ],
+      "matched": [
+        "never-commit-secrets"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 472
+    },
+    {
+      "id": "security-owasp-injection",
+      "query": "check for injection and broken access control",
+      "expected": [
+        "owasp-security-checklist"
+      ],
+      "routed": [
+        "workspace:knowledge/jwt-signing-key-rotation.md",
+        "global:knowledge/owasp-security-checklist.md",
+        "workspace:knowledge/release-pipeline-artifact-validation.md",
+        "workspace:knowledge/session-middleware-validates-auth-tokens.md",
+        "workspace:rules/never-commit-secrets.md",
+        "global:rules/code-review-etiquette.md",
+        "workspace:rules/angular-standalone-components.md",
+        "global:rules/dotnet-nullable-reference-types.md"
+      ],
+      "matched": [
+        "owasp-security-checklist"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 579
+    },
+    {
+      "id": "security-token-logging",
+      "query": "do not log tokens or personal data",
+      "expected": [
+        "structured-logging-with-serilog"
+      ],
+      "routed": [
+        "workspace:knowledge/jwt-signing-key-rotation.md",
+        "workspace:knowledge/structured-logging-with-serilog.md",
+        "workspace:knowledge/session-middleware-validates-auth-tokens.md",
+        "workspace:knowledge/auth-token-refresh-flow.md",
+        "global:knowledge/owasp-security-checklist.md",
+        "workspace:rules/no-console-output-in-production.md"
+      ],
+      "matched": [
+        "structured-logging-with-serilog"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 501
+    },
+    {
+      "id": "session-start-startup",
+      "query": "session start startup",
+      "expected": [
+        "workspace-startup-orientation"
+      ],
+      "routed": [
+        "workspace:knowledge/jwt-signing-key-rotation.md",
+        "workspace:knowledge/workspace-startup-orientation.md",
+        "workspace:knowledge/session-middleware-validates-auth-tokens.md",
+        "workspace:knowledge/auth-token-refresh-flow.md",
+        "workspace:knowledge/ef-core-migrations-workflow.md",
+        "workspace:knowledge/payment-retry-backoff-copy.md",
+        "workspace:knowledge/payment-retry-backoff-policy.md",
+        "workspace:knowledge/docker-compose-local-dev.md",
+        "workspace:rules/typescript-naming-conventions.md"
+      ],
+      "matched": [
+        "workspace-startup-orientation"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 659
+    },
+    {
+      "id": "session-start-current",
+      "query": "current session",
+      "expected": [
+        "workspace-startup-orientation"
+      ],
+      "routed": [
+        "workspace:knowledge/jwt-signing-key-rotation.md",
+        "workspace:knowledge/workspace-startup-orientation.md",
+        "workspace:knowledge/session-middleware-validates-auth-tokens.md",
+        "workspace:knowledge/auth-token-refresh-flow.md",
+        "workspace:rules/angular-standalone-components.md",
+        "workspace:rules/api-layering-thin-controllers.md",
+        "workspace:rules/conventional-commit-messages.md",
+        "workspace:rules/dotnet-async-and-cancellation.md",
+        "workspace:rules/never-commit-secrets.md",
+        "workspace:rules/no-console-output-in-production.md",
+        "workspace:rules/run-tests-before-commit.md",
+        "workspace:rules/typescript-naming-conventions.md",
+        "workspace:rules/use-pnpm-for-installs.md"
+      ],
+      "matched": [
+        "workspace-startup-orientation"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 860
+    }
+  ],
+  "metrics": {
+    "precision_at_k": 0.202,
+    "recall_at_k": 1,
+    "forbidden_hits": 0,
+    "dependency_failures": 0,
+    "isolation_failures": 6,
+    "zero_result_correctness": 0.25,
+    "tokens_mean": 389.259,
+    "tokens_p95": 765,
+    "hook_tokens_mean": 1183.926,
+    "hook_tokens_p95": 1441
+  }
+}

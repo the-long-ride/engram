@@ -32,7 +32,8 @@ import {
   apiUpgradeReview,
   apiUpgradeResolve,
   apiUpgradeResolveBatch,
-  apiUpgradeOpenFile
+  apiUpgradeOpenFile,
+  apiReviewWrite
 } from '../dist/core/web/api.js';
 import { scanUpgradeInventory } from '../dist/core/upgrade/inventory.js';
 import { buildUpgradePlan } from '../dist/core/upgrade/planner.js';
@@ -774,7 +775,7 @@ test('global shared guide plus managed instruction converge in one upgrade pass 
     assert.equal(plan.review?.pendingReviewCount, 0);
     const result = await apiUpgradeApply(cwd, { fingerprint: plan.fingerprint, confirmed: true });
     assert.equal(result.conflicts.length, 0);
-    const guideBackup = `${guideFile}.engram-upgrade-0.0.28.bak`;
+    const guideBackup = `${guideFile}.engram-upgrade-0.0.29.bak`;
     assert.equal(await readFile(guideBackup, 'utf8'), '# User manually edited shared guide\n');
 
     const after = await apiUpgradePlan(cwd);
@@ -952,6 +953,29 @@ test('web upgrade open-file resolves only the server-side plan item and rejects 
   } finally {
     restoreEnv('ENGRAM_CONFIG_DIR', old.config);
     restoreEnv('ENGRAM_GLOBAL_DIR', old.global);
+    await rm(cwd, { recursive: true, force: true });
+  }
+});
+
+test('apiReviewWrite rows carry verdict', async () => {
+  const { cwd, env } = await tempWorkspace('engram-web-verdict-');
+  await runEngram(cwd, env, ['inject', '--no-skillset']);
+  const keys = ['ENGRAM_CONFIG_DIR', 'ENGRAM_GLOBAL_DIR', 'GIT_CONFIG_COUNT', 'GIT_CONFIG_KEY_0', 'GIT_CONFIG_VALUE_0', 'GIT_CONFIG_KEY_1', 'GIT_CONFIG_VALUE_1'];
+  const previous = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
+  for (const key of keys) {
+    if (env[key] === undefined) delete process.env[key];
+    else process.env[key] = env[key];
+  }
+  try {
+    const result = await apiReviewWrite(cwd, { confirmed: true, scope: 'workspace', proposal: 'TYPE: knowledge | TEXT: Web verdict rows report the planned action' });
+    assert.equal(result.written.length, 1);
+    assert.equal(result.written[0].action, 'add');
+    assert.deepEqual(result.written[0].verdict, { kind: 'ADD' });
+  } finally {
+    for (const key of keys) {
+      if (previous[key] === undefined) delete process.env[key];
+      else process.env[key] = previous[key];
+    }
     await rm(cwd, { recursive: true, force: true });
   }
 });

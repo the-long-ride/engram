@@ -31,6 +31,7 @@ test('generic config editor cannot mutate author profile keys', () => {
   assert.equal(configFieldsForPanel().some((field) => field.key.startsWith('author.')), false);
   assert.equal(isKnownConfigKey('author.name'), false);
   assert.equal(isKnownConfigKey('author.email'), false);
+  assert.equal(isKnownConfigKey('memory.include_author_email'), true);
 });
 
 test('every visible config field has a unique explicit docs anchor', () => {

@@ -50,8 +50,10 @@ Engram = workspace memory.
   assert.equal(second.code, 0, second.stderr);
   assert.match(second.stdout, /✔ engram is injected!/);
   assert.match(await readFile(path.join(cwd, 'AGENTS.md'), 'utf8'), /<!-- engram:start -->/);
-  assert.match(await readFile(path.join(cwd, '.agents', 'skills', 'engram', 'SKILL.md'), 'utf8'), /knowledge memory center/);
-  assert.match(await readFile(path.join(cwd, '.agents', 'skills', 'engram', 'SKILL.md'), 'utf8'), /Session end/);
+  // The refreshed Codex skill is a thin pointer to the canonical guide (D13).
+  assert.match(await readFile(path.join(cwd, '.agents', 'skills', 'engram', 'SKILL.md'), 'utf8'), /Full protocol: `\.agents\/engram\.md`/);
+  assert.doesNotMatch(await readFile(path.join(cwd, '.agents', 'skills', 'engram', 'SKILL.md'), 'utf8'), /Engram = workspace memory\./);
+  assert.match(await readFile(path.join(cwd, '.agents', 'engram.md'), 'utf8'), /Agent-proposed memory/);
   assert.equal((await runEngram(cwd, env, ['inject'])).code, 0);
   await rm(cwd, { recursive: true, force: true });
 });

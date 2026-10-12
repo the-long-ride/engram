@@ -13,6 +13,7 @@ import { parseMemory, validateMemoryRaw } from '../../dist/core/memory/schema.js
 import { writeTrace } from '../../dist/core/traces/storage.js';
 
 const sha256 = (text) => createHash('sha256').update(text).digest('hex');
+const backupOf = (root, rel) => path.join(root, 'backups', 'schema-v3', ...`${rel}.pre-v3.bak`.split('/'));
 
 async function tempRoot() {
   const root = await mkdtemp(path.join(os.tmpdir(), 'engram-memory-schema-migration-'));
@@ -90,8 +91,10 @@ test('plan reports eligible legacy memories without writing files', async () => 
   assert.equal(result.migrated, 0);
   assert.equal(result.skipped, 0);
   assert.equal(result.files[0].action, 'migrate');
+  assert.equal(result.files[0].backup, 'backups/schema-v3/rules/legacy-rule.md.pre-v3.bak');
   assert.equal(await readFile(file, 'utf8'), raw);
   await assert.rejects(readFile(`${file}.pre-v3.bak`, 'utf8'));
+  await assert.rejects(readFile(backupOf(root, 'rules/legacy-rule.md'), 'utf8'));
   await rm(root, { recursive: true, force: true });
 });
 
@@ -113,8 +116,12 @@ test('migration upgrades v1 and v2 frontmatter while preserving bodies exactly',
   const migratedV2 = await readFile(v2File, 'utf8');
   assert.equal(bodyOf(migratedV1), bodyOf(v1));
   assert.equal(bodyOf(migratedV2), bodyOf(v2));
-  assert.equal(await readFile(`${v1File}.pre-v3.bak`, 'utf8'), v1);
-  assert.equal(await readFile(`${v2File}.pre-v3.bak`, 'utf8'), v2);
+  assert.equal(await readFile(backupOf(root, 'rules/legacy-rule.md'), 'utf8'), v1);
+  assert.equal(await readFile(backupOf(root, 'knowledge/legacy-knowledge.md'), 'utf8'), v2);
+  assert.equal(result.files.find((row) => row.file === 'rules/legacy-rule.md').backup, 'backups/schema-v3/rules/legacy-rule.md.pre-v3.bak');
+  await assert.rejects(readFile(`${v1File}.pre-v3.bak`, 'utf8'));
+  await assert.rejects(readFile(`${v2File}.pre-v3.bak`, 'utf8'));
+  assert.match(await readFile(path.join(root, '.gitignore'), 'utf8'), /^backups\/$/m);
 
   const v1Doc = parseMemory(migratedV1);
   assert.equal(v1Doc.frontmatter.schema_version, 3);
@@ -212,6 +219,7 @@ test('migration skips invalid files and never rewrites archives', async () => {
   assert.match(result.files.find((row) => row.file === 'rules/invalid.md').reason, /Invalid memory type/);
   assert.equal(await readFile(archived, 'utf8'), archivedRaw);
   await assert.rejects(readFile(`${archived}.pre-v3.bak`, 'utf8'));
+  await assert.rejects(readFile(backupOf(root, 'archive/legacy.md'), 'utf8'));
   await rm(root, { recursive: true, force: true });
 });
 
@@ -224,7 +232,7 @@ test('migration refreshes hashes and is idempotent without overwriting backups',
 
   const first = await migrateMemorySchema(root, 'workspace');
   const migrated = await readFile(file, 'utf8');
-  const backupStat = await stat(`${file}.pre-v3.bak`);
+  const backupStat = await stat(backupOf(root, rel));
   const hashes = JSON.parse(await readFile(path.join(root, 'memory.hashes.json'), 'utf8'));
   assert.equal(hashes[rel], sha256(migrated));
   assert.equal(first.migrated, 1);
@@ -233,7 +241,7 @@ test('migration refreshes hashes and is idempotent without overwriting backups',
   assert.equal(second.eligible, 0);
   assert.equal(second.migrated, 0);
   assert.equal(await readFile(file, 'utf8'), migrated);
-  assert.equal((await stat(`${file}.pre-v3.bak`)).mtimeMs, backupStat.mtimeMs);
+  assert.equal((await stat(backupOf(root, rel))).mtimeMs, backupStat.mtimeMs);
   await rm(root, { recursive: true, force: true });
 });
 
@@ -262,7 +270,7 @@ test('migration preserves restrictive memory file permissions', async (t) => {
   await migrateMemorySchema(root, 'workspace');
 
   assert.equal((await stat(file)).mode & 0o777, 0o600);
-  assert.equal((await stat(`${file}.pre-v3.bak`)).mode & 0o777, 0o600);
+  assert.equal((await stat(backupOf(root, 'rules/private-rule.md'))).mode & 0o777, 0o600);
   await rm(root, { recursive: true, force: true });
 });
 
@@ -279,6 +287,6 @@ test('migration restores the legacy file when hash refresh fails', async () => {
   assert.equal(result.migrated, 0);
   assert.equal(result.failed, 1);
   assert.equal(await readFile(file, 'utf8'), raw);
-  assert.equal(await readFile(`${file}.pre-v3.bak`, 'utf8'), raw);
+  assert.equal(await readFile(backupOf(root, 'rules/hash-failure.md'), 'utf8'), raw);
   await rm(root, { recursive: true, force: true });
 });

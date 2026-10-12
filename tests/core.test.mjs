@@ -21,6 +21,7 @@ import { detectCompletionTarget } from '../dist/core/cli/completion-target.js';
 import { COMMAND_TOPICS } from '../dist/core/cli/help-topics.js';
 import { INIT_WORDMARK, renderInitWordmark } from '../dist/core/cli/banner.js';
 import { forceRestructureResponse } from '../dist/commands/write.js';
+import { candidateVerdict, NOOP_MIN_SCORE, SUPERSEDE_MIN_SCORE } from '../dist/core/memory/save-plan.js';
 import { isIgnored } from '../dist/core/safety/ignore.js';
 import { scanInjection, scanSensitive, redactSensitive } from '../dist/core/safety/security.js';
 import { sha256 } from '../dist/core/safety/hash.js';
@@ -36,10 +37,15 @@ import {
 } from '../dist/core/memory/agent-proposal-protocol.js';
 import { parseMemoryCandidate, generatedMemoryGuidance, saveSessionGuidance } from '../dist/core/memory/memory-candidate.js';
 import { canonicalCandidateText, serializeCandidateForApply } from '../dist/core/review/inbox.js';
-import { canonicalRuleText, renderMemoryForAgent, ruleVariantsAreCustomized, stripRuleVariantSection } from '../dist/core/memory/rule-variants.js';
-import { route, routeDetailed } from '../dist/core/memory/routing.js';
+import { canonicalRuleText, renderMemoryForAgent, renderMemoryForConfig, ruleVariantText, ruleVariantsAreCustomized, ruleVariantsFor, stripRuleVariantSection, variantsDifferFromDefaults } from '../dist/core/memory/rule-variants.js';
+import { renderAgentBody, renderAgentCard } from '../dist/core/memory/agent-render.js';
+import { route, routeDetailed, validityFactor } from '../dist/core/memory/routing.js';
+import { entriesForPath, toolPaths } from '../dist/core/memory/path-triggers.js';
+import { pathAnchorHit, queryPaths } from '../dist/core/memory/path-anchors.js';
+import { buildBm25, stem } from '../dist/core/system/bm25.js';
 import { planLoad } from '../dist/core/memory/load-plan.js';
-import { packPayload } from '../dist/core/memory/payload-plan.js';
+import { queryText as hookQueryText } from '../dist/core/integrations/agent-hook-runtime.js';
+import { packPayload, packTiered } from '../dist/core/memory/payload-plan.js';
 import { classifyTaskType, normalizeTaskType } from '../dist/core/memory/task-classifier.js';
 import { inferTaskIntent, taskIntentQuery, intentIsActionable } from '../dist/core/memory/task-intent.js';
 import { ensureVectorIndex } from '../dist/core/memory/vector-db.js';
@@ -74,25 +80,25 @@ test('agent paths honor Engram home and config-home overrides', () => {
 import { tempWorkspace } from './helpers.mjs';
 
 
-test('v0.0.28 package and docs metadata are published together', async () => {
+test('v0.0.29 package and docs metadata are published together', async () => {
   const manifest = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
   const versions = JSON.parse(await readFile(new URL('../website/versions.json', import.meta.url), 'utf8'));
-  assert.equal(manifest.version, '0.0.28');
-  assert.deepEqual(versions, ['0.0.25', '0.0.27', '0.0.28']);
-  assert.equal(VERSION, '0.0.28');
-  assert.equal(DOCS_SITE_LATEST_VERSION, '0.0.28');
-  assert.deepEqual([...DOCS_SITE_VERSIONS], ['0.0.25', '0.0.27', '0.0.28']);
+  assert.equal(manifest.version, '0.0.29');
+  assert.deepEqual(versions, ['0.0.25', '0.0.27', '0.0.28', '0.0.29']);
+  assert.equal(VERSION, '0.0.29');
+  assert.equal(DOCS_SITE_LATEST_VERSION, '0.0.29');
+  assert.deepEqual([...DOCS_SITE_VERSIONS], ['0.0.25', '0.0.27', '0.0.28', '0.0.29']);
 });
 
-test('v0.0.28 English and localized docs snapshots exist', async () => {
-  await access(new URL('../website/versioned_docs/version-0.0.28/entry/policy.md', import.meta.url));
-  await access(new URL('../website/versioned_sidebars/version-0.0.28-sidebars.json', import.meta.url));
+test('v0.0.29 English and localized docs snapshots exist', async () => {
+  await access(new URL('../website/versioned_docs/version-0.0.29/entry/policy.md', import.meta.url));
+  await access(new URL('../website/versioned_sidebars/version-0.0.29-sidebars.json', import.meta.url));
   for (const locale of ['vi', 'es', 'fr', 'zh', 'ko', 'ja', 'ru']) {
-    await access(new URL(`../website/i18n/${locale}/docusaurus-plugin-content-docs/version-0.0.28/entry/policy.md`, import.meta.url));
+    await access(new URL(`../website/i18n/${locale}/docusaurus-plugin-content-docs/version-0.0.29/entry/policy.md`, import.meta.url));
   }
 
   const config = await readFile(new URL('../website/docusaurus.config.ts', import.meta.url), 'utf8');
-  assert.match(config, /publishedVersionLabel:\s*'0\.0\.28'/);
+  assert.match(config, /publishedVersionLabel:\s*'0\.0\.29'/);
   assert.match(config, /'0\.0\.27':\s*\{[\s\S]*?path:\s*'version-0\.0\.27'/);
   assert.match(config, /\[docsCopy\.publishedVersionLabel\]:\s*\{[\s\S]*?path:\s*'\/'/);
 });
@@ -261,7 +267,97 @@ pnpm install
   assert.equal(ruleVariantsAreCustomized(customized), true);
 });
 
-test('renderMemoryForAgent slims metadata and renders one selected rule variant', () => {
+const sectionlessRule = `---
+id: use-pnpm
+type: rule
+scope: workspace
+tags: [node, package]
+author: dev@example.com
+confidence: high
+---
+# Use pnpm
+
+## Context
+
+Project package manager.
+
+## Content
+
+- Use pnpm for installs.
+
+## Example
+
+pnpm install
+`;
+const sectionedRule = sectionlessRule.replace('\n## Example', `
+## Rule Variants
+
+### Light
+
+- Consider this rule when the task context matches: Use pnpm for installs.
+
+### Balanced
+
+- Use pnpm for installs.
+
+### Strict
+
+- Treat this rule as mandatory unless the human explicitly overrides it: Use pnpm for installs.
+
+## Example`);
+const pnpmRuleEntry = {
+  id: 'use-pnpm', type: 'rule', scope: 'workspace', tags: ['node', 'package'], summary: 'Use pnpm for installs.',
+  routingTerms: ['pnpm'], file: 'rules/use-pnpm.md', author: 'dev@example.com', confidence: 'high',
+  authority: 'instruction', ignored: false, updated: '2026-06-01'
+};
+
+test('ruleVariantText derives light and strict from Content when no section is stored', () => {
+  assert.equal(ruleVariantText(sectionlessRule), '- Use pnpm for installs.');
+  assert.equal(ruleVariantText(sectionlessRule, 'balanced'), '- Use pnpm for installs.');
+  assert.equal(ruleVariantText(sectionlessRule, 'light'), '- Consider this rule when the task context matches: Use pnpm for installs.');
+  assert.ok(ruleVariantText(sectionlessRule, 'strict').startsWith('- Treat this rule as mandatory'));
+  assert.deepEqual(ruleVariantsFor(sectionlessRule), ruleVariantsFor(sectionedRule));
+  // A stored section wins over the derivation.
+  const custom = sectionedRule.replace('- Treat this rule as mandatory unless the human explicitly overrides it: Use pnpm for installs.', '- Block npm and yarn.');
+  assert.equal(ruleVariantText(custom, 'strict'), '- Block npm and yarn.');
+  assert.equal(variantsDifferFromDefaults({ strict: '- Block npm and yarn.' }, 'Use pnpm for installs.'), true);
+  assert.equal(variantsDifferFromDefaults({}, 'Use pnpm for installs.'), false);
+  assert.equal(variantsDifferFromDefaults({
+    light: '- Consider this rule when the task context matches: Use pnpm for installs.',
+    balanced: '- Use pnpm for installs.',
+    strict: '- Treat this rule as mandatory unless the human explicitly overrides it: Use pnpm for installs.'
+  }, 'Use pnpm for installs.'), false);
+  // A lone balanced variant is custom (light and strict fall back to it); bullet-less wording equal to the defaults is not.
+  assert.equal(variantsDifferFromDefaults({ balanced: 'Use pnpm for installs.' }, 'Use pnpm for installs.'), true);
+  assert.equal(variantsDifferFromDefaults({
+    light: 'Consider this rule when the task context matches: Use pnpm for installs.',
+    balanced: 'Use pnpm for installs.',
+    strict: 'Treat this rule as mandatory unless the human explicitly overrides it: Use pnpm for installs.'
+  }, 'Use pnpm for installs.'), false);
+});
+
+test('old and new rule files index to the same summary and routing terms', () => {
+  const withSection = entryFromMemory(sectionedRule, 'rules/use-pnpm.md', 'workspace');
+  const without = entryFromMemory(sectionlessRule, 'rules/use-pnpm.md', 'workspace');
+  assert.equal(withSection.summary, without.summary);
+  assert.deepEqual(withSection.routingTerms, without.routingTerms);
+});
+
+test('renderMemoryForConfig strict on a section-less file uses the derived strict line', () => {
+  const config = defaultConfig();
+  config.rule_variants = { enabled: true, active: 'strict' };
+  const strict = renderMemoryForConfig(sectionlessRule, pnpmRuleEntry, config);
+  assert.match(strict, /- Treat this rule as mandatory unless the human explicitly overrides it: Use pnpm for installs\./);
+  assert.doesNotMatch(strict, /## Rule Variants|consider this rule/i);
+  assert.match(renderMemoryForAgent(sectionlessRule, pnpmRuleEntry, config), /- Treat this rule as mandatory/);
+  config.rule_variants = { enabled: true, active: 'light' };
+  assert.match(renderMemoryForConfig(sectionlessRule, pnpmRuleEntry, config), /- Consider this rule when the task context matches: Use pnpm for installs\./);
+  // Balanced, or variants off, leaves a section-less file byte for byte.
+  assert.equal(renderMemoryForConfig(sectionlessRule, pnpmRuleEntry, defaultConfig()), sectionlessRule);
+  assert.doesNotMatch(renderMemoryForAgent(sectionlessRule, pnpmRuleEntry, defaultConfig()), /mandatory/);
+});
+
+test('renderMemoryForAgent renders a lean header and one selected rule variant', () => {
   const auto = `---
 id: use-pnpm
 type: rule
@@ -311,20 +407,115 @@ pnpm install
     file: 'rules/use-pnpm.md',
     author: 'dev@example.com',
     confidence: 'high',
+    authority: 'instruction',
     ignored: false,
     updated: '2026-06-01'
   }, defaultConfig());
 
-  assert.match(rendered, /^---\n[\s\S]*\n---/m);
-  assert.match(rendered, /id: use-pnpm/);
-  assert.match(rendered, /type: rule/);
-  assert.match(rendered, /tags: \[node, package\]/);
-  assert.match(rendered, /confidence: high/);
-  assert.doesNotMatch(rendered, /scope: workspace|created:|updated:|author:|source:/);
-  assert.doesNotMatch(rendered, /## Rule Variants/);
-  assert.match(rendered, /## Rule variants \(1\/3 based on current: Balanced\)/);
+  assert.match(rendered, /^### use-pnpm \[rule, instruction\]\n/);
+  assert.doesNotMatch(rendered, /^---|id: use-pnpm|tags:|confidence:|created:|updated:|author:|source:/m);
+  assert.doesNotMatch(rendered, /## Rule Variants|Rule variants \(|## Content|## Context|## Example|## Origin/);
   assert.match(rendered, /- Use pnpm\./);
   assert.doesNotMatch(rendered, /- Treat this rule as mandatory/);
+});
+
+const leanV1Fixture = `---
+id: use-pnpm
+type: rule
+scope: workspace
+tags: [node, package, install]
+created: 2026-06-01
+updated: 2026-06-01
+author: dev@example.com
+source: manual
+confidence: high
+---
+# Rule: Use pnpm
+
+## Context
+
+This repository standardises on pnpm because the lockfile format, workspace protocol and install speed are all
+tuned for it. Teammates previously mixed npm and yarn which produced conflicting lockfiles and noisy diffs.
+
+## Content
+
+- Use pnpm for every install, add and remove operation in this repository.
+
+## Rule Variants
+
+### Light
+
+- Consider this rule when the task context matches: Use pnpm for every install, add and remove operation in this repository.
+
+### Balanced
+
+- Use pnpm for every install, add and remove operation in this repository.
+
+### Strict
+
+- Treat this rule as mandatory unless the human explicitly overrides it: Use pnpm for every install, add and remove operation in this repository.
+
+## Example
+
+pnpm install
+pnpm add left-pad
+pnpm remove left-pad
+
+## Origin
+
+Approved from a conversation where the team agreed to stop mixing package managers across the monorepo packages.
+`;
+const leanEntry = (extra = {}) => ({
+  id: 'use-pnpm', type: 'rule', scope: 'workspace', tags: ['node'], summary: 'Use pnpm.', file: 'rules/use-pnpm.md',
+  author: 'dev@example.com', confidence: 'high', authority: 'instruction', ignored: false, updated: '2026-06-01', ...extra
+});
+
+test('renderAgentBody drops Context, Example, Origin, separators and the variant heading', () => {
+  const body = renderAgentBody(leanV1Fixture, leanEntry(), defaultConfig());
+  assert.ok(body.startsWith('### use-pnpm [rule, instruction]'));
+  for (const banned of ['## Context', '## Example', '## Origin', '---', 'Approved from', 'Rule variants (']) {
+    assert.equal(body.includes(banned), false, `unexpected ${banned}`);
+  }
+  assert.match(body, /- Use pnpm for every install/);
+  assert.ok(body.length <= leanV1Fixture.length * 0.4, `${body.length} > 40% of ${leanV1Fixture.length}`);
+});
+
+test('renderAgentBody lists dependencies and falls back without a Content section', () => {
+  const withDeps = renderAgentBody(leanV1Fixture, leanEntry({ dependsOn: ['a', 'b'] }), defaultConfig());
+  assert.match(withDeps, /^requires: a, b$/m);
+  assert.doesNotMatch(renderAgentBody(leanV1Fixture, leanEntry(), defaultConfig()), /requires:/);
+
+  const noContent = `---
+id: loose
+type: knowledge
+scope: workspace
+tags: [loose]
+author: dev@example.com
+confidence: high
+---
+# Knowledge: Loose
+
+Plain body text.
+
+## Context
+
+Dropped context.
+
+## Notes
+
+Kept notes.
+`;
+  const fallback = renderAgentBody(noContent, leanEntry({ id: 'loose', type: 'knowledge', authority: 'reference' }), defaultConfig());
+  assert.ok(fallback.startsWith('### loose [knowledge, reference]'));
+  assert.match(fallback, /Plain body text\./);
+  assert.match(fallback, /Kept notes\./);
+  assert.doesNotMatch(fallback, /Dropped context|# Knowledge: Loose|## Context/);
+});
+
+test('renderAgentCard prints a single line from directive or summary', () => {
+  assert.equal(renderAgentCard(leanEntry({ id: 'use-pnpm', directive: 'Use pnpm' })), '- use-pnpm [rule] Use pnpm');
+  assert.equal(renderAgentCard(leanEntry({ id: 'use-pnpm', directive: 'Use pnpm' }), true), '- use-pnpm [rule] Use pnpm (stale)');
+  assert.equal(renderAgentCard(leanEntry({ summary: 'Fallback summary.' })), '- use-pnpm [rule] Fallback summary.');
 });
 
 test('rule memory summaries ignore stored variant duplication', () => {
@@ -367,6 +558,77 @@ pnpm install
   assert.match(entry.summary, /Use pnpm for installs/);
   assert.doesNotMatch(entry.summary, /mandatory unless the human explicitly overrides it/);
   assert.doesNotMatch(entry.summary, /Consider this rule when the task context matches/);
+});
+
+const distilledMemory = (extraFrontmatter = '', tags = 'tags: [deploy]\n') => `---
+id: ship-checks
+type: rule
+scope: workspace
+${tags}author: dev@example.com
+confidence: high
+${extraFrontmatter}---
+# Ship checks
+
+## Context
+
+Born from a long conversation about releases.
+
+## Content
+
+- Run the smoke suite before every release.
+
+## Example
+
+smoke run
+
+## Origin
+
+Captured from a conversation transcript.
+`;
+
+test('distilled frontmatter round-trips into the memory entry', () => {
+  const entry = entryFromMemory(distilledMemory([
+    'directive: Always run smoke tests before release',
+    'applies_to: [src/**/*.ts, docs/**]',
+    'tier: working',
+    'objective: Keep releases safe'
+  ].join('\n') + '\n'), 'working/rules/ship-checks.md', 'workspace');
+  assert.equal(entry.directive, 'Always run smoke tests before release');
+  assert.deepEqual(entry.appliesTo, ['src/**/*.ts', 'docs/**']);
+  assert.equal(entry.tier, 'working');
+  // The path decides the tier: the same frontmatter in a durable file stays durable.
+  assert.equal('tier' in entryFromMemory(distilledMemory('tier: working\n'), 'rules/ship-checks.md', 'workspace'), false);
+  assert.equal(entry.objective, 'Keep releases safe');
+  assert.equal(entry.autoTags, undefined);
+  assert.ok(entry.routingTerms.includes('smoke'));
+  assert.ok(entry.routingTerms.includes('always'));
+
+  const plain = entryFromMemory(distilledMemory(), 'rules/ship-checks.md', 'workspace');
+  for (const key of ['directive', 'appliesTo', 'tier', 'objective', 'autoTags']) assert.equal(key in plain, false);
+});
+
+test('distilled frontmatter is validated', () => {
+  assert.throws(() => validateMemoryRaw(distilledMemory(`directive: ${'x'.repeat(161)}\n`)), /directive must be <= 160 characters/);
+  validateMemoryRaw(distilledMemory(`directive: ${'x'.repeat(160)}\n`));
+  assert.throws(() => validateMemoryRaw(distilledMemory('tier: eternal\n')), /Invalid tier/);
+  validateMemoryRaw(distilledMemory('tier: durable\n'));
+  assert.throws(() => validateMemoryRaw(distilledMemory(`objective: ${'x'.repeat(201)}\n`)), /objective must be <= 200 characters/);
+});
+
+test('routing terms and summary come from the Content section only', () => {
+  const entry = entryFromMemory(distilledMemory(), 'rules/ship-checks.md', 'workspace');
+  assert.ok(entry.routingTerms.includes('smoke'));
+  assert.ok(!entry.routingTerms.includes('conversation'));
+  assert.ok(!entry.routingTerms.includes('transcript'));
+  assert.ok(!entry.routingTerms.includes('born'));
+  assert.match(entry.summary, /^Run the smoke suite before every release\.?$/);
+});
+
+test('entries flag tags derived from the title', () => {
+  const derived = entryFromMemory(distilledMemory('', ''), 'rules/ship-checks.md', 'workspace');
+  assert.equal(derived.autoTags, true);
+  assert.deepEqual(derived.tags, ['ship', 'checks']);
+  assert.equal('autoTags' in entryFromMemory(distilledMemory(), 'rules/ship-checks.md', 'workspace'), false);
 });
 
 test('memory candidates can carry dependency structure', () => {
@@ -687,9 +949,10 @@ test('merged memory priority keeps workspace before global fallback', () => {
   assert.equal(route(index, 'deploy checklist', config)[0].scope, 'workspace');
 });
 
-test('routing accepts high-confidence vector candidates without direct query overlap', () => {
+test('routing blends vector candidates that share a query anchor', () => {
   const lexical = routingEntry('deploy-checklist', 'workspace', ['deploy'], 'Deploy checklist lives local.');
-  const vectorOnly = routingEntry('release-runbook', 'workspace', ['release'], 'Cut production rollout safely.');
+  // D6: a vector hit needs anchor overlap; the score alone no longer admits it.
+  const vectorOnly = routingEntry('release-runbook', 'workspace', ['release'], 'Cut production rollout safely with the checklist.');
   const index = { version: 'test', last_updated: 'now', entries: [vectorOnly, lexical] };
   const config = { ...defaultConfig(), graph: { ...defaultConfig().graph, enabled: false }, vector: { ...defaultConfig().vector, candidate_pool: 8 } };
 
@@ -866,10 +1129,29 @@ test('vector sidecar skips cleanly when sqlite-vec runtime is unavailable', asyn
     routingEntry('one', 'workspace', ['one'], 'One memory.'),
     routingEntry('two', 'workspace', ['two'], 'Two memory.')
   ];
-  const config = { ...defaultConfig(), vector: { ...defaultConfig().vector, auto_threshold: 2 } };
+  const config = { ...defaultConfig(), vector: { ...defaultConfig().vector, enabled: true, auto_threshold: 2 } };
   const status = await ensureVectorIndex(cwd, 'workspace', entries, config, { force: true });
-  assert.equal(status.action, 'skipped');
-  assert.match(status.reason ?? '', /sqlite-vec runtime unavailable|below threshold/);
+  // The optional sqlite-vec runtime may be installed locally; the sidecar then rebuilds instead of skipping.
+  if (status.action === 'skipped') assert.match(status.reason ?? '', /sqlite-vec runtime unavailable|below threshold/);
+  else assert.equal(status.action, 'rebuilt');
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('vector layer is off by default and an explicit true still builds the sidecar', async () => {
+  assert.equal(defaultConfig().vector.enabled, false);
+  const { cwd } = await tempWorkspace('engram-vector-default-');
+  const entries = [
+    routingEntry('one', 'workspace', ['one'], 'One memory.'),
+    routingEntry('two', 'workspace', ['two'], 'Two memory.')
+  ];
+  const off = await ensureVectorIndex(cwd, 'workspace', entries, defaultConfig(), { force: true });
+  assert.equal(off.action, 'skipped');
+  assert.equal(off.reason, 'vector routing disabled');
+  const on = { ...defaultConfig(), vector: { ...defaultConfig().vector, enabled: true, auto_threshold: 2 } };
+  const status = await ensureVectorIndex(cwd, 'workspace', entries, on, { force: true });
+  // The optional sqlite-vec runtime may be absent; either outcome proves the layer was attempted.
+  if (status.action === 'skipped') assert.match(status.reason ?? '', /sqlite-vec runtime unavailable/);
+  else assert.equal(status.action, 'rebuilt');
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -1040,6 +1322,7 @@ test('forceRestructureResponse treats displayed 1.00 duplicate scores as merge g
       id: 'invoice-retry-policy',
       content: '---\nid: invoice-retry-policy\ntype: knowledge\n---\n# Invoice retry policy',
       message: 'add knowledge: invoice-retry-policy',
+      verdict: { kind: 'ADD' },
       candidateIndex: 1,
       related: [{
         id: 'invoice-webhook-retry-baseline',
@@ -1058,6 +1341,7 @@ test('forceRestructureResponse treats displayed 1.00 duplicate scores as merge g
       id: 'oauth-rotation',
       content: '---\nid: oauth-rotation\ntype: rule\ndepends_on: []\n---\n# OAuth rotation must follow release foundations',
       message: 'add rule: oauth-rotation',
+      verdict: { kind: 'ADD' },
       candidateIndex: 2,
       related: [{
         id: 'release-foundation',
@@ -1238,6 +1522,59 @@ test('inferTaskIntent detects testing work', () => {
 test('inferTaskIntent detects AI agent/skill work', () => {
   const intent = inferTaskIntent('create a new MCP skill for memory routing');
   assert.ok(intent.domains.includes('ai_agent'));
+});
+
+test('inferTaskIntent matches signals on word boundaries, not substrings', () => {
+  assert.ok(!inferTaskIntent('session start startup').domains.includes('auth'), 'session-start phrasing is not auth');
+  assert.ok(!inferTaskIntent('build the guide').domains.includes('ui'), 'ui must not match inside build/guide');
+  const unless = inferTaskIntent('unless review');
+  assert.ok(!unless.domains.includes('frontend') && !unless.domains.includes('css'));
+  assert.ok(!unless.technologies.includes('css'), 'less must not match inside unless');
+  assert.ok(inferTaskIntent('fix login session token').domains.includes('auth'));
+  assert.ok(inferTaskIntent('polish the UI').domains.includes('ui'), 'short whole-word signals still match');
+  assert.ok(inferTaskIntent('make it optimized and localized').constraints.includes('performance'), 'stem signals still match');
+});
+
+test('inferTaskIntent matches common inflections of single-word signals', () => {
+  assert.ok(inferTaskIntent('authentication flow').domains.includes('auth'));
+  assert.ok(inferTaskIntent('run the tests').domains.includes('testing'));
+  const fixing = inferTaskIntent('fixing bugs in deployment');
+  assert.ok(fixing.workKinds.includes('debugging'));
+  assert.ok(fixing.domains.includes('devops'), 'deployment inflects deploy');
+  assert.ok(inferTaskIntent('implementing encrypted storage').constraints.includes('security'), 'encrypted inflects encrypt');
+  assert.ok(inferTaskIntent('creating a component').workKinds.includes('implementation'), 'trailing-e drop');
+  assert.ok(inferTaskIntent('refactoring and reviews').workKinds.includes('refactoring'));
+  // strict signals stay exact
+  assert.ok(!inferTaskIntent('format the platform').domains.includes('frontend'), 'form must not prefix-match');
+  assert.ok(inferTaskIntent('review the pages').artifacts.includes('page'), 'plural of strict signal still matches');
+  assert.ok(!inferTaskIntent('review').artifacts.includes('page'), 'review is not page/view');
+});
+
+test('planLoad skips intent inference for the literal current session query', async () => {
+  const config = defaultConfig('1.0.0');
+  config.scope = 'workspace';
+  const index = {
+    entries: [
+      { id: 'session-notes', scope: 'workspace', type: 'knowledge', file: 'knowledge/session-notes.md', tags: ['session'], summary: 'Session notes.' }
+    ]
+  };
+  const ctx = {
+    config,
+    index,
+    roots: { workspace: '.', global: '.' },
+    scopeIndexes: { workspace: index, global: { entries: [] } },
+    ignorePatterns: [],
+    profile: { active: 'default' }
+  };
+  const plan = await planLoad(ctx, 'current session');
+  assert.equal(plan.query.intent, null);
+  assert.equal(plan.query.original, 'current session');
+});
+
+test('agent hook SessionStart routes the literal current session query', () => {
+  assert.equal(hookQueryText({ source: 'startup' }, 'SessionStart'), 'current session');
+  assert.equal(hookQueryText({ source: 'resume' }, 'sessionStart'), 'current session');
+  assert.equal(hookQueryText({ prompt: 'auth token work' }, 'UserPromptSubmit'), 'auth token work');
 });
 
 // ── V2 Memory Template ──────────────────────────────────────────────────
@@ -1467,7 +1804,8 @@ test('saveSessionGuidance mentions value gate, chat approval, and 100-line hard 
 });
 
 test('explain reason score uses blended CandidateRow.score for vector-only entry', () => {
-  const vectorEntry = routingEntry('semantic-match', 'workspace', ['semantic'], 'Completely unrelated semantic memory about animals.');
+  // D6: the vector entry shares one anchor (production) so it passes the candidate gate.
+  const vectorEntry = routingEntry('semantic-match', 'workspace', ['semantic'], 'Mostly unrelated semantic memory about production animals.');
   const directEntry = routingEntry('deploy-runbook', 'workspace', ['deploy'], 'Standard deployment runbook for production releases.');
   const index = { version: 'test', last_updated: 'now', entries: [vectorEntry, directEntry] };
   const config = { ...defaultConfig(), vector: { ...defaultConfig().vector, enabled: false }, graph: { ...defaultConfig().graph, enabled: false } };
@@ -1608,6 +1946,94 @@ test('packPayload caps rendered content and reports budget omissions', () => {
   assert.equal(packed.rows.length, 1);
   assert.equal(packed.used, 100);
   assert.deepEqual(packed.omitted, ['workspace:b.md']);
+});
+
+function tierRow(id, content, extra = {}) {
+  return { entry: { id, scope: 'workspace', file: `knowledge/${id}.md`, type: 'knowledge', ...extra }, content };
+}
+
+function tierOptions(overrides = {}) {
+  return {
+    maxTokens: 1600,
+    expandTop: 3,
+    reserveRatio: 0.2,
+    isDependency: () => false,
+    card: (row) => `- ${row.entry.id} [${row.entry.type}] card`,
+    render: (expanded, cards) => [...expanded.map((row) => row.content), ...cards].join('\n\n'),
+    ...overrides
+  };
+}
+
+test('packTiered expands the top rows and cards the rest', () => {
+  const rows = Array.from({ length: 10 }, (_, i) => tierRow(`row-${i}`, `body ${i} ${'x'.repeat(40)}`));
+  const packed = packTiered(rows, tierOptions());
+  assert.deepEqual(packed.expanded.map((row) => row.entry.id), ['row-0', 'row-1', 'row-2']);
+  assert.equal(packed.cards.length, 7);
+  assert.deepEqual(packed.omitted, []);
+  assert.ok(packed.used > 0);
+});
+
+test('packTiered cards a top row bigger than the budget instead of omitting it', () => {
+  const rows = [tierRow('huge', 'h'.repeat(8000)), tierRow('small-a', 'a'.repeat(40)), tierRow('small-b', 'b'.repeat(40))];
+  const packed = packTiered(rows, tierOptions({ maxTokens: 400 }));
+  assert.ok(packed.cards.some((row) => row.entry.id === 'huge'), 'huge row is a card');
+  assert.ok(!packed.expanded.some((row) => row.entry.id === 'huge'));
+  assert.deepEqual(packed.omitted, []);
+  assert.deepEqual(packed.expanded.map((row) => row.entry.id), ['small-a', 'small-b']);
+});
+
+test('packTiered expands a dependency of an expanded row into the reserve', () => {
+  const rows = [
+    tierRow('foundation', 'f'.repeat(160)),
+    tierRow('primary', 'p'.repeat(480), { dependsOn: ['foundation'] }),
+    tierRow('other', 'o'.repeat(40)),
+    tierRow('other-dep', 'd'.repeat(40))
+  ];
+  const deps = new Set(['foundation', 'other-dep']);
+  const packed = packTiered(rows, tierOptions({ maxTokens: 200, reserveRatio: 0.25, expandTop: 1, isDependency: (row) => deps.has(row.entry.id) }));
+  assert.deepEqual(packed.expanded.map((row) => row.entry.id), ['foundation', 'primary']);
+  assert.deepEqual(packed.cards.map((row) => row.entry.id).sort(), ['other', 'other-dep']);
+  assert.ok(packed.used <= 200, `used ${packed.used}`);
+
+  // A lower-ranked direct hit that an expanded row requires also rides the reserve.
+  const direct = packTiered([rows[1], rows[2], rows[0]], tierOptions({ maxTokens: 200, reserveRatio: 0.25, expandTop: 1 }));
+  assert.deepEqual(direct.expanded.map((row) => row.entry.id), ['primary', 'foundation']);
+});
+
+test('packTiered keeps the complete render within maxTokens when many rows are selected', () => {
+  const rows = Array.from({ length: 10 }, (_, i) => tierRow(`row-${i}`, `body ${i} ${'x'.repeat(120)}`));
+  const longCard = (row) => `- ${row.entry.id} [${row.entry.type}] ${'s'.repeat(100)}`;
+  const packed = packTiered(rows, tierOptions({ maxTokens: 200, card: longCard }));
+  assert.ok(packed.used <= 200, `used ${packed.used}`);
+  assert.ok([...packed.expanded, ...packed.cards].some((row) => row.entry.id === 'row-0'), 'top row survives');
+  assert.ok(packed.omitted.includes('workspace:knowledge/row-9.md'), `omitted ${packed.omitted}`);
+  const kept = packed.expanded.length + packed.cards.length;
+  assert.equal(kept + packed.omitted.length, 10);
+  assert.deepEqual(packed.omitted, rows.slice(10 - packed.omitted.length).map((row) => `${row.entry.scope}:${row.entry.file}`), 'lowest-ranked rows are shed first');
+
+  // One body that only fits without the cards still owed to six other rows becomes a card.
+  const probe = [tierRow('big', 'b'.repeat(600)), ...Array.from({ length: 6 }, (_, i) => tierRow(`other-${i}`, 'o'.repeat(40)))];
+  const capped = packTiered(probe, tierOptions({ maxTokens: 200, expandTop: 1, card: longCard }));
+  assert.ok(capped.used <= 200, `used ${capped.used}`);
+  assert.ok(!capped.expanded.some((row) => row.entry.id === 'big'));
+  assert.equal(capped.cards[0].entry.id, 'big');
+});
+
+test('packTiered keeps the top row as a card even when one card overflows', () => {
+  const packed = packTiered([tierRow('only', 'x'.repeat(4000)), tierRow('next', 'y'.repeat(40))], tierOptions({ maxTokens: 20, expandTop: 0, card: (row) => `- ${row.entry.id} ${'c'.repeat(200)}` }));
+  assert.deepEqual(packed.cards.map((row) => row.entry.id), ['only']);
+  assert.deepEqual(packed.omitted, ['workspace:knowledge/next.md']);
+});
+
+test('packTiered adds at most five omitted candidates as cards', () => {
+  const rows = [
+    tierRow('selected', 's'.repeat(40)),
+    ...Array.from({ length: 7 }, (_, i) => tierRow(`candidate-${i}`, '', { candidate: true }))
+  ];
+  const packed = packTiered(rows, tierOptions({ isCandidate: (row) => row.entry.candidate === true }));
+  assert.deepEqual(packed.expanded.map((row) => row.entry.id), ['selected']);
+  assert.equal(packed.cards.length, 5);
+  assert.deepEqual(packed.omitted, ['workspace:knowledge/candidate-5.md', 'workspace:knowledge/candidate-6.md']);
 });
 
 
@@ -1790,7 +2216,7 @@ last_confirmed: 2026-08-05
 });
 
 
-test('agent projection retains authority and evidence references', () => {
+test('agent projection retains authority in the body header', () => {
   const raw = `---
 schema_version: 3
 id: projected
@@ -1813,8 +2239,9 @@ last_confirmed: 2026-08-05
 `;
   const entry = entryFromMemory(raw, 'knowledge/projected.md', 'workspace');
   const rendered = renderMemoryForAgent(raw, entry, defaultConfig());
-  assert.match(rendered, /authority:\s*reference/);
-  assert.match(rendered, /evidence_refs:[\s\S]*tr_alpha/);
+  assert.match(rendered, /^### projected \[knowledge, reference\]\n/);
+  assert.match(rendered, /- Projected content\./);
+  assert.doesNotMatch(rendered, /^---|evidence_refs|schema_version/m);
 });
 
 test('canonical frontmatter round-trips multiline whitespace and trailing newlines exactly', () => {
@@ -1834,4 +2261,233 @@ test('canonical frontmatter rejects malformed inline collections', () => {
   assert.throws(() => parseFrontmatter('---\ntags: [alpha, {beta: gamma}\n---\n'), /unbalanced|invalid inline/i);
   assert.throws(() => parseFrontmatter('---\ntags: ["alpha]\n---\n'), /unterminated|quoted/i);
   assert.throws(() => parseFrontmatter('---\nclaim: {subject: runtime}}\n---\n'), /unbalanced|invalid inline/i);
+});
+
+// ── BM25 + validity-aware ranking ───────────────────────────────────────
+
+const rankingConfig = () => ({ ...defaultConfig(), graph: { ...defaultConfig().graph, enabled: false }, vector: { ...defaultConfig().vector, enabled: false } });
+
+test('stem strips one light suffix and keeps the stem at least three characters', () => {
+  assert.equal(stem('routing'), 'rout');
+  assert.equal(stem('memories'), 'memory');
+  assert.equal(stem('classes'), 'class');
+  assert.equal(stem('tokens'), 'token');
+  assert.equal(stem('class'), 'class');
+  assert.equal(stem('quickly'), 'quick');
+  assert.equal(stem('deployment'), 'deploy');
+  assert.equal(stem('used'), 'used');
+});
+
+test('bm25 ranks a document with the rare query term above one with a common term', () => {
+  const index = buildBm25([
+    { key: 'common-a', terms: ['deploy', 'release', 'notes'] },
+    { key: 'common-b', terms: ['deploy', 'checklist', 'notes'] },
+    { key: 'common-c', terms: ['deploy', 'rollback', 'notes'] },
+    { key: 'rare', terms: ['canary', 'release', 'notes'] }
+  ]);
+  const scores = index.score(['deploy', 'canary']);
+  assert.ok((scores.get('rare') ?? 0) > (scores.get('common-a') ?? 0), JSON.stringify([...scores]));
+  assert.equal(scores.has('missing'), false);
+});
+
+test('validityFactor excludes expired memories and weights lifecycle, confidence, staleness, and scope', () => {
+  const base = routingEntry('base', 'global', ['base'], 'Base memory.');
+  assert.equal(validityFactor({ ...base, validUntil: '2020-01-01' }, false, '2026-10-06'), 'exclude');
+  assert.equal(validityFactor({ ...base, validUntil: '2026-10-06' }, false, '2026-10-06'), 1);
+  assert.equal(validityFactor(base, false, '2026-10-06'), 1);
+  assert.equal(validityFactor({ ...base, lifecycle: 'review_due' }, false, '2026-10-06'), 0.7);
+  assert.equal(validityFactor(base, true, '2026-10-06'), 0.6);
+  assert.equal(validityFactor({ ...base, confidence: 'medium' }, false, '2026-10-06'), 0.9);
+  assert.equal(validityFactor({ ...base, scope: 'workspace' }, false, '2026-10-06'), 1.1);
+});
+
+test('planLoad omits an expired memory with reason lifecycle', async () => {
+  const config = defaultConfig('1.0.0');
+  config.scope = 'workspace';
+  const index = {
+    entries: [
+      routingEntry('soap-gateway-legacy', 'workspace', ['soap', 'gateway'], 'Legacy SOAP gateway endpoint.', { validUntil: '2020-01-01' }),
+      routingEntry('rest-gateway', 'workspace', ['rest', 'gateway'], 'REST gateway endpoint.')
+    ]
+  };
+  const ctx = { config, index, roots: { workspace: '.', global: '.' }, scopeIndexes: { workspace: index, global: { entries: [] } }, ignorePatterns: [], profile: { active: 'default' } };
+  const plan = await planLoad(ctx, 'soap gateway endpoint');
+  assert.ok(!plan.routeDetail.entries.some((entry) => entry.id === 'soap-gateway-legacy'));
+  assert.deepEqual(plan.omitted.filter((item) => item.reason === 'lifecycle'), [{ key: 'workspace:knowledge/soap-gateway-legacy.md', reason: 'lifecycle' }]);
+});
+
+test('a review_due memory ranks below an otherwise equal active memory', () => {
+  const index = { version: 'test', last_updated: 'now', entries: [
+    routingEntry('alpha-deploy-runbook', 'workspace', ['deploy'], 'Deploy runbook steps.', { lifecycle: 'review_due' }),
+    routingEntry('bravo-deploy-runbook', 'workspace', ['deploy'], 'Deploy runbook steps.', { lifecycle: 'active' })
+  ] };
+  const detail = routeDetailed(index, 'deploy runbook', rankingConfig());
+  assert.deepEqual(detail.entries.map((entry) => entry.id), ['bravo-deploy-runbook', 'alpha-deploy-runbook']);
+});
+
+test('a query with five anchors needs two hits or one strong-field hit', () => {
+  const index = { version: 'test', last_updated: 'now', entries: [
+    routingEntry('ledger-notes', 'workspace', ['ledger'], 'Ledger notes mention kubernetes once.'),
+    routingEntry('cluster-basics', 'workspace', ['kubernetes'], 'Cluster basics for operators.'),
+    routingEntry('helm-release-guide', 'workspace', ['packaging'], 'Use a helm chart for every service.')
+  ] };
+  const ids = routeDetailed(index, 'kubernetes helm chart rollout canary', rankingConfig()).entries.map((entry) => entry.id);
+  assert.ok(!ids.includes('ledger-notes'), `weak single hit selected: ${ids}`);
+  assert.ok(ids.includes('cluster-basics'), `strong tag hit missing: ${ids}`);
+  assert.ok(ids.includes('helm-release-guide'), `two-hit entry missing: ${ids}`);
+});
+
+test('a high-score vector hit without anchor overlap is not selected', () => {
+  const vectorEntry = routingEntry('semantic-match', 'workspace', ['semantic'], 'Completely unrelated semantic memory about animals.');
+  const directEntry = routingEntry('deploy-runbook', 'workspace', ['deploy'], 'Standard deployment runbook for production releases.');
+  const index = { version: 'test', last_updated: 'now', entries: [vectorEntry, directEntry] };
+  const detail = routeDetailed(index, 'deploy production release', rankingConfig(), false, { vectorHits: [{ entry: vectorEntry, score: 0.9 }] });
+  assert.deepEqual(detail.entries.map((entry) => entry.id), ['deploy-runbook']);
+});
+
+test('auto-derived title tags do not earn the tag boost', () => {
+  const index = { version: 'test', last_updated: 'now', entries: [
+    routingEntry('alpha-cache-notes', 'workspace', ['cache'], 'Cache notes.', { autoTags: true }),
+    routingEntry('bravo-cache-notes', 'workspace', ['cache'], 'Cache notes.')
+  ] };
+  const detail = routeDetailed(index, 'cache', rankingConfig());
+  assert.deepEqual(detail.entries.map((entry) => entry.id), ['bravo-cache-notes', 'alpha-cache-notes']);
+});
+
+test('explicit routing terms survive the 256-term cap and empty Content falls back to the body', () => {
+  const letter = (n) => String.fromCharCode(97 + n);
+  const longContent = Array.from({ length: 300 }, (_, i) => `word${letter(i % 26)}${letter(Math.floor(i / 26))}`).join(' ');
+  const raw = (content) => [
+    '---',
+    'id: long-memory',
+    'type: knowledge',
+    'scope: workspace',
+    'tags: [long]',
+    'triggers: [zebrafish]',
+    'task_types: [migration]',
+    'directive: Prefer quokka adapters',
+    'author: dev@example.com',
+    'confidence: high',
+    '---',
+    '# Long memory',
+    '',
+    '## Content',
+    content,
+    '## Example',
+    '',
+    'Fallback example text.',
+    ''
+  ].join('\n');
+  const entry = entryFromMemory(raw(`\n${longContent}\n`), 'knowledge/long-memory.md', 'workspace');
+  assert.ok(entry.routingTerms.length <= 256);
+  for (const term of ['zebrafish', 'migration', 'quokka']) assert.ok(entry.routingTerms.includes(term), term);
+  const empty = entryFromMemory(raw(''), 'knowledge/long-memory.md', 'workspace');
+  assert.notEqual(empty.summary, '');
+});
+
+// ── D9 path triggers ────────────────────────────────────────────────────
+
+test('entriesForPath matches a Windows-style relative path against applies_to globs', () => {
+  const api = routingEntry('api-conventions', 'workspace', ['api'], 'API conventions.', { appliesTo: ['src/api/**'] });
+  const web = routingEntry('web-conventions', 'workspace', ['web'], 'Web conventions.', { appliesTo: ['src/web/**'] });
+  const plain = routingEntry('plain-notes', 'workspace', ['notes'], 'No path scope.');
+  assert.deepEqual(entriesForPath([api, web, plain], 'src\\api\\users.ts').map((entry) => entry.id), ['api-conventions']);
+  assert.deepEqual(entriesForPath([api, web, plain], './src/web/app.ts').map((entry) => entry.id), ['web-conventions']);
+  assert.deepEqual(entriesForPath([api, web, plain], 'src/apix/users.ts'), [], '`dir/**` never matches a sibling prefix');
+  assert.equal(isIgnored('node_modules_backup/x.js', ['node_modules/**']), false);
+  assert.equal(isIgnored('node_modules/x.js', ['node_modules/**']), true);
+  assert.equal(isIgnored('any/file.ts', ['/**']), true, 'a bare `/**` still covers everything');
+  assert.equal(isIgnored('any/file.ts', ['**']), true);
+  assert.deepEqual(entriesForPath([api, web, plain], ''), []);
+});
+
+test('toolPaths reads file tools and Codex apply_patch, relative to the cwd', () => {
+  const cwd = path.resolve('repo-root');
+  assert.deepEqual(toolPaths('Edit', { file_path: path.join(cwd, 'src', 'api', 'users.ts') }, cwd), ['src/api/users.ts']);
+  assert.deepEqual(toolPaths('Read', { file_path: 'src/api/users.ts' }, cwd), ['src/api/users.ts']);
+  assert.deepEqual(toolPaths('Write', { file_path: path.resolve('elsewhere', 'x.ts') }, cwd), [], 'paths outside the cwd never trigger');
+  assert.deepEqual(toolPaths('Read', { file_path: 'src/../../etc/x.ts' }, cwd), [], 'a `..` escape is normalized before the check');
+  assert.deepEqual(toolPaths('Read', { file_path: 'src/./api/../api/users.ts' }, cwd), ['src/api/users.ts']);
+  assert.deepEqual(toolPaths('Bash', { command: 'cat src/api/users.ts' }, cwd), []);
+  const patch = ['*** Begin Patch', '*** Update File: src/api/users.ts', '@@', '-a', '+b', '*** Add File: src/web/new.ts', '+x', '*** End Patch'].join('\n');
+  assert.deepEqual(toolPaths('apply_patch', { command: patch }, cwd), ['src/api/users.ts', 'src/web/new.ts']);
+});
+
+test('a path in the query is a strong anchor for applies_to', () => {
+  const index = { version: 'test', last_updated: 'now', entries: [
+    routingEntry('typescript-style', 'workspace', ['style'], 'House style for strict compiler settings.', { appliesTo: ['**/*.ts'] }),
+    routingEntry('python-style', 'workspace', ['style'], 'House style for strict compiler settings.', { appliesTo: ['**/*.py'] })
+  ] };
+  const ids = routeDetailed(index, 'fix flaky retry handling inside lib/http/client.ts today', rankingConfig()).entries.map((entry) => entry.id);
+  assert.deepEqual(ids, ['typescript-style']);
+});
+
+test('prose with dots and slashes is not a query path, and universal globs never anchor', () => {
+  const scoped = (id, glob) => routingEntry(id, 'workspace', ['zzunrelated'], 'Unrelated scoped memory.', { appliesTo: [glob] });
+  const index = { version: 'test', last_updated: 'now', entries: [
+    scoped('everything', '**'), scoped('everything-files', '**/*'), scoped('star', '*'),
+    scoped('all-js', '**/*.js'), scoped('src-tree', 'src/**')
+  ] };
+  for (const query of ['e.g. retry the I/O call', 'use and/or logic over TCP/IP', 'upgrade Node.js and ASP.NET hosting']) {
+    assert.deepEqual(routeDetailed(index, query, rankingConfig()).entries.map((entry) => entry.id), [], query);
+  }
+  assert.deepEqual(routeDetailed(index, 'review src/api/users.ts', rankingConfig()).entries.map((entry) => entry.id), ['src-tree'], 'universal globs stay out');
+  // Detection itself: none of these prose tokens is a path.
+  assert.deepEqual(queryPaths('e.g. I/O and/or TCP/IP ASP.NET https://example.com/a.ts'), [{ path: 'e.g', bare: true }]);
+  assert.equal(pathAnchorHit(queryPaths('upgrade Node.js'), ['**/*.js']), false, 'a bare name only anchors a glob that names it');
+  assert.equal(pathAnchorHit(queryPaths('edit e.g. this'), ['**/*.g']), false);
+  assert.equal(pathAnchorHit(queryPaths('edit src/a/b.ts'), ['**', '**/*', '*', '/**']), false, 'universal globs never anchor');
+});
+
+test('query paths match applies_to for slash, backslash, and bare file names', () => {
+  const index = { version: 'test', last_updated: 'now', entries: [
+    routingEntry('api-scope', 'workspace', ['zzunrelated'], 'Unrelated scoped memory.', { appliesTo: ['src/api/**'] }),
+    routingEntry('foo-file', 'workspace', ['zzunrelated'], 'Unrelated scoped memory.', { appliesTo: ['**/Foo.cs'] })
+  ] };
+  const ids = (query) => routeDetailed(index, query, rankingConfig()).entries.map((entry) => entry.id);
+  assert.deepEqual(ids('look at src/api/users.ts please'), ['api-scope']);
+  assert.deepEqual(ids('look at src\\api\\users.ts please'), ['api-scope']);
+  assert.deepEqual(ids('rename the class in Foo.cs'), ['foo-file']);
+  assert.equal(pathAnchorHit(queryPaths('look at src\\api\\users.ts'), ['src/api/**']), true);
+  assert.equal(pathAnchorHit(queryPaths('rename Foo.cs now'), ['**/Foo.cs']), true);
+});
+
+test('candidateVerdict covers NOOP, UPDATE, SUPERSEDE, ADD in E16a order', () => {
+  const hint = (extra = {}) => ({
+    id: 'use-pnpm-for-package-installs', type: 'rule', scope: 'workspace', file: 'rules/use-pnpm-for-package-installs.md',
+    summary: 'Use pnpm.', score: 0.65, action: 'possible-duplicate',
+    directive: 'Use pnpm for package installs', appliesTo: ['src/api/**'], tags: ['pnpm', 'installs'], working: false, ...extra
+  });
+  const candidate = (extra = {}) => ({ type: 'rule', directive: 'Use npm for package installs.', appliesTo: ['src/api/**'], tags: ['npm'], working: false, ...extra });
+  const add = { action: 'add', explicit: false };
+  assert.equal(NOOP_MIN_SCORE, 0.995);
+  assert.equal(SUPERSEDE_MIN_SCORE, 0.6);
+
+  // 1. a related duplicate at or above the bar is NOOP, ahead of everything else
+  assert.deepEqual(candidateVerdict(candidate(), [hint({ score: 1 })], add), { kind: 'NOOP', target: 'use-pnpm-for-package-installs' });
+  // 2. explicit UPDATE is UPDATE, even when the text is unchanged (take-control --refresh needs that write)
+  assert.deepEqual(candidateVerdict(candidate(), [], { action: 'update', explicit: true, matchId: 'old-rule' }), { kind: 'UPDATE', target: 'old-rule' });
+  assert.deepEqual(candidateVerdict(candidate(), [], { action: 'update', explicit: true, matchId: 'old-rule', unchanged: true }), { kind: 'UPDATE', target: 'old-rule' });
+  // an implicit upsert is UPDATE, or NOOP when it would not change the memory
+  assert.deepEqual(candidateVerdict(candidate(), [], { action: 'update', explicit: false, matchId: 'old-rule' }), { kind: 'UPDATE', target: 'old-rule' });
+  assert.deepEqual(candidateVerdict(candidate(), [], { action: 'update', explicit: false, matchId: 'old-rule', unchanged: true }), { kind: 'NOOP', target: 'old-rule' });
+  // 3. same type, related >= 0.6, different directive, overlapping applies_to
+  assert.deepEqual(candidateVerdict(candidate(), [hint()], add), { kind: 'SUPERSEDE', target: 'use-pnpm-for-package-installs' });
+  assert.deepEqual(candidateVerdict(candidate({ appliesTo: ['src/api/auth/**'] }), [hint()], add), { kind: 'SUPERSEDE', target: 'use-pnpm-for-package-installs' });
+  //    shared (non task_type) tags also overlap
+  assert.deepEqual(candidateVerdict(candidate({ appliesTo: undefined, tags: ['task_type:coding', 'pnpm'] }), [hint({ appliesTo: undefined })], add), { kind: 'SUPERSEDE', target: 'use-pnpm-for-package-installs' });
+  // 4. everything else is ADD: equal directives, no overlap, below the bar, other type, other tier, a declared child, no related
+  assert.deepEqual(candidateVerdict(candidate({ directive: 'use pnpm for  package installs' }), [hint()], add), { kind: 'ADD' });
+  assert.deepEqual(candidateVerdict(candidate({ appliesTo: ['docs/**'], tags: ['npm'] }), [hint()], add), { kind: 'ADD' });
+  assert.deepEqual(candidateVerdict(candidate({ appliesTo: ['src/apix/**'], tags: ['task_type:coding'] }), [hint({ tags: ['task_type:coding'] })], add), { kind: 'ADD' });
+  assert.deepEqual(candidateVerdict(candidate(), [hint({ score: 0.59 })], add), { kind: 'ADD' });
+  assert.deepEqual(candidateVerdict(candidate(), [hint({ type: 'knowledge' })], add), { kind: 'ADD' });
+  assert.deepEqual(candidateVerdict(candidate(), [hint({ working: true })], add), { kind: 'ADD' });
+  assert.deepEqual(candidateVerdict(candidate(), [hint({ declaredChild: true })], add), { kind: 'ADD' });
+  assert.deepEqual(candidateVerdict(candidate({ directive: undefined }), [hint()], add), { kind: 'ADD' });
+  assert.deepEqual(candidateVerdict(candidate(), [hint({ action: 'suggested-dependency' })], add), { kind: 'ADD' });
+  assert.deepEqual(candidateVerdict(candidate(), [], add), { kind: 'ADD' });
+  // the highest related score wins when several memories qualify
+  const best = candidateVerdict(candidate(), [hint({ id: 'weaker', file: 'rules/weaker.md', score: 0.62 }), hint({ id: 'stronger', file: 'rules/stronger.md', score: 0.9 })], add);
+  assert.deepEqual(best, { kind: 'SUPERSEDE', target: 'stronger' });
 });

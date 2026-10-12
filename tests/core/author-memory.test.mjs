@@ -17,6 +17,19 @@ test('new memories write author_name and author_email only', () => {
   assert.doesNotThrow(() => validateMemoryRaw(draft.content));
 });
 
+test('draft without authorEmail writes author_name only and validates', () => {
+  const draft = draftMemory({
+    text: 'Keep author email out of memory files.',
+    type: 'knowledge',
+    scope: 'workspace',
+    authorName: 'Jane Doe'
+  });
+  assert.match(draft.content, /^author_name:/m);
+  assert.doesNotMatch(draft.content, /^author_email:/m);
+  assert.doesNotThrow(() => validateMemoryRaw(draft.content));
+  assert.equal(entryFromMemory(draft.content, 'knowledge/x.md', 'workspace').author, 'Jane Doe');
+});
+
 test('legacy author email remains readable without inventing a name', () => {
   const raw = `---\nid: legacy\ntype: knowledge\nscope: workspace\ntags: [legacy]\ncreated: 2025-01-01\nupdated: 2025-01-01\nauthor: old@example.com\nconfidence: medium\n---\n# Legacy\n\n## Content\n\n- Old memory.\n`;
   const entry = entryFromMemory(raw, 'knowledge/legacy.md', 'workspace');
@@ -25,9 +38,13 @@ test('legacy author email remains readable without inventing a name', () => {
   assert.equal(entry.authorName, undefined);
 });
 
-test('new author metadata must be a complete pair', () => {
+test('author_name alone is valid; author_email alone or an invalid email is not', () => {
   const raw = `---\nschema_version: 3\nid: incomplete\ntype: knowledge\nscope: workspace\ntags: [test]\ncreated: 2025-01-01\nupdated: 2025-01-01\nauthor_name: Jane Doe\nsource: manual\nconfidence: high\nauthority: reference\nrevision: 1\nvalid_from: 2025-01-01\nlast_confirmed: 2025-01-01\n---\n# Incomplete\n\n## Content\n\n- Missing email.\n`;
-  assert.throws(() => validateMemoryRaw(raw), /author email/i);
+  assert.doesNotThrow(() => validateMemoryRaw(raw));
+  const emailOnly = raw.replace('author_name: Jane Doe', 'author_email: jane@example.com');
+  assert.throws(() => validateMemoryRaw(emailOnly), /author name/i);
+  const badEmail = raw.replace('author_name: Jane Doe', 'author_name: Jane Doe\nauthor_email: not-an-email');
+  assert.throws(() => validateMemoryRaw(badEmail), /author email/i);
 });
 
 test('author email metadata is allowed while body email remains sensitive', async () => {

@@ -1,0 +1,337 @@
+---
+title: Construct tab
+sidebar_position: 4
+description: Configure Engram runtime fields from Construct; Global Git configuration is managed from Git → Global.
+---
+
+import RiskCallout from '@site/src/components/RiskCallout';
+
+# Construct tab
+
+The Construct tab exposes Engram runtime config fields grouped like the UI, except **Global Git configuration**, which is intentionally managed from **Git → Global**. Each Construct field has a description, use cases, safe default, validation, and risk warning.
+
+<RiskCallout level="caution">
+Fields marked **risky** can disable Engram, change save targets, change Git behavior, or affect memory security. Read the warning before changing them.
+</RiskCallout>
+
+## Core group
+
+### Enabled
+
+**Config key:** `enabled`  
+**Control:** toggle  
+**Default:** `true`  
+**Risk:** risky
+
+Master switch. Disabling it stops Engram behavior entirely. Use only for temporary shutdown or testing.
+
+### Save Target
+
+**Config key:** `scope`  
+**Control:** select — `workspace`, `global`, `both`  
+**Default:** `both`  
+**Risk:** risky
+
+Controls where new approved memories are saved. Use `workspace` for repo-specific memory, `global` for personal/team memory, `both` for fresh installs that want both.
+
+### Update Mode
+
+**Config key:** `update`  
+**Control:** select — `auto`, `manual`, `off`  
+**Default:** `auto`  
+**Risk:** normal
+
+Controls the quiet one-time package upgrade check run by normal commands. Use `manual` or `off` only when upgrades are managed outside Engram.
+
+### Read Mode
+
+**Config key:** `read`  
+**Control:** select — `auto`, `startup`, `always`, `manual`, `off`  
+**Default:** `auto`  
+**Risk:** normal
+
+Controls when agent hooks inject memory context. `auto` loads on session start and reinjects only when routed context changes. `manual` and `off` reduce automation at the cost of context bloat.
+
+### Proof Mode
+
+**Config key:** `proof`  
+**Control:** select — `off`, `compact`  
+**Default:** `off`  
+**Risk:** normal
+
+Whether hooks append a compact `Engram proof:` line on each eligible turn. Useful for debugging and audit visibility.
+
+### Global Memory Path
+
+**Config key:** `global_path`  
+**Control:** text/path  
+**Default:** empty until configured  
+**Risk:** risky
+
+Filesystem path for global memory. Use a stable, user-owned folder such as `~/Documents/engram`. Avoid temp folders, synced public folders, and directories you cannot write to.
+
+<RiskCallout level="risky">
+Using a cloud-synced public folder for private memory can leak secrets. Use a private path or a private Git repo.
+</RiskCallout>
+
+**CLI equivalent:**
+
+```bash
+engram update-global-folder ~/Documents/engram
+engram ugf ~/Documents/engram
+```
+
+### Default Profile
+
+**Config key:** `default_profile`  
+**Control:** select  
+**Default:** empty  
+**Risk:** risky
+
+Profile used when none is explicitly set. See [Profiles and scope resolution](../concepts/profiles.md).
+
+### Active Roles
+
+**Config key:** `roles`  
+**Control:** roles/comma input  
+**Default:** empty list  
+**Risk:** normal
+
+Restricts and reranks memories by role. Use safe names matching `^[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$`.
+
+## Ignore Rules group
+
+| Field | Control | Default | Notes |
+| --- | --- | --- | --- |
+| `ignore.source` | select | `engramignore` | Choose `engramignore`, `gitignore`, `both`, or `off` as scan-rule sources. |
+| `ignore.gitignore_path` | text | `.gitignore` | Git ignore file to use when enabled. |
+| `ignore.engramignore_path` | text | `.engramignore` | Engram ignore file to use when enabled. |
+| `ignore.global_engramignore` | toggle | `true` | Apply global ignore rules when global memory is configured. |
+| `ignore.also_ignore` | list | `*.secret`, `private/**` | Additional comma-separated glob patterns. |
+
+### Global Ignore Patterns
+
+**Config key:** `ignore.global_patterns`  
+**Control:** textarea, one glob pattern per line  
+**Default:** empty list  
+**Risk:** normal
+
+Patterns apply to global memory reads. Every `engram inject` synchronizes them into a managed block in the workspace `.engramignore`; human-authored lines outside that block are preserved.
+
+### Auto-save policy
+
+The **Auto-save policy** editor writes `.agents/engram.policy.json`. It controls whether policy-approved candidates can save without an interactive prompt; normal saves remain approval-based.
+
+See the [Auto-save Policy reference](policy.md) for every control, default, allowed value, review gate, quota, and rollback setting.
+
+## Load Routing group
+
+### Load Limit
+
+**Config key:** `load.limit`  
+**Control:** number 1–32  
+**Default:** `8`  
+**Risk:** normal
+
+Max memories returned by normal load. Lower values reduce context bloat for low-context models; higher values help deep architecture tasks.
+
+### Working Memory TTL (days)
+
+**Config key:** `load.working_ttl_days`  
+**Control:** number 1–365  
+**Default:** `14`  
+**Risk:** normal
+
+Days an approved `OBJECTIVE: task` memory stays in the gitignored working tier before it expires. The change applies to memories saved afterwards. Keep a working memory with `engram promote <id>`; clear expired ones with `engram working prune`.
+
+## Memory Limits group
+
+### Rule Line Target
+
+**Config key:** `memory.rule_line_target`  
+**Control:** number 50–200, step 10  
+**Default:** `70`  
+**Risk:** normal
+
+Recommended size for rule memories. Concise rules route better than overlong policies.
+
+### Rule Line Hard Limit
+
+**Config key:** `memory.rule_line_hard_limit`  
+**Control:** number 50–200, step 10  
+**Default:** `100`  
+**Risk:** risky
+
+Hard maximum for rule memories.
+
+<RiskCallout level="risky">
+Raising this can increase context bloat and reduce routing quality. Keep rules concise.
+</RiskCallout>
+
+### Write Author Email
+
+**Config key:** `memory.include_author_email`  
+**Control:** toggle  
+**Default:** `false`  
+**Risk:** risky
+
+When on, new and updated memories also write `author_email` next to `author_name`. Off by default so committed memory files carry no email address; your email stays in the author profile and in Engram-created Git commits.
+
+<RiskCallout level="risky">
+Turning this on writes email addresses into committed memory files. Turn it off again and run `engram author migrate-memories --strip-email --confirm` to remove them.
+</RiskCallout>
+
+## Hooks group
+
+### hooks.path_rules
+
+**Config key:** `hooks.path_rules`  
+**Control:** select - `native`, `hook`  
+**Default:** `native`  
+**Risk:** normal
+
+`native` writes generated rule files for `applies_to` memories (Claude `.claude/rules/engram/`, Cursor `.cursor/rules/engram/`) and registers Claude `InstructionsLoaded`. `hook` keeps the Engram `PreToolUse` hook for Claude and removes the Claude rule files. Codex always uses `PreToolUse`.
+
+## Graph group
+
+### graph.enabled
+
+**Control:** toggle  
+**Default:** `true`  
+**Risk:** normal
+
+Enables dependency/relationship routing via `depends_on`, related memories, and the graph view.
+
+### graph.max_related
+
+**Control:** number 1–20  
+**Default:** `4`  
+**Risk:** normal
+
+Limits related memories pulled through graph signals.
+
+### graph.min_related_score
+
+**Control:** number 0–1, step 0.01  
+**Default:** `0.22`  
+**Risk:** normal
+
+Minimum similarity score for related edges. Raise for precision, lower for recall.
+
+## Vector Search group
+
+### vector.provider
+
+**Control:** select — `sqlite-vec`  
+**Default:** `sqlite-vec`  
+**Risk:** normal
+
+Selects the local vector provider. `sqlite-vec` is the only supported provider.
+
+### vector.enabled
+
+**Control:** toggle  
+**Default:** `false`  
+**Risk:** normal
+
+Experimental. Enables optional local vector routing built on hashed 64-dimension vectors, which are not semantic embeddings. Off by default; a workspace config that already stores `true` stays on. No cloud dependency.
+
+### vector.auto_threshold
+
+**Control:** number 10–1000  
+**Default:** `100`  
+**Risk:** normal
+
+Memory count where vector search activates. Small vaults may not need vector search.
+
+### vector.candidate_pool
+
+**Control:** number 8–100  
+**Default:** `24`  
+**Risk:** normal
+
+How many candidates vector search considers before reranking. Higher improves recall at latency cost.
+
+### vector.dimensions
+
+**Control:** number 16–512  
+**Default:** `64`  
+**Risk:** normal
+
+Embedding dimensions for the local vector sidecar. Changing this requires a rebuild.
+
+## Rule Variants group
+
+### rule_variants.enabled
+
+**Control:** toggle  
+**Default:** `false`  
+**Risk:** normal
+
+Renders light and strict wording derived from each rule's Content at load time (off renders the balanced Content). Rule files store a `## Rule Variants` section only for custom wording.
+
+### rule_variants.active
+
+**Control:** select — `light`, `balanced`, `strict`  
+**Default:** `balanced`  
+**Risk:** normal
+
+Controls strictness of loaded rules. `strict` helps lower-tier models; `light`/`balanced` usually suit stronger models.
+
+## Live Sync group
+
+### live_sync.enabled
+
+**Control:** toggle  
+**Default:** `false`  
+**Risk:** normal
+
+Syncs generated agent context files on save.
+
+### live_sync.targets
+
+**Control:** list  
+**Default:** `agents-md`, `claude-md`, `cursor-rules`
+
+Comma-separated generated context targets refreshed when live sync runs.
+
+## Global Git configuration moved to Git
+
+Global Git configuration no longer appears in Construct. Open **Git → Global** to edit the existing `global_git.*` settings with the same validation and risk-review backend. The Workspace tab under Git never exposes these global controls.
+
+For key-by-key details, use the [field reference](field-reference.md#global-git) or the [Git settings guide](../operations/git-author-settings.md#global-git-configuration).
+
+## Pattern Mining group
+
+| Field | Control | Default | Notes |
+| --- | --- | --- | --- |
+| `pattern_mining.enabled` | toggle | `false` | Experimental recurring-pattern extraction |
+| `pattern_mining.threshold` | number 1–20 | `3` | Repetitions before a pattern candidate matters |
+| `pattern_mining.lookback_sessions` | number 1–100 | `20` | Recent sessions to inspect |
+
+## PR Workflow group
+
+| Field | Control | Default | Notes |
+| --- | --- | --- | --- |
+| `pr_workflow.enabled` | toggle | `false` | Experimental team PR workflow for memory changes |
+| `pr_workflow.provider` | text | empty | Provider identifier for an already configured team workflow |
+| `pr_workflow.repo` | text | empty | Repository identifier for an already configured team workflow |
+| `pr_workflow.target_branch` | text | `main` | Branch receiving memory PRs |
+
+## Encryption group
+
+<RiskCallout level="risky">
+Encryption config exists, but encrypted storage is not implemented yet. Document current limitations clearly to users.
+</RiskCallout>
+
+| Field | Control | Default | Notes |
+| --- | --- | --- | --- |
+| `encryption.enabled` | toggle | `false` | Future/advanced encryption mode |
+| `encryption.scope` | select — `workspace`, `global` | `global` | Which scope encryption applies to |
+| `encryption.key_source` | select — `portable-file` | `portable-file` | Key source strategy; backup loss risk |
+
+## Next steps
+
+- [Complete field reference](field-reference.md)
+- [Memories tab](memories.md)
+- [Core tab](core.md)

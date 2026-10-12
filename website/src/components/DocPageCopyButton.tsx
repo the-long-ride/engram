@@ -21,7 +21,7 @@ export function DocPageCopyButton({
   locales = [],
   defaultLocale = 'en',
   currentVersionPath = 'future',
-  publishedVersionName = 'version-0.0.28',
+  publishedVersionName = 'version-0.0.29',
   locale = null,
   fetchImpl = fetch,
   writeText = (text: string) => navigator.clipboard.writeText(text),

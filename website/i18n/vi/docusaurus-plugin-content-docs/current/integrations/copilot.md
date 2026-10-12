@@ -1,38 +1,38 @@
 ---
 title: Copilot
 sidebar_position: 8
-description: Engram integration with GitHub Copilot via repository and user custom instructions.
+description: Tích hợp Engram với GitHub Copilot thông qua hướng dẫn tùy chỉnh của kho lưu trữ và người dùng.
 ---
 
 # Copilot
 
-GitHub Copilot reads repository custom instructions from `.github/copilot-instructions.md`. For global Copilot installs, Engram appends its managed block to `~/.copilot/copilot-instructions.md`.
+GitHub Copilot đọc các hướng dẫn tùy chỉnh của kho lưu trữ từ `.github/copilot-instructions.md`. Đối với các cài đặt Copilot toàn cục, Engram thêm khối được quản lý của mình vào `~/.copilot/copilot-instructions.md`.
 
-## Install
+## Cài đặt {#install}
 
 ```bash
 engram link copilot
 ```
 
-## Files written
+## Các tệp được ghi {#files-written}
 
-| File | Purpose |
+| Tệp | Mục đích |
 | --- | --- |
-| `.github/copilot-instructions.md` | Repository custom instructions |
+| `.github/copilot-instructions.md` | Hướng dẫn tùy chỉnh của kho lưu trữ |
 
-## Global install
+## Cài đặt toàn cục {#global-install}
 
 ```bash
 engram link --global copilot
 ```
 
-Appends a managed block to `~/.copilot/copilot-instructions.md`.
+Thêm một khối được quản lý vào `~/.copilot/copilot-instructions.md`.
 
-## Compact/manual fallback target
+## Mục tiêu dự phòng thu gọn/thủ công {#compact-manual-fallback-target}
 
-Copilot is a compact/manual fallback target. It receives the full compact protocol. Hook install is skipped in v1; use the Engram skillset or a manual `engram load` for context.
+Copilot là một mục tiêu dự phòng thu gọn/thủ công. Nó nhận toàn bộ giao thức thu gọn. Việc cài đặt hook được bỏ qua trong v1; hãy sử dụng skillset Engram hoặc lệnh thủ công `engram load` để lấy ngữ cảnh.
 
-## Next steps
+## Các bước tiếp theo {#next-steps}
 
-- [Agent Integrations overview](overview.md)
-- [Hooks and proof lines](hooks.md)
+- [Tổng quan về tích hợp Agent](overview.md)
+- [Hook và dòng kiểm chứng](hooks.md)

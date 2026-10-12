@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import path from 'node:path';
 
 async function text(path) {
   return (await readFile(new URL(`../${path}`, import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
@@ -19,4 +20,13 @@ test('root test runner bounds hung tests and supports deterministic GHA sharding
   assert.equal(pkg.scripts['test:built'], 'node scripts/run-tests.mjs');
   assert.match(pkg.scripts.coverage, /--test-timeout=120000/);
   assert.match(pkg.scripts.coverage, /--test-force-exit/);
+});
+
+test('run-tests discovers core and conformance suites', async () => {
+  const { getTestFiles } = await import('../scripts/run-tests.mjs');
+  const root = path.resolve(import.meta.dirname);
+  const files = (await getTestFiles(root)).map((file) => path.relative(root, file).split(path.sep).join('/'));
+
+  assert.ok(files.includes('core/editor.test.mjs'));
+  assert.ok(files.some((file) => file.startsWith('conformance/')));
 });

@@ -58,15 +58,19 @@ export const CONFIG_FIELDS: ConfigFieldDef[] = [
   { key: 'ignore.global_patterns', group: 'Ignore Rules', label: 'Global Ignore Patterns', input: 'textarea', description: 'One glob pattern per line. Synced into each workspace .engramignore during inject.' },
 
   { key: 'load.limit', group: 'Load Routing', label: 'Load Limit', input: 'number', min: 1, max: 32, description: 'Max memories returned by normal load' },
+  { key: 'load.working_ttl_days', group: 'Load Routing', label: 'Working Memory TTL (days)', input: 'number', min: 1, max: 365, description: 'Days an approved OBJECTIVE: task memory stays in working/ before it expires (default 14)' },
 
   { key: 'memory.rule_line_target', group: 'Memory Limits', label: 'Rule Line Target', input: 'number', min: 50, max: 200, step: 10, description: 'Recommended line count target for rule memories (min 50, max 200)' },
   { key: 'memory.rule_line_hard_limit', group: 'Memory Limits', label: 'Rule Line Hard Limit', input: 'number', min: 50, max: 200, step: 10, description: 'Maximum allowed line count for rule memories (min 50, max 200)', risk: 'risky' },
+  { key: 'memory.include_author_email', group: 'Memory Limits', label: 'Write Author Email', input: 'toggle', description: 'Write author_email into new memory frontmatter (default off; author_name is always written)', risk: 'risky' },
+
+  { key: 'hooks.path_rules', group: 'Hooks', label: 'Path rules', input: 'select', options: ['native', 'hook'], description: 'native: Claude/Cursor load applies_to memories as rule files; hook: Engram PreToolUse injects them' },
 
   { key: 'graph.enabled', group: 'Graph', label: 'Enabled', input: 'toggle' },
   { key: 'graph.max_related', group: 'Graph', label: 'Max Related', input: 'number', min: 1, max: 20 },
   { key: 'graph.min_related_score', group: 'Graph', label: 'Min Score', input: 'number', min: 0, max: 1, step: 0.01, description: 'Minimum similarity score for graph edges' },
 
-  { key: 'vector.enabled', group: 'Vector Search', label: 'Enabled', input: 'toggle' },
+  { key: 'vector.enabled', group: 'Vector Search', label: 'Enabled', input: 'toggle', description: 'Experimental hashed vectors (not semantic embeddings). Off by default.' },
   { key: 'vector.provider', group: 'Vector Search', label: 'Provider', input: 'select', options: ['sqlite-vec'] },
   { key: 'vector.auto_threshold', group: 'Vector Search', label: 'Auto Threshold', input: 'number', min: 10, max: 1000, description: 'Memory count at which vector search activates' },
   { key: 'vector.candidate_pool', group: 'Vector Search', label: 'Candidate Pool', input: 'number', min: 8, max: 100 },

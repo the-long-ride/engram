@@ -1,38 +1,38 @@
 ---
 title: Copilot
 sidebar_position: 8
-description: Engram integration with GitHub Copilot via repository and user custom instructions.
+description: Integración de Engram con GitHub Copilot mediante instrucciones personalizadas del repositorio y del usuario.
 ---
 
 # Copilot
 
-GitHub Copilot reads repository custom instructions from `.github/copilot-instructions.md`. For global Copilot installs, Engram appends its managed block to `~/.copilot/copilot-instructions.md`.
+GitHub Copilot lee las instrucciones personalizadas del repositorio desde `.github/copilot-instructions.md`. Para instalaciones globales de Copilot, Engram añade su bloque gestionado a `~/.copilot/copilot-instructions.md`.
 
-## Install
+## Instalación {#install}
 
 ```bash
 engram link copilot
 ```
 
-## Files written
+## Archivos escritos {#files-written}
 
-| File | Purpose |
+| Archivo | Propósito |
 | --- | --- |
-| `.github/copilot-instructions.md` | Repository custom instructions |
+| `.github/copilot-instructions.md` | Instrucciones personalizadas del repositorio |
 
-## Global install
+## Instalación global {#global-install}
 
 ```bash
 engram link --global copilot
 ```
 
-Appends a managed block to `~/.copilot/copilot-instructions.md`.
+Añade un bloque gestionado a `~/.copilot/copilot-instructions.md`.
 
-## Compact/manual fallback target
+## Destino de respaldo compacto/manual {#compact-manual-fallback-target}
 
-Copilot is a compact/manual fallback target. It receives the full compact protocol. Hook install is skipped in v1; use the Engram skillset or a manual `engram load` for context.
+Copilot es un destino de respaldo compacto/manual. Recibe el protocolo compacto completo. La instalación de hooks se omite en v1; use el skillset de Engram o un `engram load` manual para obtener contexto.
 
-## Next steps
+## Próximos pasos {#next-steps}
 
-- [Agent Integrations overview](overview.md)
-- [Hooks and proof lines](hooks.md)
+- [Resumen de integraciones de agentes](overview.md)
+- [Hooks y líneas de prueba](hooks.md)

@@ -653,7 +653,13 @@ test('upgrade --latest migrates active workspace memories to schema v3 with back
   assert.match(current, /schema_version:\s*3/);
   assert.match(current, /authority:\s*instruction/);
   assert.match(current, /evidence_status:\s*unverified/);
-  assert.equal(await readFile(`${file}.pre-v3.bak`, 'utf8'), legacy);
+  assert.equal(await readFile(path.join(root, 'backups', 'schema-v3', 'rules', 'legacy-upgrade.md.pre-v3.bak'), 'utf8'), legacy);
+  await assert.rejects(readFile(`${file}.pre-v3.bak`, 'utf8'));
+  const backupDirs = await readdir(path.join(root, 'backups'));
+  const upgradeDir = backupDirs.find((name) => name.startsWith('upgrade-'));
+  assert.ok(upgradeDir, `expected an upgrade-* backup folder, got ${backupDirs.join(', ')}`);
+  assert.equal(await readFile(path.join(root, 'backups', upgradeDir, 'rules', `legacy-upgrade.md.engram-upgrade-${upgradeDir.slice('upgrade-'.length)}.bak`), 'utf8'), legacy);
+  assert.deepEqual((await readdir(path.join(root, 'rules'))).filter((name) => name.endsWith('.bak')), []);
   const hashes = JSON.parse(await readFile(path.join(root, 'memory.hashes.json'), 'utf8'));
   assert.equal(hashes[rel], sha256(current));
   const index = JSON.parse(await readFile(path.join(root, 'memory.index.json'), 'utf8'));
@@ -677,6 +683,7 @@ test('upgrade --latest --plan previews memory migration without writes', async (
   assert.match(planned.stdout, /Eligible:\s*1/);
   assert.equal(await readFile(file, 'utf8'), legacy);
   await assert.rejects(readFile(`${file}.pre-v3.bak`, 'utf8'));
+  await assert.rejects(readdir(path.join(root, 'backups')));
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -738,7 +745,8 @@ test('upgrade --latest migrates configured global memories too', async () => {
   assert.equal(upgraded.code, 0, upgraded.stderr);
   assert.match(upgraded.stdout, /MIGRATED global memory schema/);
   assert.match(await readFile(file, 'utf8'), /schema_version:\s*3/);
-  assert.equal(await readFile(`${file}.pre-v3.bak`, 'utf8'), legacy);
+  assert.equal(await readFile(path.join(globalRoot, 'backups', 'schema-v3', 'knowledge', 'legacy-global.md.pre-v3.bak'), 'utf8'), legacy);
+  await assert.rejects(readFile(`${file}.pre-v3.bak`, 'utf8'));
   await rm(cwd, { recursive: true, force: true });
 });
 
@@ -841,5 +849,44 @@ test('upgrade --latest --review fails fast when piped input ends before a confli
   const reviewed = await runEngram(cwd, env, ['upgrade', '--latest', '--review', '--no-version-check'], 'l\n');
   assert.notEqual(reviewed.code, 0);
   assert.match(`${reviewed.stdout}\n${reviewed.stderr}`, /input ended before all conflicts were resolved/i);
+  await rm(cwd, { recursive: true, force: true });
+});
+
+test('upgrade --latest refreshes an Engram claude hook with the old millisecond timeout instead of reporting a conflict', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-upgrade-latest-hook-timeout-');
+  const linked = await runEngram(cwd, env, ['link', 'claude']);
+  assert.equal(linked.code, 0, linked.stderr);
+  const file = path.join(cwd, '.claude', 'settings.json');
+  const old = JSON.parse(await readFile(file, 'utf8'));
+  // An older install: millisecond timeout, no PreToolUse/PreCompact, plus unrelated user settings and hooks.
+  const legacyHook = { ...old.hooks.SessionStart.at(-1).hooks[0], timeout: 10000 };
+  const human = { matcher: 'Bash', hooks: [{ name: 'human-guard', type: 'command', command: 'echo guard' }] };
+  await writeFile(file, `${JSON.stringify({
+    permissions: { allow: ['Bash(ls:*)'] },
+    hooks: {
+      SessionStart: [{ matcher: '*', hooks: [legacyHook] }],
+      UserPromptSubmit: [{ matcher: '', hooks: [legacyHook] }],
+      PreToolUse: [human]
+    }
+  }, null, 2)}\n`);
+
+  const plan = await runEngram(cwd, env, ['upgrade', '--latest', '--plan', '--json', '--no-version-check']);
+  assert.equal(plan.code, 0, plan.stderr);
+  const item = JSON.parse(plan.stdout).items.find((row) => row.kind === 'hook' && row.agent === 'claude');
+  assert.equal(item?.status, 'outdated', JSON.stringify(item));
+
+  const upgraded = await runEngram(cwd, env, ['upgrade', '--latest', '--yes', '--no-version-check']);
+  assert.equal(upgraded.code, 0, upgraded.stderr);
+  assert.doesNotMatch(upgraded.stdout, /CONFLICT hook claude/);
+  const settings = JSON.parse(await readFile(file, 'utf8'));
+  assert.deepEqual(settings.permissions, { allow: ['Bash(ls:*)'] });
+  const managed = (event) => (settings.hooks[event] ?? []).flatMap((group) => group.hooks).filter((hook) => hook.name === 'engram-auto-load');
+  // E13: the upgrade swaps the managed PreToolUse for InstructionsLoaded; the human PreToolUse group stays.
+  for (const event of ['SessionStart', 'UserPromptSubmit', 'InstructionsLoaded', 'PreCompact', 'SubagentStart']) {
+    assert.equal(managed(event).length, 1, event);
+    assert.equal(managed(event)[0].timeout, 10, `${event} timeout is in seconds`);
+  }
+  assert.equal(managed('PreToolUse').length, 0);
+  assert.ok(settings.hooks.PreToolUse.some((group) => group.hooks.some((hook) => hook.name === 'human-guard')));
   await rm(cwd, { recursive: true, force: true });
 });

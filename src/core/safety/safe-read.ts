@@ -38,8 +38,9 @@ export async function readGuardedMemory(
     const injection = scanInjection(raw);
     if (injection.length) return { entry, content: '', flagged: injection[0].value };
   }
+  // Agent context is LF-only: a Windows (autocrlf) checkout must not pay a token for every CR.
   const content = options.render === false ? raw : options.forAgents
-    ? renderMemoryForAgent(raw, entry, config)
+    ? renderMemoryForAgent(raw.replace(/\r\n?/g, '\n'), entry, config)
     : renderMemoryForConfig(raw, entry, config);
   return { entry, content, flagged };
 }

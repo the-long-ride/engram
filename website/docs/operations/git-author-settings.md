@@ -6,7 +6,7 @@ description: Configure the identity written to future Engram memories and Engram
 
 # Git author settings
 
-Engram owns an author profile so memory authorship is explicit and portable. The resolved identity is written to future memory frontmatter and supplied to Engram-created Git commits through process-local environment variables. Repository Git configuration is not changed.
+Engram owns an author profile so memory authorship is explicit and portable. The resolved name is written to future memory frontmatter (the email only when `memory.include_author_email` is `true`), and the full identity is supplied to Engram-created Git commits through process-local environment variables. Repository Git configuration is not changed.
 
 <!-- future-memories-only -->
 Author settings affect **future memories only**. Existing memories change only through the explicit migration command.
@@ -23,12 +23,18 @@ engram author --help
 engram author set --help
 ```
 
-New memory files use separate fields:
+New memory files write `author_name` only. The email stays in your author profile and in Git commits, so it does not end up in committed memory files. To also write it, enable the opt-in key `memory.include_author_email` (default `false`):
+
+```bash
+engram config set memory.include_author_email true
+```
 
 ```yaml
 author_name: Jane Doe
-author_email: jane@example.com
+author_email: jane@example.com   # opt-in: only with memory.include_author_email: true
 ```
+
+Updating an existing memory rewrites its author fields, so a legacy `author_email` is dropped on the next update unless the opt-in is on.
 
 Legacy `author: jane@example.com` remains readable, but new memories do not write it.
 
@@ -99,7 +105,7 @@ The confirmed operation writes `git config --global user.name` and `git config -
 <a id="migrate-existing-memories"></a>
 ## Migrate existing memories
 
-Backfill `author_name` and `author_email` only when a complete deterministic identity is available:
+Backfill `author_name` (and `author_email` only when `memory.include_author_email` is `true`) when a complete deterministic identity is available:
 
 ```bash
 engram author migrate-memories --plan
@@ -108,7 +114,16 @@ engram author migrate-memories --scope both --confirm
 engram author migrate-memories --help
 ```
 
-Migration preserves the Markdown body, creates a `.pre-author-v3.bak` backup, skips archives and invalid files, and is idempotent. It never guesses a missing name. Preview output lists eligible, current, skipped, and invalid files before any write.
+Migration preserves the Markdown body, writes a `.pre-author-v3.bak` backup under `backups/author-v3/`, skips archives and invalid files, and is idempotent. It never guesses a missing name. Preview output lists eligible, current, skipped, and invalid files before any write.
+
+To remove emails that earlier releases already wrote into memory files, strip them. `--strip-email` plans by default and writes only with `--confirm`; it keeps `author_name`, removes `author_email` and legacy `author:` emails, refreshes the hashes and indexes, and backs the original up under `backups/author-strip-email-<date>/`:
+
+```bash
+engram author migrate-memories --strip-email --scope both
+engram author migrate-memories --strip-email --scope both --confirm
+```
+
+Memories written by this release carry a name without an email, so an older Engram cannot index them; upgrade every teammate before relying on name-only memories.
 
 ## Entry Web UI
 
@@ -116,4 +131,4 @@ Open `engram entry`, then choose **Settings → Git**. Global and Workspace tabs
 
 ## Privacy and troubleshooting
 
-Names and email addresses become durable metadata in Markdown and Git history. Use an address appropriate for the repository's visibility. If saving reports an unresolved author, run `engram author show`, set a global or workspace profile, or configure Git fallback values. Global Git sync is never automatic.
+Names become durable metadata in Markdown and Git history; email addresses stay out of memory files unless you enable `memory.include_author_email`. Engram-created commits still carry your author email, so use an address appropriate for the repository's visibility. If saving reports an unresolved author, run `engram author show`, set a global or workspace profile, or configure Git fallback values. Global Git sync is never automatic.

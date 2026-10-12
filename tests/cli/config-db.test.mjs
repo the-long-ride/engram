@@ -27,6 +27,24 @@ test('openConfigDb returns undefined or opens without throwing', async () => {
   }
 });
 
+test('explicit vector.enabled true in engram.config.json survives loadConfig', async () => {
+  const { cwd, env } = await tempWorkspace('engram-vector-explicit-');
+  process.env.ENGRAM_CONFIG_DIR = path.join(env.ENGRAM_CONFIG_DIR);
+  const { schema } = await loadModules();
+  const { loadConfig } = await import('../../dist/core/runtime/config.js');
+  const dir = path.join(cwd, '.agents', '.engram');
+  await mkdir(dir, { recursive: true });
+  await writeFile(path.join(dir, 'engram.config.json'), JSON.stringify({ vector: { enabled: true } }));
+  schema.setConfigDbUnavailableForTests(true);
+  try {
+    const loaded = await loadConfig(cwd);
+    assert.equal(loaded.vector.enabled, true);
+    assert.equal(loaded.vector.auto_threshold, 100);
+  } finally {
+    schema.setConfigDbUnavailableForTests(false);
+  }
+});
+
 test('loadConfig falls back to JSON when config DB schema is unavailable', async () => {
   const { cwd, env } = await tempWorkspace('engram-db-fallback-');
   process.env.ENGRAM_CONFIG_DIR = path.join(env.ENGRAM_CONFIG_DIR);

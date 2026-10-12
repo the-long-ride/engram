@@ -105,7 +105,7 @@ test('executor migrates only memory files included in a partial plan', async () 
   const inventory = await scanUpgradeInventory(f.cwd, f.config, '0.0.29');
   const partial = buildUpgradePlan({
     ...inventory,
-    items: inventory.items.filter((item) => item.kind !== 'memory' || item.file.endsWith('/old.md'))
+    items: inventory.items.filter((item) => item.kind !== 'memory' || path.basename(item.file) === 'old.md')
   }, '0.0.29');
   const result = await applyUpgradePlan(f.cwd, f.config, partial, { confirmed: true });
   assert.ok(result.transactions.some((row) => row.group === 'workspace:memory' && row.status === 'updated'));

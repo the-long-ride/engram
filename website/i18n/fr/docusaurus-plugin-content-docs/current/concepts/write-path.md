@@ -1,66 +1,66 @@
 ---
-title: Write path and approval
+title: Chemin d’écriture et approbation
 sidebar_position: 6
-description: Agents propose, humans approve. Only approved memory is written, then indexes, graph, hashes, and changelog refresh.
+description: Les agents proposent, les humains approuvent. Seule la mémoire approuvée est écrite, puis les index, le graphe, les hachages et le journal des modifications sont actualisés.
 ---
 
-# Write path and approval
+# Chemin d’écriture et approbation {#write-path-and-approval}
 
-The write flow is the trust boundary. Agents propose, humans approve.
+Le flux d’écriture est la frontière de confiance. Les agents proposent, les humains approuvent.
 
-## Write flow
+## Flux d’écriture {#write-flow}
 
-1. Agent proposes one or more candidates.
-   With `save-session --query-level <n>`, the agent may consider up to n recent accessible human-agent chats, but only as proposal context.
-   Natural `/engram ss -f last 50 sessions` is the same scope plus explicit force approval: `engram save-session --query-level 50 --force`.
-2. Engram parses candidate type and target scope.
-3. Engram checks schema, secrets, prompt-injection patterns, and path safety.
-4. Human sees a preview.
-5. Direct CLI replies use `A`, `A 1,3`, `B <note>`, or `C`.
-6. AI-agent chat replies use `yes`, `audit`, or `cancel` after the exact displayed candidates.
-7. Only approved memory is written.
-8. Index, graph, hashes, and changelog are refreshed.
+1. L’agent propose un ou plusieurs candidats.
+   Avec `save-session --query-level <n>`, l’agent peut considérer jusqu’à n conversations récentes accessibles entre humain et agent, mais uniquement comme contexte de proposition.
+   La formule naturelle `/engram ss -f last 50 sessions` correspond à la même portée plus une approbation de forçage explicite : `engram save-session --query-level 50 --force`.
+2. Engram analyse le type du candidat et la portée cible.
+3. Engram vérifie le schéma, les secrets, les motifs d’injection de prompt et la sûreté des chemins.
+4. L’humain voit un aperçu. Chaque candidat porte une ligne `Verdict:` déterministe : `ADD`, `UPDATE <id>`, `SUPERSEDE <id>` ou `NOOP duplicate of <id>` (aucun appel à un modèle).
+5. Les réponses de la CLI directe utilisent `A`, `A 1,3`, `B <note>` ou `C`.
+6. Les réponses dans le chat d’un agent IA utilisent `yes`, `audit` ou `cancel` après les candidats exacts affichés.
+7. Seule la mémoire approuvée est écrite. `A` et `B` ignorent les candidats `NOOP`, et l’approbation d’un `SUPERSEDE` marque l’ancienne mémoire comme remplacée ; `--force` et l’enregistrement automatique n’appliquent jamais un `SUPERSEDE`, ils le diffèrent pour relecture.
+8. L’index, le graphe, les hachages et le journal des modifications sont actualisés.
 
-## Approval words
+## Mots d’approbation {#approval-words}
 
-Approval words are `yes`, `approve`, `confirm`, or `save`. Audit words are `audit`, `revise`, `correct`, or edited replacement text. Cancel words are `cancel`, `stop`, or rejection. Only approval after exact candidate display authorizes `engram save-session --force` for those candidates.
+Les mots d’approbation sont `yes`, `approve`, `confirm` ou `save`. Les mots d’audit sont `audit`, `revise`, `correct` ou un texte de remplacement modifié. Les mots d’annulation sont `cancel`, `stop` ou un refus. Seule une approbation donnée après l’affichage exact des candidats autorise `engram save-session --force` pour ces candidats.
 
-Direct terminal CLI remains A/B/C. MCP proposal tools remain no-write.
+La CLI directe dans un terminal reste A/B/C. Les outils de proposition MCP restent sans écriture.
 
-## Related-memory hints
+## Indications sur les mémoires apparentées {#related-memory-hints}
 
-When `engram save` finds related active memories, the approval preview reports them with a suggested `depends_on` or possible-duplicate warning. Accepting saves the preview as-is; reject first if you want to restructure dependencies or archive duplicates before saving.
+Lorsque `engram save` trouve des mémoires actives apparentées, l’aperçu d’approbation les signale avec une suggestion de `depends_on` ou un avertissement de doublon possible. Accepter enregistre l’aperçu tel quel ; refusez d’abord si vous voulez restructurer les dépendances ou archiver les doublons avant d’enregistrer.
 
-For `save-session --force`, Engram pauses before writing when those related memory hints appear. The agent should use the response to brainstorm a structured rerun: add `DEPENDS_ON: memory-id` for dependencies, `LEVEL: advanced` when a memory is deeper than its prerequisite, or `UPDATE: memory-id` when a candidate should merge into a possible duplicate.
+Pour `save-session --force`, Engram s’interrompt avant d’écrire lorsque ces indications de mémoires apparentées apparaissent. L’agent doit utiliser la réponse pour réfléchir à une nouvelle exécution structurée : ajouter `DEPENDS_ON: memory-id` pour les dépendances, `LEVEL: advanced` lorsqu’une mémoire est plus poussée que son prérequis, ou `UPDATE: memory-id` lorsqu’un candidat doit fusionner avec un doublon possible.
 
 <!-- evidence-foundation:v3:start -->
-## Mémoire étayée par des preuves
+## Mémoire étayée par des preuves {#evidence-backed-memory}
 
-For source material that should be reviewed before it becomes active memory:
+Pour un matériau source qui doit être relu avant de devenir de la mémoire active :
 
 ```bash
 engram observe --file session.md
 engram save-session --file .agents/.engram/inbox/<observation>.md
 ```
 
-The first command sanitizes the source and writes an immutable trace identified by `trace_id` plus an editable inbox wrapper. The second command resolves the wrapper to its trace, verifies hash and scope, then writes only human-approved schema v3 memory with `evidence_refs`. Editing `## Raw Note` cannot replace the trace evidence.
+La première commande assainit la source et écrit une trace immuable identifiée par `trace_id`, ainsi qu’une enveloppe de boîte de réception modifiable. La seconde commande résout l’enveloppe vers sa trace, vérifie le hachage et la portée, puis n’écrit que de la mémoire schema v3 approuvée par un humain, avec `evidence_refs`. Modifier `## Raw Note` ne peut pas remplacer la preuve de la trace.
 <!-- evidence-foundation:v3:end -->
 
-## Safety checks at save time
+## Contrôles de sûreté à l’enregistrement {#safety-checks-at-save-time}
 
-- Schema validation
-- Secret scan
-- Prompt-injection scan
-- Path safety
-- Hash integrity
+- Validation du schéma
+- Analyse des secrets
+- Analyse des injections de prompt
+- Sûreté des chemins
+- Intégrité des hachages
 
-## Why this matters
+## Pourquoi c’est important {#why-this-matters}
 
-Without a protocol, memory can become invisible state. Invisible state is hard to review, hard to share, and easy for agents to poison by accident.
+Sans protocole, la mémoire peut devenir un état invisible. Un état invisible est difficile à relire, difficile à partager et facile à empoisonner par accident pour les agents.
 
-Engram makes memory boring on purpose: files, diffs, hashes, review gates, and commands a human can rerun.
+Engram rend la mémoire volontairement ennuyeuse : des fichiers, des diffs, des hachages, des portes de relecture et des commandes qu’un humain peut relancer.
 
-## Next steps
+## Étapes suivantes {#next-steps}
 
-- [Privacy, ignore rules, and safety](safety.md)
-- [CLI: save / save-session / observe](../cli/save-session.md)
+- [Confidentialité, règles d’ignorance et sûreté](safety.md)
+- [CLI : save / save-session / observe](../cli/save-session.md)

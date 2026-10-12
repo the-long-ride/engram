@@ -3,6 +3,7 @@ import {
   globalSkillsetRegistryPath,
   installGlobalSkillset,
   installSkillset,
+  resolveLinkTargets,
   skillsetTargets,
   unlinkGlobalSkillset,
   unlinkSkillset,
@@ -10,10 +11,21 @@ import {
   type SkillsetTarget,
   type UnlinkResult
 } from "../core/integrations/skillset.js";
-import { applyAgentHookAction } from "../core/integrations/agent-hooks.js";
+import { claudeUserMcpCommand } from "../core/integrations/mcp-config.js";
+import { applyAgentHookAction, detectInstalledHookTargets, hookHostsForTarget } from "../core/integrations/agent-hooks.js";
 import { formatRecords, type RecordBlock } from "../core/cli/format.js";
 import { loadConfig, workspaceRoot, legacyWorkspaceRoot } from "../core/runtime/config.js";
 import { exists } from "../core/system/fsx.js";
+import { getContext } from "../core/memory/context.js";
+import { globalAgentHome } from "../core/integrations/agent-paths.js";
+import {
+  missingGlobalRuleCount,
+  nativeRuleRecords,
+  removeNativeRules,
+  syncNativeRules,
+  type NativeRuleHost,
+  type NativeRuleSyncResult
+} from "../core/integrations/native-rules.js";
 
 /** Install agent-host instruction files, MCP config, and agent hooks for Engram integration. */
 export async function cmdLink(args: string[], flags: Record<string, any> = {}): Promise<string> {
@@ -36,21 +48,25 @@ export async function cmdLink(args: string[], flags: Record<string, any> = {}): 
     }
   }
 
-  const results = global
-    ? await installGlobalSkillset(effectiveTarget, { force: Boolean(flags.force) })
-    : await installSkillset(process.cwd(), effectiveTarget, Boolean(flags.force));
-
   const hookTarget = skillsetHookTarget(target);
+  // Hooks are installed right after these files, so the rendered text can already say context is auto-injected.
+  const hookHosts = hookTarget && flags.plan !== true ? hookHostsForTarget(hookTarget) : [];
+  const results = global
+    ? await installGlobalSkillset(effectiveTarget, { force: Boolean(flags.force), hookHosts })
+    : await installSkillset(process.cwd(), effectiveTarget, Boolean(flags.force), { hookHosts });
+
   const hookResult = hookTarget ? await applyAgentHookAction("install", hookTarget, {
     global,
     plan: flags.plan === true,
-    force: Boolean(flags.force)
+    force: Boolean(flags.force),
+    sessionEnd: flags["session-end"] === true
   }) : "";
 
   return [
     formatRecords(global ? "Global link install" : "Link install", installResultRecords(results)),
-    ...skillsetInstallHints(results, global),
-    ...(hookResult ? [hookResult] : [])
+    ...(await skillsetInstallHints(results, global)),
+    ...(hookResult ? [hookResult] : []),
+    ...(await nativeRuleSection(effectiveTarget, global, flags.plan === true))
   ].join("\n");
 }
 
@@ -79,8 +95,59 @@ export async function cmdUnlink(args: string[], flags: Record<string, any> = {})
 
   return [
     formatRecords(global ? "Global unlink" : "Unlink", unlinkResultRecords(results)),
-    ...(hookResult ? [hookResult] : [])
+    ...(hookResult ? [hookResult] : []),
+    ...(await nativeRuleUnlinkSection(target, global))
   ].join("\n");
+}
+
+const NATIVE_RULE_HOSTS: NativeRuleHost[] = ["claude", "cursor"];
+
+/** Claude/Cursor hosts a link or unlink target covers; unlink of `all` sweeps both, since marked rule files are Engram's own. */
+function nativeRuleHosts(target: string, unlink = false): NativeRuleHost[] {
+  if (unlink && (target === "all" || target === "all-supported")) return [...NATIVE_RULE_HOSTS];
+  try {
+    const names = resolveLinkTargets(target).map((item) => String(item.name));
+    return NATIVE_RULE_HOSTS.filter((host) => names.includes(host));
+  } catch {
+    return [];
+  }
+}
+
+/** E12/E13: write or preview the native path rules of the linked Claude/Cursor targets; global link covers Claude only. */
+async function nativeRuleSection(target: string, global: boolean, plan: boolean): Promise<string[]> {
+  const hosts = nativeRuleHosts(target).filter((host) => !global || host === "claude");
+  if (!hosts.length) return [];
+  try {
+    const cwd = process.cwd();
+    const ctx = await getContext(cwd);
+    const results: NativeRuleSyncResult[] = [];
+    for (const host of hosts) {
+      results.push(await syncNativeRules(ctx, host, global
+        ? { scope: "global", baseDir: globalAgentHome(), plan }
+        : { scope: "workspace", baseDir: cwd, plan }));
+    }
+    const rows = [formatRecords("Native path rules", nativeRuleRecords(results))];
+    const missing = !global && !plan && hosts.includes("claude") ? await missingGlobalRuleCount(ctx) : 0;
+    if (missing > 0) rows.push(`Hint: ${missing} global applies_to memories have no native rule; run engram link --global claude or engram config set hooks.path_rules hook`);
+    return rows;
+  } catch (error) {
+    return [`Native path rules skipped: ${error instanceof Error ? error.message : String(error)}`];
+  }
+}
+
+/** Unlink: delete the marked rule files of the unlinked Claude/Cursor targets. */
+async function nativeRuleUnlinkSection(target: string, global: boolean): Promise<string[]> {
+  const hosts = nativeRuleHosts(target, true).filter((host) => !global || host === "claude");
+  const rows: RecordBlock[] = [];
+  for (const host of hosts) {
+    try {
+      const removed = await removeNativeRules(global ? globalAgentHome() : process.cwd(), host);
+      if (removed.length) rows.push({ title: `REMOVED native rules ${host}`, fields: [["Removed", removed.join(", ")]] });
+    } catch {
+      // Derived files: a failed cleanup must not fail the unlink.
+    }
+  }
+  return rows.length ? [formatRecords("Native path rules", rows)] : [];
 }
 
 /** Legacy command name for Engram skillset integration. */
@@ -102,7 +169,7 @@ export async function cmdInstallSkillset(args: string[], flags: Record<string, a
     : await installSkillset(process.cwd(), target, Boolean(flags.force));
   return [
     formatRecords(global ? "Global skillset install" : "Skillset install", installResultRecords(results)),
-    ...skillsetInstallHints(results, global)
+    ...(await skillsetInstallHints(results, global))
   ].join("\n");
 }
 
@@ -145,10 +212,15 @@ function skillsetListTargets(): SkillsetTarget[] {
   return targets;
 }
 
-function skillsetInstallHints(results: InstallResult[], global = false): string[] {
+async function skillsetInstallHints(results: InstallResult[], global = false): Promise<string[]> {
   const hints = [];
   if (global) hints.push(`Registry: ${globalSkillsetRegistryPath()}`);
   if (results.some((result) => result.action === "skipped")) hints.push("Skipped targets can be installed manually when the agent exposes a stable user/global rule path.");
+  if (results.some((result) => result.file === "<manual>" && result.reason?.includes("claude mcp add"))) {
+    // E5: without Engram Claude hooks nothing injects context, so ask Claude Code to load engram_load upfront.
+    const alwaysLoad = !(await detectInstalledHookTargets({ global: true, includeStale: true })).includes("claude");
+    hints.push(`Claude Code MCP (user scope): ${claudeUserMcpCommand({ alwaysLoad })}`);
+  }
   if (results.some((result) => result.target === "gemini")) {
     hints.push("Note: gemini also covers current Antigravity 2.0, Antigravity CLI, and Antigravity IDE Gemini-compatible paths while Google keeps those surfaces in flux.");
   }

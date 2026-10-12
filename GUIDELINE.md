@@ -39,8 +39,19 @@ npm run lint:lines
 - `src/core/vcs/submodule.ts` owns opt-in workspace `.agents/.engram` submodule creation
   and may stage only `.gitmodules` plus the `.agents/.engram` gitlink after human opt-in.
 - `src/core/integrations/skillset.ts` renders agent instruction, MCP, and slash-command
-  adapters.
-- `prompts` contains agent-facing prompt templates.
+  adapters. `claude-bootstrap.ts` decides where the Claude bootstrap block goes
+  (AGENTS.md always, CLAUDE.md only when it already exists), `native-rules.ts` emits
+  `applies_to` memories as Claude and Cursor rule files, and `hook-caps.ts` plus
+  `hook-turn.ts` plan hook payloads under each host's cap.
+- `src/mcp` splits the MCP server by concern: `protocol.ts` (era detection, legacy
+  version negotiation, `server/discover`), `resources.ts` (resources and the `propose`
+  prompt), `elicitation.ts` and `approval-flow.ts` (save approval through the host's
+  dialog; every failure path falls back to or stays on the token flow), and
+  `approval-tokens.ts`. New MCP surfaces must serve both protocol eras and keep
+  `engram_commit` and `engram_note` the only MCP writes that need a human decision.
+- `src/core/memory/backups.ts` owns gitignored migration backups, and
+  `host-memory.ts` is the read-only reader for Claude auto memory and Codex memories
+  (Engram never writes into a host store).
 - `templates` contains generated memory starter files.
 
 ## Coding Rules
@@ -81,14 +92,13 @@ npm run lint:lines
   `[label](url)`.
 - Rule memories target 70 counted content lines and hard-fail above 100 counted
   lines by default; empty lines and frontmatter property lines do not count. These limits are configurable via `memory.rule_line_target` and `memory.rule_line_hard_limit` (configurable between 50 and 200).
-- MCP tools are proposal-only. Keep `engram_save` behavior aligned with CLI
+- MCP tools are proposal-only, except `engram_note`, which writes only gitignored working-tier files behind its own yes/cancel approval. Keep `engram_save` behavior aligned with CLI
   auto-detection, workflow-as-skill handling, and role metadata; add MCP methods
   for new read/proposal surfaces before documenting them.
 - Command aliases must dispatch through `canonicalCommand` and be documented in
   both compact help and detailed topic help.
-- Rule variant mode is opt-in. Generate light/balanced/strict rule variants only
-  for newly saved or updated rules while the mode is enabled; never bulk-rewrite
-  old memories just to add variants.
+- Rule variants are derived at render time; store a `## Rule Variants` section
+  only for custom wording; never bulk-rewrite old memories.
 - `engram set-rule-variant` exists because lower-tier models often need strict
   wording to stay controlled, while top-tier models usually work better with
   light or balanced wording so rules do not blunt their reasoning.

@@ -1,20 +1,33 @@
 ---
 title: verify / repair / quality-check
 sidebar_position: 6
-description: Maintenance commands — verify hashes, repair invalid files, check quality, and resolve conflicts.
+description: Команды обслуживания — проверка хешей, восстановление некорректных файлов, проверка качества и разрешение конфликтов.
 ---
 
 # verify / repair / quality-check
 
-Maintenance commands keep memory healthy.
+Команды обслуживания поддерживают память в здоровом состоянии.
 
 ## verify
 
 ```bash
 engram verify
+engram verify --sources
+engram verify --sources --json
 ```
 
-Checks hashes for integrity. Run after manual edits or imports.
+Проверяет хеши на целостность. Запускайте после ручных правок или импорта.
+
+`--sources` также заново хеширует `source_files` воспоминаний take-control и сверяет их с `source_hashes`, записывая изменённые или отсутствующие в локальный, исключённый из Git `.agents/.engram/stale.json`. Устаревшие источники никогда не приводят к сбою `verify`: `load` ранжирует устаревшие воспоминания ниже и заканчивает их карточки меткой ` (stale)`, а `engram take-control --refresh` предлагает для них обновления. Пути источников должны оставаться внутри рабочего пространства; абсолютные пути, `..`, символические и жёсткие ссылки, секретные файлы, `.git` и данные Engram сообщаются как непроверенные и никогда не читаются. В `--json` поле `skipped` перечисляет объекты `{key, reason}`. Глобальное воспоминание take-control запоминает рабочее пространство, из которого оно пришло, и проверяется только там.
+
+## stats
+
+```bash
+engram stats
+engram stats --usage
+```
+
+`--usage` читает локальный, исключённый из Git `.agents/.engram/usage.json` и показывает, какие воспоминания агенты действительно получают через `engram load --id`, а какие были внедрены, но ни разу не получены за 30 дней.
 
 ## repair
 
@@ -23,7 +36,14 @@ engram repair
 engram rebuild-index
 ```
 
-Use `repair` after manual edits or imports to find malformed memory files skipped by index rebuild.
+Используйте `repair` после ручных правок или импорта, чтобы найти некорректные файлы памяти, пропущенные при перестроении индекса.
+
+```bash
+engram repair --move-backups
+engram repair workspace --move-backups --confirm
+```
+
+`--move-backups` планирует перенос разрозненных резервных копий миграции `*.bak` из `rules`, `skills` и `knowledge` в исключённую из Git папку `backups/<kind>-<label>/` (например, `backups/schema-v3/rules/x.md.pre-v3.bak`). Добавьте `--confirm`, чтобы выполнить перенос; другой файл, уже лежащий в месте назначения, сообщается как конфликт и остаётся на месте. `engram doctor` сообщает об этих файлах как о `memory.stray_backups`.
 
 ## quality-check
 
@@ -31,7 +51,7 @@ Use `repair` after manual edits or imports to find malformed memory files skippe
 engram quality-check
 ```
 
-Reports contradiction candidates compactly. Contradiction detection is heuristic and advisory.
+Компактно сообщает о кандидатах на противоречия. Обнаружение противоречий эвристическое и носит рекомендательный характер.
 
 ## graph
 
@@ -40,7 +60,7 @@ engram graph "package manager"
 engram graph --rebuild
 ```
 
-Inspect graph routing before archiving. Run `engram graph --rebuild` after manual edits.
+Проверяйте маршрутизацию по графу перед архивированием. Запускайте `engram graph --rebuild` после ручных правок.
 
 ## archive
 
@@ -48,7 +68,7 @@ Inspect graph routing before archiving. Run `engram graph --rebuild` after manua
 engram archive --reason "Repo migrated to npm." rules/use-pnpm.md
 ```
 
-Archive wrong or superseded memory. Use archive, not delete, for auditability. The file leaves active routing only after approval and remains preserved under `archive/`.
+Архивируйте неверные или заменённые воспоминания. Для аудируемости используйте архивирование, а не удаление. Файл покидает активную маршрутизацию только после подтверждения и остаётся сохранённым в `archive/`.
 
 ## resolve-conflicts
 
@@ -57,7 +77,7 @@ engram resolve-conflicts --dry-run --metacognize
 engram resolve-conflicts --metacognize
 ```
 
-Preview or resolve only Engram-owned workspace memory conflicts. Add `--metacognize` when an agent should review the memory folder after conflict handling. The command keeps deterministic conflict handling scoped to `.agents/.engram/`, then appends the workspace metacognize source pack for concise `TYPE/TEXT` candidates.
+Предпросмотр или разрешение только тех конфликтов памяти рабочего пространства, которыми владеет Engram. Добавьте `--metacognize`, если агент должен просмотреть папку памяти после обработки конфликтов. Команда ограничивает детерминированную обработку конфликтов областью `.agents/.engram/`, а затем добавляет пакет источников metacognize рабочего пространства для кратких кандидатов `TYPE/TEXT`.
 
 ## benchmark
 
@@ -65,9 +85,9 @@ Preview or resolve only Engram-owned workspace memory conflicts. Add `--metacogn
 engram benchmark
 ```
 
-Retrieval regression checks.
+Проверки регрессии извлечения.
 
-## Next steps
+## Дальнейшие шаги
 
 - [sync / archive](sync-archive.md)
-- [Operations troubleshooting](../operations/troubleshooting.md)
+- [Устранение неполадок](../operations/troubleshooting.md)

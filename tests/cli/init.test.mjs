@@ -75,7 +75,7 @@ test('init can skip or retarget default skillset install', async () => {
   const slash = await runEngram(targeted.cwd, targeted.env, ['inject', '--skillset', 'slash']);
   assert.equal(slash.code, 0, slash.stderr);
   assert.match(await readFile(path.join(targeted.cwd, '.claude/commands/engram.md'), 'utf8'), /Engram Slash Command/);
-  assert.match(await readFile(path.join(targeted.cwd, '.cursor/commands/engram.md'), 'utf8'), /Keep replies compact/);
+  assert.match(await readFile(path.join(targeted.cwd, '.cursor/commands/engram.md'), 'utf8'), /Full protocol: `\.cursor\/engram\.md`/);
   await assert.rejects(readFile(path.join(targeted.cwd, 'AGENTS.md'), 'utf8'));
   await rm(targeted.cwd, { recursive: true, force: true });
 });

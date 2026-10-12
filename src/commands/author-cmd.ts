@@ -34,8 +34,10 @@ export async function cmdAuthor(args: string[], flags: Record<string, any>, cwd 
   }
   if (action === 'migrate-memories') {
     const scope = migrationScope(flags.scope ?? 'both');
-    if (flags.plan === true) return renderMigration(await planAuthorMemoryMigration(cwd, scope), flags.json === true);
-    return renderMigration(await migrateMemoryAuthors(cwd, scope, { confirmed: flags.confirm === true }), flags.json === true);
+    const stripEmail = flags['strip-email'] === true;
+    // --strip-email is plan-first: it writes only with --confirm.
+    if (flags.plan === true || (stripEmail && flags.confirm !== true)) return renderMigration(await planAuthorMemoryMigration(cwd, scope, { stripEmail }), flags.json === true);
+    return renderMigration(await migrateMemoryAuthors(cwd, scope, { confirmed: flags.confirm === true, stripEmail }), flags.json === true);
   }
   throw new Error('author expects show, set, unset, sync-git-global, or migrate-memories');
 }

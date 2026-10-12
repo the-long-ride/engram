@@ -1,70 +1,70 @@
 ---
-title: Auto-save Policy
+title: 自动保存策略
 sidebar_position: 5
-description: Configure deny-by-default autonomous writes, quotas, rollback retention, review gates, and required metadata.
+description: 配置自主写入的默认拒绝、配额、回滚保留期限、审查门禁和必要元数据。
 ---
 
-# Auto-save Policy
+# 自动保存策略
 
-The Construct tab edits `.agents/engram.policy.json`. Normal `engram save` and `engram save-session` flows remain human-approved; this policy applies only to explicitly policy-gated autonomous candidates.
+Construct 标签页可用于编辑 `.agents/engram.policy.json`。常规的 `engram save` 和 `engram save-session` 流程依然需要人工审批；该策略仅适用于明确受策略管辖的自主候选记忆。
 
-## Autonomous writes
+## 自主写入
 
-### Allow auto-save {#autonomous-writes-enabled}
+### 允许自动保存 {#autonomous-writes-enabled}
 
-Maps to `autonomous_writes.enabled`. Default: `false`. When disabled, no candidate may write autonomously.
+对应 `autonomous_writes.enabled`。默认值：`false`。禁用时，任何候选记忆均不可自主写入。
 
-### Write mode {#autonomous-writes-mode}
+### 写入模式 {#autonomous-writes-mode}
 
-Maps to `autonomous_writes.mode`. `review_only` defers candidates for review; `autonomous` permits candidates that pass every remaining gate.
+对应 `autonomous_writes.mode`。`review_only` 将候选记忆暂缓待审；`autonomous` 允许通过所有剩余门禁的候选记忆进行写入。
 
-### Allowed types {#autonomous-writes-allowed-types}
+### 允许的类型 {#autonomous-writes-allowed-types}
 
-Maps to `autonomous_writes.allowed_types`. Allowed values are `rule`, `skill`, `workflow`, and `knowledge`. At least one type is required.
+对应 `autonomous_writes.allowed_types`。允许的值为 `rule`、`skill`、`workflow` 和 `knowledge`。至少需要指定一种类型。
 
-### Allowed scopes {#autonomous-writes-allowed-scopes}
+### 允许的作用域 {#autonomous-writes-allowed-scopes}
 
-Maps to `autonomous_writes.allowed_scopes`. Allowed values are `workspace` and `global`.
+对应 `autonomous_writes.allowed_scopes`。允许的值为 `workspace` 和 `global`。
 
-### Allowed sources {#autonomous-writes-allowed-sources}
+### 允许的来源 {#autonomous-writes-allowed-sources}
 
-Maps to `autonomous_writes.allowed_sources`. Entry offers `autosave`, `agent-hook`, `cli`, and `mcp`; custom non-empty source strings remain valid in policy JSON.
+对应 `autonomous_writes.allowed_sources`。Entry 提供 `autosave`、`agent-hook`、`cli` 和 `mcp`；策略 JSON 中非空的自定义来源字符串同样有效。
 
-### Confidence threshold {#autonomous-writes-confidence-threshold}
+### 置信度阈值 {#autonomous-writes-confidence-threshold}
 
-Maps to `autonomous_writes.confidence_threshold`. Allowed values are `low`, `medium`, and `high`.
+对应 `autonomous_writes.confidence_threshold`。允许的值为 `low`、`medium` 和 `high`。
 
-### Daily write limit {#autonomous-writes-daily-limit}
+### 每日写入上限 {#autonomous-writes-daily-limit}
 
-Maps to `autonomous_writes.daily_limit`. Use a non-negative integer. `0` prevents autonomous writes.
+对应 `autonomous_writes.daily_limit`。使用非负整数。`0` 禁止任何自主写入。
 
-### Rollback retention days {#autonomous-writes-rollback-retention-days}
+### 回滚保留天数 {#autonomous-writes-rollback-retention-days}
 
-Maps to `autonomous_writes.rollback_retention_days`. Use a non-negative integer that matches the period in which policy audit records should remain rollback-eligible.
+对应 `autonomous_writes.rollback_retention_days`。使用非负整数，匹配策略审计记录保持可回滚状态的保留周期。
 
-## Review gates
+## 审查门禁
 
-### Review rule line limit {#review-max-rule-lines}
+### 审查规则行数上限 {#review-max-rule-lines}
 
-Maps to `review.max_rule_lines`. Rule candidates above this positive integer fail review.
+对应 `review.max_rule_lines`。超过该正整数的规则候选记忆无法通过审查。
 
-### Minimum recall benchmark {#review-benchmark-min-recall-at-k}
+### 最小召回率基准 {#review-benchmark-min-recall-at-k}
 
-Maps to `review.benchmark_min_recall_at_k`. Use a number from `0` through `1`.
+对应 `review.benchmark_min_recall_at_k`。使用介于 `0` 到 `1` 之间的数值。
 
-### Require context metadata {#review-mandatory-metadata-context}
+### 要求 context 元数据 {#review-mandatory-metadata-context}
 
-Maps to `review.mandatory_metadata.context`. When enabled, candidates without `context` metadata fail review.
+对应 `review.mandatory_metadata.context`。启用时，缺少 `context` 元数据的候选记忆将无法通过审查。
 
-### Require triggers metadata {#review-mandatory-metadata-triggers}
+### 要求 triggers 元数据 {#review-mandatory-metadata-triggers}
 
-Maps to `review.mandatory_metadata.triggers`. When enabled, candidates without `triggers` metadata fail review.
+对应 `review.mandatory_metadata.triggers`。启用时，缺少 `triggers` 元数据的候选记忆将无法通过审查。
 
-### Require role metadata {#review-mandatory-metadata-role}
+### 要求 role 元数据 {#review-mandatory-metadata-role}
 
-Maps to `review.mandatory_metadata.role`. When enabled, candidates without `role` metadata fail review.
+对应 `review.mandatory_metadata.role`。启用时，缺少 `role` 元数据的候选记忆将无法通过审查。
 
-## CLI workflow
+## CLI 工作流
 
 ```bash
 engram policy init
@@ -74,10 +74,10 @@ engram policy audit --json
 engram policy rollback <audit-id>
 ```
 
-Use dry-run before enabling autonomous mode. Audit receipts contain identifiers rather than memory bodies, and rollback archives the policy-written memory.
+在启用自主模式前请使用 dry-run。审计收据包含标识符而非记忆正文，回滚操作会将受策略写入的记忆归档。
 
-## Related pages
+## 相关页面
 
-- [Construct tab](construct.md)
-- [Write path and approval](../concepts/write-path.md)
-- [Privacy, ignore rules, and safety](../concepts/safety.md)
+- [Construct 标签页](construct.md)
+- [写入路径与审批](../concepts/write-path.md)
+- [隐私、忽略规则与安全](../concepts/safety.md)

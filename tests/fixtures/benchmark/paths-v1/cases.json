@@ -1,0 +1,79 @@
+{
+  "version": 2,
+  "cases": [
+    {
+      "id": "path-sql-migration",
+      "category": "path-trigger",
+      "query": "db/migrations/20260101_add_index.sql",
+      "expect": [
+        "sql-migration-file-naming"
+      ],
+      "forbid": [
+        "terraform-module-pinning"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "path-terraform-module",
+      "category": "path-trigger",
+      "query": "infra\\network\\main.tf",
+      "expect": [
+        "terraform-module-pinning"
+      ],
+      "forbid": [
+        "sql-migration-file-naming"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "path-protobuf-field",
+      "category": "path-trigger",
+      "query": "proto/billing/invoice.proto",
+      "expect": [
+        "protobuf-field-numbering"
+      ],
+      "forbid": [
+        "storybook-story-layout"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "path-storybook-story",
+      "category": "path-trigger",
+      "query": "src/components/Button.stories.tsx",
+      "expect": [
+        "storybook-story-layout"
+      ],
+      "forbid": [
+        "protobuf-field-numbering"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "expired-kafka-probe",
+      "category": "working-expired",
+      "query": "flaky kafka consumer probe",
+      "expect": [],
+      "expect_omitted": [
+        "flaky-kafka-consumer-probe"
+      ],
+      "forbid": [
+        "flaky-kafka-consumer-probe"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "expired-flamegraph-notes",
+      "category": "working-expired",
+      "query": "temp perf flamegraph notes",
+      "expect": [],
+      "expect_omitted": [
+        "temp-perf-flamegraph-notes"
+      ],
+      "forbid": [
+        "temp-perf-flamegraph-notes"
+      ],
+      "depends_on": []
+    }
+  ]
+}

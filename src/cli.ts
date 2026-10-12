@@ -5,7 +5,7 @@ import { canonicalCommand } from './core/cli/command-registry.js';
 import { cmdCompletion, cmdHelp, cmdInject, cmdLlm } from './commands/core.js';
 import { cmdObserve } from './commands/observe.js';
 import { cmdAudit, cmdDoctor, cmdLoad, cmdRebuildIndex, cmdRehash, cmdRepair, cmdRoute, cmdVerify } from './commands/read.js';
-import { cmdSave, cmdSaveSession, cmdTakeControl } from './commands/write.js';
+import { cmdPromote, cmdSave, cmdSaveSession, cmdTakeControl, cmdWorking } from './commands/write.js';
 import { cmdArchive, cmdBenchmark, cmdDeduplicate, cmdEntry, cmdExport, cmdGraph, cmdHealth, cmdImport, cmdQuality, cmdSearch, cmdStats, cmdSync } from './commands/ops.js';
 import { cmdCloneMemory } from './commands/clone.js';
 import { cmdConfig } from './commands/config-cmd.js';
@@ -51,6 +51,8 @@ export async function runCli(argv: string[]): Promise<string> {
       case 'save-session': return await cmdSaveSession(rest, flags);
       case 'observe': return await cmdObserve(rest, flags);
       case 'take-control': return await cmdTakeControl(rest, flags);
+      case 'promote': return await cmdPromote(rest);
+      case 'working': return await cmdWorking(rest, flags);
       case 'load': return await cmdLoad(rest, flags);
       case 'verify': return await cmdVerify(rest[0], flags);
       case 'rehash': return await cmdRehash(rest[0]);

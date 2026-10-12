@@ -1,63 +1,63 @@
 ---
-title: Connections tab
+title: Onglet Connections
 sidebar_position: 3
-description: Detect and link supported AI agents from the Entry Web UI.
+description: Détecter et lier les agents IA pris en charge depuis l’interface web Entry.
 ---
 
 import RiskCallout from '@site/src/components/RiskCallout';
 
-# Connections tab
+# Onglet Connections {#connections-tab}
 
-The Connections tab scans your machine for supported AI agent surfaces and lets you link Engram to each one at the workspace or global level.
+L’onglet Connections analyse votre machine à la recherche des surfaces d’agents IA pris en charge et vous permet de lier Engram à chacune au niveau du workspace ou au niveau global.
 
-## Agent scan
+## Analyse des agents {#agent-scan}
 
-The tab shows a card per supported agent. Each card reports a detected or missing status.
+L’onglet affiche une carte par agent pris en charge. Chaque carte indique un statut détecté ou manquant.
 
-- **Detected** — Engram found a supported local agent surface (config path or app present).
-- **Missing** — Engram did not find the agent surface. Missing does not always mean unsupported; it can mean the app or config path is not present yet.
+- **Detected** — Engram a trouvé une surface d’agent locale prise en charge (chemin de configuration ou application présents).
+- **Missing** — Engram n’a pas trouvé la surface de l’agent. Manquant ne signifie pas toujours non pris en charge ; cela peut signifier que l’application ou le chemin de configuration n’existe pas encore.
 
 <RiskCallout level="caution">
-Missing does not always mean unsupported. It can mean the app or config path is not present on this machine yet.
+Manquant ne signifie pas toujours non pris en charge. Cela peut signifier que l’application ou le chemin de configuration n’est pas encore présent sur cette machine.
 </RiskCallout>
 
-## Workspace link toggle {#workspace-link-toggle}
+## Bascule de lien workspace {#workspace-link-toggle}
 
-Links Engram to the current repo/workspace for that agent. Use when memory should follow the repository: per-project rules, repo-specific memory, team-shared instructions.
+Lie Engram au dépôt/workspace courant pour cet agent. À utiliser lorsque la mémoire doit suivre le dépôt : règles par projet, mémoire propre au dépôt, instructions partagées par l’équipe.
 
-## Global link toggle {#global-link-toggle}
+## Bascule de lien global {#global-link-toggle}
 
-Links Engram globally for that agent. Use for personal memory, cross-project workflows, and reusable style/rules.
+Lie Engram globalement pour cet agent. À utiliser pour la mémoire personnelle, les flux de travail inter-projets et les styles/règles réutilisables.
 
 <RiskCallout level="risky">
-Use global links carefully on shared machines. Engram writes managed blocks into shared instruction files. Review what files Engram writes per agent before linking globally.
+Utilisez les liens globaux avec précaution sur les machines partagées. Engram écrit des blocs gérés dans des fichiers d’instructions partagés. Examinez les fichiers qu’Engram écrit pour chaque agent avant de lier globalement.
 </RiskCallout>
 
-## What files Engram writes per agent
+## Fichiers qu’Engram écrit pour chaque agent {#what-files-engram-writes-per-agent}
 
-| Target | File |
+| Cible | Fichier |
 | --- | --- |
 | `codex` | `AGENTS.md`, `.agents/skills/engram/SKILL.md` |
 | `agents-md` | `AGENTS.md` |
-| `copilot` | `.github/copilot-instructions.md`; global: `~/.copilot/copilot-instructions.md` |
-| `claude` | `CLAUDE.md` |
-| `cursor` | `.cursor/rules/engram.mdc`; global: `~/.cursor/plugins/local/engram/` |
-| `gemini` | `GEMINI.md`; global: `~/.gemini/GEMINI.md`, `~/.gemini/skills/engram/SKILL.md` |
+| `copilot` | `.github/copilot-instructions.md` ; global : `~/.copilot/copilot-instructions.md` |
+| `claude` | `AGENTS.md`, `.claude/engram.md`, `.agents/engram.md`, plus un bloc `CLAUDE.md` uniquement lorsque ce fichier existe déjà |
+| `cursor` | `.cursor/rules/engram.mdc` ; global : `~/.cursor/plugins/local/engram/` |
+| `gemini` | `GEMINI.md` ; global : `~/.gemini/GEMINI.md`, `~/.gemini/skills/engram/SKILL.md` |
 | `cline` | `.clinerules` |
-| `windsurf` | `.windsurf/rules/engram.md`; global: `~/.codeium/windsurf/memories/global_rules.md` |
+| `windsurf` | `.windsurf/rules/engram.md` ; global : `~/.codeium/windsurf/memories/global_rules.md` |
 | `opencode` | `AGENTS.md`, `.opencode/engram.md`, `.opencode/skills/engram/SKILL.md`, `opencode.json` |
-| `mcp` | `.mcp.json`; global: host MCP config files |
+| `mcp` | `.mcp.json` ; global : fichiers de configuration MCP de l’hôte |
 | `slash` | `.claude/commands/engram.md`, `.claude/skills/engram/SKILL.md`, `.cursor/commands/engram.md`, `.gemini/commands/engram.toml`, `.opencode/commands/engram.md` |
 
-## When to unlink
+## Quand délier {#when-to-unlink}
 
-- Archiving a repo or test workspace
-- Switching an agent away from Engram
-- Cleaning stale managed blocks before a fresh `engram upgrade --latest`
+- Archivage d’un dépôt ou d’un workspace de test
+- Abandon d’Engram pour un agent
+- Nettoyage des blocs gérés obsolètes avant un nouveau `engram upgrade --latest`
 
-`engram unlink` removes only Engram-managed hook entries and adapter files. Human-authored files are preserved unless `--force` is explicit.
+`engram unlink` ne supprime que les entrées de hook et les fichiers d’adaptateur gérés par Engram. Les fichiers rédigés par un humain sont conservés sauf si `--force` est explicite.
 
-## CLI equivalent
+## Équivalent CLI {#cli-equivalent}
 
 ```bash
 engram link codex
@@ -66,7 +66,7 @@ engram link --global opencode
 engram unlink
 ```
 
-## Next steps
+## Étapes suivantes {#next-steps}
 
-- [Construct tab](construct.md)
-- [Agent Integrations overview](../integrations/overview.md)
+- [Onglet Construct](construct.md)
+- [Vue d’ensemble des intégrations d’agents](../integrations/overview.md)

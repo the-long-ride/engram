@@ -47,6 +47,7 @@ Each field lists:
 | Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
 | <span id="load-limit"></span>`load.limit` | number 1–32 | `8` | normal | Max memories returned by normal load. |
+| <span id="load-working-ttl-days"></span>`load.working_ttl_days` | number 1–365 | `14` | normal | Days a task-objective memory stays in the working tier. |
 
 ## Memory Limits {#memory-limits}
 
@@ -54,6 +55,13 @@ Each field lists:
 | --- | --- | --- | --- | --- |
 | <span id="memory-rule-line-target"></span>`memory.rule_line_target` | number 50–200, step 10 | `70` | normal | Recommended line count for rules. |
 | <span id="memory-rule-line-hard-limit"></span>`memory.rule_line_hard_limit` | number 50–200, step 10 | `100` | risky | Hard max line count for rules. |
+| <span id="memory-include-author-email"></span>`memory.include_author_email` | toggle | `false` | risky | Write `author_email` into new memory frontmatter (`author_name` is always written). |
+
+## Hooks {#hooks}
+
+| Config key | Control | Default | Risk | Notes |
+| --- | --- | --- | --- | --- |
+| <span id="hooks-path-rules"></span>`hooks.path_rules` | select | `native` | normal | `native`: Claude and Cursor load `applies_to` memories from generated rule files and Claude registers `InstructionsLoaded`. `hook`: keep the Claude `PreToolUse` hook and remove the Claude rule files. |
 
 ## Graph {#graph}
 
@@ -67,7 +75,7 @@ Each field lists:
 
 | Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| <span id="vector-enabled"></span>`vector.enabled` | toggle | `true` | normal | Enables optional local vector routing. |
+| <span id="vector-enabled"></span>`vector.enabled` | toggle | `false` | normal | Experimental: enables optional local hashed-vector routing (not semantic embeddings). Off by default. |
 | <span id="vector-provider"></span>`vector.provider` | select | `sqlite-vec` | normal | The only supported local vector provider. |
 | <span id="vector-auto-threshold"></span>`vector.auto_threshold` | number 10–1000 | `100` | normal | Memory count where vector search activates. |
 | <span id="vector-candidate-pool"></span>`vector.candidate_pool` | number 8–100 | `24` | normal | Candidates considered before reranking. |
@@ -77,7 +85,7 @@ Each field lists:
 
 | Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
-| <span id="rule-variants-enabled"></span>`rule_variants.enabled` | toggle | `false` | normal | Enables role/strictness variants. |
+| <span id="rule-variants-enabled"></span>`rule_variants.enabled` | toggle | `false` | normal | Renders light and strict wording derived from each rule's Content (off renders balanced). |
 | <span id="rule-variants-active"></span>`rule_variants.active` | select | `balanced` | normal | Active variant: `light`, `balanced`, `strict`. |
 
 ## Live Sync {#live-sync}
@@ -85,7 +93,7 @@ Each field lists:
 | Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
 | <span id="live-sync-enabled"></span>`live_sync.enabled` | toggle | `false` | normal | Sync generated agent context files on save. |
-| <span id="live-sync-targets"></span>`live_sync.targets` | list | `agents-md`, `claude-md`, `cursorrules` | normal | Generated context targets refreshed by live sync. |
+| <span id="live-sync-targets"></span>`live_sync.targets` | list | `agents-md`, `claude-md`, `cursor-rules` | normal | Generated context targets refreshed by live sync. |
 
 ## Global Git {#global-git}
 

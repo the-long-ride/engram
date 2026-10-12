@@ -25,8 +25,11 @@ This creates `.agents/.engram/` and installs the compact Codex target by default
 `AGENTS.md` plus `.agents/skills/engram/SKILL.md`. The generated instructions
 For runtime-capable hosts (Codex, Claude, Cursor, Gemini), `AGENTS.md` now contains
 short bootstrap instructions that rely on MCP tools and hooks for detailed protocol;
-the Agent Skill file carries the full write/approval workflow. Fallback targets
-without reliable runtime context injection still receive compact manual instructions.
+the companion guide (`.agents/engram.md` or the host's guide file) carries the full
+write/approval workflow once, and `SKILL.md` files and slash adapters are thin
+pointers to it. With Engram hooks installed, the guide says context is auto-injected
+instead of asking the agent to load at session start. Fallback targets without
+reliable runtime context injection still receive compact manual instructions.
 
 tell agents to load memory, keep Engram replies short, ask only for required
 confirmation, and report what changed.
@@ -98,6 +101,11 @@ Use `--force` only when replacing generated Engram adapter files intentionally.
 Claude receives both `.claude/commands/engram.md` and
 `.claude/skills/engram/SKILL.md` so `/engram` appears in older command menus and
 newer skill-aware Claude Code sessions.
+Generated `SKILL.md` files follow the Agent Skills spec (`name` equals the skill
+directory, `description` is 1-1024 characters); non-Claude files carry only spec
+fields, and the Claude pointer skill adds `when_to_use` and `user-invocable: true`.
+`engram doctor` validates every Engram-generated `SKILL.md` (`host.skill_frontmatter`)
+and never checks skills it did not write.
 With `--global`, Engram appends a single managed block at the end of each
 agent's shared instruction file instead of replacing human-authored content. If
 an older Engram block is already present, it is refreshed and moved to the end.
@@ -118,13 +126,65 @@ engram set-proof compact
 
 Use `--global` for user-level config and `engram unlink` to remove
 only Engram-managed hook entries. `engram set-read startup|auto|always|manual|off`
-controls runtime behavior. `auto` loads on session start and later injects again
-only when routed Engram context changes; the hook cache stores hashes,
-session ids, host, cwd, and routed signatures, never raw prompt text.
+controls runtime behavior. `auto` loads on session start and on later prompt turns, but
+each turn injects only memory bodies not yet delivered in the session and ends with an
+`already loaded: <ids>` line for the rest; `SessionStart` and `PreCompact` reset the
+delivered set. The hook cache stores hashes,
+session ids, host, cwd, and delivered memory keys, never raw prompt text.
 `engram set-proof off|compact` controls whether supported hooks also append a
 compact `Engram proof:` line on each eligible turn. Proof visibility is
 separate from `set-read`: `compact` can report loaded, reused, or skipped turns
 without changing when full Engram memory is injected.
+
+Memories can carry `applies_to` globs (up to 8 relative paths). With
+`hooks.path_rules native` (default), `engram link claude` writes them as
+`.claude/rules/engram/<id>.md` and `engram link cursor` as
+`.cursor/rules/engram/<id>.mdc` (workspace-scope, non-working memories only; global
+memories go to `~/.claude/rules/engram/` on `link --global claude`), and Claude registers
+`InstructionsLoaded` (matcher `path_glob_match`) instead of `PreToolUse` to record each
+loaded rule in the delivered set and `usage.json`. With `hooks.path_rules hook`, on Claude the
+`PreToolUse` hook for `Read|Edit|Write|MultiEdit` injects up to 3 not-yet-delivered
+memories whose globs match the file being touched; on Codex the same hook covers
+files edited through `apply_patch` (Codex does not fire it for reads). The hook never
+returns a permission decision, so it cannot block a tool call. Claude, Codex, and Cursor
+read the hook `timeout` in seconds, so managed entries write `10`. `engram upgrade --latest`
+or `engram link <host>` adds `PreToolUse`, `PreCompact`, and `SubagentStart` (Gemini: `AfterTool`, `PreCompress`) and
+corrects the timeout in existing installs; plain `engram upgrade` does not refresh hook
+configs.
+
+Hook payloads respect host caps: Codex `additionalContext` is kept at or below 2,400 tokens
+(UTF-8 bytes / 4) and Claude's at or below 9,500 characters, other hosts at `load.max_tokens`,
+proof line and headers included. Over the cap the hook re-plans with a smaller budget so bodies
+demote to cards (a body is never cut), and the delivered set records only what was sent. The
+`already loaded:` ids are sorted and the proof `sig` is a hash of the sorted routed keys, so the
+same routed set always produces the same bytes. The cap also covers `SubagentStart` and
+path-trigger output.
+
+On Claude and Codex, `SubagentStart` (matcher `*`, every agent type) injects the routed
+`current session` context into the subagent as additional context; it never returns a
+decision. Subagent hooks carry the parent `session_id`, so the delivered set for a
+subagent is keyed `<session_id>#agent:<agent_id>` and subagent traffic never touches the
+parent's set (at most 100 subagent records are kept). Codex `SubagentStart` output omits
+`suppressOutput`, which Codex does not list for that event. Known gap: Codex does not
+document `agent_id` on `PreToolUse`, so a path trigger inside a Codex subagent may be
+recorded in the parent's delivered set.
+
+Opt-in transcript queue: `engram link claude|codex --session-end` also registers a plain
+`SessionEnd` command hook (Claude timeout 5 s, Codex 3 s). It injects nothing, answers `{}`,
+fails open, and appends `{ transcript_path, host, session, at }` to the gitignored scope-root
+`session-queue.json` under a file lock (deduped on host and session, newest 50 kept). The flag
+is off by default and `upgrade` never adds it; Gemini is not registered. `engram observe --queue
+[--dry-run] [--limit n]` drains it: each transcript must exist, be a regular file (not a
+link), and be at most 5 MiB; it is redacted, stripped of injection-like lines, and stored as a
+trace plus an inbox wrapper. No memory is written, and `--queue` must not run from an async
+Codex hook.
+
+On Gemini, an `AfterTool` hook (matcher `read_file|write_file|replace`, timeout in milliseconds)
+injects up to 3 not-yet-delivered memories whose `applies_to` globs match the file the tool
+just touched; the context is appended to the tool result, so it lands one step after the
+read. It shares the delivered set with `BeforeAgent`, honours the same cap as other hosts
+(`load.max_tokens`), and never returns a decision. Gemini's matcher is an unanchored regex, so
+the hook also starts for tools whose names merely contain `replace`; it exits with `{}` for them.
 
 ## Supported Targets
 ## AI-Agent Memory Proposal Protocol
@@ -141,24 +201,48 @@ Direct terminal CLI remains A/B/C. MCP proposal tools remain no-write.
 | `codex` | `AGENTS.md`, `.agents/skills/engram/SKILL.md` | OpenAI Codex project instructions and Agent Skill |
 | `agents-md` | `AGENTS.md` | Generic fallback for unlisted AGENTS.md-compatible agents |
 | `copilot` | `.github/copilot-instructions.md`; global: `~/.copilot/copilot-instructions.md` | GitHub Copilot repository and user instructions |
-| `claude` | `CLAUDE.md` | Claude Code project guidance |
-| `cursor` | `.cursor/rules/engram.mdc`; global: `~/.cursor/plugins/local/engram/` | Cursor project rules and local plugin |
-| `gemini` | `GEMINI.md`; global: `~/.gemini/GEMINI.md`, `~/.gemini/skills/engram/SKILL.md`, Gemini MCP config | Gemini CLI context, including current Antigravity Gemini-compatible surfaces |
+| `claude` | `AGENTS.md`, `.claude/engram.md`, `.agents/engram.md`, plus a block in `CLAUDE.md` or `.claude/CLAUDE.md` only when one already exists, and `.claude/rules/engram/<id>.md` path rules; global: `~/.claude/CLAUDE.md`, `~/.claude/skills/engram/SKILL.md`, `~/.claude/rules/engram/` | Claude Code project guidance and native path rules |
+| `cursor` | `.cursor/rules/engram.mdc`, `.cursor/rules/engram/<id>.mdc` path rules; global: `~/.cursor/plugins/local/engram/` | Cursor project rules, native path rules, and local plugin |
+| `gemini` | `GEMINI.md`; global: `~/.gemini/GEMINI.md`, `~/.gemini/skills/engram/SKILL.md`, `~/.gemini/settings.json` (MCP) | Gemini CLI context, including current Antigravity Gemini-compatible surfaces |
 | `cline` | `.clinerules` | Cline-style workspace rules |
 | `windsurf` | `.windsurf/rules/engram.md`; global: `~/.codeium/windsurf/memories/global_rules.md`, `~/.codeium/windsurf/mcp_config.json` | Windsurf workspace rules and global rules/MCP |
 | `opencode` | `AGENTS.md`, `.opencode/engram.md`, `.opencode/skills/engram/SKILL.md`, `opencode.json` (or existing `opencode.jsonc`); global: `~/.config/opencode/AGENTS.md`, `~/.config/opencode/engram.md`, `~/.config/opencode/skills/engram/SKILL.md`, `~/.config/opencode/opencode.jsonc` (or existing `opencode.json`) | OpenCode rules, Agent Skill, MCP tools, custom commands, and plugin hooks |
-| `mcp` | `.mcp.json`; global: Claude and Gemini MCP config files | MCP-style JSON-lines wrapper registration |
+| `mcp` | `.mcp.json`; global: `~/.gemini/settings.json`, `~/.codex/config.toml`, and a `claude mcp add` hint | MCP-style JSON-lines wrapper registration |
 | `slash` | `.claude/commands/engram.md`, `.claude/skills/engram/SKILL.md`, `.cursor/commands/engram.md`, `.gemini/commands/engram.toml`, `.opencode/commands/engram.md` | Native `/engram` slash adapters |
 
 Aliases: `codex` installs the `agents-md` adapter plus the generic Agent Skill
 file, `open-code` maps to `opencode`, and `cascade` maps to `windsurf`. The old
 `antigravity` and `antigravity-cli` targets are hidden compatibility aliases for now.
 
+**Claude Code bootstrap is AGENTS.md-first.** Claude Code reads a project `AGENTS.md`
+only when no `CLAUDE.md`, `.claude/CLAUDE.md`, or `CLAUDE.local.md` exists in the
+working directory or any ancestor, and `~/.claude/CLAUDE.md` does not count. So
+`engram link claude` always writes the AGENTS.md managed block (byte-identical to
+the one `agents-md`, `codex`, and `opencode` write, so a shared AGENTS.md has one
+canonical block) plus `.agents/engram.md` and `.claude/engram.md`, and it never
+creates a `CLAUDE.md`. A block goes into `CLAUDE.md` (or `.claude/CLAUDE.md`) only
+where that file already exists and does not import `@AGENTS.md`; an existing block
+is refreshed and never removed (Claude reads CLAUDE.md, not AGENTS.md, when both
+exist, and `engram upgrade` says so). `link` reports a `CLAUDE.local.md`, or a
+CLAUDE.md in a parent directory up to the git root, that hides AGENTS.md from
+Claude; add `@AGENTS.md` to it or set `instructionFiles: claude-md-and-agents-md` in
+Claude's user settings. `engram unlink claude` removes the AGENTS.md block only
+when no other linked target (a Codex skill or hook, OpenCode) still uses it.
+Global Claude installs still create `~/.claude/CLAUDE.md`, because Claude has no
+user-level AGENTS.md. `engram doctor` reports `host.agents_md_chain`, the size of
+the Codex AGENTS.md chain against `project_doc_max_bytes` (32 KiB by default),
+and warns at 80%.
+
 `engram link <target>` also installs the known MCP registration for that target
 by default. Workspace target links write `.mcp.json` (or `.cursor/mcp.json` for
-Cursor); workspace OpenCode links write the `mcp` field into project
-`opencode.json` or an existing `opencode.jsonc`; global Claude links write `~/.claude/mcp.json`; global Gemini
-and Antigravity-compatible links write the Gemini MCP config file; global
+Cursor, `.gemini/settings.json` for Gemini); workspace OpenCode links write the
+`mcp` field into project `opencode.json` or an existing `opencode.jsonc`; global
+Claude links print `claude mcp add --scope user engram -- engram-mcp` because
+Claude Code does not read `~/.claude/mcp.json`; global Gemini links merge
+`mcpServers.engram` into `~/.gemini/settings.json`; global Codex links write a
+managed `[mcp_servers.engram]` block in `~/.codex/config.toml`; global
+Antigravity-compatible links write the Gemini MCP config file; the server
+command is `engram-mcp` when it is on PATH, otherwise the `npx` form; global
 OpenCode links write the `mcp` field into `~/.config/opencode/opencode.jsonc` or an
 existing `~/.config/opencode/opencode.json`;
 global Cursor links bundle MCP in the local plugin; global Windsurf links write
@@ -169,9 +253,9 @@ because the official contract documents only user-level MCP config.
 
 | Host | Hook install in v1 | Config path | Events | Reason |
 | --- | --- | --- | --- | --- |
-| `codex` | Yes | `.codex/hooks.json`; global `~/.codex/hooks.json` | `SessionStart`, `UserPromptSubmit` | Supports startup and prompt-time additional context injection |
-| `claude` | Yes | `.claude/settings.json`; global `~/.claude/settings.json` | `SessionStart`, `UserPromptSubmit` | Supports startup and prompt-time additional context injection |
-| `gemini` | Yes | `.gemini/settings.json`; global `~/.gemini/settings.json` | `SessionStart`, `BeforeAgent` | Supports startup and prompt-time `hookSpecificOutput.additionalContext` |
+| `codex` | Yes | `.codex/hooks.json`; global `~/.codex/hooks.json` | `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PreCompact`, `SubagentStart` (opt-in `SessionEnd`) | Supports startup and prompt-time additional context injection; `PreToolUse` injects `applies_to` memories for files edited through `apply_patch`; `PreCompact` resets the delivered set; `SubagentStart` injects routed context into subagents (no `suppressOutput`) |
+| `claude` | Yes | `.claude/settings.json`; global `~/.claude/settings.json` | `SessionStart`, `UserPromptSubmit`, `InstructionsLoaded` (`PreToolUse` when `hooks.path_rules hook`), `PreCompact`, `SubagentStart` (opt-in `SessionEnd`) | Supports startup and prompt-time additional context injection; `.claude/rules/engram/<id>.md` rule files carry `applies_to` memories and `InstructionsLoaded` records them as delivered (hook mode: `PreToolUse` (`Read\|Edit\|Write\|MultiEdit`) injects them instead); `PreCompact` resets the delivered set; `SubagentStart` injects routed context into subagents |
+| `gemini` | Yes | `.gemini/settings.json`; global `~/.gemini/settings.json` | `SessionStart`, `BeforeAgent`, `AfterTool`, `PreCompress` | Supports startup and prompt-time `hookSpecificOutput.additionalContext`; `AfterTool` injects `applies_to` memories for files touched by `read_file`, `write_file`, and `replace`; `PreCompress` resets the delivered set |
 | `antigravity`, `antigravity-cli` | Hidden alias | Gemini paths | Gemini events | Normalized to `gemini` until stable primary Antigravity hook/config docs are verified |
 | `cursor` | Yes | `.cursor/hooks.json`; global plugin `hooks/hooks.json` | `sessionStart` | Supports startup context injection via `additional_context`; `beforeSubmitPrompt` is allow/block-only, not context injection |
 | `copilot` | Skipped | None written | N/A | Current hooks expose session-start context but no reliable prompt-time context injection |
@@ -385,6 +469,13 @@ transcript content.
   frontmatter. Later scans skip unchanged imported sources, while an explicit
   `--file` import still lets the human force a specific source back through the
   approval flow.
+  `engram take-control --from claude-auto-memory|codex-memories` imports a host
+  memory store for review instead of a workspace scan: Claude auto memory from
+  `~/.claude/projects/<project>/memory/` (or `autoMemoryDirectory` from the user or
+  local Claude settings), Codex memories from `~/.codex/memories/`. It never writes
+  into the host store, skips `type: user` files, the `MEMORY.md` index, and untyped
+  files, redacts and injection-filters the text, and records `source: host-memory`
+  with preset-relative `source_files`. There is no Gemini preset.
 
    `engram metacognize --workspace`, `--global`, or `--all` is the
    agent-assisted restructuring flow for existing Engram memory folders. When
@@ -397,11 +488,14 @@ transcript content.
    `engram metacognize --workspace --force`. Agents must not add
    `--force` unless the human requested it.
 
-   Engram always saves rule memories with light, balanced, and strict versions.
-   Rule variant mode is a render lens for agent-facing memory. Strict helps
-   lower-tier models stay controlled; stronger models usually benefit from light
-   or balanced wording so rules do not limit their reasoning. When variants are
-   off, Engram renders balanced rule wording by default.
+   Engram derives light, balanced, and strict rule wording at render time from the
+   rule's `## Content`; balanced is the Content verbatim. Rule files store a
+   `## Rule Variants` section only when a candidate supplies custom
+   `LIGHT:`/`BALANCED:`/`STRICT:` text. Rule variant mode is a render lens for
+   agent-facing memory. Strict helps lower-tier models stay controlled; stronger
+   models usually benefit from light or balanced wording so rules do not limit
+   their reasoning. When variants are off, Engram renders balanced rule wording
+   by default.
 
 ## Command Discovery
 
@@ -470,15 +564,46 @@ For global Claude installs, Engram appends its managed block to
 `~/.claude/skills/engram/SKILL.md`.
 The generated slash description is: "Your knowledge memory manager, synced
 across every device with Git."
-MCP hosts should treat `engram_save` and `engram_autosave` as proposal-only
-tools; they must still route final writes through the human-visible CLI approval
-flow. When `/engram save-session --query-level <n>` is present, or natural
+`engram_commit` is the only Engram MCP tool that asks the host for per-call human
+approval. Its `tools/list` entry carries `_meta["anthropic/requiresUserInteraction"]: true`,
+which makes Claude Code prompt on every call, even in bypass modes. The managed Codex
+block adds `[mcp_servers.engram.tools.engram_commit]` with `approval_mode = "approve"`;
+read tools keep the host default. Gemini's per-server `trust: true` would skip the
+confirmation, so `engram doctor` warns when `mcpServers.engram.trust` is `true` in the
+workspace or global `.gemini/settings.json`. The `approval_token` only proves that a
+proposal exists; it is not approval. Show the human each candidate's `Verdict:` line with the
+candidate: a `SUPERSEDE` retires the old memory when the human approves it.
+
+The MCP server serves two protocol eras from one stdio process. Legacy clients
+negotiate through `initialize` (`2024-11-05`, `2025-03-26`, `2025-06-18`,
+`2025-11-25`; an unknown or missing version gets `2025-11-25`). A request that carries
+`io.modelcontextprotocol/protocolVersion` in `params._meta` is served statelessly under
+MCP 2026-07-28 (`server/discover`, `tools/list`, `tools/call`, `resources/*`,
+`prompts/*`). Both eras return the same short `instructions` and advertise `resources`
+and `prompts`: `engram://index` and `engram://memory/{id}` (a read counts as a fetch
+in `usage.json`) plus one prompt, `propose`, that returns the proposal protocol.
+`engram-mcp --always-load` marks `engram_load` with `_meta["anthropic/alwaysLoad"]`;
+`engram link` adds it only to Claude-read configs of installs without Claude hooks.
+When the client declares form elicitation (legacy) or retries with `inputResponses`
+(2026-07-28), `engram_save` and `engram_save_session` ask the human in the host's own
+dialog and `accept` writes exactly the selected candidates; `decline` revokes the
+proposal, and `cancel` or a timeout fall back to the `approval_token` text.
+`engram-mcp --no-elicitation` keeps the token flow.
+`engram_note` saves one redacted working-tier task note (`source: note`) after a single
+yes/cancel approval through the same flow and returns `{id, file, valid_until}`; cancel and
+decline write nothing, and `engram promote` is the only bridge to durable memory.
+SessionStart omits a note unless `ENGRAM_SESSION_OBJECTIVE` matches its objective.
+
+MCP hosts should treat `engram_save` and `engram_save_session` as proposal-only
+tools; final writes happen only after the human approves the exact candidates in
+chat, through `engram_commit` with the proposal's `approval_token` or the CLI
+`save-session --force` path. When `/engram save-session --query-level <n>` is present, or natural
 wording such as `/engram ss -f last 50 sessions` is used, the host may include
 up to n recent accessible human-agent chat sessions in the proposal context, but
 must not invent inaccessible history. Explicit
 `/engram save-session --force` requests, including the shortcut
-`/engram ss -f`, should use the CLI write path because MCP autosave remains
-proposal-only. The counted shortcut `/engram ss -f last 50 sessions` should use
+`/engram ss -f`, should use the CLI write path: explicit force requests use the
+CLI path, while MCP commits need a proposal token (`engram_commit`). The counted shortcut `/engram ss -f last 50 sessions` should use
 `engram save-session --query-level 50 --force`. `/engram take-control` and `/engram metacognize` should use the CLI flow because they need
 workspace source discovery plus human-visible approval. Slash adapters normalize
 `/engram auto save` to `engram save-session` and `/engram take control force`
@@ -544,13 +669,18 @@ prompt and `experimental.chat.system.transform` to inject routed memory before
 each LLM request. OpenCode must be restarted or reloaded after `link`/`unlink`
 because local plugin files are loaded at startup. The plugin fails open and
 keeps raw routed memory only in the running OpenCode process; Engram's disk
-hook cache remains hashes, session IDs, host, cwd, and routed signatures only.
+hook cache remains hashes, session IDs, host, cwd, and delivered memory keys only.
 `engram unlink --global opencode` removes only the Engram-generated plugin; a
 human-authored `engram.js` is preserved unless `--force` is explicit.
 
 Cursor reads project rules from `.cursor/rules/*.mdc` files. Engram writes
 `.cursor/rules/engram.mdc` with valid frontmatter (`alwaysApply: true`) and a
-bootstrap instruction block. Workspace MCP is written to `.cursor/mcp.json`
+bootstrap instruction block, plus one `.cursor/rules/engram/<id>.mdc` per
+workspace-scope memory with `applies_to` globs (`alwaysApply: false`, comma-joined
+globs; working-tier memories are never written). `engram export --format cursor-rules`
+uses the new name; `cursorrules` stays an accepted alias for one release. Known
+limitation: the live-sync `cursor-rules` target writes the same `.cursor/rules/engram.mdc`
+as `engram link cursor` (moving it to a separate file is planned). Workspace MCP is written to `.cursor/mcp.json`
 with `type: "stdio"`. The `sessionStart` hook injects Engram startup context
 through the `additional_context` output field; `beforeSubmitPrompt` is
 allow/block-only and is not used for context injection. For global installs,

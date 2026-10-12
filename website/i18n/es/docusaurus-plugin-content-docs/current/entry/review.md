@@ -1,37 +1,37 @@
 ---
-title: Review tab
+title: Pestaña Review
 sidebar_position: 5
-description: Resolve review findings, direct an AI agent, and explicitly confirm fallback memory writes.
+description: Resuelva hallazgos de revisión, dirija un agente de IA y confirme explícitamente escrituras de memoria de respaldo.
 ---
 
 import RiskCallout from '@site/src/components/RiskCallout';
 
-# Review tab
+# Pestaña Review
 
-Review is the controlled path for findings and deferred candidates. It never calls an AI provider itself. You inspect context, copy a bounded prompt to an AI agent, then either let that agent save through its terminal or explicitly confirm a pasted response.
+Review es la vía controlada para hallazgos y candidatos diferidos. Nunca llama directamente a un proveedor de IA. Usted inspecciona el contexto, copia un prompt acotado para un agente de IA y luego permite que dicho agente guarde mediante su terminal o confirma explícitamente una respuesta pegada.
 
-## Queue and context
+## Cola y contexto
 
-The queue combines review findings and deferred inbox candidates. Select an item to inspect its summary, linked-memory metadata, and full content. Empty or unavailable linked files are reported without stopping review of the remaining queue.
+La cola combina hallazgos de revisión y candidatos diferidos de la bandeja de entrada. Seleccione un elemento para inspeccionar su resumen, metadatos de memoria vinculada y contenido completo. Los archivos vinculados vacíos o no disponibles se notifican sin detener la revisión de la cola restante.
 
-## AI review prompt
+## Prompt de revisión para IA
 
-Choose any linked memory as a dependency or replacement, then use **Copy AI review prompt**. The prompt includes only the selected candidate, visible memory context, relation instructions, and the required write scope.
+Elija cualquier memoria vinculada como dependencia o reemplazo y use **Copy AI review prompt**. El prompt incluye únicamente el candidato seleccionado, el contexto de memoria visible, las instrucciones de relación y el ámbito de escritura requerido.
 
-When the AI agent has terminal access and approval to write, it should save the sanitized result with the command embedded in the prompt. The in-app path is a fallback, not an autonomous write path.
+Cuando el agente de IA tiene acceso a la terminal y aprobación para escribir, debe guardar el resultado saneado con el comando incrustado en el prompt. La vía dentro de la app es un respaldo, no una ruta de escritura autónoma.
 
-## Paste, diff, and confirmation
+## Pegado, diff y confirmación
 
-Paste only the AI-reviewed memory proposal. Review shows a read-only line diff: removed lines are red and added lines are green. **Approve & write** opens a confirmation dialog before Engram validates and writes the proposal.
+Pegue únicamente la propuesta de memoria revisada por la IA. Review muestra un diff de líneas de solo lectura: las líneas eliminadas en rojo y las agregadas en verde. **Approve & write** abre un diálogo de confirmación antes de que Engram valide y escriba la propuesta.
 
 <RiskCallout level="risky">
-The confirmation writes to workspace or global memory immediately. Review the proposal, scope, and any replacement instruction before confirming.
+La confirmación escribe en la memoria del workspace o global de inmediato. Revise la propuesta, el ámbito y cualquier instrucción de reemplazo antes de confirmar.
 </RiskCallout>
 
-Only one replacement relation may be selected. Dependencies can be selected independently. Refresh the queue after saving to load its current state.
+Solo se puede seleccionar una relación de reemplazo. Las dependencias se pueden seleccionar de forma independiente. Actualice la cola tras guardar para cargar su estado actual.
 
-## Next steps
+## Próximos pasos
 
-- [Construct tab](construct.md)
-- [Memories tab](memories.md)
+- [Pestaña Construct](construct.md)
+- [Pestaña Memories](memories.md)
 - [CLI: save-session](../cli/save-session.md)

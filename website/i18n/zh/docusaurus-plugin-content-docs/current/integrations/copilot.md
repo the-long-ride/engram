@@ -1,38 +1,38 @@
 ---
 title: Copilot
 sidebar_position: 8
-description: Engram integration with GitHub Copilot via repository and user custom instructions.
+description: 通过仓库与用户自定义指令实现 Engram 与 GitHub Copilot 的集成。
 ---
 
 # Copilot
 
-GitHub Copilot reads repository custom instructions from `.github/copilot-instructions.md`. For global Copilot installs, Engram appends its managed block to `~/.copilot/copilot-instructions.md`.
+GitHub Copilot 从 `.github/copilot-instructions.md` 中读取仓库自定义指令。对于全局 Copilot 安装，Engram 会将其托管块追加到 `~/.copilot/copilot-instructions.md`。
 
-## Install
+## 安装 {#install}
 
 ```bash
 engram link copilot
 ```
 
-## Files written
+## 写入的文件 {#files-written}
 
-| File | Purpose |
+| 文件 | 用途 |
 | --- | --- |
-| `.github/copilot-instructions.md` | Repository custom instructions |
+| `.github/copilot-instructions.md` | 仓库自定义指令 |
 
-## Global install
+## 全局安装 {#global-install}
 
 ```bash
 engram link --global copilot
 ```
 
-Appends a managed block to `~/.copilot/copilot-instructions.md`.
+向 `~/.copilot/copilot-instructions.md` 追加托管块。
 
-## Compact/manual fallback target
+## 紧凑/手动后备目标 {#compact-manual-fallback-target}
 
-Copilot is a compact/manual fallback target. It receives the full compact protocol. Hook install is skipped in v1; use the Engram skillset or a manual `engram load` for context.
+Copilot 是一个紧凑/手动后备目标。它接收完整的紧凑协议。在 v1 中跳过 hook 安装；使用 Engram skillset 或手动运行 `engram load` 来获取上下文。
 
-## Next steps
+## 后续步骤 {#next-steps}
 
-- [Agent Integrations overview](overview.md)
-- [Hooks and proof lines](hooks.md)
+- [Agent 集成概览](overview.md)
+- [Hooks 与证明行](hooks.md)

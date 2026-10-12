@@ -1,0 +1,1 @@
+A plain text note that the Markdown-only walk must skip.

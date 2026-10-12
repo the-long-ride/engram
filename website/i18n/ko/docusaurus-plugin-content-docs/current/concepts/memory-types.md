@@ -1,73 +1,86 @@
 ---
-title: Memory types
+title: 메모리 유형
 sidebar_position: 2
-description: Engram memory is typed — Rule, Skill, and Knowledge — so routing and review stay focused.
+description: Engram 메모리는 Rule, Skill, Knowledge로 유형이 나뉘어 있어 라우팅과 검토가 집중적으로 이루어집니다.
 ---
 
-# Memory types
+# 메모리 유형
 
-Every active Engram memory has a type. The type controls routing, review, and how the memory is rendered to agents.
+모든 활성 Engram 메모리에는 유형이 있습니다. 유형은 라우팅, 검토, 그리고 에이전트에 메모리가 렌더링되는 방식을 결정합니다.
 
-| Type | Use |
+| 유형 | 용도 |
 | --- | --- |
-| Rule | user preference, correction, constraint, always/never guidance |
-| Skill | repeatable workflow, checklist, procedure, runbook |
-| Knowledge | objective project fact, decision, implementation detail |
+| Rule | 사용자 선호, 수정 사항, 제약 조건, 항상/절대 안내 |
+| Skill | 반복 가능한 워크플로, 체크리스트, 절차, 런북 |
+| Knowledge | 객관적인 프로젝트 사실, 결정, 구현 세부 사항 |
 
-New files use `schema_version: 3`. Rule and skill memories default to `authority: instruction`; knowledge defaults to `authority: reference`. `revision` starts at 1 and increments on updates. Trace IDs belong in `evidence_refs`, while session or source identities belong in `derived_from`.
+새 파일은 `schema_version: 3`을 사용합니다. Rule과 skill 메모리는 기본적으로 `authority: instruction`, knowledge는 `authority: reference`를 갖습니다. `revision`은 1에서 시작하며 업데이트할 때마다 증가합니다. 추적 ID는 `evidence_refs`에, 세션 또는 출처 식별자는 `derived_from`에 넣습니다.
 
-## Good memory
+## 좋은 메모리 {#good-memory}
 
-Good Engram memory is:
+좋은 Engram 메모리는 다음과 같습니다.
 
-- stable enough to matter next week
-- specific enough to route later
-- short enough to load into an agent context
-- safe enough to share with the intended scope
-- written as a rule, workflow, or knowledge item
+- 다음 주에도 의미가 있을 만큼 안정적입니다
+- 나중에 라우팅할 수 있을 만큼 구체적입니다
+- 에이전트 컨텍스트에 로드할 수 있을 만큼 짧습니다
+- 의도한 범위와 공유해도 될 만큼 안전합니다
+- 규칙, 워크플로, 지식 항목 중 하나로 작성되어 있습니다
 
-Bad memory is temporary chat noise, secrets, credentials, one-off speculation, or facts that nobody has approved.
+나쁜 메모리는 일시적인 대화 잡음, 비밀 정보, 자격 증명, 일회성 추측, 또는 아무도 승인하지 않은 사실입니다.
 
-## Rule variants
+## 규칙 변형 {#rule-variants}
 
-Engram always saves rule memories with light, balanced, and strict versions. Rule variant mode is a render lens for agent-facing memory:
+Engram은 렌더링 시점에 규칙의 `## Content`에서 light, balanced, strict 규칙 문구를 도출하므로(balanced는 Content 그대로) 새로 작성되거나 다시 쓰이는 규칙 파일에는 Content만 저장됩니다. `## Rule Variants` 섹션은 후보가 `LIGHT:`/`BALANCED:`/`STRICT:`로 직접 지정한 맞춤 문구가 있을 때만 유지됩니다. 규칙 변형 모드는 에이전트에 보이는 메모리를 위한 렌더링 렌즈입니다.
 
-- **Strict** helps lower-tier models stay controlled.
-- **Light** or **balanced** wording usually helps stronger models so rules do not limit their reasoning.
+- **Strict**는 하위 등급 모델이 통제된 상태를 유지하도록 돕습니다.
+- **Light** 또는 **balanced** 문구는 규칙이 추론을 제한하지 않도록 하므로 보통 더 강력한 모델에 도움이 됩니다.
 
-When variants are off, Engram renders balanced rule wording by default. Tune with:
+변형이 꺼져 있으면 Engram은 기본적으로 balanced 규칙 문구를 렌더링합니다. 다음 명령으로 조정하세요.
 
 ```bash
 engram set-rule-variant strict|balanced|light|off
 ```
 
-## Compact output by default
+## 기본적으로 간결한 출력 {#compact-output-by-default}
 
-When `engram load "<task>"` runs, the output is slimmed for AI agents by default:
+`engram load "<task>"`를 실행하면 출력은 기본적으로 AI 에이전트용으로 계층화되고 간소화됩니다.
 
-| Aspect | Default (`engram load`) | Full (`engram load --full`) |
+| 항목 | 기본값(`engram load`) | 전체(`engram load --full`) |
 | --- | --- | --- |
-| Frontmatter | `id`, `type`, `tags`, `confidence`, `authority`, `depends_on`, `evidence_refs` | Full schema v3 and legacy fields, including provenance, revision, supersession, and validity |
-| Rule body | One selected variant under `## Rule variants (1/3 based on current: <active>)` | Full `## Rule Variants` section with all three variants |
-| Non-rule content | Same content, unchanged heading | Same content, unchanged heading |
+| Frontmatter | 렌더링되지 않으며, 본문 헤더는 `### <id> [<type>, <authority>]`와 `requires: <ids>`입니다 | 출처, 리비전, 대체 관계, 유효 기간을 포함한 전체 스키마 v3 및 기존 필드 |
+| 공개 수준 | 상위 `load.expand_top` 결과는 본문으로, 나머지는 한 줄 카드(`- <id> [<type>] <directive-or-summary>`)로 표시한 뒤 `fetch:` 힌트를 붙입니다 | 패킹된 모든 본문 |
+| 규칙 본문 | 선택된 변형 하나 | Content, 그리고 파일에 맞춤 변형이 있을 때만 저장된 `## Rule Variants` 섹션 |
+| 기타 섹션 | `## Context`, `## Example`, `## Origin`은 렌더링되지 않습니다 | 같은 내용, 제목 그대로 |
 
-MCP `engram_load` and SessionStart hooks use compact output by default. Pass `full: true` on the MCP tool or `engram load --full "<task>"` when broader legacy output is needed.
+MCP `engram_load`와 훅은 기본적으로 계층화된 출력을 사용합니다. 더 넓은 기존 형식 출력이 필요하면 MCP 도구에 `full: true`를 전달하거나 `engram load --full "<task>"`를 사용하세요.
+
+## 선택적 라우팅 필드 {#optional-routing-fields}
+
+이 frontmatter 필드는 선택 사항입니다. 이 필드가 없는 메모리는 이전과 같이 동작하며 `schema_version`은 3으로 유지됩니다.
+
+| 필드 | 의미 |
+| --- | --- |
+| `directive` | 최대 160자의 한 줄이며, 카드에 표시되고 순위 계산에서 가중치를 받습니다 |
+| `applies_to` | glob 목록입니다. 일치하는 파일을 읽거나 편집할 때 메모리를 주입하며 강한 앵커로 취급됩니다 |
+| `tier` | `durable`(기본값) 또는 `working`(작업 범위, gitignore, 만료됨) |
+| `objective` | 최대 200자이며, 작업 메모리가 작성된 목표입니다 |
+| `valid_until` | 만료 날짜이며, 작업 메모리는 오늘 + `load.working_ttl_days`를 받습니다 |
 
 <!-- evidence-foundation:v3:start -->
 ## 증거 기반 메모리
 
-New files use `schema_version: 3`. Rule and skill memories default to `authority: instruction`; knowledge defaults to `authority: reference`. `revision` starts at 1 and increments on updates. Trace IDs belong in `evidence_refs`, while session or source identities belong in `derived_from`. Legacy v1 (`Context` + `Content` + `Example`) and v2 (`Content`, optional `Origin`) remain readable.
+새 파일은 `schema_version: 3`을 사용합니다. Rule과 skill 메모리는 기본적으로 `authority: instruction`, knowledge는 `authority: reference`를 갖습니다. `revision`은 1에서 시작하며 업데이트할 때마다 증가합니다. 추적 ID는 `evidence_refs`에, 세션 또는 출처 식별자는 `derived_from`에 넣습니다. 기존 v1(`Context` + `Content` + `Example`)과 v2(`Content`, 선택적 `Origin`)도 계속 읽을 수 있습니다.
 <!-- evidence-foundation:v3:end -->
 
-## Next steps
+## 다음 단계 {#next-steps}
 
-- [Workspace vs global memory](scopes.md)
-- [Read path and routing](read-path.md)
+- [워크스페이스와 글로벌 메모리](scopes.md)
+- [읽기 경로와 라우팅](read-path.md)
 
 
-## Git author identity
+## Git 작성자 정보 {#git-author-identity}
 
-Engram can store a global author and an optional workspace override. Resolution is workspace, global, then read-only Git fallback. Settings affect future memories only; a workspace override never changes global Git configuration. Use explicit plan and confirmation for global Git sync or legacy-memory migration.
+Engram은 글로벌 작성자와 선택적인 워크스페이스 재정의를 저장할 수 있습니다. 확인 순서는 워크스페이스, 글로벌, 그다음 읽기 전용 Git 대체값입니다. 설정은 앞으로 작성되는 메모리에만 적용되며, 워크스페이스 재정의는 글로벌 Git 설정을 바꾸지 않습니다. 글로벌 Git 동기화나 기존 메모리 마이그레이션에는 명시적인 계획 확인과 승인 절차를 사용하세요.
 
 ```bash
 engram author show
@@ -79,10 +92,10 @@ engram author migrate-memories --plan
 engram author migrate-memories --confirm
 ```
 
-Read the complete [Git author settings guide](../operations/git-author-settings.md).
+전체 내용은 [Git 작성자 설정 가이드](../operations/git-author-settings.md)를 읽어 보세요.
 
 
 <!-- configuration-upgrade-inventory -->
-## Configuration upgrade inventory
+## 설정 업그레이드 인벤토리 {#configuration-upgrade-inventory}
 
-After a package update, run `engram upgrade --latest --plan` before `engram upgrade --latest`. The shared inventory scans workspace and global Engram-managed memories, instructions, skillsets, configs, hooks, and plugins. User-authored bytes are preserved; ambiguous mixed files are reported as conflicts. See [Configuration upgrades](../operations/configuration-upgrades.md).
+패키지를 업데이트한 후에는 `engram upgrade --latest`를 실행하기 전에 `engram upgrade --latest --plan`을 먼저 실행하세요. 공유 인벤토리는 워크스페이스와 글로벌에서 Engram이 관리하는 메모리, 지침, 스킬셋, 설정, 훅, 플러그인을 스캔합니다. 사용자가 작성한 바이트는 보존되며, 모호하게 섞인 파일은 충돌로 보고됩니다. [설정 업그레이드](../operations/configuration-upgrades.md)를 참고하세요.

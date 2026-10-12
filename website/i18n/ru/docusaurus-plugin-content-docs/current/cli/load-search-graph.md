@@ -1,12 +1,12 @@
 ---
 title: load / search / graph
 sidebar_position: 2
-description: Read commands — load routed memory, search the vault, and inspect graph routing.
+description: Команды чтения — загрузка маршрутизированных воспоминаний, поиск в хранилище и проверка маршрутизации графа.
 ---
 
 # load / search / graph
 
-Read commands load routed memory, search the vault, and inspect graph routing.
+Команды чтения загружают маршрутизированные воспоминания, выполняют поиск в хранилище и проверяют маршрутизацию графа.
 
 ## load
 
@@ -15,16 +15,26 @@ engram load "<task>"
 engram load --full "<task>"
 engram load --dry-run "<task>"
 engram load --all "<task>"
+engram load --budget-tokens 800 "<task>"
+engram load --disclosure full "<task>"
+engram load --id <id>,<id>
+engram load --exclude-keys workspace:rules/use-pnpm.md "<task>"
 ```
 
-`load` first anchors routing on meaningful query terms, ignoring generic memory words such as `rule`, `knowledge`, and common stopwords. It then refines the wider candidate pool into a compact context pack. Normal load reports selected and total related counts, like `loaded 8 memory files / 14 total related memories`.
+`load` сначала привязывает маршрутизацию к значимым поисковым терминам, игнорируя общие слова памяти, такие как `rule`, `knowledge`, и распространенные стоп-слова. Затем он уточняет широкий пул кандидатов в компактный пакет контекста. Обычная загрузка сообщает о выбранном и общем количестве связанных воспоминаний, например `loaded 8 memory files / 14 total related memories`.
 
-- default `load` — compact agent-facing route (only `id`, `type`, `tags`, `confidence`, `authority`, `depends_on`, and `evidence_refs` in frontmatter; one selected rule variant)
-- `--full` — broader legacy output with full frontmatter and full rule variants
-- `--dry-run` — show candidate counts, narrowing tags, and match reasons without printing content
-- `--all` — return every visible routed match instead of the compact limit
+- `load` по умолчанию — многоуровневый маршрут для агента: топовые совпадения согласно `load.expand_top` (по умолчанию 3) раскрываются в виде тел (bodies), все остальные выбранные совпадения выводятся в виде однострочных карточек (cards) с завершающей подсказкой `fetch: engram load --id <ids>`; каждый заголовок тела несет `authority` воспоминания, фронтметтер, такой как `evidence_refs`, `## Context`, `## Example` и `## Origin`, не отображается (используйте `--full` для их просмотра), а правила показывают один выбранный вариант.
+- `--id <id,...>` — выборка полных тел для карточек; идентификаторы разделяются запятыми, и явная выборка учитывается в `stats --usage`.
+- `--budget-tokens <200-16000>` — жесткий лимит на весь многоуровневый вывод; тела сначала превращаются в карточки, и только затем исключаются карточки с наименьшим рангом.
+- `--disclosure auto|full` — `full` печатает каждое упакованное тело вместо многоуровневого пакета (также настраивается как `load.disclosure: full` в конфиге).
+- `--exclude-keys <scope:file,...>` — пропуск воспоминаний, которые у вызывающей стороны уже есть; тела и карточки не выводятся, а `--json` указывает их в `already_loaded`.
+- `--full` — более широкий устаревший вывод с полным фронтметтером и всеми вариантами правил.
+- `--dry-run` — показ количества кандидатов, сужающих тегов и причин совпадения без вывода содержимого.
+- `--all` — возврат всех видимых совпадений маршрута вместо компактного ограничения.
 
-`workflow` and `workflows` still route to skill memories, but generic type words do not make a broad match by themselves.
+`workflow` и `workflows` по-прежнему маршрутизируются к воспоминаниям навыков (skills), но общие слова типов сами по себе не создают широкого совпадения.
+
+В режиме раскрытия `auto` списки JSON `selected` и `entries` описывают только развернутые тела; карточки выводятся отдельно. Настройте `load.expand_top` и `load.disclosure` в блоке `load` файла `engram.config.json` (см. [профили / workspaces / конфигурация](profiles-workspaces-config.md#load-configuration)).
 
 ## search
 
@@ -33,7 +43,7 @@ engram search "<topic>"
 engram search --semantic "<topic>"
 ```
 
-Default search is deterministic lexical search. `search --semantic` adds deterministic local similarity, not embedding-backed semantic search.
+Поиск по умолчанию — детерминированный лексический поиск. `search --semantic` добавляет детерминированное локальное сходство, а не семантический поиск на основе эмбеддингов. Результаты `search --json` содержат поле `score`.
 
 ## graph
 
@@ -42,20 +52,20 @@ engram graph "<topic>"
 engram graph --rebuild
 ```
 
-Inspect graph routing. Run `engram graph --rebuild` after manual edits. The graph reports dependency layers, and `engram load` pulls routed prerequisites into the same compact context pack before deeper memories.
+Проверка маршрутизации графа. Запустите `engram graph --rebuild` после ручных правок. Граф сообщает об уровнях зависимостей, а `engram load` подтягивает маршрутизированные предварительные условия в тот же компактный пакет перед более глубокими воспоминаниями.
 
-Graph related edges and vector hits cannot load unrelated memories by themselves; they only help rerank or expand memories that already overlap meaningful query terms. Explicit `depends_on` prerequisites may still load without their own keyword overlap.
+Связанные ребра графа и векторные совпадения не загружают несвязанные воспоминания автоматически; они лишь помогают переранжировать или расширить воспоминания, уже совпавшие со значимыми терминами запроса. Явные предварительные условия `depends_on` по-прежнему могут загружаться без совпадения собственных терминов.
 
-## Dependency layers
+## Уровни зависимостей {#dependency-layers}
 
 ```yaml
 depends_on: [release-foundation]
 level: advanced
 ```
 
-Use `depends_on` frontmatter when a memory should build on another memory instead of repeating it.
+Используйте фронтметтер `depends_on`, когда воспоминание должно основываться на другом, а не повторять его.
 
-## Next steps
+## Следующие шаги {#next-steps}
 
 - [save / save-session / observe](save-session.md)
-- [Concepts: read path and routing](../concepts/read-path.md)
+- [Концепции: путь чтения и маршрутизация](../concepts/read-path.md)

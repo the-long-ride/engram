@@ -5,6 +5,7 @@ import { parseMemory } from './schema.js';
 import { readText, writeText } from '../system/fsx.js';
 import { today } from '../system/text.js';
 import type { MemoryEntry, Scope } from '../runtime/types.js';
+import { matchesMemoryRef, normalizeRef } from './memory-ref.js';
 
 export type LinkResult = {
   id: string;
@@ -85,11 +86,9 @@ export async function linkMemoryChildren(input: {
 
 /** Find the first visible memory entry (any scope, any type) matching the id ref. */
 export function findEntry(ctx: EngramContext, idRef: string): MemoryEntry | undefined {
-  const target = normalizeRef(idRef);
-  if (!target) return undefined;
+  if (!normalizeRef(idRef)) return undefined;
   const all = [...ctx.scopeIndexes.workspace.entries, ...ctx.scopeIndexes.global.entries];
-  return all.find((entry) => !entry.ignored
-    && [entry.id, entry.file, entry.file.replace(/\.md$/i, '')].some((ref) => normalizeRef(ref) === target));
+  return all.find((entry) => !entry.ignored && matchesMemoryRef(entry, idRef));
 }
 
 /** Insert/extend a `depends_on:` frontmatter entry on a raw memory file. */
@@ -114,10 +113,6 @@ function addDependsOn(raw: string, parentId: string): string {
   // Refresh the `updated:` timestamp so future graph rebuilds pick up the change.
   nextFm = nextFm.replace(/^updated:\s*.+$/m, `updated: ${today()}`);
   return `---\n${nextFm}\n---\n${raw.slice(match[0].length)}`;
-}
-
-function normalizeRef(ref: string): string {
-  return ref.trim().replace(/\\/g, '/').replace(/\.md$/i, '').toLowerCase();
 }
 
 function frontmatterStrings(value: unknown): string[] {

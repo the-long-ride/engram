@@ -1,4 +1,4 @@
-/** Human-visible A/B/C approval UI for every write path. */
+/** Human-visible approval UI for every write path: A/B/C for memories, a single yes/cancel for working-tier notes. */
 import { createInterface } from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
 
@@ -122,6 +122,23 @@ export async function requestSelectionApproval(preview: string): Promise<Selecti
   const approval = await readSelectionApproval(rl);
   rl.close();
   return approval;
+}
+
+/** Yes/cancel prompt for a working-tier note. Only an explicit `y` or `yes` accepts; anything else (including no answer) cancels. */
+export async function requestNoteApproval(preview: string): Promise<Approval> {
+  output.write(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nENGRAM — WORKING NOTE PROPOSED\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
+  output.write(`${preview}\n\nY — Save this note\nC — Cancel, write nothing\n`);
+  if (!input.isTTY) return parseNoteApproval(await readPipedPromptAnswer('Reply: Y / C: '));
+  const rl = createInterface({ input, output });
+  try {
+    return parseNoteApproval(await rl.question('Reply: Y / C: '));
+  } finally {
+    rl.close();
+  }
+}
+
+function parseNoteApproval(answer: string): Approval {
+  return { accepted: /^y(?:es)?$/i.test(answer.trim()) };
 }
 
 function writeApprovalPreview(preview: string): void {

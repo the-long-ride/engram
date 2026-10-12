@@ -1,8 +1,8 @@
 /** Configuration discovery, defaults, and scope path resolution. */
 import path from 'node:path';
 import { homedir } from 'node:os';
-import { ENGRAM_DIR, LEGACY_ENGRAM_DIR, VERSION } from './constants.js';
-import type { EngramConfig, EngramProfile, ProfileResolution, ProfileStore, ProfileSource, Scope } from './types.js';
+import { ENGRAM_DIR, LEGACY_ENGRAM_DIR, VERSION, WORKING_TTL_DAYS_DEFAULT, WORKING_TTL_DAYS_MAX } from './constants.js';
+import type { EngramConfig, EngramProfile, PathRulesMode, ProfileResolution, ProfileStore, ProfileSource, Scope } from './types.js';
 import { DEFAULT_LOAD_LIMIT, DEFAULT_MAX_TOKENS } from './load-limit.js';
 import { exists, readJson, writeJson } from '../system/fsx.js';
 import { openConfigDb, isConfigDbUsable } from '../config-db/schema.js';
@@ -130,22 +130,60 @@ export function defaultConfig(): EngramConfig {
       global_patterns: []
     },
     roles: [],
-    live_sync: { enabled: false, targets: ['agents-md', 'claude-md', 'cursorrules'] },
+    live_sync: { enabled: false, targets: ['agents-md', 'claude-md', 'cursor-rules'] },
     global_git: { enabled: true, remote: 'origin', remote_url: '', branch: 'main', auto_sync: true, auto_resolve: true },
     rule_variants: { enabled: false, active: 'balanced' },
-    load: { limit: DEFAULT_LOAD_LIMIT, max_tokens: DEFAULT_MAX_TOKENS, dependency_reserve_ratio: 0.20, projection: 'adaptive' },
+    load: { limit: DEFAULT_LOAD_LIMIT, max_tokens: DEFAULT_MAX_TOKENS, dependency_reserve_ratio: 0.20, projection: 'adaptive', disclosure: 'auto', expand_top: 3, working_ttl_days: WORKING_TTL_DAYS_DEFAULT },
     graph: { enabled: true, max_related: 4, min_related_score: 0.22 },
-    vector: { enabled: true, provider: 'sqlite-vec', auto_threshold: 100, candidate_pool: 24, dimensions: 64 },
+    // E18: hashed 64-dim vectors are not semantic; experimental, opt in with vector.enabled: true.
+    vector: { enabled: false, provider: 'sqlite-vec', auto_threshold: 100, candidate_pool: 24, dimensions: 64 },
     pattern_mining: { enabled: false, threshold: 3, lookback_sessions: 20 },
     pr_workflow: { enabled: false, target_branch: 'main' },
     encryption: { enabled: false, scope: 'global', key_source: 'portable-file' },
-    memory: { rule_line_target: 70, rule_line_hard_limit: 100 }
+    memory: { rule_line_target: 70, rule_line_hard_limit: 100, include_author_email: false },
+    // `hooks.path_rules` is deliberately not defaulted: a persisted workspace config would pin the default and hide a later
+    // `engram config set hooks.path_rules hook`. An unset value reads as `native` through pathRulesMode().
+    mcp: { resource_limit: MCP_RESOURCE_LIMIT_DEFAULT }
   };
+}
+
+export const MCP_RESOURCE_LIMIT_DEFAULT = 20;
+export const MCP_RESOURCE_LIMIT_MAX = 200;
+
+/** E6 `mcp.resource_limit`: memories listed by MCP resources/list (engram://index is extra). */
+export function mcpResourceLimit(config: EngramConfig): number {
+  const value = config.mcp?.resource_limit;
+  if (value === undefined || value === null) return MCP_RESOURCE_LIMIT_DEFAULT;
+  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0 || value > MCP_RESOURCE_LIMIT_MAX) {
+    throw new Error(`mcp.resource_limit must be an integer from 0 to ${MCP_RESOURCE_LIMIT_MAX}; got ${JSON.stringify(value)}`);
+  }
+  return value;
+}
+
+/** True only when `memory.include_author_email` is explicitly enabled (default off). */
+export function includeAuthorEmail(config: EngramConfig): boolean {
+  return config.memory?.include_author_email === true;
+}
+
+/** E13: `native` emits host path rules and drops the Claude PreToolUse hook; anything unknown reads as native. */
+export function pathRulesMode(config: Pick<EngramConfig, 'hooks'>): PathRulesMode {
+  return config.hooks?.path_rules === 'hook' ? 'hook' : 'native';
 }
 
 /** Resolve workspace and global memory roots. */
 export function scopeRoots(cwd = process.cwd()): Record<Scope, string> {
   return { workspace: workspaceRoot(cwd), global: resolveGlobalRoot() };
+}
+
+/** D16 `load.working_ttl_days`: unset means the default (14); anything but a positive integer is a config error. */
+export function workingTtlDays(config: EngramConfig): number {
+  const value = config.load?.working_ttl_days;
+  if (value === undefined || value === null) return WORKING_TTL_DAYS_DEFAULT;
+  // Same 1..365 range as the web config schema field.
+  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 1 || value > WORKING_TTL_DAYS_MAX) {
+    throw new Error(`load.working_ttl_days must be a positive integer up to ${WORKING_TTL_DAYS_MAX}; got ${JSON.stringify(value)}`);
+  }
+  return value;
 }
 
 /** Resolve roots using a loaded config, with ENGRAM_GLOBAL_DIR as override. */
@@ -201,7 +239,9 @@ export function mergeConfig(base: EngramConfig, found: Partial<EngramConfig>): E
     pattern_mining: { ...base.pattern_mining, ...(found.pattern_mining ?? {}) },
     pr_workflow: { ...base.pr_workflow, ...(found.pr_workflow ?? {}) },
     encryption: { ...base.encryption, ...(found.encryption ?? {}) },
-    memory: { ...base.memory, ...(found.memory ?? {}) }
+    memory: { ...base.memory, ...(found.memory ?? {}) },
+    mcp: { ...(base.mcp ?? {}), ...(found.mcp ?? {}) },
+    ...(base.hooks || found.hooks ? { hooks: { ...(base.hooks ?? {}), ...(found.hooks ?? {}) } } : {})
   };
 }
 

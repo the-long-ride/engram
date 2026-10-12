@@ -7,7 +7,9 @@ import {
   isGeneratedOpenCodeHookPlugin,
   renderOpenCodeHookPlugin
 } from './opencode-hook-plugin.js';
-import { exists, readJson, readText, writeJson, writeText } from '../system/fsx.js';
+import { exists, parseJsonLike, readJson, readText, writeJson, writeText } from '../system/fsx.js';
+import { loadConfig, pathRulesMode } from '../runtime/config.js';
+import type { PathRulesMode } from '../runtime/types.js';
 
 export type AgentHookHost = 'codex' | 'claude' | 'gemini' | 'opencode' | 'cursor' | 'windsurf';
 export type AgentHookAction = 'install' | 'uninstall';
@@ -18,6 +20,10 @@ type JsonHookTarget = {
   configFile: string;
   globalFile: () => string;
   events: string[];
+  /** Events an earlier Engram version registered: merge strips them; uninstall and detection still recognise them. */
+  retiredEvents?: string[];
+  /** Opt-in events: never registered by default or by upgrade, but uninstall and detection still recognise them. */
+  optionalEvents?: string[];
   schema: 'claude-codex' | 'cursor' | 'windsurf';
 };
 
@@ -48,6 +54,21 @@ export type AgentHookUpgradePreview = { host: AgentHookHost; file: string; curre
 
 const MANAGED_NAME = 'engram-auto-load';
 const TIMEOUT_MS = 10000;
+/**
+ * Claude Code, Codex, and Cursor read the hook `timeout` in seconds:
+ * https://code.claude.com/docs/en/hooks, https://developers.openai.com/codex/hooks, https://cursor.com/docs/agent/hooks
+ */
+const TIMEOUT_SECONDS = 10;
+const SECONDS_TIMEOUT_HOSTS = new Set<AgentHookHost>(['claude', 'codex', 'cursor']);
+const UNPARSEABLE_REASON = 'could not parse existing file; left untouched';
+const PATH_TOOL_MATCHER = 'Read|Edit|Write|MultiEdit';
+/** Gemini AfterTool matcher (a regex over the tool name; anchoring is undocumented, so the runtime filters exact names). */
+const GEMINI_PATH_TOOL_MATCHER = 'read_file|write_file|replace';
+/** InstructionsLoaded matches on load reason; Engram only needs the rules Claude attached by path glob. */
+const NATIVE_RULES_MATCHER = 'path_glob_match';
+/** Opt-in SessionEnd (`link --session-end`): the hook only queues the transcript path, so it gets a short budget in seconds. */
+const SESSION_END_EVENT = 'SessionEnd';
+const SESSION_END_TIMEOUT_SECONDS: Partial<Record<AgentHookHost, number>> = { claude: 5, codex: 3 };
 
 const TARGETS: Record<AgentHookHost, HookTarget> = {
   codex: {
@@ -55,7 +76,8 @@ const TARGETS: Record<AgentHookHost, HookTarget> = {
     host: 'codex',
     configFile: path.join('.codex', 'hooks.json'),
     globalFile: () => path.join(globalAgentHome(), '.codex', 'hooks.json'),
-    events: ['SessionStart', 'UserPromptSubmit'],
+    events: ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'PreCompact', 'SubagentStart'],
+    optionalEvents: [SESSION_END_EVENT],
     schema: 'claude-codex'
   },
   claude: {
@@ -63,7 +85,8 @@ const TARGETS: Record<AgentHookHost, HookTarget> = {
     host: 'claude',
     configFile: path.join('.claude', 'settings.json'),
     globalFile: () => path.join(globalAgentHome(), '.claude', 'settings.json'),
-    events: ['SessionStart', 'UserPromptSubmit'],
+    events: ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'PreCompact', 'SubagentStart'],
+    optionalEvents: [SESSION_END_EVENT],
     schema: 'claude-codex'
   },
   gemini: {
@@ -71,7 +94,7 @@ const TARGETS: Record<AgentHookHost, HookTarget> = {
     host: 'gemini',
     configFile: path.join('.gemini', 'settings.json'),
     globalFile: () => path.join(globalAgentHome(), '.gemini', 'settings.json'),
-    events: ['SessionStart', 'BeforeAgent'],
+    events: ['SessionStart', 'BeforeAgent', 'AfterTool', 'PreCompress'],
     schema: 'claude-codex'
   },
   cursor: {
@@ -104,16 +127,43 @@ const UNSUPPORTED: Record<string, string> = {
   cline: 'plugin-based hook support is real, but install UX is not file-first; use Engram skillset/manual load in v1'
 };
 
+/** E13: Claude swaps PreToolUse for InstructionsLoaded under native path rules; every other host is static. */
+function targetFor(host: AgentHookHost, pathRules: PathRulesMode, sessionEnd = false): HookTarget {
+  let meta = TARGETS[host];
+  if (meta.kind !== 'json') return meta;
+  if (host === 'claude') {
+    const base = meta.events.filter((event) => event !== 'PreToolUse' && event !== 'InstructionsLoaded');
+    meta = pathRules === 'native'
+      ? { ...meta, events: [...base.slice(0, 2), 'InstructionsLoaded', ...base.slice(2)], retiredEvents: ['PreToolUse'] }
+      : { ...meta, events: [...base.slice(0, 2), 'PreToolUse', ...base.slice(2)], retiredEvents: ['InstructionsLoaded'] };
+  }
+  // Opt-in only: an install without the flag leaves an existing managed SessionEnd entry as it is.
+  return sessionEnd && meta.optionalEvents?.includes(SESSION_END_EVENT) ? { ...meta, events: [...meta.events, SESSION_END_EVENT] } : meta;
+}
+
+const knownEvents = (meta: JsonHookTarget): string[] => [...new Set([...meta.events, ...(meta.retiredEvents ?? []), ...(meta.optionalEvents ?? [])])];
+
+/** The configured `hooks.path_rules` mode; an unreadable config reads as the default (`native`). */
+async function resolvePathRules(options: { cwd?: string; pathRules?: PathRulesMode }): Promise<PathRulesMode> {
+  if (options.pathRules) return options.pathRules;
+  try {
+    return pathRulesMode(await loadConfig(options.cwd ?? process.cwd()));
+  } catch {
+    return 'native';
+  }
+}
+
 /** Install or uninstall managed Engram agent hooks for one target or all known targets. */
-export async function applyAgentHookAction(action: AgentHookAction, targetArg = 'all', options: { global?: boolean; plan?: boolean; force?: boolean; cwd?: string } = {}): Promise<string> {
+export async function applyAgentHookAction(action: AgentHookAction, targetArg = 'all', options: { global?: boolean; plan?: boolean; force?: boolean; cwd?: string; pathRules?: PathRulesMode; sessionEnd?: boolean } = {}): Promise<string> {
   const results: AgentHookResult[] = [];
+  const pathRules = await resolvePathRules(options);
   for (const target of expandTargets(targetArg)) {
     const normalized = normalizeTarget(target);
     if (typeof normalized !== 'string') {
       results.push({ status: 'SKIPPED', host: normalized.target, reason: normalized.reason });
       continue;
     }
-    const meta = TARGETS[normalized];
+    const meta = targetFor(normalized, pathRules, action === 'install' && Boolean(options.sessionEnd));
     const file = options.global
       ? meta.globalFile()
       : path.join(options.cwd ?? process.cwd(), meta.configFile);
@@ -129,7 +179,11 @@ export async function applyAgentHookAction(action: AgentHookAction, targetArg = 
       results.push({ status: 'SKIPPED', host: meta.host, file, events: meta.events, reason: 'config file not found' });
       continue;
     }
-    const config = await readJson<Record<string, any>>(file, {});
+    const config = await readHookConfig(file);
+    if (!config) {
+      results.push({ status: 'SKIPPED', host: meta.host, file, events: meta.events, reason: UNPARSEABLE_REASON });
+      continue;
+    }
     const changed = action === 'install'
       ? mergeManagedHooks(config, meta, Boolean(options.force))
       : unmergeManagedHooks(config, meta);
@@ -145,12 +199,13 @@ export async function applyAgentHookAction(action: AgentHookAction, targetArg = 
   return formatRecords(action === 'install' ? 'Engram agent hook install' : 'Engram agent hook uninstall', results.map(resultRecord));
 }
 
-export async function refreshInstalledAgentHooks(targetArg = 'all', options: { global?: boolean; plan?: boolean; force?: boolean; cwd?: string; installMissing?: boolean } = {}): Promise<AgentHookResult[]> {
+export async function refreshInstalledAgentHooks(targetArg = 'all', options: { global?: boolean; plan?: boolean; force?: boolean; cwd?: string; installMissing?: boolean; pathRules?: PathRulesMode } = {}): Promise<AgentHookResult[]> {
   const results: AgentHookResult[] = [];
+  const pathRules = await resolvePathRules(options);
   for (const target of expandTargets(targetArg)) {
     const normalized = normalizeTarget(target);
     if (typeof normalized !== 'string') continue;
-    const meta = TARGETS[normalized];
+    const meta = targetFor(normalized, pathRules);
     const file = options.global
       ? meta.globalFile()
       : path.join(options.cwd ?? process.cwd(), meta.configFile);
@@ -163,7 +218,11 @@ export async function refreshInstalledAgentHooks(targetArg = 'all', options: { g
       results.push(await applyOpenCodePlugin('install', meta, file, Boolean(options.force)));
       continue;
     }
-    const config = await readJson<Record<string, any>>(file, {});
+    const config = await readHookConfig(file);
+    if (!config) {
+      results.push({ status: 'SKIPPED', host: meta.host, file, events: meta.events, reason: UNPARSEABLE_REASON });
+      continue;
+    }
     mergeManagedHooks(config, meta, Boolean(options.force));
     await writeJson(file, config);
     results.push({ status: 'UPDATED', host: meta.host, file, events: meta.events });
@@ -172,10 +231,11 @@ export async function refreshInstalledAgentHooks(targetArg = 'all', options: { g
 }
 
 /** Preview installed Engram hooks without writing files. Mixed user hook configs become conflicts. */
-export async function previewInstalledAgentHooks(options: { global?: boolean; cwd?: string } = {}): Promise<AgentHookUpgradePreview[]> {
+export async function previewInstalledAgentHooks(options: { global?: boolean; cwd?: string; pathRules?: PathRulesMode } = {}): Promise<AgentHookUpgradePreview[]> {
   const out: AgentHookUpgradePreview[] = [];
+  const pathRules = await resolvePathRules(options);
   for (const host of Object.keys(TARGETS) as AgentHookHost[]) {
-    const meta = TARGETS[host];
+    const meta = targetFor(host, pathRules);
     const file = options.global ? meta.globalFile() : path.join(options.cwd ?? process.cwd(), meta.configFile);
     if (!(await exists(file))) continue;
     const current = await readText(file);
@@ -188,13 +248,20 @@ export async function previewInstalledAgentHooks(options: { global?: boolean; cw
     const currentInstall = await hasManagedHookInstall(meta, file, false);
     const staleInstall = currentInstall || await hasManagedHookInstall(meta, file, true);
     if (!staleInstall) continue;
-    if (currentInstall) {
-      out.push({ host, file, current, expected: current, safe: true });
-      continue;
-    }
     const config = await readJson<Record<string, any>>(file, {});
     const next = JSON.parse(JSON.stringify(config));
     mergeManagedHooks(next, meta, true);
+    if (currentInstall) {
+      // Hooks with Engram's name and current command are ours, so their shape (timeout, new events) refreshes
+      // in place. A leftover hook with an older command makes the forced merge differ; that stays a review.
+      const refreshed = JSON.parse(JSON.stringify(config));
+      mergeManagedHooks(refreshed, meta, false);
+      if (JSON.stringify(refreshed) === JSON.stringify(next)) {
+        const expected = JSON.stringify(refreshed) === JSON.stringify(config) ? current : `${JSON.stringify(refreshed, null, 2)}\n`;
+        out.push({ host, file, current, expected, safe: true });
+        continue;
+      }
+    }
     const safe = hasOnlyManagedHookContent(config, meta);
     out.push({
       host,
@@ -206,6 +273,27 @@ export async function previewInstalledAgentHooks(options: { global?: boolean; cw
     });
   }
   return out;
+}
+
+/**
+ * A host hook config to merge into: `{}` for a missing or empty file, `undefined` when existing content does not parse
+ * as a JSON object. Callers never write over such a file, so a typo in a user's settings never loses their config.
+ */
+async function readHookConfig(file: string): Promise<Record<string, any> | undefined> {
+  let text: string;
+  try {
+    text = await fs.readFile(file, 'utf8');
+  } catch (error) {
+    // Only a missing file is an empty config; an unreadable one (EACCES/EBUSY) must never be overwritten.
+    return (error as { code?: string }).code === 'ENOENT' ? {} : undefined;
+  }
+  if (!text.trim()) return {};
+  try {
+    const parsed = parseJsonLike<unknown>(text);
+    return isObject(parsed) ? parsed : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function hasOnlyManagedHookContent(config: Record<string, any>, meta: JsonHookTarget): boolean {
@@ -221,9 +309,9 @@ function hasOnlyManagedHookContent(config: Record<string, any>, meta: JsonHookTa
   }
   if (Object.keys(config).some((key) => key !== 'hooks')) return false;
   if (!isObject(config.hooks)) return true;
-  const allowed = new Set(meta.events);
+  const allowed = new Set(knownEvents(meta));
   if (Object.keys(config.hooks).some((key) => !allowed.has(key))) return false;
-  return meta.events.every((event) => {
+  return knownEvents(meta).every((event) => {
     const groups = Array.isArray(config.hooks[event]) ? config.hooks[event] : [];
     return groups.every((group: any) => isObject(group)
       && Array.isArray(group.hooks)
@@ -231,10 +319,11 @@ function hasOnlyManagedHookContent(config: Record<string, any>, meta: JsonHookTa
   });
 }
 
-export async function detectInstalledHookTargets(options: { global?: boolean; cwd?: string; includeStale?: boolean } = {}): Promise<AgentHookHost[]> {
+export async function detectInstalledHookTargets(options: { global?: boolean; cwd?: string; includeStale?: boolean; pathRules?: PathRulesMode } = {}): Promise<AgentHookHost[]> {
   const hosts: AgentHookHost[] = [];
+  const pathRules = await resolvePathRules(options);
   for (const host of Object.keys(TARGETS) as AgentHookHost[]) {
-    const meta = TARGETS[host];
+    const meta = targetFor(host, pathRules);
     const file = options.global
       ? meta.globalFile()
       : path.join(options.cwd ?? process.cwd(), meta.configFile);
@@ -254,7 +343,7 @@ async function hasManagedHookInstall(meta: HookTarget, file: string, force = fal
     return meta.events.some((event) => Array.isArray(config[event]) && config[event].some((entry: any) => isWindsurfManagedEntry(entry, force)));
   }
   if (!isObject(config.hooks)) return false;
-  return meta.events.some((event) => Array.isArray(config.hooks[event]) && config.hooks[event].some((group: any) => hasManagedHook(group, meta.host, force)));
+  return knownEvents(meta).some((event) => Array.isArray(config.hooks[event]) && config.hooks[event].some((group: any) => hasManagedHook(group, meta.host, force)));
 }
 
 /** Return canonical supported host or unsupported target reason. */
@@ -266,6 +355,12 @@ export function normalizeTarget(target: string): AgentHookHost | UnsupportedTarg
   if (lower === 'codex' || lower === 'claude' || lower === 'gemini' || lower === 'opencode' || lower === 'cursor' || lower === 'windsurf') return lower;
   if (UNSUPPORTED[lower]) return { target: lower, reason: UNSUPPORTED[lower] };
   return { target: lower || 'all', reason: 'unknown agent hook target' };
+}
+
+/** Hook-capable hosts an install for this target covers (unsupported targets such as copilot/cline drop out). */
+export function hookHostsForTarget(target: string): AgentHookHost[] {
+  if (!target) return [];
+  return expandTargets(target).map(normalizeTarget).filter((host): host is AgentHookHost => typeof host === 'string');
 }
 
 function expandTargets(target: string): string[] {
@@ -284,13 +379,33 @@ function mergeManagedHooks(config: Record<string, any>, meta: JsonHookTarget, fo
     const groups = Array.isArray(config.hooks[event]) ? config.hooks[event] : [];
     const cleaned = removeManagedFromGroups(groups, meta.host, force);
     const group = {
-      matcher: (event === 'SessionStart' || event === 'BeforeAgent') ? '*' : '',
-      hooks: [managedHook(meta.host)]
+      matcher: eventMatcher(event),
+      hooks: [managedHook(meta.host, event)]
     };
     config.hooks[event] = [...cleaned, group];
     changed ||= force || cleaned.length !== groups.length || !groups.some((item: any) => hasManagedHook(item, meta.host, force));
   }
+  // Events an earlier install registered (Claude's PreToolUse under native path rules) lose their managed entries.
+  for (const event of meta.retiredEvents ?? []) {
+    const groups = Array.isArray(config.hooks[event]) ? config.hooks[event] : [];
+    const cleaned = removeManagedFromGroups(groups, meta.host, force);
+    if (cleaned.length !== groups.length || groups.some((item: any) => hasManagedHook(item, meta.host, force))) changed = true;
+    if (cleaned.length) config.hooks[event] = cleaned;
+    else delete config.hooks[event];
+  }
   return changed;
+}
+
+/**
+ * Matcher per event. PreToolUse limits path triggers to file tools (Codex maps `Edit|Write` onto
+ * `apply_patch`); Gemini's AfterTool limits path triggers to its file tools; PreCompact matches both `manual` and `auto` triggers; SubagentStart matches every agent type.
+ * Docs: https://code.claude.com/docs/en/hooks, https://developers.openai.com/codex/hooks
+ */
+function eventMatcher(event: string): string {
+  if (event === 'PreToolUse') return PATH_TOOL_MATCHER;
+  if (event === 'InstructionsLoaded') return NATIVE_RULES_MATCHER;
+  if (event === 'AfterTool') return GEMINI_PATH_TOOL_MATCHER;
+  return event === 'SessionStart' || event === 'BeforeAgent' || event === 'PreCompact' || event === 'PreCompress' || event === 'SubagentStart' ? '*' : '';
 }
 
 function mergeCursorHooks(config: Record<string, any>, meta: JsonHookTarget, force: boolean): boolean {
@@ -317,7 +432,7 @@ export function unmergeManagedHooks(config: Record<string, any>, meta: JsonHookT
   if (meta.schema === 'windsurf') return unmergeWindsurfHooks(config, meta);
   if (!isObject(config.hooks)) return false;
   let changed = false;
-  for (const event of meta.events) {
+  for (const event of knownEvents(meta)) {
     const groups = Array.isArray(config.hooks[event]) ? config.hooks[event] : [];
     const cleaned = removeManagedFromGroups(groups, meta.host);
     if (cleaned.length !== groups.length || groups.some((item: any) => hasManagedHook(item, meta.host))) changed = true;
@@ -369,12 +484,21 @@ function isManagedHook(hook: any, host: AgentHookHost, force = false): boolean {
   return isObject(hook) && hook.name === MANAGED_NAME && (force || hook.command === managedCommand(host));
 }
 
-function managedHook(host: AgentHookHost): Record<string, any> {
+function managedHook(host: AgentHookHost, event = ''): Record<string, any> {
+  if (event === SESSION_END_EVENT) {
+    return {
+      name: MANAGED_NAME,
+      type: 'command',
+      command: managedCommand(host),
+      timeout: SESSION_END_TIMEOUT_SECONDS[host] ?? TIMEOUT_SECONDS,
+      description: 'Queue this session transcript for engram observe --queue; injects nothing.'
+    };
+  }
   return {
     name: MANAGED_NAME,
     type: 'command',
     command: managedCommand(host),
-    timeout: TIMEOUT_MS,
+    timeout: SECONDS_TIMEOUT_HOSTS.has(host) ? TIMEOUT_SECONDS : TIMEOUT_MS,
     description: 'Load routed Engram memory context for this session or turn.'
   };
 }

@@ -1,0 +1,17 @@
+{
+  "name": "braces",
+  "version": "3.0.3-engram-safe.1",
+  "description": "Upstream braces with hard nesting and AST limits for the Engram docs toolchain",
+  "private": true,
+  "license": "MIT",
+  "author": "Jon Schlinkert (https://github.com/jonschlinkert)",
+  "repository": "micromatch/braces",
+  "main": "index.js",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "fill-range": "^7.1.1"
+  }
+}

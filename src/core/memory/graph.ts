@@ -1,9 +1,11 @@
 /** Derived JSON knowledge graph for layered routing over approved memories. */
+import fs from 'node:fs/promises';
 import path from 'node:path';
-import { GRAPH_FILE, VERSION } from '../runtime/constants.js';
+import { GRAPH_FILE, VERSION, WORKING_GRAPH_FILE, isWorkingPath } from '../runtime/constants.js';
 import type { EngramConfig, MemoryEntry, MemoryGraph, MemoryGraphEdge, MemoryGraphNode, MemoryIndex, Scope } from '../runtime/types.js';
 import { lexicalScore, words } from '../system/text.js';
-import { readJson, writeJson } from '../system/fsx.js';
+import { memoryKey, normalizeRef } from './memory-ref.js';
+import { readJson, writeJsonAtomic, writeJsonIfChanged } from '../system/fsx.js';
 import { formatRecords } from '../cli/format.js';
 import { embed } from './graph-vector.js';
 
@@ -14,22 +16,46 @@ export function emptyGraph(): MemoryGraph {
   return { version: VERSION, last_updated: new Date().toISOString(), nodes: [], edges: [] };
 }
 
-/** Read a graph file, returning an empty graph when it is missing. */
+/**
+ * Read the committed graph plus the local `working/` graph, returning an empty graph when both are missing. Working
+ * memory nodes left in the committed graph by an older build are dropped; only the working graph is authoritative.
+ */
 export async function loadGraph(root: string): Promise<MemoryGraph> {
-  return readJson<MemoryGraph>(path.join(root, GRAPH_FILE), emptyGraph());
+  const main = await readJson<MemoryGraph>(path.join(root, GRAPH_FILE), emptyGraph());
+  const working = await readJson<MemoryGraph>(path.join(root, WORKING_GRAPH_FILE), emptyGraph());
+  const stale = new Set(main.nodes.filter((node) => node.file && isWorkingPath(node.file)).map((node) => node.id));
+  const durable = stale.size
+    ? { ...main, nodes: main.nodes.filter((node) => !stale.has(node.id)), edges: main.edges.filter((edge) => !stale.has(edge.from) && !stale.has(edge.to)) }
+    : main;
+  return working.nodes.length ? unionGraph(durable, working) : durable;
 }
 
-/** Persist a graph file. */
+/** Persist the committed graph file; it is only rewritten when its content (not just `last_updated`) changes. */
 export async function writeGraph(root: string, graph: MemoryGraph): Promise<void> {
   graph.last_updated = new Date().toISOString();
-  await writeJson(path.join(root, GRAPH_FILE), graph);
+  await writeJsonIfChanged(path.join(root, GRAPH_FILE), graph, ['last_updated']);
 }
 
-/** Rebuild the graph from an index. The graph is derived, never authoritative. */
+/**
+ * Rebuild the graph from an index. The graph is derived, never authoritative. The committed graph is built from
+ * durable entries only (working memories never change it); the nodes and edges that working entries add go to the
+ * gitignored `working/` graph, and the returned graph is their union.
+ */
 export async function rebuildGraph(root: string, scope: Scope, index: MemoryIndex, config?: EngramConfig): Promise<MemoryGraph> {
-  const graph = graphFromEntries(index.entries.filter((entry) => entry.scope === scope && !entry.ignored), scope, config);
+  const entries = index.entries.filter((entry) => entry.scope === scope && !entry.ignored);
+  const durable = entries.filter((entry) => !isWorkingPath(entry.file));
+  const graph = graphFromEntries(durable, scope, config);
   await writeGraph(root, graph);
-  return graph;
+  if (durable.length === entries.length) {
+    await fs.rm(path.join(root, WORKING_GRAPH_FILE), { force: true });
+    return graph;
+  }
+  const full = graphFromEntries(entries, scope, config);
+  const nodeIds = new Set(graph.nodes.map((node) => node.id));
+  const edgeIds = new Set(graph.edges.map((edge) => edge.id));
+  const working = { ...emptyGraph(), nodes: full.nodes.filter((node) => !nodeIds.has(node.id)), edges: full.edges.filter((edge) => !edgeIds.has(edge.id)) };
+  await writeJsonAtomic(path.join(root, WORKING_GRAPH_FILE), working);
+  return unionGraph(graph, working);
 }
 
 /** Merge scope graphs into one agent-facing graph. */
@@ -41,6 +67,10 @@ export function mergeGraphs(workspace: MemoryGraph, global: MemoryGraph): Memory
     for (const edge of graph.edges) edges.set(edge.id, edge);
   }
   return { ...emptyGraph(), nodes: [...nodes.values()], edges: [...edges.values()] };
+}
+
+function unionGraph(base: MemoryGraph, extra: MemoryGraph): MemoryGraph {
+  return { ...base, nodes: [...base.nodes, ...extra.nodes], edges: [...base.edges, ...extra.edges] };
 }
 
 /** Return graph edges that probably indicate stale or wrong memory. */
@@ -68,10 +98,10 @@ export function dependencyContextEntries(selected: MemoryEntry[], visible: Memor
   const primary = selected[0];
   const dependencyLimit = primary ? Math.max(0, max - 1) : max;
   const keep = combined.filter((entry) => dependencySet.has(memoryNodeId(entry))).slice(0, dependencyLimit);
-  if (primary && keep.length < max && !keep.some((item) => entryKey(item) === entryKey(primary))) keep.push(primary);
+  if (primary && keep.length < max && !keep.some((item) => memoryKey(item) === memoryKey(primary))) keep.push(primary);
   for (const entry of selected) {
     if (keep.length >= max) break;
-    if (!keep.some((item) => entryKey(item) === entryKey(entry))) keep.push(entry);
+    if (!keep.some((item) => memoryKey(item) === memoryKey(entry))) keep.push(entry);
   }
   return orderByDependencies(keep, graph);
 }
@@ -302,14 +332,6 @@ function collectPrerequisites(nodeId: string, graph: MemoryGraph, out: string[],
     if (!out.includes(dep)) out.push(dep);
   }
   visiting.delete(nodeId);
-}
-
-function normalizeRef(ref: string): string {
-  return ref.trim().replace(/\\/g, '/').replace(/\.md$/i, '').toLowerCase();
-}
-
-function entryKey(entry: MemoryEntry): string {
-  return `${entry.scope}:${entry.file}`;
 }
 
 function uniqueStrings(values: string[]): string[] {

@@ -1,163 +1,163 @@
 ---
-title: AI-Agent Quickstart
+title: Démarrage rapide avec un agent IA
 sidebar_position: 2
-description: Start using Engram through your AI agent. Load memory, do the work, then propose durable memory when something useful emerges.
+description: Commencez à utiliser Engram via votre agent IA. Chargez la mémoire, faites le travail, puis proposez une mémoire durable lorsqu’un élément utile apparaît.
 ---
 
-# AI-Agent Quickstart
+# Démarrage rapide avec un agent IA {#ai-agent-quickstart}
 
-Use Engram through your agent first. The CLI exists, but the best experience is: ask the agent to load memory, do the work, then propose durable memory when something useful emerges.
+Utilisez d’abord Engram à travers votre agent. La CLI existe, mais la meilleure expérience est la suivante : demandez à l’agent de charger la mémoire, faites le travail, puis proposez une mémoire durable lorsqu’un élément utile apparaît.
 
-## AI-agent chat approval
+## Approbation dans le chat de l’agent IA {#ai-agent-chat-approval}
 
-In AI-agent chat, Engram approval is conversational. The agent shows refined `TYPE: ... | TEXT: ...` candidates first, including Light/Balanced/Strict variants for rules. Reply `yes` to save the exact candidates, `audit` to revise them, or `cancel` to stop. After `yes`, the agent uses `engram save-session --force` with the exact approved candidates. Direct terminal CLI saves still use A/B/C unless a force command was explicitly invoked.
+Dans le chat d’un agent IA, l’approbation Engram est conversationnelle. L’agent présente d’abord des candidats `TYPE: ... | TEXT: ...` affinés, chacun avec sa ligne `Verdict:`, ainsi que la formulation balanced pour les règles (Light et Strict sont dérivées au rendu de la règle, sauf si un candidat fournit des variantes personnalisées). Répondez `yes` pour enregistrer les candidats exacts, `audit` pour les réviser ou `cancel` pour arrêter. Après `yes`, l’agent utilise `engram save-session --force` avec les candidats exacts approuvés. Les enregistrements directs depuis la CLI d’un terminal utilisent toujours A/B/C, sauf si une commande de forçage a été explicitement invoquée.
 
-## First message in a new session
+## Premier message dans une nouvelle session {#first-message-in-a-new-session}
 
-Ask:
+Demandez :
 
 ```text
 Use Engram for this task. Load memory for: <what we are doing>.
 ```
 
-If slash adapters are installed:
+Si les adaptateurs slash sont installés :
 
 ```text
 /engram load "<current task>"
 ```
 
-The agent should reply with a compact count line by default, such as `Engram loaded: 8 memories / 24 total related memories.` With slash adapters, `load` is the agent-facing route.
+Par défaut, l’agent doit répondre par une ligne de comptage compacte, comme `Engram loaded: 8 memories / 24 total related memories.` Avec les adaptateurs slash, `load` est la route destinée à l’agent.
 
-When an agent needs a self-contained Engram usage guide, run:
+Lorsqu’un agent a besoin d’un guide d’utilisation d’Engram autonome, exécutez :
 
 ```bash
 engram llm
 ```
 
-This prints the packaged `llm.txt` guide and does not require `engram inject`.
+Cela affiche le guide `llm.txt` fourni avec le paquet et ne nécessite pas `engram inject`.
 
-## Recommended setup conversation
+## Conversation de configuration recommandée {#recommended-setup-conversation}
 
-Ask the agent:
+Demandez à l’agent :
 
 ```text
 Inject Engram memory routing for this workspace, configure it, and connect this agent.
 ```
 
-The agent will suggest running:
+L’agent proposera d’exécuter :
 
 ```bash
 engram entry
 ```
 
-To configure memory and link AI agents in a clean web UI. Under the hood, to initialize the workspace:
+Pour configurer la mémoire et lier les agents IA dans une interface web claire. En coulisses, pour initialiser le workspace :
 
 ```bash
 engram inject
 ```
 
-To link the same agent globally, so new workspaces can load Engram global memory without running `engram inject` first:
+Pour lier le même agent globalement, afin que les nouveaux workspaces puissent charger la mémoire globale d’Engram sans exécuter d’abord `engram inject` :
 
 ```bash
 engram link --global <agent-name>
 ```
 
-For chat-native use, ask:
+Pour un usage natif dans le chat, demandez :
 
 ```text
 Install slash support so I can use /engram directly from this agent.
 ```
 
-## Daily loop
+## Boucle quotidienne {#daily-loop}
 
-Start:
+Au début :
 
 ```text
 /engram load "current task"
 ```
 
-During work:
+Pendant le travail :
 
 ```text
 /engram search "topic I might be missing"
 ```
 
-When the agent learns one durable fact:
+Lorsque l’agent apprend un fait durable :
 
 ```text
 /engram save knowledge
 ```
 
-When the session produced several useful rules, facts, or workflows:
+Lorsque la session a produit plusieurs règles, faits ou flux de travail utiles :
 
 ```text
 /engram save-session
 ```
 
-Short form:
+Forme courte :
 
 ```text
 /engram ss
 ```
 
-To include recent chat history the agent can actually access:
+Pour inclure l’historique de chat récent auquel l’agent peut réellement accéder :
 
 ```text
 /engram save-session --query-level 3
 ```
 
-`--query-level` must be a positive integer. The agent may use up to that many recent human-agent chat sessions, including the current one, and must not invent unavailable history.
+`--query-level` doit être un entier positif. L’agent peut utiliser jusqu’à ce nombre de sessions de chat récentes entre humain et agent, y compris la session en cours, et ne doit pas inventer un historique indisponible.
 
-Force shortcut only when you truly mean it:
+Raccourci de forçage, uniquement si vous le voulez vraiment :
 
 ```text
 /engram ss -f
 ```
 
-`-f` means the human explicitly approves every agent-recommended candidate. Agents must not add it by themselves.
+`-f` signifie que l’humain approuve explicitement chaque candidat recommandé par l’agent. Les agents ne doivent pas l’ajouter d’eux-mêmes.
 
-To mine recent accessible chats and force-save generated candidates in one request:
+Pour explorer les conversations récentes accessibles et enregistrer de force les candidats générés en une seule demande :
 
 ```text
 /engram ss -f last 50 sessions
 ```
 
-That normalizes to `engram save-session --query-level 50 --force`.
+Cela se normalise en `engram save-session --query-level 50 --force`.
 
 <!-- evidence-foundation:v3:start -->
-## Mémoire étayée par des preuves
+## Mémoire étayée par des preuves {#evidence-backed-memory}
 
-Capture a source before deciding what should become durable:
+Capturez une source avant de décider de ce qui doit devenir durable :
 
 ```bash
 engram observe --file session.md
 engram save-session --file .agents/.engram/inbox/<observation>.md
 ```
 
-Review the wrapper before promotion. The wrapper is editable, but approved content is recovered from the immutable trace. The final memory carries `evidence_refs`, so future CLI and Web UI review can follow its provenance.
+Relisez l’enveloppe avant la promotion. L’enveloppe est modifiable, mais le contenu approuvé est récupéré depuis la trace immuable. La mémoire finale porte `evidence_refs`, de sorte que la relecture future dans la CLI et l’interface web peut suivre sa provenance.
 <!-- evidence-foundation:v3:end -->
 
-## Import existing knowledge
+## Importer des connaissances existantes {#import-existing-knowledge}
 
-For a repo that already has `AGENTS.md`, `CLAUDE.md`, Cursor rules, notes, or docs:
+Pour un dépôt qui possède déjà `AGENTS.md`, `CLAUDE.md`, des règles Cursor, des notes ou de la documentation :
 
 ```text
 /engram take-control --plan
 /engram take-control --all
 ```
 
-Use `--plan` first when you want to see selected files, skipped files, token estimates, and likely memory types.
+Utilisez d’abord `--plan` lorsque vous voulez voir les fichiers sélectionnés, les fichiers ignorés, les estimations de tokens et les types de mémoire probables.
 
-## Global memory
+## Mémoire globale {#global-memory}
 
-Use global memory for preferences that should follow you across repos:
+Utilisez la mémoire globale pour les préférences qui doivent vous suivre d’un dépôt à l’autre :
 
 ```text
 Set up global Engram memory at <path>, then save this preference globally:
 Use pnpm for package management.
 ```
 
-The agent may use:
+L’agent peut utiliser :
 
 ```bash
 engram inject --global-only --global-path <path>
@@ -165,17 +165,17 @@ engram save --scope global "Use pnpm for package management."
 engram link --global <agent-name>
 ```
 
-When inject sees configured global memory, it creates or selects a user default profile for that global root so future workspaces can reuse it.
+Lorsque inject voit une mémoire globale configurée, il crée ou sélectionne un profil utilisateur par défaut pour cette racine globale afin que les futurs workspaces puissent la réutiliser.
 
-## Keep it healthy
+## La garder en bonne santé {#keep-it-healthy}
 
-Ask the agent at the end of meaningful work:
+Demandez à l’agent à la fin d’un travail significatif :
 
 ```text
 Check Engram health, report invalid memories, and propose anything worth saving from this session.
 ```
 
-Useful commands:
+Commandes utiles :
 
 ```bash
 engram upgrade
@@ -187,14 +187,14 @@ engram quality-check
 engram archive --reason "<why>" <id-or-file>
 ```
 
-## Next steps
+## Étapes suivantes {#next-steps}
 
-- [Daily workflow](daily-workflow.md)
-- [Install and configure](install.md)
-- [Human-owned protocol](concepts/protocol.md)
+- [Flux de travail quotidien](daily-workflow.md)
+- [Installer et configurer](install.md)
+- [Protocole détenu par l’humain](concepts/protocol.md)
 
 
 <!-- configuration-upgrade-inventory -->
-## Configuration upgrade inventory
+## Inventaire des mises à niveau de configuration {#configuration-upgrade-inventory}
 
-After a package update, run `engram upgrade --latest --plan` before `engram upgrade --latest`. The shared inventory scans workspace and global Engram-managed memories, instructions, skillsets, configs, hooks, and plugins. User-authored bytes are preserved; ambiguous mixed files are reported as conflicts. See [Configuration upgrades](operations/configuration-upgrades.md).
+Après une mise à jour du paquet, exécutez `engram upgrade --latest --plan` avant `engram upgrade --latest`. L’inventaire partagé analyse les mémoires, instructions, skillsets, configurations, hooks et plugins gérés par Engram, dans l’espace de travail et au niveau global. Les octets rédigés par l’utilisateur sont préservés ; les fichiers mixtes ambigus sont signalés comme conflits. Voir [Mises à niveau de configuration](operations/configuration-upgrades.md).

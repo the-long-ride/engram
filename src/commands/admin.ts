@@ -31,6 +31,7 @@ import {
 import { applyAgentHookAction, detectInstalledHookTargets, normalizeTarget, refreshInstalledAgentHooks } from '../core/integrations/agent-hooks.js';
 import type { AgentHookHost } from '../core/integrations/agent-hooks.js';
 import { runAgentHook } from '../core/integrations/agent-hook-runtime.js';
+import { nativeRuleSummary, refreshAllLinkedNativeRules, refreshLinkedNativeRules } from '../core/integrations/native-rules.js';
 import { git } from '../core/vcs/git.js';
 import { formatRecords, type RecordBlock } from '../core/cli/format.js';
 import { installResultRecords } from './skillset-link.js';
@@ -116,7 +117,9 @@ export async function cmdSetRead(args: string[]): Promise<string> {
     throw new Error('set-read expects startup, auto, manual, off, always, or status');
   }
   await writeConfig(process.cwd(), ctx.config);
-  return readStatus(ctx.config.read);
+  // E12/K7: `off`/`manual`/`startup` remove the native rule files; `auto`/`always` restore them.
+  const native = await refreshAllLinkedNativeRules(process.cwd());
+  return `${readStatus(ctx.config.read)}${native.length ? `\nNative rules: ${nativeRuleSummary(native)}` : ''}`;
 }
 
 function readStatus(value: string): string {
@@ -331,7 +334,10 @@ async function runSharedLatestUpgrade(flags: Record<string, any>, previewOnly: b
   const result = await applyUpgradePlan(cwd, config, sharedPlan, { confirmed: true, review });
   const durableFailure = result.transactions.find((row) => row.status === 'failed' || row.status === 'rolled-back');
   if (durableFailure) throw new Error(`upgrade transaction ${durableFailure.group} ${durableFailure.status}${durableFailure.message ? `: ${durableFailure.message}` : ''}`);
-  return flags.json === true ? JSON.stringify(result, null, 2) : formatSharedUpgradeResult(sharedPlan, result);
+  // E12: the hook refresh above drops Claude's PreToolUse under native path rules, so the rule files are regenerated now.
+  const native = await refreshAllLinkedNativeRules(cwd);
+  if (flags.json === true) return JSON.stringify(result, null, 2);
+  return [formatSharedUpgradeResult(sharedPlan, result), ...(native.length ? [`Native rules: ${nativeRuleSummary(native)}`] : [])].join('\n');
 }
 
 function scopeLines(sharedPlan: UpgradePlan, scope: Scope): string[] {
@@ -457,7 +463,7 @@ function migrationFields(result: MemorySchemaMigrationResult, root: string): Arr
     ['Migrated', result.migrated],
     ['Current', result.current],
     ['Failed', result.failed],
-    ['Backup', '<memory>.pre-v3.bak']
+    ['Backup', 'backups/schema-v3/<memory>.pre-v3.bak']
   ];
 }
 
@@ -522,10 +528,14 @@ async function workspaceHookUpgradeRecord(plan: boolean): Promise<RecordBlock> {
   for (const target of hookTargets) {
     results.push(...await refreshInstalledAgentHooks(target, { cwd: process.cwd(), plan, force: true, installMissing: true }));
   }
+  const native = await refreshLinkedNativeRules(process.cwd(), { plan });
   return {
     title: plan ? 'PLAN workspace agent hooks' : 'UPDATED workspace agent hooks',
     fields: [['Hosts', [...new Set(results.map((result) => result.host))].join(', ')]],
-    lines: results.map((result) => `${result.status} ${result.host}: ${result.file ?? '<unknown>'}`)
+    lines: [
+      ...results.map((result) => `${result.status} ${result.host}: ${result.file ?? '<unknown>'}`),
+      ...(native.length ? [`Native rules: ${nativeRuleSummary(native)}`] : [])
+    ]
   };
 }
 
@@ -588,10 +598,14 @@ async function globalHookUpgradeRecord(target: string, plan: boolean): Promise<R
   for (const current of hookTargets) {
     results.push(...await refreshInstalledAgentHooks(current, { global: true, plan, force: true, installMissing: true }));
   }
+  const native = await refreshLinkedNativeRules(process.cwd(), { plan, global: true });
   return {
     title: plan ? 'PLAN global agent hooks' : 'UPDATED global agent hooks',
     fields: [['Hosts', [...new Set(results.map((result) => result.host))].join(', ')]],
-    lines: results.map((result) => `${result.status} ${result.host}: ${result.file ?? '<unknown>'}`)
+    lines: [
+      ...results.map((result) => `${result.status} ${result.host}: ${result.file ?? '<unknown>'}`),
+      ...(native.length ? [`Native rules: ${nativeRuleSummary(native)}`] : [])
+    ]
   };
 }
 

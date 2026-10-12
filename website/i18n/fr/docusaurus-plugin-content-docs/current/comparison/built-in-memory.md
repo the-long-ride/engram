@@ -1,23 +1,23 @@
 ---
-title: Built-in agent memory
+title: Mémoire intégrée de l'agent
 sidebar_position: 2
-description: Engram treats built-in agent memory as a convenience layer, not the authority.
+description: Engram traite la mémoire intégrée de l'agent comme une couche de commodité, pas comme l'autorité.
 ---
 
-# Built-in agent memory
+# Mémoire intégrée de l'agent
 
-Built-in agent memory is convenient, but often tied to one host. It can be hard to diff, export, review, or share with another agent.
+La mémoire intégrée de l'agent est pratique, mais souvent liée à un seul hôte. Il peut être difficile de la comparer (diff), de l'exporter, de la réviser ou de la partager avec un autre agent.
 
-Engram treats built-in memory as a convenience layer, not the authority. The authority remains files the human owns.
+Engram traite la mémoire intégrée comme une couche de commodité, pas comme l'autorité. L'autorité reste les fichiers appartenant à l'humain.
 
-| Dimension | Engram | Built-in agent memory |
+| Dimension | Engram | Mémoire intégrée de l'agent |
 | --- | --- | --- |
-| Source of truth | Approved Markdown files | Vendor-owned hidden state |
-| Portability | Git-native, agent-agnostic | Tied to one app or account |
-| Review | Git diff and Markdown review | Hard to inspect or export |
-| Best fit | teams that need ownership and auditability | quick personal recall within one host |
+| Source de vérité | Fichiers Markdown approuvés | État caché appartenant au fournisseur |
+| Portabilité | Natif de Git, indépendant de l'agent | Lié à une application ou à un compte |
+| Révision | Git diff et révision Markdown | Difficile à inspecter ou à exporter |
+| Idéal pour | les équipes qui ont besoin de propriété et d'auditabilité | rappel personnel rapide au sein d'un seul hôte |
 
-## Next steps
+## Étapes suivantes
 
 - [agentmemory](agentmemory.md)
-- [Comparison overview](overview.md)
+- [Présentation des comparaisons](overview.md)

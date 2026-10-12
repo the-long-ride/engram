@@ -16,6 +16,7 @@ test('npm publish metadata declares a package README', async () => {
   assert.ok(manifest.files.includes('README.md'));
   assert.ok(manifest.files.includes('llm.txt'));
   assert.ok(!manifest.files.includes('media'));
+  assert.ok(!manifest.files.includes('prompts'));
   assert.ok(!manifest.files.includes('website'));
   assert.match(npmignore, /^website\/$/m);
   assert.match(websiteManifest.packageManager, /^pnpm@\d+\.\d+\.\d+$/);

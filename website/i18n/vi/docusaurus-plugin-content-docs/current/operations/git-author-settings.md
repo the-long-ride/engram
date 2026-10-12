@@ -29,7 +29,7 @@ New memory files use separate fields:
 
 ```yaml
 author_name: Jane Doe
-author_email: jane@example.com
+author_email: jane@example.com   # opt-in: memory.include_author_email: true
 ```
 
 Legacy `author: jane@example.com` remains readable, but new memories do not write it.
@@ -110,7 +110,7 @@ engram author migrate-memories --scope both --confirm
 engram author migrate-memories --help
 ```
 
-Migration preserves the Markdown body, creates a `.pre-author-v3.bak` backup, skips archives and invalid files, and is idempotent. It never guesses a missing name. Preview output lists eligible, current, skipped, and invalid files before any write.
+Migration preserves the Markdown body, writes a `.pre-author-v3.bak` backup under `backups/author-v3/`, skips archives and invalid files, and is idempotent. It never guesses a missing name. Preview output lists eligible, current, skipped, and invalid files before any write.
 
 ## Entry Web UI
 

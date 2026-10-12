@@ -46,7 +46,48 @@ TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
 - `--force` / `-f` — every generated candidate is saved because the human explicitly approved that shortcut
 - `--file <path>` — for transcripts or long summaries already on disk
 
+### Save verdicts
+
+Every candidate preview (CLI, MCP, and Entry) prints one `Verdict:` line right after `File:`: `ADD`, `UPDATE <id>`, `SUPERSEDE <id>`, or `NOOP duplicate of <id>`. The verdict is deterministic (the existing dedupe and related-memory scores; no model call). `A` and `B` skip `NOOP` candidates and list them as skipped; `A 1,3` writes exactly the numbered ones. Approving a `SUPERSEDE` writes `supersedes: [old]` on the new memory and `lifecycle: superseded` on the old one, so `engram load` drops it. `--force` and autosave never apply a `SUPERSEDE`: it is deferred until you rerun without `--force` and review it.
+
+<a id="candidate-fields"></a>
+### Candidate fields
+
+Besides `CONTEXT`, `DEPENDS_ON`, `LEVEL`, and `UPDATE`, a candidate may carry:
+
+| Field | Meaning |
+| --- | --- |
+| `OBJECTIVE: task` or `durable` | `task` saves to the [working tier](#working-memory-promote-and-prune); default `durable` |
+| `SCOPE: workspace` or `global` | Overrides the command scope for this candidate. The approval preview names the target on its `Scope:` line. Under `--force`, a candidate whose scope is outside the command scope is deferred, not written |
+| `APPLIES_TO: <globs>` | Up to 8 relative globs; the memory is injected when a matching file is read or edited |
+| `DIRECTIVE: <line>` | One line of at most 160 characters, shown on the memory's card |
+
+```text
+TYPE: rule | TEXT: Route commands through MediatR. | DIRECTIVE: Route commands through MediatR | APPLIES_TO: src/Api/**
+```
+
+Field names are case-insensitive in the `|` format. In the multi-line format they are recognized only in uppercase, so ordinary prose lines such as `Scope: the billing module` stay content.
+
 For `/engram take-control --force` or natural `/engram take control force`, the slash adapter normalizes the wording, generates only concise `TYPE: ... | TEXT: ...` candidates, and lets Engram save them without a second approval prompt.
+
+<a id="working-memory-promote-and-prune"></a>
+## Working memory: promote and prune
+
+```bash
+engram promote <id>
+engram promote workspace:<id>
+engram working note "<text>" [--objective "<text>"] [--type knowledge|rule] [--scope workspace|global]
+engram working prune --dry-run
+engram working prune
+```
+
+An approved `OBJECTIVE: task` candidate is written to the gitignored `.agents/.engram/working/` (or `<global>/working/`) with `tier: working`, the `--objective` text, and `valid_until` = today + `load.working_ttl_days` (default 14, range 1 to 365). The approval preview shows `Tier: working (expires <date>)`. Working memories load, search, and route like durable ones until they expire; then they drop out of `load` with the omission reason `lifecycle`. Agent cards and bodies are labelled `working`.
+
+- `engram promote <id>` shows an A/B/C preview and, on approval, moves the memory to durable storage: it drops `tier` and `valid_until`, keeps `objective`, and bumps `revision`. Expired working memories cannot be promoted. Use `workspace:<id>` or `global:<id>` when both scopes hold the same id.
+- `engram working prune` deletes working memories whose `valid_until` has passed and rebuilds indexes, hashes, and graphs; `--dry-run` lists them first. Durable memory is never touched.
+- `engram working note "<text>"` saves one task note (`source: note`, default type `knowledge`, `--type rule` allowed) to the working tier. The text is redacted and instruction-like lines are refused. One Y/C prompt gates the write and cancel writes nothing. A note never updates a durable memory with the same id. Session start omits it unless `ENGRAM_SESSION_OBJECTIVE` matches the note's `--objective`; otherwise it shows as a card. Promote it with `engram promote <id>`.
+
+Working memories never reach Git, and their index, graph, and hash entries stay in local sidecars under `working/`.
 
 ## observe
 
@@ -66,7 +107,7 @@ engram observe --file session.md
 engram save-session --file .agents/.engram/inbox/<observation>.md
 ```
 
-The immutable source lives at `.agents/.engram/traces/<trace-id>.jsonl`; the inbox Markdown is only a review wrapper. Promotion reopens the trace and writes approved memory with `evidence_refs` and `derived_from`. `engram observe --propose --file session.md` may immediately enter the normal approval flow, but it still uses the trace as source evidence.
+The immutable source lives at `.agents/.engram/traces/<trace-id>.jsonl`; the inbox Markdown is only a review wrapper. Promotion reopens the trace and writes approved memory with `evidence_refs` and `derived_from`. `engram observe --propose --file session.md` may immediately enter the normal approval flow, but it still uses the trace as source evidence. `engram observe --queue [--dry-run] [--limit n]` drains the opt-in `SessionEnd` transcript queue into the same sanitized traces and inbox wrappers and writes no memory.
 <!-- evidence-foundation:v3:end -->
 
 ## Related-memory hints

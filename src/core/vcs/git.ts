@@ -1,7 +1,7 @@
 /** Small Git integration helpers. Workspace Git is intentionally untouched. */
 import { execFile } from 'node:child_process';
 import path from 'node:path';
-import { CHANGELOG_FILE, GRAPH_FILE, HASH_FILE, HELP_FILE, INDEX_FILE, MEMORY_DIRS, README_FILE } from '../runtime/constants.js';
+import { CHANGELOG_FILE, GRAPH_FILE, HASH_FILE, HELP_FILE, INDEX_FILE, MEMORY_DIRS, README_FILE, WORKING_DIR } from '../runtime/constants.js';
 import { ensureDir, exists } from '../system/fsx.js';
 import type { EngramConfig } from '../runtime/types.js';
 import type { ResolvedAuthor } from '../author/types.js';
@@ -198,7 +198,8 @@ async function commitGlobal(root: string, message: string, context: GitCommitCon
 
 async function gitAddEngramOwned(root: string): Promise<void> {
   const candidates = [
-    ...MEMORY_DIRS,
+    // working/ is gitignored and local-only; naming it to `git add` would fail.
+    ...MEMORY_DIRS.filter((dir) => dir !== WORKING_DIR),
     INDEX_FILE,
     GRAPH_FILE,
     HASH_FILE,

@@ -1,12 +1,12 @@
 ---
 title: profiles / workspaces / config
 sidebar_position: 5
-description: Manage profiles, save targets, load limits, read/proof modes, roles, and runtime config.
+description: 管理资料、保存目标、加载上限、读取/证明模式、角色和运行时配置。
 ---
 
 # profiles / workspaces / config
 
-Manage profiles, save targets, load limits, read/proof modes, roles, and runtime config.
+管理资料、保存目标、加载上限、读取/证明模式、角色和运行时配置。
 
 ## profile
 
@@ -17,7 +17,7 @@ engram profile use company --workspace
 engram profile merge personal company --dry-run
 ```
 
-Profile resolution order is explicit `--profile` or `ENGRAM_PROFILE`, then the workspace `default_profile`, then the active user profile. If workspace `W` is pinned to profile `B` while the user default remains profile `A`, every normal load, MCP load, and agent-hook injection for `W` reads profile `B` global memory and never profile `A`. An explicit profile different from the workspace default uses that profile's global memory and disables workspace memory for that command.
+资料（profile）的解析顺序为：显式的 `--profile` 或 `ENGRAM_PROFILE`，然后是工作区的 `default_profile`，最后是当前的用户资料。如果工作区 `W` 被固定到资料 `B`，而用户默认仍是资料 `A`，则 `W` 的每一次正常加载、MCP 加载和 agent hook 注入都会读取资料 `B` 的全局记忆，绝不会读取资料 `A`。与工作区默认值不同的显式资料会使用该资料的全局记忆，并在该命令中禁用工作区记忆。
 
 ## set-save-target
 
@@ -35,6 +35,17 @@ engram set-load-limit 1..32
 engram set-load-limit status
 engram set-load-limit reset
 ```
+
+<a id="load-configuration"></a>
+## 加载配置
+
+这些键位于 `.agents/.engram/engram.config.json` 的 `load` 块中；`engram config set` 不接受它们。
+
+| 键 | 默认值 | 含义 |
+| --- | --- | --- |
+| `load.disclosure` | `auto` | `auto` 展开排名靠前的命中并将其余显示为卡片；`full` 保持未分层的输出 |
+| `load.expand_top` | `3` | 在 `auto` 披露模式下展开的正文数量 |
+| `load.working_ttl_days` | `14` | 已批准的 `OBJECTIVE: task` 记忆停留在工作层的天数（1 到 365）。也可在 Entry 的 Construct 标签页中编辑 |
 
 ## set-read
 
@@ -58,7 +69,7 @@ engram set-role backend security
 engram set-role
 ```
 
-When `engram set-role ...` or `engram set-rule-variant ...` succeeds, the CLI returns an `Agent action:` line. Engram-aware slash adapters and MCP hosts should immediately rerun `engram load "<current task/request>"`.
+当 `engram set-role ...` 或 `engram set-rule-variant ...` 成功时，CLI 会返回一行 `Agent action:`。支持 Engram 的斜杠适配器和 MCP 宿主应立即重新运行 `engram load "<current task/request>"`。
 
 ## set-rule-variant
 
@@ -73,35 +84,38 @@ engram config view
 engram config set <key> <value>
 ```
 
-### Key settings reference
+### 关键设置参考
 
-| Key | Description | Default | Range / Options |
+| 键 | 说明 | 默认值 | 范围 / 选项 |
 | --- | --- | --- | --- |
-| `memory.rule_line_target` | Recommended line count target for rule memories | `70` | `50` to `200` |
-| `memory.rule_line_hard_limit` | Maximum allowed line count for rule memories | `100` | `50` to `200` |
-| `load.limit` | Max memories returned by normal load | `8` | `1` to `32` |
-| `rule_variants.enabled` | Enable or disable rule variants generation | `false` | `true`, `false` |
-| `rule_variants.active` | Active rule variant mode | `balanced` | `light`, `balanced`, `strict` |
-| `graph.enabled` | Enable or disable graph-aware routing | `true` | `true`, `false` |
-| `graph.max_related` | Max related memories to fetch from graph edges | `4` | `1` to `20` |
-| `graph.min_related_score` | Min similarity score to add graph edges | `0.22` | `0.0` to `1.0` |
-| `vector.enabled` | Enable or disable vector search fallback | `true` | `true`, `false` |
-| `live_sync.enabled` | Sync generated agent context files on save | `false` | `true`, `false` |
-| `global_git.enabled` | Enable global Git repo sync automation | `true` | `true`, `false` |
-| `global_git.remote` | Git remote name for global sync | `origin` | String |
-| `global_git.branch` | Git branch name for global sync | `main` | String |
+| `memory.rule_line_target` | 规则记忆的推荐行数目标 | `70` | `50` 到 `200` |
+| `memory.rule_line_hard_limit` | 规则记忆允许的最大行数 | `100` | `50` 到 `200` |
+| `memory.include_author_email` | 将 `author_email` 写入新记忆的 frontmatter（`author_name` 始终会写入） | `false` | `true`, `false` |
+| `mcp.resource_limit` | 除 `engram://index` 之外，记忆 MCP `resources/list` 按注入与获取使用量排序所返回的条数（仅限 JSON 配置；不能通过 `engram config set` 设置） | `20` | `0` 到 `200` |
+| `load.limit` | 正常加载返回的最大记忆数 | `8` | `1` 到 `32` |
+| `hooks.path_rules` | `native` 会为带有 `applies_to` 的记忆写入 Claude 和 Cursor 规则文件，并注册 Claude 的 `InstructionsLoaded`；`hook` 则保留 Claude 的 `PreToolUse` hook | `native` | `native`, `hook` |
+| `rule_variants.enabled` | 启用或禁用规则变体生成 | `false` | `true`, `false` |
+| `rule_variants.active` | 当前的规则变体模式 | `balanced` | `light`, `balanced`, `strict` |
+| `graph.enabled` | 启用或禁用图感知路由 | `true` | `true`, `false` |
+| `graph.max_related` | 从图的边获取的相关记忆最大数量 | `4` | `1` 到 `20` |
+| `graph.min_related_score` | 添加图的边所需的最小相似度分数 | `0.22` | `0.0` 到 `1.0` |
+| `vector.enabled` | 实验性的哈希向量搜索回退（不是语义嵌入） | `false` | `true`, `false` |
+| `live_sync.enabled` | 保存时同步生成的 agent 上下文文件 | `false` | `true`, `false` |
+| `global_git.enabled` | 启用全局 Git 仓库同步自动化 | `true` | `true`, `false` |
+| `global_git.remote` | 用于全局同步的 Git 远程名称 | `origin` | 字符串 |
+| `global_git.branch` | 用于全局同步的 Git 分支名称 | `main` | 字符串 |
 
-These settings are also manageable visually under the **Construct** tab in `engram entry`.
+这些设置也可以在 `engram entry` 的 **Construct** 标签页中以可视化方式管理。
 
-## Next steps
+## 后续步骤
 
 - [verify / repair / quality-check](verify-repair-quality.md)
-- [Entry Web UI: Construct tab](../entry/construct.md)
+- [Entry Web UI：Construct 标签页](../entry/construct.md)
 
 
-## Git author identity
+## Git 作者身份
 
-Engram can store a global author and an optional workspace override. Resolution is workspace, global, then read-only Git fallback. Settings affect future memories only; a workspace override never changes global Git configuration. Use explicit plan and confirmation for global Git sync or legacy-memory migration.
+Engram 可以存储一个全局作者以及可选的工作区覆盖。解析顺序依次为工作区、全局，然后是只读的 Git 回退。设置仅影响未来的记忆；工作区覆盖绝不会更改全局 Git 配置。全局 Git 同步或旧版记忆迁移需要显式的计划与确认。
 
 ```bash
 engram author show
@@ -113,4 +127,4 @@ engram author migrate-memories --plan
 engram author migrate-memories --confirm
 ```
 
-Read the complete [Git author settings guide](../operations/git-author-settings.md).
+请阅读完整的 [Git 作者设置指南](../operations/git-author-settings.md)。

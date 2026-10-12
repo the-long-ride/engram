@@ -17,7 +17,8 @@ Core operating model
 - Write commands require human-visible approval unless the human explicitly
   requested a force path for that command.
 - Markdown memory files are the source of truth. Indexes, graphs, and optional
-  vector sidecars are acceleration layers.
+  vector sidecars are acceleration layers (the hashed vector sidecar is
+  experimental and off by default for new configs).
 - For runtime-capable hosts, Engram installs small bootstrap instructions
   instead of the full protocol; MCP tools and Agent Skills carry the detail.
   Fallback targets get compact manual instructions.
@@ -26,7 +27,11 @@ Core operating model
 
 What AI agents should do first
 
-At the start of a task, run:
+If Engram hooks are installed (`engram link <host>`), context is injected
+automatically at session start, on later prompts, in subagents, and when files
+that match a memory's `applies_to` globs are touched; do not run `engram load`
+just to start a session. Without hooks, at the start of a task
+run:
 
 engram load "<current task>"
 
@@ -59,6 +64,9 @@ Read path
 Primary read commands:
 
 - `engram load "<task>"`: route relevant memory for the current task and render compact AI-agent output
+- `engram load --id <id,...>`: fetch the full body of memories shown as one-line cards
+- `engram load --budget-tokens <n> "<task>"`: hard-cap the complete compact output (200-16000)
+- `engram load --disclosure full "<task>"`: print every packed body instead of the tiered pack
 - `engram load --dry-run "<task>"`: preview routed files, candidate counts, and
   narrowing tags without printing memory contents
 - `engram load --all "<task>"`: bypass the compact load cap only when broad
@@ -71,17 +79,32 @@ Primary read commands:
 - `engram repair`: report malformed memory files
 - `engram entry`: show active roots, profile, and runtime configuration
 - `engram stats`, `engram health`, `engram quality-check`: inspect memory health
+- `engram stats --usage`: show which memories agents fetch and which are injected but never fetched
+- `engram verify --sources`: re-hash the source files of take-control memories and record stale ones
 
 How routing works
 
-Default `engram load` keeps only `id`, `type`, `tags`, and `confidence` in frontmatter. For rules, it renders one selected variant and labels the section as `## Rule variants (1/3 based on current: <active>)`.
+Default `engram load` is tiered. The top `load.expand_top` hits (default 3) are
+printed as bodies under `### <id> [<type>, <authority>]` (plus `requires: <ids>`
+when the memory has `depends_on`). Every other selected hit, plus up to 5
+omitted candidates, is one card line, `- <id> [<type>] <directive-or-summary>`
+(` (stale)` is appended when its sources changed), under `related:`. The output
+ends with `fetch: engram load --id <ids>`; run it only for cards you need.
+Frontmatter, `## Context`, `## Example`, and `## Origin` are not rendered for
+agents. For rules, one selected variant is rendered.
+`load.disclosure: full`, `--disclosure full`, `--full`, and `--all` skip tiering.
 
 `engram load` does not blindly load all memory. It:
 
 1. Anchors on meaningful query terms.
-2. Filters broad matches with lexical, tag, recency, graph, and optional vector
-   signals.
-3. Refines results to a compact context pack.
+2. Ranks candidates with BM25 over id, tags, `directive`, summary, triggers, and
+   content terms (light stemming), then scales by lifecycle (`review_due`),
+   staleness, confidence, and scope, with a small boost for memories agents
+   fetch. Expired `valid_until` memories are left out (reason `lifecycle`).
+   A query with 4 or more anchors needs 2 anchor hits or one hit on a strong
+   field (id, tag, directive, `applies_to` path). Vector hits alone never admit a
+   memory.
+3. Refines results to a compact context pack within the token budget.
 4. Reports selected memory count and total related matches.
 
 If memory files declare `depends_on: [...]`, routed prerequisites are kept before
@@ -103,7 +126,7 @@ Hook-capable hosts can use:
 Meaning:
 
 - `startup`: inject only at session start
-- `auto`: inject at session start and again only when routed context changes
+- `auto`: inject at session start and later turns, delivering only memory bodies not yet delivered in this session (`already loaded: <ids>` marks the rest)
 - `always`: inject on every eligible prompt
 - `manual`: disable automatic hook reads but keep manual `engram load`
 - `off`: suppress automatic read surfaces
@@ -122,6 +145,29 @@ Transcript capture is disabled by default. An explicit `.agents/engram.transcrip
 with `enabled: true` may allow supported hooks to create sanitized, non-indexed
 inbox observations; transcript events never become active memories automatically.
 
+Hook events per host:
+
+- Codex: `SessionStart`, `UserPromptSubmit`, `PreToolUse` (`apply_patch` edits),
+  `PreCompact`, `SubagentStart`.
+- Claude: `SessionStart`, `UserPromptSubmit`, `InstructionsLoaded`, `PreCompact`,
+  `SubagentStart`. With `hooks.path_rules hook`, `PreToolUse`
+  (`Read|Edit|Write|MultiEdit`) replaces `InstructionsLoaded`.
+- Gemini: `SessionStart`, `BeforeAgent`, `AfterTool` (`read_file|write_file|replace`),
+  `PreCompress`.
+
+Memories with `applies_to` globs reach Claude and Cursor as generated native rule
+files (`.claude/rules/engram/<id>.md`, `.cursor/rules/engram/<id>.mdc`; working-tier
+memories are never written there). The Claude `InstructionsLoaded` hook only records
+that a rule file loaded, so the body is not injected twice. Where a hook injects a
+path match (Codex `PreToolUse`, Gemini `AfterTool`, Claude in hook mode) it adds up
+to 3 undelivered memories and never blocks the tool. `SubagentStart` (Claude, Codex)
+injects the routed context into each subagent with its own delivered set.
+`SessionStart` and `PreCompact` (Gemini: `PreCompress`) reset the delivered set.
+Hook output stays under host caps: 2,400 tokens on Codex, 9,500 characters on
+Claude, `load.max_tokens` elsewhere; over the cap, bodies become cards.
+`engram upgrade --latest` (or re-running `engram link <host>`) adds the new events
+to an older install.
+
 Proof visibility is separate:
 
 - `engram set-proof off`
@@ -133,7 +179,7 @@ loaded, reused, or skipped.
 
 Write path and approval
 
-Never write memory silently.
+Never write durable memory silently; working-tier notes are gitignored, expire, and are redacted.
 
 Write and proposal commands:
 
@@ -146,10 +192,12 @@ Write and proposal commands:
 - `engram observe "note"`
 - `engram take-control --plan`
 - `engram take-control --all`
+- `engram take-control --from claude-auto-memory|codex-memories --plan`
 - `engram metacognize --workspace|--global|--all`
 - `engram clone-memory ... --metacognize`
 - `engram archive --reason "<why>" <id-or-file>`
 - `engram resolve-conflicts --metacognize`
+- `engram working note "<text>"` (one yes/cancel approval; working tier only)
 
 How to choose memory type
 
@@ -163,6 +211,15 @@ Save behavior
 `engram save` proposes one memory. Engram may automatically choose update-vs-new
 before showing the approval preview.
 
+Every candidate preview carries one `Verdict:` line: `ADD`, `UPDATE <id>`,
+`SUPERSEDE <id>`, or `NOOP duplicate of <id>`. The verdict is deterministic (no
+model call). Show it with the candidate. Approving a `SUPERSEDE` marks the old
+memory superseded; `--force` and autosave never apply a `SUPERSEDE`, they defer it.
+Rule memories store the balanced text; light and strict wording is derived when
+the rule is rendered unless a candidate supplies custom `LIGHT:`/`STRICT:` text.
+New memories store `author_name` only (not the email) unless
+`memory.include_author_email` is true.
+
 `engram save-session` is for long sessions that produced multiple durable
 memories.
 
@@ -170,7 +227,24 @@ memories.
 active memory unless routed through proposal flows later.
 
 `engram take-control` converts existing guidance, notes, and docs into Engram
-memory candidates.
+memory candidates. `--kind code|config|all` (default `docs`) also digests code
+(a per-directory repo map of symbol names and imports, never bodies), config keys
+and allowlisted values, and build manifests; `--objective "<text>"` names the
+current objective; `--plan --json` previews sources; `--budget-tokens`,
+`--max-sources`, and `--max-chars` bound the scan; `--refresh` re-proposes
+`UPDATE: <id>` candidates only for memories that `engram verify --sources`
+marked stale. `--from claude-auto-memory|codex-memories` reads a host memory
+store (`~/.claude/projects/<project>/memory/` or `~/.codex/memories/`) read-only
+and proposes candidates through the same approval gate; Engram never writes into
+the host store.
+
+`engram promote <id>` moves a working memory (see `OBJECTIVE: task` below) to
+durable memory after A/B/C approval. `engram working prune [--dry-run]` deletes
+expired working memories. `engram working note "<text>" [--objective <text>]
+[--type knowledge|rule] [--scope workspace|global]` saves a redacted task note
+(`source: note`) to the working tier after one yes/cancel approval; it writes
+nothing on cancel and never updates a durable memory. SessionStart omits a note
+unless `ENGRAM_SESSION_OBJECTIVE` matches its objective (otherwise it is a card).
 
 `engram metacognize` restructures existing Engram memory through proposal-first
 candidate generation.
@@ -190,6 +264,16 @@ Optional fields:
 - `DEPENDS_ON: memory-id` links deeper memory to a prerequisite
 - `LEVEL: advanced` marks a deeper memory layer
 - `UPDATE: memory-id` asks Engram to update an existing memory
+- `OBJECTIVE: task|durable` (default durable): `task` saves to the gitignored
+  working tier with `valid_until` = today + `load.working_ttl_days` (default 14)
+- `SCOPE: workspace|global`: overrides the command scope; under `--force` an
+  out-of-scope target is deferred, not written
+- `APPLIES_TO: <globs>`: up to 8 relative globs that trigger the memory when a
+  matching file is read or edited
+- `DIRECTIVE: <line>`: one line of at most 160 characters shown on cards
+
+In the multi-line grammar these four field names are recognized only in
+uppercase.
 
 Examples:
 
@@ -257,7 +341,7 @@ flowchart TD
     Rebuild --> Hashes["hashes"]
     Rebuild --> Index["index"]
     Rebuild --> Graph["dependency graph"]
-    Rebuild --> Vec["optional sqlite-vec"]
+    Rebuild --> Vec["optional sqlite-vec (experimental, off by default)"]
     Query --> Config["optional SQLite config DB"]
 ```
 
@@ -335,6 +419,34 @@ injects startup context via `additional_context`. For Windsurf/Cascade,
 workspace MCP is skipped (global-only); the `pre_user_prompt` hook can
 audit/preload/block but does not inject model context.
 
+MCP config is written where each host reads it: `.mcp.json` for Claude Code,
+`mcpServers` in `.gemini/settings.json` / `~/.gemini/settings.json` for Gemini,
+a managed block in `~/.codex/config.toml` for Codex. Claude Code reads user-scope
+servers from its own store, so global Claude linking prints
+`claude mcp add --scope user engram -- engram-mcp` instead of writing a file.
+MCP `engram_save` and `engram_save_session` return an `approval_token`; after the
+human approves the exact candidates in chat, call `engram_commit` with that
+token (single use, 30 minutes) and `approve: "all"` or candidate numbers.
+
+Claude Code's workspace bootstrap is AGENTS.md-first: `engram link claude` writes
+the managed block to `AGENTS.md` and adds a block to `CLAUDE.md` (or
+`.claude/CLAUDE.md`) only when that file already exists. `engram doctor` checks
+the AGENTS.md chain size against Codex's 32 KiB limit and validates generated
+`SKILL.md` files against the Agent Skills spec.
+
+The MCP server speaks MCP 2026-07-28 and the legacy handshake from one process
+and returns short `instructions`. Memories are MCP resources (`engram://index`,
+`engram://memory/{id}`) and one prompt, `propose`, returns the proposal protocol.
+`engram_commit` carries `_meta["anthropic/requiresUserInteraction"]`, so keep the
+host's per-call approval on. When the client supports elicitation,
+`engram_save` and `engram_save_session` ask the human in the host's own dialog:
+`accept` writes the selected candidates, `decline` revokes the proposal, and
+`cancel` falls back to the `approval_token` flow. Never write after `decline`.
+`engram_note` (`text`, optional `objective`, `type`, `scope`) saves a redacted
+working-tier task note after the same single yes/cancel approval and returns
+`{id, file, valid_until}`; cancel writes nothing. `engram promote` is the only
+way a note becomes durable.
+
 For OpenCode, `engram link --global opencode` also installs a managed local
 JavaScript plugin at `~/.config/opencode/plugins/engram.js` (or the
 platform/config override equivalent). The plugin uses `chat.message` to route
@@ -343,7 +455,7 @@ experimental API) to inject routed memory before each LLM request. OpenCode
 must be restarted or reloaded after `link`/`unlink` because local plugin files
 are loaded at startup. The plugin fails open and keeps raw routed memory only
 in the running OpenCode process; Engram's disk hook cache remains hashes,
-session IDs, host, cwd, and routed signatures only. `engram unlink --global
+session IDs, host, cwd, and delivered memory keys only. `engram unlink --global
 opencode` removes only the Engram-generated plugin; a human-authored
 `engram.js` is preserved unless `--force` is explicit.
 
@@ -441,7 +553,7 @@ Agent checklist
 1. Load Engram memory at task start.
 2. Keep read responses compact unless the human asked for raw detail.
 3. Reload when the task changes materially or after `Agent action:` commands.
-4. Never write memory silently.
+4. Never write durable memory silently; working-tier notes are gitignored, expire, and are redacted.
 5. Use force mode only when the human explicitly included it.
 6. Never invent inaccessible recent chat history.
 7. Use `DEPENDS_ON`, `LEVEL`, `UPDATE`, and optional `CONTEXT` when restructuring

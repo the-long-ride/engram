@@ -1,18 +1,16 @@
 ---
 title: Traces de preuve et provenance
 sidebar_position: 7
-description: How Engram preserves immutable evidence, links approved memory to its source, and exposes the same metadata in CLI and Web UI.
+description: Comment Engram préserve des preuves immuables, relie la mémoire approuvée à sa source et expose les mêmes métadonnées dans la CLI et l’interface web.
 ---
 
-# Traces de preuve et provenance
+# Traces de preuve et provenance {#evidence-traces-and-provenance}
 
-Engram sépare les preuves de la mémoire approuvée ; la trace conserve une source nettoyée et immuable.
+Engram sépare les preuves de la mémoire approuvée. Une trace préserve l’enregistrement de source assaini ; une mémoire reste une instruction ou une référence approuvée par un humain qui cite cette preuve.
 
-Engram separates evidence from approved memory. A trace preserves the sanitized source record; a memory remains a human-approved instruction or reference that cites that evidence.
+## Contrat de la mémoire approuvée {#approved-memory-contract}
 
-## Approved memory contract
-
-New approved memories use schema v3. Legacy v1 and v2 files remain readable and are never silently rewritten.
+Les nouvelles mémoires approuvées utilisent le schema v3. Les anciens fichiers v1 et v2 restent lisibles et ne sont jamais réécrits silencieusement.
 
 ```yaml
 schema_version: 3
@@ -27,11 +25,11 @@ valid_until: YYYY-MM-DD | null
 last_confirmed: YYYY-MM-DD
 ```
 
-The contract fields are `schema_version`, `authority`, `evidence_refs`, `derived_from`, `revision`, `supersedes`, `superseded_by`, `valid_from`, `valid_until`, and `last_confirmed`.
+Les champs du contrat sont `schema_version`, `authority`, `evidence_refs`, `derived_from`, `revision`, `supersedes`, `superseded_by`, `valid_from`, `valid_until` et `last_confirmed`.
 
-## Immutable trace contract
+## Contrat de la trace immuable {#immutable-trace-contract}
 
-Each `traces/<trace-id>.jsonl` file contains exactly one canonical record and is created exclusively, so an existing trace ID cannot be overwritten. The fields `trace_id`, `session_id`, `source_hash`, `trust_level`, `sensitivity`, and `retention` preserve identity, origin, integrity, trust, privacy, and lifecycle. `authority: evidence` is data only and never acts as an instruction.
+Chaque fichier `traces/<trace-id>.jsonl` contient exactement un enregistrement canonique et est créé de façon exclusive ; un identifiant de trace existant ne peut donc pas être écrasé. Les champs `trace_id`, `session_id`, `source_hash`, `trust_level`, `sensitivity` et `retention` préservent l’identité, l’origine, l’intégrité, la confiance, la confidentialité et le cycle de vie. `authority: evidence` est une simple donnée et n’agit jamais comme une instruction.
 
 ```json
 {
@@ -45,14 +43,14 @@ Each `traces/<trace-id>.jsonl` file contains exactly one canonical record and is
 }
 ```
 
-## CLI and Web UI stay synchronized
+## La CLI et l’interface web (Web UI) restent synchronisées {#cli-and-web-ui-stay-synchronized}
 
-`engram observe` and transcript hooks sanitize before persistence. The CLI prints the created trace ID, and `save-session` carries `evidence_refs` and `derived_from` into approved memory. Entry Web UI reads the same index and shows authority, evidence IDs, session origin, revision, validity, and supersession links in the memory detail panel.
+`engram observe` et les hooks de transcription assainissent avant la persistance. La CLI affiche l’identifiant de trace créé, et `save-session` reporte `evidence_refs` et `derived_from` dans la mémoire approuvée. L’interface web Entry (Web UI) lit le même index et affiche l’autorité, les identifiants de preuve, l’origine de session, la révision, la validité et les liens de remplacement dans le panneau de détail de la mémoire.
 
-## Safety and migration
+## Sûreté et migration {#safety-and-migration}
 
-Default human capture uses `trust_level: human`, `sensitivity: private`, and `retention: 30d` unless configured. Expired or missing evidence blocks new approved writes. Existing observation wrappers remain review conveniences that point to traces, and initialization migrates eligible legacy wrappers once.
+La capture humaine par défaut utilise `trust_level: human`, `sensitivity: private` et `retention: 30d`, sauf configuration contraire. Une preuve expirée ou manquante bloque les nouvelles écritures approuvées. Les enveloppes d’observation existantes restent des commodités de relecture qui pointent vers des traces, et l’initialisation migre une seule fois les anciennes enveloppes éligibles.
 
-## Promotion integrity and scope
+## Intégrité et portée de la promotion {#promotion-integrity-and-scope}
 
-The inbox wrapper is editable review material, not the evidence source. During `save-session --file`, Engram reopens the immutable trace, verifies the wrapper hash when present, and uses the trace text, session, and source metadata. Editing `## Raw Note` cannot change promoted content. A trace-backed save is bound to the trace's workspace or global scope; a conflicting explicit `--scope` is rejected. Legacy trace and session identifiers are namespaced by scope to avoid provenance collisions.
+L’enveloppe de la boîte de réception est un matériau de relecture modifiable, pas la source de preuve. Pendant `save-session --file`, Engram rouvre la trace immuable, vérifie le hachage de l’enveloppe lorsqu’il est présent et utilise le texte, la session et les métadonnées de source de la trace. Modifier `## Raw Note` ne peut pas changer le contenu promu. Un enregistrement fondé sur une trace est lié à la portée workspace ou globale de la trace ; un `--scope` explicite en conflit est rejeté. Les anciens identifiants de trace et de session sont placés dans un espace de noms par portée pour éviter les collisions de provenance.

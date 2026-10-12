@@ -36,6 +36,17 @@ engram set-load-limit status
 engram set-load-limit reset
 ```
 
+<a id="load-configuration"></a>
+## Load configuration
+
+These keys live in the `load` block of `.agents/.engram/engram.config.json`; `engram config set` does not accept them.
+
+| Key | Default | Meaning |
+| --- | --- | --- |
+| `load.disclosure` | `auto` | `auto` expands the top hits and cards the rest; `full` keeps the untiered output |
+| `load.expand_top` | `3` | Bodies expanded under `auto` disclosure |
+| `load.working_ttl_days` | `14` | Days an approved `OBJECTIVE: task` memory stays in the working tier (1 to 365). Also editable in the Entry Construct tab |
+
 ## set-read
 
 ```bash
@@ -79,13 +90,16 @@ engram config set <key> <value>
 | --- | --- | --- | --- |
 | `memory.rule_line_target` | Recommended line count target for rule memories | `70` | `50` to `200` |
 | `memory.rule_line_hard_limit` | Maximum allowed line count for rule memories | `100` | `50` to `200` |
+| `memory.include_author_email` | Write `author_email` into new memory frontmatter (`author_name` is always written) | `false` | `true`, `false` |
+| `mcp.resource_limit` | Memories MCP `resources/list` returns besides `engram://index`, ranked by injected + fetched usage (JSON config only; not set by `engram config set`) | `20` | `0` to `200` |
 | `load.limit` | Max memories returned by normal load | `8` | `1` to `32` |
+| `hooks.path_rules` | `native` writes Claude and Cursor rule files for `applies_to` memories and registers Claude `InstructionsLoaded`; `hook` keeps the Claude `PreToolUse` hook | `native` | `native`, `hook` |
 | `rule_variants.enabled` | Enable or disable rule variants generation | `false` | `true`, `false` |
 | `rule_variants.active` | Active rule variant mode | `balanced` | `light`, `balanced`, `strict` |
 | `graph.enabled` | Enable or disable graph-aware routing | `true` | `true`, `false` |
 | `graph.max_related` | Max related memories to fetch from graph edges | `4` | `1` to `20` |
 | `graph.min_related_score` | Min similarity score to add graph edges | `0.22` | `0.0` to `1.0` |
-| `vector.enabled` | Enable or disable vector search fallback | `true` | `true`, `false` |
+| `vector.enabled` | Experimental hashed-vector search fallback (not semantic embeddings) | `false` | `true`, `false` |
 | `live_sync.enabled` | Sync generated agent context files on save | `false` | `true`, `false` |
 | `global_git.enabled` | Enable global Git repo sync automation | `true` | `true`, `false` |
 | `global_git.remote` | Git remote name for global sync | `origin` | String |

@@ -1,70 +1,70 @@
 ---
-title: Auto-save Policy
+title: Политика автосохранения
 sidebar_position: 5
-description: Configure deny-by-default autonomous writes, quotas, rollback retention, review gates, and required metadata.
+description: Настройте запрет по умолчанию для автономной записи, квоты, удержание отката, шлюзы проверки и обязательные метаданные.
 ---
 
-# Auto-save Policy
+# Политика автосохранения
 
-The Construct tab edits `.agents/engram.policy.json`. Normal `engram save` and `engram save-session` flows remain human-approved; this policy applies only to explicitly policy-gated autonomous candidates.
+Вкладка Construct редактирует файл `.agents/engram.policy.json`. Обычные процессы `engram save` и `engram save-session` по-прежнему требуют одобрения человека; эта политика применяется только к автономным кандидатам, явно ограниченным политикой.
 
-## Autonomous writes
+## Автономная запись
 
-### Allow auto-save {#autonomous-writes-enabled}
+### Разрешить автосохранение {#autonomous-writes-enabled}
 
-Maps to `autonomous_writes.enabled`. Default: `false`. When disabled, no candidate may write autonomously.
+Сопоставляется с `autonomous_writes.enabled`. По умолчанию: `false`. Когда отключено, ни один кандидат не может производить запись автономно.
 
-### Write mode {#autonomous-writes-mode}
+### Режим записи {#autonomous-writes-mode}
 
-Maps to `autonomous_writes.mode`. `review_only` defers candidates for review; `autonomous` permits candidates that pass every remaining gate.
+Сопоставляется с `autonomous_writes.mode`. `review_only` откладывает кандидатов на проверку; `autonomous` разрешает кандидатов, прошедших все остальные шлюзы.
 
-### Allowed types {#autonomous-writes-allowed-types}
+### Разрешенные типы {#autonomous-writes-allowed-types}
 
-Maps to `autonomous_writes.allowed_types`. Allowed values are `rule`, `skill`, `workflow`, and `knowledge`. At least one type is required.
+Сопоставляется с `autonomous_writes.allowed_types`. Допустимые значения: `rule`, `skill`, `workflow` и `knowledge`. Требуется как минимум один тип.
 
-### Allowed scopes {#autonomous-writes-allowed-scopes}
+### Разрешенные области {#autonomous-writes-allowed-scopes}
 
-Maps to `autonomous_writes.allowed_scopes`. Allowed values are `workspace` and `global`.
+Сопоставляется с `autonomous_writes.allowed_scopes`. Допустимые значения: `workspace` и `global`.
 
-### Allowed sources {#autonomous-writes-allowed-sources}
+### Разрешенные источники {#autonomous-writes-allowed-sources}
 
-Maps to `autonomous_writes.allowed_sources`. Entry offers `autosave`, `agent-hook`, `cli`, and `mcp`; custom non-empty source strings remain valid in policy JSON.
+Сопоставляется с `autonomous_writes.allowed_sources`. Entry предлагает `autosave`, `agent-hook`, `cli` и `mcp`; пользовательские непустые строки источников остаются действительными в JSON политики.
 
-### Confidence threshold {#autonomous-writes-confidence-threshold}
+### Порог достоверности {#autonomous-writes-confidence-threshold}
 
-Maps to `autonomous_writes.confidence_threshold`. Allowed values are `low`, `medium`, and `high`.
+Сопоставляется с `autonomous_writes.confidence_threshold`. Допустимые значения: `low`, `medium` и `high`.
 
-### Daily write limit {#autonomous-writes-daily-limit}
+### Дневной лимит записей {#autonomous-writes-daily-limit}
 
-Maps to `autonomous_writes.daily_limit`. Use a non-negative integer. `0` prevents autonomous writes.
+Сопоставляется с `autonomous_writes.daily_limit`. Используйте неотрицательное целое число. `0` предотвращает автономную запись.
 
-### Rollback retention days {#autonomous-writes-rollback-retention-days}
+### Дни хранения отката {#autonomous-writes-rollback-retention-days}
 
-Maps to `autonomous_writes.rollback_retention_days`. Use a non-negative integer that matches the period in which policy audit records should remain rollback-eligible.
+Сопоставляется с `autonomous_writes.rollback_retention_days`. Используйте неотрицательное целое число, соответствующее периоду, в течение которого записи аудита политики остаются доступными для отката.
 
-## Review gates
+## Шлюзы проверки
 
-### Review rule line limit {#review-max-rule-lines}
+### Лимит строк правил при проверке {#review-max-rule-lines}
 
-Maps to `review.max_rule_lines`. Rule candidates above this positive integer fail review.
+Сопоставляется с `review.max_rule_lines`. Кандидаты правил, превышающие это положительное целое число, не проходят проверку.
 
-### Minimum recall benchmark {#review-benchmark-min-recall-at-k}
+### Минимальный эталон recall {#review-benchmark-min-recall-at-k}
 
-Maps to `review.benchmark_min_recall_at_k`. Use a number from `0` through `1`.
+Сопоставляется с `review.benchmark_min_recall_at_k`. Используйте число от `0` до `1`.
 
-### Require context metadata {#review-mandatory-metadata-context}
+### Требовать метаданные context {#review-mandatory-metadata-context}
 
-Maps to `review.mandatory_metadata.context`. When enabled, candidates without `context` metadata fail review.
+Сопоставляется с `review.mandatory_metadata.context`. При включении кандидаты без метаданных `context` не проходят проверку.
 
-### Require triggers metadata {#review-mandatory-metadata-triggers}
+### Требовать метаданные triggers {#review-mandatory-metadata-triggers}
 
-Maps to `review.mandatory_metadata.triggers`. When enabled, candidates without `triggers` metadata fail review.
+Сопоставляется с `review.mandatory_metadata.triggers`. При включении кандидаты без метаданных `triggers` не проходят проверку.
 
-### Require role metadata {#review-mandatory-metadata-role}
+### Требовать метаданные role {#review-mandatory-metadata-role}
 
-Maps to `review.mandatory_metadata.role`. When enabled, candidates without `role` metadata fail review.
+Сопоставляется с `review.mandatory_metadata.role`. При включении кандидаты без метаданных `role` не проходят проверку.
 
-## CLI workflow
+## Рабочий процесс CLI
 
 ```bash
 engram policy init
@@ -74,10 +74,10 @@ engram policy audit --json
 engram policy rollback <audit-id>
 ```
 
-Use dry-run before enabling autonomous mode. Audit receipts contain identifiers rather than memory bodies, and rollback archives the policy-written memory.
+Используйте dry-run перед включением автономного режима. Квитанции аудита содержат идентификаторы, а не тела воспоминаний, а откат архивирует воспоминание, записанное в рамках политики.
 
-## Related pages
+## Связанные страницы
 
-- [Construct tab](construct.md)
-- [Write path and approval](../concepts/write-path.md)
-- [Privacy, ignore rules, and safety](../concepts/safety.md)
+- [Вкладка Construct](construct.md)
+- [Путь записи и одобрение](../concepts/write-path.md)
+- [Конфиденциальность, правила игнорирования и безопасность](../concepts/safety.md)

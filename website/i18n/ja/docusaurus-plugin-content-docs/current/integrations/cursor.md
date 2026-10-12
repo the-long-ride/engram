@@ -1,45 +1,50 @@
 ---
 title: Cursor
 sidebar_position: 5
-description: Engram integration with Cursor via rules, MCP, local plugin, slash commands, and session-start hooks.
+description: ルール、MCP、ローカル プラグイン、スラッシュ コマンド、およびセッション開始フックによる Engram と Cursor の統合。
 ---
 
 # Cursor
 
-Cursor reads project rules from `.cursor/rules/*.mdc` files. Engram writes `.cursor/rules/engram.mdc` with valid frontmatter (`alwaysApply: true`) and a bootstrap instruction block.
+Cursor は `.cursor/rules/*.mdc` ファイルからプロジェクト ルールを読み取ります。Engram は有効なフロントマター（`alwaysApply: true`）とブートストラップ指示ブロックを含む `.cursor/rules/engram.mdc` を書き込みます。
 
-## Install
+## インストール {#install}
 
 ```bash
 engram link cursor
 ```
 
-## Files written
+## 書き込まれるファイル {#files-written}
 
-| File | Purpose |
+| ファイル | 目的 |
 | --- | --- |
-| `.cursor/rules/engram.mdc` | Project rules with `alwaysApply: true` |
-| `.cursor/mcp.json` | MCP registration (`type: "stdio"`) |
-| `.cursor/hooks.json` | `sessionStart` hook |
-| `.cursor/commands/engram.md` | `/engram` slash adapter |
+| `.cursor/rules/engram.mdc` | `alwaysApply: true` のプロジェクト ルール |
+| `.cursor/mcp.json` | MCP 登録（`type: "stdio"`） |
+| `.cursor/rules/engram/<id>.mdc` | `applies_to` を持つワークスペース メモリごとに 1 つ生成されたルール（`alwaysApply: false`、カンマ区切りの glob）。作業層メモリは書き込まれません |
+| `.cursor/hooks.json` | `sessionStart` フック |
+| `.cursor/commands/engram.md` | `/engram` スラッシュ アダプター |
 
-## Global install
+## グローバル インストール {#global-install}
 
 ```bash
 engram link --global cursor
 ```
 
-Engram creates a local plugin at `~/.cursor/plugins/local/engram/` containing the plugin manifest, rules, skills, commands, MCP config, and hooks.
+Engram はプラグイン マニフェスト、ルール、スキル、コマンド、MCP 設定、およびフックを含むローカル プラグインを `~/.cursor/plugins/local/engram/` に作成します。
 
-## Runtime-first target
+## ランタイム優先ターゲット {#runtime-first-target}
 
-Cursor is a runtime-first target. Project rules contain short bootstrap instructions that rely on MCP tools and hooks for detailed protocol; the Agent Skill file carries the full write/approval workflow.
+Cursor はランタイム優先ターゲットです。プロジェクト ルールには、詳細なプロトコルを MCP ツールとフックに依存する短いブートストラップ指示が含まれています。付属のガイドには完全な書き込み/承認ワークフローが記載されており、Agent Skill ファイルはその短いポインターとなります。
 
-## Hook behavior
+## フックの動作 {#hook-behavior}
 
-The `sessionStart` hook injects Engram startup context through the `additional_context` output field. `beforeSubmitPrompt` is allow/block-only and is not used for context injection.
+`sessionStart` フックは `additional_context` 出力フィールドを介して Engram の起動コンテキストを注入します。`beforeSubmitPrompt` は許可/ブロックのみを扱い、コンテキスト注入には使用されません。
 
-## Next steps
+## エクスポート形式 {#export-format}
 
-- [Agent Integrations overview](overview.md)
-- [Hooks and proof lines](hooks.md)
+`engram export --format cursor-rules` は `description` と `alwaysApply: false` フロントマターを含む `.cursor/rules/engram.mdc` を書き込みます。これは 1 つのリリース期間中に受け入れられるエイリアスとして維持され stderr に非推奨通知を出力する `cursorrules` を置き換えます。`live_sync.targets` は新しい名前を使用します。
+
+## 次のステップ {#next-steps}
+
+- [エージェント統合の概要](overview.md)
+- [フックと証明行](hooks.md)

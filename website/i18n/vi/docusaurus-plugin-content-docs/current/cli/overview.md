@@ -1,46 +1,57 @@
 ---
-title: Command overview
+title: Tổng quan lệnh
 sidebar_position: 1
-description: Map of every Engram CLI command and what it does.
+description: Bản đồ mọi lệnh CLI của Engram và chức năng của từng lệnh.
 ---
 
-# Command overview
+# Tổng quan lệnh
 
-Run `engram -h` for the compact command surface. Run `engram help <topic>` or `engram -h <topic>` for command-specific examples and use cases.
+Chạy `engram -h` để xem bề mặt lệnh dạng gọn. Chạy `engram help <topic>` hoặc `engram -h <topic>` để xem ví dụ và các trường hợp sử dụng riêng của từng lệnh.
 
-## Command map
+## Bản đồ lệnh {#command-map}
 
-| Need | Command |
+| Nhu cầu | Lệnh |
 | --- | --- |
-| Load task memory | `engram load "<task>"` |
-| Load compact task memory | `engram load "<task>"` |
-| Print AI-agent usage guide | `engram llm` |
-| Preview routed memory files | `engram load --dry-run "<task>"` |
-| Search memory | `engram search "<topic>"` |
-| Save one memory | `engram save [rule\|workflow\|knowledge] "<text>"` |
-| Save several session memories | `engram save-session` or `engram ss` |
-| Mine recent accessible chats | `engram save-session --query-level 3` |
-| Force-save session candidates | `engram ss -f` |
-| Mine and force-save recent chats | `engram ss -f last 50 sessions` |
-| Capture raw note | `engram observe --file session.md` |
-| Convert existing docs/guidance | `engram take-control --all` |
-| Preview source takeover | `engram take-control --plan` |
-| Restructure existing memory folder | `engram metacognize --workspace\|--global\|--all` |
-| Resolve conflicts and metacognize | `engram resolve-conflicts --metacognize` |
-| Inspect graph routing | `engram graph "<topic>"` |
-| Check hashes | `engram verify` |
-| Find malformed memory files | `engram repair` |
-| Archive wrong memory | `engram archive --reason "<why>" <id-or-file>` |
-| Tune rule strength | `engram set-rule-variant strict\|balanced\|light\|off` |
-| Set default save target | `engram set-save-target workspace\|global\|both\|status` |
-| Set compact load limit | `engram set-load-limit 1..32\|status\|reset` |
-| Set automatic hook reads | `engram set-read startup\|auto\|always\|manual\|off\|status` |
-| Set hook proof visibility | `engram set-proof off\|compact\|status` |
-| Install agent hooks | `engram link codex\|claude\|gemini\|opencode\|cursor\|windsurf` |
-| Manage global profiles | `engram profile status\|list\|create\|use\|merge` |
-| Clone workspace/global memory | `engram clone-memory workspace global [--metacognize]` |
+| Tải bộ nhớ cho tác vụ | `engram load "<task>"` |
+| Tải bộ nhớ tác vụ dạng gọn | `engram load "<task>"` |
+| In hướng dẫn sử dụng dành cho AI agent | `engram llm` |
+| Xem trước các tệp bộ nhớ được định tuyến | `engram load --dry-run "<task>"` |
+| Tải với giới hạn token | `engram load --budget-tokens 800 "<task>"` |
+| In mọi nội dung đã đóng gói | `engram load --disclosure full "<task>"` |
+| Lấy thẻ theo id | `engram load --id <id>,<id>` |
+| Tìm kiếm bộ nhớ | `engram search "<topic>"` |
+| Lưu một bộ nhớ | `engram save [rule\|workflow\|knowledge] "<text>"` |
+| Lưu nhiều bộ nhớ từ phiên | `engram save-session` hoặc `engram ss` |
+| Khai thác các cuộc trò chuyện gần đây có thể truy cập | `engram save-session --query-level 3` |
+| Buộc lưu các ứng viên của phiên | `engram ss -f` |
+| Khai thác và buộc lưu các cuộc trò chuyện gần đây | `engram ss -f last 50 sessions` |
+| Ghi lại ghi chú thô | `engram observe --file session.md` |
+| Xử lý hàng đợi bản ghi SessionEnd (tùy chọn bật) | `engram observe --queue --dry-run` |
+| Chuyển đổi tài liệu/hướng dẫn hiện có | `engram take-control --all` |
+| Xem trước việc tiếp quản nguồn | `engram take-control --plan` |
+| Tóm lược mã hoặc cấu hình | `engram take-control --kind code --objective "<text>"` |
+| Làm mới bộ nhớ lấy từ mã đã lỗi thời | `engram take-control --refresh` |
+| Kiểm tra độ mới của nguồn | `engram verify --sources` |
+| Giữ lại một bộ nhớ làm việc | `engram promote <id>` |
+| Lưu ghi chú tác vụ | `engram working note "<text>"` |
+| Dọn bộ nhớ làm việc đã hết hạn | `engram working prune [--dry-run]` |
+| Xem số lần lấy và chèn | `engram stats --usage` |
+| Tái cấu trúc thư mục bộ nhớ hiện có | `engram metacognize --workspace\|--global\|--all` |
+| Giải quyết xung đột và metacognize | `engram resolve-conflicts --metacognize` |
+| Kiểm tra định tuyến đồ thị | `engram graph "<topic>"` |
+| Kiểm tra hash | `engram verify` |
+| Tìm các tệp bộ nhớ bị lỗi định dạng | `engram repair` |
+| Lưu trữ bộ nhớ sai | `engram archive --reason "<why>" <id-or-file>` |
+| Chỉnh độ mạnh của quy tắc | `engram set-rule-variant strict\|balanced\|light\|off` |
+| Đặt nơi lưu mặc định | `engram set-save-target workspace\|global\|both\|status` |
+| Đặt giới hạn tải dạng gọn | `engram set-load-limit 1..32\|status\|reset` |
+| Đặt chế độ đọc tự động của hook | `engram set-read startup\|auto\|always\|manual\|off\|status` |
+| Đặt mức hiển thị dòng proof của hook | `engram set-proof off\|compact\|status` |
+| Cài hook cho agent | `engram link codex\|claude\|gemini\|opencode\|cursor\|windsurf` |
+| Quản lý profile toàn cục | `engram profile status\|list\|create\|use\|merge` |
+| Sao chép bộ nhớ workspace/global | `engram clone-memory workspace global [--metacognize]` |
 
-## Command discovery
+## Khám phá lệnh {#command-discovery}
 
 ```bash
 engram help save-session
@@ -48,9 +59,9 @@ engram help set-role
 engram -h set-rule-variant
 ```
 
-All commands listed in help include short aliases. Aliases route to the same CLI behavior and approval gates as their canonical commands.
+Mọi lệnh được liệt kê trong phần trợ giúp đều có bí danh ngắn. Bí danh dùng cùng hành vi CLI và cùng các cổng phê duyệt như lệnh chính tắc.
 
-## Shell completion
+## Tự hoàn thành lệnh trong shell {#shell-completion}
 
 ```bash
 engram completion bash
@@ -58,16 +69,16 @@ engram completion zsh
 engram completion powershell
 ```
 
-## Next steps
+## Bước tiếp theo {#next-steps}
 
 - [load / search / graph](load-search-graph.md)
 - [save / save-session / observe](save-session.md)
 - [inject / link / upgrade](inject-link-upgrade.md)
 
 
-## Git author identity
+## Danh tính tác giả Git {#git-author-identity}
 
-Engram can store a global author and an optional workspace override. Resolution is workspace, global, then read-only Git fallback. Settings affect future memories only; a workspace override never changes global Git configuration. Use explicit plan and confirmation for global Git sync or legacy-memory migration.
+Engram có thể lưu một tác giả toàn cục và một ghi đè tùy chọn theo workspace. Thứ tự phân giải là workspace, rồi global, rồi phương án dự phòng chỉ đọc từ Git. Các cài đặt chỉ ảnh hưởng đến bộ nhớ trong tương lai; ghi đè theo workspace không bao giờ thay đổi cấu hình Git toàn cục. Hãy dùng bước lập kế hoạch và xác nhận tường minh cho việc đồng bộ Git toàn cục hoặc di chuyển bộ nhớ cũ.
 
 ```bash
 engram author show
@@ -79,4 +90,4 @@ engram author migrate-memories --plan
 engram author migrate-memories --confirm
 ```
 
-Read the complete [Git author settings guide](../operations/git-author-settings.md).
+Đọc [hướng dẫn cài đặt tác giả Git](../operations/git-author-settings.md) đầy đủ.

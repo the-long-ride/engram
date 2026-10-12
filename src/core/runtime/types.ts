@@ -10,6 +10,8 @@ export type InboxReceiptSource = 'save' | 'save-session';
 export type MemoryAuthority = 'instruction' | 'reference';
 export type EvidenceStatus = 'verified' | 'unverified';
 export type MemorySchemaVersion = 1 | 2 | 3;
+/** E13 `hooks.path_rules`: `native` emits host path rules; `hook` keeps the Engram PreToolUse hook. */
+export type PathRulesMode = 'native' | 'hook';
 
 export type InboxCandidate = {
   type: MemoryType;
@@ -22,6 +24,11 @@ export type InboxCandidate = {
   level?: string;
   updateId?: string;
   parent?: string[];
+  /** D16: only `task` is stored; omitted for durable candidates so existing receipt hashes never change. */
+  objective?: 'task';
+  /** D15 fields; omitted when absent so existing receipt hashes never change. */
+  appliesTo?: string[];
+  directive?: string;
 };
 
 export type InboxReceipt = {
@@ -84,13 +91,22 @@ export type EngramConfig = {
     max_tokens?: number;
     dependency_reserve_ratio?: number;
     projection?: 'adaptive' | 'full';
+    /** `auto` expands the top hits as bodies and cards the rest; `full` renders every packed body. */
+    disclosure?: 'auto' | 'full';
+    expand_top?: number;
+    /** D16: days an approved `OBJECTIVE: task` memory stays in the working tier before it expires. */
+    working_ttl_days?: number;
   };
   graph: { enabled: boolean; max_related: number; min_related_score: number };
   vector: { enabled: boolean; provider: 'sqlite-vec'; auto_threshold: number; candidate_pool: number; dimensions: number };
   pattern_mining: { enabled: boolean; threshold: number; lookback_sessions: number };
   pr_workflow: { enabled: boolean; provider?: string; repo?: string; target_branch: string };
   encryption: { enabled: boolean; scope: Scope; key_source: string };
-  memory: { rule_line_target: number; rule_line_hard_limit: number };
+  memory: { rule_line_target: number; rule_line_hard_limit: number; include_author_email?: boolean };
+  /** MCP server settings; JSON config only. */
+  mcp?: { resource_limit?: number };
+  /** Host hook behaviour. */
+  hooks?: { path_rules?: PathRulesMode };
 };
 
 export type IgnoreConfig = {
@@ -101,6 +117,8 @@ export type IgnoreConfig = {
   also_ignore: string[];
   global_patterns: string[];
 };
+
+export type MemoryTier = 'durable' | 'working';
 
 export type MemoryEntry = {
   id: string;
@@ -134,6 +152,17 @@ export type MemoryEntry = {
   validUntil?: string;
   lastConfirmed?: string;
   archivedAt?: string;
+  /** One-line imperative distilled from the memory (<= 160 chars). */
+  directive?: string;
+  /** Path globs the memory applies to. */
+  appliesTo?: string[];
+  /** `working` memories are short-lived task context; absent means `durable`. */
+  tier?: MemoryTier;
+  objective?: string;
+  /** A working-tier task note (`source: note`, written by engram working note or engram_note); routing keeps it out of SessionStart unless the session objective matches. */
+  note?: true;
+  /** True when `tags` were derived from the title because the frontmatter had none. */
+  autoTags?: true;
 };
 
 export type MemoryIndex = { version: string; last_updated: string; entries: MemoryEntry[] };

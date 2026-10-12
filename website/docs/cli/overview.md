@@ -16,6 +16,9 @@ Run `engram -h` for the compact command surface. Run `engram help <topic>` or `e
 | Load compact task memory | `engram load "<task>"` |
 | Print AI-agent usage guide | `engram llm` |
 | Preview routed memory files | `engram load --dry-run "<task>"` |
+| Load with a token cap | `engram load --budget-tokens 800 "<task>"` |
+| Print every packed body | `engram load --disclosure full "<task>"` |
+| Fetch cards by id | `engram load --id <id>,<id>` |
 | Search memory | `engram search "<topic>"` |
 | Save one memory | `engram save [rule\|workflow\|knowledge] "<text>"` |
 | Save several session memories | `engram save-session` or `engram ss` |
@@ -23,8 +26,16 @@ Run `engram -h` for the compact command surface. Run `engram help <topic>` or `e
 | Force-save session candidates | `engram ss -f` |
 | Mine and force-save recent chats | `engram ss -f last 50 sessions` |
 | Capture raw note | `engram observe --file session.md` |
+| Drain the opt-in SessionEnd transcript queue | `engram observe --queue --dry-run` |
 | Convert existing docs/guidance | `engram take-control --all` |
 | Preview source takeover | `engram take-control --plan` |
+| Digest code or config | `engram take-control --kind code --objective "<text>"` |
+| Refresh stale code-derived memory | `engram take-control --refresh` |
+| Check source freshness | `engram verify --sources` |
+| Keep a working memory | `engram promote <id>` |
+| Save a task note | `engram working note "<text>"` |
+| Prune expired working memory | `engram working prune [--dry-run]` |
+| See fetch and inject counts | `engram stats --usage` |
 | Restructure existing memory folder | `engram metacognize --workspace\|--global\|--all` |
 | Resolve conflicts and metacognize | `engram resolve-conflicts --metacognize` |
 | Inspect graph routing | `engram graph "<topic>"` |

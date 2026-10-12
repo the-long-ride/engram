@@ -1,18 +1,16 @@
 ---
 title: Следы доказательств и происхождение
 sidebar_position: 7
-description: How Engram preserves immutable evidence, links approved memory to its source, and exposes the same metadata in CLI and Web UI.
+description: Как Engram сохраняет неизменяемые доказательства, связывает утверждённую память с её источником и показывает одни и те же метаданные в CLI и Web UI.
 ---
 
 # Следы доказательств и происхождение
 
-Engram отделяет доказательства от утверждённой памяти; след сохраняет очищенный неизменяемый источник.
+Engram отделяет доказательства от утверждённой памяти. След (trace) сохраняет очищенную запись об источнике; память остаётся утверждённой человеком инструкцией или справкой, которая ссылается на эти доказательства.
 
-Engram separates evidence from approved memory. A trace preserves the sanitized source record; a memory remains a human-approved instruction or reference that cites that evidence.
+## Контракт утверждённой памяти
 
-## Approved memory contract
-
-New approved memories use schema v3. Legacy v1 and v2 files remain readable and are never silently rewritten.
+Новые утверждённые воспоминания используют схему v3. Устаревшие файлы v1 и v2 остаются читаемыми и никогда не переписываются молча.
 
 ```yaml
 schema_version: 3
@@ -27,11 +25,11 @@ valid_until: YYYY-MM-DD | null
 last_confirmed: YYYY-MM-DD
 ```
 
-The contract fields are `schema_version`, `authority`, `evidence_refs`, `derived_from`, `revision`, `supersedes`, `superseded_by`, `valid_from`, `valid_until`, and `last_confirmed`.
+Поля контракта: `schema_version`, `authority`, `evidence_refs`, `derived_from`, `revision`, `supersedes`, `superseded_by`, `valid_from`, `valid_until` и `last_confirmed`.
 
-## Immutable trace contract
+## Контракт неизменяемого следа
 
-Each `traces/<trace-id>.jsonl` file contains exactly one canonical record and is created exclusively, so an existing trace ID cannot be overwritten. The fields `trace_id`, `session_id`, `source_hash`, `trust_level`, `sensitivity`, and `retention` preserve identity, origin, integrity, trust, privacy, and lifecycle. `authority: evidence` is data only and never acts as an instruction.
+Каждый файл `traces/<trace-id>.jsonl` содержит ровно одну каноническую запись и создаётся эксклюзивно, поэтому существующий идентификатор следа нельзя перезаписать. Поля `trace_id`, `session_id`, `source_hash`, `trust_level`, `sensitivity` и `retention` сохраняют идентичность, происхождение, целостность, уровень доверия, приватность и жизненный цикл. `authority: evidence` — это только данные, они никогда не действуют как инструкция.
 
 ```json
 {
@@ -45,14 +43,14 @@ Each `traces/<trace-id>.jsonl` file contains exactly one canonical record and is
 }
 ```
 
-## CLI and Web UI stay synchronized
+## CLI и Web UI остаются синхронизированными
 
-`engram observe` and transcript hooks sanitize before persistence. The CLI prints the created trace ID, and `save-session` carries `evidence_refs` and `derived_from` into approved memory. Entry Web UI reads the same index and shows authority, evidence IDs, session origin, revision, validity, and supersession links in the memory detail panel.
+`engram observe` и хуки транскриптов очищают данные до сохранения. CLI выводит идентификатор созданного следа, а `save-session` переносит `evidence_refs` и `derived_from` в утверждённую память. Entry Web UI читает тот же индекс и показывает в панели сведений о памяти авторитет, идентификаторы доказательств, происхождение сессии, ревизию, срок действия и ссылки замещения.
 
-## Safety and migration
+## Безопасность и миграция
 
-Default human capture uses `trust_level: human`, `sensitivity: private`, and `retention: 30d` unless configured. Expired or missing evidence blocks new approved writes. Existing observation wrappers remain review conveniences that point to traces, and initialization migrates eligible legacy wrappers once.
+По умолчанию при ручном сохранении используются `trust_level: human`, `sensitivity: private` и `retention: 30d`, если не настроено иное. Истёкшие или отсутствующие доказательства блокируют новые утверждённые записи. Существующие обёртки наблюдений остаются удобным материалом для проверки, указывающим на следы, а при инициализации подходящие устаревшие обёртки мигрируют один раз.
 
-## Promotion integrity and scope
+## Целостность продвижения и область действия
 
-The inbox wrapper is editable review material, not the evidence source. During `save-session --file`, Engram reopens the immutable trace, verifies the wrapper hash when present, and uses the trace text, session, and source metadata. Editing `## Raw Note` cannot change promoted content. A trace-backed save is bound to the trace's workspace or global scope; a conflicting explicit `--scope` is rejected. Legacy trace and session identifiers are namespaced by scope to avoid provenance collisions.
+Обёртка во входящих — это редактируемый материал для проверки, а не источник доказательств. При `save-session --file` Engram повторно открывает неизменяемый след, проверяет хеш обёртки, если он есть, и использует текст следа, сессию и метаданные источника. Правка `## Raw Note` не может изменить продвигаемое содержимое. Сохранение на основе следа привязано к рабочему пространству или глобальной области следа; конфликтующий явный `--scope` отклоняется. Идентификаторы устаревших следов и сессий получают пространство имён по области действия, чтобы избежать коллизий происхождения.

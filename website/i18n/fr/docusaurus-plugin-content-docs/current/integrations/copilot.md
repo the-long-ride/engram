@@ -1,38 +1,38 @@
 ---
 title: Copilot
 sidebar_position: 8
-description: Engram integration with GitHub Copilot via repository and user custom instructions.
+description: Intégration d’Engram avec GitHub Copilot via les instructions personnalisées du dépôt et de l’utilisateur.
 ---
 
 # Copilot
 
-GitHub Copilot reads repository custom instructions from `.github/copilot-instructions.md`. For global Copilot installs, Engram appends its managed block to `~/.copilot/copilot-instructions.md`.
+GitHub Copilot lit les instructions personnalisées du dépôt dans `.github/copilot-instructions.md`. Pour les installations globales de Copilot, Engram ajoute son bloc géré à `~/.copilot/copilot-instructions.md`.
 
-## Install
+## Installation {#install}
 
 ```bash
 engram link copilot
 ```
 
-## Files written
+## Fichiers écrits {#files-written}
 
-| File | Purpose |
+| Fichier | Rôle |
 | --- | --- |
-| `.github/copilot-instructions.md` | Repository custom instructions |
+| `.github/copilot-instructions.md` | Instructions personnalisées du dépôt |
 
-## Global install
+## Installation globale {#global-install}
 
 ```bash
 engram link --global copilot
 ```
 
-Appends a managed block to `~/.copilot/copilot-instructions.md`.
+Ajoute un bloc géré à `~/.copilot/copilot-instructions.md`.
 
-## Compact/manual fallback target
+## Cible de repli compacte/manuelle {#compact-manual-fallback-target}
 
-Copilot is a compact/manual fallback target. It receives the full compact protocol. Hook install is skipped in v1; use the Engram skillset or a manual `engram load` for context.
+Copilot est une cible de repli compacte/manuelle. Il reçoit le protocole compact complet. L’installation des hooks est ignorée dans la v1 ; utilisez le skillset Engram ou un `engram load` manuel pour obtenir le contexte.
 
-## Next steps
+## Étapes suivantes {#next-steps}
 
-- [Agent Integrations overview](overview.md)
-- [Hooks and proof lines](hooks.md)
+- [Vue d’ensemble des intégrations d’agents](overview.md)
+- [Hooks et lignes de preuve](hooks.md)

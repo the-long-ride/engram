@@ -1,22 +1,20 @@
 ---
 title: Git 作成者設定
 sidebar_position: 2
-description: Configure the identity written to future Engram memories and Engram-created Git commits.
+description: 今後の Engram メモリと Engram が作成する Git コミットに記録されるアイデンティティを設定します。
 ---
 
 # Git 作成者設定
 
-Engram は持ち運び可能な作成者プロファイルを保持し、解決された ID は将来のメモリにだけ適用され、リポジトリの Git 設定は変更しません。
-
-Engram owns an author profile so memory authorship is explicit and portable. The resolved identity is written to future memory frontmatter and supplied to Engram-created Git commits through process-local environment variables. Repository Git configuration is not changed.
+Engram は作成者プロファイルを管理し、メモリの作成者を明確かつ持ち高めやすいものにします。解決された名前は今後のメモリのフロントマターに記録されます（メールアドレスは `memory.include_author_email` が `true` の場合に限ります）。完全な ID はプロセスローカルの環境変数を介して Engram が作成する Git コミットに渡されます。リポジトリの Git 設定は変更されません。
 
 <!-- future-memories-only -->
-Author settings affect **future memories only**. Existing memories change only through the explicit migration command.
+作成者設定の影響を受けるのは**今後のメモリのみ**です。既存のメモリは、明示的な移行コマンドを実行した場合に限って変更されます。
 
 <a id="global-author"></a>
-## Global author
+## グローバル作成者
 
-Set the default Engram identity for all workspaces:
+すべてのワークスペースの既定の Engram アイデンティティを設定します。
 
 ```bash
 engram author set --name "Jane Doe" --email "jane@example.com"
@@ -25,19 +23,25 @@ engram author --help
 engram author set --help
 ```
 
-New memory files use separate fields:
+新しいメモリファイルには `author_name` だけが書かれます。メールアドレスは作成者プロファイルと Git コミットにだけ残り、コミットされるメモリファイルには含まれません。メールアドレスも書き込むには、オプトインのキー `memory.include_author_email`（既定は `false`）を有効にします。
+
+```bash
+engram config set memory.include_author_email true
+```
 
 ```yaml
 author_name: Jane Doe
-author_email: jane@example.com
+author_email: jane@example.com   # opt-in: only with memory.include_author_email: true
 ```
 
-Legacy `author: jane@example.com` remains readable, but new memories do not write it.
+既存のメモリを更新すると作成者フィールドが書き直されるため、オプトインがオンでない限り、従来の `author_email` は次の更新時に削除されます。
+
+従来の `author: jane@example.com` は引き続き読み取り可能ですが、新しいメモリでは書き込まれません。
 
 <a id="workspace-override"></a>
-## Workspace override
+## ワークスペースのオーバーライド
 
-A workspace can override the global Engram profile without changing other workspaces:
+ワークスペースは、他のワークスペースを変更することなくグローバルの Engram プロファイルをオーバーライドできます。
 
 ```bash
 engram author set --scope workspace --name "Workspace Jane" --email "jane@work.com"
@@ -45,17 +49,17 @@ engram author show --scope workspace
 ```
 
 <!-- workspace-never-syncs-global-git -->
-A workspace override never changes global Git config. It is stored in the workspace and is used only for memories and Engram-created commits in that workspace.
+ワークスペースのオーバーライドがグローバルの Git 設定を変更することはありません。ワークスペース内に保存され、そのワークスペースで作成されるメモリと Engram 作成のコミットにだけ使用されます。
 
 <a id="resolution-order"></a>
-## Resolution order
+## 解決順序
 
-Engram resolves identity in this order:
+Engram は次の順序で ID を解決します。
 
-1. Workspace Engram author.
-2. Global Engram author.
-3. Read-only effective Git `user.name` and `user.email` fallback.
-4. Unresolved.
+1. ワークスペースの Engram 作成者。
+2. グローバルの Engram 作成者。
+3. 読み取り専用で参照する有効な Git の `user.name` と `user.email` のフォールバック。
+4. 未解決。
 
 ```bash
 engram author show
@@ -63,12 +67,12 @@ engram author show --json
 engram author show --help
 ```
 
-A complete valid name and email are required before a memory write. Engram-created commits receive `GIT_AUTHOR_NAME`, `GIT_AUTHOR_EMAIL`, `GIT_COMMITTER_NAME`, and `GIT_COMMITTER_EMAIL`; local and global Git config remain unchanged.
+メモリを書き込む前に、完全で有効な名前とメールアドレスが必要です。Engram が作成するコミットには `GIT_AUTHOR_NAME`、`GIT_AUTHOR_EMAIL`、`GIT_COMMITTER_NAME`、`GIT_COMMITTER_EMAIL` が渡され、ローカルとグローバルの Git 設定は変更されません。
 
-In Entry, the resolved name is followed by a compact source badge: `WORKSPACE` for a workspace override, `GLOBAL` for the Engram global profile, `GIT` for Git fallback, and `UNRESOLVED` when no complete identity exists.
+Entry では、解決された名前の後ろにコンパクトなソースバッジが表示されます。`WORKSPACE` はワークスペースのオーバーライド、`GLOBAL` は Engram のグローバルプロファイル、`GIT` は Git のフォールバック、`UNRESOLVED` は完全な ID が存在しないことを示します。
 
 <a id="remove-an-author-profile"></a>
-## Remove an author profile
+## 作成者プロファイルの削除
 
 ```bash
 engram author unset --scope workspace
@@ -76,19 +80,19 @@ engram author unset --scope global
 engram author unset --help
 ```
 
-The Web UI requires confirmation. The CLI removes the profile immediately after the explicit `unset` command. After removal, the next source in the resolution order becomes active.
+Web UI では確認が必要です。CLI では明示的な `unset` コマンドの実行後すぐにプロファイルが削除されます。削除後は、解決順序の次のソースが有効になります。
 
 <a id="global-git-configuration"></a>
-## Global Git configuration
+## グローバル Git 設定 {#global-git-configuration}
 
-Entry exposes the existing global-memory Git settings **only in the Global tab** under **Settings → Git**. They continue to use the shared configuration backend; moving the controls does not create a second Git config store.
+Entry は、既存のグローバルメモリの Git 設定を **Settings → Git** の **Global タブだけ**に表示します。これらは共有の設定バックエンドを引き続き使用し、コントロールを移動しても 2 つ目の Git 設定ストアは作成されません。
 
-The Global tab can edit `global_git.enabled`, `global_git.remote`, `global_git.remote_url`, `global_git.branch`, `global_git.auto_sync`, and `global_git.auto_resolve`. These fields are risky, so Entry validates the patch, shows the exact changed keys, and requires review before saving. The Workspace tab never renders these global controls.
+Global タブでは `global_git.enabled`、`global_git.remote`、`global_git.remote_url`、`global_git.branch`、`global_git.auto_sync`、`global_git.auto_resolve` を編集できます。これらのフィールドはリスクがあるため、Entry はパッチを検証し、変更されるキーを正確に表示して、保存前にレビューを求めます。Workspace タブにはこれらのグローバル用コントロールは表示されません。
 
 <a id="sync-to-global-git"></a>
-## Sync to global Git
+## グローバル Git への同期
 
-Only the global Engram profile can be copied to global Git configuration. Preview first, then explicitly confirm:
+グローバル Git 設定にコピーできるのは、Engram のグローバルプロファイルだけです。まずプレビューし、その後で明示的に確定します。
 
 ```bash
 engram author sync-git-global --plan
@@ -96,12 +100,12 @@ engram author sync-git-global --confirm
 engram author sync-git-global --help
 ```
 
-The confirmed operation writes `git config --global user.name` and `git config --global user.email`, verifies both values, and restores the exact previous values if either write or verification fails. A workspace profile is never eligible for this operation.
+確定した操作では `git config --global user.name` と `git config --global user.email` を書き込み、両方の値を検証し、いずれかの書き込みや検証が失敗した場合は以前の値をそのまま復元します。ワークスペースのプロファイルはこの操作の対象になりません。
 
 <a id="migrate-existing-memories"></a>
-## Migrate existing memories
+## 既存のメモリの移行
 
-Backfill `author_name` and `author_email` only when a complete deterministic identity is available:
+完全で決定的な ID を利用できる場合に、`author_name`（`author_email` は `memory.include_author_email` が `true` の場合に限ります）を補完します。
 
 ```bash
 engram author migrate-memories --plan
@@ -110,12 +114,21 @@ engram author migrate-memories --scope both --confirm
 engram author migrate-memories --help
 ```
 
-Migration preserves the Markdown body, creates a `.pre-author-v3.bak` backup, skips archives and invalid files, and is idempotent. It never guesses a missing name. Preview output lists eligible, current, skipped, and invalid files before any write.
+移行では Markdown の本文を保持し、`backups/author-v3/` に `.pre-author-v3.bak` のバックアップを作成し、アーカイブと無効なファイルはスキップし、冕等です。欠けている名前を推測することはありません。プレビューの出力は、書き込みの前に対象、最新、スキップ、無効のファイルを一覧表示します。
+
+以前のリリースですでにメモリファイルに書かれてしまったメールアドレスを削除するには、ストリップします。`--strip-email` は既定でプランのみを作成し、`--confirm` を指定した場合に限って書き込みます。`author_name` は保持し、`author_email` と従来の `author:` のメールを削除し、ハッシュとインデックスを更新し、元のファイルを `backups/author-strip-email-<date>/` にバックアップします。
+
+```bash
+engram author migrate-memories --strip-email --scope both
+engram author migrate-memories --strip-email --scope both --confirm
+```
+
+このリリースで書かれたメモリはメールアドレスなしで名前だけを保持するため、古いバージョンの Engram ではそれらをインデックスできません。名前だけのメモリに依存する前に、チームメンバー全員をアップグレードしてください。
 
 ## Entry Web UI
 
-Open `engram entry`, then choose **Settings → Git**. Global and Workspace tabs show stored profiles, the resolved source badge, review-before-save dialogs, and memory migration preview. The Global tab additionally owns **Global Git configuration** and the explicit Git sync preview; those controls are hidden from Workspace. Every information button opens this localized page in a new tab and shows the matching CLI `--help` command.
+`engram entry` を開き、**Settings → Git** を選択します。Global と Workspace のタブには、保存済みのプロファイル、解決されたソースバッジ、保存前のレビューダイアログ、メモリ移行のプレビューが表示されます。Global タブではさらに **Global Git configuration** と明示的な Git 同期のプレビューを扱い、これらのコントロールは Workspace では非表示です。すべての情報ボタンはこのローカライズされたページを新しいタブで開き、対応する CLI の `--help` コマンドを表示します。
 
-## Privacy and troubleshooting
+## プライバシーとトラブルシューティング
 
-Names and email addresses become durable metadata in Markdown and Git history. Use an address appropriate for the repository's visibility. If saving reports an unresolved author, run `engram author show`, set a global or workspace profile, or configure Git fallback values. Global Git sync is never automatic.
+名前は Markdown と Git 履歴に永続的なメタデータとして残りますが、`memory.include_author_email` を有効にしない限り、メールアドレスはメモリファイルに含まれません。Engram が作成するコミットには引き続き作成者のメールアドレスが含まれるため、リポジトリの公開範囲に適したアドレスを使用してください。保存時に作成者が未解決と報告された場合は、`engram author show` を実行し、グローバルまたはワークスペースのプロファイルを設定するか、Git のフォールバック値を設定してください。グローバル Git の同期が自動で行われることはありません。

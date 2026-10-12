@@ -1,38 +1,38 @@
 ---
 title: Copilot
 sidebar_position: 8
-description: Engram integration with GitHub Copilot via repository and user custom instructions.
+description: 저장소 및 사용자 지정 지침을 통한 Engram과 GitHub Copilot 통합.
 ---
 
 # Copilot
 
-GitHub Copilot reads repository custom instructions from `.github/copilot-instructions.md`. For global Copilot installs, Engram appends its managed block to `~/.copilot/copilot-instructions.md`.
+GitHub Copilot은 `.github/copilot-instructions.md`에서 저장소 사용자 지정 지침을 읽습니다. 전역 Copilot 설치의 경우 Engram은 관리 블록을 `~/.copilot/copilot-instructions.md`에 추가합니다.
 
-## Install
+## 설치 {#install}
 
 ```bash
 engram link copilot
 ```
 
-## Files written
+## 작성된 파일 {#files-written}
 
-| File | Purpose |
+| 파일 | 목적 |
 | --- | --- |
-| `.github/copilot-instructions.md` | Repository custom instructions |
+| `.github/copilot-instructions.md` | 저장소 사용자 지정 지침 |
 
-## Global install
+## 전역 설치 {#global-install}
 
 ```bash
 engram link --global copilot
 ```
 
-Appends a managed block to `~/.copilot/copilot-instructions.md`.
+`~/.copilot/copilot-instructions.md`에 관리 블록을 추가합니다.
 
-## Compact/manual fallback target
+## 압축/수동 대체 대상 {#compact-manual-fallback-target}
 
-Copilot is a compact/manual fallback target. It receives the full compact protocol. Hook install is skipped in v1; use the Engram skillset or a manual `engram load` for context.
+Copilot은 압축/수동 대체 대상입니다. 전체 압축 프로토콜을 수신합니다. v1에서는 훅 설치를 건너뜁니다. 컨텍스트를 위해 Engram 스킬셋 또는 수동 `engram load`를 사용하세요.
 
-## Next steps
+## 다음 단계 {#next-steps}
 
-- [Agent Integrations overview](overview.md)
-- [Hooks and proof lines](hooks.md)
+- [에이전트 통합 개요](overview.md)
+- [훅 및 증명 라인](hooks.md)

@@ -23,6 +23,8 @@ declare module 'node:url' { export function fileURLToPath(url: string | URL): st
 declare module 'node:os' { export const homedir: any; export const hostname: any; export const tmpdir: any; export const EOL: string; export const platform: any; }
 declare module 'node:crypto' {
   export const createHash: any;
+  export const createHmac: any;
+  export const timingSafeEqual: any;
   export const createCipheriv: any;
   export const createDecipheriv: any;
   export const randomBytes: any;

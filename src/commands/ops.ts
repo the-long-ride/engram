@@ -3,31 +3,38 @@ import path from 'node:path';
 import { getContext } from '../core/memory/context.js';
 import { health, scoreMemory } from '../core/analysis/quality.js';
 import type { MemoryLimits } from '../core/memory/schema.js';
-import { duplicatePairs, searchEntries, semanticDuplicatePairs, semanticSearchEntries, stats, statsData } from '../core/analysis/search.js';
+import { duplicatePairs, scoredSearchEntries, scoredSemanticSearchEntries, semanticDuplicatePairs, stats, statsData } from '../core/analysis/search.js';
 import { healthData } from '../core/analysis/quality.js';
-import { assertFormat, exportBundle, renderFormat, writeSyncTarget } from '../core/integrations/exporter.js';
-import { readJson, readText } from '../core/system/fsx.js';
+import { assertFormat, exportBundle, normalizeFormat, renderFormat, writeSyncTarget } from '../core/integrations/exporter.js';
+import { exists, readJson, readText } from '../core/system/fsx.js';
+import { ensureScopeGitignore } from '../core/memory/scope-gitignore.js';
 import { syncGlobalMemoryGit, writeApprovedMemory } from '../core/memory/storage.js';
 import { requireResolvedAuthor } from '../core/author/resolve.js';
 import { applyApprovalEdit, requestApproval } from '../core/safety/approval.js';
 import { launchEntryUi } from '../core/web/entry-server.js';
 import { renderInitWordmark } from '../core/cli/banner.js';
-import { visibleEntries } from '../core/memory/routing.js';
+import { validityFactor, visibleEntries } from '../core/memory/routing.js';
+import { isWorkingPath } from '../core/runtime/constants.js';
 import { readGuardedMemory } from '../core/safety/safe-read.js';
 import { contradictionEdges, renderGraphReport } from '../core/memory/graph.js';
 import { archiveMemory, planArchiveSet } from '../core/memory/archive.js';
 import { planMemorySave, previewSavePlans, type SavePlan } from '../core/memory/save-plan.js';
+import { applyApprovedSupersedes } from '../core/memory/save-supersede.js';
 import { normalizeMemoryType } from '../core/memory/memory-candidate.js';
 import { parseSaveTarget, writeScopes } from '../core/runtime/config.js';
 import { isJsonMode, jsonOk } from '../core/cli/json-output.js';
 import { EngramError, ExitCode } from '../core/runtime/exit-codes.js';
 import { formatRecords, type RecordBlock } from '../core/cli/format.js';
-import type { MemoryType, Scope } from '../core/runtime/types.js';
+import type { MemoryEntry, MemoryType, Scope } from '../core/runtime/types.js';
+import { isExpired } from '../core/memory/memory-ref.js';
+import { today } from '../core/system/text.js';
 import { parseBenchmarkDocument } from '../core/benchmark/schema.js';
 import { runBenchmark } from '../core/benchmark/run.js';
 import { serializeResult, fail } from '../core/contracts/result.js';
 import { writeJson } from '../core/system/fsx.js';
 import { loadPolicy } from '../core/policy/load.js';
+import { neverFetched, readUsage } from '../core/memory/usage.js';
+import { nativeRuleSummary, refreshAllLinkedNativeRules } from '../core/integrations/native-rules.js';
 
 /** Return memory health summary. */
 export async function cmdHealth(flags: Record<string, any> = {}): Promise<string> {
@@ -38,25 +45,40 @@ export async function cmdHealth(flags: Record<string, any> = {}): Promise<string
 
 /** Search the merged index. */
 export async function cmdSearch(args: string[], flags: Record<string, any> = {}): Promise<string> {
+  const { text, data } = await searchMemories(args.join(' '), flags);
+  return isJsonMode(flags) ? jsonOk(data) : text;
+}
+
+export type SearchResultRow = { id: string; scope: string; type: string; file: string; summary: string; score: number };
+export type SearchData = { query: string; semantic: boolean; count: number; results: SearchResultRow[] };
+
+/** Run one search and return both the human text and the JSON data, so callers needing both search once. */
+export async function searchMemories(query: string, flags: Record<string, any> = {}): Promise<{ text: string; data: SearchData }> {
   const ctx = await getContext();
   const entries = visibleEntries(ctx.index.entries, ctx.config, true, ctx.ignorePatterns);
-  const search = flags.semantic ? semanticSearchEntries : searchEntries;
-  const query = args.join(' ');
-  const hits = search(entries, query);
-  if (isJsonMode(flags)) {
-    return jsonOk({
-      query,
-      semantic: Boolean(flags.semantic),
-      count: hits.length,
-      results: hits.map((entry) => ({ id: entry.id, scope: entry.scope, type: entry.type, file: entry.file, summary: entry.summary }))
-    });
-  }
-  if (!hits.length) return 'No matches';
+  const search = flags.semantic ? scoredSemanticSearchEntries : scoredSearchEntries;
+  const scored = search(entries, query);
+  const hits = scored.map((row) => row.entry);
+  const data: SearchData = {
+    query,
+    semantic: Boolean(flags.semantic),
+    count: hits.length,
+    results: scored.map(({ entry, score }) => ({ id: entry.id, scope: entry.scope, type: entry.type, file: entry.file, summary: entry.summary, score: Math.round(score * 1000) / 1000 }))
+  };
+  if (!hits.length) return { text: 'No matches', data };
+  const day = today();
   const title = flags.semantic ? `Semantic search results (${hits.length})` : `Search results (${hits.length})`;
-  return formatRecords(title, hits.map((entry) => ({
+  const text = formatRecords(title, hits.map((entry) => ({
     title: `${entry.scope}:${entry.file}`,
-    fields: [['Type', entry.type], ['Summary', entry.summary]]
+    fields: [['Type', `${entry.type}${searchTierLabel(entry, day)}`], ['Summary', entry.summary]]
   })));
+  return { text, data };
+}
+
+/** D16: search lists working memories too, so label them, and mark the ones `load` already leaves out as expired. */
+function searchTierLabel(entry: MemoryEntry, day: string): string {
+  if (!isWorkingPath(entry.file)) return '';
+  return isExpired(entry.validUntil, day) ? ' [working, expired]' : ' [working]';
 }
 
 /** Score every indexed memory. */
@@ -182,11 +204,32 @@ export async function cmdDeduplicate(flags: Record<string, any> = {}): Promise<s
 export async function cmdExport(flags: Record<string, any>): Promise<string> {
   const ctx = await getContext();
   const entries = visibleEntries(ctx.index.entries, ctx.config, false, ctx.ignorePatterns);
-  const format = flags.format as string | undefined;
-  if (format) return renderFormat(process.cwd(), entries, format);
-  const out = flags.out as string || path.join(process.cwd(), `engram-bundle-${new Date().toISOString().slice(0, 10)}.json`);
-  await exportBundle(process.cwd(), entries, out);
-  return `Exported -> ${out}`;
+  // E15/K9: only the CLI flag warns about the deprecated alias; config targets normalise silently.
+  const format = flags.format ? normalizeFormat(String(flags.format), (note) => { process.stderr.write(`${note}\n`); }) : undefined;
+  if (format) return renderFormat(process.cwd(), durableEntries(entries), format);
+  // The JSON bundle is a local backup: live working memories travel with it, expired ones are dropped.
+  const day = today();
+  const live = entries.filter((entry) => !isWorkingPath(entry.file) || validityFactor(entry, false, day) !== 'exclude');
+  const name = `engram-bundle-${new Date().toISOString().slice(0, 10)}.json`;
+  const explicit = typeof flags.out === 'string' && flags.out ? flags.out : '';
+  const scopeRoot = ctx.roots.workspace && await exists(ctx.roots.workspace) ? ctx.roots.workspace : '';
+  if (!explicit && !scopeRoot) {
+    // No gitignored scope folder to hold it: a cwd bundle could be committed, so task-scoped memories stay out.
+    const out = path.join(process.cwd(), name);
+    await exportBundle(process.cwd(), durableEntries(live), out);
+    return `Exported -> ${out}`;
+  }
+  if (!explicit) await ensureScopeGitignore(scopeRoot);
+  const out = explicit || path.join(scopeRoot, 'exports', name);
+  const exported = await exportBundle(process.cwd(), live, out);
+  const working = exported.filter((entry) => isWorkingPath(entry.file)).length;
+  const note = explicit && working ? `\nNote: the bundle contains ${working} working (task-scoped) ${working === 1 ? 'memory' : 'memories'}.` : '';
+  return `Exported -> ${out}${note}`;
+}
+
+/** D16/R22: generated agent instruction files are shared, so task-scoped working memories never reach them. */
+function durableEntries(entries: MemoryEntry[]): MemoryEntry[] {
+  return entries.filter((entry) => !isWorkingPath(entry.file));
 }
 
 /** Import a JSON bundle through the approval gate. */
@@ -277,13 +320,31 @@ async function writePlans(plans: SavePlan[], edits?: string): Promise<void> {
   for (const plan of plans) {
     await writeApprovedMemory({ cwd: process.cwd(), scope: plan.scope, file: plan.file, content: applyApprovalEdit(plan.content, edits), message: plan.message });
   }
+  // The approval showed each plan's Verdict line, so an approved SUPERSEDE also retires its target.
+  await applyApprovedSupersedes(process.cwd(), plans);
 }
 
 /** Print index counts. */
 export async function cmdStats(flags: Record<string, any> = {}): Promise<string> {
   const ctx = await getContext();
   const entries = visibleEntries(ctx.index.entries, ctx.config, false, ctx.ignorePatterns);
-  return isJsonMode(flags) ? jsonOk(statsData(entries)) : stats(entries);
+  if (flags.usage !== true) return isJsonMode(flags) ? jsonOk(statsData(entries, ctx.config)) : stats(entries, ctx.config);
+  const usage = ctx.roots.workspace ? await readUsage(ctx.roots.workspace) : {};
+  const stale = neverFetched(usage);
+  if (isJsonMode(flags)) return jsonOk({ ...statsData(entries, ctx.config), usage: { memories: usage, never_fetched: stale } });
+  const never = stale.length
+    ? stale.map((item) => `  ${item.key} (injected ${item.injected}, last ${item.last.slice(0, 10)})`)
+    : ['  none'];
+  const tracked = Object.entries(usage).sort(([a], [b]) => a.localeCompare(b));
+  return [
+    stats(entries, ctx.config),
+    '',
+    'Usage (injected / fetched):',
+    ...(tracked.length ? tracked.map(([key, row]) => `  ${key}: ${row.injected} / ${row.fetched}`) : ['  none']),
+    '',
+    'Never fetched:',
+    ...never
+  ].join('\n');
 }
 
 export async function cmdEntry(flags: Record<string, any> = {}): Promise<string> {
@@ -301,13 +362,18 @@ export async function cmdEntry(flags: Record<string, any> = {}): Promise<string>
 /** Render live-sync targets once. */
 export async function cmdSync(): Promise<string> {
   const before = await getContext();
-  const targets = before.config.live_sync.targets;
+  const targets = before.config.live_sync.targets.map((target) => normalizeFormat(target));
   for (const target of targets) assertFormat(target);
   const syncRows = before.roots.global ? await syncGlobalMemoryGit(process.cwd()) : ['global memory: not configured'];
-  if (!before.config.live_sync.enabled) return `${syncRows.join('\n')}\nLive sync disabled`;
+  // E12: the native Claude/Cursor rule files follow the memories whether or not live sync is on.
+  const nativeLine = async () => {
+    const results = await refreshAllLinkedNativeRules(process.cwd());
+    return results.length ? `\nNative rules: ${nativeRuleSummary(results)}` : '';
+  };
+  if (!before.config.live_sync.enabled) return `${syncRows.join('\n')}\nLive sync disabled${await nativeLine()}`;
   const ctx = await getContext(process.cwd(), { rebuild: true });
   const entries = visibleEntries(ctx.index.entries, ctx.config, false, ctx.ignorePatterns);
   const written = [];
-  for (const target of targets) written.push(await writeSyncTarget(process.cwd(), target, await renderFormat(process.cwd(), entries, target)));
-  return `${syncRows.join('\n')}\nSynced: ${written.join(', ')}`;
+  for (const target of targets) written.push(await writeSyncTarget(process.cwd(), target, await renderFormat(process.cwd(), durableEntries(entries), target)));
+  return `${syncRows.join('\n')}\nSynced: ${written.join(', ')}${await nativeLine()}`;
 }

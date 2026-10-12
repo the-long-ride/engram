@@ -12,9 +12,15 @@ import { writeApprovedMemory } from '../core/memory/storage.js';
 import { requireResolvedAuthor } from '../core/author/resolve.js';
 import { classifyTaskType } from '../core/memory/task-classifier.js';
 import { stagePolicySnapshots } from '../core/policy/snapshot.js';
+import { workingTierMeta } from '../core/memory/working-tier.js';
+import { today } from '../core/system/text.js';
 export async function cmdAutosave(args: string[], flags: Record<string, any> = {}): Promise<string> {
   if (!flags.policy) throw new EngramError('ENG_USAGE', 'autosave requires --policy', 2);
-  const candidate = parseMemoryCandidate(args.join(' ')); const scope = flags.scope === 'global' ? 'global' : 'workspace'; const requestedPolicy = typeof flags.policy === 'string' ? flags.policy : undefined; const loaded = await loadPolicy(process.cwd(), requestedPolicy);
+  const candidate = parseMemoryCandidate(args.join(' '));
+  // A candidate SCOPE picks the target when --scope is absent; a different --scope is ambiguous, so nothing is written (R21).
+  const flagScope = flags.scope === 'global' || flags.scope === 'workspace' ? flags.scope as 'global' | 'workspace' : undefined;
+  if (candidate.scope && flagScope && candidate.scope !== flagScope) { const reason = `candidate SCOPE: ${candidate.scope} is outside --scope ${flagScope}`; return isJsonMode(flags) ? jsonOk({ allowed: false, status: 'denied', reason }) : `Autosave denied: ${reason}`; }
+  const scope = candidate.scope ?? flagScope ?? 'workspace'; const requestedPolicy = typeof flags.policy === 'string' ? flags.policy : undefined; const loaded = await loadPolicy(process.cwd(), requestedPolicy);
   const confidence = candidate.confidence ?? 'low';
   const decision = evaluatePolicy(loaded.policy, { type: candidate.type, scope, source: 'autosave', confidence, text: candidate.text, context: candidate.context, triggers: candidate.triggers, role: candidate.role });
   if (!decision.allowed || loaded.diagnostics.length) { const reason = loaded.diagnostics.length ? 'policy invalid: ' + loaded.diagnostics.map((d) => `${d.path} ${d.message}`).join('; ') : decision.reason; return isJsonMode(flags) ? jsonOk({ allowed: false, status: 'denied', reason }) : `Autosave denied: ${reason}`; }
@@ -38,8 +44,12 @@ export async function cmdAutosave(args: string[], flags: Record<string, any> = {
     parent: candidate.parent,
     variants: candidate.variants,
     confidence,
+    directive: candidate.directive,
+    appliesTo: candidate.appliesTo,
     source: { source: 'autosave' },
-    taskType: classifyTaskType(candidate.text).taskType
+    taskType: classifyTaskType(candidate.text).taskType,
+    // D16: a policy-approved OBJECTIVE: task candidate goes to the working tier, as in every other save path.
+    working: candidate.objective === 'task' ? workingTierMeta(ctx.config, today()) : undefined
   });
   const implicitUpdate = plans.some((plan) => plan.action === 'update' && !candidate.updateId);
   const declaredChildren = new Set((candidate.parent ?? []).map((id) => id.trim().toLowerCase()));

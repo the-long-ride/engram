@@ -2,11 +2,17 @@
 export type FlagValue = string | boolean | string[];
 export type ParsedArgs = { command: string; rest: string[]; flags: Record<string, FlagValue> };
 
+/** Comma-separated (or repeated) flag values as a trimmed list. */
+export function listFlag(value: unknown): string[] {
+  const raw = Array.isArray(value) ? value : typeof value === 'string' ? [value] : [];
+  return raw.flatMap((item) => String(item).split(',')).map((item) => item.trim()).filter(Boolean);
+}
+
 const booleanFlags = new Set([
   'all', 'auto', 'confirm', 'configs-only', 'dry-run', 'explain', 'force', 'full', 'h', 'help',
-  'global', 'global-only', 'global-skillsets-only', 'inbox', 'json', 'latest', 'low-confidence', 'memory-only', 'migrate-memories', 'no-auto-upgrade', 'no-global', 'no-migrate-memories', 'no-skillset',
-  'no-submodule', 'no-version-check', 'plan', 'propose', 'review', 'yes', 'rebuild', 'metacognize', 'restructure', 'self', 'semantic', 'show-rule-variants', 'skip-task-type-prompt', 'stale', 'strict',
-  'submodule', 'use', 'user', 'v', 'version', 'workspace', 'host-only'
+  'global', 'global-only', 'global-skillsets-only', 'inbox', 'json', 'latest', 'low-confidence', 'memory-only', 'migrate-memories', 'move-backups', 'no-auto-upgrade', 'no-global', 'no-migrate-memories', 'no-skillset',
+  'no-submodule', 'no-version-check', 'plan', 'propose', 'queue', 'refresh', 'review', 'yes', 'rebuild', 'metacognize', 'restructure', 'self', 'semantic', 'session-end', 'show-rule-variants', 'skip-task-type-prompt', 'sources', 'stale', 'strict', 'strip-email',
+  'submodule', 'use', 'usage', 'user', 'v', 'version', 'workspace', 'host-only'
 ]);
 const saveSessionCommands = new Set(['save-session', 'ss']);
 const takeControlCommands = new Set(['take-control', 'tc']);
@@ -215,6 +221,11 @@ function normalizeNaturalCommandOptions(argv: string[]): string[] {
     if (looksLikeCandidateToken(token)) {
       normalized.push(...tokens.slice(i));
       break;
+    }
+    // Free-text flag values (`--objective "use force"`) are never natural-language options.
+    if (token === '--objective' && tokens[i + 1] !== undefined && !tokens[i + 1].startsWith('--')) {
+      normalized.push(token, tokens[++i]);
+      continue;
     }
     if (lower === 'force') normalized.push('--force');
     else if (lower === 'accept-all' || (lower === 'accept' && tokens[i + 1]?.toLowerCase() === 'all')) {

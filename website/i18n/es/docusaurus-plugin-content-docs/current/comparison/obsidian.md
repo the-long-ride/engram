@@ -1,24 +1,24 @@
 ---
 title: Obsidian
 sidebar_position: 4
-description: Engram vs Obsidian — agent memory protocol vs personal knowledge base.
+description: Engram frente a Obsidian — protocolo de memoria del agente frente a base de conocimientos personal.
 ---
 
 # Obsidian
 
-Obsidian is a popular personal knowledge base built on local Markdown files. Engram is also file-first and Markdown-based, but the focus differs.
+Obsidian es una base de conocimientos personal popular construida sobre archivos Markdown locales. Engram también es el primero en archivos y basado en Markdown, pero el enfoque difiere.
 
-| Dimension | Engram | Obsidian |
+| Dimensión | Engram | Obsidian |
 | --- | --- | --- |
-| Purpose | AI-agent memory protocol | Personal knowledge base |
-| Routing | Graph-aware task routing into agent context | Manual linking and search |
-| Approval | Human approval gate before durable writes | Human authors directly |
-| Agent integration | Skill files, slash adapters, MCP, hooks | None built-in |
-| Best fit | teams using AI agents that need durable, routed memory | individuals building a linked note graph |
+| Propósito | Protocolo de memoria del agente de IA | Base de conocimientos personal |
+| Enrutamiento | Enrutamiento de tareas compatible con grafos en el contexto del agente | Enlace manual y búsqueda |
+| Aprobación | Puerta de aprobación humana antes de escrituras duraderas | Autores humanos directamente |
+| Integración de agente | Archivos de habilidades, adaptadores de comandos slash, MCP, hooks | Ninguno integrado |
+| Ideal para | equipos que usan agentes de IA que necesitan memoria enrutada y duradera | personas que construyen un grafo de notas vinculadas |
 
-Use both: Engram for agent-facing durable memory, Obsidian for personal knowledge. Both are Markdown and Git-friendly.
+Usa ambos: Engram para memoria duradera orientada al agente, Obsidian para conocimiento personal. Ambos son compatibles con Markdown y Git.
 
-## Next steps
+## Siguientes pasos
 
 - [Tolaria](tolaria.md)
-- [Comparison overview](overview.md)
+- [Descripción general de comparación](overview.md)

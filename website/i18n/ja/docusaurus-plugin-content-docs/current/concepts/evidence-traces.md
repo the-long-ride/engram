@@ -1,18 +1,16 @@
 ---
 title: 証拠トレースと来歴
 sidebar_position: 7
-description: How Engram preserves immutable evidence, links approved memory to its source, and exposes the same metadata in CLI and Web UI.
+description: Engram が不変の証拠をどのように保持し、承認済みメモリをその出典にひも付け、同じメタデータを CLI と Web UI に公開するかを説明します。
 ---
 
 # 証拠トレースと来歴
 
-Engram は証拠と承認済みメモリを分離し、トレースはサニタイズ済みの不変な出典を保持します。
+Engram は証拠と承認済みメモリを分離します。トレースはサニタイズ済みの出典レコードを保持し、メモリはその証拠を引用する、人間が承認した指示または参照として残ります。
 
-Engram separates evidence from approved memory. A trace preserves the sanitized source record; a memory remains a human-approved instruction or reference that cites that evidence.
+## 承認済みメモリの契約
 
-## Approved memory contract
-
-New approved memories use schema v3. Legacy v1 and v2 files remain readable and are never silently rewritten.
+新しい承認済みメモリはスキーマ v3 を使用します。従来の v1 および v2 ファイルは引き続き読み取り可能で、黙って書き換えられることはありません。
 
 ```yaml
 schema_version: 3
@@ -27,11 +25,11 @@ valid_until: YYYY-MM-DD | null
 last_confirmed: YYYY-MM-DD
 ```
 
-The contract fields are `schema_version`, `authority`, `evidence_refs`, `derived_from`, `revision`, `supersedes`, `superseded_by`, `valid_from`, `valid_until`, and `last_confirmed`.
+契約のフィールドは `schema_version`、`authority`、`evidence_refs`、`derived_from`、`revision`、`supersedes`、`superseded_by`、`valid_from`、`valid_until`、`last_confirmed` です。
 
-## Immutable trace contract
+## 不変トレースの契約
 
-Each `traces/<trace-id>.jsonl` file contains exactly one canonical record and is created exclusively, so an existing trace ID cannot be overwritten. The fields `trace_id`, `session_id`, `source_hash`, `trust_level`, `sensitivity`, and `retention` preserve identity, origin, integrity, trust, privacy, and lifecycle. `authority: evidence` is data only and never acts as an instruction.
+各 `traces/<trace-id>.jsonl` ファイルには正規のレコードがちょうど 1 件だけ含まれ、排他的に作成されるため、既存のトレース ID を上書きすることはできません。`trace_id`、`session_id`、`source_hash`、`trust_level`、`sensitivity`、`retention` の各フィールドは、識別、出所、完全性、信頼性、プライバシー、ライフサイクルを保持します。`authority: evidence` はデータにすぎず、指示として機能することはありません。
 
 ```json
 {
@@ -45,14 +43,14 @@ Each `traces/<trace-id>.jsonl` file contains exactly one canonical record and is
 }
 ```
 
-## CLI and Web UI stay synchronized
+## CLI と Web UI の同期
 
-`engram observe` and transcript hooks sanitize before persistence. The CLI prints the created trace ID, and `save-session` carries `evidence_refs` and `derived_from` into approved memory. Entry Web UI reads the same index and shows authority, evidence IDs, session origin, revision, validity, and supersession links in the memory detail panel.
+`engram observe` とトランスクリプトフックは、永続化の前にサニタイズを行います。CLI は作成されたトレース ID を表示し、`save-session` は `evidence_refs` と `derived_from` を承認済みメモリに引き継ぎます。Entry Web UI は同じインデックスを読み取り、メモリ詳細パネルに権限、証拠 ID、セッションの出所、リビジョン、有効期間、置き換えリンクを表示します。
 
-## Safety and migration
+## 安全性と移行
 
-Default human capture uses `trust_level: human`, `sensitivity: private`, and `retention: 30d` unless configured. Expired or missing evidence blocks new approved writes. Existing observation wrappers remain review conveniences that point to traces, and initialization migrates eligible legacy wrappers once.
+既定の人間による取り込みでは、設定で変更しない限り `trust_level: human`、`sensitivity: private`、`retention: 30d` を使用します。証拠が期限切れまたは存在しない場合、新しい承認済みメモリの書き込みはブロックされます。既存の観察ラッパーはトレースを指し示すレビュー用の補助として残り、初期化時に対象となる従来のラッパーが 1 回だけ移行されます。
 
-## Promotion integrity and scope
+## 昇格の完全性とスコープ
 
-The inbox wrapper is editable review material, not the evidence source. During `save-session --file`, Engram reopens the immutable trace, verifies the wrapper hash when present, and uses the trace text, session, and source metadata. Editing `## Raw Note` cannot change promoted content. A trace-backed save is bound to the trace's workspace or global scope; a conflicting explicit `--scope` is rejected. Legacy trace and session identifiers are namespaced by scope to avoid provenance collisions.
+インボックスのラッパーは編集可能なレビュー用の素材であり、証拠の出典ではありません。`save-session --file` の実行中、Engram は不変のトレースを開き直し、ラッパーのハッシュがある場合は検証したうえで、トレースのテキスト、セッション、出典メタデータを使用します。`## Raw Note` を編集しても、昇格される内容は変わりません。トレースに基づく保存は、そのトレースのワークスペースまたはグローバルのスコープに固定され、矛盾する明示的な `--scope` は拒否されます。従来のトレースとセッションの識別子は、来歴の衝突を避けるためスコープごとに名前空間が付けられます。

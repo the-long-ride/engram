@@ -9,8 +9,14 @@ export function tagsFrom(text: string): string[] {
   return meaningfulWordList(text).slice(0, 6);
 }
 
-/** Return today in YYYY-MM-DD form. */
+/**
+ * Return today in YYYY-MM-DD form. Test-only: with `NODE_ENV=test`, `ENGRAM_TODAY=YYYY-MM-DD` pins the clock for
+ * TTL and validity tests; outside tests the variable is ignored, so it can never shift production dates.
+ */
 export function today(): string {
+  const testing = typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
+  const pinned = testing ? process.env.ENGRAM_TODAY?.trim() : undefined;
+  if (pinned && /^\d{4}-\d{2}-\d{2}$/.test(pinned) && Number.isFinite(Date.parse(pinned))) return pinned;
   return new Date().toISOString().slice(0, 10);
 }
 
@@ -24,7 +30,7 @@ const ROUTING_STOPWORDS = new Set([
   'both', 'but', 'can', 'come', 'current', 'does', 'done', 'each', 'else', 'ever',
   'for', 'from', 'had', 'has', 'have', 'here', 'into', 'its', 'just', 'keep',
   'made', 'make', 'more', 'most', 'much', 'must', 'new', 'not', 'off', 'only',
-  'other', 'over', 'same', 'some', 'such', 'take', 'than', 'that', 'the', 'their',
+  'original', 'other', 'over', 'same', 'some', 'such', 'take', 'than', 'that', 'the', 'their',
   'them', 'then', 'they', 'this', 'very', 'was', 'well', 'when', 'where', 'which',
   'with', 'work', 'written', 'your'
 ]);

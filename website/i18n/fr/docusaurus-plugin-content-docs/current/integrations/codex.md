@@ -1,45 +1,46 @@
 ---
 title: Codex
 sidebar_position: 2
-description: Engram integration with OpenAI Codex via AGENTS.md and Agent Skills.
+description: Intégration d’Engram avec OpenAI Codex via AGENTS.md et les Agent Skills.
 ---
 
 # Codex
 
-OpenAI Codex and other AGENTS.md-compatible agents use `AGENTS.md` as a project instruction file. The `codex` alias also writes `.agents/skills/engram/SKILL.md` so agents that discover Agent Skills can route Engram as an invokable skill.
+OpenAI Codex et les autres agents compatibles AGENTS.md utilisent `AGENTS.md` comme fichier d’instructions du projet. L’alias `codex` écrit aussi `.agents/skills/engram/SKILL.md` afin que les agents qui découvrent les Agent Skills puissent router Engram comme un skill invocable.
 
-## Install
+## Installation {#install}
 
 ```bash
 engram link codex
 ```
 
-## Files written
+## Fichiers écrits {#files-written}
 
-| File | Purpose |
+| Fichier | Rôle |
 | --- | --- |
-| `AGENTS.md` | Project instructions bootstrap |
-| `.agents/skills/engram/SKILL.md` | Agent Skill with full write/approval workflow |
-| `.codex/hooks.json` | `SessionStart` and `UserPromptSubmit` hooks |
-| `.mcp.json` | MCP registration |
+| `AGENTS.md` | Amorçage des instructions du projet |
+| `.agents/skills/engram/SKILL.md` | Court pointeur Agent Skill vers le guide |
+| `.agents/engram.md` | Guide compagnon avec le flux complet d’écriture/approbation |
+| `.codex/hooks.json` | Hooks `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PreCompact` et `SubagentStart` |
+| `.mcp.json` | Enregistrement MCP |
 
-## Global install
+## Installation globale {#global-install}
 
 ```bash
 engram link --global codex
 ```
 
-Writes the Codex skill to `~/.codex/skills/engram/SKILL.md` and appends a managed block to shared Codex instruction files.
+Écrit le skill Codex dans `~/.codex/skills/engram/SKILL.md` et ajoute un bloc géré aux fichiers d’instructions Codex partagés. Le MCP global est un bloc géré `[mcp_servers.engram]` dans `~/.codex/config.toml` ; il définit aussi `approval_mode = "approve"` sur `[mcp_servers.engram.tools.engram_commit]` afin que Codex demande confirmation avant chaque commit (`engram upgrade` ou `engram link codex` actualise les anciens blocs). `engram doctor` indique la taille de votre chaîne AGENTS.md par rapport à la limite de 32 Kio de Codex (`host.agents_md_chain`).
 
-## Hook behavior
+## Comportement des hooks {#hook-behavior}
 
-Codex supports startup and prompt-time additional context injection. `SessionStart` loads routed memory at startup; `UserPromptSubmit` reinjects only when routed Engram context changes.
+Codex prend en charge l’injection de contexte supplémentaire au démarrage et au moment de l’invite. `SessionStart` charge la mémoire routée au démarrage ; `UserPromptSubmit` n’injecte que les corps de mémoire pas encore livrés dans la session. `PreToolUse` injecte les mémoires dont les globs `applies_to` correspondent aux fichiers modifiés via `apply_patch` (il ne se déclenche pas sur les lectures), et `PreCompact` réinitialise l’ensemble des mémoires livrées. `SubagentStart` (matcher `*`) injecte le contexte routé dans chaque sous-agent ; l’ensemble des mémoires livrées du sous-agent a pour clé `<session_id>#agent:<agent_id>`, de sorte qu’il ne touche jamais celui du parent. Codex limite un message de hook à environ 2 500 tokens ; Engram garde donc `additionalContext` à 2 400 tokens ou moins et rétrograde les corps en cartes au lieu de les couper.
 
-## Runtime-first target
+## Cible orientée exécution {#runtime-first-target}
 
-Codex is a runtime-first target. `AGENTS.md` contains short bootstrap instructions that rely on MCP tools and hooks for detailed protocol; the Agent Skill file carries the full write/approval workflow.
+Codex est une cible orientée exécution. `AGENTS.md` contient de courtes instructions d’amorçage qui s’appuient sur les outils MCP et les hooks pour le protocole détaillé ; le guide compagnon porte le flux complet d’écriture/approbation, et le fichier Agent Skill n’en est qu’un court pointeur.
 
-## Next steps
+## Étapes suivantes {#next-steps}
 
-- [Agent Integrations overview](overview.md)
-- [Hooks and proof lines](hooks.md)
+- [Vue d’ensemble des intégrations d’agents](overview.md)
+- [Hooks et lignes de preuve](hooks.md)

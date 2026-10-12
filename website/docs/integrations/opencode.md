@@ -52,7 +52,7 @@ The MCP server implements the standard JSON-RPC handshake (`initialize`, `notifi
 
 ## Plugin behavior
 
-The plugin fails open and keeps raw routed memory only in the running OpenCode process. Engram's disk hook cache remains hashes, session IDs, host, cwd, and routed signatures only. `engram unlink --global opencode` removes only the Engram-generated plugin; a human-authored `engram.js` is preserved unless `--force` is explicit.
+The plugin fails open and keeps raw routed memory only in the running OpenCode process. Engram's disk hook cache remains hashes, session IDs, host, cwd, and delivered memory keys only. `engram unlink --global opencode` removes only the Engram-generated plugin; a human-authored `engram.js` is preserved unless `--force` is explicit.
 
 ## Next steps
 

@@ -26,7 +26,7 @@ engram link all
 
 | Category | Targets | Behavior |
 | --- | --- | --- |
-| Runtime-first | `codex`, `claude`, `cursor`, `gemini` | Short bootstrap instructions plus full Agent Skills and MCP config |
+| Runtime-first | `codex`, `claude`, `cursor`, `gemini` | Short bootstrap instructions, a companion guide with the full workflow, short Agent Skill pointers, and MCP config |
 | Hook-capable | `codex`, `claude`, `gemini`, `opencode`, `cursor`, `windsurf`/`cascade` | Agent hooks with host-specific event schemas |
 | Compact/manual fallback | `agents-md`, `copilot`, `cline` | Full compact protocol; no reliable runtime context injection in v1 |
 
@@ -37,13 +37,13 @@ engram link all
 | `codex` | `AGENTS.md`, `.agents/skills/engram/SKILL.md` | OpenAI Codex project instructions and Agent Skill |
 | `agents-md` | `AGENTS.md` | Generic fallback for unlisted AGENTS.md-compatible agents |
 | `copilot` | `.github/copilot-instructions.md`; global: `~/.copilot/copilot-instructions.md` | GitHub Copilot repository and user instructions |
-| `claude` | `CLAUDE.md` | Claude Code project guidance |
-| `cursor` | `.cursor/rules/engram.mdc`; global: `~/.cursor/plugins/local/engram/` | Cursor project rules and local plugin |
+| `claude` | `AGENTS.md`, `.claude/engram.md`, `.agents/engram.md`, plus a `CLAUDE.md` block only when that file already exists, and `.claude/rules/engram/<id>.md` path rules | Claude Code project guidance and native path rules |
+| `cursor` | `.cursor/rules/engram.mdc`, `.cursor/rules/engram/<id>.mdc` path rules; global: `~/.cursor/plugins/local/engram/` | Cursor project rules, native path rules, and local plugin |
 | `gemini` | `GEMINI.md`; global: `~/.gemini/GEMINI.md`, `~/.gemini/skills/engram/SKILL.md` | Gemini CLI context, including Antigravity Gemini-compatible surfaces |
 | `cline` | `.clinerules` | Cline-style workspace rules |
 | `windsurf` | `.windsurf/rules/engram.md`; global: `~/.codeium/windsurf/memories/global_rules.md` | Windsurf workspace rules and global rules/MCP |
 | `opencode` | `AGENTS.md`, `.opencode/engram.md`, `.opencode/skills/engram/SKILL.md`, `opencode.json` | OpenCode rules, Agent Skill, MCP tools, custom commands, plugin hooks |
-| `mcp` | `.mcp.json`; global: Claude and Gemini MCP config files | MCP-style JSON-lines wrapper registration |
+| `mcp` | `.mcp.json`; global: `~/.gemini/settings.json`, `~/.codex/config.toml`, and a `claude mcp add` hint | MCP-style JSON-lines wrapper registration |
 | `slash` | `.claude/commands/engram.md`, `.cursor/commands/engram.md`, `.gemini/commands/engram.toml`, `.opencode/commands/engram.md` | Native `/engram` slash adapters |
 
 Aliases: `codex` installs the `agents-md` adapter plus the generic Agent Skill file, `open-code` maps to `opencode`, and `cascade` maps to `windsurf`. The old `antigravity` and `antigravity-cli` targets are hidden compatibility aliases for now.
@@ -52,9 +52,9 @@ Aliases: `codex` installs the `agents-md` adapter plus the generic Agent Skill f
 
 | Host | Hook install in v1 | Events |
 | --- | --- | --- |
-| `codex` | Yes | `SessionStart`, `UserPromptSubmit` |
-| `claude` | Yes | `SessionStart`, `UserPromptSubmit` |
-| `gemini` | Yes | `SessionStart`, `BeforeAgent` |
+| `codex` | Yes | `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PreCompact`, `SubagentStart` (opt-in `SessionEnd`) |
+| `claude` | Yes | `SessionStart`, `UserPromptSubmit`, `InstructionsLoaded` (`PreToolUse` with `hooks.path_rules hook`), `PreCompact`, `SubagentStart` (opt-in `SessionEnd`) |
+| `gemini` | Yes | `SessionStart`, `BeforeAgent`, `AfterTool`, `PreCompress` |
 | `cursor` | Yes | `sessionStart` |
 | `windsurf` / `cascade` | Yes | `pre_user_prompt` |
 | `opencode` | Supported via local plugin | `chat.message`, `experimental.chat.system.transform` |

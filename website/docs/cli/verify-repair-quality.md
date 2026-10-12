@@ -12,9 +12,22 @@ Maintenance commands keep memory healthy.
 
 ```bash
 engram verify
+engram verify --sources
+engram verify --sources --json
 ```
 
 Checks hashes for integrity. Run after manual edits or imports.
+
+`--sources` also re-hashes the `source_files` of take-control memories against their `source_hashes` and records changed or missing ones in the local, gitignored `.agents/.engram/stale.json`. Stale sources never fail `verify`: `load` ranks stale memories lower and ends their cards with ` (stale)`, and `engram take-control --refresh` proposes updates for them. Source paths must stay inside the workspace; absolute paths, `..`, symlinks and hard links, secret files, `.git`, and Engram data are reported as unchecked and never read. In `--json`, `skipped` lists `{key, reason}` objects. A global take-control memory records the workspace it came from and is checked only there.
+
+## stats
+
+```bash
+engram stats
+engram stats --usage
+```
+
+`--usage` reads the local, gitignored `.agents/.engram/usage.json` and shows which memories agents actually fetch with `engram load --id` and which were injected but never fetched in 30 days.
 
 ## repair
 
@@ -24,6 +37,13 @@ engram rebuild-index
 ```
 
 Use `repair` after manual edits or imports to find malformed memory files skipped by index rebuild.
+
+```bash
+engram repair --move-backups
+engram repair workspace --move-backups --confirm
+```
+
+`--move-backups` plans moving stray `*.bak` migration backups from `rules`, `skills`, and `knowledge` into the gitignored `backups/<kind>-<label>/` folder (for example `backups/schema-v3/rules/x.md.pre-v3.bak`). Add `--confirm` to move them; a different file already at the destination is reported as a conflict and left in place. `engram doctor` reports these files as `memory.stray_backups`.
 
 ## quality-check
 

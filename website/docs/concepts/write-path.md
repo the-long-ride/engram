@@ -15,10 +15,10 @@ The write flow is the trust boundary. Agents propose, humans approve.
    Natural `/engram ss -f last 50 sessions` is the same scope plus explicit force approval: `engram save-session --query-level 50 --force`.
 2. Engram parses candidate type and target scope.
 3. Engram checks schema, secrets, prompt-injection patterns, and path safety.
-4. Human sees a preview.
+4. Human sees a preview. Each candidate carries one deterministic `Verdict:` line: `ADD`, `UPDATE <id>`, `SUPERSEDE <id>`, or `NOOP duplicate of <id>` (no model call).
 5. Direct CLI replies use `A`, `A 1,3`, `B <note>`, or `C`.
 6. AI-agent chat replies use `yes`, `audit`, or `cancel` after the exact displayed candidates.
-7. Only approved memory is written.
+7. Only approved memory is written. `A` and `B` skip `NOOP` candidates, and approving a `SUPERSEDE` marks the old memory superseded; `--force` and autosave never apply a `SUPERSEDE`, they defer it for review.
 8. Index, graph, hashes, and changelog are refreshed.
 
 ## Approval words

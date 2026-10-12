@@ -22,8 +22,8 @@ engram link gemini
 | --- | --- |
 | `GEMINI.md` | Project context bootstrap |
 | `.gemini/commands/engram.toml` | `/engram` slash adapter |
-| `.gemini/settings.json` | `SessionStart` and `BeforeAgent` hooks |
-| Gemini MCP config | MCP registration |
+| `.gemini/settings.json` | `SessionStart`, `BeforeAgent`, `AfterTool`, and `PreCompress` hooks |
+| `.gemini/settings.json` | MCP registration (`mcpServers.engram`, merged next to the hooks) |
 
 ## Global install
 
@@ -31,15 +31,17 @@ engram link gemini
 engram link --global gemini
 ```
 
-Writes `~/.gemini/GEMINI.md`, `~/.gemini/skills/engram/SKILL.md`, and the Gemini MCP config file.
+Writes `~/.gemini/GEMINI.md`, `~/.gemini/skills/engram/SKILL.md`, and merges `mcpServers.engram` into `~/.gemini/settings.json`.
 
 ## Runtime-first target
 
-Gemini is a runtime-first target. `GEMINI.md` contains short bootstrap instructions that rely on MCP tools and hooks for detailed protocol; the Agent Skill file carries the full write/approval workflow.
+Gemini is a runtime-first target. `GEMINI.md` contains short bootstrap instructions that rely on MCP tools and hooks for detailed protocol; the companion guide carries the full write/approval workflow, and the Agent Skill file is a short pointer to it.
 
 ## Hook behavior
 
-Gemini supports startup and prompt-time `hookSpecificOutput.additionalContext` injection via `SessionStart` and `BeforeAgent` events.
+Gemini supports startup and prompt-time `hookSpecificOutput.additionalContext` injection via `SessionStart` and `BeforeAgent` events; `PreCompress` (before the CLI summarizes history) resets the delivered set. `AfterTool` (matcher `read_file|write_file|replace`, timeout in milliseconds) injects up to 3 undelivered memories whose `applies_to` globs match the file the tool touched; the context is appended to the tool result, so it lands one step after the read. It shares the delivered set with `BeforeAgent` and never returns a decision. `engram link gemini` or `engram upgrade --latest` adds the event to an existing install.
+
+If `mcpServers.engram` in `.gemini/settings.json` sets `trust: true`, Gemini skips its confirmation for `engram_commit`; `engram doctor` warns about it (`host.gemini_trust`).
 
 ## Antigravity compatibility
 

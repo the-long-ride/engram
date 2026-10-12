@@ -40,7 +40,7 @@ Use global links carefully on shared machines. Engram writes managed blocks into
 | `codex` | `AGENTS.md`, `.agents/skills/engram/SKILL.md` |
 | `agents-md` | `AGENTS.md` |
 | `copilot` | `.github/copilot-instructions.md`; global: `~/.copilot/copilot-instructions.md` |
-| `claude` | `CLAUDE.md` |
+| `claude` | `AGENTS.md`, `.claude/engram.md`, `.agents/engram.md`, plus a `CLAUDE.md` block only when that file already exists |
 | `cursor` | `.cursor/rules/engram.mdc`; global: `~/.cursor/plugins/local/engram/` |
 | `gemini` | `GEMINI.md`; global: `~/.gemini/GEMINI.md`, `~/.gemini/skills/engram/SKILL.md` |
 | `cline` | `.clinerules` |

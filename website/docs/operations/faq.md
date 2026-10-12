@@ -8,7 +8,7 @@ description: Frequently asked questions about Engram.
 
 ## Is Engram a vector database?
 
-No. Default Engram search is deterministic lexical search. `engram search --semantic` adds deterministic local similarity, not embedding-backed semantic search. Graph vectors are local hashed word vectors, not semantic embeddings. Optional local sqlite-vec is an acceleration layer, not the source of truth.
+No. Default Engram search is deterministic lexical search. `engram search --semantic` adds deterministic local similarity, not embedding-backed semantic search. Graph vectors are local hashed word vectors, not semantic embeddings. Optional local sqlite-vec is an experimental acceleration layer (off by default; opt in with `vector.enabled: true`), not the source of truth.
 
 ## Does Engram write memory automatically?
 
@@ -54,7 +54,7 @@ Add `--move-from-path <old-path>` when they also want Engram to move the whole o
 
 ## Legacy memory migration to schema v3
 
-`engram upgrade --latest` also migrates active v1/v2 memory files in the workspace and configured global roots to schema v3. Engram preserves each Markdown body exactly, creates `<memory-file>.pre-v3.bak`, fills only deterministic metadata, refreshes integrity hashes, and rebuilds the index, graph, and eligible vector sidecars. It never invents `evidence_refs`; a memory without verified trace links is marked `evidence_status: unverified`. Invalid memories are reported and skipped, archived memories are not rewritten, and a second run is idempotent.
+`engram upgrade --latest` also migrates active v1/v2 memory files in the workspace and configured global roots to schema v3. Engram preserves each Markdown body exactly, writes `backups/schema-v3/<memory-file>.pre-v3.bak` (a gitignored folder; `engram repair --move-backups` relocates older backups left beside memories), fills only deterministic metadata, refreshes integrity hashes, and rebuilds the index, graph, and eligible vector sidecars. It never invents `evidence_refs`; a memory without verified trace links is marked `evidence_status: unverified`. Invalid memories are reported and skipped, archived memories are not rewritten, and a second run is idempotent.
 
 Preview all changes without writing:
 

@@ -30,7 +30,7 @@ Bad memory is temporary chat noise, secrets, credentials, one-off speculation, o
 
 ## Rule variants
 
-Engram always saves rule memories with light, balanced, and strict versions. Rule variant mode is a render lens for agent-facing memory:
+Engram derives light, balanced, and strict rule wording at render time from the rule's `## Content` (balanced is the Content verbatim), so new and rewritten rule files store only the Content. A `## Rule Variants` section is kept only for custom wording a candidate supplies with `LIGHT:`/`BALANCED:`/`STRICT:`. Rule variant mode is a render lens for agent-facing memory:
 
 - **Strict** helps lower-tier models stay controlled.
 - **Light** or **balanced** wording usually helps stronger models so rules do not limit their reasoning.
@@ -43,15 +43,28 @@ engram set-rule-variant strict|balanced|light|off
 
 ## Compact output by default
 
-When `engram load "<task>"` runs, the output is slimmed for AI agents by default:
+When `engram load "<task>"` runs, the output is tiered and slimmed for AI agents by default:
 
 | Aspect | Default (`engram load`) | Full (`engram load --full`) |
 | --- | --- | --- |
-| Frontmatter | `id`, `type`, `tags`, `confidence`, `authority`, `depends_on`, `evidence_refs` | Full schema v3 and legacy fields, including provenance, revision, supersession, and validity |
-| Rule body | One selected variant under `## Rule variants (1/3 based on current: <active>)` | Full `## Rule Variants` section with all three variants |
-| Non-rule content | Same content, unchanged heading | Same content, unchanged heading |
+| Frontmatter | Not rendered; the body header is `### <id> [<type>, <authority>]` plus `requires: <ids>` | Full schema v3 and legacy fields, including provenance, revision, supersession, and validity |
+| Disclosure | Top `load.expand_top` hits as bodies, other hits as one-line cards (`- <id> [<type>] <directive-or-summary>`), then a `fetch:` hint | Every packed body |
+| Rule body | One selected variant | The Content, plus the stored `## Rule Variants` section only when the file has custom variants |
+| Other sections | `## Context`, `## Example`, and `## Origin` are not rendered | Same content, unchanged heading |
 
-MCP `engram_load` and SessionStart hooks use compact output by default. Pass `full: true` on the MCP tool or `engram load --full "<task>"` when broader legacy output is needed.
+MCP `engram_load` and hooks use the tiered output by default. Pass `full: true` on the MCP tool or `engram load --full "<task>"` when broader legacy output is needed.
+
+## Optional routing fields
+
+These frontmatter fields are optional; a memory without them behaves as before and `schema_version` stays 3.
+
+| Field | Meaning |
+| --- | --- |
+| `directive` | One line of at most 160 characters; shown on cards and weighted in ranking |
+| `applies_to` | Glob list; injects the memory when a matching file is read or edited and counts as a strong anchor |
+| `tier` | `durable` (default) or `working` (task-scoped, gitignored, expires) |
+| `objective` | Up to 200 characters; the objective a working memory was written for |
+| `valid_until` | Expiry date; a working memory gets today + `load.working_ttl_days` |
 
 <!-- evidence-foundation:v3:start -->
 ## Evidence-backed memory

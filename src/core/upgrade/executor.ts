@@ -2,8 +2,9 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { EngramConfig, Scope } from '../runtime/types.js';
-import { GRAPH_FILE, HASH_FILE, INDEX_FILE, VECTOR_DB_FILE } from '../runtime/constants.js';
+import { GRAPH_FILE, HASH_FILE, INDEX_FILE, VECTOR_DB_FILE, WORKING_GRAPH_FILE, WORKING_HASH_FILE, WORKING_INDEX_FILE } from '../runtime/constants.js';
 import { ensureDir, exists, readText } from '../system/fsx.js';
+import { backupPath, writeBackupOnce } from '../memory/backups.js';
 import { migrateMemorySchema } from '../memory/migrate-schema.js';
 import { rebuildIndex } from '../memory/index.js';
 import { rebuildGraph } from '../memory/graph.js';
@@ -129,7 +130,7 @@ async function applyMemoryGroup(
   const memorySnapshots = await capture(items.map((item) => item.file));
   const sidecarSnapshots = await capture(memorySidecars(root));
   try {
-    await writeBackups(memorySnapshots, plan.targetVersion);
+    await writeBackups(memorySnapshots, plan.targetVersion, root);
     const selectedFiles = items.map((item) => path.relative(root, item.file).replace(/\\/g, '/'));
     const result = await migrateMemorySchema(root, scope, { files: selectedFiles });
     if (result.failed > 0) throw new Error(`${result.failed} memory migration file(s) failed`);
@@ -149,7 +150,7 @@ async function applyMemoryGroup(
 }
 
 function memorySidecars(root: string): string[] {
-  return [HASH_FILE, INDEX_FILE, GRAPH_FILE, VECTOR_DB_FILE, `${VECTOR_DB_FILE}-wal`, `${VECTOR_DB_FILE}-shm`]
+  return [HASH_FILE, INDEX_FILE, GRAPH_FILE, WORKING_HASH_FILE, WORKING_INDEX_FILE, WORKING_GRAPH_FILE, VECTOR_DB_FILE, `${VECTOR_DB_FILE}-wal`, `${VECTOR_DB_FILE}-shm`]
     .map((file) => path.join(root, file));
 }
 
@@ -259,10 +260,16 @@ async function capture(files: string[]): Promise<Snapshot[]> {
   return rows;
 }
 
-async function writeBackups(rows: Snapshot[], targetVersion: string): Promise<void> {
+/** Memory rows (with `scopeRoot`) go to `backups/upgrade-<version>/`; integration files keep a sibling `.bak`. */
+async function writeBackups(rows: Snapshot[], targetVersion: string, scopeRoot?: string): Promise<void> {
   const suffix = targetVersion.replace(/[^A-Za-z0-9._-]/g, '_');
   for (const row of rows) {
     if (!row.existed || !row.bytes) continue;
+    if (scopeRoot) {
+      const target = backupPath(scopeRoot, 'upgrade', targetVersion, path.relative(scopeRoot, row.file), `.engram-upgrade-${suffix}.bak`);
+      await writeBackupOnce(scopeRoot, target, row.bytes, row.mode, false);
+      continue;
+    }
     const backup = `${row.file}.engram-upgrade-${suffix}.bak`;
     try {
       await fs.writeFile(backup, row.bytes, { flag: 'wx', mode: row.mode });

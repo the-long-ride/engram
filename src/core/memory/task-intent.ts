@@ -86,13 +86,70 @@ const CONSTRAINT_SIGNALS: Record<string, string[]> = {
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 
+// Stem signals intentionally match any word that starts with them (optimiz -> optimized).
+const STEM_SIGNALS = new Set(['optimiz', 'sanitiz', 'localiz', 'translat', 'compatib', 'internationaliz']);
+
+// "session start" / "startup" describe the hook event, not authentication.
+const SESSION_START_PHRASE = /\bsession[\s-]+start(?:up)?\b|\bstart(?:up)?[\s-]+session\b|\bstartup\b/g;
+
+/** Whole-word tokens; keeps short ones (ui, ci) and also splits dotted/hyphenated ones (login-form). */
+function tokenize(lower: string): string[] {
+  const out: string[] = [];
+  for (const token of lower.match(/[a-z0-9]+(?:[.-][a-z0-9]+)*/g) ?? []) {
+    out.push(token);
+    if (/[.-]/.test(token)) out.push(...token.split(/[.-]/));
+  }
+  return out;
+}
+
+// Short or ambiguous signals match exactly (or as a plain plural); a prefix match on `form` would hit `format`.
+const STRICT_SIGNALS = new Set(['ui', 'ux', 'ci', 'cd', 'db', 'ts', 'go', 'less', 'form', 'rest', 'port', 'view', 'page']);
+const INFLECTION_SUFFIXES = ['s', 'es', 'ed', 'ing', 'ion', 'ions', 'ation', 'ations', 'ment', 'ments', 'er', 'ers'];
+// Forms that a suffix rule cannot derive from the signal.
+const IRREGULAR_FORMS: Record<string, string[]> = {
+  auth: ['authentication', 'authenticate', 'authenticated', 'authenticating', 'authorization', 'authorize', 'authorized', 'authorizing']
+};
+
+/** True when token is the signal plus a common inflection (tests, fixing, deployment, created, planning). */
+function isInflection(token: string, signal: string): boolean {
+  if (token === signal) return true;
+  if (STRICT_SIGNALS.has(signal) || signal.length < 3) return token === `${signal}s` || token === `${signal}es`;
+  if (IRREGULAR_FORMS[signal]?.includes(token)) return true;
+  const suffixAfter = (stem: string) => token.startsWith(stem) && INFLECTION_SUFFIXES.includes(token.slice(stem.length));
+  if (suffixAfter(signal)) return true;
+  // trailing-e drop (create -> creating), y -> i (verify -> verifies), consonant doubling (plan -> planning)
+  if (signal.endsWith('e') && suffixAfter(signal.slice(0, -1))) return true;
+  if (signal.endsWith('y') && suffixAfter(`${signal.slice(0, -1)}i`)) return true;
+  return suffixAfter(`${signal}${signal.slice(-1)}`);
+}
+
+const PHRASE_PATTERNS = new Map<string, RegExp>();
+
+function phrasePattern(signal: string): RegExp {
+  let pattern = PHRASE_PATTERNS.get(signal);
+  if (!pattern) {
+    pattern = new RegExp(String.raw`\b${signal.replace(/ /g, String.raw`\s+`)}\b`);
+    PHRASE_PATTERNS.set(signal, pattern);
+  }
+  return pattern;
+}
+
+function matchesSignal(signal: string, lower: string, tokens: Set<string>, tokenList: string[]): boolean {
+  if (signal.includes(' ')) return phrasePattern(signal).test(lower);
+  if (STEM_SIGNALS.has(signal)) return tokenList.some((token) => token.startsWith(signal));
+  if (tokens.has(signal)) return true;
+  return tokenList.some((token) => isInflection(token, signal));
+}
+
 function detectFromMap(text: string, map: Record<string, string[]>): string[] {
-  const lower = text.toLowerCase();
+  const lower = text.toLowerCase().replace(SESSION_START_PHRASE, ' ');
+  const tokenList = tokenize(lower);
+  const tokens = new Set(tokenList);
   const hits: Array<{ key: string; score: number }> = [];
   for (const [key, signals] of Object.entries(map)) {
     let score = 0;
     for (const signal of signals) {
-      if (lower.includes(signal)) score += signal.includes(' ') ? 2 : 1;
+      if (matchesSignal(signal, lower, tokens, tokenList)) score += signal.includes(' ') ? 2 : 1;
     }
     if (score > 0) hits.push({ key, score });
   }

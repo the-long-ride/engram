@@ -6,8 +6,11 @@ const sensitivePatterns: Array<[string, string, RegExp, string]> = [
   ['jwt', 'JWT token pattern', /eyJ[A-Za-z0-9+/=_-]{20,}\.[A-Za-z0-9+/=_-]{10,}/g, '<api-key>'],
   ['private-key', 'private key block', /-----BEGIN [A-Z ]*PRIVATE KEY-----/g, '<private-key>'],
   ['password', 'password assignment', /password\s*[:=]\s*\S+/gi, '<password>'],
-  ['secret', 'secret environment value', /[A-Z_]*(SECRET|TOKEN|KEY)\s*=\s*\S+/g, '<api-key>'],
-  ['email', 'email address', /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '<team-email>'],
+  // Linear forms. The lookbehind only starts a SECRET match at the head of an [A-Z_] run (same matches as the
+  // unanchored form). The email local part is capped at 64 chars (RFC 5321): a longer one is still detected, but
+  // its prefix beyond 64 chars survives redaction. The JWT pattern keeps its unbounded repeats.
+  ['secret', 'secret environment value', /(?<![A-Z_])[A-Z_]*(SECRET|TOKEN|KEY)\s*=\s*\S+/g, '<api-key>'],
+  ['email', 'email address', /[a-zA-Z0-9._%+-]{1,64}@[a-zA-Z0-9.-]{1,255}\.[a-zA-Z]{2,}/g, '<team-email>'],
   ['card', 'payment card pattern', /\b\d{4}[\s-]\d{4}[\s-]\d{4}[\s-]\d{4}\b/g, '<card-number>'],
   ['internal-ip', 'internal IP address', /\b(10|192\.168)\.\d+\.\d+\.\d+\b/g, '<internal-host>'],
   ['gps', 'GPS coordinate pattern', /\b\d{1,3}\.\d{4,},\s*\d{1,3}\.\d{4,}\b/g, '<location>']

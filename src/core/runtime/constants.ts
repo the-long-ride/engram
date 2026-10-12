@@ -18,7 +18,29 @@ export const INBOX_DIR = 'inbox';
 export const TRACE_DIR = 'traces';
 export const INBOX_DEFAULT_TTL_DAYS = 14;
 
-export const MEMORY_DIRS = ['rules', 'skills', 'knowledge', 'archive', 'quarantine', 'proposals', 'inbox', 'traces'];
+/** D16 working tier: task-scoped memories under `working/<type-dir>/`, gitignored and expiring. */
+export const WORKING_DIR = 'working';
+export const WORKING_TTL_DAYS_DEFAULT = 14;
+export const WORKING_TTL_DAYS_MAX = 365;
+/** Local (gitignored) sidecars for working-tier entries, so the committed sidecars never name a working memory. */
+export const WORKING_INDEX_FILE = `${WORKING_DIR}/${INDEX_FILE}`;
+export const WORKING_GRAPH_FILE = `${WORKING_DIR}/${GRAPH_FILE}`;
+export const WORKING_HASH_FILE = `${WORKING_DIR}/${HASH_FILE}`;
+
+/**
+ * True when a scope-relative path lives in the working tier, including archived working memories
+ * (`working/archive/<date>/...`, and `archive/<date>/working/...` written by an earlier build); all are gitignored.
+ */
+export function isWorkingPath(rel: string): boolean {
+  return /^(?:archive\/[^/]+\/)?working\//.test(rel.replace(/\\/g, '/'));
+}
+
+export const MEMORY_DIRS = ['rules', 'skills', 'knowledge', 'archive', 'quarantine', 'proposals', 'inbox', 'traces', WORKING_DIR];
+
+/** True for a scope-relative path of an active (durable or working) memory file. */
+export function isActiveMemoryPath(rel: string): boolean {
+  return rel.endsWith('.md') && /^(?:working\/)?(?:rules|skills|knowledge)\//.test(rel.replace(/\\/g, '/'));
+}
 
 export const DEFAULT_IGNORE = `# Engram ignores private or generated AI context.
 .env

@@ -146,7 +146,7 @@ function renderConfig(title: string, config: EngramConfig): string {
     ['Graph enabled', String(config.graph.enabled)],
     ['Graph max related', String(config.graph.max_related)],
     ['Graph min score', String(config.graph.min_related_score)],
-    ['Vector enabled', String(config.vector.enabled)],
+    ['Vector enabled (experimental)', String(config.vector.enabled)],
     ['Vector provider', config.vector.provider],
     ['Vector threshold', String(config.vector.auto_threshold)],
     ['Vector candidate pool', String(config.vector.candidate_pool)],

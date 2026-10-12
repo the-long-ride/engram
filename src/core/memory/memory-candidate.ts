@@ -1,7 +1,12 @@
 /** Memory type detection helpers for agent-brainstormed save candidates. */
-import type { Confidence, MemoryType, RuleVariant } from '../runtime/types.js';
-import { resolveMemoryLimits, type MemoryLimits } from './schema.js';
+import type { Confidence, MemoryType, RuleVariant, Scope } from '../runtime/types.js';
+import { DIRECTIVE_MAX_CHARS, resolveMemoryLimits, type MemoryLimits } from './schema.js';
 import { agentMemoryChatApprovalText, agentMemoryValueGateText } from './agent-proposal-protocol.js';
+
+/** D15: `task` items serve the current objective; `durable` (the default when omitted) outlive it. */
+export type CandidateObjective = 'task' | 'durable';
+/** Most `APPLIES_TO` globs one candidate may declare. */
+export const APPLIES_TO_MAX_GLOBS = 8;
 
 export type MemoryCandidate = {
   type: MemoryType;
@@ -21,6 +26,14 @@ export type MemoryCandidate = {
    */
   parent?: string[];
   variants?: Partial<Record<RuleVariant, string>>;
+  /** Omitted means durable. Carried through preview and approval; the working-tier write path is separate. */
+  objective?: CandidateObjective;
+  /** Per-candidate save target; overrides the command scope and is always named in the preview. */
+  scope?: Scope;
+  /** Workspace-relative globs written as `applies_to` frontmatter. */
+  appliesTo?: string[];
+  /** One imperative line (<= DIRECTIVE_MAX_CHARS) written as `directive` frontmatter. */
+  directive?: string;
 };
 type CandidateOptions = { explicitType?: MemoryType };
 
@@ -48,6 +61,7 @@ export function parseMemoryCandidate(raw: string, options: CandidateOptions = {}
   let declaredChildren: string[] = [];
   let variants: Partial<Record<RuleVariant, string>> = {};
   let confidence: Confidence | undefined;
+  const distilled: Record<string, string> = {};
   const content: string[] = [];
   for (const line of raw.split(/\r?\n/).map((part) => part.trim()).filter(Boolean)) {
     const typeMatch = line.match(/^(?:type|kind|memory type)\s*:\s*([a-z-]+)\b\s*(.*)$/i);
@@ -102,6 +116,13 @@ export function parseMemoryCandidate(raw: string, options: CandidateOptions = {}
       confidence = parseConfidence(confidenceMatch[1]);
       continue;
     }
+    // D15 fields only in their documented uppercase form, so prose such as "Scope: ..." or "Applies to: ..." stays
+    // content; an OBJECTIVE/SCOPE line whose value is not a known enum is content too.
+    const distilledMatch = line.match(/^(OBJECTIVE|SCOPE|APPLIES_TO|DIRECTIVE)\s*:\s*(.+)$/);
+    if (distilledMatch && isDistilledLine(distilledMatch[1], distilledMatch[2])) {
+      setDistilledField(distilled, distilledMatch[1].toLowerCase(), distilledMatch[2].trim());
+      continue;
+    }
     const variantMatch = line.match(/^(light|balanced|strict)\s*:\s*(.+)$/i);
     if (variantMatch) {
       variants[variantMatch[1].toLowerCase() as RuleVariant] = variantMatch[2].trim();
@@ -128,7 +149,8 @@ export function parseMemoryCandidate(raw: string, options: CandidateOptions = {}
     updateId,
     ...(declaredChildren.length ? { parent: uniqueStrings(declaredChildren) } : {}),
     confidence,
-    variants
+    variants,
+    ...distilledFields(distilled)
   });
 }
 
@@ -144,7 +166,7 @@ export function parseMemoryCandidates(raw: string): MemoryCandidate[] {
     const variantKey = candidate.variants
       ? `${candidate.variants.light ?? ''}:${candidate.variants.balanced ?? ''}:${candidate.variants.strict ?? ''}`
       : '';
-    unique.set(`${candidate.type}:${candidate.text.toLowerCase()}:${candidate.context ?? ''}:${(candidate.triggers ?? []).join(',')}:${(candidate.dependsOn ?? []).join(',')}:${candidate.level ?? ''}:${candidate.updateId ?? ''}:${(candidate.parent ?? []).join(',')}:${candidate.confidence ?? ''}:${variantKey}`, candidate);
+    unique.set(`${candidate.type}:${candidate.text.toLowerCase()}:${candidate.context ?? ''}:${(candidate.triggers ?? []).join(',')}:${(candidate.dependsOn ?? []).join(',')}:${candidate.level ?? ''}:${candidate.updateId ?? ''}:${(candidate.parent ?? []).join(',')}:${candidate.confidence ?? ''}:${variantKey}:${candidate.objective ?? ''}:${candidate.scope ?? ''}:${(candidate.appliesTo ?? []).join(',')}:${candidate.directive ?? ''}`, candidate);
   }
   return [...unique.values()].slice(0, 8);
 }
@@ -198,7 +220,7 @@ export function generatedMemoryGuidance(explicitType?: MemoryType, limits?: Memo
     'Optional structure: add `| DEPENDS_ON: base-memory-id | LEVEL: advanced` when a memory builds on existing memory.',
     agentMemoryValueGateText(),
     'For approved rule candidates, optional fields are `| LIGHT: ... | BALANCED: ... | STRICT: ...`.',
-    'Rule variant fields are for reviewed rule wording; omit them when deterministic defaults are enough.',
+    'Rule variant fields are for reviewed rule wording. Omit them unless the reviewed wording differs from the defaults; Engram derives them otherwise.',
     'Recommended format: TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag the version. | ORIGIN: Created from release planning so future agents preserve the release order. | TRIGGERS: release, versioning, changelog'
   ].join('\n');
 }
@@ -211,6 +233,7 @@ export function saveSessionGuidance(options: { queryLevel?: number; limits?: Mem
     'If you are an AI agent in chat, use LLM judgment to define the candidates from the current conversation before passing them to Engram.',
     'Use one candidate per line in this format: TYPE: rule | TEXT: Always use pnpm for installs.',
     'When Engram reports related memories, restructure and rerun with `DEPENDS_ON: memory-id`; use `UPDATE: memory-id` for duplicate candidates that should merge into existing memory.',
+    'Engram prints a Verdict line per candidate (ADD, UPDATE <id>, SUPERSEDE <id>, NOOP duplicate of <id>); show it to the human with the candidate.',
     'Use rule for user corrections, preferences, constraints, or repeated "always/never/do not" guidance.',
     'Use workflow for repeatable procedures discovered from rules plus project knowledge across the session.',
     'Use knowledge for objective durable facts, decisions, project state, or implementation details.',
@@ -238,7 +261,9 @@ function parsePipeFields(raw: string): Record<string, string> | undefined {
   for (const part of clean.split(/\s+\|\s+/)) {
     const match = part.match(/^([a-z_ -]+)\s*:\s*([\s\S]+)$/i);
     if (!match) return undefined;
-    fields[normalizeField(match[1])] = match[2].trim();
+    const field = normalizeField(match[1]);
+    if (field === 'scope') setDistilledField(fields, field, match[2].trim());
+    else fields[field] = match[2].trim();
   }
   return fields.type || fields.kind || fields.memory_type ? fields : undefined;
 }
@@ -267,8 +292,73 @@ function candidateFromFields(fields: Record<string, string>, options: CandidateO
     updateId,
     ...(parent.length ? { parent } : {}),
     confidence,
-    variants
+    variants,
+    ...distilledFields({ ...fields, applies_to: fields.applies_to ?? fields.appliesto })
   });
+}
+
+/** D15 fields; an invalid value rejects the whole candidate with a message naming the field. */
+function distilledFields(fields: Record<string, string | undefined>): Pick<MemoryCandidate, 'objective' | 'scope' | 'appliesTo' | 'directive'> {
+  const objective = fields.objective === undefined ? undefined : parseObjective(fields.objective);
+  const scope = fields.scope === undefined ? undefined : parseCandidateScope(fields.scope);
+  const appliesTo = fields.applies_to === undefined ? [] : parseAppliesTo(fields.applies_to);
+  const directive = fields.directive?.replace(/\s+/g, ' ').trim();
+  if (directive && directive.length > DIRECTIVE_MAX_CHARS) {
+    throw new Error(`DIRECTIVE must be <= ${DIRECTIVE_MAX_CHARS} characters; got ${directive.length}`);
+  }
+  return {
+    ...(objective ? { objective } : {}),
+    ...(scope ? { scope } : {}),
+    ...(appliesTo.length ? { appliesTo } : {}),
+    ...(directive ? { directive } : {})
+  };
+}
+
+function isDistilledLine(field: string, value: string): boolean {
+  const normalized = value.trim().toLowerCase();
+  if (field === 'OBJECTIVE') return normalized === 'task' || normalized === 'durable';
+  if (field === 'SCOPE') return normalized === 'workspace' || normalized === 'global';
+  return true;
+}
+
+/** A field set twice must agree; two different SCOPE targets are ambiguous, so the candidate is rejected. */
+function setDistilledField(fields: Record<string, string>, field: string, value: string): void {
+  const previous = fields[field];
+  if (field === 'scope' && previous !== undefined && previous.toLowerCase() !== value.toLowerCase()) {
+    throw new Error(`duplicate SCOPE with different values: ${previous}, ${value}`);
+  }
+  fields[field] = value;
+}
+
+function parseObjective(value: string): CandidateObjective {
+  const normalized = value.trim().toLowerCase();
+  if (normalized === 'task' || normalized === 'durable') return normalized;
+  throw new Error(`OBJECTIVE must be task or durable; got: ${value.trim() || '(empty)'}`);
+}
+
+function parseCandidateScope(value: string): Scope {
+  const normalized = value.trim().toLowerCase();
+  if (normalized === 'workspace' || normalized === 'global') return normalized;
+  throw new Error(`SCOPE must be workspace or global; got: ${value.trim() || '(empty)'}`);
+}
+
+/**
+ * Comma- or space-separated workspace-relative globs, normalized to `/` without a leading `./`, so they match the
+ * paths path triggers compare against. Absolute paths, drive letters, `~`, and `..` segments are rejected.
+ */
+function parseAppliesTo(value: string): string[] {
+  const list = value.replace(/^\[|\]$/g, '');
+  // Commas separate globs when present, so `src/My Folder/**` survives; otherwise whitespace does.
+  const globs = uniqueStrings(list.split(list.includes(',') ? ',' : /\s+/)
+    .map((glob) => glob.trim().replace(/^["']|["']$/g, '').replace(/\\/g, '/').replace(/^(?:\.\/)+/, '')));
+  for (const glob of globs) {
+    if (/^\//.test(glob) || /^[a-z]:/i.test(glob) || glob.startsWith('~')) {
+      throw new Error(`APPLIES_TO globs must be workspace-relative; got: ${glob}`);
+    }
+    if (glob.split('/').includes('..')) throw new Error(`APPLIES_TO globs must not contain '..'; got: ${glob}`);
+  }
+  if (globs.length > APPLIES_TO_MAX_GLOBS) throw new Error(`APPLIES_TO accepts at most ${APPLIES_TO_MAX_GLOBS} globs; got ${globs.length}`);
+  return globs;
 }
 
 function compactCandidate(candidate: MemoryCandidate): MemoryCandidate {
@@ -284,7 +374,11 @@ function compactCandidate(candidate: MemoryCandidate): MemoryCandidate {
     ...(candidate.updateId?.trim() ? { updateId: candidate.updateId.trim() } : {}),
     ...(candidate.parent?.length ? { parent: uniqueStrings(candidate.parent) } : {}),
     ...(candidate.confidence ? { confidence: candidate.confidence } : {}),
-    ...(Object.keys(variants).length ? { variants } : {})
+    ...(Object.keys(variants).length ? { variants } : {}),
+    ...(candidate.objective ? { objective: candidate.objective } : {}),
+    ...(candidate.scope ? { scope: candidate.scope } : {}),
+    ...(candidate.appliesTo?.length ? { appliesTo: uniqueStrings(candidate.appliesTo) } : {}),
+    ...(candidate.directive?.trim() ? { directive: candidate.directive.trim() } : {})
   };
 }
 

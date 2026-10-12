@@ -5,17 +5,18 @@ import type { AuthorMigrationFile, AuthorMigrationPlan, AuthorMigrationResult, A
 import { AuthorMigrationError } from './types.js';
 import { readConfiguredAuthorLayers } from './config.js';
 import { getAuthorState } from './resolve.js';
-import { tryNormalizeAuthorProfile } from './validate.js';
-import { loadConfig, scopeRootsForConfig } from '../runtime/config.js';
+import { includeAuthorEmail, loadConfig, scopeRootsForConfig } from '../runtime/config.js';
+import { today } from '../system/text.js';
 import type { Scope } from '../runtime/types.js';
 import { exists, listFiles, readText } from '../system/fsx.js';
 import { updateHash } from '../safety/hash.js';
 import { parseMemory, validateMemoryRaw } from '../memory/schema.js';
 import { updateFrontmatter } from '../memory/frontmatter.js';
+import { backupPath, backupRelative, writeBackupOnce } from '../memory/backups.js';
 import { rebuildIndex } from '../memory/index.js';
 import { rebuildGraph } from '../memory/graph.js';
 import { ensureVectorIndex } from '../memory/vector-db.js';
-import { GRAPH_FILE, HASH_FILE, INDEX_FILE, VECTOR_DB_FILE } from '../runtime/constants.js';
+import { GRAPH_FILE, HASH_FILE, INDEX_FILE, VECTOR_DB_FILE, WORKING_GRAPH_FILE, WORKING_HASH_FILE, WORKING_INDEX_FILE, isActiveMemoryPath } from '../runtime/constants.js';
 
 type MigrationWriter = (file: string, content: string, mode: number) => Promise<void>;
 let writerForTests: MigrationWriter | undefined;
@@ -32,18 +33,23 @@ type RootPlan = {
   rows: AuthorMigrationFile[];
 };
 
-export async function planAuthorMemoryMigration(cwd: string, scope: AuthorMigrationScope): Promise<AuthorMigrationPlan> {
-  const rootPlans = await buildRootPlans(cwd, scope);
+export async function planAuthorMemoryMigration(
+  cwd: string,
+  scope: AuthorMigrationScope,
+  options: { stripEmail?: boolean } = {}
+): Promise<AuthorMigrationPlan> {
+  const rootPlans = await buildRootPlans(cwd, scope, options);
   return aggregatePlan(scope, rootPlans);
 }
 
 export async function migrateMemoryAuthors(
   cwd: string,
   scope: AuthorMigrationScope,
-  options: { confirmed: boolean }
+  options: { confirmed: boolean; stripEmail?: boolean }
 ): Promise<AuthorMigrationResult> {
   if (options.confirmed !== true) throw new Error('Author memory migration requires explicit confirmation (--confirm)');
-  const rootPlans = await buildRootPlans(cwd, scope);
+  const rootPlans = await buildRootPlans(cwd, scope, options);
+  const stripEmail = options.stripEmail === true;
   const migratedRows: AuthorMigrationFile[] = [];
   for (const plan of rootPlans) {
     if (!plan.files.length) {
@@ -51,10 +57,10 @@ export async function migrateMemoryAuthors(
       continue;
     }
     try {
-      await applyRootMigration(cwd, plan);
+      await applyRootMigration(cwd, plan, stripEmail);
       const eligible = new Set(plan.files.map((file) => file.relative));
       migratedRows.push(...plan.rows.map((row) => eligible.has(row.file)
-        ? { ...row, action: 'migrated' as const, backup: `${row.file}.pre-author-v3.bak` }
+        ? { ...row, action: 'migrated' as const, backup: backupRelative(plan.root, authorBackupFile(plan.root, row.file, stripEmail)) }
         : row));
     } catch (error) {
       if (error instanceof AuthorMigrationError) throw error;
@@ -65,8 +71,10 @@ export async function migrateMemoryAuthors(
   return { ...base, migrated: migratedRows.filter((row) => row.action === 'migrated').length, failed: 0, rollback: 'not-needed' };
 }
 
-async function buildRootPlans(cwd: string, requested: AuthorMigrationScope): Promise<RootPlan[]> {
+async function buildRootPlans(cwd: string, requested: AuthorMigrationScope, options: { stripEmail?: boolean }): Promise<RootPlan[]> {
   const config = await loadConfig(cwd);
+  const stripEmail = options.stripEmail === true;
+  const includeEmail = includeAuthorEmail(config);
   const roots = scopeRootsForConfig(cwd, config);
   const scopes: Scope[] = requested === 'both' ? ['workspace', 'global'] : [requested];
   const layers = await readConfiguredAuthorLayers(cwd);
@@ -91,18 +99,21 @@ async function buildRootPlans(cwd: string, requested: AuthorMigrationScope): Pro
       try {
         const raw = await readText(absolute);
         const doc = parseMemory(raw);
-        const explicit = tryNormalizeAuthorProfile({ name: doc.frontmatter.author_name, email: doc.frontmatter.author_email });
-        const hasExplicitKeys = doc.frontmatter.author_name !== undefined || doc.frontmatter.author_email !== undefined;
-        if (explicit) {
-          validateMemoryRaw(raw);
+        const fm = doc.frontmatter;
+        // Throws for a missing author, an invalid name/email, or an email without a name; a name alone is valid.
+        validateMemoryRaw(raw);
+        const hasName = fm.author_name !== undefined;
+        const carriesEmail = fm.author_email !== undefined || fm.author !== undefined;
+        if (hasName && !(stripEmail && carriesEmail)) {
           rows.push({ scope, file: relative, action: 'current', source: selected.source });
           continue;
         }
-        if (hasExplicitKeys) {
-          throw new Error('Incomplete or invalid author_name/author_email pair');
+        const keptName = hasName ? String(fm.author_name) : selected.profile?.name;
+        if (stripEmail && !keptName) {
+          rows.push({ scope, file: relative, action: 'skipped', source: selected.source, reason: 'No author name is available to keep after stripping the email' });
+          continue;
         }
-        validateMemoryRaw(raw);
-        if (!selected.profile) {
+        if (!stripEmail && !selected.profile) {
           rows.push({
             scope,
             file: relative,
@@ -114,15 +125,17 @@ async function buildRootPlans(cwd: string, requested: AuthorMigrationScope): Pro
           });
           continue;
         }
-        const next = updateFrontmatter(raw, {
-          author: undefined,
-          author_name: selected.profile.name,
-          author_email: selected.profile.email
-        });
+        const next = stripEmail
+          ? updateFrontmatter(raw, { author: undefined, author_email: undefined, author_name: keptName })
+          : updateFrontmatter(raw, {
+            author: undefined,
+            author_name: selected.profile!.name,
+            author_email: includeEmail ? selected.profile!.email : undefined
+          });
         validateMemoryRaw(next);
         const stat = await fs.stat(absolute);
         migrations.push({ absolute, relative, raw, next, mode: stat.mode & 0o777, atime: stat.atime, mtime: stat.mtime });
-        rows.push({ scope, file: relative, action: 'migrate', backup: `${relative}.pre-author-v3.bak`, source: selected.source });
+        rows.push({ scope, file: relative, action: 'migrate', backup: backupRelative(root, authorBackupFile(root, relative, stripEmail)), source: selected.source });
       } catch (error) {
         rows.push({ scope, file: relative, action: 'invalid', reason: error instanceof Error ? error.message : String(error), source: selected.source });
       }
@@ -132,13 +145,13 @@ async function buildRootPlans(cwd: string, requested: AuthorMigrationScope): Pro
   return plans;
 }
 
-async function applyRootMigration(cwd: string, plan: RootPlan): Promise<void> {
-  const sidecarPaths = [HASH_FILE, INDEX_FILE, GRAPH_FILE, VECTOR_DB_FILE, `${VECTOR_DB_FILE}-wal`, `${VECTOR_DB_FILE}-shm`]
+async function applyRootMigration(cwd: string, plan: RootPlan, stripEmail: boolean): Promise<void> {
+  const sidecarPaths = [HASH_FILE, INDEX_FILE, GRAPH_FILE, WORKING_HASH_FILE, WORKING_INDEX_FILE, WORKING_GRAPH_FILE, VECTOR_DB_FILE, `${VECTOR_DB_FILE}-wal`, `${VECTOR_DB_FILE}-shm`]
     .map((file) => path.join(plan.root, file));
   const sidecars = await Promise.all(sidecarPaths.map(snapshotFile));
   const originals = await Promise.all(plan.files.map((file) => snapshotFile(file.absolute)));
   try {
-    for (const file of plan.files) await ensureBackup(`${file.absolute}.pre-author-v3.bak`, file.raw, file.mode);
+    for (const file of plan.files) await writeBackupOnce(plan.root, authorBackupFile(plan.root, file.relative, stripEmail), file.raw, file.mode);
     for (const file of plan.files) await writeMemory(file.absolute, file.next, file.mode);
     for (const file of plan.files) await updateHash(plan.root, file.relative, file.next);
     const config = await loadConfig(cwd);
@@ -175,14 +188,10 @@ async function writeMemory(file: string, content: string, mode: number): Promise
   }
 }
 
-async function ensureBackup(file: string, raw: string, mode: number): Promise<void> {
-  try {
-    await fs.writeFile(file, raw, { flag: 'wx', mode });
-    await fs.chmod(file, mode);
-  } catch (error: any) {
-    if (error?.code !== 'EEXIST') throw error;
-    if (await readText(file) !== raw) throw new Error(`Existing author migration backup does not match: ${path.basename(file)}`);
-  }
+function authorBackupFile(root: string, relative: string, stripEmail: boolean): string {
+  return stripEmail
+    ? backupPath(root, 'author-strip-email', today(), relative, '.pre-strip-email.bak')
+    : backupPath(root, 'author', 'v3', relative, '.pre-author-v3.bak');
 }
 
 type FileSnapshot = { file: string; exists: boolean; bytes?: Uint8Array; mode?: number; atime?: Date; mtime?: Date };
@@ -221,5 +230,5 @@ function aggregateRows(scope: AuthorMigrationScope, files: AuthorMigrationFile[]
 }
 function isActiveMemory(root: string, file: string): boolean {
   const relative = path.relative(root, file).replace(/\\/g, '/');
-  return file.endsWith('.md') && /^(rules|skills|knowledge)\//.test(relative);
+  return isActiveMemoryPath(relative);
 }

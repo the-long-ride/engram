@@ -2,15 +2,27 @@
 import type { EngramConfig, MemoryEntry, MemoryGraph, MemoryIndex } from '../runtime/types.js';
 import { readGuardedMemory } from '../safety/safe-read.js';
 import { isIgnored } from '../safety/ignore.js';
-import { lexicalScore, meaningfulWords, words } from '../system/text.js';
+import { pathAnchorHit, queryPaths, type QueryPath } from './path-anchors.js';
+import { meaningfulWordList, meaningfulWords, today, words } from '../system/text.js';
+import { buildBm25, stem } from '../system/bm25.js';
 import { dependencyContextEntries, routeWithGraph } from './graph.js';
 import type { VectorRouteHit } from './vector-db.js';
 import { normalizeLoadLimit } from '../runtime/load-limit.js';
 import type { TaskIntent } from './task-intent.js';
+import { usageBoost, type UsageMap } from './usage.js';
+import type { StaleMap } from './freshness.js';
+import { isExpired, memoryKey } from './memory-ref.js';
 
-export type RouteOptions = { all?: boolean; ignorePatterns?: string[]; vectorHits?: VectorRouteHit[]; candidatePool?: number; limit?: number; intent?: TaskIntent; semanticRelaxed?: boolean };
+/** `stale` is the D17 `stale.json` map (`scope:file` keys); a listed memory gets the D5 stale factor. */
+export type RouteOptions = { all?: boolean; ignorePatterns?: string[]; vectorHits?: VectorRouteHit[]; candidatePool?: number; limit?: number; intent?: TaskIntent; semanticRelaxed?: boolean; usage?: UsageMap; stale?: StaleMap; sessionObjective?: string };
 export type RouteFacet = { tag: string; count: number };
-type RouteContext = { query: string; anchors: Set<string>; terms: Map<string, Set<string>> };
+/** `anchors` are the raw query words; `stems` their stemmed forms used for matching and BM25; `paths` the file paths the query names (D9). */
+type RouteContext = { query: string; anchors: Set<string>; stems: Set<string>; paths: QueryPath[]; fields: Map<string, EntryFields>; scores: Map<string, number>; usage?: UsageMap };
+/**
+ * Stemmed routing terms per entry; `strong` fields (id, tags, directive, applies_to) gate and weigh double.
+ * `pathHit` is set when a query path matches an `applies_to` glob (D9), which counts as a strong anchor.
+ */
+type EntryFields = { strong: Set<string>; all: Set<string>; bm25: string[]; pathHit: boolean };
 type CandidateRow = { entry: MemoryEntry; score: number; contributions: Set<string> };
 export type RouteReason = {
   key: string;
@@ -20,7 +32,6 @@ export type RouteReason = {
   score?: number;
   source?: string;
 };
-const SEMANTIC_HIGH_CONFIDENCE_THRESHOLD = 0.72;
 
 export type RouteDetail = {
   entries: MemoryEntry[];
@@ -31,7 +42,17 @@ export type RouteDetail = {
   facets: RouteFacet[];
   reasons?: RouteReason[];
   candidateEntries?: MemoryEntry[];
+  /** Matching memories left out because their `valid_until` has passed. */
+  lifecycleOmitted?: MemoryEntry[];
 };
+
+// D6: queries with this many anchors need two anchor hits or one strong-field hit.
+const GATE_MIN_ANCHORS = 4;
+// D9: score added when a file path named in the query matches the entry's `applies_to`. Detection only
+// accepts real file paths against non-universal globs, so a hit is a deliberate signal: enough to route a
+// path-only match, while a top BM25 hit (normalised to about 1.0) still outranks it.
+const PATH_ANCHOR_SCORE = 0.5;
+const VALIDITY_WEIGHTS = { reviewDue: 0.7, stale: 0.6, mediumConfidence: 0.9, workspace: 1.1 };
 
 const STOP_TAGS = new Set([
   'and', 'are', 'but', 'for', 'from', 'has', 'have', 'into', 'must', 'not', 'the', 'this', 'that',
@@ -41,9 +62,20 @@ const STOP_TAGS = new Set([
   'here', 'where', 'able', 'else', 'ever', 'lives', 'new'
 ]);
 
-/** Filter index entries before scoring. */
-export function prefilter(index: MemoryIndex, config: EngramConfig, manual = false, ignorePatterns: string[] = []): MemoryEntry[] {
-  return visibleEntries(index.entries, config, manual, ignorePatterns);
+/** Filter index entries before scoring; expired memories never route. */
+export function prefilter(index: MemoryIndex, config: EngramConfig, manual = false, ignorePatterns: string[] = [], day = today()): MemoryEntry[] {
+  return visibleEntries(index.entries, config, manual, ignorePatterns).filter((entry) => validityFactor(entry, false, day) !== 'exclude');
+}
+
+/** D5 ranking multiplier: expired `valid_until` excludes; review_due, staleness, and medium confidence demote; workspace scope promotes. */
+export function validityFactor(entry: MemoryEntry, stale: boolean, today: string): number | 'exclude' {
+  if (isExpired(entry.validUntil, today)) return 'exclude';
+  let factor = 1;
+  if (entry.lifecycle === 'review_due') factor *= VALIDITY_WEIGHTS.reviewDue;
+  if (stale) factor *= VALIDITY_WEIGHTS.stale;
+  if (entry.confidence === 'medium') factor *= VALIDITY_WEIGHTS.mediumConfidence;
+  if (entry.scope === 'workspace') factor *= VALIDITY_WEIGHTS.workspace;
+  return factor;
 }
 
 /** Return entries visible to read/export surfaces under current policy. */
@@ -68,15 +100,42 @@ export function route(index: MemoryIndex, query: string, config: EngramConfig, m
   return routeDetailed(index, query, config, manual, options, graph).entries;
 }
 
+/** The session objective a hook run carries, set by whoever starts the host session (`ENGRAM_SESSION_OBJECTIVE`). */
+export function sessionObjectiveFromEnv(): string | undefined {
+  return process.env.ENGRAM_SESSION_OBJECTIVE?.trim() || undefined;
+}
+
+/** A working-tier note belongs to the session only when its objective equals (or contains, or is contained in) the session objective; every other memory always passes. */
+export function noteMatchesObjective(entry: MemoryEntry, sessionObjective?: string): boolean {
+  if (!entry.note) return true;
+  const normalize = (value?: string) => (value ?? '').toLowerCase().replace(/\s+/g, ' ').trim();
+  const session = normalize(sessionObjective);
+  const own = normalize(entry.objective);
+  return Boolean(session && own && (session === own || session.includes(own) || own.includes(session)));
+}
+
 /** Select relevant entries and expose read-only refinement diagnostics. */
 export function routeDetailed(index: MemoryIndex, query: string, config: EngramConfig, manual = false, options: RouteOptions = {}, graph?: MemoryGraph): RouteDetail {
-  const entries = prefilter(index, config, manual, options.ignorePatterns);
+  const day = today();
+  const prefiltered = prefilter(index, config, manual, options.ignorePatterns, day);
+  // SessionStart never carries a task note unless the session objective names it; `all` is an explicit full listing.
+  const sessionStart = query.trim().toLowerCase() === 'current session' && options.all !== true;
+  const entries = sessionStart ? prefiltered.filter((entry) => noteMatchesObjective(entry, options.sessionObjective ?? sessionObjectiveFromEnv())) : prefiltered;
+  const routeCtx = routeContext(query, entries, day, options.usage, options.stale);
+  const routed = routeEntries(entries, routeCtx, config, options, graph);
+  // Expired memories that would have matched are reported, never routed.
+  const expired = visibleEntries(index.entries, config, manual, options.ignorePatterns)
+    .filter((entry) => validityFactor(entry, false, day) === 'exclude' && hasAnchorOverlap(entry, routeCtx));
+  return expired.length ? { ...routed, lifecycleOmitted: expired } : routed;
+}
+
+function routeEntries(entries: MemoryEntry[], routeCtx: RouteContext, config: EngramConfig, options: RouteOptions, graph?: MemoryGraph): RouteDetail {
+  const query = routeCtx.query;
   const activeGraph = config.graph.enabled ? graph : undefined;
   const max = normalizeLoadLimit(options.limit ?? config.load?.limit);
   const pool = Math.max(max, options.candidatePool ?? config.vector?.candidate_pool ?? max);
   const isCurrentSession = query.trim().toLowerCase() === 'current session';
-  const routeCtx = routeContext(query);
-  if (!isCurrentSession && !routeCtx.anchors.size) return detail([], [], query, false);
+  if (!isCurrentSession && !routeCtx.anchors.size && !routeCtx.paths.length) return detail([], [], query, false);
   if (options.all) {
     const allRows: CandidateRow[] = entries.map((entry) => {
       let score = directScore(entry, routeCtx);
@@ -88,14 +147,14 @@ export function routeDetailed(index: MemoryIndex, query: string, config: EngramC
     const ranked = rankRows(allRows, routeCtx);
     const selected = ranked.map((row) => row.entry);
     const ordered = activeGraph ? dependencyContextEntries(selected, entries, activeGraph, selected.length) : selected;
-    const contributions = new Map<string, Set<string>>(ranked.map((row) => [entryKey(row.entry), row.contributions]));
-    const scores = new Map<string, number>(ranked.map((row) => [entryKey(row.entry), row.score]));
+    const contributions = new Map<string, Set<string>>(ranked.map((row) => [memoryKey(row.entry), row.contributions]));
+    const scores = new Map<string, number>(ranked.map((row) => [memoryKey(row.entry), row.score]));
     return detail(ordered, selected, query, false, reasonMap(ordered, routeCtx, selected, undefined, contributions, scores));
   }
   if (!options.all && (config.graph.enabled && graph?.nodes.length || options.vectorHits?.length)) {
     const lexical = lexicalRoute(entries, query, pool, routeCtx);
     const graphHits = config.graph.enabled && graph?.nodes.length ? routeWithGraph(entries, graph, query, pool) : [];
-    const candidates = blendCandidateRows(entries, query, routeCtx, lexical, graphHits, options.vectorHits ?? [], options);
+    const candidates = blendCandidateRows(entries, query, routeCtx, lexical, graphHits, options.vectorHits ?? []);
     const intentTerms = options.intent ? new Set(options.intent.retrievalTerms) : undefined;
     return selectDetailed(candidates, routeCtx, max, activeGraph, entries, intentTerms);
   }
@@ -131,13 +190,12 @@ function blendCandidateRows(
   routeCtx: RouteContext,
   lexical: MemoryEntry[],
   graph: MemoryEntry[],
-  vector: VectorRouteHit[],
-  options: RouteOptions = {}
+  vector: VectorRouteHit[]
 ): Array<CandidateRow> {
-  const allowed = new Map(visible.map((entry) => [entryKey(entry), entry]));
+  const allowed = new Map(visible.map((entry) => [memoryKey(entry), entry]));
   const scores = new Map<string, CandidateRow>();
   const bump = (entry: MemoryEntry, score: number, source: string) => {
-    const key = entryKey(entry);
+    const key = memoryKey(entry);
     if (!allowed.has(key) || score <= 0) return;
     const current = scores.get(key);
     if (current) {
@@ -147,7 +205,6 @@ function blendCandidateRows(
       scores.set(key, { entry, score, contributions: new Set([source]) });
     }
   };
-  const intentTerms = options.intent ? new Set(options.intent.retrievalTerms) : undefined;
   const isCurrentSession = query.trim().toLowerCase() === 'current session';
   for (const entry of lexical) {
     let baseLexicalScore = directScore(entry, routeCtx);
@@ -156,20 +213,12 @@ function blendCandidateRows(
     }
     bump(entry, baseLexicalScore + 0.22, 'lexical');
   }
+  // D6: graph and vector hits must pass the same anchor gate; hashed vectors are not semantic.
   graph
-    .filter((entry) => {
-      if (hasAnchorOverlap(entry, routeCtx)) return true;
-      if (intentTerms && intentOverlap(entry, intentTerms)) return true;
-      return false;
-    })
+    .filter((entry) => hasAnchorOverlap(entry, routeCtx))
     .forEach((entry, index) => bump(entry, 0.4 * rankScore(index, graph.length), 'graph'));
   vector
-    .filter((hit) => {
-      if (hasAnchorOverlap(hit.entry, routeCtx)) return true;
-      if (hit.score >= SEMANTIC_HIGH_CONFIDENCE_THRESHOLD) return true;
-      if (intentTerms && intentOverlap(hit.entry, intentTerms, routeCtx)) return true;
-      return false;
-    })
+    .filter((hit) => hasAnchorOverlap(hit.entry, routeCtx))
     .forEach((hit, index) => bump(hit.entry, 0.36 * Math.max(hit.score, rankScore(index, vector.length) * 0.75), 'vector'));
   return [...scores.values()];
 }
@@ -185,8 +234,8 @@ function selectDetailed(candidates: CandidateRow[], routeCtx: RouteContext, max:
   const primarySelected = selected;
   if (graph) selected = dependencyContextEntries(selected, visible ?? ranked.map((row) => row.entry), graph, max);
   const candidateEntries = withSelected(ranked.map((row) => row.entry), selected);
-  const contributions = new Map<string, Set<string>>(ranked.map((row) => [entryKey(row.entry), row.contributions]));
-  const scores = new Map<string, number>(ranked.map((row) => [entryKey(row.entry), row.score]));
+  const contributions = new Map<string, Set<string>>(ranked.map((row) => [memoryKey(row.entry), row.contributions]));
+  const scores = new Map<string, number>(ranked.map((row) => [memoryKey(row.entry), row.score]));
   return detail(selected, candidateEntries, routeCtx.query, candidateEntries.length > max, reasonMap(selected, routeCtx, primarySelected, intentRetrievalTerms, contributions, scores));
 }
 
@@ -197,11 +246,11 @@ function rankRows(rows: CandidateRow[], routeCtx: RouteContext): CandidateRow[] 
 }
 
 function refinementScore(entry: MemoryEntry, routeCtx: RouteContext): number {
-  const queryWords = routeCtx.anchors;
-  if (!queryWords.size) return 0;
-  const tagHits = entry.tags.filter((tag) => tagMatchesQuery(tag, queryWords)).length;
+  if (!routeCtx.stems.size) return 0;
+  // Title-derived tags repeat the id; only authored tags earn the boost.
+  const tagHits = entry.autoTags ? 0 : entry.tags.filter((tag) => tagMatchesStems(tag, routeCtx.stems)).length;
   // Boost entries with tag overlap, don't penalize — the floor handles filtering in large pools.
-  return tagHits * 0.15 + lexicalScore(routeCtx.query, routingText(entry)) * 0.06 + recencyScore(entry.updated) * 0.01;
+  return tagHits * 0.15 + recencyScore(entry.updated) * 0.01 + usageBoost(routeCtx.usage?.[memoryKey(entry)]);
 }
 
 function detail(selected: MemoryEntry[], candidates: MemoryEntry[], query: string, refined: boolean, reasons?: Map<string, RouteReason>): RouteDetail {
@@ -213,16 +262,16 @@ function detail(selected: MemoryEntry[], candidates: MemoryEntry[], query: strin
     refined,
     facets: suggestedFacets(candidates, selected, query),
     candidateEntries: candidates,
-    ...(reasons?.size ? { reasons: selected.map((entry) => reasons.get(entryKey(entry))).filter((reason): reason is RouteReason => Boolean(reason)) } : {})
+    ...(reasons?.size ? { reasons: selected.map((entry) => reasons.get(memoryKey(entry))).filter((reason): reason is RouteReason => Boolean(reason)) } : {})
   };
 }
 
 function suggestedFacets(candidates: MemoryEntry[], selected: MemoryEntry[], query: string): RouteFacet[] {
   const queryWords = words(query);
-  const selectedKeys = new Set(selected.map(entryKey));
+  const selectedKeys = new Set(selected.map(memoryKey));
   const counts = new Map<string, { tag: string; count: number; selected: number }>();
   for (const entry of candidates) {
-    const selectedHit = selectedKeys.has(entryKey(entry));
+    const selectedHit = selectedKeys.has(memoryKey(entry));
     for (const tag of entry.tags) {
       const normalized = tag.toLowerCase();
       if (STOP_TAGS.has(normalized) || tagMatchesQuery(normalized, queryWords)) continue;
@@ -244,6 +293,11 @@ function tagMatchesQuery(tag: string, queryWords: Set<string>): boolean {
   return tag.split('-').some((part) => queryWords.has(part));
 }
 
+function tagMatchesStems(tag: string, stems: Set<string>): boolean {
+  const normalized = tag.toLowerCase();
+  return [normalized, ...normalized.split('-')].some((part) => stems.has(stem(part)));
+}
+
 function recencyScore(updated: string): number {
   const time = Date.parse(updated);
   if (!Number.isFinite(time)) return 0;
@@ -255,57 +309,66 @@ function rankScore(index: number, total: number): number {
   return total ? (total - index) / total : 0;
 }
 
-function entryText(entry: MemoryEntry): string {
-  return `${typeRoutingTerms(entry).join(' ')} ${entry.tags.join(' ')} ${(entry.dependsOn ?? []).join(' ')} ${entry.summary} ${(entry.routingTerms ?? []).join(' ')}`;
+/** Build the per-query context: stemmed anchors plus BM25 scores normalised to the best hit, times the validity factor. */
+function routeContext(query: string, entries: MemoryEntry[], day: string, usage?: UsageMap, stale?: StaleMap): RouteContext {
+  const anchors = meaningfulWords(query);
+  const ctx: RouteContext = { query, anchors, stems: new Set([...anchors].map(stem)), paths: queryPaths(query), fields: new Map(), scores: new Map(), ...(usage ? { usage } : {}) };
+  if (!anchors.size) return ctx;
+  const raw = buildBm25(entries.map((entry) => ({ key: memoryKey(entry), terms: entryFields(entry, ctx).bm25 }))).score([...ctx.stems]);
+  const max = Math.max(0, ...raw.values());
+  if (!max) return ctx;
+  for (const entry of entries) {
+    const score = raw.get(memoryKey(entry));
+    const factor = validityFactor(entry, Boolean(stale?.[memoryKey(entry)]?.length), day);
+    if (score && factor !== 'exclude') ctx.scores.set(memoryKey(entry), (score / max) * factor);
+  }
+  return ctx;
 }
 
-function routingText(entry: MemoryEntry): string {
-  return `${entry.id} ${entryText(entry)}`;
-}
-
-function routeContext(query: string): RouteContext {
-  return { query, anchors: meaningfulWords(query), terms: new Map() };
-}
-
-function intentOverlap(entry: MemoryEntry, intentTerms: Set<string>, routeCtx?: RouteContext): boolean {
-  const entryTerms = routeCtx ? candidateTerms(entry, routeCtx) : new Set([
-    ...meaningfulWords(entry.id),
-    ...typeRoutingTerms(entry),
-    ...entry.tags.flatMap((tag) => [...meaningfulWords(tag)]),
-    ...meaningfulWords(entry.summary),
-    ...(entry.routingTerms ?? [])
-  ]);
+function intentOverlap(entry: MemoryEntry, intentTerms: Set<string>, routeCtx: RouteContext): boolean {
+  const entryTerms = entryFields(entry, routeCtx).all;
   for (const term of intentTerms) {
-    if (entryTerms.has(term)) return true;
+    if (entryTerms.has(stem(term))) return true;
   }
   return false;
 }
 
 function directScore(entry: MemoryEntry, routeCtx: RouteContext): number {
-  return hasAnchorOverlap(entry, routeCtx) ? lexicalScore(routeCtx.query, routingText(entry)) : 0;
+  if (!hasAnchorOverlap(entry, routeCtx)) return 0;
+  const pathBonus = entryFields(entry, routeCtx).pathHit ? PATH_ANCHOR_SCORE : 0;
+  return (routeCtx.scores.get(memoryKey(entry)) ?? 0) + pathBonus;
 }
 
+/** D6 candidate gate: any anchor hit for short queries; longer ones need two hits or one strong-field hit. */
 function hasAnchorOverlap(entry: MemoryEntry, routeCtx: RouteContext): boolean {
-  if (!routeCtx.anchors.size) return false;
-  const candidate = candidateTerms(entry, routeCtx);
-  for (const anchor of routeCtx.anchors) if (candidate.has(anchor)) return true;
+  const { all, strong, pathHit } = entryFields(entry, routeCtx);
+  if (pathHit) return true;
+  if (!routeCtx.stems.size) return false;
+  let hits = 0;
+  for (const anchor of routeCtx.stems) {
+    if (!all.has(anchor)) continue;
+    hits += 1;
+    if (routeCtx.stems.size < GATE_MIN_ANCHORS || strong.has(anchor) || hits >= 2) return true;
+  }
   return false;
 }
 
-function candidateTerms(entry: MemoryEntry, routeCtx: RouteContext): Set<string> {
-  const key = entryKey(entry);
-  const cached = routeCtx.terms.get(key);
+function entryFields(entry: MemoryEntry, routeCtx: RouteContext): EntryFields {
+  const key = memoryKey(entry);
+  const cached = routeCtx.fields.get(key);
   if (cached) return cached;
-  const terms = new Set([
-    ...meaningfulWords(entry.id),
-    ...typeRoutingTerms(entry),
-    ...entry.tags.flatMap((tag) => [...meaningfulWords(tag)]),
-    ...((entry.dependsOn ?? []).flatMap((dep) => [...meaningfulWords(dep)])),
-    ...meaningfulWords(entry.summary),
-    ...(entry.routingTerms ?? [])
-  ]);
-  routeCtx.terms.set(key, terms);
-  return terms;
+  // Title-derived tags (no frontmatter `tags`) are ordinary terms, not a strong field.
+  const tags = entry.tags ?? [];
+  const strong = stemmedTerms([entry.id, ...(entry.autoTags ? [] : tags), entry.directive ?? '', ...(entry.appliesTo ?? [])]);
+  const normal = stemmedTerms([...typeRoutingTerms(entry), ...(entry.autoTags ? tags : []), entry.summary ?? '', ...(entry.routingTerms ?? [])]);
+  const pathHit = pathAnchorHit(routeCtx.paths, entry.appliesTo);
+  const fields = { strong: new Set(strong), all: new Set([...strong, ...normal]), bm25: [...strong, ...strong, ...normal], pathHit };
+  routeCtx.fields.set(key, fields);
+  return fields;
+}
+
+function stemmedTerms(texts: string[]): string[] {
+  return texts.flatMap((text) => meaningfulWordList(text).map(stem));
 }
 
 function typeRoutingTerms(entry: MemoryEntry): string[] {
@@ -313,12 +376,12 @@ function typeRoutingTerms(entry: MemoryEntry): string[] {
 }
 
 function reasonMap(selected: MemoryEntry[], routeCtx: RouteContext, primarySelected: MemoryEntry[], intentRetrievalTerms?: Set<string>, contributions?: Map<string, Set<string>>, scores?: Map<string, number>): Map<string, RouteReason> {
-  const primary = new Set(primarySelected.map(entryKey));
+  const primary = new Set(primarySelected.map(memoryKey));
   const out = new Map<string, RouteReason>();
   for (const entry of selected) {
-    const terms = [...routeCtx.anchors].filter((anchor) => candidateTerms(entry, routeCtx).has(anchor));
-    const direct = primary.has(entryKey(entry));
-    const entryContributions = contributions?.get(entryKey(entry));
+    const terms = [...routeCtx.anchors].filter((anchor) => entryFields(entry, routeCtx).all.has(stem(anchor)));
+    const direct = primary.has(memoryKey(entry));
+    const entryContributions = contributions?.get(memoryKey(entry));
     const matchedBy: Array<'literal' | 'intent' | 'vector' | 'graph' | 'dependency'> = [];
     if (direct) {
       if (entryContributions?.has('vector')) matchedBy.push('vector');
@@ -327,24 +390,20 @@ function reasonMap(selected: MemoryEntry[], routeCtx: RouteContext, primarySelec
     } else {
       matchedBy.push('dependency');
     }
-    if (intentRetrievalTerms?.size && intentOverlap(entry, intentRetrievalTerms)) matchedBy.push('intent');
+    if (intentRetrievalTerms?.size && intentOverlap(entry, intentRetrievalTerms, routeCtx)) matchedBy.push('intent');
     const kind: RouteReason['kind'] = direct
       ? (entryContributions?.has('vector') ? 'vector' : entryContributions?.has('graph') ? 'graph' : 'direct')
       : 'dependency';
-    out.set(entryKey(entry), {
-      key: entryKey(entry),
+    out.set(memoryKey(entry), {
+      key: memoryKey(entry),
       kind,
       matchedBy,
       ...(terms.length ? { terms } : {}),
-      score: scores?.get(entryKey(entry)) ?? (direct ? Number(directScore(entry, routeCtx).toFixed(3)) : undefined),
+      score: scores?.get(memoryKey(entry)) ?? (direct ? Number(directScore(entry, routeCtx).toFixed(3)) : undefined),
       ...(direct ? {} : { source: 'depends_on' })
     });
   }
   return out;
-}
-
-function entryKey(entry: MemoryEntry): string {
-  return `${entry.scope}:${entry.file}`;
 }
 
 type LoadEntriesOptions = { forAgents?: boolean };
@@ -363,11 +422,11 @@ function scopePriority(entry: MemoryEntry): number {
 }
 
 function withSelected(candidates: MemoryEntry[], selected: MemoryEntry[]): MemoryEntry[] {
-  const seen = new Set(candidates.map(entryKey));
+  const seen = new Set(candidates.map(memoryKey));
   const out = [...candidates];
   for (const entry of selected) {
-    if (seen.has(entryKey(entry))) continue;
-    seen.add(entryKey(entry));
+    if (seen.has(memoryKey(entry))) continue;
+    seen.add(memoryKey(entry));
     out.push(entry);
   }
   return out;

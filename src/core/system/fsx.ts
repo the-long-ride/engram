@@ -18,10 +18,130 @@ export async function readJson<T>(file: string, fallback: T): Promise<T> {
   try { return parseJsonLike<T>(await fs.readFile(file, 'utf8')); } catch { return fallback; }
 }
 
+/**
+ * Read JSON before a read-modify-write: a missing or unparseable file yields the fallback, but a transient read error
+ * (a Windows rename in flight) is retried and then thrown, so the caller never overwrites rows it could not read.
+ */
+export async function readJsonForUpdate<T>(file: string, fallback: T): Promise<T> {
+  let text = '';
+  for (let attempt = 1; ; attempt++) {
+    try {
+      text = await fs.readFile(file, 'utf8');
+      break;
+    } catch (error) {
+      const code = String((error as { code?: unknown }).code ?? '');
+      if (code === 'ENOENT') return fallback;
+      if (!RENAME_RETRY_CODES.has(code) || attempt >= RENAME_ATTEMPTS) throw error;
+      await new Promise((resolve) => setTimeout(resolve, attempt * 10));
+    }
+  }
+  try { return parseJsonLike<T>(text); } catch { return fallback; }
+}
+
 /** Write pretty JSON with a final newline. */
 export async function writeJson(file: string, value: unknown): Promise<void> {
   await ensureDir(path.dirname(file));
   await fs.writeFile(file, `${JSON.stringify(value, null, 2)}\n`);
+}
+
+/** Pretty JSON written atomically (see `writeTextAtomic`), so a concurrent reader never sees a torn file. */
+export async function writeJsonAtomic(file: string, value: unknown): Promise<void> {
+  await writeTextAtomic(file, `${JSON.stringify(value, null, 2)}\n`);
+}
+
+const RENAME_RETRY_CODES = new Set(['EPERM', 'EBUSY', 'EACCES']);
+const RENAME_ATTEMPTS = 6;
+
+/**
+ * Atomic replace: write a sibling temp file, then rename it over the target. A failed write or rename removes the
+ * temp file and leaves the previous content intact. Windows rejects a rename while another process holds the target
+ * open, so EPERM/EBUSY/EACCES are retried a few times with a short backoff.
+ */
+export async function writeTextAtomic(file: string, text: string): Promise<void> {
+  await ensureDir(path.dirname(file));
+  const temp = `${file}.${process.pid}.${Math.random().toString(16).slice(2, 10)}.tmp`;
+  try {
+    await fs.writeFile(temp, text);
+    for (let attempt = 1; ; attempt++) {
+      try {
+        await fs.rename(temp, file);
+        return;
+      } catch (error) {
+        const code = String((error as { code?: unknown }).code ?? '');
+        if (!RENAME_RETRY_CODES.has(code) || attempt >= RENAME_ATTEMPTS) throw error;
+        await new Promise((resolve) => setTimeout(resolve, attempt * 10 + Math.floor(Math.random() * 10)));
+      }
+    }
+  } catch (error) {
+    await fs.rm(temp, { force: true }).catch(() => undefined);
+    throw error;
+  }
+}
+
+/** Thrown when `withFileLock` cannot take the lock before its timeout. */
+export class FileLockTimeoutError extends Error {
+  constructor(lockFile: string) {
+    super(`timed out waiting for lock ${lockFile}`);
+    this.name = 'FileLockTimeoutError';
+  }
+}
+
+export type FileLockOptions = { timeoutMs?: number; staleMs?: number };
+
+const LOCK_RETRY_CODES = new Set(['EEXIST', 'EPERM', 'EBUSY', 'EACCES']);
+
+/**
+ * Cross-process mutex for a read-modify-write of `file`: `<file>.lock` is created with O_EXCL, retried with short
+ * jittered backoff until `timeoutMs`, and always removed in `finally`. A lock older than `staleMs` (a crashed holder)
+ * is broken. Release only removes the lock this call created, so a holder whose lock was broken never frees another's.
+ */
+export async function withFileLock<T>(file: string, fn: () => Promise<T>, options: FileLockOptions = {}): Promise<T> {
+  const lockFile = `${file}.lock`;
+  const timeoutMs = options.timeoutMs ?? 2000;
+  const staleMs = options.staleMs ?? 10_000;
+  const owner = `${process.pid}:${Math.random().toString(16).slice(2, 10)}`;
+  await ensureDir(path.dirname(file));
+  const deadline = Date.now() + timeoutMs;
+  for (let attempt = 1; ; attempt++) {
+    try {
+      await fs.writeFile(lockFile, owner, { flag: 'wx' });
+      break;
+    } catch (error) {
+      const code = String((error as { code?: unknown }).code ?? '');
+      if (!LOCK_RETRY_CODES.has(code)) throw error;
+      if (await breakStaleLock(lockFile, staleMs)) continue;
+      if (Date.now() >= deadline) throw new FileLockTimeoutError(lockFile);
+      await new Promise((resolve) => setTimeout(resolve, Math.min(attempt * 5, 40) + Math.floor(Math.random() * 10)));
+    }
+  }
+  try {
+    return await fn();
+  } finally {
+    if ((await readText(lockFile)) === owner) await fs.rm(lockFile, { force: true }).catch(() => undefined);
+  }
+}
+
+async function breakStaleLock(lockFile: string, staleMs: number): Promise<boolean> {
+  try {
+    const { mtimeMs } = await fs.stat(lockFile);
+    if (Date.now() - mtimeMs <= staleMs) return false;
+    await fs.rm(lockFile, { force: true });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Write pretty JSON only when the content changes, ignoring `volatile` top-level keys (such as `last_updated`) in the
+ * comparison, so an unchanged tracked sidecar is never rewritten. Returns true when the file was written.
+ */
+export async function writeJsonIfChanged(file: string, value: Record<string, unknown>, volatile: string[] = []): Promise<boolean> {
+  const stable = (input: Record<string, unknown>) => JSON.stringify(Object.fromEntries(Object.entries(input).filter(([key]) => !volatile.includes(key))));
+  const current = await readJson<Record<string, unknown> | undefined>(file, undefined);
+  if (current && typeof current === 'object' && stable(current) === stable(JSON.parse(JSON.stringify(value)))) return false;
+  await writeJson(file, value);
+  return true;
 }
 
 /** Write text, creating parent folders first. */
@@ -33,6 +153,17 @@ export async function writeText(file: string, text: string): Promise<void> {
 /** Read text with an empty fallback. */
 export async function readText(file: string): Promise<string> {
   try { return await fs.readFile(file, 'utf8'); } catch { return ''; }
+}
+
+/** Nearest ancestor directory (cwd included) that holds a `.git` entry, or undefined outside a repository. */
+export async function nearestGitRoot(cwd: string): Promise<string | undefined> {
+  let current = path.resolve(cwd);
+  for (;;) {
+    if (await exists(path.join(current, '.git'))) return current;
+    const parent = path.dirname(current);
+    if (parent === current) return undefined;
+    current = parent;
+  }
 }
 
 /** Read text from standard input until EOF. */
@@ -71,9 +202,9 @@ export function inside(root: string, target: string): string {
   return full;
 }
 
-/** Parse JSON or JSONC-style text with comments and trailing commas. */
+/** Parse JSON or JSONC-style text with comments and trailing commas; a leading UTF-8 BOM is ignored. */
 export function parseJsonLike<T>(text: string): T {
-  return JSON.parse(stripTrailingCommas(stripJsonComments(text))) as T;
+  return JSON.parse(stripTrailingCommas(stripJsonComments(text.replace(/^﻿/u, '')))) as T;
 }
 
 function stripJsonComments(text: string): string {

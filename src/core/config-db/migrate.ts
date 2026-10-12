@@ -100,7 +100,7 @@ export async function runMigration(opts: MigrationOptions = {}): Promise<Migrati
       if (key === 'auto_upgrade' || key === 'version' || key === 'ignore' || key === 'live_sync' ||
           key === 'global_git' || key === 'graph' || key === 'vector' || key === 'pattern_mining' ||
           key === 'pr_workflow' || key === 'encryption' || key === 'rule_variants' || key === 'load' ||
-          key === 'roles') continue;
+          key === 'roles' || key === 'hooks') continue;
       if (typeof value === 'string') flat[key] = value;
       else if (typeof value === 'boolean' || typeof value === 'number') flat[key] = String(value);
     }
@@ -111,6 +111,7 @@ export async function runMigration(opts: MigrationOptions = {}): Promise<Migrati
     if (typeof userCfg.global_path === 'string') flat['global_path'] = userCfg.global_path;
     if (typeof userCfg.default_profile === 'string') flat['default_profile'] = userCfg.default_profile;
     if (typeof userCfg.enabled === 'boolean') flat['enabled'] = String(userCfg.enabled);
+    if (typeof userCfg.hooks?.path_rules === 'string') flat['hooks.path_rules'] = userCfg.hooks.path_rules;
 
     setUserConfig(db.db, flat);
     result.user_config_keys_migrated = Object.keys(flat).length;
@@ -135,6 +136,7 @@ export async function runMigration(opts: MigrationOptions = {}): Promise<Migrati
       if (typeof config.proof === 'string') cfgFlat['proof'] = config.proof;
       if (typeof config.default_profile === 'string') cfgFlat['default_profile'] = config.default_profile;
       if (typeof config.global_path === 'string') cfgFlat['global_path'] = config.global_path;
+      if (typeof config.hooks?.path_rules === 'string') cfgFlat['hooks.path_rules'] = config.hooks.path_rules;
       if (config.load?.limit !== undefined) cfgFlat['load.limit'] = String(config.load.limit);
       if (config.rule_variants?.enabled !== undefined) {
         cfgFlat['rule_variants.enabled'] = String(config.rule_variants.enabled);

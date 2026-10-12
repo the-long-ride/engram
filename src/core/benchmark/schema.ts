@@ -11,7 +11,10 @@ export type BenchmarkCategory =
   | 'duplicate'
   | 'mixed-intent'
   | 'disagreement'
-  | 'security';
+  | 'security'
+  | 'session-start'
+  | 'path-trigger'
+  | 'working-expired';
 
 export type BenchmarkCase = {
   id: string;
@@ -24,13 +27,15 @@ export type BenchmarkCase = {
   limit?: number;
   max_tokens?: number;
   category?: BenchmarkCategory;
+  /** Ids that must be reported as omitted (lifecycle) and must not be routed. */
+  expect_omitted?: string[];
 };
 
 export type BenchmarkDocument = { version: 1 | 2; cases: BenchmarkCase[] };
 export type BenchmarkDiagnostic = { path: string; message: string };
 const BENCHMARK_CATEGORIES = new Set<BenchmarkCategory>([
   'zero-match', 'paraphrase', 'negation', 'dependency-chain', 'profile-isolation',
-  'duplicate', 'mixed-intent', 'disagreement', 'security'
+  'duplicate', 'mixed-intent', 'disagreement', 'security', 'session-start', 'path-trigger', 'working-expired'
 ]);
 
 export function parseBenchmarkDocument(value: unknown): { document?: BenchmarkDocument; diagnostics: BenchmarkDiagnostic[] } {
@@ -51,6 +56,7 @@ export function parseBenchmarkDocument(value: unknown): { document?: BenchmarkDo
     const expect = strings(item.expect);
     const forbid = strings(item.forbid);
     const depends = strings(item.depends_on ?? item.dependsOn);
+    const expectOmitted = strings(item.expect_omitted ?? item.expectOmitted);
     if (!query) diagnostics.push({ path: `${path}.query`, message: 'query is required' });
     if (item.expect !== undefined && !Array.isArray(item.expect) && typeof item.expect !== 'string') diagnostics.push({ path: `${path}.expect`, message: 'expect must be an array or string' });
     if (item.scope !== undefined && !['workspace', 'global', 'both'].includes(item.scope)) diagnostics.push({ path: `${path}.scope`, message: 'scope must be workspace, global, or both' });
@@ -67,6 +73,7 @@ export function parseBenchmarkDocument(value: unknown): { document?: BenchmarkDo
       ? item.category as BenchmarkCategory
       : undefined;
     if (item.category !== undefined && !category) diagnostics.push({ path: `${path}.category`, message: 'category must be a supported benchmark category' });
+    if (category === 'path-trigger' && query && isAbsolutePath(query)) diagnostics.push({ path: `${path}.query`, message: 'path-trigger query must be a workspace-relative path' });
     cases.push({
       id,
       query,
@@ -77,11 +84,17 @@ export function parseBenchmarkDocument(value: unknown): { document?: BenchmarkDo
       ...(item.scope ? { scope: item.scope } : {}),
       ...(item.limit ? { limit: item.limit } : {}),
       ...(maxTokens !== undefined ? { max_tokens: maxTokens } : {}),
-      ...(category ? { category } : {})
+      ...(category ? { category } : {}),
+      ...(expectOmitted.length ? { expect_omitted: expectOmitted } : {})
     });
   }
   const version = (input.version === 2 ? 2 : 1) as 1 | 2;
   return diagnostics.length ? { diagnostics } : { document: { version, cases }, diagnostics };
+}
+
+/** POSIX, Windows drive, or UNC absolute path. */
+function isAbsolutePath(value: string): boolean {
+  return value.startsWith('/') || value.startsWith('\\') || /^[A-Za-z]:[\\/]/.test(value);
 }
 
 function strings(value: unknown): string[] {

@@ -15,6 +15,8 @@ import { requestApproval, applyApprovalEdit } from '../core/safety/approval.js';
 import { writeApprovedMemory } from '../core/memory/storage.js';
 import { requireResolvedAuthor } from '../core/author/resolve.js';
 import { flagValues } from '../cli/args.js';
+import { crossTierUpdateAdvice, workingTierMeta } from '../core/memory/working-tier.js';
+import { today } from '../core/system/text.js';
 
 type Scope = 'workspace' | 'global';
 
@@ -219,7 +221,8 @@ function unresolvedHintGuides(candidate: MemoryCandidate, plan: SavePlan): strin
   for (const hint of plan.related ?? []) {
     if (hint.declaredChild) continue;
     if (hint.action === 'possible-duplicate' && !updateId) {
-      guides.push(`Possible duplicate ${hint.id}: add UPDATE: ${hint.id}.`);
+      const crossTier = crossTierUpdateAdvice(plan.file, hint.file, hint.id);
+      guides.push(crossTier ? `Possible duplicate ${crossTier}` : `Possible duplicate ${hint.id}: add UPDATE: ${hint.id}.`);
     } else if (hint.action === 'suggested-dependency' && !dependsOn.has(hint.id.trim().toLowerCase())) {
       guides.push(`Suggested dependency ${hint.id}: add DEPENDS_ON: ${hint.id}.`);
     }
@@ -250,12 +253,16 @@ async function cmdReviewApply(ctx: EngramContext, rest: string[], flags: Record<
   const roleValue = typeof flags.role === 'string' ? flags.role : typeof flags.roles === 'string' ? flags.roles : '';
   const role = candidate.role?.length ? candidate.role : roleValue ? roleValue.split(',').map((r: string) => r.trim()).filter(Boolean) : undefined;
   const force = flags.force === true || flags.f === true;
-  const plans = await planMemorySave({
+  // D16: a task receipt applies to the working tier, with the same cross-tier UPDATE guards as a direct save.
+  const task = candidate.objective === 'task';
+  const plans = (await planMemorySave({
     ctx, text: candidate.text, type: candidate.type, scopes: [receipt.candidate.scope], authorName: author.name, authorEmail: author.email, role,
     context: candidate.context, triggers: candidate.triggers,
     dependsOn: candidate.dependsOn, level: candidate.level,
-    updateId: candidate.updateId, parent: candidate.parent, variants: candidate.variants
-  });
+    updateId: candidate.updateId, parent: candidate.parent, variants: candidate.variants,
+    directive: candidate.directive, appliesTo: candidate.appliesTo,
+    working: task ? workingTierMeta(ctx.config, today()) : undefined
+  })).map((plan) => (task ? { ...plan, objective: 'task' as const } : plan));
   const relatedIds = [...new Set(plans.flatMap((plan) => plan.related?.map((hint) => hint.id) ?? []))];
   const unresolved = plans.flatMap((plan) => unresolvedHintGuides(candidate, plan));
   if (unresolved.length) {

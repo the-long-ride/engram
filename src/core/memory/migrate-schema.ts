@@ -2,10 +2,12 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { EvidenceStatus, MemorySchemaVersion, MemoryType, Scope } from '../runtime/types.js';
+import { isActiveMemoryPath } from '../runtime/constants.js';
 import { exists, listFiles, readText } from '../system/fsx.js';
 import { updateHash } from '../safety/hash.js';
 import { isTraceExpired } from '../traces/codec.js';
 import { readTrace } from '../traces/storage.js';
+import { backupPath, backupRelative, writeBackupOnce } from './backups.js';
 import { frontmatterStringList, updateFrontmatter } from './frontmatter.js';
 import { defaultMemoryAuthority, memorySchemaVersion, parseMemory, validateMemory, validateMemoryRaw } from './schema.js';
 
@@ -93,15 +95,16 @@ async function runMemorySchemaMigration(
       }
       validateMemory(doc);
       const migrated = await migratedDocument(raw, file, root, scope);
+      const backupFile = backupPath(root, 'schema', 'v3', rel, '.pre-v3.bak');
+      const backup = backupRelative(root, backupFile);
       result.eligible += 1;
       if (!apply) {
-        result.files.push({ file: rel, action: 'migrate', fromVersion: version, toVersion: 3, backup: `${rel}.pre-v3.bak` });
+        result.files.push({ file: rel, action: 'migrate', fromVersion: version, toVersion: 3, backup });
         continue;
       }
-      const backup = `${file}.pre-v3.bak`;
       const originalStat = await fs.stat(file);
       const mode = originalStat.mode & 0o777;
-      await ensureBackup(backup, raw, mode);
+      await writeBackupOnce(root, backupFile, raw, mode);
       await writeAtomically(file, migrated, mode);
       try {
         await updateHash(root, rel, migrated);
@@ -111,7 +114,7 @@ async function runMemorySchemaMigration(
         throw error;
       }
       result.migrated += 1;
-      result.files.push({ file: rel, action: 'migrated', fromVersion: version, toVersion: 3, backup: `${rel}.pre-v3.bak` });
+      result.files.push({ file: rel, action: 'migrated', fromVersion: version, toVersion: 3, backup });
     } catch (error) {
       result.failed += 1;
       result.files.push({ file: rel, action: 'failed', reason: error instanceof Error ? error.message : String(error) });
@@ -170,17 +173,6 @@ function positiveInteger(value: unknown): number | undefined {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
 }
 
-async function ensureBackup(backup: string, raw: string, mode: number): Promise<void> {
-  try {
-    await fs.writeFile(backup, raw, { flag: 'wx', mode });
-    await fs.chmod(backup, mode);
-  } catch (error: any) {
-    if (error?.code !== 'EEXIST') throw error;
-    const existing = await readText(backup);
-    if (existing !== raw) throw new Error(`Existing migration backup does not match current legacy memory: ${path.basename(backup)}`);
-  }
-}
-
 async function writeAtomically(file: string, content: string, mode: number): Promise<void> {
   const temporary = `${file}.engram-migrate-${process.pid}-${Date.now()}`;
   try {
@@ -198,5 +190,5 @@ function normalizeRelativeMemoryPath(file: string): string {
 
 function isActiveMemoryFile(root: string, file: string): boolean {
   const rel = path.relative(root, file).replace(/\\/g, '/');
-  return file.endsWith('.md') && /^(rules|skills|knowledge)\//.test(rel);
+  return isActiveMemoryPath(rel);
 }

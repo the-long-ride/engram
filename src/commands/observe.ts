@@ -5,9 +5,11 @@ import { writeObservation } from '../core/memory/observe.js';
 import { parseSaveTarget, writeScopes } from '../core/runtime/config.js';
 import { readText, readTextFromStdin } from '../core/system/fsx.js';
 import { cmdSaveSession } from './write.js';
+import { cmdObserveQueue } from './observe-queue.js';
 
 /** Capture a raw session note in inbox, optionally mining it through save-session. */
 export async function cmdObserve(args: string[], flags: Record<string, any> = {}): Promise<string> {
+  if (flags.queue === true) return cmdObserveQueue(args, flags);
   const ctx = await getContext();
   const scopes = flags.scope ? writeScopes(parseSaveTarget(flags.scope, 'observe --scope'), ctx.config) : writeScopes(ctx.config.scope, ctx.config);
   const scope = scopes[0];

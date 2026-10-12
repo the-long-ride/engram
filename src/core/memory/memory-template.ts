@@ -1,11 +1,14 @@
 /** Deterministic memory drafting for manual saves. */
-import type { Confidence, MemoryAuthority, MemoryType, Scope } from '../runtime/types.js';
+import type { Confidence, MemoryAuthority, MemoryTier, MemoryType, Scope } from '../runtime/types.js';
+import { WORKING_DIR } from '../runtime/constants.js';
 import { defaultMemoryAuthority, frontmatter, parseMemory } from './schema.js';
 import { frontmatterStringList } from './frontmatter.js';
-import { defaultRuleVariants, extractRuleVariants, ruleVariantsAreCustomized } from './rule-variants.js';
+import { extractRuleVariants, plainContentText, ruleVariantsAreCustomized, variantsDifferFromDefaults } from './rule-variants.js';
 import { slugify, tagsFrom, today } from '../system/text.js';
 import type { TaskType } from './task-classifier.js';
+import { sourceHashMode, type SourceHashMode } from './freshness.js';
 
+/** `ruleVariants`: preserve customized stored variants on update (default variants are derived at render time and never stored, E17). */
 export type MemoryDraftOptions = { ruleVariants?: boolean };
 export type MemorySourceMeta = {
   source?: string;
@@ -14,6 +17,12 @@ export type MemorySourceMeta = {
   evidenceRefs?: string[];
   derivedFrom?: string[];
   evidenceScope?: Scope;
+  /** D17: `digest` when code/config/manifest sources were hashed by digest text; omitted means raw hashes. */
+  sourceHashMode?: SourceHashMode;
+  /** D17 refresh: replace the memory's source lists instead of merging them (dropped or deleted sources go away). */
+  replaceSources?: boolean;
+  /** D17: workspace fingerprint (`workspaceOrigin`) of the sources; written as `source_origin` on global memories only, or the host store hash (`hostMemoryOrigin`) for `source: host-memory` in any scope. */
+  sourceOrigin?: string;
 };
 
 /** Build a concise schema-compliant memory from user text. */
@@ -22,7 +31,7 @@ export function draftMemory(input: {
   type: MemoryType;
   scope: Scope;
   authorName: string;
-  authorEmail: string;
+  authorEmail?: string;
   role?: string[];
   context?: string;
   dependsOn?: string[];
@@ -33,13 +42,23 @@ export function draftMemory(input: {
   triggers?: string[];
   variants?: Partial<Record<'light' | 'balanced' | 'strict', string>>;
   confidence?: Confidence;
+  directive?: string;
+  appliesTo?: string[];
+  /** D16 working tier: written under `working/` with `tier: working`, `objective`, and `valid_until`. */
+  working?: WorkingTierMeta;
+  /** E16 SUPERSEDE verdict: ids of the memories the new memory replaces (written as `supersedes:`). */
+  supersedes?: string[];
 }, options: MemoryDraftOptions = {}): { file: string; id: string; content: string; tags: string[] } {
   const title = titleFor(input.text, input.type);
   const id = slugify(title);
   const tags = unique([...taskTypeTags(input.taskType), ...tagsFrom(input.text)]);
-  const content = renderMemory({ ...input, id, title, tags, created: today() }, options);
-  return { file: `${dirFor(input.type)}/${id}.md`, id, content, tags };
+  const working = input.working ? { tier: 'working' as const, objective: input.working.objective, validUntil: input.working.validUntil } : {};
+  const content = renderMemory({ ...input, id, title, tags, created: today(), ...working }, options);
+  return { file: `${input.working ? `${WORKING_DIR}/` : ''}${memoryDir(input.type)}/${id}.md`, id, content, tags };
 }
+
+/** D16 working-tier write metadata: TTL end date and the command's objective text (omitted when none). */
+export type WorkingTierMeta = { validUntil: string; objective?: string };
 
 /** Merge approved save text into an existing memory without changing its file. */
 export function updateMemory(raw: string, input: {
@@ -47,7 +66,7 @@ export function updateMemory(raw: string, input: {
   type: MemoryType;
   scope: Scope;
   authorName: string;
-  authorEmail: string;
+  authorEmail?: string;
   role?: string[];
   context?: string;
   dependsOn?: string[];
@@ -58,6 +77,8 @@ export function updateMemory(raw: string, input: {
   triggers?: string[];
   variants?: Partial<Record<'light' | 'balanced' | 'strict', string>>;
   confidence?: Confidence;
+  directive?: string;
+  appliesTo?: string[];
 }, options: MemoryDraftOptions = {}): string {
   const doc = parseMemory(raw);
   const tags = unique([...(doc.frontmatter.tags ?? []), ...taskTypeTags(input.taskType), ...tagsFrom(input.text)]);
@@ -82,6 +103,11 @@ export function updateMemory(raw: string, input: {
     variantText: text,
     variants,
     confidence: input.confidence ?? doc.frontmatter.confidence as Confidence | undefined,
+    directive: input.directive?.trim() ? input.directive : typeof doc.frontmatter.directive === 'string' ? doc.frontmatter.directive : undefined,
+    appliesTo: input.appliesTo?.length ? input.appliesTo : frontmatterStringList(doc.frontmatter.applies_to),
+    // D16: an update keeps the memory's tier and objective; valid_until is preserved below.
+    tier: typeof doc.frontmatter.tier === 'string' ? doc.frontmatter.tier as MemoryTier : undefined,
+    objective: typeof doc.frontmatter.objective === 'string' && doc.frontmatter.objective.trim() ? doc.frontmatter.objective : undefined,
     authority: (doc.frontmatter.authority ?? defaultMemoryAuthority(input.type)) as MemoryAuthority,
     revision: nextRevision(doc.frontmatter.revision),
     validFrom: String(doc.frontmatter.valid_from ?? doc.frontmatter.created ?? today()),
@@ -97,16 +123,18 @@ function titleFor(text: string, type: MemoryType): string {
 }
 
 function renderMemory(input: {
-  text: string; type: MemoryType; scope: Scope; authorName: string; authorEmail: string; id: string; title: string;
+  text: string; type: MemoryType; scope: Scope; authorName: string; authorEmail?: string; id: string; title: string;
   tags: string[]; created: string; role?: string[]; context?: string; dependsOn?: string[]; parent?: string[]; level?: string; source?: MemorySourceMeta; bodyText?: string; variantText?: string; variants?: Partial<Record<'light' | 'balanced' | 'strict', string>>;
   triggers?: string[]; confidence?: Confidence; authority?: MemoryAuthority; revision?: number; validFrom?: string; validUntil?: string | null; lastConfirmed?: string;
+  directive?: string; appliesTo?: string[]; tier?: MemoryTier; objective?: string; supersedes?: string[];
 }, options: MemoryDraftOptions): string {
   const now = today();
   const metadata: Record<string, any> = {
     schema_version: 3,
     id: input.id, type: input.type, scope: input.scope, tags: input.tags,
     created: input.created, updated: now,
-    author_name: input.authorName, author_email: input.authorEmail,
+    author_name: input.authorName,
+    ...(input.authorEmail ? { author_email: input.authorEmail } : {}),
     source: input.source?.source ?? 'manual', confidence: input.confidence ?? 'high',
     authority: input.authority ?? defaultMemoryAuthority(input.type),
     revision: input.revision ?? 1,
@@ -117,12 +145,21 @@ function renderMemory(input: {
   if (input.role?.length) metadata.role = input.role;
   if (input.dependsOn?.length) metadata.depends_on = unique(input.dependsOn);
   if (input.parent?.length) metadata.parent = unique(input.parent);
+  if (input.supersedes?.length) metadata.supersedes = uniqueAll(input.supersedes);
   if (input.level?.trim()) metadata.level = input.level.trim();
   if (input.source?.sourceFiles?.length) metadata.source_files = unique(input.source.sourceFiles);
   if (input.source?.sourceHashes?.length) metadata.source_hashes = uniqueAll(input.source.sourceHashes);
+  if (input.source?.sourceHashes?.length && input.source.sourceHashMode) metadata.source_hash_mode = input.source.sourceHashMode;
+  // A host-memory origin is a hash of the store path, so it is recorded for any scope (freshness checks only that machine).
+  if ((input.scope === 'global' || input.source?.source === 'host-memory') && input.source?.sourceFiles?.length && input.source.sourceOrigin) metadata.source_origin = input.source.sourceOrigin;
   if (input.source?.evidenceRefs?.length) metadata.evidence_refs = uniqueAll(input.source.evidenceRefs);
   if (input.source?.derivedFrom?.length) metadata.derived_from = uniqueAll(input.source.derivedFrom);
   if (input.triggers?.length) metadata.triggers = unique(input.triggers);
+  // D4 distilled fields; `tier`/`objective` come only from the working-tier path or an existing memory.
+  if (input.directive?.trim()) metadata.directive = input.directive.trim();
+  if (input.appliesTo?.length) metadata.applies_to = uniqueAll(input.appliesTo);
+  if (input.tier) metadata.tier = input.tier;
+  if (input.objective?.trim()) metadata.objective = input.objective.trim();
   const meta = frontmatter(metadata);
   const originSection = input.context?.trim()
     ? `\n## Origin\n\n${formatInlineMarkdown(input.context.slice(0, 600))}\n`
@@ -133,7 +170,7 @@ function renderMemory(input: {
 ## Content
 
 ${input.bodyText ?? bulletize(input.text)}
-${variantSection(input, options)}${originSection}`;
+${variantSection(input)}${originSection}`;
 }
 
 function bulletize(text: string): string {
@@ -158,12 +195,14 @@ function contextSection(body: string): string {
   return body.match(/\n## Context\r?\n([\s\S]*?)(?=\n## |\s*$)/)?.[1]?.trim() ?? '';
 }
 
+/** E17: the `## Rule Variants` section is written only for custom wording; light and strict are otherwise derived from Content at render time. */
 function variantSection(input: {
-  type: MemoryType; text: string; variantText?: string; variants?: Partial<Record<'light' | 'balanced' | 'strict', string>>;
-}, options: MemoryDraftOptions): string {
-  if (input.type !== 'rule') return '\n';
-  const variants = input.variants ?? (options.ruleVariants ? defaultRuleVariants(input.variantText ?? input.text) : undefined);
-  if (!variants?.balanced && !variants?.light && !variants?.strict) return '\n';
+  type: MemoryType; text: string; bodyText?: string; variants?: Partial<Record<'light' | 'balanced' | 'strict', string>>;
+}): string {
+  if (input.type !== 'rule' || !input.variants) return '\n';
+  const variants = input.variants;
+  const content = input.bodyText ?? bulletize(input.text);
+  if (!variantsDifferFromDefaults(variants, plainContentText(content))) return '\n';
   const fallback = variants.balanced ?? variants.light ?? variants.strict ?? '';
   return `
 ## Rule Variants
@@ -183,7 +222,8 @@ ${variants.strict ?? fallback}
 `;
 }
 
-function dirFor(type: MemoryType): string {
+/** Durable type directory for a memory type (`rules`, `skills`, `knowledge`). */
+export function memoryDir(type: MemoryType): string {
   return type === 'rule' ? 'rules' : type === 'skill' ? 'skills' : 'knowledge';
 }
 
@@ -209,21 +249,36 @@ function mergeSourceMeta(frontmatter: Record<string, any>, source?: MemorySource
     sourceFiles: frontmatterStringList(frontmatter.source_files),
     sourceHashes: frontmatterStringList(frontmatter.source_hashes),
     evidenceRefs: frontmatterStringList(frontmatter.evidence_refs),
-    derivedFrom: frontmatterStringList(frontmatter.derived_from)
+    derivedFrom: frontmatterStringList(frontmatter.derived_from),
+    sourceHashMode: sourceHashMode(frontmatter.source_hash_mode),
+    ...(typeof frontmatter.source_origin === 'string' ? { sourceOrigin: frontmatter.source_origin } : {})
   };
   if (!source) {
     return existing.sourceFiles?.length || existing.sourceHashes?.length || existing.evidenceRefs?.length || existing.derivedFrom?.length
       ? existing
       : undefined;
   }
+  const replace = source.replaceSources === true;
+  // Digest-mode checks also accept raw hashes, so a merge that saw any digest hash stays `digest`.
+  const mode = replace ? source.sourceHashMode : existing.sourceHashMode === 'digest' || source.sourceHashMode === 'digest' ? 'digest' : existing.sourceHashMode ?? source.sourceHashMode;
+  const origin = mergedOrigin(existing, source, replace);
   return {
     source: source.source ?? existing.source,
-    sourceFiles: uniqueAll([...(existing.sourceFiles ?? []), ...(source.sourceFiles ?? [])]),
-    sourceHashes: uniqueAll([...(existing.sourceHashes ?? []), ...(source.sourceHashes ?? [])]),
+    sourceFiles: uniqueAll([...(replace ? [] : existing.sourceFiles ?? []), ...(source.sourceFiles ?? [])]),
+    sourceHashes: uniqueAll([...(replace ? [] : existing.sourceHashes ?? []), ...(source.sourceHashes ?? [])]),
+    ...(mode ? { sourceHashMode: mode } : {}),
+    ...(origin ? { sourceOrigin: origin } : {}),
     evidenceRefs: uniqueAll([...(existing.evidenceRefs ?? []), ...(source.evidenceRefs ?? [])]),
     derivedFrom: uniqueAll([...(existing.derivedFrom ?? []), ...(source.derivedFrom ?? [])]),
     evidenceScope: source.evidenceScope
   };
+}
+
+/** Sources merged from two workspaces (or onto older sources without an origin) have no single origin, so none is kept. */
+function mergedOrigin(existing: MemorySourceMeta, source: MemorySourceMeta, replace: boolean): string | undefined {
+  if (replace || !existing.sourceFiles?.length) return source.sourceOrigin;
+  if (!source.sourceFiles?.length) return existing.sourceOrigin;
+  return existing.sourceOrigin === source.sourceOrigin ? existing.sourceOrigin : undefined;
 }
 
 function nextRevision(value: unknown): number {

@@ -41,7 +41,8 @@ export function matchPattern(file: string, pattern: string): boolean {
   const normalized = file.replace(/\\/g, '/').replace(/^\.\//, '');
   const p = pattern.replace(/\\/g, '/').replace(/^\.\//, '');
   if (p.endsWith('/')) return normalized.startsWith(p) || normalized.includes(`/${p}`);
-  if (p.endsWith('/**')) return normalized.startsWith(p.slice(0, -3));
+  // `dir/**` covers the directory itself and everything below it, never a sibling such as `dirx/`; a bare `/**` covers everything.
+  if (p.endsWith('/**')) return p === '/**' || normalized === p.slice(0, -3) || normalized.startsWith(p.slice(0, -2));
   if (!/[?*]/.test(p)) return normalized === p || normalized.endsWith(`/${p}`) || normalized.startsWith(`${p}/`);
   const source = globSource(p);
   return new RegExp(`^${source}$`).test(normalized) || new RegExp(`(^|/)${source}$`).test(normalized);

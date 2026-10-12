@@ -1,15 +1,19 @@
 /** Memory Markdown frontmatter parser and validator. */
-import type { EvidenceStatus, MemoryAuthority, MemoryDoc, MemoryEntry, MemorySchemaVersion, MemoryType, Scope, Confidence, Lifecycle } from '../runtime/types.js';
+import type { EvidenceStatus, MemoryAuthority, MemoryDoc, MemoryEntry, MemorySchemaVersion, MemoryTier, MemoryType, Scope, Confidence, Lifecycle } from '../runtime/types.js';
 import { meaningfulWordList, summarize, tagsFrom, today } from '../system/text.js';
 import { canonicalRuleMemory } from './rule-variants.js';
 import { frontmatterStringList, parseFrontmatter, renderFrontmatter } from './frontmatter.js';
-import { normalizeAuthorProfile } from '../author/validate.js';
+import { normalizeAuthorEmail, normalizeAuthorName } from '../author/validate.js';
+import { isWorkingPath } from '../runtime/constants.js';
 
 const memoryTypes = new Set(['rule', 'skill', 'knowledge']);
 const scopes = new Set(['workspace', 'global']);
 const confidences = new Set(['high', 'medium', 'low']);
 const lifecycles = new Set<Lifecycle>(['active', 'review_due', 'superseded', 'archived']);
 const memoryAuthorities = new Set<MemoryAuthority>(['instruction', 'reference']);
+const memoryTiers = new Set<MemoryTier>(['durable', 'working']);
+export const DIRECTIVE_MAX_CHARS = 160;
+export const OBJECTIVE_MAX_CHARS = 200;
 const evidenceStatuses = new Set<EvidenceStatus>(['verified', 'unverified']);
 export const RULE_EFFECTIVE_LINE_TARGET = 70;
 export const RULE_EFFECTIVE_LINE_HARD_LIMIT = 100;
@@ -52,7 +56,14 @@ export function entryFromMemory(raw: string, file: string, fallbackScope: Scope)
   validateMemory(doc);
   const dependsOn = frontmatterStringList(doc.frontmatter.depends_on);
   const dependencyDepth = frontmatterDepth(doc.frontmatter.dependency_depth ?? doc.frontmatter.level ?? doc.frontmatter.depth);
-  const summaryBody = doc.frontmatter.type === 'rule' ? parseMemory(canonicalRuleMemory(raw)).body : doc.body;
+  const fullBody = doc.frontmatter.type === 'rule' ? parseMemory(canonicalRuleMemory(raw)).body : doc.body;
+  // Context/Example/Origin carry provenance boilerplate; only Content feeds summary and routing.
+  // An empty Content section falls back to the whole body so the summary is never blank.
+  const content = contentSection(fullBody);
+  const summaryBody = content?.trim() ? content : fullBody;
+  const directive = trimmedText(doc.frontmatter.directive);
+  const objective = trimmedText(doc.frontmatter.objective);
+  const appliesTo = frontmatterStringList(doc.frontmatter.applies_to);
   const lifecycle = normalizeLifecycle(doc.frontmatter.lifecycle);
   const supersedes = frontmatterStringList(doc.frontmatter.supersedes);
   const authorName = typeof doc.frontmatter.author_name === 'string' ? doc.frontmatter.author_name.trim() : undefined;
@@ -64,14 +75,17 @@ export function entryFromMemory(raw: string, file: string, fallbackScope: Scope)
     type: doc.frontmatter.type,
     scope: doc.frontmatter.scope ?? fallbackScope,
     tags: doc.frontmatter.tags ?? tagsFrom(doc.title),
+    ...(doc.frontmatter.tags === undefined ? { autoTags: true as const } : {}),
     summary: summarize(summaryBody),
-    routingTerms: [
-      ...meaningfulWordList(summaryBody),
+    // Explicit terms lead so the 256-term cap trims Content words, never the highest-signal ones.
+    routingTerms: [...new Set([
       ...(Array.isArray(doc.frontmatter.triggers) ? doc.frontmatter.triggers : []),
-      ...(Array.isArray(doc.frontmatter.task_types) ? doc.frontmatter.task_types : [])
-    ].slice(0, 256),
+      ...(Array.isArray(doc.frontmatter.task_types) ? doc.frontmatter.task_types : []),
+      ...(directive ? meaningfulWordList(directive) : []),
+      ...meaningfulWordList(summaryBody)
+    ])].slice(0, 256),
     file,
-    author: authorEmail || 'unknown',
+    author: authorEmail || authorName || 'unknown',
     ...(authorName ? { authorName } : {}),
     ...(authorEmail ? { authorEmail } : {}),
     ...(!explicitAuthorEmail && legacyAuthorEmail ? { legacyAuthorEmail } : {}),
@@ -94,7 +108,14 @@ export function entryFromMemory(raw: string, file: string, fallbackScope: Scope)
     ...(typeof doc.frontmatter.valid_from === 'string' && doc.frontmatter.valid_from ? { validFrom: doc.frontmatter.valid_from } : {}),
     ...(typeof doc.frontmatter.valid_until === 'string' && doc.frontmatter.valid_until ? { validUntil: doc.frontmatter.valid_until } : {}),
     ...(typeof doc.frontmatter.last_confirmed === 'string' && doc.frontmatter.last_confirmed ? { lastConfirmed: doc.frontmatter.last_confirmed } : {}),
-    ...(typeof doc.frontmatter.archived_at === 'string' && doc.frontmatter.archived_at ? { archivedAt: doc.frontmatter.archived_at } : {})
+    ...(typeof doc.frontmatter.archived_at === 'string' && doc.frontmatter.archived_at ? { archivedAt: doc.frontmatter.archived_at } : {}),
+    ...(directive ? { directive } : {}),
+    ...(appliesTo.length ? { appliesTo } : {}),
+    // The working/ location alone decides the tier: a durable file claiming `tier: working` stays durable.
+    ...(isWorkingPath(file) ? { tier: 'working' as MemoryTier } : {}),
+    ...(objective ? { objective } : {}),
+    // Like `tier`, the working/ location decides: a durable file claiming `source: note` is an ordinary memory (promote keeps the provenance).
+    ...(isWorkingPath(file) && doc.frontmatter.source === 'note' ? { note: true as const } : {})
   };
 }
 
@@ -106,8 +127,11 @@ export function validateMemory(doc: MemoryDoc, limits?: MemoryLimits): void {
   if (fm.scope && !scopes.has(fm.scope)) throw new Error('Invalid memory scope');
   if (fm.confidence && !confidences.has(fm.confidence)) throw new Error('Invalid confidence');
   const hasNewAuthor = fm.author_name !== undefined || fm.author_email !== undefined;
-  if (hasNewAuthor) normalizeAuthorProfile({ name: fm.author_name, email: fm.author_email });
-  else if (!fm.author) throw new Error('Missing author metadata');
+  if (hasNewAuthor) {
+    // The name is required once either key is present; the email is optional but validated when present.
+    normalizeAuthorName(fm.author_name);
+    if (fm.author_email !== undefined) normalizeAuthorEmail(fm.author_email);
+  } else if (!fm.author) throw new Error('Missing author metadata');
   const version = memorySchemaVersion(doc);
   if (version === 3 && Number(fm.schema_version) !== 3) throw new Error('Invalid schema_version');
   if (version === 3 && fm.authority === undefined) throw new Error('vNext memory requires authority');
@@ -132,6 +156,7 @@ export function validateMemory(doc: MemoryDoc, limits?: MemoryLimits): void {
   for (const ref of frontmatterStringList(fm.evidence_refs)) {
     if (!/^tr_[A-Za-z0-9_-]+$/.test(ref)) throw new Error(`Invalid evidence_ref: ${ref}`);
   }
+  validateDistilledFields(fm);
   const hasLegacyContext = doc.body.includes('## Context');
   const hasContent = doc.body.includes('## Content');
   const hasLegacyExample = doc.body.includes('## Example');
@@ -148,6 +173,32 @@ export function validateMemory(doc: MemoryDoc, limits?: MemoryLimits): void {
   if (fm.type === 'rule' && effectiveMemoryLines(doc.raw) > ruleLineHardLimit) {
     throw new Error(`Rule memory exceeds ${ruleLineHardLimit}-line hard limit`);
   }
+}
+
+function validateDistilledFields(fm: Record<string, any>): void {
+  for (const [field, max] of [['directive', DIRECTIVE_MAX_CHARS], ['objective', OBJECTIVE_MAX_CHARS]] as const) {
+    if (fm[field] === undefined || fm[field] === null) continue;
+    if (typeof fm[field] !== 'string') throw new Error(`${field} must be text`);
+    if (fm[field].trim().length > max) throw new Error(`${field} must be <= ${max} characters`);
+  }
+  if (fm.tier !== undefined && fm.tier !== null && !memoryTiers.has(fm.tier)) throw new Error('Invalid tier');
+  // D17: how source_hashes were computed; absent means raw-file hashes.
+  if (fm.source_hash_mode !== undefined && fm.source_hash_mode !== null && fm.source_hash_mode !== 'digest' && fm.source_hash_mode !== 'raw') {
+    throw new Error('source_hash_mode must be digest or raw');
+  }
+  // D17: workspace fingerprint of a global memory's sources (a sha256, never a path).
+  if (fm.source_origin !== undefined && fm.source_origin !== null && typeof fm.source_origin !== 'string') {
+    throw new Error('source_origin must be a string');
+  }
+}
+
+/** Body text of the Content section, or undefined when the body has none. */
+function contentSection(body: string): string | undefined {
+  return body.match(/(?:^|\n)## Content\r?\n([\s\S]*?)(?=\n## |\s*$)/)?.[1];
+}
+
+function trimmedText(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
 }
 
 /** Parse and validate a raw memory document. */

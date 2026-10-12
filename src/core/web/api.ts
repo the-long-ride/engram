@@ -13,7 +13,9 @@ import type { MemoryEntry, MemoryGraphEdge, MemoryGraphNode, Scope } from '../ru
 import { loadIndex, rebuildIndex } from '../memory/index.js';
 import { parseMemory } from '../memory/schema.js';
 import { parseMemoryCandidate } from '../memory/memory-candidate.js';
-import { planMemorySave } from '../memory/save-plan.js';
+import { planMemorySave, type SaveVerdict } from '../memory/save-plan.js';
+import { workingTierMeta } from '../memory/working-tier.js';
+import { today } from '../system/text.js';
 import { writeApprovedMemory } from '../memory/storage.js';
 import { getAuthorState, requireResolvedAuthor } from '../author/resolve.js';
 import { setAuthorProfile, unsetAuthorProfile } from '../author/config.js';
@@ -353,12 +355,14 @@ export async function apiReviewPreview(cwd: string, id: string, requestedMemoryI
 }
 
 /** Explicitly confirmed UI write. The caller must supply an AI-reviewed candidate; this never invokes an AI provider. */
-export async function apiReviewWrite(cwd: string, request: ReviewWriteRequest): Promise<{ written: Array<{ id: string; file: string; action: string }>; message: string }> {
+export async function apiReviewWrite(cwd: string, request: ReviewWriteRequest): Promise<{ written: Array<{ id: string; file: string; action: string; verdict: SaveVerdict }>; message: string }> {
   if (request.confirmed !== true) throw new Error('Writing memory requires explicit confirmation');
   if (request.scope !== 'workspace' && request.scope !== 'global') throw new Error('A valid memory scope is required');
   if (!request.proposal?.trim()) throw new Error('Paste an AI-reviewed proposal before writing');
 
   const candidate = parseMemoryCandidate(request.proposal.trim());
+  // The confirmed scope is the human's choice; a proposal naming another target is ambiguous, so nothing is written.
+  if (candidate.scope && candidate.scope !== request.scope) throw new Error(`The proposal says SCOPE: ${candidate.scope}, but the selected scope is ${request.scope}; choose that scope or remove the SCOPE field`);
   const relations = request.relations ?? [];
   const dependsOn = [...new Set([...(candidate.dependsOn ?? []), ...relations.filter((relation) => relation.reason === 'DEPENDS_ON').map((relation) => relation.id)])];
   const updates = relations.filter((relation) => relation.reason === 'UPDATE').map((relation) => relation.id);
@@ -380,7 +384,11 @@ export async function apiReviewWrite(cwd: string, request: ReviewWriteRequest): 
     level: candidate.level,
     updateId,
     variants: candidate.variants,
-    confidence: candidate.confidence
+    confidence: candidate.confidence,
+    directive: candidate.directive,
+    appliesTo: candidate.appliesTo,
+    // D16: an OBJECTIVE: task proposal writes to the working tier, as in every other save path.
+    working: candidate.objective === 'task' ? workingTierMeta(ctx.config, today()) : undefined
   });
   const missingRelations = plans.flatMap((plan) => (plan.related ?? []).flatMap((hint) => {
     if (hint.action === 'possible-duplicate' && !updateId) return [`Mark replacement for ${hint.id} before writing.`];
@@ -392,7 +400,7 @@ export async function apiReviewWrite(cwd: string, request: ReviewWriteRequest): 
   const written = [];
   for (const plan of plans) {
     const file = await writeApprovedMemory({ cwd, scope: plan.scope, file: plan.file, content: plan.content, message: `review write ${plan.message}` });
-    written.push({ id: plan.id, file, action: plan.action });
+    written.push({ id: plan.id, file, action: plan.action, verdict: plan.verdict });
   }
   return { written, message: `Wrote ${written.length} memor${written.length === 1 ? 'y' : 'ies'} from the reviewed proposal.` };
 }
@@ -645,7 +653,7 @@ import { readText } from '../system/fsx.js';
 import { detectInstalledAgents } from '../integrations/agent-detect.js';
 import { isGenerated } from '../integrations/skillset-render.js';
 import { readGlobalSkillsetRegistry, installSkillset, unlinkSkillset, installGlobalSkillset, unlinkGlobalSkillset, globalInstallPlans, type SkillsetTarget } from '../integrations/skillset.js';
-import { applyAgentHookAction } from '../integrations/agent-hooks.js';
+import { applyAgentHookAction, hookHostsForTarget } from '../integrations/agent-hooks.js';
 import { globalAgentConfigHome, globalOpenCodeConfigHome } from '../integrations/agent-paths.js';
 
 export interface AgentUiInfo {
@@ -674,7 +682,7 @@ const AGENT_TARGET_MAP: Record<string, string[]> = {
 const TARGET_FILES: Record<string, string[]> = {
   'agents-md': ['AGENTS.md'],
   copilot: ['.github/copilot-instructions.md'],
-  claude: ['CLAUDE.md'],
+  claude: ['CLAUDE.md', '.claude/engram.md'],
   cursor: ['.cursor/rules/engram.mdc', '.cursor/engram.md', '.cursor/mcp.json'],
   gemini: ['GEMINI.md'],
   cline: ['.clinerules'],
@@ -787,7 +795,7 @@ function agentPath(agentId: string): string {
 
 export async function apiAgentLink(cwd: string, agentId: string, global: boolean): Promise<string> {
   if (global) {
-    const results = await installGlobalSkillset(agentId, { force: true });
+    const results = await installGlobalSkillset(agentId, { force: true, hookHosts: hookHostsForTarget(skillsetHookTarget(agentId)) });
     const anyWritten = results.some((r) => r.action === 'written' || r.action === 'updated');
     const allSkipped = results.length > 0 && results.every((r) => r.action === 'skipped');
     if (allSkipped) {
@@ -804,7 +812,7 @@ export async function apiAgentLink(cwd: string, agentId: string, global: boolean
     if (config.scope === 'global') {
       return `Skipped ${agentId} (workspace): config scope is global.`;
     }
-    const results = await installSkillset(cwd, agentId, true);
+    const results = await installSkillset(cwd, agentId, true, { hookHosts: hookHostsForTarget(skillsetHookTarget(agentId)) });
     const anyWritten = results.some((r) => r.action === 'written' || r.action === 'updated');
     const allSkipped = results.length > 0 && results.every((r) => r.action === 'skipped');
     if (allSkipped) {

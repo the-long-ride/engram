@@ -14,6 +14,7 @@ import { appendChangelog } from './storage.js';
 import { gitCommitGlobal, pullGlobalGit } from '../vcs/git.js';
 import { resolveConflictsInRoot } from '../vcs/conflict.js';
 import { requireResolvedAuthor } from '../author/resolve.js';
+import { WORKING_DIR, isWorkingPath } from '../runtime/constants.js';
 
 export type ArchivePlan = { entry: MemoryEntry; originalPath: string; archiveFile: string; content: string };
 type NormalizedArchiveTarget = { scope?: Scope; value: string };
@@ -35,7 +36,10 @@ export function planArchiveSet(ctx: EngramContext, target: string, reason = ''):
 }
 
 function archivePlanForEntry(ctx: EngramContext, entry: MemoryEntry, reason: string): ArchivePlan {
-  const archiveFile = `archive/${today()}/${entry.file}`;
+  // D16: a working memory is archived inside the gitignored working/ tree, so the archive stays local too.
+  const archiveFile = isWorkingPath(entry.file)
+    ? `${WORKING_DIR}/archive/${today()}/${entry.file.slice(WORKING_DIR.length + 1)}`
+    : `archive/${today()}/${entry.file}`;
   const originalPath = entryPath(ctx, entry.scope, entry.file);
   const content = [
     `<!-- Archived by Engram on ${new Date().toISOString()} -->`,
@@ -54,7 +58,9 @@ function archiveTargetEntries(ctx: EngramContext, wanted: NormalizedArchiveTarge
 
 function globalTwinEntries(ctx: EngramContext, entry: MemoryEntry): MemoryEntry[] {
   if (entry.scope !== 'workspace') return [];
-  return ctx.scopeIndexes.global.entries.filter((candidate) => candidate.id === entry.id && candidate.type === entry.type && !candidate.ignored);
+  // Twins share the tier: archiving a working memory never archives a durable global memory with the same id.
+  return ctx.scopeIndexes.global.entries.filter((candidate) => candidate.id === entry.id && candidate.type === entry.type && !candidate.ignored
+    && isWorkingPath(candidate.file) === isWorkingPath(entry.file));
 }
 
 function uniqueArchivePlans(plans: ArchivePlan[]): ArchivePlan[] {
@@ -67,7 +73,9 @@ function uniqueArchivePlans(plans: ArchivePlan[]): ArchivePlan[] {
 export async function archiveMemory(ctx: EngramContext, plan: ArchivePlan, reason = ''): Promise<string> {
   const root = ctx.roots[plan.entry.scope];
   if (!root) throw new Error(`${plan.entry.scope} memory is not configured`);
-  const globalGit = plan.entry.scope === 'global' ? ctx.config.global_git : undefined;
+  // Archiving a working memory is working-only: no hash entry, no changelog line, and no global pull or commit.
+  const working = isWorkingPath(plan.entry.file);
+  const globalGit = plan.entry.scope === 'global' && !working ? ctx.config.global_git : undefined;
   const commitContext = globalGit ? { cwd: ctx.cwd, author: await requireResolvedAuthor(ctx.cwd) } : undefined;
   if (globalGit) await pullGlobalGit(root, globalGit, () => resolveGlobalConflicts(root), commitContext);
   const raw = await readText(plan.originalPath);
@@ -77,7 +85,7 @@ export async function archiveMemory(ctx: EngramContext, plan: ArchivePlan, reaso
   const annotated = plan.content.replace(readTextSyncNotice(), raw);
   await writeText(archivePath, annotated);
   await removeHash(root, plan.entry.file);
-  await updateHash(root, plan.archiveFile, annotated);
+  if (!working) await updateHash(root, plan.archiveFile, annotated);
   const index = await rebuildIndex(root, plan.entry.scope);
   await rebuildGraph(root, plan.entry.scope, index, ctx.config);
   await ensureVectorIndex(root, plan.entry.scope, index.entries, ctx.config);

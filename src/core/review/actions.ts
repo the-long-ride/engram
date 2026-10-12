@@ -163,7 +163,8 @@ function nextRevision(data: Record<string, unknown>): number {
   return Number.isInteger(current) && current >= 1 ? current + 1 : 2;
 }
 
-function patchReviewedMemory(raw: string, patch: Record<string, unknown>): string {
+/** Patch frontmatter and bump `revision`/`last_confirmed`; shared by the review actions and approved SUPERSEDE writes. */
+export function patchReviewedMemory(raw: string, patch: Record<string, unknown>): string {
   const parsed = parseFrontmatter(raw);
   return updateFrontmatter(raw, {
     ...patch,

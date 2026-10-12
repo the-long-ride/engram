@@ -1,6 +1,6 @@
 /** Read-oriented commands: load, rebuild-index, verify, audit, and rehash. */
 import path from 'node:path';
-import { getContext } from '../core/memory/context.js';
+import { getContext, type EngramContext } from '../core/memory/context.js';
 import { classifyTaskType } from '../core/memory/task-classifier.js';
 import { inferTaskIntent, taskIntentQuery, intentIsActionable } from '../core/memory/task-intent.js';
 import { rebuildGraph } from '../core/memory/graph.js';
@@ -13,13 +13,19 @@ import { EngramError, ExitCode } from '../core/runtime/exit-codes.js';
 import { fail, serializeResult } from '../core/contracts/result.js';
 import { runDoctor, doctorDiagnostics, type DoctorResult } from '../core/diagnostics/doctor.js';
 import type { Scope, MemoryEntry } from '../core/runtime/types.js';
-import { loadHashes, updateHash, verifyRoot, sha256 } from '../core/safety/hash.js';
-import { inside, listFiles, readText, writeJson } from '../core/system/fsx.js';
+import { memoryKey } from '../core/memory/memory-ref.js';
+import { listFlag } from '../cli/args.js';
+import { loadHashes, saveHashes, updateHash, verifyRoot, sha256 } from '../core/safety/hash.js';
+import { inside, listFiles, readText } from '../core/system/fsx.js';
 import { scopeRootsForConfig } from '../core/runtime/config.js';
-import { HASH_FILE } from '../core/runtime/constants.js';
+import { isActiveMemoryPath } from '../core/runtime/constants.js';
 import { explainRoute } from '../core/memory/route-explain.js';
-import { planLoad, renderCompactPayload } from '../core/memory/load-plan.js';
+import { planLoad, renderLoadPlan, type LoadDisclosure, type LoadPlan } from '../core/memory/load-plan.js';
 import { DEFAULT_MAX_TOKENS, parseMaxTokens } from '../core/runtime/load-limit.js';
+import { recordUsage } from '../core/memory/usage.js';
+import { applyBackupMoves, planBackupMoves, type BackupMove } from '../core/memory/backups.js';
+import { nativeRuleRecords, refreshLinkedNativeRules, type NativeRuleSyncResult } from '../core/integrations/native-rules.js';
+import { checkFreshnessDetailed, freshnessEntries, HOST_OTHER_MACHINE, readStale, STALE_FILE, writeStale, type FreshnessReport } from '../core/memory/freshness.js';
 
 /** Load routed memory for a query. */
 export async function cmdLoad(args: string[], flags: Record<string, any> = {}): Promise<string> {
@@ -43,12 +49,17 @@ export async function cmdLoad(args: string[], flags: Record<string, any> = {}): 
     ? ctx.config.load.max_tokens ?? DEFAULT_MAX_TOKENS
     : parseMaxTokens(flags['budget-tokens'], '--budget-tokens');
 
+  const disclosure = parseDisclosure(flags.disclosure);
+  const excludeKeys = listFlag(flags['exclude-keys']);
+
   const plan = await planLoad(ctx, query, {
     all,
     full,
     id: targetIds,
     budgetTokens,
-    forAgents
+    forAgents,
+    ...(disclosure ? { disclosure } : {}),
+    ...(excludeKeys.length ? { excludeKeys } : {})
   });
 
   const routed = plan.routeDetail!;
@@ -80,7 +91,7 @@ export async function cmdLoad(args: string[], flags: Record<string, any> = {}): 
         selected: entries.length,
         total_related: routed.candidates,
         omitted: routed.omitted,
-        entries: entries.map((entry) => ({ id: entry.id, scope: entry.scope, type: entry.type, file: entry.file, summary: entry.summary, matched_by: matchReason(routed, entry) }))
+        entries: entries.map((entry) => ({ id: entry.id, scope: entry.scope, type: entry.type, file: entry.file, summary: entry.summary, score: matchScore(routed, entry), matched_by: matchReason(routed, entry) }))
       });
     }
     const rows: RecordBlock[] = [];
@@ -105,28 +116,122 @@ export async function cmdLoad(args: string[], flags: Record<string, any> = {}): 
     })));
     return formatRecords(`Routed memories (${entries.length} of ${routed.candidates})`, rows);
   }
+  // D10: only an explicit `--id` fetch counts; routed, --all, and --full loads do not.
+  if (targetIds.length > 0 && ctx.roots.workspace) {
+    await recordUsage(ctx.roots.workspace, plan.payload_rows.map(({ entry }) => memoryKey(entry)), 'fetched');
+  }
   if (isJsonMode(flags)) {
+    const stale = new Set(plan.stale_keys ?? []);
+    const row = (entry: MemoryEntry) => ({ id: entry.id, scope: entry.scope, type: entry.type, file: entry.file, summary: entry.summary, ...(stale.has(memoryKey(entry)) ? { stale: true } : {}) });
     return jsonOk({
       selected: plan.selected_ids.length,
       total_related: routed.candidates,
       omitted: routed.omitted,
-      entries: plan.payload_rows.map(({ entry }) => ({ id: entry.id, scope: entry.scope, type: entry.type, file: entry.file, summary: entry.summary }))
+      entries: plan.payload_rows.map(({ entry }) => row(entry)),
+      cards: plan.card_rows.map(({ entry }) => row(entry)),
+      already_loaded: plan.already_loaded
     });
   }
-  return renderCompactPayload(ctx, routed, plan.payload_rows, plan.skipped_rows);
+  return agentLoadResult(ctx, plan).text;
 }
+
+export type AgentLoadOptions = {
+  cwd?: string;
+  excludeKeys?: string[];
+  /** Bodies the caller already holds: they keep their expansion slots but are not re-rendered. */
+  deliveredKeys?: string[];
+  /** Fetch these memory ids directly (bypasses routing and the token cap). */
+  id?: string[];
+  /** Token cap for rendered compact context; defaults to `load.max_tokens`. */
+  budgetTokens?: number;
+  disclosure?: LoadDisclosure;
+};
+export type AgentLoad = {
+  text: string;
+  /** Every routed selection key (`scope:file`), including excluded and carded rows. */
+  selectedKeys: string[];
+  /** Keys whose bodies `text` expands; excluded and delivered keys never appear here. */
+  bodyKeys: string[];
+  /** Total related candidates for the query. */
+  related: number;
+  /** Ids of routed memories left out because the caller already holds them (excluded or delivered). */
+  alreadyLoaded: string[];
+  /** Ids rendered as one-line cards in `text`. */
+  cardIds: string[];
+  /** Ids of selected memories the token cap shed; fetch them with `id`. */
+  omittedIds: string[];
+};
+
+/** Routed agent load for hooks and MCP: the default `engram load` text plus the plan facts callers need. */
+export async function loadForAgent(query: string, opts: AgentLoadOptions = {}): Promise<AgentLoad> {
+  return loadForAgentWithContext(await getContext(opts.cwd ?? process.cwd()), query, opts);
+}
+
+/** `loadForAgent` over an already-built context, so the benchmark and other callers avoid re-reading the index. */
+export async function loadForAgentWithContext(ctx: EngramContext, query: string, opts: AgentLoadOptions = {}): Promise<AgentLoad> {
+  if (!ctx.config.enabled || ctx.config.read === 'off') return { text: '', selectedKeys: [], bodyKeys: [], related: 0, alreadyLoaded: [], cardIds: [], omittedIds: [] };
+  const excludeKeys = opts.excludeKeys ?? [];
+  const deliveredKeys = opts.deliveredKeys ?? [];
+  const ids = (opts.id ?? []).map((id) => id.trim()).filter(Boolean);
+  const plan = await planLoad(ctx, query || 'current session', {
+    budgetTokens: opts.budgetTokens ?? ctx.config.load.max_tokens ?? DEFAULT_MAX_TOKENS,
+    forAgents: true,
+    ...(opts.disclosure ? { disclosure: opts.disclosure } : {}),
+    ...(ids.length ? { id: ids } : {}),
+    ...(excludeKeys.length ? { excludeKeys } : {}),
+    ...(deliveredKeys.length ? { deliveredKeys } : {})
+  });
+  // D10: only an explicit id fetch counts as usage.
+  if (ids.length && ctx.roots.workspace) {
+    await recordUsage(ctx.roots.workspace, plan.payload_rows.map(({ entry }) => memoryKey(entry)), 'fetched');
+  }
+  return agentLoadResult(ctx, plan);
+}
+
+/** One rendering path shared by `cmdLoad` and `loadForAgent`. */
+function agentLoadResult(ctx: EngramContext, plan: LoadPlan): AgentLoad {
+  const routed = plan.routeDetail?.entries ?? [];
+  const already = new Set(plan.already_loaded);
+  const shed = new Set(plan.omitted.filter((item) => item.reason === 'budget').map((item) => item.key));
+  return {
+    text: renderLoadPlan(ctx, plan),
+    selectedKeys: routed.map(memoryKey),
+    bodyKeys: plan.payload_rows.map(({ entry }) => memoryKey(entry)),
+    related: plan.routeDetail?.candidates ?? 0,
+    alreadyLoaded: routed.filter((entry) => already.has(memoryKey(entry))).map((entry) => entry.id),
+    cardIds: plan.disclosure === 'auto' ? plan.card_rows.map(({ entry }) => entry.id) : [],
+    omittedIds: routed.filter((entry) => shed.has(memoryKey(entry))).map((entry) => entry.id)
+  };
+}
+
+function parseDisclosure(value: unknown): LoadDisclosure | undefined {
+  if (value === undefined) return undefined;
+  if (value === 'auto' || value === 'full') return value;
+  throw new EngramError('ENG_USAGE', `load --disclosure: invalid value '${String(value)}'. Must be auto or full.`, ExitCode.UsageError);
+}
+
 
 /** Classify a user task for `engram load` and save tags. */
 export function cmdRoute(args: string[], flags: Record<string, any> = {}): string {
-  const text = args.join(' ').trim();
-  const classification = classifyTaskType(text);
-  const data = {
+  const data = routeData(args.join(' '));
+  return isJsonMode(flags) ? jsonOk(data) : renderRoute(data);
+}
+
+export type RouteData = { task_type: string; confidence: number; load_query: string; save_tags: string[] };
+
+/** Task classification data for `engram route`. */
+export function routeData(query: string): RouteData {
+  const classification = classifyTaskType(query.trim());
+  return {
     task_type: classification.taskType,
     confidence: Math.round(classification.confidence * 100) / 100,
     load_query: classification.loadQuery,
     save_tags: classification.saveTags
   };
-  if (isJsonMode(flags)) return jsonOk(data);
+}
+
+/** Human text for `engram route`. */
+export function renderRoute(data: RouteData): string {
   return [
     `Task type: ${data.task_type}`,
     `Confidence: ${data.confidence.toFixed(2)}`,
@@ -150,6 +255,11 @@ export async function cmdRebuildIndex(scope?: string): Promise<string> {
     const vector = await ensureVectorIndex(ctx.roots[current as Scope], current as Scope, visibleEntries(index.entries, ctx.config, true, ctx.ignorePatterns), ctx.config, { force: true });
     rows.push({ title: current, fields: [['Indexed', index.entries.length], ['Graph nodes', graph.nodes.length], ['Vector', vector.action], ['Vector reason', vector.reason ?? '-']] });
   }
+  // E12: rule files for linked Claude/Cursor hosts follow the rebuilt index (workspace rules for the workspace scope, user rules for global).
+  const native: NativeRuleSyncResult[] = [];
+  if (scopes.includes('workspace')) native.push(...await refreshLinkedNativeRules(process.cwd()));
+  if (scopes.includes('global')) native.push(...await refreshLinkedNativeRules(process.cwd(), { global: true }));
+  rows.push(...nativeRuleRecords(native));
   return formatRecords('engram: rebuilt indexes', rows);
 }
 
@@ -157,6 +267,7 @@ export async function cmdRebuildIndex(scope?: string): Promise<string> {
 export async function cmdRepair(scope: string | undefined, flags: Record<string, any> = {}): Promise<string> {
   const ctx = await getContext();
   const scopes = scope === 'workspace' || scope === 'global' ? [scope] : ['workspace', 'global'];
+  if (flags['move-backups'] === true) return repairMoveBackups(ctx, scopes as Scope[], flags.confirm === true, flags);
   const rows: RecordBlock[] = [];
   const invalid: Array<{ scope: string; file: string; error: string }> = [];
   const scopeStatus: Array<{ scope: string; status: 'checked' | 'not_configured'; invalid_count: number }> = [];
@@ -181,10 +292,49 @@ export async function cmdRepair(scope: string | undefined, flags: Record<string,
   return formatRecords('Invalid memory files', rows);
 }
 
-/** Verify hashes for one or both scopes. Exits non-zero when mismatches are found. */
+/** Plan (default) or apply (`--confirm`) moving stray migration backups into the gitignored `backups/` folder. */
+async function repairMoveBackups(ctx: EngramContext, scopes: Scope[], confirm: boolean, flags: Record<string, any>): Promise<string> {
+  const lines: string[] = [];
+  const backups: Array<BackupMove & { scope: string }> = [];
+  const scopeStatus: Array<{ scope: string; status: 'checked' | 'not_configured'; backups: number }> = [];
+  let planned = 0;
+  for (const current of scopes) {
+    const root = ctx.roots[current];
+    if (!root) {
+      scopeStatus.push({ scope: current, status: 'not_configured', backups: 0 });
+      lines.push(`${current}: not configured`);
+      continue;
+    }
+    const plan = await planBackupMoves(root);
+    planned += plan.filter((move) => move.action !== 'conflict').length;
+    const result = confirm ? await applyBackupMoves(root, plan) : plan;
+    for (const move of result) {
+      backups.push({ scope: current, ...move });
+      lines.push(backupMoveLine(current, move));
+    }
+    scopeStatus.push({ scope: current, status: 'checked', backups: result.length });
+  }
+  const moved = backups.filter((move) => move.action === 'moved').length;
+  const conflicts = backups.filter((move) => move.action === 'conflict').length;
+  if (isJsonMode(flags)) return jsonOk({ scopes: scopeStatus, backups, planned, moved, conflicts });
+  if (!backups.length) return 'No stray backup files.';
+  if (!confirm) lines.push('Run again with --confirm to move these files.');
+  return lines.join('\n');
+}
+
+function backupMoveLine(scope: string, move: BackupMove): string {
+  const label = move.action === 'moved' ? 'MOVED' : move.action === 'conflict' ? 'CONFLICT' : 'PLAN';
+  return `${label} ${scope}:${move.from} -> ${move.to}${move.reason ? `: ${move.reason}` : ''}`;
+}
+
+/**
+ * Verify hashes for one or both scopes. Exits non-zero when mismatches are found. `--sources` (D17) also re-hashes
+ * take-control memories' source files and records stale ones in `stale.json`; stale sources never fail the command.
+ */
 export async function cmdVerify(scope: string | undefined, flags: Record<string, any> = {}): Promise<string> {
   const ctx = await getContext();
   const scopes = scope === 'workspace' || scope === 'global' ? [scope] : ['workspace', 'global'];
+  const freshness = flags.sources === true ? await verifySources(ctx, scopes as Scope[]) : undefined;
   const scopeRows = await Promise.all(scopes.map(async (s) => {
     const root = ctx.roots[s as Scope];
     if (!root) return { scope: s, status: 'not_configured' as const, rows: [] };
@@ -194,27 +344,67 @@ export async function cmdVerify(scope: string | undefined, flags: Record<string,
   const mismatches = rows.filter((row) => !row.ok);
   const scopeStatus = scopeRows.map((item) => ({ scope: item.scope, status: item.status, checked_files: item.rows.length, mismatches: item.rows.filter((r) => !r.ok).length }));
   if (isJsonMode(flags)) {
-    const data = { scopes: scopeStatus, results: rows.map((row) => ({ scope: row.scope, file: row.file, ok: row.ok })), mismatches: mismatches.length };
+    const data = { scopes: scopeStatus, results: rows.map((row) => ({ scope: row.scope, file: row.file, ok: row.ok })), mismatches: mismatches.length, ...(freshness ? { sources: sourcesJson(freshness) } : {}) };
     if (mismatches.length) {
-      const diagnostics = mismatches.map((row) => ({ id: 'hash.mismatch', severity: 'error' as const, message: `${row.scope}:${row.file}`, remediation: `engram rehash ${row.scope}` }));
+      // The failure envelope has no data, so stale sources found by the same run travel as info diagnostics.
+      const staleDiagnostics = Object.entries(freshness?.stale ?? {}).map(([key, files]) => ({ id: 'sources.stale', severity: 'info' as const, message: `${key}: ${files.join(', ')}`, remediation: 'engram take-control --refresh' }));
+      const diagnostics = [...mismatches.map((row) => ({ id: 'hash.mismatch', severity: 'error' as const, message: `${row.scope}:${row.file}`, remediation: `engram rehash ${row.scope}` })), ...staleDiagnostics];
       throw new EngramError('ENG_INTEGRITY', `${mismatches.length} hash mismatch(es) found`, ExitCode.IntegrityError, serializeResult(fail('ENG_INTEGRITY', `${mismatches.length} hash mismatch(es) found`, diagnostics)));
     }
     return jsonOk(data);
   }
+  const sourcesText = freshness ? `\n\n${renderSources(freshness)}` : '';
   if (!rows.length && scopeStatus.every((s) => s.status === 'not_configured')) return 'engram: no memory files to verify';
-  if (!rows.length) return formatRecords('Verify memory hashes', scopeStatus.map((s) => ({ title: s.scope, fields: [['Status', s.status]] })));
-  const text = formatRecords('Verify memory hashes', rows.map((row) => ({ title: `${row.ok ? 'OK' : 'MISMATCH'} ${row.scope}:${row.file}` })));
+  if (!rows.length) return formatRecords('Verify memory hashes', scopeStatus.map((s) => ({ title: s.scope, fields: [['Status', s.status]] }))) + sourcesText;
+  const text = formatRecords('Verify memory hashes', rows.map((row) => ({ title: `${row.ok ? 'OK' : 'MISMATCH'} ${row.scope}:${row.file}` }))) + sourcesText;
   if (mismatches.length) {
     throw new EngramError('ENG_INTEGRITY', `${mismatches.length} hash mismatch(es) found`, ExitCode.IntegrityError, text);
   }
   return text;
 }
 
+type SourcesCheck = FreshnessReport & { written: boolean; staleFile?: string };
+
+/**
+ * Re-hash source files for the checked scopes and store the result in the workspace `stale.json` (local derived
+ * state, gitignored). Keys of scopes not checked this run are kept. Global memories are checked only in the workspace
+ * their `source_origin` fingerprint names, because their paths are relative to the workspace they came from; others,
+ * and older global memories without an origin, are listed as skipped and never read.
+ */
+async function verifySources(ctx: EngramContext, scopes: Scope[]): Promise<SourcesCheck> {
+  const report = await checkFreshnessDetailed(ctx.cwd, await freshnessEntries(ctx, scopes.filter((scope) => Boolean(ctx.roots[scope]))), undefined, ctx.ignorePatterns);
+  const root = ctx.roots.workspace;
+  if (!root) return { ...report, written: false };
+  const kept = Object.fromEntries(Object.entries(await readStale(root)).filter(([key]) => !scopes.some((scope) => key.startsWith(`${scope}:`))));
+  const written = await writeStale(root, { ...kept, ...report.stale });
+  return { ...report, written, staleFile: path.relative(ctx.cwd, path.join(root, STALE_FILE)).replace(/\\/g, '/') };
+}
+
+function sourcesJson(check: SourcesCheck) {
+  return { checked: check.checked.length, stale: check.stale, stale_count: Object.keys(check.stale).length, unchecked: check.unchecked, skipped: check.skipped, written: check.written };
+}
+
+function renderSources(check: SourcesCheck): string {
+  const stale = Object.entries(check.stale);
+  const records: RecordBlock[] = stale.map(([key, files]) => ({ title: `STALE ${key}`, fields: [['Changed', files.join(', ')]] }));
+  records.push(...check.unchecked.map((item) => ({ title: `UNCHECKED ${item.key}`, fields: [['Source', `${item.file}: ${item.reason}`]] as Array<[string, string]> })));
+  const hostSkipped = check.skipped.filter((item) => item.reason === HOST_OTHER_MACHINE).length;
+  const globalSkipped = check.skipped.length - hostSkipped;
+  const skipped = [
+    globalSkipped ? ` ${globalSkipped} global ${globalSkipped === 1 ? 'memory' : 'memories'} skipped (from another workspace or without a recorded origin).` : '',
+    hostSkipped ? ` ${hostSkipped} host-memory ${hostSkipped === 1 ? 'import' : 'imports'} skipped (host memory store not on this machine).` : ''
+  ].join('');
+  const summary = (stale.length
+    ? `${stale.length} stale of ${check.checked.length} checked; recorded in ${check.staleFile ?? STALE_FILE}. Run engram take-control --refresh to propose updates.`
+    : `No stale memories (${check.checked.length} checked).`) + skipped;
+  return [formatRecords('Verify memory sources', records), summary].join('\n');
+}
+
 /** Show audit rows, with simple filters. */
 export async function cmdAudit(flags: Record<string, any> = {}): Promise<string> {
   const ctx = await getContext();
   let entries = visibleEntries(ctx.index.entries, ctx.config, Boolean(flags['low-confidence']), ctx.ignorePatterns);
-  if (flags.author) entries = entries.filter((e) => e.author === flags.author);
+  if (flags.author) entries = entries.filter((e) => [e.author, e.authorName, e.authorEmail].includes(flags.author));
   if (flags['low-confidence']) entries = entries.filter((e) => e.confidence === 'low');
   if (flags.stale) entries = entries.filter((e) => Date.now() - Date.parse(e.updated) > 180 * 864e5);
   if (isJsonMode(flags)) {
@@ -242,8 +432,13 @@ function refinementRecord(routed: RouteDetail): RecordBlock {
   };
 }
 
+function matchScore(routed: RouteDetail, entry: { scope: string; file: string }): number {
+  const score = routed.reasons?.find((item) => item.key === memoryKey(entry))?.score;
+  return score === undefined ? 0 : Math.round(score * 1000) / 1000;
+}
+
 function matchReason(routed: RouteDetail, entry: { scope: string; file: string }): string {
-  const reason = routed.reasons?.find((item) => item.key === `${entry.scope}:${entry.file}`);
+  const reason = routed.reasons?.find((item) => item.key === memoryKey(entry));
   if (!reason) return '-';
   if (reason.kind === 'dependency') return `dependency prerequisite${reason.source ? ` (${reason.source})` : ''}`;
   const terms = reason.terms?.join(', ') || '-';
@@ -268,7 +463,7 @@ export async function cmdRehash(scope?: string): Promise<string> {
     const newHashes: Record<string, string> = {};
     for (const file of files) {
       const rel = path.relative(root, file).replace(/\\/g, '/');
-      if (!/^(rules|skills|knowledge)\//.test(rel)) continue;
+      if (!isActiveMemoryPath(rel)) continue;
       if (rel === 'HELP.md' || rel === 'README.md' || rel === 'changelog.md') continue;
       const content = await readText(file);
       const hash = sha256(content);
@@ -282,7 +477,7 @@ export async function cmdRehash(scope?: string): Promise<string> {
       if (oldHashes[file] !== hash) changed += 1;
     }
     // Write the full hash store.
-    await writeJson(path.join(root, HASH_FILE), newHashes);
+    await saveHashes(root, newHashes);
     rows.push({ title: current, fields: [['Hashed', updated], ['Changed', changed], ['Unchanged', updated - changed]] });
   }
   return formatRecords('engram: rehashed memory files', rows);

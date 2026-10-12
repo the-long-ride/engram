@@ -1,5 +1,5 @@
 /** Search, stats, and duplicate detection helpers. */
-import type { MemoryEntry } from '../runtime/types.js';
+import type { EngramConfig, MemoryEntry } from '../runtime/types.js';
 import { lexicalScore, words } from '../system/text.js';
 import { style } from '../cli/format.js';
 
@@ -7,21 +7,31 @@ export type DuplicatePair = [MemoryEntry, MemoryEntry, number];
 
 /** Return entries ranked by lexical match. */
 export function searchEntries(entries: MemoryEntry[], query: string): MemoryEntry[] {
-  return entries
-    .map((entry) => ({ entry, score: lexicalScore(query, `${entry.id} ${entry.tags.join(' ')} ${entry.summary}`) }))
-    .filter((row) => row.score > 0)
-    .sort((a, b) => b.score - a.score || scopePriority(a.entry) - scopePriority(b.entry) || a.entry.file.localeCompare(b.entry.file))
-    .map((row) => row.entry);
+  return scoredSearchEntries(entries, query).map((row) => row.entry);
 }
-// ... [keeping semanticSearchEntries, duplicatePairs, semanticDuplicatePairs unchanged]
+
+export type ScoredEntry = { entry: MemoryEntry; score: number };
+
+/** Lexical matches with the score that ranked them. */
+export function scoredSearchEntries(entries: MemoryEntry[], query: string): ScoredEntry[] {
+  return rankScored(entries.map((entry) => ({ entry, score: lexicalScore(query, `${entry.id} ${entry.tags.join(' ')} ${entry.summary}`) })));
+}
+
 /** Return entries ranked by local normalized-term similarity. */
 export function semanticSearchEntries(entries: MemoryEntry[], query: string): MemoryEntry[] {
+  return scoredSemanticSearchEntries(entries, query).map((row) => row.entry);
+}
+
+/** Semantic matches with the score that ranked them. */
+export function scoredSemanticSearchEntries(entries: MemoryEntry[], query: string): ScoredEntry[] {
   const queryTerms = semanticTerms(query);
-  return entries
-    .map((entry) => ({ entry, score: semanticSearchScore(query, queryTerms, entry) }))
+  return rankScored(entries.map((entry) => ({ entry, score: semanticSearchScore(query, queryTerms, entry) })));
+}
+
+function rankScored(rows: ScoredEntry[]): ScoredEntry[] {
+  return rows
     .filter((row) => row.score > 0)
-    .sort((a, b) => b.score - a.score || scopePriority(a.entry) - scopePriority(b.entry) || a.entry.file.localeCompare(b.entry.file))
-    .map((row) => row.entry);
+    .sort((a, b) => b.score - a.score || scopePriority(a.entry) - scopePriority(b.entry) || a.entry.file.localeCompare(b.entry.file));
 }
 
 /** Find likely duplicates with deterministic token overlap. */
@@ -40,21 +50,28 @@ export type StatsData = {
   by_type: Record<string, number>;
   by_scope: Record<string, number>;
   by_author: Record<string, number>;
+  working?: number;
+  vector?: { enabled: boolean; experimental: true };
 };
 
 /** Return structured memory counts without styling. */
-export function statsData(entries: MemoryEntry[]): StatsData {
+export function statsData(entries: MemoryEntry[], config?: EngramConfig): StatsData {
+  const working = entries.filter((entry) => entry.tier === 'working').length;
   return {
     total: entries.length,
     by_type: groupCount(entries, 'type'),
     by_scope: groupCount(entries, 'scope'),
-    by_author: authorCounts(entries)
+    by_author: authorCounts(entries),
+    // D16 additive field, present only when working-tier memories exist.
+    ...(working ? { working } : {}),
+    // E18 additive field: the hashed vector layer is experimental and off by default.
+    ...(config ? { vector: { enabled: config.vector.enabled, experimental: true as const } } : {})
   };
 }
 
 /** Summarize memory counts by type and scope. */
-export function stats(entries: MemoryEntry[]): string {
-  const data = statsData(entries);
+export function stats(entries: MemoryEntry[], config?: EngramConfig): string {
+  const data = statsData(entries, config);
   return [
     style.heading('Memory stats'),
     `${style.label('Total:')} ${style.number(String(data.total))}`,
@@ -66,7 +83,9 @@ export function stats(entries: MemoryEntry[]): string {
     ...countRows(data.by_scope),
     '',
     style.title('By author:'),
-    ...countRows(data.by_author)
+    ...countRows(data.by_author),
+    ...(data.working ? ['', `${style.label('Working tier:')} ${style.number(String(data.working))} (task-scoped, expiring; engram promote <id> keeps one)`] : []),
+    ...(data.vector ? ['', `${style.label('Vector:')} ${data.vector.enabled ? 'on' : 'off'} (experimental)`] : [])
   ].join('\n');
 }
 
@@ -86,7 +105,7 @@ function authorCounts(entries: MemoryEntry[]): Record<string, number> {
   return entries.reduce<Record<string, number>>((acc, entry) => {
     const key = entry.authorName && entry.authorEmail
       ? `${entry.authorName} <${entry.authorEmail}>`
-      : entry.authorEmail || entry.author || 'unknown';
+      : entry.authorEmail || entry.authorName || entry.author || 'unknown';
     acc[key] = (acc[key] ?? 0) + 1;
     return acc;
   }, {});

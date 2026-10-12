@@ -141,7 +141,8 @@ const ALLOWED_KEYS = new Set([
   'encryption.enabled', 'encryption.scope', 'encryption.key_source',
   'global_path',
   'global_git.enabled', 'global_git.remote', 'global_git.remote_url', 'global_git.branch', 'global_git.auto_sync', 'global_git.auto_resolve',
-  'memory.rule_line_target', 'memory.rule_line_hard_limit',
+  'memory.rule_line_target', 'memory.rule_line_hard_limit', 'memory.include_author_email',
+  'hooks.path_rules',
 ]);
 
 export function configKeyToColumn(key: string): string | undefined {
@@ -199,6 +200,9 @@ export function flattenConfig(config: EngramConfig): Record<string, string> {
   out['global_git.auto_resolve'] = String(config.global_git.auto_resolve);
   out['memory.rule_line_target'] = String(config.memory?.rule_line_target ?? 70);
   out['memory.rule_line_hard_limit'] = String(config.memory?.rule_line_hard_limit ?? 100);
+  out['memory.include_author_email'] = String(config.memory?.include_author_email === true);
+  // Only an explicit choice is stored, so a workspace write never pins the default over a user-level setting.
+  if (config.hooks?.path_rules) out['hooks.path_rules'] = config.hooks.path_rules === 'hook' ? 'hook' : 'native';
   if (config.author) {
     out['author.name'] = config.author.name;
     out['author.email'] = config.author.email;
@@ -260,6 +264,8 @@ export function unflattenConfig(kv: Record<string, string>): Partial<EngramConfi
       case 'global_git.auto_resolve': out.global_git = { ...(out.global_git ?? {}), auto_resolve: value === 'true' }; break;
       case 'memory.rule_line_target': out.memory = { ...(out.memory ?? {}), rule_line_target: intOr(value, d.memory.rule_line_target) }; break;
       case 'memory.rule_line_hard_limit': out.memory = { ...(out.memory ?? {}), rule_line_hard_limit: intOr(value, d.memory.rule_line_hard_limit) }; break;
+      case 'memory.include_author_email': out.memory = { ...(out.memory ?? {}), include_author_email: value === 'true' }; break;
+      case 'hooks.path_rules': out.hooks = { ...(out.hooks ?? {}), path_rules: value === 'hook' ? 'hook' : 'native' }; break;
     }
   }
   if (typeof kv['author.name'] === 'string' && typeof kv['author.email'] === 'string' && kv['author.name'] && kv['author.email']) {

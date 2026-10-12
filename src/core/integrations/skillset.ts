@@ -26,22 +26,25 @@ import {
   mergeGeminiHookConfig,
   unmergeGeminiHookConfig
 } from './skillset-render.js';
-import type { InstructionProfile } from './skillset-render.js';
+import type { InstructionProfile, RenderOptions } from './skillset-render.js';
 import { globalAgentHome, globalAgentConfigHome, globalOpenCodeConfigHome } from './agent-paths.js';
 import { resolveAllTargets, allSupportedTargets } from './agent-detect.js';
-import { unmergeManagedHooks } from './agent-hooks.js';
+import { detectInstalledHookTargets, unmergeManagedHooks, type AgentHookHost } from './agent-hooks.js';
+import { claudeUserMcpHint, hasCodexMcpBlock, hasUnmanagedCodexEngramTable, removeCodexMcpBlock, renderCodexMcpBlock, upsertCodexMcpBlock } from './mcp-config.js';
+import { CLAUDE_BLOCK_KEPT, CLAUDE_GUIDE, CLAUDE_PROJECT_FILES, CLAUDE_UPGRADE_DETECTION_FILES, claudeBootstrapFiles } from './claude-bootstrap.js';
 
 export type SkillsetTarget =
   | 'agents-md' | 'copilot' | 'claude' | 'cursor' | 'gemini'
   | 'cline' | 'windsurf' | 'agent-skill' | 'antigravity' | 'opencode' | 'mcp' | 'slash';
 export type InstallAction = 'written' | 'updated' | 'skipped' | 'planned';
 export type InstallResult = { target: string; file: string; action: InstallAction; mode?: GlobalInstallMode; reason?: string; hash?: string };
-export type SkillsetUpgradePreview = { target: string; file: string; mode?: GlobalInstallMode; renderTarget?: SkillsetTarget | 'gemini-hook'; current: string; expected: string; latest?: string; safe: boolean; userEditsPreserved: boolean; reason?: string; installedVersion?: string };
+export type SkillsetUpgradePreview = { target: string; file: string; mode?: GlobalInstallMode; renderTarget?: RenderTargetName; current: string; expected: string; latest?: string; safe: boolean; userEditsPreserved: boolean; reason?: string; installedVersion?: string };
 export type UnlinkResult = { target: string; file: string; action: 'removed' | 'cleaned' | 'skipped'; reason?: string };
 export type GlobalInstallMode = 'block' | 'file';
 
+type RenderTargetName = SkillsetTarget | 'gemini-hook' | 'codex-mcp';
 type ResolvedTarget = { name: SkillsetTarget; label: string };
-type GlobalInstallPlan = ResolvedTarget & { file: string; mode?: GlobalInstallMode; renderTarget?: SkillsetTarget | 'gemini-hook'; reason?: string };
+type GlobalInstallPlan = ResolvedTarget & { file: string; mode?: GlobalInstallMode; renderTarget?: RenderTargetName; reason?: string };
 type GlobalSkillsetRegistry = { version: 1; updated: string; engram_version: string; installs: Record<string, { target: string; updated: string; engram_version: string; files: Array<{ path: string; mode: GlobalInstallMode; hash: string }> }> };
 
 const GLOBAL_BEGIN = '<!-- BEGIN ENGRAM GLOBAL SKILLSET -->';
@@ -103,6 +106,75 @@ function workspaceGuideFileForTarget(target: SkillsetTarget): string | undefined
   return workspaceGuideFiles[target];
 }
 
+/** Hook hosts whose installed hooks inject context for readers of a full workspace guide file. */
+const guideHookHosts: Record<string, AgentHookHost[]> = {
+  '.agents/engram.md': ['codex', 'claude'],
+  '.claude/engram.md': ['claude'],
+  '.cursor/engram.md': ['cursor'],
+  '.gemini/engram.md': ['gemini'],
+  '.windsurf/engram.md': ['windsurf'],
+  '.opencode/engram.md': ['opencode'],
+  '.antigravityrules': ['gemini']
+};
+
+/** Options for link installs; `hookHosts` names hosts whose hooks the caller installs alongside these files. */
+export type SkillsetInstallOptions = { hookHosts?: AgentHookHost[] };
+
+/** Hosts whose Engram hooks inject context (installed or about to be); manual/off read modes disable hook injection. */
+async function activeHookHosts(readMode: string, options: { cwd?: string; global?: boolean }, pending: AgentHookHost[] = []): Promise<Set<AgentHookHost>> {
+  if (readMode === 'manual' || readMode === 'off') return new Set();
+  return new Set([...pending, ...await detectInstalledHookTargets({ ...options, includeStale: true })]);
+}
+
+function guideHasHooks(file: string, hookHosts: Set<AgentHookHost>): boolean {
+  return Boolean(guideHookHosts[normalizePath(file)]?.some((host) => hookHosts.has(host)));
+}
+
+/** `.agents/engram.md` is shared with hookless readers (Copilot, Cline, generic AGENTS.md), so its hook wording hedges. */
+const SHARED_WORKSPACE_GUIDE = '.agents/engram.md';
+
+function guideRenderOptions(file: string, hookHosts: Set<AgentHookHost>): RenderOptions {
+  return { hooks: guideHasHooks(file, hookHosts), sharedGuide: normalizePath(file) === SHARED_WORKSPACE_GUIDE };
+}
+
+/** Guide referenced by an instruction block; AGENTS.md is shared, so every target renders the same block (upgrade compares them). */
+function instructionGuidePath(target: SkillsetTarget, relativeFile: string, preferOpenCode: boolean): string {
+  if (normalizePath(relativeFile) === 'AGENTS.md') return preferOpenCode || target === 'opencode' ? '.opencode/engram.md' : SHARED_WORKSPACE_GUIDE;
+  return workspaceGuideFileForTarget(target) ?? SHARED_WORKSPACE_GUIDE;
+}
+
+const OPENCODE_POINTER = 'Full guide: `.opencode/engram.md`';
+
+/** True when an AGENTS.md managed block already points at the OpenCode guide (OpenCode owns that pointer). */
+function textUsesOpenCodeGuide(agentsMd: string): boolean {
+  return hasWorkspaceManagedBlock(agentsMd) && agentsMd.includes(OPENCODE_POINTER);
+}
+
+/** Guide files a target's install writes or upgrade previews; Claude also writes the shared guide its AGENTS.md pointer needs. */
+function workspaceGuideFilesForTarget(target: SkillsetTarget): string[] {
+  if (target === 'claude') return [CLAUDE_GUIDE, SHARED_WORKSPACE_GUIDE];
+  const guide = workspaceGuideFileForTarget(target);
+  return guide ? [guide] : [];
+}
+
+/** MCP configs read by Claude Code; only these benefit from anthropic/alwaysLoad (other hosts ignore the key). */
+const CLAUDE_MCP_FILES = new Set(['.mcp.json']);
+
+/** E5: hookless Claude installs ask the host to load engram_load upfront; hooks already inject context. */
+function mcpRenderOptions(relativeFile: string, hookHosts: Set<AgentHookHost>): RenderOptions {
+  return { alwaysLoad: CLAUDE_MCP_FILES.has(normalizePath(relativeFile)) && !hookHosts.has('claude') };
+}
+
+/** Skills point at their install's canonical guide; full instruction files get hook-aware load wording. */
+function workspaceRenderOptions(target: SkillsetTarget, relativeFile: string, hookHosts: Set<AgentHookHost>): RenderOptions {
+  const normalized = normalizePath(relativeFile);
+  if (target === 'mcp') return mcpRenderOptions(normalized, hookHosts);
+  if (target === 'agent-skill' && normalized === '.agents/skills/engram/SKILL.md') return { guidePath: '.agents/engram.md' };
+  if (target === 'agent-skill' && normalized === '.opencode/skills/engram/SKILL.md') return { guidePath: '.opencode/engram.md' };
+  if (target === 'antigravity' && normalized.endsWith('SKILL.md')) return { guidePath: '.antigravityrules' };
+  return { hooks: guideHasHooks(normalized, hookHosts) };
+}
+
 const OPENCODE_JSON = 'opencode.json';
 const OPENCODE_JSONC = 'opencode.jsonc';
 
@@ -110,6 +182,7 @@ const OPENCODE_JSONC = 'opencode.jsonc';
 const instructionFileNames = new Set([
   'AGENTS.md',
   'CLAUDE.md',
+  '.claude/CLAUDE.md',
   'GEMINI.md',
   '.cursor/rules/engram.mdc',
   '.clinerules',
@@ -192,15 +265,31 @@ export function skillsetTargets(): SkillsetTarget[] {
 }
 
 /** Install one or all agent adapter files into a workspace. */
-export async function installSkillset(cwd: string, target = 'all', force = false): Promise<InstallResult[]> {
+export async function installSkillset(cwd: string, target = 'all', force = false, options: SkillsetInstallOptions = {}): Promise<InstallResult[]> {
   const config = await loadConfig(cwd);
+  const hookHosts = await activeHookHosts(config.read, { cwd }, options.hookHosts);
   const names = resolveLinkTargets(target);
   const results: InstallResult[] = [];
   const plannedFiles = new Set<string>();
   const plannedGuideFiles = new Set<string>();
-  const preferOpenCodeGuide = names.some((item) => item.name === 'opencode');
+  const preferOpenCodeGuide = names.some((item) => item.name === 'opencode')
+    || (names.some((item) => item.name === 'claude') && textUsesOpenCodeGuide(await readText(path.join(cwd, 'AGENTS.md'))));
+  const writeCompanionGuide = async (label: string, guidePath: string): Promise<void> => {
+    if (plannedGuideFiles.has(guidePath)) return;
+    plannedGuideFiles.add(guidePath);
+    const guideFile = path.join(cwd, guidePath);
+    const existingGuide = await readText(guideFile);
+    if (!existingGuide || isGenerated(existingGuide, guidePath) || force) {
+      await ensureDir(path.dirname(guideFile));
+      await writeText(guideFile, renderAgentGuide(config.read, guideRenderOptions(guidePath, hookHosts)));
+      results.push({ target: label, file: guidePath, action: existingGuide ? 'updated' : 'written' });
+    } else {
+      results.push({ target: label, file: guidePath, action: 'skipped', reason: 'human-authored file; use --force to replace' });
+    }
+  };
   for (const { name, label } of names) {
-    const files = target === 'all' ? targets[name] : [...targets[name], ...workspaceMcpFilesForTarget(name)];
+    const { files, notes } = await workspaceFilesToInstall(cwd, name, target === 'all');
+    results.push(...notes.map((note) => ({ target: label, file: note.file, action: 'skipped' as InstallAction, reason: note.reason })));
     for (const relativeFile of files) {
       const resolvedRelativeFile = await resolveWorkspaceRelativeFile(cwd, relativeFile);
       if (plannedFiles.has(resolvedRelativeFile)) continue;
@@ -208,10 +297,9 @@ export async function installSkillset(cwd: string, target = 'all', force = false
       const file = path.join(cwd, resolvedRelativeFile);
       if (isInstructionFile(resolvedRelativeFile)) {
         // Minimal block path: upsert managed block, write companion guide
-        const guidePath = resolvedRelativeFile === 'AGENTS.md' && name === 'agents-md' && preferOpenCodeGuide
-          ? '.opencode/engram.md'
-          : workspaceGuideFileForTarget(name);
-        const effectiveGuidePath = guidePath ?? '.agents/engram.md';
+        const guidePath = instructionGuidePath(name, resolvedRelativeFile, preferOpenCodeGuide);
+        const effectiveGuidePath = guidePath;
+        const keptReason = name === 'claude' && CLAUDE_PROJECT_FILES.includes(normalizePath(resolvedRelativeFile)) ? CLAUDE_BLOCK_KEPT : undefined;
         const block = renderInstructionBlock(name, resolvedRelativeFile, effectiveGuidePath);
         // For cursor .mdc and windsurf .md: the block includes frontmatter, so write it directly
         const isFrontmatterFile = (name === 'cursor' && resolvedRelativeFile === '.cursor/rules/engram.mdc') || (name === 'windsurf' && resolvedRelativeFile === '.windsurf/rules/engram.md');
@@ -229,7 +317,7 @@ export async function installSkillset(cwd: string, target = 'all', force = false
             const { text, action } = upsertWorkspaceManagedBlock(existing, block);
             await ensureDir(path.dirname(file));
             await writeText(file, text);
-            results.push({ target: label, file: resolvedRelativeFile, action });
+            results.push({ target: label, file: resolvedRelativeFile, action, reason: keptReason });
           }
         } else if (!existing) {
           await ensureDir(path.dirname(file));
@@ -242,21 +330,10 @@ export async function installSkillset(cwd: string, target = 'all', force = false
             : upsertWorkspaceManagedBlock(existing, block);
           await ensureDir(path.dirname(file));
           await writeText(file, text);
-          results.push({ target: label, file: resolvedRelativeFile, action });
+          results.push({ target: label, file: resolvedRelativeFile, action, reason: keptReason });
         }
         // Write companion guide file
-        if (guidePath && !plannedGuideFiles.has(guidePath)) {
-          plannedGuideFiles.add(guidePath);
-          const guideFile = path.join(cwd, guidePath);
-          const existingGuide = await readText(guideFile);
-          if (!existingGuide || isGenerated(existingGuide, guidePath) || force) {
-            await ensureDir(path.dirname(guideFile));
-            await writeText(guideFile, renderAgentGuide(config.read));
-            results.push({ target: label, file: guidePath, action: existingGuide ? 'updated' : 'written' });
-          } else {
-            results.push({ target: label, file: guidePath, action: 'skipped', reason: 'human-authored file; use --force to replace' });
-          }
-        }
+        await writeCompanionGuide(label, guidePath);
       } else {
         // Non-instruction file
         if (isOpencodeConfigFile(resolvedRelativeFile)) {
@@ -288,9 +365,9 @@ export async function installSkillset(cwd: string, target = 'all', force = false
             continue;
           }
         }
-        if (isCursorMcpFile(resolvedRelativeFile)) {
+        if (isMergedMcpFile(resolvedRelativeFile)) {
           const existing = await readText(file);
-          const incoming = renderSkillsetFile('mcp', resolvedRelativeFile, config.read, 'compact');
+          const incoming = renderSkillsetFile('mcp', resolvedRelativeFile, config.read, 'compact', mcpRenderOptions(resolvedRelativeFile, hookHosts));
           if (existing) {
             const merged = mergeMcpJson(existing, incoming, { replaceExisting: force });
             if (merged) {
@@ -298,7 +375,7 @@ export async function installSkillset(cwd: string, target = 'all', force = false
               await writeText(file, merged);
               results.push({ target: label, file: resolvedRelativeFile, action: 'updated' });
             } else {
-              results.push({ target: label, file: resolvedRelativeFile, action: 'skipped', reason: force ? 'could not merge existing MCP config' : 'engram MCP entry already present' });
+              results.push({ target: label, file: resolvedRelativeFile, action: 'skipped', reason: mcpMergeSkipReason(existing, force) });
             }
           } else {
             await ensureDir(path.dirname(file));
@@ -315,10 +392,12 @@ export async function installSkillset(cwd: string, target = 'all', force = false
         await ensureDir(path.dirname(file));
         const renderTarget = renderTargetForFile(name, resolvedRelativeFile);
         const profile = instructionProfileForTarget(renderTarget, label);
-        await writeText(file, renderSkillsetFile(renderTarget, resolvedRelativeFile, config.read, profile));
+        await writeText(file, renderSkillsetFile(renderTarget, resolvedRelativeFile, config.read, profile, workspaceRenderOptions(renderTarget, resolvedRelativeFile, hookHosts)));
         results.push({ target: label, file: resolvedRelativeFile, action: 'written' });
       }
     }
+    // Claude's own guide is its detection file and the slash skill's guide, so it is written even without a CLAUDE.md.
+    if (name === 'claude') await writeCompanionGuide(label, CLAUDE_GUIDE);
   }
   return results;
 }
@@ -327,7 +406,7 @@ export async function installSkillset(cwd: string, target = 'all', force = false
 export async function overwriteLinkedWorkspaceSkillsets(cwd: string, options: { plan?: boolean } = {}): Promise<InstallResult[]> {
   const linkedTargets = await detectLinkedWorkspaceTargets(cwd);
   if (!linkedTargets.length) return [];
-  if (options.plan) return planLinkedWorkspaceSkillsets(linkedTargets);
+  if (options.plan) return planLinkedWorkspaceSkillsets(cwd, linkedTargets);
   const results: InstallResult[] = [];
   for (const target of linkedTargets) results.push(...await installSkillset(cwd, target, true));
   return dedupeInstallResults(results);
@@ -336,11 +415,12 @@ export async function overwriteLinkedWorkspaceSkillsets(cwd: string, options: { 
 /** Preview exact workspace skillset rewrites without touching durable files. */
 export async function previewLinkedWorkspaceSkillsets(cwd: string): Promise<SkillsetUpgradePreview[]> {
   const config = await loadConfig(cwd);
+  const hookHosts = await activeHookHosts(config.read, { cwd });
   const linkedTargets = await detectUpgradeWorkspaceTargets(cwd);
   const previews: SkillsetUpgradePreview[] = [];
   const seen = new Set<string>();
   for (const target of linkedTargets) {
-    for (const requestedFile of workspaceInstallFilesForTarget(target)) {
+    for (const requestedFile of await workspaceInstallFilesForTarget(cwd, target)) {
       const relativeFile = await resolveWorkspaceRelativeFile(cwd, requestedFile);
       const key = `${target} ${normalizePath(relativeFile)}`;
       if (seen.has(key)) continue;
@@ -348,7 +428,7 @@ export async function previewLinkedWorkspaceSkillsets(cwd: string): Promise<Skil
       const file = path.join(cwd, relativeFile);
       const current = await readText(file);
       if (isInstructionFile(relativeFile)) {
-        const guidePath = workspaceGuideFileForTarget(target) ?? '.agents/engram.md';
+        const guidePath = instructionGuidePath(target, relativeFile, target === 'claude' && textUsesOpenCodeGuide(await readText(path.join(cwd, 'AGENTS.md'))));
         const block = renderInstructionBlock(target, relativeFile, guidePath);
         const isFrontmatterFile = (target === 'cursor' && relativeFile === '.cursor/rules/engram.mdc')
           || (target === 'windsurf' && relativeFile === '.windsurf/rules/engram.md');
@@ -373,24 +453,25 @@ export async function previewLinkedWorkspaceSkillsets(cwd: string): Promise<Skil
         } else {
           expected = upsertWorkspaceManagedBlock(current, block).text;
         }
-        previews.push({ target, file: relativeFile, current, expected, latest: expected, safe: true, userEditsPreserved: Boolean(current && !isGenerated(current, relativeFile)) });
+        const keptReason = target === 'claude' && CLAUDE_PROJECT_FILES.includes(normalizePath(relativeFile)) ? CLAUDE_BLOCK_KEPT : undefined;
+        previews.push({ target, file: relativeFile, current, expected, latest: expected, safe: true, userEditsPreserved: Boolean(current && !isGenerated(current, relativeFile)), reason: keptReason });
         continue;
       }
-      const guideForTarget = workspaceGuideFileForTarget(target);
-      if (guideForTarget && normalizePath(relativeFile) === normalizePath(guideForTarget)) {
-        const expected = renderAgentGuide(config.read);
+      const guideForFile = workspaceGuideFilesForTarget(target).find((guide) => normalizePath(guide) === normalizePath(relativeFile));
+      if (guideForFile) {
+        const expected = renderAgentGuide(config.read, guideRenderOptions(guideForFile, hookHosts));
         const safe = !current || isGenerated(current, relativeFile);
         previews.push({ target, file: relativeFile, mode: 'file', current, expected, latest: expected, safe, userEditsPreserved: false, reason: safe ? undefined : 'human-authored guide file' });
         continue;
       }
       const renderTarget = renderTargetForFile(target, relativeFile);
-      const incoming = renderSkillsetFile(renderTarget, relativeFile, config.read, instructionProfileForTarget(renderTarget, target));
+      const incoming = renderSkillsetFile(renderTarget, relativeFile, config.read, instructionProfileForTarget(renderTarget, target), workspaceRenderOptions(renderTarget, relativeFile, hookHosts));
       if (isOpencodeConfigFile(relativeFile)) {
         const merged = current ? mergeOpencodeMcp(current, incoming, { replaceExisting: true }) : incoming;
         previews.push({ target, file: relativeFile, current, expected: merged ?? current, latest: incoming, safe: Boolean(merged), userEditsPreserved: Boolean(current), reason: merged ? undefined : 'could not merge existing OpenCode config' });
         continue;
       }
-      if (isCursorMcpFile(relativeFile)) {
+      if (isMergedMcpFile(relativeFile)) {
         const merged = current ? mergeMcpJson(current, incoming, { replaceExisting: true }) : incoming;
         previews.push({ target, file: relativeFile, current, expected: merged ?? current, latest: incoming, safe: Boolean(merged), userEditsPreserved: Boolean(current), reason: merged ? undefined : 'could not merge existing MCP config' });
         continue;
@@ -407,7 +488,7 @@ async function detectUpgradeWorkspaceTargets(cwd: string): Promise<SkillsetTarge
   for (const target of Object.keys(targets) as SkillsetTarget[]) {
     const candidates = target === 'opencode'
       ? targets[target].filter((file) => normalizePath(file) !== 'AGENTS.md')
-      : targets[target];
+      : target === 'claude' ? [...targets.claude, ...CLAUDE_UPGRADE_DETECTION_FILES] : targets[target];
     for (const requested of candidates) {
       const relativeFile = await resolveWorkspaceRelativeFile(cwd, requested);
       const existing = await readText(path.join(cwd, relativeFile));
@@ -434,7 +515,7 @@ export async function installDetectedWorkspaceSkillsets(cwd: string, options: { 
   const linked = await detectLinkedWorkspaceTargets(cwd);
   const missing = detected.filter((target) => !linked.includes(target));
   if (!missing.length) return [];
-  if (options.plan) return planLinkedWorkspaceSkillsets(missing);
+  if (options.plan) return planLinkedWorkspaceSkillsets(cwd, missing);
   const results: InstallResult[] = [];
   for (const target of missing) results.push(...await installSkillset(cwd, target, true));
   return dedupeInstallResults(results);
@@ -457,11 +538,11 @@ async function workspaceTargetIsLinked(cwd: string, target: SkillsetTarget): Pro
   return false;
 }
 
-function planLinkedWorkspaceSkillsets(linkedTargets: SkillsetTarget[]): InstallResult[] {
+async function planLinkedWorkspaceSkillsets(cwd: string, linkedTargets: SkillsetTarget[]): Promise<InstallResult[]> {
   const results: InstallResult[] = [];
   const seen = new Set<string>();
   for (const target of linkedTargets) {
-    for (const relativeFile of workspaceInstallFilesForTarget(target)) {
+    for (const relativeFile of await workspaceInstallFilesForTarget(cwd, target)) {
       const key = `${target}\u0000${relativeFile}`;
       if (seen.has(key)) continue;
       seen.add(key);
@@ -471,13 +552,31 @@ function planLinkedWorkspaceSkillsets(linkedTargets: SkillsetTarget[]): InstallR
   return results;
 }
 
-function workspaceInstallFilesForTarget(target: SkillsetTarget): string[] {
+/** Static file list per target; `targets.claude` stays `['CLAUDE.md']` so detection still recognises legacy installs. */
+function staticWorkspaceInstallFiles(target: SkillsetTarget): string[] {
   const guidePath = workspaceGuideFileForTarget(target);
   return [...targets[target], ...workspaceMcpFilesForTarget(target), ...(guidePath ? [guidePath] : [])];
 }
 
+/** Files an install or upgrade manages for a target. Claude's bootstrap depends on which CLAUDE.md the workspace already holds (E10). */
+async function workspaceInstallFilesForTarget(cwd: string, target: SkillsetTarget): Promise<string[]> {
+  if (target !== 'claude') return staticWorkspaceInstallFiles(target);
+  const { files } = await claudeBootstrapFiles(cwd);
+  const sharedGuide = textUsesOpenCodeGuide(await readText(path.join(cwd, 'AGENTS.md'))) ? [] : [SHARED_WORKSPACE_GUIDE];
+  return [...files, ...workspaceMcpFilesForTarget(target), CLAUDE_GUIDE, ...sharedGuide];
+}
+
+/** Install file list with the notes Claude's bootstrap resolution produced (an importing CLAUDE.md, a hiding CLAUDE.local.md). */
+async function workspaceFilesToInstall(cwd: string, target: SkillsetTarget, all: boolean): Promise<{ files: string[]; notes: Array<{ file: string; reason: string }> }> {
+  if (target === 'claude') {
+    const { files, notes } = await claudeBootstrapFiles(cwd);
+    return { files: all ? files : [...files, ...workspaceMcpFilesForTarget(target)], notes };
+  }
+  return { files: all ? targets[target] : [...targets[target], ...workspaceMcpFilesForTarget(target)], notes: [] };
+}
+
 function workspaceDetectionFilesForTarget(target: SkillsetTarget): string[] {
-  const files = workspaceInstallFilesForTarget(target);
+  const files = staticWorkspaceInstallFiles(target);
   if (target === 'opencode') {
     return [...new Set([
       ...files.filter((file) => normalizePath(file) !== 'AGENTS.md' && !isOpencodeConfigFile(file)),
@@ -491,8 +590,7 @@ function workspaceDetectionFilesForTarget(target: SkillsetTarget): string[] {
 function isUpgradeLinkedWorkspaceArtifact(target: SkillsetTarget, relativeFile: string, existing: string): boolean {
   if (target === 'agents-md'
       && normalizePath(relativeFile) === 'AGENTS.md'
-      && hasWorkspaceManagedBlock(existing)
-      && existing.includes('Full guide: `.opencode/engram.md`')) {
+      && textUsesOpenCodeGuide(existing)) {
     return false;
   }
   return isLinkedWorkspaceArtifact(relativeFile, existing);
@@ -500,7 +598,7 @@ function isUpgradeLinkedWorkspaceArtifact(target: SkillsetTarget, relativeFile: 
 
 function isLinkedWorkspaceArtifact(relativeFile: string, existing: string): boolean {
   const normalized = normalizePath(relativeFile);
-  if (normalized === '.mcp.json' || normalized === '.cursor/mcp.json') return hasEngramMcpConfig(existing);
+  if (isMergedMcpFile(normalized)) return hasEngramMcpConfig(existing);
   if (normalized === OPENCODE_JSON || normalized === OPENCODE_JSONC) return hasEngramOpenCodeConfig(existing);
   return isGenerated(existing, relativeFile);
 }
@@ -537,10 +635,12 @@ function dedupeInstallResults(results: InstallResult[]): InstallResult[] {
 
 export async function refreshGeneratedWorkspaceSkillsets(cwd: string, options: { plan?: boolean } = {}): Promise<InstallResult[]> {
   const config = await loadConfig(cwd);
+  const hookHosts = await activeHookHosts(config.read, { cwd });
   const results: InstallResult[] = [];
   const handledGuideFiles = new Set<string>();
   for (const name of Object.keys(targets) as SkillsetTarget[]) {
-    for (const relativeFile of targets[name]) {
+    // Gemini keeps its MCP entry in `.gemini/settings.json`, outside its instruction targets; refresh it too.
+    for (const relativeFile of name === 'gemini' ? [...targets[name], ...workspaceMcpFilesForTarget(name)] : targets[name]) {
       const resolvedRelativeFile = await resolveWorkspaceRelativeFile(cwd, relativeFile);
       const file = path.join(cwd, resolvedRelativeFile);
       const existing = await readText(file);
@@ -563,11 +663,11 @@ export async function refreshGeneratedWorkspaceSkillsets(cwd: string, options: {
         } catch { /* not valid JSON, skip */ }
         continue;
       }
-      if (name === 'cursor' && isCursorMcpFile(resolvedRelativeFile)) {
+      if (isMergedMcpFile(resolvedRelativeFile)) {
         try {
           const parsed = parseJsonLike<Record<string, any>>(existing);
           if (!parsed.mcpServers?.engram) continue;
-          const next = renderSkillsetFile('mcp', resolvedRelativeFile, config.read, 'compact');
+          const next = renderSkillsetFile('mcp', resolvedRelativeFile, config.read, 'compact', mcpRenderOptions(resolvedRelativeFile, hookHosts));
           const merged = mergeMcpJson(existing, next, { replaceExisting: true });
           if (merged && merged !== existing) {
             if (options.plan) {
@@ -584,7 +684,10 @@ export async function refreshGeneratedWorkspaceSkillsets(cwd: string, options: {
 
       if (isInstructionFile(resolvedRelativeFile)) {
         // Handle instruction file: migrate to minimal block or refresh block
-        const guidePath = workspaceGuideFileForTarget(name);
+        // AGENTS.md is shared by agents-md, opencode and claude: keep whichever guide its block already points at, so a refresh never flips it.
+        const guidePath = normalizePath(resolvedRelativeFile) === 'AGENTS.md'
+          ? (textUsesOpenCodeGuide(existing) || (name === 'opencode' && !hasWorkspaceManagedBlock(existing)) ? '.opencode/engram.md' : SHARED_WORKSPACE_GUIDE)
+          : workspaceGuideFileForTarget(name);
         const effectiveGuidePath = guidePath ?? '.agents/engram.md';
         const block = renderMinimalInstructionBlock(effectiveGuidePath);
         const { text: nextText, action: blockAction } = upsertWorkspaceManagedBlock(existing, block);
@@ -604,7 +707,7 @@ export async function refreshGeneratedWorkspaceSkillsets(cwd: string, options: {
           handledGuideFiles.add(guidePath);
           const guideFile = path.join(cwd, guidePath);
           const existingGuide = await readText(guideFile);
-          const nextGuide = renderAgentGuide(config.read);
+          const nextGuide = renderAgentGuide(config.read, guideRenderOptions(guidePath, hookHosts));
           const normalizedGuide = nextGuide.endsWith('\n') ? nextGuide : `${nextGuide}\n`;
           if (!existingGuide || isGenerated(existingGuide, guidePath)) {
             if (existingGuide !== normalizedGuide) {
@@ -622,7 +725,8 @@ export async function refreshGeneratedWorkspaceSkillsets(cwd: string, options: {
       } else {
         // Non-instruction generated file: original refresh behavior
         const profile = await instructionProfileForWorkspaceRefresh(cwd, name, resolvedRelativeFile, existing);
-        const next = renderSkillsetFile(name, resolvedRelativeFile, config.read, profile);
+        const renderTarget = renderTargetForFile(name, resolvedRelativeFile);
+        const next = renderSkillsetFile(renderTarget, resolvedRelativeFile, config.read, profile, workspaceRenderOptions(renderTarget, resolvedRelativeFile, hookHosts));
         const normalized = next.endsWith('\n') ? next : `${next}\n`;
         if (existing === normalized) continue;
         if (options.plan) {
@@ -631,6 +735,22 @@ export async function refreshGeneratedWorkspaceSkillsets(cwd: string, options: {
         }
         await writeText(file, normalized);
         results.push({ target: name, file: resolvedRelativeFile, action: 'updated' });
+      }
+    }
+  }
+  // Claude's own guide is written even without a CLAUDE.md, so refresh it here when no CLAUDE.md pass handled it.
+  if (!handledGuideFiles.has(CLAUDE_GUIDE)) {
+    const guideFile = path.join(cwd, CLAUDE_GUIDE);
+    const existingGuide = await readText(guideFile);
+    if (existingGuide && isGenerated(existingGuide, CLAUDE_GUIDE)) {
+      const nextGuide = persistedText(renderAgentGuide(config.read, guideRenderOptions(CLAUDE_GUIDE, hookHosts)));
+      if (existingGuide !== nextGuide) {
+        if (options.plan) {
+          results.push({ target: 'claude', file: CLAUDE_GUIDE, action: 'planned' });
+        } else {
+          await writeText(guideFile, nextGuide);
+          results.push({ target: 'claude', file: CLAUDE_GUIDE, action: 'updated' });
+        }
       }
     }
   }
@@ -652,9 +772,10 @@ function persistedText(text: string): string {
 }
 
 /** Install one or all agent adapter files into user/global agent locations. */
-export async function installGlobalSkillset(target = 'all', options: { force?: boolean; plan?: boolean; home?: string } = {}): Promise<InstallResult[]> {
+export async function installGlobalSkillset(target = 'all', options: { force?: boolean; plan?: boolean; home?: string } & SkillsetInstallOptions = {}): Promise<InstallResult[]> {
   const config = await loadConfig(process.cwd());
-  const plans = globalInstallPlans(target, options.home);
+  const hookHosts = await globalHookHosts(config.read, options.home, options.hookHosts);
+  const plans = globalInstallPlans(target, options.home, !hookHosts.has('claude'));
   const results: InstallResult[] = [];
   for (const rawPlan of plans) {
     const resolvedFile = await resolveOpencodeConfigPath(rawPlan.file);
@@ -667,15 +788,26 @@ export async function installGlobalSkillset(target = 'all', options: { force?: b
       results.push({ target: plan.label, file: plan.file, action: 'skipped', reason: plan.reason ?? 'global install is not supported for this target yet' });
       continue;
     }
-    const rt = plan.renderTarget === 'gemini-hook' ? plan.name : (plan.renderTarget ?? plan.name);
+    const rt = plan.renderTarget === 'gemini-hook' || plan.renderTarget === 'codex-mcp' ? plan.name : (plan.renderTarget ?? plan.name);
     const profile = instructionProfileForTarget(rt, plan.label);
-    const content = renderGlobalPlanIncomingContent(plan, plan.file, config.read, profile);
+    const content = renderGlobalPlanIncomingContent(plan, plan.file, config.read, profile, hookHosts);
     const isWindsurfGlobalRules = plan.file.endsWith('global_rules.md');
     if (options.plan) {
       results.push({ target: plan.label, file: plan.file, action: 'planned', mode: plan.mode, hash: sha256(content) });
       continue;
     }
     const existing = await readText(plan.file);
+    if (plan.renderTarget === 'codex-mcp') {
+      if (hasUnmanagedCodexEngramTable(existing)) {
+        results.push({ target: plan.label, file: plan.file, action: 'skipped', mode: plan.mode, reason: 'config.toml already defines [mcp_servers.engram]; left untouched' });
+        continue;
+      }
+      const persisted = upsertCodexMcpBlock(existing, content);
+      await ensureDir(path.dirname(plan.file));
+      await writeText(plan.file, persisted);
+      results.push({ target: plan.label, file: plan.file, action: existing ? 'updated' : 'written', mode: plan.mode, hash: sha256(persisted) });
+      continue;
+    }
     if (plan.mode === 'file' && existing && !options.force && !isGenerated(existing, plan.file)) {
       if (plan.renderTarget === 'opencode' && isOpencodeConfigFile(plan.file)) {
         const merged = mergeOpencodeMcp(existing, content);
@@ -686,7 +818,7 @@ export async function installGlobalSkillset(target = 'all', options: { force?: b
           continue;
         }
       }
-      if (plan.renderTarget === 'mcp' && (plan.file.endsWith('mcp.json') || plan.file.endsWith('mcp_config.json'))) {
+      if (plan.renderTarget === 'mcp' && isMcpJsonFile(plan.file)) {
         const merged = mergeMcpJson(existing, content);
         if (merged) {
           const persisted = persistedText(merged);
@@ -694,7 +826,7 @@ export async function installGlobalSkillset(target = 'all', options: { force?: b
           results.push({ target: plan.label, file: plan.file, action: 'updated', mode: plan.mode, hash: sha256(persisted) });
           continue;
         }
-        results.push({ target: plan.label, file: plan.file, action: 'skipped', mode: plan.mode, reason: 'engram MCP entry already present' });
+        results.push({ target: plan.label, file: plan.file, action: 'skipped', mode: plan.mode, reason: mcpMergeSkipReason(existing, false) });
         continue;
       }
       if (plan.renderTarget === 'gemini-hook' && plan.file.endsWith('hooks.json')) {
@@ -729,7 +861,7 @@ export async function installGlobalSkillset(target = 'all', options: { force?: b
       results.push({ target: plan.label, file: plan.file, action: 'skipped', mode: plan.mode, reason: 'could not merge existing OpenCode config' });
       continue;
     }
-    if (plan.mode === 'file' && existing && plan.renderTarget === 'mcp' && (plan.file.endsWith('mcp.json') || plan.file.endsWith('mcp_config.json'))) {
+    if (plan.mode === 'file' && existing && plan.renderTarget === 'mcp' && isMcpJsonFile(plan.file)) {
       const merged = mergeMcpJson(existing, content, { replaceExisting: true });
       if (merged) {
         const persisted = persistedText(merged);
@@ -737,7 +869,7 @@ export async function installGlobalSkillset(target = 'all', options: { force?: b
         results.push({ target: plan.label, file: plan.file, action: 'updated', mode: plan.mode, hash: sha256(persisted) });
         continue;
       }
-      results.push({ target: plan.label, file: plan.file, action: 'skipped', mode: plan.mode, reason: 'could not merge existing MCP config' });
+      results.push({ target: plan.label, file: plan.file, action: 'skipped', mode: plan.mode, reason: mcpMergeSkipReason(existing, true) });
       continue;
     }
     if (plan.mode === 'file' && existing && plan.renderTarget === 'gemini-hook' && plan.file.endsWith('hooks.json')) {
@@ -776,10 +908,11 @@ export async function refreshGlobalSkillsets(target = '', options: { force?: boo
 /** Preview registered global skillset rewrites without changing agent files. */
 export async function previewRegisteredGlobalSkillsets(home = globalAgentHome(), cwd = process.cwd()): Promise<SkillsetUpgradePreview[]> {
   const config = await loadConfig(cwd);
+  const hookHosts = await globalHookHosts(config.read, home);
   const registry = await readGlobalSkillsetRegistry();
   const previews: SkillsetUpgradePreview[] = [];
   for (const [target, install] of Object.entries(registry.installs)) {
-    let plans = globalInstallPlans(target, home).filter((plan) => !plan.reason && plan.file !== '<manual>');
+    let plans = globalInstallPlans(target, home, !hookHosts.has('claude')).filter((plan) => !plan.reason && plan.file !== '<manual>');
     if (target === 'opencode') {
       const opencodeHome = globalOpenCodeConfigHome(home);
       const jsonc = path.join(opencodeHome, OPENCODE_JSONC);
@@ -792,9 +925,9 @@ export async function previewRegisteredGlobalSkillsets(home = globalAgentHome(),
       const file = path.resolve(plan.file);
       const current = await readText(file);
       const registered = registeredFiles.get(file);
-      const renderTarget = plan.renderTarget === 'gemini-hook' ? plan.name : (plan.renderTarget ?? plan.name);
+      const renderTarget = plan.renderTarget === 'gemini-hook' || plan.renderTarget === 'codex-mcp' ? plan.name : (plan.renderTarget ?? plan.name);
       const profile = instructionProfileForTarget(renderTarget, plan.label);
-      previews.push(await previewGlobalInstallPlan(target, plan, file, current, config.read, profile, registered?.hash, install.engram_version));
+      previews.push(await previewGlobalInstallPlan(target, plan, file, current, config.read, profile, hookHosts, registered?.hash, install.engram_version));
     }
     for (const registered of install.files) {
       const file = path.resolve(registered.path);
@@ -813,10 +946,11 @@ async function previewGlobalInstallPlan(
   current: string,
   readMode: string,
   profile: InstructionProfile,
+  hookHosts: Set<AgentHookHost>,
   registeredHash?: string,
   installedVersion?: string
 ): Promise<SkillsetUpgradePreview> {
-  const content = renderGlobalPlanIncomingContent(plan, file, readMode, profile);
+  const content = renderGlobalPlanIncomingContent(plan, file, readMode, profile, hookHosts);
   let expected = content;
   let safe = true;
   let userEditsPreserved = false;
@@ -830,12 +964,17 @@ async function previewGlobalInstallPlan(
     expected = merged ?? current;
     userEditsPreserved = Boolean(current);
     reason = safe ? undefined : 'could not merge existing OpenCode config';
-  } else if (plan.renderTarget === 'mcp' && (plan.file.endsWith('mcp.json') || plan.file.endsWith('mcp_config.json'))) {
+  } else if (plan.renderTarget === 'mcp' && isMcpJsonFile(plan.file)) {
     const merged = current ? mergeMcpJson(current, content, { replaceExisting: true }) : content;
     safe = Boolean(merged);
     expected = merged ?? current;
     userEditsPreserved = Boolean(current);
     reason = safe ? undefined : 'could not merge existing MCP config';
+  } else if (plan.renderTarget === 'codex-mcp') {
+    safe = !hasUnmanagedCodexEngramTable(current);
+    expected = safe ? upsertCodexMcpBlock(current, content) : current;
+    userEditsPreserved = Boolean(current);
+    reason = safe ? undefined : 'config.toml already defines [mcp_servers.engram] outside the managed block';
   } else if (plan.renderTarget === 'gemini-hook' && plan.file.endsWith('hooks.json')) {
     const merged = current ? mergeGeminiHookConfig(current, content, { replaceExisting: true }) : content;
     safe = Boolean(merged);
@@ -905,18 +1044,30 @@ function groupedResults(results: InstallResult[]): Map<string, InstallResult[]> 
   return grouped;
 }
 
-export function globalInstallPlans(target: string, home = globalAgentHome()): GlobalInstallPlan[] {
+/** `alwaysLoad` (no Engram Claude hook) puts `--always-load` into the printed `claude mcp add` hint. */
+export function globalInstallPlans(target: string, home = globalAgentHome(), alwaysLoad = false): GlobalInstallPlan[] {
   const resolvedTargets = resolveLinkTargets(target);
   return resolvedTargets.flatMap((item) => [
-    ...globalFilesForTarget(item, home),
-    ...(target === 'all' || target === 'all-supported' ? [] : globalConfigFilesForTarget(item, home))
+    ...globalFilesForTarget(item, home, alwaysLoad),
+    ...(target === 'all' || target === 'all-supported' ? [] : globalConfigFilesForTarget(item, home, alwaysLoad))
   ]);
 }
 
-function globalFilesForTarget(target: ResolvedTarget, home: string): GlobalInstallPlan[] {
+/** Every SKILL.md path Engram can generate: `workspace` entries are relative to a workspace root, `global` entries are absolute under `home`. */
+export function generatedSkillPaths(home = globalAgentHome()): { workspace: string[]; global: string[] } {
+  const names = Object.keys(targets) as SkillsetTarget[];
+  const workspace = names.flatMap((name) => targets[name]).filter((file) => file.endsWith('SKILL.md'));
+  const global = names
+    .flatMap((name) => globalFilesForTarget(resolveTarget(name, name), home, false))
+    .filter((plan) => !plan.reason && plan.file.endsWith('SKILL.md'))
+    .map((plan) => plan.file);
+  return { workspace: [...new Set(workspace)], global: [...new Set(global)] };
+}
+
+function globalFilesForTarget(target: ResolvedTarget, home: string, alwaysLoad: boolean): GlobalInstallPlan[] {
   const configHome = globalAgentConfigHome(home);
   const opencodeHome = globalOpenCodeConfigHome(home);
-  const plan = (file: string, mode: GlobalInstallMode, renderTarget = target.name): GlobalInstallPlan => ({ ...target, file, mode, renderTarget });
+  const plan = (file: string, mode: GlobalInstallMode, renderTarget: RenderTargetName = target.name): GlobalInstallPlan => ({ ...target, file, mode, renderTarget });
   const skip = (reason: string): GlobalInstallPlan => ({ ...target, file: '<manual>', reason });
   switch (target.name) {
     case 'agents-md':
@@ -972,7 +1123,11 @@ function globalFilesForTarget(target: ResolvedTarget, home: string): GlobalInsta
         plan(path.join(opencodeHome, 'engram.md'), 'file', 'agents-md')
       ];
     case 'mcp':
-      return [plan(path.join(home, '.claude', 'mcp.json'), 'file', 'mcp'), plan(path.join(configHome, 'gemini', 'mcp.json'), 'file', 'mcp')];
+      return [
+        { ...target, file: '<manual>', reason: claudeUserMcpHint({ alwaysLoad }) },
+        plan(path.join(home, '.gemini', 'settings.json'), 'file', 'mcp'),
+        plan(path.join(home, '.codex', 'config.toml'), 'file', 'codex-mcp')
+      ];
     case 'slash':
       return [
         plan(path.join(home, '.claude', 'commands', 'engram.md'), 'file'),
@@ -987,31 +1142,57 @@ function workspaceMcpFilesForTarget(target: SkillsetTarget): string[] {
   if (target === 'windsurf') return [];
   if (target === 'cursor') return [];
   if (target === 'opencode') return [];
+  if (target === 'gemini') return ['.gemini/settings.json'];
   return target === 'mcp' || target === 'slash' ? [] : targets.mcp;
 }
 
 function renderTargetForFile(target: SkillsetTarget, relativeFile: string): SkillsetTarget {
   const normalized = relativeFile.replace(/\\/g, '/');
   if (targets.mcp.includes(normalized)) return 'mcp';
-  if (normalized === '.cursor/mcp.json') return 'mcp';
+  if (normalized === '.cursor/mcp.json' || normalized === '.gemini/settings.json') return 'mcp';
   if (normalized === OPENCODE_JSON || normalized === OPENCODE_JSONC) return 'opencode';
   if (normalized === '.opencode/skills/engram/SKILL.md') return 'agent-skill';
   return target;
 }
 
-function isCursorMcpFile(relativeFile: string): boolean { return relativeFile.replace(/\\/g, '/') === '.cursor/mcp.json'; }
+/** Workspace JSON configs shared with user content: Engram merges only its own `mcpServers.engram` entry. */
+const MERGED_MCP_FILES = new Set(['.cursor/mcp.json', '.mcp.json', '.gemini/settings.json']);
+function isMergedMcpFile(relativeFile: string): boolean { return MERGED_MCP_FILES.has(normalizePath(relativeFile)); }
 
-function globalConfigFilesForTarget(target: ResolvedTarget, home: string): GlobalInstallPlan[] {
+/** Accurate skip reason when mergeMcpJson refused an existing config. */
+function mcpMergeSkipReason(existing: string, force: boolean): string {
+  try {
+    parseJsonLike<Record<string, any>>(existing);
+  } catch {
+    return 'could not parse existing file; left untouched';
+  }
+  return force ? 'could not merge existing MCP config' : 'engram MCP entry already present';
+}
+
+/** Global JSON configs that hold an Engram `mcpServers.engram` entry among user content. */
+function isMcpJsonFile(file: string): boolean {
+  const normalized = normalizePath(file);
+  return normalized.endsWith('mcp.json') || normalized.endsWith('mcp_config.json') || normalized.endsWith('/.gemini/settings.json');
+}
+
+function globalConfigFilesForTarget(target: ResolvedTarget, home: string, alwaysLoad: boolean): GlobalInstallPlan[] {
   const configHome = globalAgentConfigHome(home);
   const opencodeHome = globalOpenCodeConfigHome(home);
   const mcpPlan = (file: string): GlobalInstallPlan => ({ ...target, file, mode: 'file', renderTarget: 'mcp' });
   const hookPlan = (file: string): GlobalInstallPlan => ({ ...target, file, mode: 'file', renderTarget: 'gemini-hook' });
   switch (target.name) {
     case 'claude':
-      return [mcpPlan(path.join(home, '.claude', 'mcp.json'))];
+      // Claude Code keeps user-scope MCP servers in ~/.claude.json, which only `claude mcp add` should edit.
+      return [{ ...target, file: '<manual>', reason: claudeUserMcpHint({ alwaysLoad }) }];
+    case 'agents-md':
+      return [{ ...target, file: path.join(home, '.codex', 'config.toml'), mode: 'file', renderTarget: 'codex-mcp' }];
     case 'cursor':
       return [];
     case 'gemini':
+      return [
+        mcpPlan(path.join(home, '.gemini', 'settings.json')),
+        hookPlan(path.join(home, '.gemini', 'config', 'hooks.json'))
+      ];
     case 'antigravity':
       return [
         mcpPlan(path.join(home, '.gemini', 'config', 'mcp_config.json')),
@@ -1026,32 +1207,69 @@ function globalConfigFilesForTarget(target: ResolvedTarget, home: string): Globa
   }
 }
 
-function renderGlobalInstallContent(plan: GlobalInstallPlan, readMode = 'auto', profile: InstructionProfile = 'compact'): string {
+function renderGlobalInstallContent(plan: GlobalInstallPlan, readMode = 'auto', profile: InstructionProfile = 'compact', hookHosts = new Set<AgentHookHost>()): string {
   const normFile = plan.file.replace(/\\/g, '/');
-  if (plan.name === 'slash' || plan.renderTarget === 'slash') return renderSkillsetFile('slash', plan.file, readMode);
+  const pointer: RenderOptions = { guidePath: globalPointerGuidePath(plan) };
+  if (plan.name === 'slash' || plan.renderTarget === 'slash') return renderSkillsetFile('slash', plan.file, readMode, 'compact', pointer);
   if (plan.renderTarget === 'mcp') return renderSkillsetFile('mcp', plan.file, readMode);
+  if (plan.renderTarget === 'codex-mcp') return renderCodexMcpBlock();
   if (plan.renderTarget === 'gemini-hook') return renderGeminiHookConfig();
   if (plan.renderTarget === 'opencode' && /opencode\.jsonc?$/u.test(normFile)) return renderSkillsetFile('opencode', plan.file, readMode);
-  if (normFile.endsWith('SKILL.md')) return renderSkillsetFile(plan.renderTarget ?? 'agent-skill', plan.file, readMode);
+  if (normFile.endsWith('SKILL.md')) return renderSkillsetFile(plan.renderTarget ?? 'agent-skill', plan.file, readMode, 'compact', globalSkillRenderOptions(plan, hookHosts));
   if (normFile.endsWith('plugin.json')) return renderCursorPluginJson();
-  if (normFile.endsWith('rules/engram.mdc')) return renderCursorRule();
-  if (normFile.endsWith('commands/engram.md')) return renderSkillsetFile('slash', plan.file, readMode);
+  if (normFile.endsWith('rules/engram.mdc')) return renderCursorRule(CURSOR_PLUGIN_GUIDE);
+  if (normFile.endsWith('commands/engram.md')) return renderSkillsetFile('slash', plan.file, readMode, 'compact', pointer);
   if (normFile.endsWith('hooks.json')) return '{}\n';
   if (normFile.endsWith('global_rules.md')) return `${renderWindsurfGlobalRulesBlock()}\n`;
-  return globalSkillsetMarkdown(readMode, profile);
+  return globalSkillsetMarkdown(readMode, profile, globalGuideRenderOptions(plan, hookHosts));
 }
 
-function renderCanonicalGlobalInstallContent(plan: GlobalInstallPlan, file: string, readMode = 'auto', profile: InstructionProfile = 'compact'): string {
-  return isCanonicalFullGuideFile(file) ? globalSkillsetMarkdown(readMode, 'compact') : renderGlobalInstallContent(plan, readMode, profile);
+function renderCanonicalGlobalInstallContent(plan: GlobalInstallPlan, file: string, readMode = 'auto', profile: InstructionProfile = 'compact', hookHosts = new Set<AgentHookHost>()): string {
+  return isCanonicalFullGuideFile(file)
+    ? globalSkillsetMarkdown(readMode, 'compact', globalGuideRenderOptions(plan, hookHosts))
+    : renderGlobalInstallContent(plan, readMode, profile, hookHosts);
 }
 
-function renderGlobalPlanIncomingContent(plan: GlobalInstallPlan, file: string, readMode = 'auto', profile: InstructionProfile = 'compact'): string {
+function renderGlobalPlanIncomingContent(plan: GlobalInstallPlan, file: string, readMode = 'auto', profile: InstructionProfile = 'compact', hookHosts = new Set<AgentHookHost>()): string {
   const content = plan.mode === 'block'
     ? renderMinimalInstructionBlock(globalGuidePathForPlan(plan))
     : file.endsWith('global_rules.md')
       ? renderWindsurfGlobalRulesBlock()
-      : renderCanonicalGlobalInstallContent(plan, file, readMode, profile);
+      : renderCanonicalGlobalInstallContent(plan, file, readMode, profile, hookHosts);
   return persistedText(content);
+}
+
+/** The global Cursor plugin has no separate guide: its skill holds the full protocol. */
+const CURSOR_PLUGIN_GUIDE = '~/.cursor/plugins/local/engram/skills/engram/SKILL.md';
+
+/** Hosts sharing `~/.agents/engram.md`; the shared guide stays canonical across them. */
+const SHARED_GLOBAL_GUIDE_HOOK_HOSTS: AgentHookHost[] = ['codex', 'claude', 'gemini'];
+
+/** Global hook detection follows ENGRAM_AGENT_HOME; for an explicit other home only the caller's pending hooks count. */
+async function globalHookHosts(readMode: string, home?: string, pending: AgentHookHost[] = []): Promise<Set<AgentHookHost>> {
+  const readsHooks = readMode !== 'manual' && readMode !== 'off';
+  if (home && path.resolve(home) !== path.resolve(globalAgentHome())) return new Set(readsHooks ? pending : []);
+  return activeHookHosts(readMode, { global: true }, pending);
+}
+
+/** `~/.agents/engram.md` is also read by Copilot (no hooks), so it gets the hedged hook wording. */
+function globalGuideRenderOptions(plan: GlobalInstallPlan, hookHosts: Set<AgentHookHost>): RenderOptions {
+  if (plan.name === 'opencode') return { hooks: hookHosts.has('opencode') };
+  if (plan.name === 'cline') return { hooks: false };
+  return { hooks: SHARED_GLOBAL_GUIDE_HOOK_HOSTS.some((host) => hookHosts.has(host)), sharedGuide: true };
+}
+
+function globalPointerGuidePath(plan: GlobalInstallPlan): string {
+  if (normalizePath(plan.file).includes('/.cursor/plugins/local/engram/')) return CURSOR_PLUGIN_GUIDE;
+  if (plan.name === 'opencode') return '~/.config/opencode/engram.md';
+  return '~/.agents/engram.md';
+}
+
+/** Global skills are pointers, except where the install has no other guide (Cursor plugin, Antigravity). */
+function globalSkillRenderOptions(plan: GlobalInstallPlan, hookHosts: Set<AgentHookHost>): RenderOptions {
+  if (normalizePath(plan.file).includes('/.cursor/plugins/local/engram/')) return { hooks: hookHosts.has('cursor') };
+  if (plan.renderTarget === 'antigravity') return { hooks: hookHosts.has('gemini') };
+  return { guidePath: globalPointerGuidePath(plan) };
 }
 
 function isCanonicalFullGuideFile(file: string): boolean {
@@ -1080,8 +1298,17 @@ export async function unlinkSkillset(cwd: string, target = 'all', force = false)
   const names = target === 'all' ? skillsetTargets().map((name) => ({ name, label: name })) : resolveTargets(target);
   const results: UnlinkResult[] = [];
   const handledGuideFiles = new Set<string>();
+  const handledMcpFiles = new Set<string>();
   for (const { name, label } of names) {
-    for (const relativeFile of targets[name]) {
+    // Claude and Gemini link a shared workspace MCP file (.mcp.json, .gemini/settings.json); unlink drops only the engram entry.
+    const mcpFiles = name === 'claude' || name === 'gemini' ? workspaceMcpFilesForTarget(name) : [];
+    // A project .claude/CLAUDE.md block (E10) is cleaned like CLAUDE.md; it is only listed when it exists.
+    const claudeExtra = name === 'claude' && await exists(path.join(cwd, '.claude/CLAUDE.md')) ? ['.claude/CLAUDE.md'] : [];
+    for (const relativeFile of [...new Set([...targets[name], ...claudeExtra, ...mcpFiles])]) {
+      if (isMergedMcpFile(relativeFile)) {
+        if (handledMcpFiles.has(relativeFile)) continue;
+        handledMcpFiles.add(relativeFile);
+      }
       const resolvedRelativeFile = await resolveWorkspaceRelativeFile(cwd, relativeFile);
       const file = path.join(cwd, resolvedRelativeFile);
       const existing = await readText(file);
@@ -1137,18 +1364,18 @@ export async function unlinkSkillset(cwd: string, target = 'all', force = false)
             continue;
           }
         }
-        if (isCursorMcpFile(resolvedRelativeFile)) {
+        if (isMergedMcpFile(resolvedRelativeFile)) {
           const unmerged = unmergeMcpJson(existing);
-          if (unmerged !== null) {
-            if (unmerged === '') {
-              await fs.rm(file, { force: true });
-              results.push({ target: label, file: resolvedRelativeFile, action: 'removed' });
-            } else {
-              await writeText(file, unmerged);
-              results.push({ target: label, file: resolvedRelativeFile, action: 'cleaned' });
-            }
-            continue;
+          if (unmerged === null) {
+            results.push({ target: label, file: resolvedRelativeFile, action: 'skipped', reason: 'no Engram MCP entry found' });
+          } else if (unmerged === '') {
+            await fs.rm(file, { force: true });
+            results.push({ target: label, file: resolvedRelativeFile, action: 'removed' });
+          } else {
+            await writeText(file, unmerged);
+            results.push({ target: label, file: resolvedRelativeFile, action: 'cleaned' });
           }
+          continue;
         }
         if (!force && !isGenerated(existing, resolvedRelativeFile)) {
           results.push({ target: label, file: resolvedRelativeFile, action: 'skipped', reason: 'human-authored file; use --force to remove' });
@@ -1158,6 +1385,68 @@ export async function unlinkSkillset(cwd: string, target = 'all', force = false)
         results.push({ target: label, file: resolvedRelativeFile, action: 'removed' });
       }
     }
+    if (name === 'claude') results.push(...await unlinkClaudeSharedFiles(cwd, label, force, names, handledGuideFiles));
+  }
+  return results;
+}
+
+/** Remove a generated (or forced) file; undefined when it does not exist. */
+async function removeGeneratedFile(cwd: string, label: string, relativeFile: string, force: boolean): Promise<UnlinkResult | undefined> {
+  const existing = await readText(path.join(cwd, relativeFile));
+  if (!existing) return undefined;
+  if (!force && !isGenerated(existing, relativeFile)) return { target: label, file: relativeFile, action: 'skipped', reason: 'human-authored file; use --force to remove' };
+  await fs.rm(path.join(cwd, relativeFile), { force: true });
+  return { target: label, file: relativeFile, action: 'removed' };
+}
+
+/** True when a non-Claude target left files that still read the AGENTS.md block or the shared guide. */
+async function otherTargetUsesAgentsMd(cwd: string): Promise<boolean> {
+  for (const file of ['.agents/skills/engram/SKILL.md', '.opencode/engram.md', '.opencode/skills/engram/SKILL.md']) {
+    const text = await readText(path.join(cwd, file));
+    if (text && isGenerated(text, file)) return true;
+  }
+  return (await detectInstalledHookTargets({ cwd, includeStale: true })).some((host) => host === 'codex' || host === 'opencode');
+}
+
+/** True when another generated file still points at the shared `.agents/engram.md` guide. */
+async function sharedGuideStillReferenced(cwd: string): Promise<boolean> {
+  for (const file of ['.agents/skills/engram/SKILL.md', '.github/copilot-instructions.md', '.clinerules', 'AGENTS.md']) {
+    const text = await readText(path.join(cwd, file));
+    if (text && text.includes(SHARED_WORKSPACE_GUIDE) && isGenerated(text, file)) return true;
+  }
+  return false;
+}
+
+/** `link claude` also writes the AGENTS.md block and Claude's guides; remove them unless another linked target still reads them. */
+async function unlinkClaudeSharedFiles(cwd: string, label: string, force: boolean, names: ResolvedTarget[], handledGuideFiles: Set<string>): Promise<UnlinkResult[]> {
+  const results: UnlinkResult[] = [];
+  if (!handledGuideFiles.has(CLAUDE_GUIDE)) {
+    handledGuideFiles.add(CLAUDE_GUIDE);
+    const guide = await removeGeneratedFile(cwd, label, CLAUDE_GUIDE, force);
+    if (guide) results.push(guide);
+  }
+  // `agents-md` and `opencode` own AGENTS.md themselves; when they are part of this unlink they clean it.
+  if (names.some((item) => item.name === 'agents-md' || item.name === 'opencode')) return results;
+  if (await otherTargetUsesAgentsMd(cwd)) {
+    results.push({ target: label, file: 'AGENTS.md', action: 'skipped', reason: 'AGENTS.md block still used by another linked target' });
+    return results;
+  }
+  const agentsFile = path.join(cwd, 'AGENTS.md');
+  const agents = await readText(agentsFile);
+  if (agents && hasWorkspaceManagedBlock(agents)) {
+    const cleaned = removeWorkspaceManagedBlock(agents).trimEnd();
+    if (cleaned) {
+      await writeText(agentsFile, `${cleaned}\n`);
+      results.push({ target: label, file: 'AGENTS.md', action: 'cleaned' });
+    } else {
+      await fs.rm(agentsFile, { force: true });
+      results.push({ target: label, file: 'AGENTS.md', action: 'removed' });
+    }
+  }
+  if (!handledGuideFiles.has(SHARED_WORKSPACE_GUIDE) && !(await sharedGuideStillReferenced(cwd))) {
+    handledGuideFiles.add(SHARED_WORKSPACE_GUIDE);
+    const guide = await removeGeneratedFile(cwd, label, SHARED_WORKSPACE_GUIDE, force);
+    if (guide) results.push(guide);
   }
   return results;
 }
@@ -1226,18 +1515,34 @@ export async function unlinkGlobalSkillset(target = 'all', options: { force?: bo
           }
           continue;
         }
-        if (file.endsWith('mcp.json') || file.endsWith('mcp_config.json')) {
+        if (isMcpJsonFile(file)) {
           const unmerged = unmergeMcpJson(existing);
-          if (unmerged !== null) {
-            if (unmerged === '') {
-              await fs.rm(file, { force: true });
-              results.push({ target: current, file, action: 'removed' });
-            } else {
-              await writeText(file, unmerged);
-              results.push({ target: current, file, action: 'cleaned' });
-            }
+          if (unmerged === null) {
+            // Never delete a shared config (e.g. ~/.gemini/settings.json) that holds no Engram entry, even with --force.
+            results.push({ target: current, file, action: 'skipped', reason: 'no Engram MCP entry found' });
+          } else if (unmerged === '') {
+            await fs.rm(file, { force: true });
+            results.push({ target: current, file, action: 'removed' });
+          } else {
+            await writeText(file, unmerged);
+            results.push({ target: current, file, action: 'cleaned' });
+          }
+          continue;
+        }
+        if (normalizePath(file).endsWith('/.codex/config.toml')) {
+          if (!hasCodexMcpBlock(existing)) {
+            results.push({ target: current, file, action: 'skipped', reason: 'no Engram managed block found' });
             continue;
           }
+          const remaining = removeCodexMcpBlock(existing);
+          if (!remaining) {
+            await fs.rm(file, { force: true });
+            results.push({ target: current, file, action: 'removed' });
+          } else {
+            await writeText(file, remaining);
+            results.push({ target: current, file, action: 'cleaned' });
+          }
+          continue;
         }
         if (file.endsWith('hooks.json')) {
           try {

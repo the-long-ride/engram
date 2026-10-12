@@ -1,12 +1,13 @@
 /** Workspace/global storage setup and approved memory writes. */
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { CHANGELOG_FILE, DEFAULT_IGNORE, GRAPH_FILE, HASH_FILE, HELP_FILE, INDEX_FILE, MEMORY_DIRS, README_FILE, VECTOR_DB_FILE, VERSION } from '../runtime/constants.js';
+import { CHANGELOG_FILE, DEFAULT_IGNORE, GRAPH_FILE, HASH_FILE, HELP_FILE, INDEX_FILE, MEMORY_DIRS, README_FILE, VECTOR_DB_FILE, VERSION, isWorkingPath } from '../runtime/constants.js';
 import type { EngramConfig, Scope } from '../runtime/types.js';
 import { defaultConfig, legacyWorkspaceRoot, loadConfig, mergeConfig, profileResolutionForConfig, scopeRootsForConfig, workspaceRoot, writeConfig, writeUserConfig } from '../runtime/config.js';
 import { ensureDir, exists, inside, listFiles, readJson, readText, writeJson, writeText } from '../system/fsx.js';
 import { renderHelp, renderMemoryReadme } from '../cli/help.js';
-import { emptyIndex, rebuildIndex } from './index.js';
+import { ensureScopeGitignore } from './scope-gitignore.js';
+import { committedWorkingRefs, emptyIndex, rebuildIndex } from './index.js';
 import { rebuildGraph } from './graph.js';
 import { ensureVectorIndex } from './vector-db.js';
 import { updateHash } from '../safety/hash.js';
@@ -22,10 +23,6 @@ import { requireResolvedAuthor } from '../author/resolve.js';
 
 type ReconcileResult = { dirs: number; files: number; config: boolean; migrated: number; traces: number; index: boolean };
 type InitOptions = { globalOnly?: boolean; saveTarget?: EngramConfig['scope'] };
-const SCOPE_GITIGNORE = `# Engram generated routing sidecars.
-memory.vec.sqlite
-memory.vec.sqlite-*
-`;
 
 /** Initialize a workspace .agents/.engram folder. */
 export async function initWorkspace(cwd: string, force = false, branch = 'main', globalPath = '', options: InitOptions = {}): Promise<string[]> {
@@ -103,7 +100,7 @@ export async function createScope(root: string, config: EngramConfig, scope: Sco
   result.files += await writeTextIfNeeded(path.join(root, HELP_FILE), renderHelp(), true) ? 1 : 0;
   result.files += await writeTextIfNeeded(path.join(root, README_FILE), renderMemoryReadme(), true) ? 1 : 0;
   result.files += await writeTextIfNeeded(path.join(root, CHANGELOG_FILE), `# Engram Changelog\n\n`, false) ? 1 : 0;
-  result.files += await reconcileScopeGitignore(root) ? 1 : 0;
+  result.files += await ensureScopeGitignore(root) ? 1 : 0;
   if (force || result.migrated || result.traces || !(await exists(path.join(root, INDEX_FILE))) || await needsIndexRefresh(root)) {
     const index = await rebuildIndex(root, scope);
     await rebuildGraph(root, scope, index, config);
@@ -122,9 +119,12 @@ export async function createScope(root: string, config: EngramConfig, scope: Sco
 }
 
 async function needsIndexRefresh(root: string): Promise<boolean> {
-  const index = await readJson<{ version?: string; entries?: Array<{ routingTerms?: unknown }> }>(path.join(root, INDEX_FILE), {});
+  const index = await readJson<{ version?: string; entries?: Array<{ routingTerms?: unknown; file?: string }> }>(path.join(root, INDEX_FILE), {});
   if (index.version !== VERSION) return true;
-  return (index.entries ?? []).some((entry) => !Array.isArray(entry.routingTerms));
+  // Older builds kept working-tier entries in the committed index, hash store, and graph; a rebuild moves them to working/.
+  if ((index.entries ?? []).some((entry) => !Array.isArray(entry.routingTerms) || isWorkingPath(entry.file ?? ''))) return true;
+  const refs = await committedWorkingRefs(root);
+  return refs.hashes.length > 0 || refs.graphNodes.length > 0;
 }
 
 /** Write a memory after all approval and safety checks have passed. */
@@ -148,7 +148,12 @@ export async function writeApprovedMemory(input: {
     if (isTraceExpired(trace)) throw new Error(`Expired evidence reference: ${traceId}`);
   }
   const full = inside(root, input.file);
-  const globalGit = input.scope === 'global' ? config.global_git : undefined;
+  // Working-tier files must never reach Git: make sure the ignore entry exists before the first write.
+  const working = isWorkingPath(input.file);
+  if (working) await ensureScopeGitignore(root);
+  // A working-only write changes nothing tracked (its index, graph, and hash entries live under working/), so it
+  // neither pulls nor commits global Git.
+  const globalGit = input.scope === 'global' && !working ? config.global_git : undefined;
   const commitContext = globalGit ? { cwd: input.cwd, author: await requireResolvedAuthor(input.cwd) } : undefined;
   if (globalGit) await pullGlobalGit(root, globalGit, () => resolveGlobalConflicts(root), commitContext);
   await writeText(full, input.content);
@@ -175,8 +180,9 @@ export async function syncGlobalMemoryGit(cwd: string): Promise<string[]> {
   return [...new Set(rows)];
 }
 
-/** Append an audit-friendly changelog line. */
+/** Append an audit-friendly changelog line. The committed changelog never records working-tier files. */
 export async function appendChangelog(root: string, file: string, message: string): Promise<void> {
+  if (isWorkingPath(file)) return;
   const target = path.join(root, CHANGELOG_FILE);
   const current = await readText(target);
   const line = `- ${new Date().toISOString()} ${file}: ${message}`;
@@ -249,19 +255,6 @@ async function reconcileIgnoreFile(cwd: string, force: boolean, globalPatterns: 
   return true;
 }
 
-async function reconcileScopeGitignore(root: string): Promise<boolean> {
-  const file = path.join(root, '.gitignore');
-  const current = await readText(file);
-  if (!current.trim()) {
-    await writeText(file, SCOPE_GITIGNORE);
-    return true;
-  }
-  const existing = new Set(current.split(/\r?\n/u).map((line) => line.trim()).filter(Boolean));
-  const missing = SCOPE_GITIGNORE.split(/\r?\n/u).map((line) => line.trim()).filter(Boolean).filter((line) => !line.startsWith('#') && !existing.has(line));
-  if (!missing.length) return false;
-  await writeText(file, `${current.trimEnd()}\n${missing.join('\n')}\n`);
-  return true;
-}
 
 async function migrateLegacyDirs(root: string): Promise<number> {
   const migrations = [['workflow', 'skills'], ['workflows', 'skills'], ['skill', 'skills'], ['rule', 'rules']] as const;

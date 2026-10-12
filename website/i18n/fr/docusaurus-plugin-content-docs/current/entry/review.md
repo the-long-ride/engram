@@ -1,37 +1,37 @@
 ---
-title: Review tab
+title: Onglet Review
 sidebar_position: 5
-description: Resolve review findings, direct an AI agent, and explicitly confirm fallback memory writes.
+description: Résolvez les constats de révision, orientez un agent IA et confirmez explicitement les écritures de mémoire de secours.
 ---
 
 import RiskCallout from '@site/src/components/RiskCallout';
 
-# Review tab
+# Onglet Review
 
-Review is the controlled path for findings and deferred candidates. It never calls an AI provider itself. You inspect context, copy a bounded prompt to an AI agent, then either let that agent save through its terminal or explicitly confirm a pasted response.
+Review est la voie contrôlée pour traiter les constats et candidats différés. Cet onglet n’appelle jamais lui-même un fournisseur d’IA. Vous inspectez le contexte, copiez une invite délimitée destinée à un agent IA, puis laissez cet agent enregistrer via son terminal ou confirmez explicitement une réponse collée.
 
-## Queue and context
+## File d’attente et contexte
 
-The queue combines review findings and deferred inbox candidates. Select an item to inspect its summary, linked-memory metadata, and full content. Empty or unavailable linked files are reported without stopping review of the remaining queue.
+La file combine les constats de révision et les candidats différés de la boîte de réception. Sélectionnez un élément pour inspecter son résumé, les métadonnées de mémoire liée et l’intégralité du contenu. Les fichiers liés vides ou indisponibles sont signalés sans interrompre la révision du reste de la file.
 
-## AI review prompt
+## Invite de révision pour IA
 
-Choose any linked memory as a dependency or replacement, then use **Copy AI review prompt**. The prompt includes only the selected candidate, visible memory context, relation instructions, and the required write scope.
+Choisissez une mémoire liée comme dépendance ou remplacement, puis utilisez **Copy AI review prompt**. L’invite ne contient que le candidat sélectionné, le contexte de mémoire visible, les instructions de relation et la portée d’écriture requise.
 
-When the AI agent has terminal access and approval to write, it should save the sanitized result with the command embedded in the prompt. The in-app path is a fallback, not an autonomous write path.
+Lorsque l’agent IA dispose d’un accès au terminal et de l’approbation d’écrire, il doit enregistrer le résultat nettoyé à l’aide de la commande intégrée dans l’invite. La voie intégrée à l’application est un repli, pas une voie d’écriture autonome.
 
-## Paste, diff, and confirmation
+## Collage, diff et confirmation
 
-Paste only the AI-reviewed memory proposal. Review shows a read-only line diff: removed lines are red and added lines are green. **Approve & write** opens a confirmation dialog before Engram validates and writes the proposal.
+Collez uniquement la proposition de mémoire révisée par l’IA. Review affiche un diff ligne par ligne en lecture seule : les lignes supprimées apparaissent en rouge et les lignes ajoutées en vert. **Approve & write** ouvre une boîte de dialogue de confirmation avant qu’Engram ne valide et n’écrive la proposition.
 
 <RiskCallout level="risky">
-The confirmation writes to workspace or global memory immediately. Review the proposal, scope, and any replacement instruction before confirming.
+La confirmation écrit immédiatement dans la mémoire du workspace ou globale. Relisez la proposition, la portée et toute consigne de remplacement avant de confirmer.
 </RiskCallout>
 
-Only one replacement relation may be selected. Dependencies can be selected independently. Refresh the queue after saving to load its current state.
+Une seule relation de remplacement peut être sélectionnée. Les dépendances peuvent être sélectionnées indépendamment. Actualisez la file après l’enregistrement pour charger son état actuel.
 
-## Next steps
+## Étapes suivantes
 
-- [Construct tab](construct.md)
-- [Memories tab](memories.md)
-- [CLI: save-session](../cli/save-session.md)
+- [Onglet Construct](construct.md)
+- [Onglet Memories](memories.md)
+- [CLI : save-session](../cli/save-session.md)

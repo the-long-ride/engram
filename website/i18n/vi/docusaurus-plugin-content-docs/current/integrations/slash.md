@@ -1,24 +1,24 @@
 ---
-title: Slash adapters
+title: Bộ điều hợp slash
 sidebar_position: 10
-description: Engram slash adapters expose /engram commands across Claude, Cursor, Gemini, and OpenCode.
+description: Các bộ điều hợp slash của Engram cung cấp các lệnh /engram trên Claude, Cursor, Gemini và OpenCode.
 ---
 
-# Slash adapters
+# Bộ điều hợp slash
 
-The `slash` target writes native `/engram` slash adapters for hosts that support project slash commands or Agent Skills.
+Mục tiêu `slash` ghi các bộ điều hợp slash `/engram` gốc cho các máy chủ hỗ trợ lệnh slash của dự án hoặc Agent Skills.
 
-## Files written
+## Các tệp được ghi
 
-| File | Host |
+| Tệp | Máy chủ |
 | --- | --- |
 | `.claude/commands/engram.md` | Claude Code |
-| `.claude/skills/engram/SKILL.md` | Claude Code (skill form) |
+| `.claude/skills/engram/SKILL.md` | Claude Code (dạng skill) |
 | `.cursor/commands/engram.md` | Cursor |
 | `.gemini/commands/engram.toml` | Gemini CLI |
 | `.opencode/commands/engram.md` | OpenCode |
 
-## Common commands
+## Các lệnh phổ biến
 
 ```text
 /engram
@@ -41,15 +41,15 @@ The `slash` target writes native `/engram` slash adapters for hosts that support
 /engram verify
 ```
 
-## Behavior
+## Hành vi
 
-If the host exposes only one visible `/engram` command, bare `/engram` should return a compact menu of `load`, `search`, `save`, `propose`, `entry`, and `help` instead of running the CLI. `/engram propose` is a slash-level alias: normalize it to `engram save-session` over the current chat/session.
+Nếu máy chủ chỉ hiển thị một lệnh `/engram` duy nhất, lệnh `/engram` không tham số sẽ trả về một menu thu gọn bao gồm `load`, `search`, `save`, `propose`, `entry` và `help` thay vì chạy CLI. `/engram propose` là bí danh cấp slash: chuẩn hóa nó thành `engram save-session` trên cuộc trò chuyện/phiên hiện tại.
 
-`/engram ss -f` is the force shortcut. Agents must not add `--force` unless the human requested it.
+`/engram ss -f` là phím tắt chấp nhận tất cả. Agent không được tự động thêm `--force` trừ khi con người yêu cầu điều đó.
 
-## Natural wording normalization
+## Chuẩn hóa ngôn ngữ tự nhiên
 
-| Natural wording | Normalizes to |
+| Ngôn ngữ tự nhiên | Chuẩn hóa thành |
 | --- | --- |
 | `/engram auto save` | `engram save-session` |
 | `/engram take control force` | `engram take-control --force` |
@@ -58,7 +58,7 @@ If the host exposes only one visible `/engram` command, bare `/engram` should re
 | `/engram resolve conflicts and metacognize` | `engram resolve-conflicts --metacognize` |
 | `/engram ss -f last 50 sessions` | `engram save-session --query-level 50 --force` |
 
-## Next steps
+## Các bước tiếp theo
 
-- [MCP tools](mcp.md)
-- [Hooks and proof lines](hooks.md)
+- [Công cụ MCP](mcp.md)
+- [Hook và dòng kiểm chứng](hooks.md)

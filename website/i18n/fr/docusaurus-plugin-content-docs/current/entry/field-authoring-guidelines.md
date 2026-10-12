@@ -1,61 +1,61 @@
 ---
-title: Field authoring guidelines
+title: Directives de rédaction des champs
 sidebar_position: 11
-description: Rules for maintainers documenting new Entry UI fields.
+description: Règles pour les mainteneurs documentant de nouveaux champs de l'interface utilisateur Entry.
 ---
 
-# Field authoring guidelines
+# Directives de rédaction des champs
 
-Rules for maintainers documenting new Entry UI fields.
+Règles pour les mainteneurs documentant de nouveaux champs de l'interface utilisateur Entry.
 
-## When you add a field
+## Lorsque vous ajoutez un champ
 
-1. Add the field to `CONFIG_FIELDS` in `src/core/web/config-schema.ts` with a short `description`, `options`, `min`/`max`/`step`, and `risk`.
-2. Add a docs entry to `website/src/data/entryFields.ts` with `shortDescription`, `useCases`, and `guidelines` at minimum.
-3. Document the field on the [Construct tab](construct.md) page and in the [Complete field reference](field-reference.md).
-4. Run the field docs coverage check:
+1. Ajoutez le champ à `CONFIG_FIELDS` dans `src/core/web/config-schema.ts` avec une courte `description`, des `options`, `min`/`max`/`step`, et le risque (`risk`).
+2. Ajoutez une entrée de doc à `website/src/data/entryFields.ts` avec au minimum `shortDescription`, `useCases`, et `guidelines`.
+3. Documentez le champ sur la page de l' [Onglet Construct](construct.md) et dans la [Référence complète des champs](field-reference.md).
+4. Exécutez la vérification de couverture de doc des champs :
 
    ```bash
    npm --prefix website run check:entry-fields
    ```
 
-5. If the field is risky, add at least one recovery/troubleshooting note.
+5. Si le champ est risqué, ajoutez au moins une note de récupération/dépannage.
 
-## Required doc items per field
+## Éléments de doc requis par champ
 
-| Item | Required |
+| Élément | Requis |
 | --- | --- |
-| Plain-language description | Yes |
-| Use cases | Yes (1+) |
-| Recommended default | Yes |
-| Allowed values / range | Yes |
-| Risk level | Yes |
-| Side effects | When relevant |
-| CLI equivalent | When relevant |
-| Example values | For text/path fields |
-| Troubleshooting notes | For risky fields |
+| Description en langage clair | Oui |
+| Cas d'utilisation | Oui (1+) |
+| Valeur par défaut recommandée | Oui |
+| Valeurs autorisées / plage | Oui |
+| Niveau de risque | Oui |
+| Effets secondaires | Si pertinent |
+| Équivalent CLI | Si pertinent |
+| Exemples de valeurs | Pour les champs de texte/chemin |
+| Notes de dépannage | Pour les champs risqués |
 
-## Writing rules
+## Règles d'écriture
 
-- Write for a user configuring an AI-agent memory system, not a maintainer reading source code.
-- Name the real effect on memory ownership, routing, context size, privacy, or Git sync.
-- Prefer examples from Engram workflows: Codex, Claude, Gemini, Cursor, OpenCode, personal memory, client profile, team repo.
-- Do not recommend high limits by default; explain context bloat tradeoffs.
-- Mark settings as risky when they can disable Engram, change save location, change Git sync, archive memory, or affect encryption/security.
-- Include recovery commands for risky settings.
-- Keep in-app descriptions short; put detailed guidance in Docusaurus.
+- Écrivez pour un utilisateur configurant un système de mémoire d'agent IA, pas pour un mainteneur lisant le code source.
+- Nommez l'effet réel sur la propriété de la mémoire, le routage, la taille du contexte, la confidentialité ou la synchronisation Git.
+- Préférez les exemples issus des flux de travail d'Engram : Codex, Claude, Gemini, Cursor, OpenCode, mémoire personnelle, profil client, dépôt d'équipe.
+- Ne recommandez pas de limites élevées par défaut ; expliquez les compromis d'encombrement du contexte.
+- Marquez les paramètres comme risqués lorsqu'ils peuvent désactiver Engram, modifier l'emplacement de sauvegarde, modifier la synchronisation Git, archiver la mémoire ou affecter le chiffrement/la sécurité.
+- Incluez des commandes de récupération pour les paramètres risqués.
+- Gardez les descriptions dans l'application courtes ; mettez le guide détaillé dans Docusaurus.
 
-## CI coverage
+## Couverture CI
 
-`website/scripts/check-entry-field-docs.mjs` fails when:
+`website/scripts/check-entry-field-docs.mjs` échoue lorsque :
 
-1. A visible `CONFIG_FIELDS` key lacks a docs entry.
-2. A docs entry references a field no longer in `CONFIG_FIELDS`.
-3. A field lacks `shortDescription`, `useCases`, or `guidelines`.
-4. A risky field lacks at least one troubleshooting note.
-5. A numeric field omits allowed range in rendered docs.
+1. Une clé `CONFIG_FIELDS` visible manque d'une entrée de doc.
+2. Une entrée de doc fait référence à un champ qui n'est plus dans `CONFIG_FIELDS`.
+3. Un champ manque de `shortDescription`, `useCases`, ou `guidelines`.
+4. Un champ risqué manque d'au moins une note de dépannage.
+5. Un champ numérique omet la plage autorisée dans les documents rendus.
 
-## Next steps
+## Étapes suivantes
 
-- [Complete field reference](field-reference.md)
-- [Construct tab](construct.md)
+- [Référence complète des champs](field-reference.md)
+- [Onglet Construct](construct.md)

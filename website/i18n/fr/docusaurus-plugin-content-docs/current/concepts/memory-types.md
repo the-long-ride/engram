@@ -1,73 +1,86 @@
 ---
-title: Memory types
+title: Types de mémoire
 sidebar_position: 2
-description: Engram memory is typed — Rule, Skill, and Knowledge — so routing and review stay focused.
+description: La mémoire Engram est typée — Rule, Skill et Knowledge — afin que le routage et la relecture restent ciblés.
 ---
 
-# Memory types
+# Types de mémoire {#memory-types}
 
-Every active Engram memory has a type. The type controls routing, review, and how the memory is rendered to agents.
+Chaque mémoire Engram active a un type. Le type contrôle le routage, la relecture et la façon dont la mémoire est présentée aux agents.
 
-| Type | Use |
+| Type | Usage |
 | --- | --- |
-| Rule | user preference, correction, constraint, always/never guidance |
-| Skill | repeatable workflow, checklist, procedure, runbook |
-| Knowledge | objective project fact, decision, implementation detail |
+| Rule | préférence de l’utilisateur, correction, contrainte, consigne « toujours / jamais » |
+| Skill | flux de travail répétable, liste de contrôle, procédure, runbook |
+| Knowledge | fait objectif du projet, décision, détail d’implémentation |
 
-New files use `schema_version: 3`. Rule and skill memories default to `authority: instruction`; knowledge defaults to `authority: reference`. `revision` starts at 1 and increments on updates. Trace IDs belong in `evidence_refs`, while session or source identities belong in `derived_from`.
+Les nouveaux fichiers utilisent `schema_version: 3`. Les mémoires Rule et Skill ont par défaut `authority: instruction` ; Knowledge a par défaut `authority: reference`. `revision` démarre à 1 et s’incrémente à chaque mise à jour. Les identifiants de trace vont dans `evidence_refs`, tandis que les identités de session ou de source vont dans `derived_from`.
 
-## Good memory
+## Une bonne mémoire {#good-memory}
 
-Good Engram memory is:
+Une bonne mémoire Engram est :
 
-- stable enough to matter next week
-- specific enough to route later
-- short enough to load into an agent context
-- safe enough to share with the intended scope
-- written as a rule, workflow, or knowledge item
+- assez stable pour compter la semaine prochaine
+- assez précise pour être routée plus tard
+- assez courte pour tenir dans le contexte d’un agent
+- assez sûre pour être partagée avec la portée prévue
+- rédigée comme une règle, un flux de travail ou un élément de connaissance
 
-Bad memory is temporary chat noise, secrets, credentials, one-off speculation, or facts that nobody has approved.
+Une mauvaise mémoire, c’est du bruit de conversation temporaire, des secrets, des identifiants, des conjectures ponctuelles ou des faits que personne n’a approuvés.
 
-## Rule variants
+## Variantes de règle {#rule-variants}
 
-Engram always saves rule memories with light, balanced, and strict versions. Rule variant mode is a render lens for agent-facing memory:
+Engram dérive les formulations light, balanced et strict d’une règle au moment du rendu à partir de son `## Content` (balanced correspond au Content tel quel) ; les fichiers de règle nouveaux ou réécrits ne stockent donc que le Content. Une section `## Rule Variants` n’est conservée que pour une formulation personnalisée qu’un candidat fournit avec `LIGHT:`/`BALANCED:`/`STRICT:`. Le mode de variante de règle est une lentille de rendu pour la mémoire destinée aux agents :
 
-- **Strict** helps lower-tier models stay controlled.
-- **Light** or **balanced** wording usually helps stronger models so rules do not limit their reasoning.
+- **Strict** aide les modèles de niveau inférieur à rester cadrés.
+- Une formulation **light** ou **balanced** aide en général les modèles plus performants, afin que les règles ne brident pas leur raisonnement.
 
-When variants are off, Engram renders balanced rule wording by default. Tune with:
+Lorsque les variantes sont désactivées, Engram rend par défaut la formulation balanced. Réglez-le avec :
 
 ```bash
 engram set-rule-variant strict|balanced|light|off
 ```
 
-## Compact output by default
+## Sortie compacte par défaut {#compact-output-by-default}
 
-When `engram load "<task>"` runs, the output is slimmed for AI agents by default:
+Lorsque `engram load "<task>"` s’exécute, la sortie est hiérarchisée et allégée pour les agents IA par défaut :
 
-| Aspect | Default (`engram load`) | Full (`engram load --full`) |
+| Aspect | Par défaut (`engram load`) | Complet (`engram load --full`) |
 | --- | --- | --- |
-| Frontmatter | `id`, `type`, `tags`, `confidence`, `authority`, `depends_on`, `evidence_refs` | Full schema v3 and legacy fields, including provenance, revision, supersession, and validity |
-| Rule body | One selected variant under `## Rule variants (1/3 based on current: <active>)` | Full `## Rule Variants` section with all three variants |
-| Non-rule content | Same content, unchanged heading | Same content, unchanged heading |
+| Frontmatter | Non rendu ; l’en-tête du corps est `### <id> [<type>, <authority>]` plus `requires: <ids>` | Schéma v3 complet et champs hérités, y compris provenance, révision, remplacement et validité |
+| Divulgation | Les `load.expand_top` meilleurs résultats en corps, les autres en cartes d’une ligne (`- <id> [<type>] <directive-or-summary>`), puis une indication `fetch:` | Tous les corps empaquetés |
+| Corps d’une règle | Une variante sélectionnée | Le Content, plus la section `## Rule Variants` stockée uniquement lorsque le fichier a des variantes personnalisées |
+| Autres sections | `## Context`, `## Example` et `## Origin` ne sont pas rendues | Même contenu, titre inchangé |
 
-MCP `engram_load` and SessionStart hooks use compact output by default. Pass `full: true` on the MCP tool or `engram load --full "<task>"` when broader legacy output is needed.
+Le `engram_load` MCP et les hooks utilisent par défaut la sortie hiérarchisée. Passez `full: true` sur l’outil MCP ou `engram load --full "<task>"` lorsqu’une sortie héritée plus large est nécessaire.
+
+## Champs de routage facultatifs {#optional-routing-fields}
+
+Ces champs de frontmatter sont facultatifs ; une mémoire qui en est dépourvue se comporte comme avant et `schema_version` reste 3.
+
+| Champ | Signification |
+| --- | --- |
+| `directive` | Une ligne d’au plus 160 caractères ; affichée sur les cartes et pondérée dans le classement |
+| `applies_to` | Liste de globs ; injecte la mémoire lorsqu’un fichier correspondant est lu ou modifié et compte comme un fort point d’ancrage |
+| `tier` | `durable` (par défaut) ou `working` (limitée à une tâche, ignorée par Git, expire) |
+| `objective` | Jusqu’à 200 caractères ; l’objectif pour lequel une mémoire de travail a été écrite |
+| `valid_until` | Date d’expiration ; une mémoire de travail reçoit aujourd’hui + `load.working_ttl_days` |
 
 <!-- evidence-foundation:v3:start -->
-## Mémoire étayée par des preuves
+## Mémoire étayée par des preuves {#evidence-backed-memory}
 
-New files use `schema_version: 3`. Rule and skill memories default to `authority: instruction`; knowledge defaults to `authority: reference`. `revision` starts at 1 and increments on updates. Trace IDs belong in `evidence_refs`, while session or source identities belong in `derived_from`. Legacy v1 (`Context` + `Content` + `Example`) and v2 (`Content`, optional `Origin`) remain readable.
+Les nouveaux fichiers utilisent `schema_version: 3`. Les mémoires Rule et Skill ont par défaut `authority: instruction` ; Knowledge a par défaut `authority: reference`. `revision` démarre à 1 et s’incrémente à chaque mise à jour. Les identifiants de trace vont dans `evidence_refs`, tandis que les identités de session ou de source vont dans `derived_from`. Les anciens formats v1 (`Context` + `Content` + `Example`) et v2 (`Content`, `Origin` facultatif) restent lisibles.
 <!-- evidence-foundation:v3:end -->
 
-## Next steps
+## Étapes suivantes {#next-steps}
 
-- [Workspace vs global memory](scopes.md)
-- [Read path and routing](read-path.md)
+- [Mémoire workspace et mémoire globale](scopes.md)
+- [Chemin de lecture et routage](read-path.md)
 
 
-## Git author identity
+## Identité d’auteur Git {#git-author-identity}
 
-Engram can store a global author and an optional workspace override. Resolution is workspace, global, then read-only Git fallback. Settings affect future memories only; a workspace override never changes global Git configuration. Use explicit plan and confirmation for global Git sync or legacy-memory migration.
+Engram peut stocker un auteur global et une surcharge d’espace de travail facultative. La résolution suit l’ordre workspace, global, puis repli Git en lecture seule. Les paramètres n’affectent que les mémoires futures ; une surcharge d’espace de travail ne modifie jamais la configuration Git globale. Utilisez un plan explicite et une confirmation pour la synchronisation Git globale ou la migration des anciennes mémoires.
 
 ```bash
 engram author show
@@ -79,10 +92,10 @@ engram author migrate-memories --plan
 engram author migrate-memories --confirm
 ```
 
-Read the complete [Git author settings guide](../operations/git-author-settings.md).
+Lisez le [guide complet des paramètres de l’auteur Git](../operations/git-author-settings.md).
 
 
 <!-- configuration-upgrade-inventory -->
-## Configuration upgrade inventory
+## Inventaire des mises à niveau de configuration {#configuration-upgrade-inventory}
 
-After a package update, run `engram upgrade --latest --plan` before `engram upgrade --latest`. The shared inventory scans workspace and global Engram-managed memories, instructions, skillsets, configs, hooks, and plugins. User-authored bytes are preserved; ambiguous mixed files are reported as conflicts. See [Configuration upgrades](../operations/configuration-upgrades.md).
+Après une mise à jour du paquet, exécutez `engram upgrade --latest --plan` avant `engram upgrade --latest`. L’inventaire partagé analyse les mémoires, instructions, skillsets, configurations, hooks et plugins gérés par Engram, dans l’espace de travail et au niveau global. Les octets rédigés par l’utilisateur sont préservés ; les fichiers mixtes ambigus sont signalés comme conflits. Voir [Mises à niveau de configuration](../operations/configuration-upgrades.md).

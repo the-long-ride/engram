@@ -1,80 +1,80 @@
 ---
-title: Construct tab
+title: Pestaña Construct
 sidebar_position: 4
-description: Configure Engram runtime fields from Construct; Global Git configuration is managed from Git → Global.
+description: Configure los campos de ejecución de Engram desde Construct; la configuración de Git global se gestiona desde Git → Global.
 ---
 
 import RiskCallout from '@site/src/components/RiskCallout';
 
-# Construct tab
+# Pestaña Construct
 
-The Construct tab exposes Engram runtime config fields grouped like the UI, except **Global Git configuration**, which is intentionally managed from **Git → Global**. Each Construct field has a description, use cases, safe default, validation, and risk warning.
+La pestaña Construct expone los campos de configuración en tiempo de ejecución de Engram agrupados como en la interfaz, salvo la **configuración de Git global**, que se gestiona intencionadamente desde **Git → Global**. Cada campo de Construct tiene una descripción, casos de uso, un valor por defecto seguro, validación y una advertencia de riesgo.
 
 <RiskCallout level="caution">
-Fields marked **risky** can disable Engram, change save targets, change Git behavior, or affect memory security. Read the warning before changing them.
+Los campos marcados como **risky** pueden desactivar Engram, cambiar los destinos de guardado, cambiar el comportamiento de Git o afectar a la seguridad de la memoria. Lea la advertencia antes de cambiarlos.
 </RiskCallout>
 
-## Core group
+## Grupo Core {#core-group}
 
 ### Enabled
 
-**Config key:** `enabled`  
+**Clave de configuración:** `enabled`  
 **Control:** toggle  
-**Default:** `true`  
-**Risk:** risky
+**Valor por defecto:** `true`  
+**Riesgo:** risky
 
-Master switch. Disabling it stops Engram behavior entirely. Use only for temporary shutdown or testing.
+Interruptor general. Desactivarlo detiene por completo el comportamiento de Engram. Úsese solo para un apagado temporal o para pruebas.
 
 ### Save Target
 
-**Config key:** `scope`  
+**Clave de configuración:** `scope`  
 **Control:** select — `workspace`, `global`, `both`  
-**Default:** `both`  
-**Risk:** risky
+**Valor por defecto:** `both`  
+**Riesgo:** risky
 
-Controls where new approved memories are saved. Use `workspace` for repo-specific memory, `global` for personal/team memory, `both` for fresh installs that want both.
+Controla dónde se guardan las nuevas memorias aprobadas. Use `workspace` para memoria específica del repositorio, `global` para memoria personal o de equipo y `both` para instalaciones nuevas que quieran ambas.
 
 ### Update Mode
 
-**Config key:** `update`  
+**Clave de configuración:** `update`  
 **Control:** select — `auto`, `manual`, `off`  
-**Default:** `auto`  
-**Risk:** normal
+**Valor por defecto:** `auto`  
+**Riesgo:** normal
 
-Controls the quiet one-time package upgrade check run by normal commands. Use `manual` or `off` only when upgrades are managed outside Engram.
+Controla la comprobación silenciosa, una sola vez, de actualización del paquete que ejecutan los comandos normales. Use `manual` u `off` solo cuando las actualizaciones se gestionen fuera de Engram.
 
 ### Read Mode
 
-**Config key:** `read`  
+**Clave de configuración:** `read`  
 **Control:** select — `auto`, `startup`, `always`, `manual`, `off`  
-**Default:** `auto`  
-**Risk:** normal
+**Valor por defecto:** `auto`  
+**Riesgo:** normal
 
-Controls when agent hooks inject memory context. `auto` loads on session start and reinjects only when routed context changes. `manual` and `off` reduce automation at the cost of context bloat.
+Controla cuándo los hooks de agente inyectan contexto de memoria. `auto` carga al iniciar la sesión y vuelve a inyectar solo cuando cambia el contexto enrutado. `manual` y `off` reducen la automatización a costa de inflar el contexto.
 
 ### Proof Mode
 
-**Config key:** `proof`  
+**Clave de configuración:** `proof`  
 **Control:** select — `off`, `compact`  
-**Default:** `off`  
-**Risk:** normal
+**Valor por defecto:** `off`  
+**Riesgo:** normal
 
-Whether hooks append a compact `Engram proof:` line on each eligible turn. Useful for debugging and audit visibility.
+Indica si los hooks añaden una línea compacta `Engram proof:` en cada turno elegible. Útil para depuración y visibilidad de auditoría.
 
 ### Global Memory Path
 
-**Config key:** `global_path`  
+**Clave de configuración:** `global_path`  
 **Control:** text/path  
-**Default:** empty until configured  
-**Risk:** risky
+**Valor por defecto:** vacío hasta que se configure  
+**Riesgo:** risky
 
-Filesystem path for global memory. Use a stable, user-owned folder such as `~/Documents/engram`. Avoid temp folders, synced public folders, and directories you cannot write to.
+Ruta del sistema de archivos para la memoria global. Use una carpeta estable y propia del usuario, como `~/Documents/engram`. Evite las carpetas temporales, las carpetas públicas sincronizadas y los directorios en los que no pueda escribir.
 
 <RiskCallout level="risky">
-Using a cloud-synced public folder for private memory can leak secrets. Use a private path or a private Git repo.
+Usar una carpeta pública sincronizada en la nube para memoria privada puede filtrar secretos. Use una ruta privada o un repositorio Git privado.
 </RiskCallout>
 
-**CLI equivalent:**
+**Equivalente en la CLI:**
 
 ```bash
 engram update-global-folder ~/Documents/engram
@@ -83,222 +83,255 @@ engram ugf ~/Documents/engram
 
 ### Default Profile
 
-**Config key:** `default_profile`  
+**Clave de configuración:** `default_profile`  
 **Control:** select  
-**Default:** empty  
-**Risk:** risky
+**Valor por defecto:** vacío  
+**Riesgo:** risky
 
-Profile used when none is explicitly set. See [Profiles and scope resolution](../concepts/profiles.md).
+Perfil que se usa cuando no se establece ninguno explícitamente. Consulte [Perfiles y resolución de ámbito](../concepts/profiles.md).
 
 ### Active Roles
 
-**Config key:** `roles`  
+**Clave de configuración:** `roles`  
 **Control:** roles/comma input  
-**Default:** empty list  
-**Risk:** normal
+**Valor por defecto:** lista vacía  
+**Riesgo:** normal
 
-Restricts and reranks memories by role. Use safe names matching `^[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$`.
+Restringe y reordena las memorias por rol. Use nombres seguros que cumplan `^[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$`.
 
-## Ignore Rules group
+## Grupo Ignore Rules {#ignore-rules-group}
 
-| Field | Control | Default | Notes |
+| Campo | Control | Valor por defecto | Notas |
 | --- | --- | --- | --- |
-| `ignore.source` | select | `engramignore` | Choose `engramignore`, `gitignore`, `both`, or `off` as scan-rule sources. |
-| `ignore.gitignore_path` | text | `.gitignore` | Git ignore file to use when enabled. |
-| `ignore.engramignore_path` | text | `.engramignore` | Engram ignore file to use when enabled. |
-| `ignore.global_engramignore` | toggle | `true` | Apply global ignore rules when global memory is configured. |
-| `ignore.also_ignore` | list | `*.secret`, `private/**` | Additional comma-separated glob patterns. |
+| `ignore.source` | select | `engramignore` | Elija `engramignore`, `gitignore`, `both` u `off` como fuentes de reglas de análisis. |
+| `ignore.gitignore_path` | text | `.gitignore` | Archivo de exclusión de Git que se usa cuando está activado. |
+| `ignore.engramignore_path` | text | `.engramignore` | Archivo de exclusión de Engram que se usa cuando está activado. |
+| `ignore.global_engramignore` | toggle | `true` | Aplica las reglas de exclusión globales cuando hay memoria global configurada. |
+| `ignore.also_ignore` | list | `*.secret`, `private/**` | Patrones glob adicionales separados por comas. |
 
 ### Global Ignore Patterns
 
-**Config key:** `ignore.global_patterns`  
-**Control:** textarea, one glob pattern per line  
-**Default:** empty list  
-**Risk:** normal
+**Clave de configuración:** `ignore.global_patterns`  
+**Control:** textarea, un patrón glob por línea  
+**Valor por defecto:** lista vacía  
+**Riesgo:** normal
 
-Patterns apply to global memory reads. Every `engram inject` synchronizes them into a managed block in the workspace `.engramignore`; human-authored lines outside that block are preserved.
+Los patrones se aplican a las lecturas de memoria global. Cada `engram inject` los sincroniza en un bloque gestionado del `.engramignore` del workspace; las líneas escritas por personas fuera de ese bloque se conservan.
 
 ### Auto-save policy
 
-The **Auto-save policy** editor writes `.agents/engram.policy.json`. It controls whether policy-approved candidates can save without an interactive prompt; normal saves remain approval-based.
+El editor **Auto-save policy** escribe `.agents/engram.policy.json`. Controla si las candidatas aprobadas por la política pueden guardarse sin un aviso interactivo; los guardados normales siguen basándose en la aprobación.
 
-See the [Auto-save Policy reference](policy.md) for every control, default, allowed value, review gate, quota, and rollback setting.
+Consulte la [referencia de Auto-save Policy](policy.md) para ver cada control, valor por defecto, valor permitido, puerta de revisión, cuota y ajuste de reversión.
 
-## Load Routing group
+## Grupo Load Routing {#load-routing-group}
 
 ### Load Limit
 
-**Config key:** `load.limit`  
+**Clave de configuración:** `load.limit`  
 **Control:** number 1–32  
-**Default:** `8`  
-**Risk:** normal
+**Valor por defecto:** `8`  
+**Riesgo:** normal
 
-Max memories returned by normal load. Lower values reduce context bloat for low-context models; higher values help deep architecture tasks.
+Máximo de memorias devueltas por una carga normal. Los valores bajos reducen el exceso de contexto en modelos de poco contexto; los altos ayudan en tareas de arquitectura profundas.
 
-## Memory Limits group
+### Working Memory TTL (days)
+
+**Clave de configuración:** `load.working_ttl_days`  
+**Control:** number 1–365  
+**Valor por defecto:** `14`  
+**Riesgo:** normal
+
+Días que una memoria `OBJECTIVE: task` aprobada permanece en el nivel de trabajo, ignorado por Git, antes de caducar. El cambio se aplica a las memorias guardadas después. Conserve una memoria de trabajo con `engram promote <id>`; elimine las caducadas con `engram working prune`.
+
+## Grupo Memory Limits {#memory-limits-group}
 
 ### Rule Line Target
 
-**Config key:** `memory.rule_line_target`  
+**Clave de configuración:** `memory.rule_line_target`  
 **Control:** number 50–200, step 10  
-**Default:** `70`  
-**Risk:** normal
+**Valor por defecto:** `70`  
+**Riesgo:** normal
 
-Recommended size for rule memories. Concise rules route better than overlong policies.
+Tamaño recomendado para las memorias de reglas. Las reglas concisas se enrutan mejor que las políticas demasiado largas.
 
 ### Rule Line Hard Limit
 
-**Config key:** `memory.rule_line_hard_limit`  
+**Clave de configuración:** `memory.rule_line_hard_limit`  
 **Control:** number 50–200, step 10  
-**Default:** `100`  
-**Risk:** risky
+**Valor por defecto:** `100`  
+**Riesgo:** risky
 
-Hard maximum for rule memories.
+Máximo estricto para las memorias de reglas.
 
 <RiskCallout level="risky">
-Raising this can increase context bloat and reduce routing quality. Keep rules concise.
+Subirlo puede aumentar el exceso de contexto y empeorar la calidad del enrutamiento. Mantenga las reglas concisas.
 </RiskCallout>
 
-## Graph group
+### Write Author Email
+
+**Clave de configuración:** `memory.include_author_email`  
+**Control:** toggle  
+**Valor por defecto:** `false`  
+**Riesgo:** risky
+
+Cuando está activado, las memorias nuevas y las actualizadas también escriben `author_email` junto a `author_name`. Está desactivado por defecto para que los archivos de memoria confirmados no incluyan ninguna dirección de correo; su correo permanece en el perfil de autor y en los commits de Git creados por Engram.
+
+<RiskCallout level="risky">
+Activarlo escribe direcciones de correo en archivos de memoria confirmados. Vuelva a desactivarlo y ejecute `engram author migrate-memories --strip-email --confirm` para eliminarlas.
+</RiskCallout>
+
+## Grupo Hooks {#hooks-group}
+
+### hooks.path_rules
+
+**Clave de configuración:** `hooks.path_rules`  
+**Control:** select - `native`, `hook`  
+**Valor por defecto:** `native`  
+**Riesgo:** normal
+
+`native` escribe archivos de reglas generados para las memorias con `applies_to` (Claude `.claude/rules/engram/`, Cursor `.cursor/rules/engram/`) y registra `InstructionsLoaded` de Claude. `hook` mantiene el hook `PreToolUse` de Engram para Claude y elimina los archivos de reglas de Claude. Codex usa siempre `PreToolUse`.
+
+## Grupo Graph {#graph-group}
 
 ### graph.enabled
 
 **Control:** toggle  
-**Default:** `true`  
-**Risk:** normal
+**Valor por defecto:** `true`  
+**Riesgo:** normal
 
-Enables dependency/relationship routing via `depends_on`, related memories, and the graph view.
+Activa el enrutamiento por dependencias/relaciones mediante `depends_on`, memorias relacionadas y la vista del grafo.
 
 ### graph.max_related
 
 **Control:** number 1–20  
-**Default:** `4`  
-**Risk:** normal
+**Valor por defecto:** `4`  
+**Riesgo:** normal
 
-Limits related memories pulled through graph signals.
+Limita las memorias relacionadas que se obtienen mediante señales del grafo.
 
 ### graph.min_related_score
 
 **Control:** number 0–1, step 0.01  
-**Default:** `0.22`  
-**Risk:** normal
+**Valor por defecto:** `0.22`  
+**Riesgo:** normal
 
-Minimum similarity score for related edges. Raise for precision, lower for recall.
+Puntuación mínima de similitud para las aristas relacionadas. Suélo para ganar precisión, bájelo para ganar cobertura.
 
-## Vector Search group
+## Grupo Vector Search {#vector-search-group}
 
 ### vector.provider
 
 **Control:** select — `sqlite-vec`  
-**Default:** `sqlite-vec`  
-**Risk:** normal
+**Valor por defecto:** `sqlite-vec`  
+**Riesgo:** normal
 
-Selects the local vector provider. `sqlite-vec` is the only supported provider.
+Selecciona el proveedor vectorial local. `sqlite-vec` es el único proveedor compatible.
 
 ### vector.enabled
 
 **Control:** toggle  
-**Default:** `true`  
-**Risk:** normal
+**Valor por defecto:** `false`  
+**Riesgo:** normal
 
-Enables optional local vector routing. No cloud dependency.
+Experimental. Activa un enrutamiento vectorial local opcional basado en vectores hash de 64 dimensiones, que no son embeddings semánticos. Desactivado por defecto; una configuración de workspace que ya almacena `true` sigue activada. Sin dependencia de la nube.
 
 ### vector.auto_threshold
 
 **Control:** number 10–1000  
-**Default:** `100`  
-**Risk:** normal
+**Valor por defecto:** `100`  
+**Riesgo:** normal
 
-Memory count where vector search activates. Small vaults may not need vector search.
+Número de memorias a partir del cual se activa la búsqueda vectorial. Es posible que los vaults pequeños no necesiten búsqueda vectorial.
 
 ### vector.candidate_pool
 
 **Control:** number 8–100  
-**Default:** `24`  
-**Risk:** normal
+**Valor por defecto:** `24`  
+**Riesgo:** normal
 
-How many candidates vector search considers before reranking. Higher improves recall at latency cost.
+Cuántas candidatas considera la búsqueda vectorial antes de reordenar. Un valor mayor mejora la cobertura a costa de latencia.
 
 ### vector.dimensions
 
 **Control:** number 16–512  
-**Default:** `64`  
-**Risk:** normal
+**Valor por defecto:** `64`  
+**Riesgo:** normal
 
-Embedding dimensions for the local vector sidecar. Changing this requires a rebuild.
+Dimensiones de embedding del sidecar vectorial local. Cambiarlo requiere una reconstrucción.
 
-## Rule Variants group
+## Grupo Rule Variants {#rule-variants-group}
 
 ### rule_variants.enabled
 
 **Control:** toggle  
-**Default:** `false`  
-**Risk:** normal
+**Valor por defecto:** `false`  
+**Riesgo:** normal
 
-Enables role/strictness variants. Use when teams need light/balanced/strict routing.
+Presenta al cargar la redacción light y strict derivada del Content de cada regla (desactivado presenta el Content balanced). Los archivos de reglas almacenan una sección `## Rule Variants` solo para redacción personalizada.
 
 ### rule_variants.active
 
 **Control:** select — `light`, `balanced`, `strict`  
-**Default:** `balanced`  
-**Risk:** normal
+**Valor por defecto:** `balanced`  
+**Riesgo:** normal
 
-Controls strictness of loaded rules. `strict` helps lower-tier models; `light`/`balanced` usually suit stronger models.
+Controla la firmeza de las reglas cargadas. `strict` ayuda a los modelos de gama baja; `light`/`balanced` suelen convenir a los modelos más potentes.
 
-## Live Sync group
+## Grupo Live Sync {#live-sync-group}
 
 ### live_sync.enabled
 
 **Control:** toggle  
-**Default:** `false`  
-**Risk:** normal
+**Valor por defecto:** `false`  
+**Riesgo:** normal
 
-Syncs generated agent context files on save.
+Sincroniza los archivos de contexto de agente generados al guardar.
 
 ### live_sync.targets
 
 **Control:** list  
-**Default:** `agents-md`, `claude-md`, `cursorrules`
+**Valor por defecto:** `agents-md`, `claude-md`, `cursor-rules`
 
-Comma-separated generated context targets refreshed when live sync runs.
+Destinos de contexto generados, separados por comas, que se actualizan cuando se ejecuta live sync.
 
-## Global Git configuration moved to Git
+## La configuración de Git global se movió a Git
 
-Global Git configuration no longer appears in Construct. Open **Git → Global** to edit the existing `global_git.*` settings with the same validation and risk-review backend. The Workspace tab under Git never exposes these global controls.
+La configuración de Git global ya no aparece en Construct. Abra **Git → Global** para editar los ajustes `global_git.*` existentes con la misma validación y el mismo backend de revisión de riesgo. La pestaña Workspace dentro de Git nunca expone estos controles globales.
 
-For key-by-key details, use the [field reference](field-reference.md#global-git-enabled) or the [Git settings guide](../operations/git-author-settings.md#global-git-configuration).
+Para los detalles clave por clave, use la [referencia de campos](field-reference.md#global-git) o la [guía de ajustes de Git](../operations/git-author-settings.md#global-git-configuration).
 
-## Pattern Mining group
+## Grupo Pattern Mining {#pattern-mining-group}
 
-| Field | Control | Default | Notes |
+| Campo | Control | Valor por defecto | Notas |
 | --- | --- | --- | --- |
-| `pattern_mining.enabled` | toggle | `false` | Experimental recurring-pattern extraction |
-| `pattern_mining.threshold` | number 1–20 | `3` | Repetitions before a pattern candidate matters |
-| `pattern_mining.lookback_sessions` | number 1–100 | `20` | Recent sessions to inspect |
+| `pattern_mining.enabled` | toggle | `false` | Extracción experimental de patrones recurrentes |
+| `pattern_mining.threshold` | number 1–20 | `3` | Repeticiones antes de que un patrón candidato importe |
+| `pattern_mining.lookback_sessions` | number 1–100 | `20` | Sesiones recientes que se inspeccionan |
 
-## PR Workflow group
+## Grupo PR Workflow {#pr-workflow-group}
 
-| Field | Control | Default | Notes |
+| Campo | Control | Valor por defecto | Notas |
 | --- | --- | --- | --- |
-| `pr_workflow.enabled` | toggle | `false` | Experimental team PR workflow for memory changes |
-| `pr_workflow.provider` | text | empty | Provider identifier for an already configured team workflow |
-| `pr_workflow.repo` | text | empty | Repository identifier for an already configured team workflow |
-| `pr_workflow.target_branch` | text | `main` | Branch receiving memory PRs |
+| `pr_workflow.enabled` | toggle | `false` | Flujo experimental de PR de equipo para cambios de memoria |
+| `pr_workflow.provider` | text | vacío | Identificador del proveedor de un flujo de equipo ya configurado |
+| `pr_workflow.repo` | text | vacío | Identificador del repositorio de un flujo de equipo ya configurado |
+| `pr_workflow.target_branch` | text | `main` | Rama que recibe los PR de memoria |
 
-## Encryption group
+## Grupo Encryption {#encryption-group}
 
 <RiskCallout level="risky">
-Encryption config exists, but encrypted storage is not implemented yet. Document current limitations clearly to users.
+La configuración de cifrado existe, pero el almacenamiento cifrado aún no está implementado. Documente con claridad las limitaciones actuales a los usuarios.
 </RiskCallout>
 
-| Field | Control | Default | Notes |
+| Campo | Control | Valor por defecto | Notas |
 | --- | --- | --- | --- |
-| `encryption.enabled` | toggle | `false` | Future/advanced encryption mode |
-| `encryption.scope` | select — `workspace`, `global` | `global` | Which scope encryption applies to |
-| `encryption.key_source` | select — `portable-file` | `portable-file` | Key source strategy; backup loss risk |
+| `encryption.enabled` | toggle | `false` | Modo de cifrado futuro/avanzado |
+| `encryption.scope` | select — `workspace`, `global` | `global` | Ámbito al que se aplica el cifrado |
+| `encryption.key_source` | select — `portable-file` | `portable-file` | Estrategia de origen de la clave; riesgo de pérdida de la copia de seguridad |
 
-## Next steps
+## Próximos pasos
 
-- [Complete field reference](field-reference.md)
-- [Memories tab](memories.md)
-- [Core tab](core.md)
+- [Referencia completa de campos](field-reference.md)
+- [Pestaña Memories](memories.md)
+- [Pestaña Core](core.md)

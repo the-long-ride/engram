@@ -40,7 +40,7 @@ A successful apply is verified by a post-write rescan. Rolled-back or failed tra
 
 ## Skillset render profiles
 
-For runtime-capable hosts, Engram installs small bootstrap instructions instead of the full protocol. Hooks provide routed task context, MCP tools provide load/search/proposal behavior, and slash adapters or Agent Skills carry detailed command workflows. Fallback targets without reliable runtime context injection still receive compact manual instructions.
+For runtime-capable hosts, Engram installs small bootstrap instructions instead of the full protocol. Hooks provide routed task context, MCP tools provide load/search/proposal behavior, and one companion guide carries the detailed workflow, with slash adapters and Agent Skills as short pointers to it. Fallback targets without reliable runtime context injection still receive compact manual instructions.
 
 ## SQLite config DB fallback
 
@@ -49,7 +49,7 @@ Engram's SQLite config DB is an optimization for workspace/profile management. I
 
 ## Legacy memory migration to schema v3
 
-`engram upgrade --latest` also migrates active v1/v2 memory files in the workspace and configured global roots to schema v3. Engram preserves each Markdown body exactly, creates `<memory-file>.pre-v3.bak`, fills only deterministic metadata, refreshes integrity hashes, and rebuilds the index, graph, and eligible vector sidecars. It never invents `evidence_refs`; a memory without verified trace links is marked `evidence_status: unverified`. Invalid memories are reported and skipped, archived memories are not rewritten, and a second run is idempotent.
+`engram upgrade --latest` also migrates active v1/v2 memory files in the workspace and configured global roots to schema v3. Engram preserves each Markdown body exactly, writes `backups/schema-v3/<memory-file>.pre-v3.bak` (a gitignored folder; `engram repair --move-backups` relocates older backups left beside memories), fills only deterministic metadata, refreshes integrity hashes, and rebuilds the index, graph, and eligible vector sidecars. It never invents `evidence_refs`; a memory without verified trace links is marked `evidence_status: unverified`. Invalid memories are reported and skipped, archived memories are not rewritten, and a second run is idempotent.
 
 Preview all changes without writing:
 

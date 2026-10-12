@@ -1,12 +1,12 @@
 ---
 title: load / search / graph
 sidebar_position: 2
-description: Read commands — load routed memory, search the vault, and inspect graph routing.
+description: Comandos de lectura: cargue memoria enrutada, busque en el almacén e inspeccione el enrutamiento de grafos.
 ---
 
 # load / search / graph
 
-Read commands load routed memory, search the vault, and inspect graph routing.
+Los comandos de lectura cargan memoria enrutada, buscan en el almacén e inspeccionan el enrutamiento de grafos.
 
 ## load
 
@@ -15,16 +15,26 @@ engram load "<task>"
 engram load --full "<task>"
 engram load --dry-run "<task>"
 engram load --all "<task>"
+engram load --budget-tokens 800 "<task>"
+engram load --disclosure full "<task>"
+engram load --id <id>,<id>
+engram load --exclude-keys workspace:rules/use-pnpm.md "<task>"
 ```
 
-`load` first anchors routing on meaningful query terms, ignoring generic memory words such as `rule`, `knowledge`, and common stopwords. It then refines the wider candidate pool into a compact context pack. Normal load reports selected and total related counts, like `loaded 8 memory files / 14 total related memories`.
+`load` ancla primero el enrutamiento en términos de consulta significativos, ignorando palabras de memoria genéricas como `rule`, `knowledge` y palabras vacías comunes. Luego refina el conjunto de candidatos en un paquete de contexto compacto. La carga normal informa recuentos seleccionados y totales relacionados, como `loaded 8 memory files / 14 total related memories`.
 
-- default `load` — compact agent-facing route (only `id`, `type`, `tags`, `confidence`, `authority`, `depends_on`, and `evidence_refs` in frontmatter; one selected rule variant)
-- `--full` — broader legacy output with full frontmatter and full rule variants
-- `--dry-run` — show candidate counts, narrowing tags, and match reasons without printing content
-- `--all` — return every visible routed match instead of the compact limit
+- `load` por defecto — ruta escalonada orientada al agente: los mejores aciertos según `load.expand_top` (por defecto 3) como cuerpos completos, cada otro acierto seleccionado como una tarjeta de una sola línea y un aviso de cierre `fetch: engram load --id <ids>`; cada encabezado de cuerpo lleva la `authority` de la memoria, el frontmatter como `evidence_refs`, `## Context`, `## Example` y `## Origin` no se representan (use `--full` para verlos) y las reglas muestran una variante seleccionada.
+- `--id <id,...>` — obtiene cuerpos completos para tarjetas; los identificadores pueden estar separados por comas, y una obtención explícita cuenta para `stats --usage`.
+- `--budget-tokens <200-16000>` — límite estricto en la salida escalonada completa; los cuerpos se convierten primero en tarjetas y solo entonces se omiten las tarjetas de menor rango.
+- `--disclosure auto|full` — `full` imprime cada cuerpo empaquetado en lugar del paquete escalonado (también `load.disclosure: full` en la configuración).
+- `--exclude-keys <scope:file,...>` — omite memorias que el emisor ya posee; no se imprime cuerpo ni tarjeta, y `--json` las lista en `already_loaded`.
+- `--full` — salida heredada más amplia con frontmatter completo y todas las variantes de regla.
+- `--dry-run` — muestra recuentos de candidatos, etiquetas de filtrado y motivos de coincidencia sin imprimir contenido.
+- `--all` — devuelve todas las coincidencias enrutadas visibles en lugar del límite compacto.
 
-`workflow` and `workflows` still route to skill memories, but generic type words do not make a broad match by themselves.
+`workflow` y `workflows` siguen enrutando a memorias de habilidades (skill), pero las palabras de tipo genéricas no generan por sí solas una coincidencia amplia.
+
+Bajo la divulgación `auto`, las listas JSON `selected` y `entries` describen solo los cuerpos expandidos; las tarjetas se informan por separado. Configure `load.expand_top` y `load.disclosure` en el bloque `load` de `engram.config.json` (consulte [perfiles / workspaces / configuración](profiles-workspaces-config.md#load-configuration)).
 
 ## search
 
@@ -33,7 +43,7 @@ engram search "<topic>"
 engram search --semantic "<topic>"
 ```
 
-Default search is deterministic lexical search. `search --semantic` adds deterministic local similarity, not embedding-backed semantic search.
+La búsqueda predeterminada es una búsqueda léxica determinista. `search --semantic` agrega similitud local determinista, no búsqueda semántica respaldada por embeddings. Los resultados de `search --json` incluyen un campo `score`.
 
 ## graph
 
@@ -42,20 +52,20 @@ engram graph "<topic>"
 engram graph --rebuild
 ```
 
-Inspect graph routing. Run `engram graph --rebuild` after manual edits. The graph reports dependency layers, and `engram load` pulls routed prerequisites into the same compact context pack before deeper memories.
+Inspeccione el enrutamiento del grafo. Ejecute `engram graph --rebuild` tras ediciones manuales. El grafo informa capas de dependencia, y `engram load` incorpora los prerrequisitos enrutados en el mismo paquete compacto antes que las memorias más profundas.
 
-Graph related edges and vector hits cannot load unrelated memories by themselves; they only help rerank or expand memories that already overlap meaningful query terms. Explicit `depends_on` prerequisites may still load without their own keyword overlap.
+Las aristas relacionadas en el grafo y las coincidencias vectoriales no cargan memorias no relacionadas automáticamente; solo ayudan a reclasificar o ampliar memorias que ya coinciden con términos de consulta significativos. Los prerrequisitos explícitos `depends_on` aún pueden cargarse sin coincidencias de términos propias.
 
-## Dependency layers
+## Capas de dependencia {#dependency-layers}
 
 ```yaml
 depends_on: [release-foundation]
 level: advanced
 ```
 
-Use `depends_on` frontmatter when a memory should build on another memory instead of repeating it.
+Use el frontmatter `depends_on` cuando una memoria deba construirse sobre otra en lugar de repetirla.
 
-## Next steps
+## Próximos pasos {#next-steps}
 
 - [save / save-session / observe](save-session.md)
-- [Concepts: read path and routing](../concepts/read-path.md)
+- [Conceptos: ruta de lectura y enrutamiento](../concepts/read-path.md)

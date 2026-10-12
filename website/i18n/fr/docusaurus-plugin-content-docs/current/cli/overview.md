@@ -1,46 +1,57 @@
 ---
-title: Command overview
+title: Vue d’ensemble des commandes
 sidebar_position: 1
-description: Map of every Engram CLI command and what it does.
+description: Carte de toutes les commandes de la CLI Engram et de leur rôle.
 ---
 
-# Command overview
+# Vue d’ensemble des commandes {#command-overview}
 
-Run `engram -h` for the compact command surface. Run `engram help <topic>` or `engram -h <topic>` for command-specific examples and use cases.
+Exécutez `engram -h` pour la surface de commandes compacte. Exécutez `engram help <topic>` ou `engram -h <topic>` pour obtenir des exemples et des cas d’usage propres à une commande.
 
-## Command map
+## Carte des commandes {#command-map}
 
-| Need | Command |
+| Besoin | Commande |
 | --- | --- |
-| Load task memory | `engram load "<task>"` |
-| Load compact task memory | `engram load "<task>"` |
-| Print AI-agent usage guide | `engram llm` |
-| Preview routed memory files | `engram load --dry-run "<task>"` |
-| Search memory | `engram search "<topic>"` |
-| Save one memory | `engram save [rule\|workflow\|knowledge] "<text>"` |
-| Save several session memories | `engram save-session` or `engram ss` |
-| Mine recent accessible chats | `engram save-session --query-level 3` |
-| Force-save session candidates | `engram ss -f` |
-| Mine and force-save recent chats | `engram ss -f last 50 sessions` |
-| Capture raw note | `engram observe --file session.md` |
-| Convert existing docs/guidance | `engram take-control --all` |
-| Preview source takeover | `engram take-control --plan` |
-| Restructure existing memory folder | `engram metacognize --workspace\|--global\|--all` |
-| Resolve conflicts and metacognize | `engram resolve-conflicts --metacognize` |
-| Inspect graph routing | `engram graph "<topic>"` |
-| Check hashes | `engram verify` |
-| Find malformed memory files | `engram repair` |
-| Archive wrong memory | `engram archive --reason "<why>" <id-or-file>` |
-| Tune rule strength | `engram set-rule-variant strict\|balanced\|light\|off` |
-| Set default save target | `engram set-save-target workspace\|global\|both\|status` |
-| Set compact load limit | `engram set-load-limit 1..32\|status\|reset` |
-| Set automatic hook reads | `engram set-read startup\|auto\|always\|manual\|off\|status` |
-| Set hook proof visibility | `engram set-proof off\|compact\|status` |
-| Install agent hooks | `engram link codex\|claude\|gemini\|opencode\|cursor\|windsurf` |
-| Manage global profiles | `engram profile status\|list\|create\|use\|merge` |
-| Clone workspace/global memory | `engram clone-memory workspace global [--metacognize]` |
+| Charger la mémoire d’une tâche | `engram load "<task>"` |
+| Charger la mémoire compacte d’une tâche | `engram load "<task>"` |
+| Afficher le guide d’utilisation pour agents IA | `engram llm` |
+| Prévisualiser les fichiers de mémoire routés | `engram load --dry-run "<task>"` |
+| Charger avec un plafond de tokens | `engram load --budget-tokens 800 "<task>"` |
+| Afficher tous les corps empaquetés | `engram load --disclosure full "<task>"` |
+| Récupérer des cartes par identifiant | `engram load --id <id>,<id>` |
+| Rechercher dans la mémoire | `engram search "<topic>"` |
+| Enregistrer une mémoire | `engram save [rule\|workflow\|knowledge] "<text>"` |
+| Enregistrer plusieurs mémoires de session | `engram save-session` ou `engram ss` |
+| Explorer les conversations récentes accessibles | `engram save-session --query-level 3` |
+| Enregistrer de force les candidats de session | `engram ss -f` |
+| Explorer et enregistrer de force les conversations récentes | `engram ss -f last 50 sessions` |
+| Capturer une note brute | `engram observe --file session.md` |
+| Vider la file optionnelle des transcriptions SessionEnd | `engram observe --queue --dry-run` |
+| Convertir les documents et consignes existants | `engram take-control --all` |
+| Prévisualiser la reprise des sources | `engram take-control --plan` |
+| Résumer du code ou de la configuration | `engram take-control --kind code --objective "<text>"` |
+| Actualiser une mémoire dérivée du code devenue obsolète | `engram take-control --refresh` |
+| Vérifier la fraîcheur des sources | `engram verify --sources` |
+| Conserver une mémoire de travail | `engram promote <id>` |
+| Enregistrer une note de tâche | `engram working note "<text>"` |
+| Purger la mémoire de travail expirée | `engram working prune [--dry-run]` |
+| Voir les compteurs de récupération et d’injection | `engram stats --usage` |
+| Restructurer un dossier de mémoire existant | `engram metacognize --workspace\|--global\|--all` |
+| Résoudre les conflits et métacognitiser | `engram resolve-conflicts --metacognize` |
+| Inspecter le routage par graphe | `engram graph "<topic>"` |
+| Vérifier les hachages | `engram verify` |
+| Trouver les fichiers de mémoire malformés | `engram repair` |
+| Archiver une mémoire erronée | `engram archive --reason "<why>" <id-or-file>` |
+| Régler la force des règles | `engram set-rule-variant strict\|balanced\|light\|off` |
+| Définir la cible d’enregistrement par défaut | `engram set-save-target workspace\|global\|both\|status` |
+| Définir la limite de chargement compact | `engram set-load-limit 1..32\|status\|reset` |
+| Définir les lectures automatiques des hooks | `engram set-read startup\|auto\|always\|manual\|off\|status` |
+| Définir la visibilité de la preuve des hooks | `engram set-proof off\|compact\|status` |
+| Installer les hooks d’agent | `engram link codex\|claude\|gemini\|opencode\|cursor\|windsurf` |
+| Gérer les profils globaux | `engram profile status\|list\|create\|use\|merge` |
+| Cloner la mémoire workspace/global | `engram clone-memory workspace global [--metacognize]` |
 
-## Command discovery
+## Découverte des commandes {#command-discovery}
 
 ```bash
 engram help save-session
@@ -48,9 +59,9 @@ engram help set-role
 engram -h set-rule-variant
 ```
 
-All commands listed in help include short aliases. Aliases route to the same CLI behavior and approval gates as their canonical commands.
+Toutes les commandes listées dans l’aide disposent d’alias courts. Les alias déclenchent le même comportement de CLI et les mêmes portes d’approbation que leurs commandes canoniques.
 
-## Shell completion
+## Complétion du shell {#shell-completion}
 
 ```bash
 engram completion bash
@@ -58,16 +69,16 @@ engram completion zsh
 engram completion powershell
 ```
 
-## Next steps
+## Étapes suivantes {#next-steps}
 
 - [load / search / graph](load-search-graph.md)
 - [save / save-session / observe](save-session.md)
 - [inject / link / upgrade](inject-link-upgrade.md)
 
 
-## Git author identity
+## Identité d’auteur Git {#git-author-identity}
 
-Engram can store a global author and an optional workspace override. Resolution is workspace, global, then read-only Git fallback. Settings affect future memories only; a workspace override never changes global Git configuration. Use explicit plan and confirmation for global Git sync or legacy-memory migration.
+Engram peut stocker un auteur global et une surcharge d’espace de travail facultative. La résolution suit l’ordre workspace, global, puis repli Git en lecture seule. Les paramètres n’affectent que les mémoires futures ; une surcharge d’espace de travail ne modifie jamais la configuration Git globale. Utilisez un plan explicite et une confirmation pour la synchronisation Git globale ou la migration des anciennes mémoires.
 
 ```bash
 engram author show
@@ -79,4 +90,4 @@ engram author migrate-memories --plan
 engram author migrate-memories --confirm
 ```
 
-Read the complete [Git author settings guide](../operations/git-author-settings.md).
+Lisez le [guide complet des paramètres de l’auteur Git](../operations/git-author-settings.md).

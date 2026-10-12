@@ -1,66 +1,66 @@
 ---
-title: Write path and approval
+title: Luồng ghi và phê duyệt
 sidebar_position: 6
-description: Agents propose, humans approve. Only approved memory is written, then indexes, graph, hashes, and changelog refresh.
+description: Agent đề xuất, con người phê duyệt. Chỉ bộ nhớ đã duyệt mới được ghi, sau đó chỉ mục, đồ thị, hash và changelog được làm mới.
 ---
 
-# Write path and approval
+# Luồng ghi và phê duyệt
 
-The write flow is the trust boundary. Agents propose, humans approve.
+Luồng ghi là ranh giới tin cậy. Agent đề xuất, con người phê duyệt.
 
-## Write flow
+## Luồng ghi {#write-flow}
 
-1. Agent proposes one or more candidates.
-   With `save-session --query-level <n>`, the agent may consider up to n recent accessible human-agent chats, but only as proposal context.
-   Natural `/engram ss -f last 50 sessions` is the same scope plus explicit force approval: `engram save-session --query-level 50 --force`.
-2. Engram parses candidate type and target scope.
-3. Engram checks schema, secrets, prompt-injection patterns, and path safety.
-4. Human sees a preview.
-5. Direct CLI replies use `A`, `A 1,3`, `B <note>`, or `C`.
-6. AI-agent chat replies use `yes`, `audit`, or `cancel` after the exact displayed candidates.
-7. Only approved memory is written.
-8. Index, graph, hashes, and changelog are refreshed.
+1. Agent đề xuất một hoặc nhiều ứng viên.
+   Với `save-session --query-level <n>`, agent có thể xem xét tối đa n cuộc trò chuyện gần đây giữa người và agent mà có thể truy cập, nhưng chỉ dùng làm ngữ cảnh đề xuất.
+   Câu tự nhiên `/engram ss -f last 50 sessions` có cùng phạm vi đó cộng với sự phê duyệt buộc lưu tường minh: `engram save-session --query-level 50 --force`.
+2. Engram phân tích loại ứng viên và phạm vi đích.
+3. Engram kiểm tra schema, bí mật, các mẫu prompt-injection và an toàn đường dẫn.
+4. Con người thấy bản xem trước. Mỗi ứng viên mang một dòng `Verdict:` xác định: `ADD`, `UPDATE <id>`, `SUPERSEDE <id>` hoặc `NOOP duplicate of <id>` (không gọi mô hình).
+5. Phản hồi trên CLI trực tiếp dùng `A`, `A 1,3`, `B <note>` hoặc `C`.
+6. Phản hồi trong chat với AI agent dùng `yes`, `audit` hoặc `cancel` sau các ứng viên đã được hiển thị chính xác.
+7. Chỉ bộ nhớ đã duyệt mới được ghi. `A` và `B` bỏ qua các ứng viên `NOOP`, và việc phê duyệt một `SUPERSEDE` đánh dấu bộ nhớ cũ là đã bị thay thế; `--force` và autosave không bao giờ áp dụng `SUPERSEDE`, mà hoãn lại để rà soát.
+8. Chỉ mục, đồ thị, hash và changelog được làm mới.
 
-## Approval words
+## Từ phê duyệt {#approval-words}
 
-Approval words are `yes`, `approve`, `confirm`, or `save`. Audit words are `audit`, `revise`, `correct`, or edited replacement text. Cancel words are `cancel`, `stop`, or rejection. Only approval after exact candidate display authorizes `engram save-session --force` for those candidates.
+Các từ phê duyệt là `yes`, `approve`, `confirm` hoặc `save`. Các từ audit là `audit`, `revise`, `correct` hoặc văn bản thay thế đã chỉnh sửa. Các từ hủy là `cancel`, `stop` hoặc lời từ chối. Chỉ sự phê duyệt sau khi đã hiển thị chính xác các ứng viên mới ủy quyền `engram save-session --force` cho những ứng viên đó.
 
-Direct terminal CLI remains A/B/C. MCP proposal tools remain no-write.
+CLI terminal trực tiếp vẫn là A/B/C. Các công cụ đề xuất MCP vẫn không ghi.
 
-## Related-memory hints
+## Gợi ý về bộ nhớ liên quan {#related-memory-hints}
 
-When `engram save` finds related active memories, the approval preview reports them with a suggested `depends_on` or possible-duplicate warning. Accepting saves the preview as-is; reject first if you want to restructure dependencies or archive duplicates before saving.
+Khi `engram save` tìm thấy các bộ nhớ đang hoạt động có liên quan, bản xem trước phê duyệt báo cáo chúng kèm gợi ý `depends_on` hoặc cảnh báo có thể trùng lặp. Chấp nhận sẽ lưu bản xem trước nguyên trạng; hãy từ chối trước nếu bạn muốn tái cấu trúc phụ thuộc hoặc lưu trữ các bản trùng lặp trước khi lưu.
 
-For `save-session --force`, Engram pauses before writing when those related memory hints appear. The agent should use the response to brainstorm a structured rerun: add `DEPENDS_ON: memory-id` for dependencies, `LEVEL: advanced` when a memory is deeper than its prerequisite, or `UPDATE: memory-id` when a candidate should merge into a possible duplicate.
+Với `save-session --force`, Engram tạm dừng trước khi ghi nếu xuất hiện các gợi ý bộ nhớ liên quan đó. Agent nên dùng phản hồi để brainstorm một lần chạy lại có cấu trúc: thêm `DEPENDS_ON: memory-id` cho các phụ thuộc, `LEVEL: advanced` khi một bộ nhớ sâu hơn tiền đề của nó, hoặc `UPDATE: memory-id` khi một ứng viên nên hợp nhất vào một bản có thể trùng lặp.
 
 <!-- evidence-foundation:v3:start -->
-## Bộ nhớ có bằng chứng
+## Bộ nhớ có bằng chứng {#evidence-backed-memory}
 
-For source material that should be reviewed before it becomes active memory:
+Với tài liệu nguồn cần được rà soát trước khi trở thành bộ nhớ đang hoạt động:
 
 ```bash
 engram observe --file session.md
 engram save-session --file .agents/.engram/inbox/<observation>.md
 ```
 
-The first command sanitizes the source and writes an immutable trace identified by `trace_id` plus an editable inbox wrapper. The second command resolves the wrapper to its trace, verifies hash and scope, then writes only human-approved schema v3 memory with `evidence_refs`. Editing `## Raw Note` cannot replace the trace evidence.
+Lệnh đầu tiên làm sạch nguồn và ghi một dấu vết bất biến được định danh bằng `trace_id` cùng một lớp bọc inbox có thể chỉnh sửa. Lệnh thứ hai đối chiếu lớp bọc về dấu vết của nó, xác minh hash và phạm vi, rồi chỉ ghi bộ nhớ schema v3 đã được con người phê duyệt kèm `evidence_refs`. Chỉnh sửa `## Raw Note` không thể thay thế bằng chứng là dấu vết.
 <!-- evidence-foundation:v3:end -->
 
-## Safety checks at save time
+## Các kiểm tra an toàn khi lưu {#safety-checks-at-save-time}
 
-- Schema validation
-- Secret scan
-- Prompt-injection scan
-- Path safety
-- Hash integrity
+- Kiểm tra schema
+- Quét bí mật
+- Quét prompt-injection
+- An toàn đường dẫn
+- Toàn vẹn hash
 
-## Why this matters
+## Vì sao điều này quan trọng {#why-this-matters}
 
-Without a protocol, memory can become invisible state. Invisible state is hard to review, hard to share, and easy for agents to poison by accident.
+Nếu không có giao thức, bộ nhớ có thể trở thành trạng thái vô hình. Trạng thái vô hình khó rà soát, khó chia sẻ và dễ bị agent làm nhiễm một cách vô tình.
 
-Engram makes memory boring on purpose: files, diffs, hashes, review gates, and commands a human can rerun.
+Engram cố ý làm cho bộ nhớ trở nên nhàm chán: tệp, diff, hash, các cổng rà soát và các lệnh mà con người có thể chạy lại.
 
-## Next steps
+## Bước tiếp theo {#next-steps}
 
-- [Privacy, ignore rules, and safety](safety.md)
+- [Quyền riêng tư, quy tắc bỏ qua và an toàn](safety.md)
 - [CLI: save / save-session / observe](../cli/save-session.md)

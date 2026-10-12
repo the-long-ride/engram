@@ -1,47 +1,47 @@
 ---
 title: FAQ
 sidebar_position: 4
-description: Frequently asked questions about Engram.
+description: Questions fréquentes sur Engram.
 ---
 
 # FAQ
 
-## Is Engram a vector database?
+## Engram est-il une base de données vectorielle ? {#is-engram-a-vector-database}
 
-No. Default Engram search is deterministic lexical search. `engram search --semantic` adds deterministic local similarity, not embedding-backed semantic search. Graph vectors are local hashed word vectors, not semantic embeddings. Optional local sqlite-vec is an acceleration layer, not the source of truth.
+Non. La recherche par défaut d’Engram est une recherche lexicale déterministe. `engram search --semantic` ajoute une similarité locale déterministe, et non une recherche sémantique fondée sur des embeddings. Les vecteurs du graphe sont des vecteurs de mots hachés locaux, pas des embeddings sémantiques. sqlite-vec local, facultatif, est une couche d’accélération expérimentale (désactivée par défaut ; à activer avec `vector.enabled: true`), pas la source de vérité.
 
-## Does Engram write memory automatically?
+## Engram écrit-il la mémoire automatiquement ? {#does-engram-write-memory-automatically}
 
-No. Agents propose candidates; humans approve. Direct terminal CLI uses A/B/C. AI-agent chat uses `yes`/`audit`/`cancel`. Only explicit force requests (`ss -f`) save every candidate, and agents must not add `--force` unless the human requested it.
+Non. Les agents proposent des candidats ; les humains approuvent. La CLI directe dans un terminal utilise A/B/C. Le chat d’un agent IA utilise `yes`/`audit`/`cancel`. Seules les demandes de forçage explicites (`ss -f`) enregistrent chaque candidat, et les agents ne doivent pas ajouter `--force` sauf si l’humain l’a demandé.
 
-## Where does memory live?
+## Où vit la mémoire ? {#where-does-memory-live}
 
-- Workspace memory: `<project>/.agents/.engram/`
-- Global memory: wherever you configure it (default empty until configured)
+- Mémoire du workspace : `<project>/.agents/.engram/`
+- Mémoire globale : là où vous la configurez (vide par défaut tant qu’elle n’est pas configurée)
 
-Workspace memory wins. Global memory is fallback for reusable preferences and team context.
+La mémoire du workspace l’emporte. La mémoire globale sert de repli pour les préférences réutilisables et le contexte d’équipe.
 
-## Which agents are supported?
+## Quels agents sont pris en charge ? {#which-agents-are-supported}
 
-Codex, Claude, Gemini (and Antigravity Gemini-compatible surfaces), Cursor, Windsurf/Cascade, OpenCode, Copilot, Cline, generic AGENTS.md-compatible hosts, MCP-capable hosts, and slash-command hosts. See [Agent Integrations overview](../integrations/overview.md).
+Codex, Claude, Gemini (et les surfaces Antigravity compatibles Gemini), Cursor, Windsurf/Cascade, OpenCode, Copilot, Cline, les hôtes génériques compatibles AGENTS.md, les hôtes compatibles MCP et les hôtes à commandes slash. Voir [Vue d’ensemble des intégrations d’agents](../integrations/overview.md).
 
-## Is encryption implemented?
+## Le chiffrement est-il implémenté ? {#is-encryption-implemented}
 
-Encryption config exists, but encrypted storage is not implemented yet. Document current limitations clearly.
+La configuration du chiffrement existe, mais le stockage chiffré n’est pas encore implémenté. Documentez clairement les limites actuelles.
 
-## Can I use Engram without Git?
+## Puis-je utiliser Engram sans Git ? {#can-i-use-engram-without-git}
 
-Yes. Git is optional but recommended for audit history, portability, and team review.
+Oui. Git est facultatif mais recommandé pour l’historique d’audit, la portabilité et la relecture en équipe.
 
-## How do I archive wrong memory?
+## Comment archiver une mémoire erronée ? {#how-do-i-archive-wrong-memory}
 
 ```bash
 engram archive --reason "<why>" <id-or-file>
 ```
 
-The file leaves active routing only after approval and remains preserved under `archive/`. Use archive, not delete, for auditability.
+Le fichier ne quitte le routage actif qu’après approbation et reste conservé sous `archive/`. Utilisez archive, et non la suppression, pour la traçabilité.
 
-## How do I move global memory?
+## Comment déplacer la mémoire globale ? {#how-do-i-move-global-memory}
 
 ```bash
 engram update-global-folder <new-path>
@@ -49,38 +49,38 @@ engram ugf <new-path>
 engram move global folder from <old-path> to <new-path>
 ```
 
-Add `--move-from-path <old-path>` when they also want Engram to move the whole old global root into the new location.
+Ajoutez `--move-from-path <old-path>` lorsqu’ils veulent aussi qu’Engram déplace toute l’ancienne racine globale vers le nouvel emplacement.
 
 
-## Legacy memory migration to schema v3
+## Migration des anciennes mémoires vers le schema v3 {#legacy-memory-migration-to-schema-v3}
 
-`engram upgrade --latest` also migrates active v1/v2 memory files in the workspace and configured global roots to schema v3. Engram preserves each Markdown body exactly, creates `<memory-file>.pre-v3.bak`, fills only deterministic metadata, refreshes integrity hashes, and rebuilds the index, graph, and eligible vector sidecars. It never invents `evidence_refs`; a memory without verified trace links is marked `evidence_status: unverified`. Invalid memories are reported and skipped, archived memories are not rewritten, and a second run is idempotent.
+`engram upgrade --latest` migre aussi les fichiers de mémoire actifs v1/v2 de l’espace de travail et des racines globales configurées vers le schema v3. Engram préserve exactement chaque corps Markdown, écrit `backups/schema-v3/<memory-file>.pre-v3.bak` (un dossier ignoré par Git ; `engram repair --move-backups` déplace les anciennes sauvegardes laissées à côté des mémoires), ne renseigne que des métadonnées déterministes, actualise les hachages d’intégrité et reconstruit l’index, le graphe et les fichiers annexes vectoriels éligibles. Il n’invente jamais `evidence_refs` ; une mémoire sans liens de trace vérifiés est marquée `evidence_status: unverified`. Les mémoires invalides sont signalées et ignorées, les mémoires archivées ne sont pas réécrites, et une seconde exécution est idempotente.
 
-Preview all changes without writing:
+Prévisualiser tous les changements sans rien écrire :
 
 ```bash
 engram upgrade --latest --plan
 ```
 
-Run only the memory migration, without overwriting linked agent artifacts:
+Exécuter uniquement la migration des mémoires, sans écraser les artefacts d’agent liés :
 
 ```bash
 engram upgrade --migrate-memories
 ```
 
-Skip memory migration during a latest upgrade:
+Ignorer la migration des mémoires pendant une mise à niveau vers la dernière version :
 
 ```bash
 engram upgrade --latest --no-migrate-memories
 ```
 
-## Next steps
+## Étapes suivantes {#next-steps}
 
-- [Troubleshooting](troubleshooting.md)
-- [Comparison and roadmap](../comparison/overview.md)
+- [Dépannage](troubleshooting.md)
+- [Comparaison et feuille de route](../comparison/overview.md)
 
 
 <!-- configuration-upgrade-inventory -->
-## Configuration upgrade inventory
+## Inventaire des mises à niveau de configuration {#configuration-upgrade-inventory}
 
-After a package update, run `engram upgrade --latest --plan` before `engram upgrade --latest`. The shared inventory scans workspace and global Engram-managed memories, instructions, skillsets, configs, hooks, and plugins. User-authored bytes are preserved; ambiguous mixed files are reported as conflicts. See [Configuration upgrades](configuration-upgrades.md).
+Après une mise à jour du paquet, exécutez `engram upgrade --latest --plan` avant `engram upgrade --latest`. L’inventaire partagé analyse les mémoires, instructions, skillsets, configurations, hooks et plugins gérés par Engram, dans l’espace de travail et au niveau global. Les octets rédigés par l’utilisateur sont préservés ; les fichiers mixtes ambigus sont signalés comme conflits. Voir [Mises à niveau de configuration](configuration-upgrades.md).

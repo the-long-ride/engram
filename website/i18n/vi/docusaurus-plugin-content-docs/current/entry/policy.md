@@ -1,70 +1,70 @@
 ---
-title: Auto-save Policy
+title: Chính sách tự động lưu
 sidebar_position: 5
-description: Configure deny-by-default autonomous writes, quotas, rollback retention, review gates, and required metadata.
+description: Cấu hình từ chối theo mặc định đối với các thao tác ghi tự động, định mức, thời gian lưu giữ bản hoàn tác, cổng rà soát và metadata bắt buộc.
 ---
 
-# Auto-save Policy
+# Chính sách tự động lưu
 
-The Construct tab edits `.agents/engram.policy.json`. Normal `engram save` and `engram save-session` flows remain human-approved; this policy applies only to explicitly policy-gated autonomous candidates.
+Tab Construct chỉnh sửa tệp `.agents/engram.policy.json`. Các luồng `engram save` và `engram save-session` thông thường vẫn cần con người phê duyệt; chính sách này chỉ áp dụng cho các ứng viên tự động được kiểm soát rõ ràng theo chính sách.
 
-## Autonomous writes
+## Thao tác ghi tự động
 
-### Allow auto-save {#autonomous-writes-enabled}
+### Cho phép tự động lưu {#autonomous-writes-enabled}
 
-Maps to `autonomous_writes.enabled`. Default: `false`. When disabled, no candidate may write autonomously.
+Ánh xạ tới `autonomous_writes.enabled`. Mặc định: `false`. Khi bị vô hiệu hóa, không ứng viên nào có thể ghi tự động.
 
-### Write mode {#autonomous-writes-mode}
+### Chế độ ghi {#autonomous-writes-mode}
 
-Maps to `autonomous_writes.mode`. `review_only` defers candidates for review; `autonomous` permits candidates that pass every remaining gate.
+Ánh xạ tới `autonomous_writes.mode`. `review_only` hoãn các ứng viên lại để rà soát; `autonomous` cho phép các ứng viên vượt qua tất cả các cổng còn lại được ghi.
 
-### Allowed types {#autonomous-writes-allowed-types}
+### Các loại được phép {#autonomous-writes-allowed-types}
 
-Maps to `autonomous_writes.allowed_types`. Allowed values are `rule`, `skill`, `workflow`, and `knowledge`. At least one type is required.
+Ánh xạ tới `autonomous_writes.allowed_types`. Các giá trị hợp lệ là `rule`, `skill`, `workflow` và `knowledge`. Bắt buộc phải có ít nhất một loại.
 
-### Allowed scopes {#autonomous-writes-allowed-scopes}
+### Các phạm vi được phép {#autonomous-writes-allowed-scopes}
 
-Maps to `autonomous_writes.allowed_scopes`. Allowed values are `workspace` and `global`.
+Ánh xạ tới `autonomous_writes.allowed_scopes`. Các giá trị hợp lệ là `workspace` và `global`.
 
-### Allowed sources {#autonomous-writes-allowed-sources}
+### Các nguồn được phép {#autonomous-writes-allowed-sources}
 
-Maps to `autonomous_writes.allowed_sources`. Entry offers `autosave`, `agent-hook`, `cli`, and `mcp`; custom non-empty source strings remain valid in policy JSON.
+Ánh xạ tới `autonomous_writes.allowed_sources`. Entry hỗ trợ `autosave`, `agent-hook`, `cli` và `mcp`; các chuỗi nguồn tùy chỉnh không rỗng vẫn hợp lệ trong JSON chính sách.
 
-### Confidence threshold {#autonomous-writes-confidence-threshold}
+### Ngưỡng độ tin cậy {#autonomous-writes-confidence-threshold}
 
-Maps to `autonomous_writes.confidence_threshold`. Allowed values are `low`, `medium`, and `high`.
+Ánh xạ tới `autonomous_writes.confidence_threshold`. Các giá trị hợp lệ là `low`, `medium` và `high`.
 
-### Daily write limit {#autonomous-writes-daily-limit}
+### Giới hạn ghi hàng ngày {#autonomous-writes-daily-limit}
 
-Maps to `autonomous_writes.daily_limit`. Use a non-negative integer. `0` prevents autonomous writes.
+Ánh xạ tới `autonomous_writes.daily_limit`. Sử dụng một số nguyên không âm. `0` ngăn chặn mọi thao tác ghi tự động.
 
-### Rollback retention days {#autonomous-writes-rollback-retention-days}
+### Số ngày lưu giữ bản hoàn tác {#autonomous-writes-rollback-retention-days}
 
-Maps to `autonomous_writes.rollback_retention_days`. Use a non-negative integer that matches the period in which policy audit records should remain rollback-eligible.
+Ánh xạ tới `autonomous_writes.rollback_retention_days`. Sử dụng một số nguyên không âm tương ứng với khoảng thời gian mà các bản ghi kiểm tra chính sách vẫn đủ điều kiện để hoàn tác.
 
-## Review gates
+## Cổng rà soát
 
-### Review rule line limit {#review-max-rule-lines}
+### Giới hạn số dòng của quy tắc {#review-max-rule-lines}
 
-Maps to `review.max_rule_lines`. Rule candidates above this positive integer fail review.
+Ánh xạ tới `review.max_rule_lines`. Các ứng viên quy tắc vượt quá số nguyên dương này sẽ không qua được bước rà soát.
 
-### Minimum recall benchmark {#review-benchmark-min-recall-at-k}
+### Điểm chuẩn recall tối thiểu {#review-benchmark-min-recall-at-k}
 
-Maps to `review.benchmark_min_recall_at_k`. Use a number from `0` through `1`.
+Ánh xạ tới `review.benchmark_min_recall_at_k`. Sử dụng một số từ `0` đến `1`.
 
-### Require context metadata {#review-mandatory-metadata-context}
+### Bắt buộc có metadata context {#review-mandatory-metadata-context}
 
-Maps to `review.mandatory_metadata.context`. When enabled, candidates without `context` metadata fail review.
+Ánh xạ tới `review.mandatory_metadata.context`. Khi được bật, các ứng viên thiếu metadata `context` sẽ không qua được bước rà soát.
 
-### Require triggers metadata {#review-mandatory-metadata-triggers}
+### Bắt buộc có metadata triggers {#review-mandatory-metadata-triggers}
 
-Maps to `review.mandatory_metadata.triggers`. When enabled, candidates without `triggers` metadata fail review.
+Ánh xạ tới `review.mandatory_metadata.triggers`. Khi được bật, các ứng viên thiếu metadata `triggers` sẽ không qua được bước rà soát.
 
-### Require role metadata {#review-mandatory-metadata-role}
+### Bắt buộc có metadata role {#review-mandatory-metadata-role}
 
-Maps to `review.mandatory_metadata.role`. When enabled, candidates without `role` metadata fail review.
+Ánh xạ tới `review.mandatory_metadata.role`. Khi được bật, các ứng viên thiếu metadata `role` sẽ không qua được bước rà soát.
 
-## CLI workflow
+## Quy trình CLI
 
 ```bash
 engram policy init
@@ -74,10 +74,10 @@ engram policy audit --json
 engram policy rollback <audit-id>
 ```
 
-Use dry-run before enabling autonomous mode. Audit receipts contain identifiers rather than memory bodies, and rollback archives the policy-written memory.
+Hãy dùng dry-run trước khi bật chế độ tự động. Biên nhận kiểm tra chứa mã định danh thay vì phần thân bộ nhớ, và thao tác hoàn tác sẽ lưu trữ bộ nhớ do chính sách ghi lại.
 
-## Related pages
+## Các trang liên quan
 
-- [Construct tab](construct.md)
-- [Write path and approval](../concepts/write-path.md)
-- [Privacy, ignore rules, and safety](../concepts/safety.md)
+- [Tab Construct](construct.md)
+- [Đường dẫn ghi và phê duyệt](../concepts/write-path.md)
+- [Quyền riêng tư, quy tắc bỏ qua và an toàn](../concepts/safety.md)

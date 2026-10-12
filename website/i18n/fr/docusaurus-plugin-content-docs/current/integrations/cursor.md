@@ -1,45 +1,50 @@
 ---
 title: Cursor
 sidebar_position: 5
-description: Engram integration with Cursor via rules, MCP, local plugin, slash commands, and session-start hooks.
+description: Intégration d’Engram avec Cursor via les règles, MCP, un plugin local, les commandes slash et les hooks de démarrage de session.
 ---
 
 # Cursor
 
-Cursor reads project rules from `.cursor/rules/*.mdc` files. Engram writes `.cursor/rules/engram.mdc` with valid frontmatter (`alwaysApply: true`) and a bootstrap instruction block.
+Cursor lit les règles du projet dans les fichiers `.cursor/rules/*.mdc`. Engram écrit `.cursor/rules/engram.mdc` avec un frontmatter valide (`alwaysApply: true`) et un bloc d’instructions d’amorçage.
 
-## Install
+## Installation {#install}
 
 ```bash
 engram link cursor
 ```
 
-## Files written
+## Fichiers écrits {#files-written}
 
-| File | Purpose |
+| Fichier | Rôle |
 | --- | --- |
-| `.cursor/rules/engram.mdc` | Project rules with `alwaysApply: true` |
-| `.cursor/mcp.json` | MCP registration (`type: "stdio"`) |
-| `.cursor/hooks.json` | `sessionStart` hook |
-| `.cursor/commands/engram.md` | `/engram` slash adapter |
+| `.cursor/rules/engram.mdc` | Règles du projet avec `alwaysApply: true` |
+| `.cursor/mcp.json` | Enregistrement MCP (`type: "stdio"`) |
+| `.cursor/rules/engram/<id>.mdc` | Une règle générée par mémoire de workspace avec `applies_to` (`alwaysApply: false`, globs joints par des virgules) ; les mémoires du niveau de travail ne sont jamais écrites |
+| `.cursor/hooks.json` | Hook `sessionStart` |
+| `.cursor/commands/engram.md` | Adaptateur slash `/engram` |
 
-## Global install
+## Installation globale {#global-install}
 
 ```bash
 engram link --global cursor
 ```
 
-Engram creates a local plugin at `~/.cursor/plugins/local/engram/` containing the plugin manifest, rules, skills, commands, MCP config, and hooks.
+Engram crée un plugin local dans `~/.cursor/plugins/local/engram/` contenant le manifeste du plugin, les règles, les skills, les commandes, la configuration MCP et les hooks.
 
-## Runtime-first target
+## Cible orientée exécution {#runtime-first-target}
 
-Cursor is a runtime-first target. Project rules contain short bootstrap instructions that rely on MCP tools and hooks for detailed protocol; the Agent Skill file carries the full write/approval workflow.
+Cursor est une cible orientée exécution. Les règles du projet contiennent de courtes instructions d’amorçage qui s’appuient sur les outils MCP et les hooks pour le protocole détaillé ; le guide compagnon porte le flux complet d’écriture/approbation, et le fichier Agent Skill n’en est qu’un court pointeur.
 
-## Hook behavior
+## Comportement des hooks {#hook-behavior}
 
-The `sessionStart` hook injects Engram startup context through the `additional_context` output field. `beforeSubmitPrompt` is allow/block-only and is not used for context injection.
+Le hook `sessionStart` injecte le contexte de démarrage d’Engram via le champ de sortie `additional_context`. `beforeSubmitPrompt` ne permet que d’autoriser ou de bloquer et n’est pas utilisé pour l’injection de contexte.
 
-## Next steps
+## Format d’export {#export-format}
 
-- [Agent Integrations overview](overview.md)
-- [Hooks and proof lines](hooks.md)
+`engram export --format cursor-rules` écrit `.cursor/rules/engram.mdc` avec un frontmatter `description` et `alwaysApply: false`. Il remplace `cursorrules`, qui reste un alias accepté pendant une version et affiche une note d’obsolescence sur stderr. `live_sync.targets` utilise le nouveau nom.
+
+## Étapes suivantes {#next-steps}
+
+- [Vue d’ensemble des intégrations d’agents](overview.md)
+- [Hooks et lignes de preuve](hooks.md)

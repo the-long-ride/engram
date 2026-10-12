@@ -1,37 +1,37 @@
 ---
-title: Review tab
+title: Tab Review
 sidebar_position: 5
-description: Resolve review findings, direct an AI agent, and explicitly confirm fallback memory writes.
+description: Giải quyết các phát hiện kiểm tra, chỉ đạo agent AI và xác nhận rõ ràng việc ghi bộ nhớ dự phòng.
 ---
 
 import RiskCallout from '@site/src/components/RiskCallout';
 
-# Review tab
+# Tab Review
 
-Review is the controlled path for findings and deferred candidates. It never calls an AI provider itself. You inspect context, copy a bounded prompt to an AI agent, then either let that agent save through its terminal or explicitly confirm a pasted response.
+Review là luồng được kiểm soát dành cho các phát hiện kiểm tra và ứng viên bị trì hoãn. Tab này không bao giờ tự ý gọi nhà cung cấp AI. Bạn kiểm tra ngữ cảnh, sao chép prompt có giới hạn cho agent AI, sau đó để agent lưu qua terminal hoặc tự mình xác nhận rõ ràng phản hồi được dán vào.
 
-## Queue and context
+## Hàng đợi và ngữ cảnh
 
-The queue combines review findings and deferred inbox candidates. Select an item to inspect its summary, linked-memory metadata, and full content. Empty or unavailable linked files are reported without stopping review of the remaining queue.
+Hàng đợi kết hợp các phát hiện rà soát và ứng viên hộp thư đến bị hoãn. Chọn một mục để kiểm tra tóm tắt, metadata bộ nhớ liên kết và toàn bộ nội dung. Các tệp liên kết trống hoặc không khả dụng được báo cáo mà không làm gián đoạn việc rà soát phần còn lại của hàng đợi.
 
-## AI review prompt
+## Prompt rà soát cho AI
 
-Choose any linked memory as a dependency or replacement, then use **Copy AI review prompt**. The prompt includes only the selected candidate, visible memory context, relation instructions, and the required write scope.
+Chọn bất kỳ bộ nhớ được liên kết nào làm phần phụ thuộc hoặc phần thay thế, sau đó sử dụng **Copy AI review prompt**. Prompt chỉ chứa ứng viên đã chọn, ngữ cảnh bộ nhớ hiển thị, hướng dẫn quan hệ và phạm vi ghi bắt buộc.
 
-When the AI agent has terminal access and approval to write, it should save the sanitized result with the command embedded in the prompt. The in-app path is a fallback, not an autonomous write path.
+Khi agent AI có quyền truy cập terminal và được phê duyệt để ghi, agent nên lưu kết quả đã khử dữ liệu nhạy cảm bằng lệnh được nhúng trong prompt. Luồng trong ứng dụng là phương án dự phòng, không phải luồng ghi tự động.
 
-## Paste, diff, and confirmation
+## Dán, so sánh diff và xác nhận
 
-Paste only the AI-reviewed memory proposal. Review shows a read-only line diff: removed lines are red and added lines are green. **Approve & write** opens a confirmation dialog before Engram validates and writes the proposal.
+Chỉ dán đề xuất bộ nhớ đã được AI rà soát. Review hiển thị bản so sánh diff dạng chỉ đọc: các dòng bị xóa màu đỏ và dòng được thêm màu xanh lá. **Approve & write** mở hộp thoại xác nhận trước khi Engram xác thực và ghi đề xuất.
 
 <RiskCallout level="risky">
-The confirmation writes to workspace or global memory immediately. Review the proposal, scope, and any replacement instruction before confirming.
+Hộp thoại xác nhận sẽ ghi vào bộ nhớ workspace hoặc global ngay lập tức. Hãy rà soát đề xuất, phạm vi và mọi hướng dẫn thay thế trước khi xác nhận.
 </RiskCallout>
 
-Only one replacement relation may be selected. Dependencies can be selected independently. Refresh the queue after saving to load its current state.
+Chỉ được chọn một quan hệ thay thế. Các phần phụ thuộc có thể được chọn độc lập. Hãy làm mới hàng đợi sau khi lưu để tải trạng thái hiện tại.
 
-## Next steps
+## Các bước tiếp theo
 
-- [Construct tab](construct.md)
-- [Memories tab](memories.md)
+- [Tab Construct](construct.md)
+- [Tab Memories](memories.md)
 - [CLI: save-session](../cli/save-session.md)

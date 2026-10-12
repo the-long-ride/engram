@@ -1,51 +1,53 @@
 ---
 title: Gemini
 sidebar_position: 4
-description: Engram integration with Gemini CLI and Antigravity Gemini-compatible surfaces.
+description: Intégration d’Engram avec Gemini CLI et les surfaces Antigravity compatibles Gemini.
 ---
 
 # Gemini
 
-Gemini CLI searches for `GEMINI.md` files as context. The `slash` target writes `.gemini/commands/engram.toml` so `/engram <args>` becomes a project custom command in Gemini CLI.
+Gemini CLI recherche des fichiers `GEMINI.md` comme contexte. La cible `slash` écrit `.gemini/commands/engram.toml` afin que `/engram <args>` devienne une commande personnalisée de projet dans Gemini CLI.
 
-Engram also treats `gemini` as the advertised target for Antigravity 2.0, Antigravity CLI, and Antigravity IDE because current Google docs still tie Antigravity context and skills to Gemini-compatible locations. The hidden `antigravity` and `antigravity-cli` target names remain explicit compatibility paths, but they are not shown in `engram link list`, help, completion, or `all`.
+Engram considère aussi `gemini` comme la cible annoncée pour Antigravity 2.0, Antigravity CLI et Antigravity IDE, car la documentation Google actuelle rattache encore le contexte et les skills d’Antigravity à des emplacements compatibles Gemini. Les noms de cible masqués `antigravity` et `antigravity-cli` restent des chemins de compatibilité explicites, mais ils n’apparaissent ni dans `engram link list`, ni dans l’aide, la complétion ou `all`.
 
-## Install
+## Installation {#install}
 
 ```bash
 engram link gemini
 ```
 
-## Files written
+## Fichiers écrits {#files-written}
 
-| File | Purpose |
+| Fichier | Rôle |
 | --- | --- |
-| `GEMINI.md` | Project context bootstrap |
-| `.gemini/commands/engram.toml` | `/engram` slash adapter |
-| `.gemini/settings.json` | `SessionStart` and `BeforeAgent` hooks |
-| Gemini MCP config | MCP registration |
+| `GEMINI.md` | Amorçage du contexte du projet |
+| `.gemini/commands/engram.toml` | Adaptateur slash `/engram` |
+| `.gemini/settings.json` | Hooks `SessionStart`, `BeforeAgent`, `AfterTool` et `PreCompress` |
+| `.gemini/settings.json` | Enregistrement MCP (`mcpServers.engram`, fusionné à côté des hooks) |
 
-## Global install
+## Installation globale {#global-install}
 
 ```bash
 engram link --global gemini
 ```
 
-Writes `~/.gemini/GEMINI.md`, `~/.gemini/skills/engram/SKILL.md`, and the Gemini MCP config file.
+Écrit `~/.gemini/GEMINI.md`, `~/.gemini/skills/engram/SKILL.md` et fusionne `mcpServers.engram` dans `~/.gemini/settings.json`.
 
-## Runtime-first target
+## Cible orientée exécution {#runtime-first-target}
 
-Gemini is a runtime-first target. `GEMINI.md` contains short bootstrap instructions that rely on MCP tools and hooks for detailed protocol; the Agent Skill file carries the full write/approval workflow.
+Gemini est une cible orientée exécution. `GEMINI.md` contient de courtes instructions d’amorçage qui s’appuient sur les outils MCP et les hooks pour le protocole détaillé ; le guide compagnon porte le flux complet d’écriture/approbation, et le fichier Agent Skill n’en est qu’un court pointeur.
 
-## Hook behavior
+## Comportement des hooks {#hook-behavior}
 
-Gemini supports startup and prompt-time `hookSpecificOutput.additionalContext` injection via `SessionStart` and `BeforeAgent` events.
+Gemini prend en charge l’injection de `hookSpecificOutput.additionalContext` au démarrage et au moment de l’invite via les événements `SessionStart` et `BeforeAgent` ; `PreCompress` (avant que la CLI ne résume l’historique) réinitialise l’ensemble des mémoires livrées. `AfterTool` (matcher `read_file|write_file|replace`, délai en millisecondes) injecte jusqu’à 3 mémoires non encore livrées dont les globs `applies_to` correspondent au fichier touché par l’outil ; le contexte est ajouté au résultat de l’outil, il arrive donc une étape après la lecture. Il partage l’ensemble des mémoires livrées avec `BeforeAgent` et ne renvoie jamais de décision. `engram link gemini` ou `engram upgrade --latest` ajoute l’événement à une installation existante.
 
-## Antigravity compatibility
+Si `mcpServers.engram` dans `.gemini/settings.json` définit `trust: true`, Gemini ignore sa confirmation pour `engram_commit` ; `engram doctor` vous en avertit (`host.gemini_trust`).
 
-For hooks, `gemini` is also the public Antigravity fallback. The hidden `antigravity` and `antigravity-cli` hook targets normalize to Gemini hook behavior and paths until Google publishes stable primary Antigravity hook/config documentation.
+## Compatibilité Antigravity {#antigravity-compatibility}
 
-## Next steps
+Pour les hooks, `gemini` est aussi le repli public pour Antigravity. Les cibles de hook masquées `antigravity` et `antigravity-cli` se normalisent vers le comportement et les chemins des hooks Gemini, jusqu’à ce que Google publie une documentation stable des hooks/configuration principaux d’Antigravity.
 
-- [Agent Integrations overview](overview.md)
-- [Hooks and proof lines](hooks.md)
+## Étapes suivantes {#next-steps}
+
+- [Vue d’ensemble des intégrations d’agents](overview.md)
+- [Hooks et lignes de preuve](hooks.md)

@@ -1,22 +1,20 @@
 ---
 title: Paramètres de l’auteur Git
 sidebar_position: 2
-description: Configure the identity written to future Engram memories and Engram-created Git commits.
+description: Configurer l’identité écrite dans les futures mémoires Engram et dans les commits Git créés par Engram.
 ---
 
-# Paramètres de l’auteur Git
+# Paramètres de l’auteur Git {#git-author-settings}
 
-Engram conserve un profil d’auteur portable ; l’identité résolue s’applique aux mémoires futures sans modifier la configuration Git du dépôt.
-
-Engram owns an author profile so memory authorship is explicit and portable. The resolved identity is written to future memory frontmatter and supplied to Engram-created Git commits through process-local environment variables. Repository Git configuration is not changed.
+Engram conserve un profil d’auteur afin que la paternité des mémoires soit explicite et portable. Le nom résolu est écrit dans le frontmatter des mémoires futures (l’e-mail uniquement lorsque `memory.include_author_email` vaut `true`), et l’identité complète est fournie aux commits Git créés par Engram via des variables d’environnement propres au processus. La configuration Git du dépôt n’est pas modifiée.
 
 <!-- future-memories-only -->
-Author settings affect **future memories only**. Existing memories change only through the explicit migration command.
+Les paramètres d’auteur n’affectent que les **mémoires futures**. Les mémoires existantes ne changent que via la commande de migration explicite.
 
 <a id="global-author"></a>
-## Global author
+## Auteur global {#global-author}
 
-Set the default Engram identity for all workspaces:
+Définissez l’identité Engram par défaut pour tous les workspaces :
 
 ```bash
 engram author set --name "Jane Doe" --email "jane@example.com"
@@ -25,19 +23,25 @@ engram author --help
 engram author set --help
 ```
 
-New memory files use separate fields:
+Les nouveaux fichiers de mémoire n’écrivent que `author_name`. L’e-mail reste dans votre profil d’auteur et dans les commits Git ; il ne se retrouve donc pas dans les fichiers de mémoire commités. Pour l’écrire aussi, activez la clé facultative `memory.include_author_email` (`false` par défaut) :
+
+```bash
+engram config set memory.include_author_email true
+```
 
 ```yaml
 author_name: Jane Doe
-author_email: jane@example.com
+author_email: jane@example.com   # opt-in: only with memory.include_author_email: true
 ```
 
-Legacy `author: jane@example.com` remains readable, but new memories do not write it.
+Mettre à jour une mémoire existante réécrit ses champs d’auteur ; un ancien `author_email` est donc supprimé à la mise à jour suivante, sauf si l’option est activée.
+
+L’ancien `author: jane@example.com` reste lisible, mais les nouvelles mémoires ne l’écrivent pas.
 
 <a id="workspace-override"></a>
-## Workspace override
+## Surcharge du workspace {#workspace-override}
 
-A workspace can override the global Engram profile without changing other workspaces:
+Un workspace peut surcharger le profil Engram global sans modifier les autres workspaces :
 
 ```bash
 engram author set --scope workspace --name "Workspace Jane" --email "jane@work.com"
@@ -45,17 +49,17 @@ engram author show --scope workspace
 ```
 
 <!-- workspace-never-syncs-global-git -->
-A workspace override never changes global Git config. It is stored in the workspace and is used only for memories and Engram-created commits in that workspace.
+Une surcharge de workspace ne modifie jamais la configuration Git globale. Elle est stockée dans le workspace et n’est utilisée que pour les mémoires et les commits créés par Engram dans ce workspace.
 
 <a id="resolution-order"></a>
-## Resolution order
+## Ordre de résolution {#resolution-order}
 
-Engram resolves identity in this order:
+Engram résout l’identité dans cet ordre :
 
-1. Workspace Engram author.
-2. Global Engram author.
-3. Read-only effective Git `user.name` and `user.email` fallback.
-4. Unresolved.
+1. Auteur Engram du workspace.
+2. Auteur Engram global.
+3. Repli en lecture seule sur les `user.name` et `user.email` Git effectifs.
+4. Non résolu.
 
 ```bash
 engram author show
@@ -63,12 +67,12 @@ engram author show --json
 engram author show --help
 ```
 
-A complete valid name and email are required before a memory write. Engram-created commits receive `GIT_AUTHOR_NAME`, `GIT_AUTHOR_EMAIL`, `GIT_COMMITTER_NAME`, and `GIT_COMMITTER_EMAIL`; local and global Git config remain unchanged.
+Un nom et un e-mail valides et complets sont requis avant l’écriture d’une mémoire. Les commits créés par Engram reçoivent `GIT_AUTHOR_NAME`, `GIT_AUTHOR_EMAIL`, `GIT_COMMITTER_NAME` et `GIT_COMMITTER_EMAIL` ; la configuration Git locale et globale reste inchangée.
 
-In Entry, the resolved name is followed by a compact source badge: `WORKSPACE` for a workspace override, `GLOBAL` for the Engram global profile, `GIT` for Git fallback, and `UNRESOLVED` when no complete identity exists.
+Dans Entry, le nom résolu est suivi d’un badge de source compact : `WORKSPACE` pour une surcharge de workspace, `GLOBAL` pour le profil global d’Engram, `GIT` pour le repli Git et `UNRESOLVED` lorsqu’aucune identité complète n’existe.
 
 <a id="remove-an-author-profile"></a>
-## Remove an author profile
+## Supprimer un profil d’auteur {#remove-an-author-profile}
 
 ```bash
 engram author unset --scope workspace
@@ -76,19 +80,19 @@ engram author unset --scope global
 engram author unset --help
 ```
 
-The Web UI requires confirmation. The CLI removes the profile immediately after the explicit `unset` command. After removal, the next source in the resolution order becomes active.
+L’interface web demande une confirmation. La CLI supprime le profil immédiatement après la commande `unset` explicite. Après la suppression, la source suivante dans l’ordre de résolution devient active.
 
 <a id="global-git-configuration"></a>
-## Global Git configuration
+## Configuration Git globale {#global-git-configuration}
 
-Entry exposes the existing global-memory Git settings **only in the Global tab** under **Settings → Git**. They continue to use the shared configuration backend; moving the controls does not create a second Git config store.
+Entry expose les paramètres Git existants de la mémoire globale **uniquement dans l’onglet Global** sous **Settings → Git**. Ils continuent d’utiliser le backend de configuration partagé ; déplacer les contrôles ne crée pas un second magasin de configuration Git.
 
-The Global tab can edit `global_git.enabled`, `global_git.remote`, `global_git.remote_url`, `global_git.branch`, `global_git.auto_sync`, and `global_git.auto_resolve`. These fields are risky, so Entry validates the patch, shows the exact changed keys, and requires review before saving. The Workspace tab never renders these global controls.
+L’onglet Global peut modifier `global_git.enabled`, `global_git.remote`, `global_git.remote_url`, `global_git.branch`, `global_git.auto_sync` et `global_git.auto_resolve`. Ces champs sont risqués ; Entry valide donc le correctif, affiche les clés exactes modifiées et exige une relecture avant l’enregistrement. L’onglet Workspace n’affiche jamais ces contrôles globaux.
 
 <a id="sync-to-global-git"></a>
-## Sync to global Git
+## Synchroniser vers Git global {#sync-to-global-git}
 
-Only the global Engram profile can be copied to global Git configuration. Preview first, then explicitly confirm:
+Seul le profil Engram global peut être copié dans la configuration Git globale. Prévisualisez d’abord, puis confirmez explicitement :
 
 ```bash
 engram author sync-git-global --plan
@@ -96,12 +100,12 @@ engram author sync-git-global --confirm
 engram author sync-git-global --help
 ```
 
-The confirmed operation writes `git config --global user.name` and `git config --global user.email`, verifies both values, and restores the exact previous values if either write or verification fails. A workspace profile is never eligible for this operation.
+L’opération confirmée écrit `git config --global user.name` et `git config --global user.email`, vérifie les deux valeurs et restaure exactement les valeurs précédentes si une écriture ou la vérification échoue. Un profil de workspace n’est jamais éligible pour cette opération.
 
 <a id="migrate-existing-memories"></a>
-## Migrate existing memories
+## Migrer les mémoires existantes {#migrate-existing-memories}
 
-Backfill `author_name` and `author_email` only when a complete deterministic identity is available:
+Renseignez rétroactivement `author_name` (et `author_email` uniquement lorsque `memory.include_author_email` vaut `true`) lorsqu’une identité déterministe complète est disponible :
 
 ```bash
 engram author migrate-memories --plan
@@ -110,12 +114,21 @@ engram author migrate-memories --scope both --confirm
 engram author migrate-memories --help
 ```
 
-Migration preserves the Markdown body, creates a `.pre-author-v3.bak` backup, skips archives and invalid files, and is idempotent. It never guesses a missing name. Preview output lists eligible, current, skipped, and invalid files before any write.
+La migration préserve le corps Markdown, écrit une sauvegarde `.pre-author-v3.bak` sous `backups/author-v3/`, ignore les archives et les fichiers invalides, et est idempotente. Elle ne devine jamais un nom manquant. L’aperçu liste les fichiers éligibles, à jour, ignorés et invalides avant toute écriture.
 
-## Entry Web UI
+Pour supprimer les e-mails que des versions antérieures ont déjà écrits dans des fichiers de mémoire, retirez-les. `--strip-email` planifie par défaut et n’écrit qu’avec `--confirm` ; il conserve `author_name`, supprime `author_email` et les e-mails de l’ancien `author:`, actualise les hachages et les index, et sauvegarde l’original sous `backups/author-strip-email-<date>/` :
 
-Open `engram entry`, then choose **Settings → Git**. Global and Workspace tabs show stored profiles, the resolved source badge, review-before-save dialogs, and memory migration preview. The Global tab additionally owns **Global Git configuration** and the explicit Git sync preview; those controls are hidden from Workspace. Every information button opens this localized page in a new tab and shows the matching CLI `--help` command.
+```bash
+engram author migrate-memories --strip-email --scope both
+engram author migrate-memories --strip-email --scope both --confirm
+```
 
-## Privacy and troubleshooting
+Les mémoires écrites par cette version portent un nom sans e-mail ; un Engram plus ancien ne peut donc pas les indexer. Mettez à niveau tous vos collègues avant de vous appuyer sur des mémoires à nom seul.
 
-Names and email addresses become durable metadata in Markdown and Git history. Use an address appropriate for the repository's visibility. If saving reports an unresolved author, run `engram author show`, set a global or workspace profile, or configure Git fallback values. Global Git sync is never automatic.
+## Interface web Entry {#entry-web-ui}
+
+Ouvrez `engram entry`, puis choisissez **Settings → Git**. Les onglets Global et Workspace affichent les profils stockés, le badge de source résolue, des boîtes de dialogue de relecture avant enregistrement et un aperçu de migration des mémoires. L’onglet Global possède en plus la **configuration Git globale** et l’aperçu explicite de synchronisation Git ; ces contrôles sont masqués dans Workspace. Chaque bouton d’information ouvre cette page localisée dans un nouvel onglet et affiche la commande CLI `--help` correspondante.
+
+## Confidentialité et dépannage {#privacy-and-troubleshooting}
+
+Les noms deviennent des métadonnées durables dans le Markdown et l’historique Git ; les adresses e-mail restent hors des fichiers de mémoire sauf si vous activez `memory.include_author_email`. Les commits créés par Engram portent toujours votre e-mail d’auteur ; utilisez donc une adresse adaptée à la visibilité du dépôt. Si l’enregistrement signale un auteur non résolu, exécutez `engram author show`, définissez un profil global ou de workspace, ou configurez les valeurs de repli Git. La synchronisation Git globale n’est jamais automatique.

@@ -1,12 +1,12 @@
 ---
 title: profiles / workspaces / config
 sidebar_position: 5
-description: Manage profiles, save targets, load limits, read/proof modes, roles, and runtime config.
+description: Gestione perfiles, destinos de guardado, límites de carga, modos de lectura/prueba, roles y configuración en tiempo de ejecución.
 ---
 
 # profiles / workspaces / config
 
-Manage profiles, save targets, load limits, read/proof modes, roles, and runtime config.
+Gestione perfiles, destinos de guardado, límites de carga, modos de lectura/prueba, roles y configuración en tiempo de ejecución.
 
 ## profile
 
@@ -17,7 +17,7 @@ engram profile use company --workspace
 engram profile merge personal company --dry-run
 ```
 
-Profile resolution order is explicit `--profile` or `ENGRAM_PROFILE`, then the workspace `default_profile`, then the active user profile. If workspace `W` is pinned to profile `B` while the user default remains profile `A`, every normal load, MCP load, and agent-hook injection for `W` reads profile `B` global memory and never profile `A`. An explicit profile different from the workspace default uses that profile's global memory and disables workspace memory for that command.
+El orden de resolución del perfil es: `--profile` explícito o `ENGRAM_PROFILE`, después el `default_profile` del workspace y, por último, el perfil de usuario activo. Si el workspace `W` está fijado al perfil `B` mientras el perfil por defecto del usuario sigue siendo `A`, toda carga normal, carga MCP e inyección de hooks de agente para `W` lee la memoria global del perfil `B` y nunca la del perfil `A`. Un perfil explícito distinto del predeterminado del workspace usa la memoria global de ese perfil y desactiva la memoria del workspace para ese comando.
 
 ## set-save-target
 
@@ -35,6 +35,17 @@ engram set-load-limit 1..32
 engram set-load-limit status
 engram set-load-limit reset
 ```
+
+<a id="load-configuration"></a>
+## Configuración de carga
+
+Estas claves viven en el bloque `load` de `.agents/.engram/engram.config.json`; `engram config set` no las acepta.
+
+| Clave | Valor por defecto | Significado |
+| --- | --- | --- |
+| `load.disclosure` | `auto` | `auto` expande los mejores resultados y reduce el resto a tarjetas; `full` mantiene la salida sin niveles |
+| `load.expand_top` | `3` | Cuerpos que se expanden con la divulgación `auto` |
+| `load.working_ttl_days` | `14` | Días que una memoria `OBJECTIVE: task` aprobada permanece en el nivel de trabajo (1 a 365). También editable en la pestaña Construct de Entry |
 
 ## set-read
 
@@ -58,7 +69,7 @@ engram set-role backend security
 engram set-role
 ```
 
-When `engram set-role ...` or `engram set-rule-variant ...` succeeds, the CLI returns an `Agent action:` line. Engram-aware slash adapters and MCP hosts should immediately rerun `engram load "<current task/request>"`.
+Cuando `engram set-role ...` o `engram set-rule-variant ...` se ejecuta con éxito, la CLI devuelve una línea `Agent action:`. Los adaptadores slash compatibles con Engram y los hosts MCP deben volver a ejecutar de inmediato `engram load "<current task/request>"`.
 
 ## set-rule-variant
 
@@ -73,35 +84,38 @@ engram config view
 engram config set <key> <value>
 ```
 
-### Key settings reference
+### Referencia de ajustes clave
 
-| Key | Description | Default | Range / Options |
+| Clave | Descripción | Valor por defecto | Rango / Opciones |
 | --- | --- | --- | --- |
-| `memory.rule_line_target` | Recommended line count target for rule memories | `70` | `50` to `200` |
-| `memory.rule_line_hard_limit` | Maximum allowed line count for rule memories | `100` | `50` to `200` |
-| `load.limit` | Max memories returned by normal load | `8` | `1` to `32` |
-| `rule_variants.enabled` | Enable or disable rule variants generation | `false` | `true`, `false` |
-| `rule_variants.active` | Active rule variant mode | `balanced` | `light`, `balanced`, `strict` |
-| `graph.enabled` | Enable or disable graph-aware routing | `true` | `true`, `false` |
-| `graph.max_related` | Max related memories to fetch from graph edges | `4` | `1` to `20` |
-| `graph.min_related_score` | Min similarity score to add graph edges | `0.22` | `0.0` to `1.0` |
-| `vector.enabled` | Enable or disable vector search fallback | `true` | `true`, `false` |
-| `live_sync.enabled` | Sync generated agent context files on save | `false` | `true`, `false` |
-| `global_git.enabled` | Enable global Git repo sync automation | `true` | `true`, `false` |
-| `global_git.remote` | Git remote name for global sync | `origin` | String |
-| `global_git.branch` | Git branch name for global sync | `main` | String |
+| `memory.rule_line_target` | Número de líneas recomendado para las memorias de reglas | `70` | `50` a `200` |
+| `memory.rule_line_hard_limit` | Número máximo de líneas permitido para las memorias de reglas | `100` | `50` a `200` |
+| `memory.include_author_email` | Escribe `author_email` en el frontmatter de las memorias nuevas (`author_name` se escribe siempre) | `false` | `true`, `false` |
+| `mcp.resource_limit` | Memorias que devuelve `resources/list` de MCP además de `engram://index`, ordenadas por uso inyectado + obtenido (solo en la configuración JSON; `engram config set` no lo establece) | `20` | `0` a `200` |
+| `load.limit` | Máximo de memorias devueltas por una carga normal | `8` | `1` a `32` |
+| `hooks.path_rules` | `native` escribe archivos de reglas de Claude y Cursor para las memorias con `applies_to` y registra `InstructionsLoaded` de Claude; `hook` mantiene el hook `PreToolUse` de Claude | `native` | `native`, `hook` |
+| `rule_variants.enabled` | Activa o desactiva la generación de variantes de reglas | `false` | `true`, `false` |
+| `rule_variants.active` | Modo de variante de regla activo | `balanced` | `light`, `balanced`, `strict` |
+| `graph.enabled` | Activa o desactiva el enrutamiento basado en el grafo | `true` | `true`, `false` |
+| `graph.max_related` | Máximo de memorias relacionadas que se obtienen de las aristas del grafo | `4` | `1` a `20` |
+| `graph.min_related_score` | Puntuación mínima de similitud para añadir aristas al grafo | `0.22` | `0.0` a `1.0` |
+| `vector.enabled` | Búsqueda vectorial de respaldo experimental con vectores hash (no son embeddings semánticos) | `false` | `true`, `false` |
+| `live_sync.enabled` | Sincroniza los archivos de contexto de agente generados al guardar | `false` | `true`, `false` |
+| `global_git.enabled` | Activa la automatización de sincronización del repositorio Git global | `true` | `true`, `false` |
+| `global_git.remote` | Nombre del remoto Git para la sincronización global | `origin` | Cadena |
+| `global_git.branch` | Nombre de la rama Git para la sincronización global | `main` | Cadena |
 
-These settings are also manageable visually under the **Construct** tab in `engram entry`.
+Estos ajustes también pueden gestionarse visualmente en la pestaña **Construct** de `engram entry`.
 
-## Next steps
+## Próximos pasos
 
 - [verify / repair / quality-check](verify-repair-quality.md)
-- [Entry Web UI: Construct tab](../entry/construct.md)
+- [Entry Web UI: pestaña Construct](../entry/construct.md)
 
 
-## Git author identity
+## Identidad de autor de Git
 
-Engram can store a global author and an optional workspace override. Resolution is workspace, global, then read-only Git fallback. Settings affect future memories only; a workspace override never changes global Git configuration. Use explicit plan and confirmation for global Git sync or legacy-memory migration.
+Engram puede almacenar un autor global y una anulación opcional por workspace. La resolución es workspace, global y, por último, un respaldo de Git de solo lectura. Los ajustes afectan solo a memorias futuras; una anulación de workspace nunca cambia la configuración global de Git. Use plan y confirmación explícitos para la sincronización con Git global o la migración de memorias heredadas.
 
 ```bash
 engram author show
@@ -113,4 +127,4 @@ engram author migrate-memories --plan
 engram author migrate-memories --confirm
 ```
 
-Read the complete [Git author settings guide](../operations/git-author-settings.md).
+Lea la [guía completa de ajustes del autor de Git](../operations/git-author-settings.md).

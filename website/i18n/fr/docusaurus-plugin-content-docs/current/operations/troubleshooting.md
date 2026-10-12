@@ -1,40 +1,40 @@
 ---
-title: Troubleshooting
+title: Résolution des problèmes
 sidebar_position: 3
-description: Common Engram problems and how to recover.
+description: Problèmes courants d'Engram et comment les résoudre.
 ---
 
-# Troubleshooting
+# Résolution des problèmes
 
-First step: open `engram entry` and read the **Runtime** tab. It shows the resolved profile, memory roots, core config, routing, graph, and Git detection.
+Première étape : ouvrez `engram entry` et lisez l'onglet **Runtime**. Il présente le profil résolu, les racines de mémoire, la configuration principale, le routage, le graphe et la détection Git.
 
-## Memory did not load
+## La mémoire ne se charge pas
 
-- Run `engram load --dry-run "<task>"` to inspect candidate counts and narrowing tags.
-- Check `engram config view` for `enabled`, `read`, and `load.limit`.
-- Confirm workspace memory exists under `.agents/.engram/`.
-- Run `engram verify` to check hashes.
+- Exécutez `engram load --dry-run "<tâche>"` pour inspecter le nombre de candidats et les étiquettes de restriction.
+- Vérifiez `engram config view` pour les paramètres `enabled`, `read` et `load.limit`.
+- Confirmez que la mémoire de l'espace de travail existe dans le répertoire `.agents/.engram/`.
+- Exécutez `engram verify` pour contrôler les hachages.
 
-## Hooks not injecting
+## Les hooks ne s'injectent pas
 
-- Confirm `engram set-read status` is not `off` or `manual`.
-- Confirm the host is linked: `engram link <target>`.
-- Restart or reload the host after `link`/`unlink` (especially OpenCode).
-- Check `engram set-proof status` for proof line visibility.
+- Confirmez que le paramètre `engram set-read status` n'est ni à `off` ni à `manual`.
+- Confirmez que l'hôte est lié : `engram link <cible>`.
+- Redémarrez ou rechargez l'hôte après un `link`/`unlink` (notamment OpenCode).
+- Vérifiez `engram set-proof status` pour s'assurer de la visibilité de la ligne de preuve.
 
-## Save failed
+## Échec de la sauvegarde
 
-- Read the approval preview for related-memory hints.
-- If accept-all reported related memories, no file was saved. Rerun with `DEPENDS_ON` or `UPDATE` candidates.
-- Check schema, secret, and injection scan errors in the CLI output.
+- Lisez l'aperçu d'approbation pour identifier les indices concernant la mémoire liée.
+- Si une requête d'acceptation globale a signalé des mémoires liées, aucun fichier n'a été enregistré. Relancez la commande avec les candidats `DEPENDS_ON` ou `UPDATE`.
+- Vérifiez les erreurs de validation de schéma, de détection de secrets et d'injections dans la sortie CLI.
 
-## Profile confusion
+## Confusion de profils
 
-- Run `engram profile status`.
-- Confirm the workspace `default_profile` and active user profile.
-- Remember: an explicit profile different from the workspace default disables workspace memory for that command.
+- Exécutez `engram profile status`.
+- Confirmez le profil par défaut (`default_profile`) de l'espace de travail et le profil utilisateur actif.
+- Rappel : l'utilisation d'un profil explicite différent de celui par défaut de l'espace de travail désactive la mémoire de l'espace de travail pour cette commande.
 
-## Invalid memory files
+## Fichiers de mémoire non valides
 
 ```bash
 engram verify
@@ -43,7 +43,7 @@ engram rebuild-index
 engram graph --rebuild
 ```
 
-## Stale adapters after package update
+## Adaptateurs obsolètes après une mise à jour de package
 
 ```bash
 engram upgrade
@@ -51,28 +51,28 @@ engram upgrade --latest
 engram link all
 ```
 
-Use `--force` only when replacing generated Engram adapter files intentionally.
+N'utilisez `--force` que pour remplacer intentionnellement des fichiers d'adaptateur Engram générés.
 
-## SQLite config DB unavailable
+## Base SQLite de configuration indisponible
 
-Normal read/write commands fall back to JSON config snapshots. DB-specific commands report SQLite as unavailable instead of blocking normal memory use.
+Les commandes normales de lecture/écriture se replient sur des instantanés de configuration JSON. Les commandes spécifiques à la base de données signalent que SQLite est indisponible au lieu de bloquer l'utilisation normale de la mémoire.
 
-## Global Git sync issues
+## Problèmes de synchronisation Git globale
 
-- Confirm `global_git.enabled` is `true`.
-- Check `global_git.remote_url` is a valid Git remote URL.
-- Review `global_git.auto_resolve` — auto conflict handling can mask memory diffs.
-- Run `engram entry` and open the Construct tab, or run `engram config view`, to inspect resolved Git detection.
+- Confirmez que `global_git.enabled` est à `true`.
+- Vérifiez que `global_git.remote_url` est une URL de dépôt distant Git valide.
+- Revise `global_git.auto_resolve` — la gestion automatique des conflits peut masquer les différences de mémoire.
+- Exécutez `engram entry`, onglet Runtime, pour inspecter la variable `global_git_detected`.
 
-## Next steps
+## Étapes suivantes
 
 - [FAQ](faq.md)
-- [CLI: verify / repair / quality-check](../cli/verify-repair-quality.md)
+- [CLI : verify / repair / quality-check](../cli/verify-repair-quality.md)
 
 
-## Git author identity
+## Identité d’auteur Git {#git-author-identity}
 
-Engram can store a global author and an optional workspace override. Resolution is workspace, global, then read-only Git fallback. Settings affect future memories only; a workspace override never changes global Git configuration. Use explicit plan and confirmation for global Git sync or legacy-memory migration.
+Engram peut stocker un auteur global et une surcharge d’espace de travail facultative. La résolution suit l’ordre workspace, global, puis repli Git en lecture seule. Les paramètres n’affectent que les mémoires futures ; une surcharge d’espace de travail ne modifie jamais la configuration Git globale. Utilisez un plan explicite et une confirmation pour la synchronisation Git globale ou la migration des anciennes mémoires.
 
 ```bash
 engram author show
@@ -84,14 +84,4 @@ engram author migrate-memories --plan
 engram author migrate-memories --confirm
 ```
 
-Read the complete [Git author settings guide](git-author-settings.md).
-
-## Vector primary-key error during upgrade
-
-Older vector-sidecar code could surface this sqlite-vec error while `engram upgrade --latest` rebuilt `memory_vectors`:
-
-```text
-Only integers are allowed for primary key values on memory_vectors
-```
-
-Current Engram binds vec0 row IDs with integer-compatible `BigInt` values. Vector search is a disposable acceleration layer: if sqlite-vec still fails, Engram removes the incomplete sidecar/WAL/SHM files, reports vector status as **degraded**, and continues the durable upgrade through lexical/graph retrieval. Use `engram upgrade --latest --plan` to preview the durable configuration changes. See [Configuration upgrades](configuration-upgrades.md).
+Lisez le [guide complet des paramètres de l’auteur Git](git-author-settings.md).

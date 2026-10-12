@@ -1,16 +1,12 @@
 ---
-title: Configuration upgrades
+title: Nâng cấp cấu hình
 sidebar_position: 3
-description: Preview, review, and safely upgrade Engram-managed memories and connected-agent configuration.
+description: Xem trước, rà soát và nâng cấp an toàn các bộ nhớ do Engram quản lý cùng cấu hình của các agent đã kết nối.
 ---
 
-# Configuration upgrades
+# Nâng cấp cấu hình
 
-## Localized Updates summary
-
-Updates hiển thị **biểu ngữ trạng thái** với `Workspace · Global · Conflicts`, một **bảng** hiện vật và một vùng **cuộn ngang**. Mỗi **ô chọn** phân biệt trạng thái; **thông báo** toast dùng màu xanh cho thành công và màu đỏ cho lỗi, còn Diff dùng đỏ cho phần xóa và xanh cho phần thêm. **Force upgrade** chỉ buộc cập nhật **khối Engram** hoặc **tệp được tạo** khi chứng minh được quyền sở hữu; xác nhận hàng loạt không buộc thay đổi và sau khi ghi Engram xác minh hội tụ.
-
-Engram uses one upgrade inventory engine for the CLI and Entry Web UI. It scans the configured **workspace** and **global** scopes, classifies Engram-managed artifacts, builds a deterministic plan, and uses hashes/fingerprints to prevent stale writes.
+Engram dùng một engine kiểm kê nâng cấp duy nhất cho CLI và Entry Web UI. Engine quét các phạm vi **workspace** và **global** đã cấu hình, phân loại các hiện vật do Engram quản lý, xây dựng một kế hoạch mang tính xác định, và dùng hash/fingerprint để ngăn việc ghi trên dữ liệu đã lỗi thời.
 
 ```bash
 engram upgrade --latest --plan
@@ -20,63 +16,63 @@ engram upgrade --latest --yes
 engram upgrade --help
 ```
 
-`--plan` is read-only. Human-readable output is grouped by artifact kind in this order: Config, Instructions, Memories, Skillsets, Hooks, Plugins. `--plan --json` exposes the same grouped plan, its fingerprint, review states, and `pendingReviewCount`. UI kind tabs use the exact labels `All`, `Config`, `Instructions`, `Memories`, `Skillsets`, `Hooks`, `Plugins`.
+`--plan` chỉ đọc. Đầu ra dành cho người đọc được nhóm theo loại hiện vật theo thứ tự: Config, Instructions, Memories, Skillsets, Hooks, Plugins. `--plan --json` trả về cùng kế hoạch đã nhóm, fingerprint của nó, các trạng thái rà soát và `pendingReviewCount`. Các tab loại trong UI dùng đúng các nhãn `All`, `Config`, `Instructions`, `Memories`, `Skillsets`, `Hooks`, `Plugins`.
 
-## What Engram detects
+## Engram phát hiện những gì
 
-The inventory covers `memory`, `instruction`, `skillset`, `config`, `hook`, and `plugin` artifacts in known Engram locations or registered connected-agent installs. Workspace and global roots are scanned separately; Engram does not recursively crawl arbitrary home-directory trees.
+Bản kiểm kê bao gồm các hiện vật `memory`, `instruction`, `skillset`, `config`, `hook` và `plugin` tại các vị trí Engram đã biết hoặc trong các bản cài đặt agent đã kết nối và được đăng ký. Thư mục gốc workspace và global được quét riêng biệt; Engram không quét đệ quy các cây thư mục tùy ý trong thư mục home.
 
-Engram first trusts explicit schema/version metadata and registered install metadata. Legacy files without markers fall back to known managed structure and expected content. Each item is classified as `current`, `outdated`, `conflict`, or `invalid`.
+Trước hết Engram tin vào metadata schema/phiên bản tường minh và metadata cài đặt đã đăng ký. Các tệp cũ không có dấu hiệu nhận biết sẽ dùng cấu trúc được quản lý đã biết và nội dung kỳ vọng để đối chiếu. Mỗi mục được phân loại là `current`, `outdated`, `conflict` hoặc `invalid`.
 
-## Type-aware replacement and merge
+## Thay thế và hợp nhất theo từng loại
 
-A conflict means **review required**, not permanently blocked. Engram preserves user edits until the user confirms a replacement/merge decision.
+Xung đột nghĩa là **cần rà soát**, không phải bị chặn vĩnh viễn. Engram giữ nguyên các chỉnh sửa của người dùng cho đến khi người dùng xác nhận quyết định thay thế/hợp nhất.
 
-- **Instructions:** Engram proposes the latest managed block while preserving user text outside Engram markers. An Engram-owned whole instruction file can be replaced.
-- **Skillsets:** Engram proposes the latest Engram-managed content. Explicitly user-owned sections are preserved when the format supports them.
-- **Config:** Engram parses the configuration and proposes a merged migration: known Engram keys are upgraded, new defaults are added where required, and unrelated user keys/values are preserved.
-- **Memories:** Engram performs schema migration rather than template replacement.
-- **Hooks/plugins:** generated artifacts are replaced only when ownership is provable. Ambiguous user code stays review-only and can be confirmed as **Keep current**.
+- **Instructions:** Engram đề xuất khối được quản lý mới nhất và giữ nguyên văn bản của người dùng nằm ngoài các marker của Engram. Một tệp instruction hoàn toàn thuộc sở hữu của Engram có thể bị thay thế toàn bộ.
+- **Skillsets:** Engram đề xuất nội dung mới nhất do Engram quản lý. Các phần được nêu rõ là của người dùng sẽ được giữ nguyên khi định dạng hỗ trợ.
+- **Config:** Engram phân tích cấu hình và đề xuất một bản migration đã hợp nhất: các khóa Engram đã biết được nâng cấp, các giá trị mặc định mới được thêm khi cần, và các khóa/giá trị không liên quan của người dùng được giữ nguyên.
+- **Memories:** Engram thực hiện migration schema thay vì thay thế theo mẫu.
+- **Hooks/plugins:** các hiện vật được tạo tự động chỉ bị thay thế khi chứng minh được quyền sở hữu. Mã người dùng không rõ ràng chỉ dành cho rà soát và có thể được xác nhận là **Keep current**.
 
-## Entry Web UI conflict review
+## Rà soát xung đột trên Entry Web UI
 
-The Updates page now uses a compact dashboard: a **status banner** reports whether configuration is current, needs an update, or requires conflict review; the **Workspace**, **Global**, and **Conflicts** summary cards show the important counts at a glance. After preview, every actionable item appears in one **actionable artifact table** with Artifact, Scope, Agent(s), Status, Review, and Actions columns. The table stays structurally intact on narrow screens and uses one shared **horizontal scroll** container instead of per-row scrollbars.
+Trang Updates nay dùng một dashboard gọn: **biểu ngữ trạng thái** cho biết cấu hình đã mới nhất, cần cập nhật hay cần rà soát xung đột; các thẻ tóm tắt **Workspace**, **Global** và **Conflicts** hiển thị nhanh các số liệu quan trọng. Sau khi xem trước, mọi mục có thể xử lý đều xuất hiện trong một **bảng hiện vật có thể xử lý** với các cột Artifact, Scope, Agent(s), Status, Review và Actions. Bảng giữ nguyên cấu trúc trên màn hình hẹp và dùng một vùng **cuộn ngang** dùng chung thay vì thanh cuộn riêng cho từng hàng.
 
-Open `engram entry`, then **Settings → Updates**. The sidebar **copy command** action copies `engram upgrade --latest --plan` without navigating away. The preview has `All` plus only actionable kind tabs: `Config`, `Instructions`, `Memories`, `Skillsets`, `Hooks`, and `Plugins`.
+Mở `engram entry`, sau đó chọn **Settings → Updates**. Hành động **copy command** ở thanh bên sao chép `engram upgrade --latest --plan` mà không cần chuyển trang. Phần xem trước có `All` cùng các tab loại chỉ gồm những loại có mục cần xử lý: `Config`, `Instructions`, `Memories`, `Skillsets`, `Hooks` và `Plugins`.
 
-Every conflict has a **Review** action. The modal provides **Current**, **Proposed**, and **Diff** views. **Current** is read-only. **Proposed** is editable for replaceable Config/Instruction/Skillset items and starts from Engram's type-aware merged/replacement result. **Diff** defaults to **Inline** and can switch to **Parallel**. Inline marks removed lines with `-` on a red background and added lines with `+` on a green background; Parallel aligns **Current** and **Proposed** rows with the same red/green highlighting. Use **Use latest**, **Reset proposed**, **Keep current**, or—when Engram can prove ownership—**Force upgrade**, then **Confirm change**.
+Mọi xung đột đều có hành động **Review**. Hộp thoại cung cấp các chế độ xem **Current**, **Proposed** và **Diff**. **Current** chỉ đọc. **Proposed** có thể chỉnh sửa đối với các mục Config/Instruction/Skillset có thể thay thế và bắt đầu từ kết quả hợp nhất/thay thế theo từng loại của Engram. **Diff** mặc định là **Inline** và có thể chuyển sang **Parallel**. Inline đánh dấu các dòng bị xóa bằng `-` trên nền đỏ và các dòng được thêm bằng `+` trên nền xanh lá; Parallel căn các dòng **Current** và **Proposed** song song với cùng cách tô màu đỏ/xanh. Dùng **Use latest**, **Reset proposed**, **Keep current**, hoặc—khi Engram chứng minh được quyền sở hữu—**Force upgrade**, rồi chọn **Confirm change**.
 
-**Open in editor** opens the exact current artifact resolved by the server, using `$VISUAL`, then `$EDITOR`, then the platform fallback. The browser never supplies a filesystem path. For **Instructions**, **Proposed** contains only the managed `<!-- engram:start -->` block; the full global skillset stays in the companion `.agents/engram.md` guide. If the external edit changes the file, the preview/source hash becomes stale and the review must be refreshed before confirmation.
+**Open in editor** mở đúng hiện vật hiện tại do server xác định, dùng `$VISUAL`, rồi đến `$EDITOR`, rồi đến phương án dự phòng của nền tảng. Trình duyệt không bao giờ cung cấp đường dẫn hệ thống tệp. Với **Instructions**, **Proposed** chỉ chứa khối được quản lý `<!-- engram:start -->`; toàn bộ skillset global vẫn nằm trong hướng dẫn đi kèm `.agents/engram.md`. Nếu chỉnh sửa bên ngoài làm thay đổi tệp, hash xem trước/nguồn trở nên lỗi thời và phải làm mới bản rà soát trước khi xác nhận.
 
-Eligible pending replaceable conflicts have selection checkboxes. **Select all visible** selects eligible rows in the active kind tab; selection persists when switching tabs. **Confirm selected changes** accepts **Use latest** for the checked rows, while **Confirm all changes** accepts **Use latest** for every eligible pending conflict in the full preview. Non-replaceable, stale, and already-reviewed rows cannot be selected. The server validates the complete batch against the preview fingerprint, current source hashes, review states, and generated proposals before one atomic review-store write. If any selected item fails validation, zero batch decisions are saved.
+Các xung đột có thể thay thế và đang chờ xử lý đủ điều kiện sẽ có ô chọn. **Select all visible** chọn các hàng đủ điều kiện trong tab loại đang mở; lựa chọn được giữ lại khi chuyển tab. **Confirm selected changes** chấp nhận **Use latest** cho các hàng đã chọn, còn **Confirm all changes** chấp nhận **Use latest** cho mọi xung đột đang chờ đủ điều kiện trong toàn bộ bản xem trước. Các hàng không thể thay thế, đã lỗi thời hoặc đã được rà soát thì không thể chọn. Server kiểm tra toàn bộ lô dựa trên fingerprint của bản xem trước, hash nguồn (source hash) hiện tại, trạng thái rà soát và các đề xuất đã tạo, trước khi thực hiện một lần ghi nguyên tử vào kho rà soát. Nếu bất kỳ mục nào được chọn không qua kiểm tra, sẽ không có quyết định nào của lô được lưu.
 
-Entry uses the same custom checkbox treatment across upgrade review: checked, keyboard-focus, and disabled states are visibly distinct. Result toast feedback uses a green border/glow for success and a red border/glow for errors.
+Entry dùng cùng kiểu ô chọn tùy biến trong toàn bộ phần rà soát nâng cấp: các trạng thái đã chọn, đang focus bàn phím và bị vô hiệu hóa đều phân biệt rõ ràng. Thông báo (toast) phản hồi kết quả dùng viền/ánh sáng xanh lá cho thành công và đỏ cho lỗi.
 
-The page shows review progress. The final Upgrade action remains disabled until every conflict is explicitly resolved as accepted latest, edited proposal, **Force upgrade**, or **Keep current**. A final confirmation summarizes automatic updates, accepted proposals, edited proposals, forced replacements, kept-current files, and backups.
+Trang hiển thị tiến độ rà soát. Nút Upgrade cuối cùng vẫn bị vô hiệu hóa cho đến khi mọi xung đột được giải quyết rõ ràng bằng một trong các cách: chấp nhận bản mới nhất, đề xuất đã chỉnh sửa, **Force upgrade** hoặc **Keep current**. Bước xác nhận cuối cùng tóm tắt các cập nhật tự động, đề xuất đã chấp nhận, đề xuất đã chỉnh sửa, các lần thay thế cưỡng bức, các tệp giữ nguyên hiện tại và các bản sao lưu.
 
-## Ownership-aware force upgrade
+## Force upgrade theo quyền sở hữu
 
-Engram canonicalizes connected-agent upgrade inventory by **physical file**, so a shared guide such as `.agents/engram.md` is represented once even when Codex, Claude, Gemini, or another registered host points at it. The host list remains visible as metadata, but one physical file receives one canonical renderer output and one write transaction.
+Engram chuẩn hóa bản kiểm kê nâng cấp của agent đã kết nối theo **tệp vật lý**, vì vậy một hướng dẫn dùng chung như `.agents/engram.md` chỉ được biểu diễn một lần, ngay cả khi Codex, Claude, Gemini hoặc một host đã đăng ký khác cùng trỏ tới nó. Danh sách host vẫn hiển thị như metadata, nhưng mỗi tệp vật lý chỉ nhận một đầu ra renderer chuẩn và một giao dịch ghi.
 
-**Force upgrade** is intentionally narrower than **Use latest**. It appears only when Engram can prove an ownership boundary:
+**Force upgrade** được cố ý giới hạn hẹp hơn **Use latest**. Hành động này chỉ xuất hiện khi Engram chứng minh được ranh giới quyền sở hữu:
 
-- **Managed region:** Engram replaces only the marked Engram block and preserves all user-authored bytes outside it, including the file's CRLF/LF newline style.
-- **Generated file:** Engram may replace the whole registered/generated Engram file, including manual edits inside that Engram-owned file.
-- **Unknown ownership:** no Force upgrade action is offered; use **Keep current** or resolve the ownership ambiguity first.
+- **Managed region:** Engram chỉ thay thế khối Engram được đánh dấu và giữ nguyên mọi byte do người dùng viết nằm ngoài khối, bao gồm cả kiểu xuống dòng CRLF/LF của tệp.
+- **Generated file:** Engram có thể thay thế toàn bộ tệp Engram đã đăng ký/được tạo, kể cả các chỉnh sửa thủ công bên trong tệp thuộc sở hữu Engram đó.
+- **Unknown ownership:** không có hành động Force upgrade; hãy dùng **Keep current** hoặc giải quyết sự mơ hồ về quyền sở hữu trước.
 
-Bulk controls never force. **Confirm selected changes** and **Confirm all changes** remain limited to safe **Use latest** decisions. Force decisions are reviewed one item at a time and are rejected if the source hash, ownership evidence, or force mode changed after preview.
+Các điều khiển hàng loạt không bao giờ ép buộc. **Confirm selected changes** và **Confirm all changes** chỉ giới hạn ở các quyết định **Use latest** an toàn. Các quyết định force được rà soát từng mục một và bị từ chối nếu hash nguồn, bằng chứng quyền sở hữu hoặc chế độ force thay đổi sau khi xem trước.
 
-After writes complete, Engram rescans the upgraded physical artifacts. Expected-updated items must converge to `current`; a failed or rolled-back transaction, or an item that remains `outdated`/`conflict`, makes the entire apply report an error instead of showing a success toast. Explicit **Keep current** items are excluded from that convergence requirement.
+Sau khi ghi xong, Engram quét lại các hiện vật vật lý đã nâng cấp. Các mục được kỳ vọng đã cập nhật phải hội tụ về `current`; một giao dịch thất bại hoặc bị rollback, hay một mục vẫn ở trạng thái `outdated`/`conflict`, sẽ khiến toàn bộ lần áp dụng báo lỗi thay vì hiển thị toast thành công. Các mục **Keep current** tường minh được loại khỏi yêu cầu hội tụ này.
 
-## CLI conflict review
+## Rà soát xung đột bằng CLI
 
-Run:
+Chạy:
 
 ```bash
 engram upgrade --latest --review
 ```
 
-The interactive reviewer handles unresolved conflicts one at a time:
+Trình rà soát tương tác xử lý từng xung đột chưa giải quyết một:
 
 ```text
 [V] View diff
@@ -86,31 +82,31 @@ The interactive reviewer handles unresolved conflicts one at a time:
 [Q] Save and quit
 ```
 
-`E` opens a temporary proposed file using `$VISUAL`, then `$EDITOR`, then a platform fallback. Engram validates the edited proposal before accepting it. Decisions are persisted under Engram state by plan fingerprint, so `Q` can stop the session and a later `--review` resumes the saved decisions.
+`E` mở một tệp đề xuất tạm thời bằng `$VISUAL`, rồi đến `$EDITOR`, rồi đến phương án dự phòng của nền tảng. Engram kiểm tra đề xuất đã chỉnh sửa trước khi chấp nhận. Các quyết định được lưu trong state của Engram theo fingerprint của kế hoạch, vì vậy `Q` có thể dừng phiên và lần `--review` sau sẽ tiếp tục với các quyết định đã lưu.
 
-For automation:
+Dành cho tự động hóa:
 
 ```bash
 engram upgrade --latest --yes
 ```
 
-`--yes` never invents conflict decisions. If any conflict remains pending or stale, Engram exits non-zero and asks you to run `engram upgrade --latest --review`.
+`--yes` không bao giờ tự đưa ra quyết định cho xung đột. Nếu còn bất kỳ xung đột nào đang chờ hoặc đã lỗi thời, Engram thoát với mã khác 0 và yêu cầu bạn chạy `engram upgrade --latest --review`.
 
-## Stale-review protection
+## Bảo vệ chống rà soát lỗi thời
 
-Every reviewed item records its source hash. Before apply, Engram compares the current source hash with the reviewed source hash. If the file changed after review, that decision becomes stale/pending and must be reviewed again. A plan fingerprint also prevents applying a different inventory than the one reviewed.
+Mỗi mục đã rà soát đều ghi lại hash nguồn của nó. Trước khi áp dụng, Engram so sánh hash nguồn hiện tại với hash nguồn lúc rà soát. Nếu tệp thay đổi sau khi rà soát, quyết định đó trở thành lỗi thời/đang chờ và phải được rà soát lại. Fingerprint của kế hoạch cũng ngăn việc áp dụng một bản kiểm kê khác với bản đã được rà soát.
 
-## Transaction groups, backup, and rollback
+## Nhóm giao dịch, sao lưu và rollback
 
-Accepted replacements and merges use the same transaction path as safe automatic upgrades. Engram captures original bytes and permissions, creates backups where required, validates proposed content, writes through a temporary file, and atomically renames it into place. A failed durable transformation rolls back its transaction group. **Keep current** performs no write.
+Các thay thế và hợp nhất đã chấp nhận dùng cùng đường giao dịch với các nâng cấp tự động an toàn. Engram lưu lại byte gốc và quyền truy cập, tạo bản sao lưu khi cần, kiểm tra nội dung đề xuất, ghi qua một tệp tạm rồi đổi tên nguyên tử vào đúng vị trí. Một biến đổi bền vững thất bại sẽ rollback nhóm giao dịch của nó. **Keep current** không thực hiện ghi.
 
-## Vector index is fail-open
+## Vector index theo kiểu fail-open
 
-Vector search is an optional acceleration layer. Engram binds `sqlite-vec` `memory_vectors` primary keys with integer-compatible `BigInt` values. If vector rebuilding fails, Engram removes the incomplete vector sidecar/WAL/SHM, reports a degraded warning, and continues the durable lexical/graph upgrade. A vector-only failure cannot abort an otherwise valid configuration upgrade.
+Tìm kiếm vector là một lớp tăng tốc tùy chọn. Engram gán các khóa chính `memory_vectors` của `sqlite-vec` bằng các giá trị `BigInt` tương thích số nguyên. Nếu việc dựng lại vector thất bại, Engram xóa sidecar/WAL/SHM vector chưa hoàn chỉnh, báo cảnh báo suy giảm, và tiếp tục nâng cấp lexical/graph bền vững. Một lỗi chỉ riêng ở vector không thể làm hủy một lần nâng cấp cấu hình vốn hợp lệ.
 
-## Package version vs configuration state
+## Phiên bản package so với trạng thái cấu hình
 
-A new npm package and outdated local configuration are separate signals. Recommended release flow:
+Một package npm mới và cấu hình cục bộ lỗi thời là hai tín hiệu riêng biệt. Quy trình phát hành được khuyến nghị:
 
 ```bash
 npm install -g @the-long-ride/engram@latest
@@ -119,4 +115,4 @@ engram upgrade --latest --review
 engram upgrade --latest
 ```
 
-Re-running the upgrade is idempotent for current artifacts. Reviewed `Keep current` files remain untouched unless their state changes and requires a new review.
+Chạy lại nâng cấp là idempotent đối với các hiện vật đã mới nhất. Các tệp `Keep current` đã rà soát vẫn không bị động tới trừ khi trạng thái của chúng thay đổi và cần một lần rà soát mới.

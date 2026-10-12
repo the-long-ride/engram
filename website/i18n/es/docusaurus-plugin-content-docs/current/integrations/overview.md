@@ -1,67 +1,67 @@
 ---
-title: Agent Integrations overview
+title: Visión general de integraciones de agentes
 sidebar_position: 1
-description: Engram supports skill files, slash adapters, MCP tools, and agent hooks across many AI hosts.
+description: Engram admite archivos de skill, adaptadores slash, herramientas MCP y hooks de agente en muchos hosts de IA.
 ---
 
-# Agent Integrations overview
+# Visión general de integraciones de agentes {#agent-integrations-overview}
 
-Engram supports two integration layers:
+Engram admite dos capas de integración:
 
-- **Skill files** — generated instructions for agents that read project context.
-- **Slash adapters** — generated `/engram` command prompts for agents that support project slash commands or Agent Skills.
-- **MCP-style tools** — a JSON-lines wrapper for agents that can register external tool processes.
-- **Agent hooks** — opt-in host hooks that inject routed Engram context at session start and later task-change turns.
+- **Archivos de skill** — instrucciones generadas para agentes que leen el contexto del proyecto.
+- **Adaptadores slash** — prompts de comandos `/engram` generados para agentes que admiten comandos slash del proyecto o Agent Skills.
+- **Herramientas estilo MCP** — un wrapper JSON-lines para agentes que pueden registrar procesos de herramientas externas.
+- **Hooks de agente** — hooks de host opcionales que inyectan el contexto enrutado de Engram al inicio de la sesión y en los turnos posteriores de cambio de tarea.
 
-## Quick start
+## Inicio rápido {#quick-start}
 
 ```bash
 engram inject
 engram link all
 ```
 
-`engram link all` installs the public target set and reports deterministic `SKIPPED` reasons for partial hosts across skillset instruction files, MCP config, slash adapters, and agent hooks in one unified install.
+`engram link all` instala el conjunto de objetivos públicos e informa motivos `SKIPPED` deterministas para hosts parciales en archivos de instrucciones de skillset, configuración de MCP, adaptadores slash y hooks de agente en una sola instalación unificada.
 
-## Target categories
+## Categorías de objetivos {#target-categories}
 
-| Category | Targets | Behavior |
+| Categoría | Objetivos | Comportamiento |
 | --- | --- | --- |
-| Runtime-first | `codex`, `claude`, `cursor`, `gemini` | Short bootstrap instructions plus full Agent Skills and MCP config |
-| Hook-capable | `codex`, `claude`, `gemini`, `opencode`, `cursor`, `windsurf`/`cascade` | Agent hooks with host-specific event schemas |
-| Compact/manual fallback | `agents-md`, `copilot`, `cline` | Full compact protocol; no reliable runtime context injection in v1 |
+| Primero en tiempo de ejecución | `codex`, `claude`, `cursor`, `gemini` | Instrucciones breves de inicio, una guía complementaria con el flujo de trabajo completo, punteros breves de Agent Skill y configuración de MCP |
+| Capaz de hooks | `codex`, `claude`, `gemini`, `opencode`, `cursor`, `windsurf`/`cascade` | Hooks de agente con esquemas de eventos específicos del host |
+| Fallback compacto/manual | `agents-md`, `copilot`, `cline` | Protocolo compacto completo; sin inyección confiable de contexto en tiempo de ejecución en v1 |
 
-## Supported targets
+## Objetivos compatibles {#supported-targets}
 
-| Target | File | Main use |
+| Objetivo | Archivo | Uso principal |
 | --- | --- | --- |
-| `codex` | `AGENTS.md`, `.agents/skills/engram/SKILL.md` | OpenAI Codex project instructions and Agent Skill |
-| `agents-md` | `AGENTS.md` | Generic fallback for unlisted AGENTS.md-compatible agents |
-| `copilot` | `.github/copilot-instructions.md`; global: `~/.copilot/copilot-instructions.md` | GitHub Copilot repository and user instructions |
-| `claude` | `CLAUDE.md` | Claude Code project guidance |
-| `cursor` | `.cursor/rules/engram.mdc`; global: `~/.cursor/plugins/local/engram/` | Cursor project rules and local plugin |
-| `gemini` | `GEMINI.md`; global: `~/.gemini/GEMINI.md`, `~/.gemini/skills/engram/SKILL.md` | Gemini CLI context, including Antigravity Gemini-compatible surfaces |
-| `cline` | `.clinerules` | Cline-style workspace rules |
-| `windsurf` | `.windsurf/rules/engram.md`; global: `~/.codeium/windsurf/memories/global_rules.md` | Windsurf workspace rules and global rules/MCP |
-| `opencode` | `AGENTS.md`, `.opencode/engram.md`, `.opencode/skills/engram/SKILL.md`, `opencode.json` | OpenCode rules, Agent Skill, MCP tools, custom commands, plugin hooks |
-| `mcp` | `.mcp.json`; global: Claude and Gemini MCP config files | MCP-style JSON-lines wrapper registration |
-| `slash` | `.claude/commands/engram.md`, `.cursor/commands/engram.md`, `.gemini/commands/engram.toml`, `.opencode/commands/engram.md` | Native `/engram` slash adapters |
+| `codex` | `AGENTS.md`, `.agents/skills/engram/SKILL.md` | Instrucciones de proyecto OpenAI Codex y Agent Skill |
+| `agents-md` | `AGENTS.md` | Fallback genérico para agentes compatibles con AGENTS.md no listados |
+| `copilot` | `.github/copilot-instructions.md`; global: `~/.copilot/copilot-instructions.md` | Instrucciones de repositorio y usuario de GitHub Copilot |
+| `claude` | `AGENTS.md`, `.claude/engram.md`, `.agents/engram.md`, más un bloque `CLAUDE.md` solo cuando ese archivo ya existe, y reglas de ruta `.claude/rules/engram/<id>.md` | Guía de proyecto de Claude Code y reglas de ruta nativas |
+| `cursor` | `.cursor/rules/engram.mdc`, reglas de ruta `.cursor/rules/engram/<id>.mdc`; global: `~/.cursor/plugins/local/engram/` | Reglas de proyecto de Cursor, reglas de ruta nativas y plugin local |
+| `gemini` | `GEMINI.md`; global: `~/.gemini/GEMINI.md`, `~/.gemini/skills/engram/SKILL.md` | Contexto de Gemini CLI, incluidas las superficies compatibles con Gemini de Antigravity |
+| `cline` | `.clinerules` | Reglas de espacio de trabajo estilo Cline |
+| `windsurf` | `.windsurf/rules/engram.md`; global: `~/.codeium/windsurf/memories/global_rules.md` | Reglas de espacio de trabajo de Windsurf y reglas/MCP globales |
+| `opencode` | `AGENTS.md`, `.opencode/engram.md`, `.opencode/skills/engram/SKILL.md`, `opencode.json` | Reglas de OpenCode, Agent Skill, herramientas MCP, comandos personalizados, hooks de plugins |
+| `mcp` | `.mcp.json`; global: `~/.gemini/settings.json`, `~/.codex/config.toml`, y una sugerencia de `claude mcp add` | Registro de wrapper JSON-lines estilo MCP |
+| `slash` | `.claude/commands/engram.md`, `.cursor/commands/engram.md`, `.gemini/commands/engram.toml`, `.opencode/commands/engram.md` | Adaptadores slash nativos `/engram` |
 
-Aliases: `codex` installs the `agents-md` adapter plus the generic Agent Skill file, `open-code` maps to `opencode`, and `cascade` maps to `windsurf`. The old `antigravity` and `antigravity-cli` targets are hidden compatibility aliases for now.
+Alias: `codex` instala el adaptador `agents-md` más el archivo genérico Agent Skill, `open-code` se asigna a `opencode` y `cascade` se asigna a `windsurf`. Los antiguos objetivos `antigravity` y `antigravity-cli` son alias de compatibilidad ocultos por ahora.
 
-## Hook capability matrix
+## Matriz de capacidades de hooks {#hook-capability-matrix}
 
-| Host | Hook install in v1 | Events |
+| Host | Instalación de hook en v1 | Eventos |
 | --- | --- | --- |
-| `codex` | Yes | `SessionStart`, `UserPromptSubmit` |
-| `claude` | Yes | `SessionStart`, `UserPromptSubmit` |
-| `gemini` | Yes | `SessionStart`, `BeforeAgent` |
-| `cursor` | Yes | `sessionStart` |
-| `windsurf` / `cascade` | Yes | `pre_user_prompt` |
-| `opencode` | Supported via local plugin | `chat.message`, `experimental.chat.system.transform` |
-| `copilot` | Skipped | N/A |
-| `cline` | Skipped | N/A |
+| `codex` | Sí | `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PreCompact`, `SubagentStart` (`SessionEnd` opcional) |
+| `claude` | Sí | `SessionStart`, `UserPromptSubmit`, `InstructionsLoaded` (`PreToolUse` con `hooks.path_rules hook`), `PreCompact`, `SubagentStart` (`SessionEnd` opcional) |
+| `gemini` | Sí | `SessionStart`, `BeforeAgent`, `AfterTool`, `PreCompress` |
+| `cursor` | Sí | `sessionStart` |
+| `windsurf` / `cascade` | Sí | `pre_user_prompt` |
+| `opencode` | Compatible mediante plugin local | `chat.message`, `experimental.chat.system.transform` |
+| `copilot` | Omitido | N/A |
+| `cline` | Omitido | N/A |
 
-## Next steps
+## Pasos siguientes {#next-steps}
 
 - [Codex](codex.md)
 - [Claude](claude.md)
@@ -71,6 +71,6 @@ Aliases: `codex` installs the `agents-md` adapter plus the generic Agent Skill f
 - [OpenCode](opencode.md)
 - [Copilot](copilot.md)
 - [Cline](cline.md)
-- [Slash adapters](slash.md)
-- [MCP tools](mcp.md)
-- [Hooks and proof lines](hooks.md)
+- [Adaptadores slash](slash.md)
+- [Herramientas MCP](mcp.md)
+- [Hooks y líneas de prueba](hooks.md)

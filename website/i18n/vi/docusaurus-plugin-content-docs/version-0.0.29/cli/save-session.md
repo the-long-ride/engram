@@ -1,0 +1,136 @@
+---
+title: save / save-session / observe
+sidebar_position: 3
+description: Write commands — save one memory, save several from a session, and capture raw notes.
+---
+
+# save / save-session / observe
+
+Write commands propose memory through the approval gate.
+
+## save
+
+```bash
+engram save [rule|workflow|knowledge] "<text>"
+engram save --role frontend "<text>"
+engram save --scope global "<text>"
+```
+
+`engram save` captures the best single memory candidate, automatically updates a matching memory or creates a new one, and always shows the A/B/C approval gate before writing.
+
+When `engram save` finds related active memories, the approval preview reports them with a suggested `depends_on` or possible-duplicate warning.
+
+## save-session
+
+```bash
+engram save-session
+engram ss
+engram save-session --query-level 3
+engram ss -f
+engram ss -f last 50 sessions
+engram save-session --file transcript.md
+engram save-session --force
+```
+
+Use `save-session` when a long interaction produced multiple candidates:
+
+```text
+TYPE: rule | TEXT: Always run tests before release. | CONTEXT: Created from release planning so future agents preserve the test gate.
+TYPE: knowledge | TEXT: Release notes live in CHANGELOG.md.
+TYPE: workflow | TEXT: When releasing, run tests, update changelog, then tag.
+```
+
+`CONTEXT: ...` is optional. Add it only when it explains why the memory exists. Candidates may also add `DEPENDS_ON`, `LEVEL`, or `UPDATE` fields when restructuring related memory.
+
+- `--query-level <n>` — mine up to n recent accessible human-agent chats; must be a positive integer; agents must not invent unavailable history
+- `--force` / `-f` — every generated candidate is saved because the human explicitly approved that shortcut
+- `--file <path>` — for transcripts or long summaries already on disk
+
+<a id="candidate-fields"></a>
+### Candidate fields
+
+Besides `CONTEXT`, `DEPENDS_ON`, `LEVEL`, and `UPDATE`, a candidate may carry:
+
+| Field | Meaning |
+| --- | --- |
+| `OBJECTIVE: task` or `durable` | `task` saves to the [working tier](#working-memory-promote-and-prune); default `durable` |
+| `SCOPE: workspace` or `global` | Overrides the command scope for this candidate. The approval preview names the target on its `Scope:` line. Under `--force`, a candidate whose scope is outside the command scope is deferred, not written |
+| `APPLIES_TO: <globs>` | Up to 8 relative globs; the memory is injected when a matching file is read or edited |
+| `DIRECTIVE: <line>` | One line of at most 160 characters, shown on the memory's card |
+
+```text
+TYPE: rule | TEXT: Route commands through MediatR. | DIRECTIVE: Route commands through MediatR | APPLIES_TO: src/Api/**
+```
+
+Field names are case-insensitive in the `|` format. In the multi-line format they are recognized only in uppercase, so ordinary prose lines such as `Scope: the billing module` stay content.
+
+For `/engram take-control --force` or natural `/engram take control force`, the slash adapter normalizes the wording, generates only concise `TYPE: ... | TEXT: ...` candidates, and lets Engram save them without a second approval prompt.
+
+<a id="working-memory-promote-and-prune"></a>
+## Working memory: promote and prune
+
+```bash
+engram promote <id>
+engram promote workspace:<id>
+engram working prune --dry-run
+engram working prune
+```
+
+An approved `OBJECTIVE: task` candidate is written to the gitignored `.agents/.engram/working/` (or `<global>/working/`) with `tier: working`, the `--objective` text, and `valid_until` = today + `load.working_ttl_days` (default 14, range 1 to 365). The approval preview shows `Tier: working (expires <date>)`. Working memories load, search, and route like durable ones until they expire; then they drop out of `load` with the omission reason `lifecycle`. Agent cards and bodies are labelled `working`.
+
+- `engram promote <id>` shows an A/B/C preview and, on approval, moves the memory to durable storage: it drops `tier` and `valid_until`, keeps `objective`, and bumps `revision`. Expired working memories cannot be promoted. Use `workspace:<id>` or `global:<id>` when both scopes hold the same id.
+- `engram working prune` deletes working memories whose `valid_until` has passed and rebuilds indexes, hashes, and graphs; `--dry-run` lists them first. Durable memory is never touched.
+
+Working memories never reach Git, and their index, graph, and hash entries stay in local sidecars under `working/`.
+
+## observe
+
+```bash
+engram observe --file session.md
+engram save-session --file .agents/.engram/inbox/<note>.md
+```
+
+`observe` stores sanitized raw notes in `inbox/`. Inbox notes are not active memory. Use this when you want to preserve rough notes before deciding what should become durable memory.
+
+<!-- evidence-foundation:v3:start -->
+## Bộ nhớ có bằng chứng
+
+```bash
+engram observe --file session.md
+# Output includes Trace: tr_... and the inbox wrapper path
+engram save-session --file .agents/.engram/inbox/<observation>.md
+```
+
+The immutable source lives at `.agents/.engram/traces/<trace-id>.jsonl`; the inbox Markdown is only a review wrapper. Promotion reopens the trace and writes approved memory with `evidence_refs` and `derived_from`. `engram observe --propose --file session.md` may immediately enter the normal approval flow, but it still uses the trace as source evidence.
+<!-- evidence-foundation:v3:end -->
+
+## Related-memory hints
+
+When an accept-all run reports related memories before writing, no file was saved yet. The agent should rerun with structured candidates:
+
+```text
+TYPE: rule | TEXT: OAuth rotation follows release foundations. | DEPENDS_ON: release-foundation | LEVEL: advanced
+TYPE: knowledge | TEXT: Invoice retries use exponential backoff. | UPDATE: invoice-retry-baseline
+```
+
+## Next steps
+
+- [inject / link / upgrade](inject-link-upgrade.md)
+- [Concepts: write path and approval](../concepts/write-path.md)
+
+
+## Git author identity
+
+Engram can store a global author and an optional workspace override. Resolution is workspace, global, then read-only Git fallback. Settings affect future memories only; a workspace override never changes global Git configuration. Use explicit plan and confirmation for global Git sync or legacy-memory migration.
+
+```bash
+engram author show
+engram author set --name "Jane Doe" --email "jane@example.com"
+engram author unset --scope workspace
+engram author sync-git-global --plan
+engram author sync-git-global --confirm
+engram author migrate-memories --plan
+engram author migrate-memories --confirm
+```
+
+Read the complete [Git author settings guide](../operations/git-author-settings.md).

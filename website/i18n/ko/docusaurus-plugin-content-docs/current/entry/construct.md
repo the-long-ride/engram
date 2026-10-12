@@ -135,6 +135,15 @@ See the [Auto-save Policy reference](policy.md) for every control, default, allo
 
 Max memories returned by normal load. Lower values reduce context bloat for low-context models; higher values help deep architecture tasks.
 
+### Working Memory TTL (days)
+
+**Config key:** `load.working_ttl_days`  
+**Control:** number 1–365  
+**Default:** `14`  
+**Risk:** normal
+
+Days an approved `OBJECTIVE: task` memory stays in the gitignored working tier before it expires. The change applies to memories saved afterwards. Keep a working memory with `engram promote <id>`; clear expired ones with `engram working prune`.
+
 ## Memory Limits group
 
 ### Rule Line Target
@@ -258,7 +267,7 @@ Syncs generated agent context files on save.
 ### live_sync.targets
 
 **Control:** list  
-**Default:** `agents-md`, `claude-md`, `cursorrules`
+**Default:** `agents-md`, `claude-md`, `cursor-rules`
 
 Comma-separated generated context targets refreshed when live sync runs.
 

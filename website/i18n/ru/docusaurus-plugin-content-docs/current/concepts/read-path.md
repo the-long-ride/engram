@@ -1,45 +1,61 @@
 ---
-title: Read path and routing
+title: Путь чтения и маршрутизация
 sidebar_position: 5
-description: Engram loads workspace and global indexes, applies ignore rules and role filters, then routes a compact context pack.
+description: Engram загружает индексы рабочего пространства и глобальной области, применяет правила игнорирования и фильтры ролей, а затем маршрутизирует компактный пакет контекста.
 ---
 
-# Read path and routing
+# Путь чтения и маршрутизация
 
-The read flow decides which memory an agent sees for a given task.
+Поток чтения определяет, какую память агент увидит для данной задачи.
 
-## Read flow
+## Поток чтения
 
-1. Engram loads workspace and optional global indexes.
-2. Workspace entries win over global duplicates.
-3. Ignore rules and role filters hide irrelevant entries.
-4. Graph-aware routing selects a compact context pack.
-5. Hash and safety checks run before content is printed.
+1. Engram загружает индексы рабочего пространства и необязательные глобальные индексы.
+2. Записи рабочего пространства имеют приоритет над глобальными дубликатами.
+3. Правила игнорирования и фильтры ролей скрывают нерелевантные записи.
+4. Маршрутизация с учётом графа выбирает компактный пакет контекста.
+5. Проверки хешей и безопасности выполняются до вывода содержимого.
 
-## Anchor and refine
+## Привязка, ранжирование и уточнение
 
-`load` first anchors routing on meaningful query terms, ignoring generic memory words such as `rule`, `knowledge`, and common stopwords. It then refines the wider candidate pool into a compact context pack.
+`load` сначала привязывает маршрутизацию к значимым терминам запроса, игнорируя общие слова памяти, такие как `rule`, `knowledge`, и типичные стоп-слова. Затем он ранжирует кандидатов по BM25 (с лёгким стеммингом) по id, тегам, `directive`, краткому описанию, триггерам и терминам содержимого. Оценка масштабируется по жизненному циклу (`review_due` ×0.7), устареванию (×0.6), уверенности (`medium` ×0.9) и области (рабочее пространство ×1.1), плюс небольшой бонус воспоминаниям, которые агенты запрашивали. Воспоминания, у которых `valid_until` уже прошёл, исключаются с причиной пропуска `lifecycle`. Запросу с четырьмя и более якорями нужны два попадания по якорям или одно попадание по сильному полю (id, тег, `directive` или путь из `applies_to`). Векторные совпадения без пересечения по терминам никогда не допускают воспоминание.
 
-Normal load reports selected and total related counts, like `loaded 8 memory files / 14 total related memories`.
+Наконец, он уточняет более широкий пул кандидатов до компактного пакета контекста.
 
-- `load --dry-run` shows candidate counts, narrowing tags, and match reasons.
-- `load --all` returns every visible routed match instead of applying the compact limit.
-- Default `load` is the agent-facing compact route. Use `load --full` for broader legacy output.
+Обычная загрузка сообщает число выбранных и всех связанных воспоминаний, например `loaded 8 memory files / 14 total related memories`.
 
-`workflow` and `workflows` still route to skill memories, but generic type words do not make a broad match by themselves.
+- `load --dry-run` показывает число кандидатов, сужающие теги и причины совпадений.
+- `load --all` возвращает все видимые маршрутизированные совпадения вместо применения компактного лимита.
+- `load` по умолчанию — компактный маршрут для агента. Используйте `load --full` для более широкого устаревшего вывода.
 
-## Dependency layers
+## Многоуровневое раскрытие
 
-Use `depends_on` frontmatter when a memory should build on another memory instead of repeating it:
+Вывод для агента по умолчанию разбит на уровни (`load.disclosure: auto`):
+
+- Первые `load.expand_top` совпадений (по умолчанию 3) выводятся телами под `### <id> [<type>, <authority>]`, с `requires: <ids>`, если у воспоминания есть `depends_on`.
+- Каждое другое выбранное совпадение, плюс до 5 пропущенных кандидатов, выводится однострочной карточкой `- <id> [<type>] <directive-or-summary>`, с добавлением ` (stale)`, если его источники изменились.
+- Вывод завершается строкой `fetch: engram load --id <ids>`, чтобы агент запрашивал полное тело только при необходимости.
+
+Frontmatter, `## Context`, `## Example` и `## Origin` агентам никогда не отображаются. `--budget-tokens` ограничивает весь вывод: Engram сначала превращает тела в карточки и только затем отбрасывает карточки с самым низким рангом. Используйте `--disclosure full`, `--full` или `--all`, чтобы отключить разбиение на уровни.
+
+## Дельта хуков и триггеры по путям
+
+Хуки помнят, какие ключи памяти они уже доставили в сессии. Последующие реплики внедряют только новые тела, а остальные сворачивают в одну строку `already loaded: <ids>`. `SessionStart` и `PreCompact` сбрасывают этот набор. Воспоминания с glob-шаблонами `applies_to` также внедряются «точно вовремя» по событиям файлов `PreToolUse` (правки Codex `apply_patch`; Claude `Read`, `Edit`, `Write`, `MultiEdit` в режиме hook) и по событиям Gemini `AfterTool` (`read_file`, `write_file`, `replace`), не более 3 тел на событие. При `hooks.path_rules native` (по умолчанию) Claude и Cursor вместо этого загружают их из сгенерированных файлов правил в `.claude/rules/engram/` и `.cursor/rules/engram/`, а хук Claude `InstructionsLoaded` передаёт набор доставленного. Субагенты Claude и Codex стартуют с маршрутизированным контекстом через `SubagentStart`, а вывод хуков остаётся в пределах ограничения размера payload каждого хоста (2 400 токенов в Codex, 9 500 символов в Claude): при превышении тела понижаются до карточек и никогда не обрезаются посреди текста. См. [Хуки и строки подтверждения](../integrations/hooks.md).
+
+`workflow` и `workflows` по-прежнему маршрутизируются к воспоминаниям-навыкам, но общие слова-типы сами по себе не создают широкого совпадения.
+
+## Слои зависимостей
+
+Используйте frontmatter `depends_on`, когда воспоминание должно опираться на другое воспоминание, а не повторять его:
 
 ```yaml
 depends_on: [release-foundation]
 level: advanced
 ```
 
-Run `engram graph --rebuild` after manual edits. The graph reports dependency layers, and `engram load` pulls routed prerequisites into the same compact context pack before deeper memories. Graph related edges and vector hits cannot load unrelated memories by themselves; they only help rerank or expand memories that already overlap meaningful query terms. Explicit `depends_on` prerequisites may still load without their own keyword overlap.
+Выполните `engram graph --rebuild` после ручных правок. Граф сообщает о слоях зависимостей, а `engram load` подтягивает маршрутизируемые предварительные условия в тот же компактный пакет контекста перед более глубокими воспоминаниями. Связанные рёбра графа и векторные совпадения сами по себе не могут загрузить посторонние воспоминания; они лишь помогают переранжировать или расширить воспоминания, которые уже пересекаются со значимыми терминами запроса. Явные предварительные условия `depends_on` могут по-прежнему загружаться без собственного совпадения по ключевым словам.
 
-## Routing diagram
+## Диаграмма маршрутизации
 
 ```mermaid
 flowchart LR
@@ -48,10 +64,10 @@ flowchart LR
   C --> D[Ignore rules + role filters]
   D --> E[Graph-aware routing]
   E --> F[Hash + safety checks]
-  F --> G[Compact context pack]
+  F --> G[Tiered pack: bodies + cards]
 ```
 
-## Next steps
+## Дальнейшие шаги
 
-- [Write path and approval](write-path.md)
+- [Путь записи и подтверждение](write-path.md)
 - [CLI: load / search / graph](../cli/load-search-graph.md)

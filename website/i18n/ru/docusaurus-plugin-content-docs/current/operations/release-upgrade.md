@@ -1,22 +1,18 @@
 ---
-title: Release and upgrade process
+title: Процесс выпуска и обновления
 sidebar_position: 2
-description: Upgrade Engram packages and reconcile memory roots safely.
+description: Безопасное обновление пакетов Engram и согласование корней памяти.
 ---
 
-# Release and upgrade process
+# Процесс выпуска и обновления
 
-## Localized upgrade safety summary
+## После обновления npm-пакета
 
-Diff показывает удаления красным, добавления зелёным. **Force upgrade** выполняет принудительное обновление только для **блока Engram** или **сгенерированного файла** с доказанным владением; пакетная операция не выполняет принудительные замены, а проверка сходимости исключает ложный успех.
+Следующая обычная команда Engram незаметно один раз согласует уже инициализированные корни workspace/global с новой версией. Это охватывает изменения схемы памяти от выпуска к выпуску, начиная с v0.0.8: при обнаружении устаревших метаданных обновляются сгенерированная справка, индексы памяти, графовые файлы и подходящие векторные sidecar-файлы.
 
-## After an npm package update
+Проверка при запуске намеренно дешёвая после первого раза: когда текущая версия уже записана, она читает лишь небольшие маркеры конфигурации. Она не запускается из npm postinstall, не создаёт новых корней памяти и не заменяет файлы, написанные человеком. Используйте `--no-auto-upgrade` или `ENGRAM_NO_AUTO_UPGRADE=1`, чтобы пропустить её для команды.
 
-The next normal Engram command quietly reconciles already-initialized workspace/global roots once for the new version. This covers release-to-release memory schema changes from v0.0.8 onward by refreshing generated help, memory indexes, graph files, and eligible vector sidecars when older metadata is detected.
-
-The startup check is intentionally cheap after the first run: it only reads small config markers when the current version is already recorded. It does not run from npm postinstall, create new memory roots, or replace human-authored files. Use `--no-auto-upgrade` or `ENGRAM_NO_AUTO_UPGRADE=1` to skip it for a command.
-
-## Explicit upgrade
+## Явное обновление
 
 ```bash
 engram upgrade
@@ -24,60 +20,72 @@ engram upgrade --plan
 engram upgrade --latest
 ```
 
-`engram upgrade` refreshes generated workspace help, memory indexes, graph files, eligible vector sidecars, existing Engram-generated workspace skillset files, and registered global skillsets while preserving human-authored files.
+`engram upgrade` обновляет сгенерированную справку рабочего пространства, индексы памяти, графовые файлы, подходящие векторные sidecar-файлы, существующие файлы skillset рабочего пространства, сгенерированные Engram, и зарегистрированные глобальные skillset, сохраняя файлы, написанные человеком.
 
-`engram upgrade --latest` is stronger: it overwrites current Engram-managed linked agent artifacts for already-linked workspace agents and registered global installs, including instruction files, rules, MCP/plugin config, and managed hooks, so linked hosts pick up the new package output immediately.
+`engram upgrade --latest` действует сильнее: он перезаписывает текущие артефакты связанных агентов, управляемые Engram, для уже связанных агентов рабочего пространства и зарегистрированных глобальных установок, включая файлы инструкций, правила, конфигурацию MCP/плагинов и управляемые хуки, чтобы связанные хосты сразу получили новый результат пакета.
 
-Use `--force` only when replacing generated Engram adapter files intentionally.
+Используйте `--force` только тогда, когда вы намеренно заменяете сгенерированные адаптерные файлы Engram.
 
-## Ownership-aware configuration reconciliation
+## Согласование конфигурации с учётом владения
 
-The latest-upgrade inventory deduplicates registered integrations by physical file. If several hosts share the same Engram guide, Engram renders and writes that file once instead of letting host-specific rows rewrite one another.
+Инвентарь latest-обновления дедуплицирует зарегистрированные интеграции по физическому файлу. Если несколько хостов используют одно и то же руководство Engram, Engram рендерит и записывает этот файл один раз, а не позволяет строкам разных хостов перезаписывать друг друга.
 
-When manual edits make a known Engram artifact unsafe for normal replacement, Entry can offer **Force upgrade** only when ownership is provable. For a marked Engram block, force replaces only that block and preserves surrounding user text. For a registered/generated Engram file, force can replace the entire generated file. Unknown ownership is never forceable, and bulk confirmation never performs force actions.
+Когда ручные правки делают известный артефакт Engram небезопасным для обычной замены, Entry может предложить **Force upgrade** только при доказуемом владении. Для помеченного блока Engram принуждение заменяет только этот блок и сохраняет окружающий текст пользователя. Для зарегистрированного/сгенерированного файла Engram принуждение может заменить весь сгенерированный файл. Неизвестное владение никогда не допускает принуждения, а пакетное подтверждение никогда не выполняет принудительных действий.
 
-A successful apply is verified by a post-write rescan. Rolled-back or failed transactions and expected-updated artifacts that do not converge to `current` are reported as errors; Entry does not show an upgrade-success toast for those cases.
+Успешное применение проверяется повторным сканированием после записи. Откатённые или неудачные транзакции и артефакты, которые должны были обновиться, но не пришли к `current`, сообщаются как ошибки; для таких случаев Entry не показывает уведомление об успешном обновлении.
 
-## Skillset render profiles
+## Профили рендера skillset
 
-For runtime-capable hosts, Engram installs small bootstrap instructions instead of the full protocol. Hooks provide routed task context, MCP tools provide load/search/proposal behavior, and slash adapters or Agent Skills carry detailed command workflows. Fallback targets without reliable runtime context injection still receive compact manual instructions.
+Для хостов с поддержкой runtime Engram устанавливает небольшие начальные инструкции вместо полного протокола. Хуки предоставляют маршрутизированный контекст задачи, инструменты MCP — поведение загрузки/поиска/предложений, а одно сопутствующее руководство содержит подробный рабочий процесс; slash-адаптеры и Agent Skills служат короткими указателями на него. Резервные цели без надёжной инъекции контекста во время выполнения по-прежнему получают компактные ручные инструкции.
 
-## SQLite config DB fallback
+## Резервный режим конфигурационной БД SQLite
 
-Engram's SQLite config DB is an optimization for workspace/profile management. If the DB cannot be opened or initialized, normal read/write commands fall back to JSON config snapshots. DB-specific commands report SQLite as unavailable instead of blocking normal memory use.
+Конфигурационная БД SQLite в Engram — это оптимизация для управления рабочими пространствами/профилями. Если БД не удаётся открыть или инициализировать, обычные команды чтения/записи переходят на JSON-снимки конфигурации. Команды, специфичные для БД, сообщают, что SQLite недоступна, а не блокируют обычное использование памяти.
 
 
-## Legacy memory migration to schema v3
+## Что меняется в выпуске host-native
 
-`engram upgrade --latest` also migrates active v1/v2 memory files in the workspace and configured global roots to schema v3. Engram preserves each Markdown body exactly, creates `<memory-file>.pre-v3.bak`, fills only deterministic metadata, refreshes integrity hashes, and rebuilds the index, graph, and eligible vector sidecars. It never invents `evidence_refs`; a memory without verified trace links is marked `evidence_status: unverified`. Invalid memories are reported and skipped, archived memories are not rewritten, and a second run is idempotent.
+После `engram upgrade --latest` (или `engram link <host>`) на существующей установке:
 
-Preview all changes without writing:
+- **Hooks**: Claude и Codex получают `SubagentStart`, Gemini получает `AfterTool`, а новые записи хуков учитывают ограничение размера payload каждого хоста. Claude теряет управляемую запись `PreToolUse` и получает `InstructionsLoaded` плюс сгенерированные файлы правил `.claude/rules/engram/`; чтобы сохранить прежнее поведение, сначала выполните `engram config set hooks.path_rules hook && engram link claude`. Обычный `engram upgrade` не обновляет конфигурации хуков.
+- **Instructions**: `link claude` записывает управляемый блок в `AGENTS.md` и больше не создаёт `CLAUDE.md`; существующий блок в `CLAUDE.md` сохраняется. Сгенерированные файлы `SKILL.md` теперь соответствуют спецификации Agent Skills.
+- **MCP**: сервер поддерживает MCP 2026-07-28 и прежнее рукопожатие, а `engram_commit` требует подтверждения при каждом вызове в Claude Code и Codex (`engram upgrade` перезаписывает управляемый блок Codex).
+- **Memory files**: новые воспоминания не содержат `author_email` (выполните `engram author migrate-memories --strip-email --confirm`, чтобы очистить старые), правила хранят только свой Content, а резервные копии миграции находятся в папке `backups/`, исключённой из Git (`engram repair --move-backups` переносит более старые).
+- **Config**: `vector.enabled` по умолчанию равно `false` для новых конфигураций; конфигурация, где уже сохранено `true`, остаётся включённой. `cursorrules` — устаревший псевдоним формата экспорта `cursor-rules` на один выпуск.
+
+Полный список и перечень того, что ещё не сделано, смотрите в разделе Unreleased [журнала изменений](changelog.md).
+
+## Миграция устаревших воспоминаний на схему v3 (schema v3)
+
+`engram upgrade --latest` также мигрирует активные файлы памяти v1/v2 в рабочем пространстве и настроенных глобальных корнях на схему v3. Engram в точности сохраняет каждое тело Markdown, записывает `backups/schema-v3/<memory-file>.pre-v3.bak` (папка, исключённая из Git; `engram repair --move-backups` переносит более старые резервные копии, оставшиеся рядом с воспоминаниями), заполняет только детерминированные метаданные, обновляет хеши целостности и перестраивает индекс, граф и подходящие векторные sidecar-файлы. Он никогда не придумывает `evidence_refs`; воспоминание без проверенных ссылок на следы помечается `evidence_status: unverified`. О некорректных воспоминаниях сообщается, и они пропускаются, архивные воспоминания не перезаписываются, а повторный запуск идемпотентен.
+
+Просмотр всех изменений без записи:
 
 ```bash
 engram upgrade --latest --plan
 ```
 
-Run only the memory migration, without overwriting linked agent artifacts:
+Запуск только миграции памяти без перезаписи артефактов связанных агентов:
 
 ```bash
 engram upgrade --migrate-memories
 ```
 
-Skip memory migration during a latest upgrade:
+Пропуск миграции памяти при latest-обновлении:
 
 ```bash
 engram upgrade --latest --no-migrate-memories
 ```
 
-## Next steps
+## Дальнейшие шаги
 
-- [Troubleshooting](troubleshooting.md)
+- [Устранение неполадок](troubleshooting.md)
 - [CLI: inject / link / upgrade](../cli/inject-link-upgrade.md)
 
 
-## Git author identity
+## Личность автора Git
 
-Engram can store a global author and an optional workspace override. Resolution is workspace, global, then read-only Git fallback. Settings affect future memories only; a workspace override never changes global Git configuration. Use explicit plan and confirmation for global Git sync or legacy-memory migration.
+Engram может хранить глобального автора и необязательное переопределение для рабочего пространства. Порядок разрешения: рабочее пространство, глобальный, затем резервный Git только для чтения. Настройки влияют только на будущие воспоминания; переопределение рабочего пространства никогда не меняет глобальную конфигурацию Git. Для синхронизации с глобальным Git или миграции устаревших воспоминаний используйте явный план и подтверждение.
 
 ```bash
 engram author show
@@ -89,13 +97,13 @@ engram author migrate-memories --plan
 engram author migrate-memories --confirm
 ```
 
-Read the complete [Git author settings guide](git-author-settings.md).
+Прочитайте полное [руководство по настройкам автора Git](git-author-settings.md).
 
 
 <!-- configuration-upgrade-inventory -->
 
-Conflict review uses the same shared plan in CLI and Entry. Run `engram upgrade --latest --review` to accept the latest type-aware proposal, edit it via `$VISUAL`/`$EDITOR`, or confirm **Keep current**. Entry provides **Current**, **Proposed**, and **Diff** views; **Diff** defaults to **Inline** and can switch to **Parallel**, with removed content highlighted red and added content green. Final apply is blocked while `pendingReviewCount` is non-zero, and `engram upgrade --latest --yes` refuses unresolved or stale decisions. Each decision is checked against its source hash before writing.
+Проверка конфликтов использует один и тот же общий план в CLI и Entry. Выполните `engram upgrade --latest --review`, чтобы принять последнее предложение с учётом типа, отредактировать его через `$VISUAL`/`$EDITOR` или подтвердить **Keep current**. Entry предоставляет представления **Current**, **Proposed** и **Diff**; **Diff** по умолчанию показывается как **Inline** и может переключаться на **Parallel**, при этом удалённое содержимое подсвечивается красным, а добавленное — зелёным. Итоговое применение блокируется, пока `pendingReviewCount` не равен нулю, а `engram upgrade --latest --yes` отказывается работать с неразрешёнными или устаревшими решениями. Каждое решение сверяется с хешем своего источника перед записью.
 
-## Configuration upgrade inventory
+## Инвентаризация обновлений конфигурации
 
-After a package update, run `engram upgrade --latest --plan` before `engram upgrade --latest`. The shared inventory scans workspace and global Engram-managed memories, instructions, skillsets, configs, hooks, and plugins. User-authored bytes are preserved; ambiguous mixed files are reported as conflicts that require explicit review before apply. See [Configuration upgrades](configuration-upgrades.md).
+После обновления пакета выполните `engram upgrade --latest --plan` перед `engram upgrade --latest`. Общий инвентарь сканирует воспоминания, инструкции, skillset, конфигурации, хуки и плагины рабочего пространства и глобальной области, управляемые Engram. Байты, написанные пользователем, сохраняются; неоднозначные смешанные файлы сообщаются как конфликты, требующие явной проверки перед применением. См. [Обновления конфигурации](configuration-upgrades.md).

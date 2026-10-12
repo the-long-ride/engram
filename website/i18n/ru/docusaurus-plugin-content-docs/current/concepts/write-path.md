@@ -1,66 +1,66 @@
 ---
-title: Write path and approval
+title: Путь записи и подтверждение
 sidebar_position: 6
-description: Agents propose, humans approve. Only approved memory is written, then indexes, graph, hashes, and changelog refresh.
+description: Агенты предлагают, люди утверждают. Записывается только утверждённая память, затем обновляются индексы, граф, хеши и журнал изменений.
 ---
 
-# Write path and approval
+# Путь записи и подтверждение
 
-The write flow is the trust boundary. Agents propose, humans approve.
+Поток записи — это граница доверия. Агенты предлагают, люди утверждают.
 
-## Write flow
+## Поток записи
 
-1. Agent proposes one or more candidates.
-   With `save-session --query-level <n>`, the agent may consider up to n recent accessible human-agent chats, but only as proposal context.
-   Natural `/engram ss -f last 50 sessions` is the same scope plus explicit force approval: `engram save-session --query-level 50 --force`.
-2. Engram parses candidate type and target scope.
-3. Engram checks schema, secrets, prompt-injection patterns, and path safety.
-4. Human sees a preview.
-5. Direct CLI replies use `A`, `A 1,3`, `B <note>`, or `C`.
-6. AI-agent chat replies use `yes`, `audit`, or `cancel` after the exact displayed candidates.
-7. Only approved memory is written.
-8. Index, graph, hashes, and changelog are refreshed.
+1. Агент предлагает одного или нескольких кандидатов.
+   При `save-session --query-level <n>` агент может учитывать до n недавних доступных чатов человека с агентом, но только как контекст для предложения.
+   Естественная форма `/engram ss -f last 50 sessions` — это та же область плюс явное принудительное подтверждение: `engram save-session --query-level 50 --force`.
+2. Engram разбирает тип кандидата и целевую область.
+3. Engram проверяет схему, секреты, шаблоны prompt-инъекций и безопасность путей.
+4. Человек видит предпросмотр. Каждый кандидат содержит одну детерминированную строку `Verdict:`: `ADD`, `UPDATE <id>`, `SUPERSEDE <id>` или `NOOP duplicate of <id>` (без вызова модели).
+5. Ответы в прямом CLI: `A`, `A 1,3`, `B <note>` или `C`.
+6. Ответы в чате ИИ-агента: `yes`, `audit` или `cancel` после точно показанных кандидатов.
+7. Записывается только утверждённая память. `A` и `B` пропускают кандидатов `NOOP`, а подтверждение `SUPERSEDE` помечает старое воспоминание как замещённое; `--force` и автосохранение никогда не применяют `SUPERSEDE`, они откладывают его для проверки.
+8. Индекс, граф, хеши и журнал изменений обновляются.
 
-## Approval words
+## Слова подтверждения
 
-Approval words are `yes`, `approve`, `confirm`, or `save`. Audit words are `audit`, `revise`, `correct`, or edited replacement text. Cancel words are `cancel`, `stop`, or rejection. Only approval after exact candidate display authorizes `engram save-session --force` for those candidates.
+Слова подтверждения: `yes`, `approve`, `confirm` или `save`. Слова для доработки: `audit`, `revise`, `correct` или отредактированный заменяющий текст. Слова отмены: `cancel`, `stop` или отказ. Только подтверждение после точного показа кандидатов разрешает `engram save-session --force` для этих кандидатов.
 
-Direct terminal CLI remains A/B/C. MCP proposal tools remain no-write.
+Прямой терминальный CLI остаётся A/B/C. Инструменты предложений MCP по-прежнему не пишут.
 
-## Related-memory hints
+## Подсказки о связанных воспоминаниях
 
-When `engram save` finds related active memories, the approval preview reports them with a suggested `depends_on` or possible-duplicate warning. Accepting saves the preview as-is; reject first if you want to restructure dependencies or archive duplicates before saving.
+Когда `engram save` находит связанные активные воспоминания, предпросмотр подтверждения сообщает о них с предлагаемой связью `depends_on` или предупреждением о возможном дубликате. Принятие сохраняет предпросмотр как есть; сначала отклоните, если хотите перестроить зависимости или заархивировать дубликаты перед сохранением.
 
-For `save-session --force`, Engram pauses before writing when those related memory hints appear. The agent should use the response to brainstorm a structured rerun: add `DEPENDS_ON: memory-id` for dependencies, `LEVEL: advanced` when a memory is deeper than its prerequisite, or `UPDATE: memory-id` when a candidate should merge into a possible duplicate.
+Для `save-session --force` Engram приостанавливается перед записью, когда появляются такие подсказки о связанных воспоминаниях. Агент должен использовать ответ, чтобы продумать структурированный повторный запуск: добавить `DEPENDS_ON: memory-id` для зависимостей, `LEVEL: advanced`, когда воспоминание глубже своего предварительного условия, или `UPDATE: memory-id`, когда кандидата нужно слить с возможным дубликатом.
 
 <!-- evidence-foundation:v3:start -->
 ## Память, подкреплённая доказательствами
 
-For source material that should be reviewed before it becomes active memory:
+Для исходного материала, который нужно проверить, прежде чем он станет активной памятью:
 
 ```bash
 engram observe --file session.md
 engram save-session --file .agents/.engram/inbox/<observation>.md
 ```
 
-The first command sanitizes the source and writes an immutable trace identified by `trace_id` plus an editable inbox wrapper. The second command resolves the wrapper to its trace, verifies hash and scope, then writes only human-approved schema v3 memory with `evidence_refs`. Editing `## Raw Note` cannot replace the trace evidence.
+Первая команда очищает источник и записывает неизменяемый след, определяемый `trace_id`, плюс редактируемую обёртку во входящих. Вторая команда сопоставляет обёртку с её следом, проверяет хеш и область и записывает только утверждённую человеком память схемы v3 (schema v3) с `evidence_refs`. Правка `## Raw Note` не может заменить доказательство следа.
 <!-- evidence-foundation:v3:end -->
 
-## Safety checks at save time
+## Проверки безопасности при сохранении
 
-- Schema validation
-- Secret scan
-- Prompt-injection scan
-- Path safety
-- Hash integrity
+- Проверка схемы
+- Поиск секретов
+- Поиск prompt-инъекций
+- Безопасность путей
+- Целостность хешей
 
-## Why this matters
+## Почему это важно
 
-Without a protocol, memory can become invisible state. Invisible state is hard to review, hard to share, and easy for agents to poison by accident.
+Без протокола память может превратиться в невидимое состояние. Невидимое состояние трудно проверять, трудно разделять, и агентам легко случайно отравить его.
 
-Engram makes memory boring on purpose: files, diffs, hashes, review gates, and commands a human can rerun.
+Engram намеренно делает память скучной: файлы, диффы, хеши, шлюзы проверки и команды, которые человек может запустить повторно.
 
-## Next steps
+## Дальнейшие шаги
 
-- [Privacy, ignore rules, and safety](safety.md)
+- [Конфиденциальность, правила игнорирования и безопасность](safety.md)
 - [CLI: save / save-session / observe](../cli/save-session.md)

@@ -1,73 +1,86 @@
 ---
-title: Memory types
+title: メモリタイプ
 sidebar_position: 2
-description: Engram memory is typed — Rule, Skill, and Knowledge — so routing and review stay focused.
+description: Engram のメモリは Rule、Skill、Knowledge の型を持つため、ルーティングとレビューが的を絞ったものになります。
 ---
 
-# Memory types
+# メモリタイプ
 
-Every active Engram memory has a type. The type controls routing, review, and how the memory is rendered to agents.
+アクティブな Engram のメモリにはすべて型があります。型は、ルーティング、レビュー、そしてエージェントへのメモリの表示方法を決めます。
 
-| Type | Use |
+| タイプ | 用途 |
 | --- | --- |
-| Rule | user preference, correction, constraint, always/never guidance |
-| Skill | repeatable workflow, checklist, procedure, runbook |
-| Knowledge | objective project fact, decision, implementation detail |
+| Rule | ユーザーの好み、訂正、制約、常に/決してしないという指針 |
+| Skill | 繰り返し使えるワークフロー、チェックリスト、手順、ランブック |
+| Knowledge | プロジェクトに関する客観的な事実、決定、実装の詳細 |
 
-New files use `schema_version: 3`. Rule and skill memories default to `authority: instruction`; knowledge defaults to `authority: reference`. `revision` starts at 1 and increments on updates. Trace IDs belong in `evidence_refs`, while session or source identities belong in `derived_from`.
+新しいファイルは `schema_version: 3` を使います。Rule と Skill のメモリは既定で `authority: instruction`、Knowledge は既定で `authority: reference` になります。`revision` は 1 から始まり、更新のたびに増えます。トレース ID は `evidence_refs` に、セッションやソースの識別情報は `derived_from` に入れます。
 
-## Good memory
+## 良いメモリ
 
-Good Engram memory is:
+良い Engram のメモリは次のようなものです。
 
-- stable enough to matter next week
-- specific enough to route later
-- short enough to load into an agent context
-- safe enough to share with the intended scope
-- written as a rule, workflow, or knowledge item
+- 来週になっても意味を持つほど安定している
+- あとでルーティングできるほど具体的である
+- エージェントのコンテキストに読み込めるほど短い
+- 想定したスコープで共有できるほど安全である
+- ルール、ワークフロー、ナレッジのいずれかとして書かれている
 
-Bad memory is temporary chat noise, secrets, credentials, one-off speculation, or facts that nobody has approved.
+悪いメモリとは、一時的なチャットのノイズ、シークレット、認証情報、その場限りの推測、誰も承認していない事実です。
 
-## Rule variants
+## ルールバリアント
 
-Engram always saves rule memories with light, balanced, and strict versions. Rule variant mode is a render lens for agent-facing memory:
+Engram は、ルールの `## Content` から軽め(light)、標準(balanced)、厳しめ(strict)のルール文言を表示時に導出します(balanced は Content そのままです)。そのため、新規および書き換えられたルールファイルには Content だけが保存されます。`## Rule Variants` セクションは、候補が `LIGHT:`/`BALANCED:`/`STRICT:` で独自の文言を指定した場合にだけ保持されます。ルールバリアントモードは、エージェント向けメモリの表示レンズです。
 
-- **Strict** helps lower-tier models stay controlled.
-- **Light** or **balanced** wording usually helps stronger models so rules do not limit their reasoning.
+- **Strict** は、下位のモデルを制御された状態に保つのに役立ちます。
+- **Light** や **balanced** の文言は、通常、より強力なモデルがルールに推論を制限されないようにするのに役立ちます。
 
-When variants are off, Engram renders balanced rule wording by default. Tune with:
+バリアントがオフのとき、Engram は既定で balanced のルール文言を表示します。次のコマンドで調整します。
 
 ```bash
 engram set-rule-variant strict|balanced|light|off
 ```
 
-## Compact output by default
+## 既定ではコンパクトな出力
 
-When `engram load "<task>"` runs, the output is slimmed for AI agents by default:
+`engram load "<task>"` を実行すると、既定では AI エージェント向けに階層化され、スリム化された出力になります。
 
-| Aspect | Default (`engram load`) | Full (`engram load --full`) |
+| 項目 | 既定(`engram load`) | フル(`engram load --full`) |
 | --- | --- | --- |
-| Frontmatter | `id`, `type`, `tags`, `confidence`, `authority`, `depends_on`, `evidence_refs` | Full schema v3 and legacy fields, including provenance, revision, supersession, and validity |
-| Rule body | One selected variant under `## Rule variants (1/3 based on current: <active>)` | Full `## Rule Variants` section with all three variants |
-| Non-rule content | Same content, unchanged heading | Same content, unchanged heading |
+| フロントマター | 表示されません。本文のヘッダーは `### <id> [<type>, <authority>]` と `requires: <ids>` です | 来歴、リビジョン、置き換え、有効期間を含む、完全な schema v3 とレガシーのフィールド |
+| 開示 | 上位 `load.expand_top` 件は本文、その他は 1 行のカード(`- <id> [<type>] <directive-or-summary>`)、最後に `fetch:` のヒント | パックされたすべての本文 |
+| ルール本文 | 選択された 1 つのバリアント | Content と、ファイルに独自のバリアントがある場合にのみ、保存された `## Rule Variants` セクション |
+| その他のセクション | `## Context`、`## Example`、`## Origin` は表示されません | 同じ内容で、見出しも変わりません |
 
-MCP `engram_load` and SessionStart hooks use compact output by default. Pass `full: true` on the MCP tool or `engram load --full "<task>"` when broader legacy output is needed.
+MCP の `engram_load` とフックは、既定で階層化された出力を使います。より広いレガシー出力が必要な場合は、MCP ツールに `full: true` を渡すか、`engram load --full "<task>"` を使います。
+
+## 任意のルーティングフィールド
+
+これらのフロントマターのフィールドは任意です。これらがないメモリはこれまでどおり動作し、`schema_version` は 3 のままです。
+
+| フィールド | 意味 |
+| --- | --- |
+| `directive` | 最大 160 文字の 1 行。カードに表示され、ランキングで重み付けされます |
+| `applies_to` | glob のリスト。一致するファイルが読み取りまたは編集されたときにそのメモリを注入し、強いアンカーとして数えられます |
+| `tier` | `durable`(既定)または `working`(タスク単位、Git 管理外、期限あり) |
+| `objective` | 最大 200 文字。作業メモリが書かれた目的 |
+| `valid_until` | 有効期限の日付。作業メモリには今日 + `load.working_ttl_days` が設定されます |
 
 <!-- evidence-foundation:v3:start -->
 ## 証拠に基づくメモリ
 
-New files use `schema_version: 3`. Rule and skill memories default to `authority: instruction`; knowledge defaults to `authority: reference`. `revision` starts at 1 and increments on updates. Trace IDs belong in `evidence_refs`, while session or source identities belong in `derived_from`. Legacy v1 (`Context` + `Content` + `Example`) and v2 (`Content`, optional `Origin`) remain readable.
+新しいファイルは `schema_version: 3` を使います。Rule と Skill のメモリは既定で `authority: instruction`、Knowledge は既定で `authority: reference` になります。`revision` は 1 から始まり、更新のたびに増えます。トレース ID は `evidence_refs` に、セッションやソースの識別情報は `derived_from` に入れます。レガシーの v1(`Context` + `Content` + `Example`)と v2(`Content`、任意の `Origin`)も引き続き読み取れます。
 <!-- evidence-foundation:v3:end -->
 
-## Next steps
+## 次のステップ
 
-- [Workspace vs global memory](scopes.md)
-- [Read path and routing](read-path.md)
+- [ワークスペースメモリとグローバルメモリ](scopes.md)
+- [読み取りパスとルーティング](read-path.md)
 
 
-## Git author identity
+## Git 作成者(author)の ID
 
-Engram can store a global author and an optional workspace override. Resolution is workspace, global, then read-only Git fallback. Settings affect future memories only; a workspace override never changes global Git configuration. Use explicit plan and confirmation for global Git sync or legacy-memory migration.
+Engram は、グローバルの作成者と、任意のワークスペースオーバーライドを保存できます。解決順序は、ワークスペース、グローバル、読み取り専用の Git フォールバックの順です。設定が影響するのは今後のメモリだけで、ワークスペースのオーバーライドがグローバルの Git 設定を変更することはありません。グローバル Git の同期やレガシーメモリの移行では、明示的なプランと確認を使ってください。
 
 ```bash
 engram author show
@@ -79,10 +92,10 @@ engram author migrate-memories --plan
 engram author migrate-memories --confirm
 ```
 
-Read the complete [Git author settings guide](../operations/git-author-settings.md).
+詳しくは [Git 作成者設定ガイド](../operations/git-author-settings.md) を参照してください。
 
 
 <!-- configuration-upgrade-inventory -->
-## Configuration upgrade inventory
+## 設定アップグレードのインベントリ
 
-After a package update, run `engram upgrade --latest --plan` before `engram upgrade --latest`. The shared inventory scans workspace and global Engram-managed memories, instructions, skillsets, configs, hooks, and plugins. User-authored bytes are preserved; ambiguous mixed files are reported as conflicts. See [Configuration upgrades](../operations/configuration-upgrades.md).
+パッケージ更新後は、`engram upgrade --latest` の前に `engram upgrade --latest --plan` を実行してください。共有インベントリは、ワークスペースとグローバルの Engram 管理下にあるメモリ、指示、スキルセット、設定、フック、プラグインをスキャンします。ユーザーが書いたバイト列は保持され、判別できない混在ファイルはコンフリクトとして報告されます。[設定アップグレード](../operations/configuration-upgrades.md) を参照してください。

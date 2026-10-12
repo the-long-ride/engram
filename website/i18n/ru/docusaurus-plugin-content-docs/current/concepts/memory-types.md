@@ -1,73 +1,86 @@
 ---
-title: Memory types
+title: Типы памяти
 sidebar_position: 2
-description: Engram memory is typed — Rule, Skill, and Knowledge — so routing and review stay focused.
+description: Память Engram типизирована — Rule, Skill и Knowledge — поэтому маршрутизация и проверка остаются сфокусированными.
 ---
 
-# Memory types
+# Типы памяти
 
-Every active Engram memory has a type. The type controls routing, review, and how the memory is rendered to agents.
+У каждого активного воспоминания Engram есть тип. Тип определяет маршрутизацию, проверку и то, как воспоминание отображается агентам.
 
-| Type | Use |
+| Тип | Назначение |
 | --- | --- |
-| Rule | user preference, correction, constraint, always/never guidance |
-| Skill | repeatable workflow, checklist, procedure, runbook |
-| Knowledge | objective project fact, decision, implementation detail |
+| Rule | предпочтение пользователя, исправление, ограничение, указание «всегда/никогда» |
+| Skill | повторяемый рабочий процесс, чек-лист, процедура, runbook |
+| Knowledge | объективный факт о проекте, решение, деталь реализации |
 
-New files use `schema_version: 3`. Rule and skill memories default to `authority: instruction`; knowledge defaults to `authority: reference`. `revision` starts at 1 and increments on updates. Trace IDs belong in `evidence_refs`, while session or source identities belong in `derived_from`.
+Новые файлы используют `schema_version: 3`. Воспоминания типов rule и skill по умолчанию получают `authority: instruction`; knowledge — `authority: reference`. `revision` начинается с 1 и увеличивается при обновлениях. Идентификаторы следов относятся к `evidence_refs`, а идентичности сессии или источника — к `derived_from`.
 
-## Good memory
+## Хорошее воспоминание
 
-Good Engram memory is:
+Хорошее воспоминание Engram:
 
-- stable enough to matter next week
-- specific enough to route later
-- short enough to load into an agent context
-- safe enough to share with the intended scope
-- written as a rule, workflow, or knowledge item
+- достаточно стабильно, чтобы быть важным и через неделю
+- достаточно конкретно, чтобы его можно было маршрутизировать позже
+- достаточно коротко, чтобы поместиться в контекст агента
+- достаточно безопасно, чтобы делиться им в предполагаемой области
+- записано как правило, рабочий процесс или элемент знаний
 
-Bad memory is temporary chat noise, secrets, credentials, one-off speculation, or facts that nobody has approved.
+Плохое воспоминание — это временный шум чата, секреты, учётные данные, разовые домыслы или факты, которые никто не утверждал.
 
-## Rule variants
+## Варианты правил
 
-Engram always saves rule memories with light, balanced, and strict versions. Rule variant mode is a render lens for agent-facing memory:
+Engram выводит формулировки правила в вариантах light, balanced и strict во время рендеринга из `## Content` правила (balanced — это Content дословно), поэтому новые и переписанные файлы правил хранят только Content. Раздел `## Rule Variants` сохраняется только для собственных формулировок, которые кандидат передаёт через `LIGHT:`/`BALANCED:`/`STRICT:`. Режим вариантов правил — это линза рендеринга для памяти, ориентированной на агента:
 
-- **Strict** helps lower-tier models stay controlled.
-- **Light** or **balanced** wording usually helps stronger models so rules do not limit their reasoning.
+- **Strict** помогает моделям младшего уровня оставаться в рамках.
+- Формулировки **light** или **balanced** обычно помогают более сильным моделям, чтобы правила не ограничивали их рассуждения.
 
-When variants are off, Engram renders balanced rule wording by default. Tune with:
+Когда варианты выключены, Engram по умолчанию рендерит формулировку balanced. Настройка:
 
 ```bash
 engram set-rule-variant strict|balanced|light|off
 ```
 
-## Compact output by default
+## Компактный вывод по умолчанию
 
-When `engram load "<task>"` runs, the output is slimmed for AI agents by default:
+При выполнении `engram load "<task>"` вывод по умолчанию разбивается на уровни и сокращается для ИИ-агентов:
 
-| Aspect | Default (`engram load`) | Full (`engram load --full`) |
+| Аспект | По умолчанию (`engram load`) | Полный (`engram load --full`) |
 | --- | --- | --- |
-| Frontmatter | `id`, `type`, `tags`, `confidence`, `authority`, `depends_on`, `evidence_refs` | Full schema v3 and legacy fields, including provenance, revision, supersession, and validity |
-| Rule body | One selected variant under `## Rule variants (1/3 based on current: <active>)` | Full `## Rule Variants` section with all three variants |
-| Non-rule content | Same content, unchanged heading | Same content, unchanged heading |
+| Frontmatter | Не отображается; заголовок тела — `### <id> [<type>, <authority>]` плюс `requires: <ids>` | Полная схема v3 и устаревшие поля, включая происхождение, ревизию, замещение и срок действия |
+| Раскрытие | Первые `load.expand_top` совпадений — телами, остальные — однострочными карточками (`- <id> [<type>] <directive-or-summary>`), затем подсказка `fetch:` | Каждое упакованное тело |
+| Тело правила | Один выбранный вариант | Content, плюс сохранённый раздел `## Rule Variants` только если в файле есть собственные варианты |
+| Прочие разделы | `## Context`, `## Example` и `## Origin` не отображаются | То же содержимое, заголовок без изменений |
 
-MCP `engram_load` and SessionStart hooks use compact output by default. Pass `full: true` on the MCP tool or `engram load --full "<task>"` when broader legacy output is needed.
+MCP `engram_load` и хуки по умолчанию используют многоуровневый вывод. Передайте `full: true` в инструмент MCP или используйте `engram load --full "<task>"`, когда нужен более широкий устаревший вывод.
+
+## Необязательные поля маршрутизации
+
+Эти поля frontmatter необязательны; воспоминание без них ведёт себя как раньше, а `schema_version` остаётся равной 3.
+
+| Поле | Значение |
+| --- | --- |
+| `directive` | Одна строка не длиннее 160 символов; показывается на карточках и учитывается с весом при ранжировании |
+| `applies_to` | Список glob-шаблонов; внедряет воспоминание, когда читается или редактируется подходящий файл, и считается сильным якорем |
+| `tier` | `durable` (по умолчанию) или `working` (привязано к задаче, исключено из Git, истекает) |
+| `objective` | До 200 символов; цель, для которой было записано рабочее воспоминание |
+| `valid_until` | Дата истечения; рабочее воспоминание получает сегодня + `load.working_ttl_days` |
 
 <!-- evidence-foundation:v3:start -->
 ## Память, подкреплённая доказательствами
 
-New files use `schema_version: 3`. Rule and skill memories default to `authority: instruction`; knowledge defaults to `authority: reference`. `revision` starts at 1 and increments on updates. Trace IDs belong in `evidence_refs`, while session or source identities belong in `derived_from`. Legacy v1 (`Context` + `Content` + `Example`) and v2 (`Content`, optional `Origin`) remain readable.
+Новые файлы используют `schema_version: 3`. Воспоминания типов rule и skill по умолчанию получают `authority: instruction`; knowledge — `authority: reference`. `revision` начинается с 1 и увеличивается при обновлениях. Идентификаторы следов относятся к `evidence_refs`, а идентичности сессии или источника — к `derived_from`. Устаревшие v1 (`Context` + `Content` + `Example`) и v2 (`Content`, необязательный `Origin`) остаются читаемыми.
 <!-- evidence-foundation:v3:end -->
 
-## Next steps
+## Дальнейшие шаги
 
-- [Workspace vs global memory](scopes.md)
-- [Read path and routing](read-path.md)
+- [Рабочее пространство и глобальная память](scopes.md)
+- [Путь чтения и маршрутизация](read-path.md)
 
 
-## Git author identity
+## Личность автора Git
 
-Engram can store a global author and an optional workspace override. Resolution is workspace, global, then read-only Git fallback. Settings affect future memories only; a workspace override never changes global Git configuration. Use explicit plan and confirmation for global Git sync or legacy-memory migration.
+Engram может хранить глобального автора и необязательное переопределение для рабочего пространства. Порядок разрешения: рабочее пространство, глобальный, затем резервный Git только для чтения. Настройки влияют только на будущие воспоминания; переопределение рабочего пространства никогда не меняет глобальную конфигурацию Git. Для синхронизации с глобальным Git или миграции устаревших воспоминаний используйте явный план и подтверждение.
 
 ```bash
 engram author show
@@ -79,10 +92,10 @@ engram author migrate-memories --plan
 engram author migrate-memories --confirm
 ```
 
-Read the complete [Git author settings guide](../operations/git-author-settings.md).
+Прочитайте полное [руководство по настройкам автора Git](../operations/git-author-settings.md).
 
 
 <!-- configuration-upgrade-inventory -->
-## Configuration upgrade inventory
+## Инвентаризация обновлений конфигурации
 
-After a package update, run `engram upgrade --latest --plan` before `engram upgrade --latest`. The shared inventory scans workspace and global Engram-managed memories, instructions, skillsets, configs, hooks, and plugins. User-authored bytes are preserved; ambiguous mixed files are reported as conflicts. See [Configuration upgrades](../operations/configuration-upgrades.md).
+После обновления пакета выполните `engram upgrade --latest --plan` перед `engram upgrade --latest`. Общий инвентарь сканирует воспоминания, инструкции, skillset, конфигурации, хуки и плагины рабочего пространства и глобальной области, управляемые Engram. Байты, написанные пользователем, сохраняются; неоднозначные смешанные файлы сообщаются как конфликты. См. [Обновления конфигурации](../operations/configuration-upgrades.md).

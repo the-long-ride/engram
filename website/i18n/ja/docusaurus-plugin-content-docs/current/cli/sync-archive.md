@@ -1,12 +1,12 @@
 ---
 title: sync / clone-memory / archive
 sidebar_position: 7
-description: Sync, clone, and archive commands for moving memory between scopes.
+description: スコープ間でメモリを移動するための sync、clone、archive コマンド。
 ---
 
 # sync / clone-memory / archive
 
-Move memory between scopes and retire wrong memory safely.
+スコープ間でメモリを移動し、誤ったメモリを安全に退役させます。
 
 ## clone-memory
 
@@ -16,9 +16,9 @@ engram clone-memory global workspace --force
 engram clone-memory workspace global --metacognize
 ```
 
-Copy active `rules/`, `skills/`, and `knowledge/` Markdown between workspace and global scopes. Add `--metacognize` when you want cloned memories proposed through the save-session approval flow instead of copied verbatim.
+ワークスペースとグローバル スコープ間で、`rules/`、`skills/`、`knowledge/` のアクティブな Markdown をコピーします。クローンされたメモリをそのままコピーするのではなく、save-session の承認フローを通じて提案させたい場合は `--metacognize` を追加します。
 
-Agents may normalize natural clone requests into `engram clone-memory`, for example "clone workspace memory to global" -> `engram clone-memory workspace global`. Reverse the scopes to copy global memory into a workspace; use `--force` only when the human explicitly asks to overwrite destination copies.
+エージェントは自然なクローン要求を `engram clone-memory` に正規化できます（例: "clone workspace memory to global" -> `engram clone-memory workspace global`）。グローバル メモリをワークスペースにクローンするにはスコープを逆にします。宛先の重複を上書きするよう明示的に要求された場合にのみ `--force` を使用してください。
 
 ## archive
 
@@ -26,7 +26,7 @@ Agents may normalize natural clone requests into `engram clone-memory`, for exam
 engram archive --reason "<why>" <id-or-file>
 ```
 
-Archive wrong or superseded memory. The file leaves active routing only after approval and remains preserved under `archive/`. Use archive, not delete, for auditability.
+誤ったメモリや置き換えられたメモリをアーカイブします。ファイルは承認後にのみアクティブなルーティングから外れ、`archive/` 配下に保持されます。監査のために削除（delete）ではなくアーカイブ（archive）を使用してください。
 
 ## observe (inbox)
 
@@ -35,13 +35,13 @@ engram observe --file session.md
 engram save-session --file .agents/.engram/inbox/<note>.md
 ```
 
-`observe` stores sanitized raw notes in `inbox/`. Inbox notes are not active memory.
+`observe` はサニタイズされた生のメモを `inbox/` に保存します。受信トレイのメモはアクティブなメモリではありません。
 
-## Global Git sync
+## グローバル Git 同期 {#global-git-sync}
 
-Global Git sync is controlled by the `global_git.*` config fields. See [Entry Web UI: Construct tab](../entry/construct.md) for every field. Use `engram entry` and the Construct tab, or `engram config view`, to inspect resolved Git detection.
+グローバル Git 同期は `global_git.*` 設定フィールドによって制御されます。各フィールドについては [Entry Web UI: Construct タブ](../entry/construct.md) を参照してください。解決された Git 検出結果を確認するには、`engram entry` と Construct タブ、または `engram config view` を使用します。
 
-## Next steps
+## 次のステップ {#next-steps}
 
-- [profiles / workspaces / config](profiles-workspaces-config.md)
-- [Operations: team Git workflow](../operations/team-git-workflow.md)
+- [プロファイル / ワークスペース / 設定](profiles-workspaces-config.md)
+- [運用: チーム Git ワークフロー](../operations/team-git-workflow.md)

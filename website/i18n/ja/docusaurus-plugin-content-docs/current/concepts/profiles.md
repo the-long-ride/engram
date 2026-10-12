@@ -1,14 +1,14 @@
 ---
-title: Profiles and scope resolution
+title: プロファイルとスコープの解決
 sidebar_position: 4
-description: Profiles isolate global memory roots for company, team, and personal contexts.
+description: プロファイルは、企業、チーム、個人のコンテキストごとにグローバルメモリのルートを分離します。
 ---
 
-# Profiles and scope resolution
+# プロファイルとスコープの解決
 
-Profiles isolate global memory roots for company, team, and personal contexts. They keep client, company, and personal memory from leaking across boundaries.
+プロファイルは、企業、チーム、個人のコンテキストごとにグローバルメモリのルートを分離します。クライアント、企業、個人のメモリが境界を越えて漏洩するのを防ぎます。
 
-## Create and switch profiles
+## プロファイルの作成と切り替え
 
 ```bash
 engram profile create personal --global-path ~/Documents/engram-personal --use
@@ -16,28 +16,28 @@ engram profile use company --workspace
 engram profile merge personal company --dry-run
 ```
 
-## Resolution order
+## 解決の順序
 
-Profile resolution order is:
+プロファイルの解決順序は以下の通りです：
 
-1. Explicit `--profile` or `ENGRAM_PROFILE`
-2. The workspace `default_profile`
-3. The active user profile
+1. 明示的な `--profile` または `ENGRAM_PROFILE`
+2. ワークスペースの `default_profile`
+3. アクティブなユーザープロファイル
 
-If workspace `W` is pinned to profile `B` while the user default remains profile `A`, every normal load, MCP load, and agent-hook injection for `W` reads profile `B` global memory and never profile `A`. An explicit profile different from the workspace default uses that profile's global memory and disables workspace memory for that command.
+ユーザーのデフォルトがプロファイル `A` のまま、ワークスペース `W` がプロファイル `B` に固定されている場合、`W` に対する通常ロード、MCP ロード、およびエージェントフックの注入は、プロファイル `B` のグローバルメモリを読み取り、プロファイル `A` は決して読み取りません。ワークスペースのデフォルトと異なる明示的なプロファイルを指定すると、そのプロファイルのグローバルメモリが使用され、そのコマンドに対するワークスペースメモリは無効になります。
 
-## When to use profiles
+## プロファイルを使用するタイミング
 
-- Personal memory that should never reach a client repo
-- Company memory that should never reach a personal repo
-- Client-isolated memory for consultants working across engagements
-- Team-shared memory that should not bleed into individual experiments
+- クライアントのリポジトリに絶対に含めてはならない個人メモリ
+- 個人のリポジトリに絶対に含めてはならない企業のメモリ
+- 複数の案件にまたがって活動するコンサルタントのためのクライアント分離メモリ
+- 個々の実験に混入してはならないチーム共有メモリ
 
-## SQLite config DB fallback
+## SQLite 設定 DB へのフォールバック
 
-Engram's SQLite config DB is an optimization for workspace/profile management. If the DB cannot be opened or initialized, normal read/write commands fall back to JSON config snapshots. DB-specific commands report SQLite as unavailable instead of blocking normal memory use.
+Engram の SQLite 設定 DB は、ワークスペース/プロファイル管理のための最適化です。DB をオープンまたは初期化できない場合、通常の読み取り/書き込みコマンドは JSON 設定のスナップショットにフォールバックします。DB 固有のコマンドは、通常のメモリ使用をブロックする代わりに SQLite が利用不可であることを報告します。
 
-## Next steps
+## 次のステップ
 
-- [Workspace vs global memory](scopes.md)
-- [Write path and approval](write-path.md)
+- [ワークスペースメモリとグローバルメモリ](scopes.md)
+- [書き込みパスと承認](write-path.md)

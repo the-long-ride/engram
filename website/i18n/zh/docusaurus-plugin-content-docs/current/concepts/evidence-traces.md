@@ -1,18 +1,16 @@
 ---
 title: 证据追踪与来源
 sidebar_position: 7
-description: How Engram preserves immutable evidence, links approved memory to its source, and exposes the same metadata in CLI and Web UI.
+description: Engram 如何保存不可变的证据、将已批准的记忆关联到其来源，并在 CLI 和 Web UI 中呈现相同的元数据。
 ---
 
 # 证据追踪与来源
 
-Engram 将证据与已批准记忆分离；追踪记录保存经过清理且不可变的来源。
+Engram 将证据与已批准的记忆分开。追踪记录（trace）保存经过清理的来源记录；记忆则仍是经人工批准的指令或参考资料，并引用该证据。
 
-Engram separates evidence from approved memory. A trace preserves the sanitized source record; a memory remains a human-approved instruction or reference that cites that evidence.
+## 已批准记忆的契约
 
-## Approved memory contract
-
-New approved memories use schema v3. Legacy v1 and v2 files remain readable and are never silently rewritten.
+新的已批准记忆使用 schema v3。旧版 v1 和 v2 文件仍可读取，且不会被悄悄改写。
 
 ```yaml
 schema_version: 3
@@ -27,11 +25,11 @@ valid_until: YYYY-MM-DD | null
 last_confirmed: YYYY-MM-DD
 ```
 
-The contract fields are `schema_version`, `authority`, `evidence_refs`, `derived_from`, `revision`, `supersedes`, `superseded_by`, `valid_from`, `valid_until`, and `last_confirmed`.
+契约字段包括 `schema_version`、`authority`、`evidence_refs`、`derived_from`、`revision`、`supersedes`、`superseded_by`、`valid_from`、`valid_until` 和 `last_confirmed`。
 
-## Immutable trace contract
+## 不可变追踪契约
 
-Each `traces/<trace-id>.jsonl` file contains exactly one canonical record and is created exclusively, so an existing trace ID cannot be overwritten. The fields `trace_id`, `session_id`, `source_hash`, `trust_level`, `sensitivity`, and `retention` preserve identity, origin, integrity, trust, privacy, and lifecycle. `authority: evidence` is data only and never acts as an instruction.
+每个 `traces/<trace-id>.jsonl` 文件恰好包含一条规范记录，并以独占方式创建，因此已有的 trace ID 无法被覆盖。`trace_id`、`session_id`、`source_hash`、`trust_level`、`sensitivity` 和 `retention` 这些字段分别保留身份、来源、完整性、信任、隐私和生命周期信息。`authority: evidence` 仅是数据，绝不会作为指令执行。
 
 ```json
 {
@@ -45,14 +43,14 @@ Each `traces/<trace-id>.jsonl` file contains exactly one canonical record and is
 }
 ```
 
-## CLI and Web UI stay synchronized
+## CLI 与 Web UI 保持同步
 
-`engram observe` and transcript hooks sanitize before persistence. The CLI prints the created trace ID, and `save-session` carries `evidence_refs` and `derived_from` into approved memory. Entry Web UI reads the same index and shows authority, evidence IDs, session origin, revision, validity, and supersession links in the memory detail panel.
+`engram observe` 和会话记录（transcript）hook 会在持久化之前先进行清理。CLI 会输出所创建的 trace ID，`save-session` 会将 `evidence_refs` 和 `derived_from` 带入已批准的记忆。Entry Web UI 读取同一份索引，并在记忆详情面板中显示权限（authority）、证据 ID、会话来源、修订版本、有效期以及取代关系链接。
 
-## Safety and migration
+## 安全与迁移
 
-Default human capture uses `trust_level: human`, `sensitivity: private`, and `retention: 30d` unless configured. Expired or missing evidence blocks new approved writes. Existing observation wrappers remain review conveniences that point to traces, and initialization migrates eligible legacy wrappers once.
+除非另行配置，默认的人工采集使用 `trust_level: human`、`sensitivity: private` 和 `retention: 30d`。证据过期或缺失时，将阻止新的已批准写入。现有的观察（observation）包装文件仍作为指向 trace 的审阅辅助，初始化时会一次性迁移符合条件的旧版包装文件。
 
-## Promotion integrity and scope
+## 提升的完整性与作用域
 
-The inbox wrapper is editable review material, not the evidence source. During `save-session --file`, Engram reopens the immutable trace, verifies the wrapper hash when present, and uses the trace text, session, and source metadata. Editing `## Raw Note` cannot change promoted content. A trace-backed save is bound to the trace's workspace or global scope; a conflicting explicit `--scope` is rejected. Legacy trace and session identifiers are namespaced by scope to avoid provenance collisions.
+inbox 包装文件是可编辑的审阅材料，而不是证据来源。执行 `save-session --file` 时，Engram 会重新打开不可变的 trace，在存在包装文件哈希时对其进行校验，并使用 trace 的文本、会话和来源元数据。编辑 `## Raw Note` 无法改变被提升的内容。基于 trace 的保存会绑定到该 trace 的工作区或全局作用域；与之冲突的显式 `--scope` 会被拒绝。旧版 trace 和会话标识符按作用域加命名空间，以避免来源冲突。

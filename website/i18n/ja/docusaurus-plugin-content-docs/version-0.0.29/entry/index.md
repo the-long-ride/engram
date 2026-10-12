@@ -1,0 +1,67 @@
+---
+title: Entry Web UI の概要
+sidebar_position: 1
+description: Entry Web UI は、Engram メモリ、プロファイル、ワークスペース、およびエージェント接続を構成するためのローカル専用コントロールパネルです。
+---
+
+import RiskCallout from '@site/src/components/RiskCallout';
+
+# Entry Web UI の概要
+
+Entry Web UI は、Engram 用のローカル専用コントロールパネルです。これを使用して、メモリルートを構成し、AI エージェントをリンクし、ルーティングを調整し、重複メモリを確認し、メモリグラフを検査し、JSON ファイルを手動で編集することなく実行構成をデバッグできます。
+
+## 使用するタイミング
+
+- ワークスペースまたはグローバルメモリルートの初期設定時
+- CLI フラグを覚えることなく AI エージェントの接続を有効/無効化したいとき
+- ルーティング、グラフ、ベクトル、ルールバリアント設定を調整するとき
+- 重複するメモリや競合するメモリを確認するとき
+- メモリの関連性グラフをシ覚的に確認するとき
+- 適用された最終設定、パス、Git 連携検出状態をデバッグするとき
+
+## ローカル専用アクセスモデル (Local-only)
+
+このパネルはローカルの PC 内で実行されます。クラウドサービスではありません。セキュリティ上の理由から、構成作業が完了したらサーバーを停止してください。
+
+<RiskCallout level="risky">
+Entry パネルはローカル単独で実行されます。メモリを設定している間のみ稼働させ、終了したら Runtime タブからすぐにサーバーを停止してください。
+</RiskCallout>
+
+## CLI コマンドとの関係
+
+UI に表示されるすべてのコントロールは、CLI コマンドまたは設定キーに対応しています。対応する CLI コマンドは、フィールドリファレンスガイドに記載されています。自動化やスクリプト作成の基準となるのは、常に CLI 環境です。
+
+## タブの要約
+
+| タブ | 役割 |
+| --- | --- |
+| [Connections](connections.md) | サポートされている AI エージェントの検出とリンク |
+| [Construct](construct.md) | すべての Engram 実行時フィールドの構成 |
+| [Profiles](profiles.md) | 分離されたグローバルメモリプロファイルの管理 |
+| [Workspaces](workspaces.md) | プロジェクトリポジトリの登録とリンク状態の管理 |
+| [Core](core.md) | 重複するメモリや競合するメモリの確認 |
+| [Memories](memories.md) | メモリグラフの検査とメモリのアーカイブ |
+| [Runtime](runtime.md) | 最終解決された構成情報と物理パスの表示（読み取り専用） |
+
+## 次のステップ
+
+- [コントロールパネルの起動](launch.md)
+- [Construct タブ](construct.md)
+- [完全なフィールドリファレンス](field-reference.md)
+
+
+## Git 作成者(author)の ID
+
+Engram は、グローバルの作成者と、任意のワークスペースオーバーライドを保存できます。解決順序は、ワークスペース、グローバル、読み取り専用の Git フォールバックの順です。設定が影響するのは今後のメモリだけで、ワークスペースのオーバーライドがグローバルの Git 設定を変更することはありません。グローバル Git の同期やレガシーメモリの移行では、明示的なプランと確認を使ってください。
+
+```bash
+engram author show
+engram author set --name "Jane Doe" --email "jane@example.com"
+engram author unset --scope workspace
+engram author sync-git-global --plan
+engram author sync-git-global --confirm
+engram author migrate-memories --plan
+engram author migrate-memories --confirm
+```
+
+詳しくは [Git 作成者設定ガイド](../operations/git-author-settings.md)

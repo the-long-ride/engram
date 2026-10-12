@@ -1,47 +1,47 @@
 ---
 title: FAQ
 sidebar_position: 4
-description: Frequently asked questions about Engram.
+description: Engram についてのよくある質問です。
 ---
 
 # FAQ
 
-## Is Engram a vector database?
+## Engram はベクトルデータベースですか?
 
-No. Default Engram search is deterministic lexical search. `engram search --semantic` adds deterministic local similarity, not embedding-backed semantic search. Graph vectors are local hashed word vectors, not semantic embeddings. Optional local sqlite-vec is an acceleration layer, not the source of truth.
+いいえ。既定の Engram の検索は、決定的な字句検索です。`engram search --semantic` は決定的なローカルの類似度を加えるもので、埋め込みベースの意味検索ではありません。グラフのベクトルはローカルのハッシュ化された単語ベクトルで、意味的な埋め込みではありません。任意のローカル sqlite-vec は実験的な高速化レイヤー(既定ではオフ。`vector.enabled: true` で有効化)であり、信頼できる情報源ではありません。
 
-## Does Engram write memory automatically?
+## Engram は自動でメモリを書き込みますか?
 
-No. Agents propose candidates; humans approve. Direct terminal CLI uses A/B/C. AI-agent chat uses `yes`/`audit`/`cancel`. Only explicit force requests (`ss -f`) save every candidate, and agents must not add `--force` unless the human requested it.
+いいえ。エージェントが候補を提案し、人間が承認します。直接のターミナル CLI は A/B/C を使います。AI エージェントのチャットは `yes`/`audit`/`cancel` を使います。すべての候補を保存するのは、明示的な強制の依頼(`ss -f`)だけで、人間が依頼しない限り、エージェントは `--force` を付けてはいけません。
 
-## Where does memory live?
+## メモリはどこにありますか?
 
-- Workspace memory: `<project>/.agents/.engram/`
-- Global memory: wherever you configure it (default empty until configured)
+- ワークスペースメモリ: `<project>/.agents/.engram/`
+- グローバルメモリ: 設定した場所(設定するまでは既定で空)
 
-Workspace memory wins. Global memory is fallback for reusable preferences and team context.
+ワークスペースメモリが優先されます。グローバルメモリは、再利用できる好みやチーム共通の文脈のためのフォールバックです。
 
-## Which agents are supported?
+## どのエージェントに対応していますか?
 
-Codex, Claude, Gemini (and Antigravity Gemini-compatible surfaces), Cursor, Windsurf/Cascade, OpenCode, Copilot, Cline, generic AGENTS.md-compatible hosts, MCP-capable hosts, and slash-command hosts. See [Agent Integrations overview](../integrations/overview.md).
+Codex、Claude、Gemini(および Antigravity の Gemini 互換サーフェス)、Cursor、Windsurf/Cascade、OpenCode、Copilot、Cline、AGENTS.md 互換の汎用ホスト、MCP 対応ホスト、スラッシュコマンド対応ホストです。[エージェント連携の概要](../integrations/overview.md) を参照してください。
 
-## Is encryption implemented?
+## 暗号化は実装されていますか?
 
-Encryption config exists, but encrypted storage is not implemented yet. Document current limitations clearly.
+暗号化の設定は存在しますが、暗号化ストレージはまだ実装されていません。現在の制限は明確に文書化してください。
 
-## Can I use Engram without Git?
+## Git なしで Engram を使えますか?
 
-Yes. Git is optional but recommended for audit history, portability, and team review.
+はい。Git は任意ですが、監査履歴、ポータビリティ、チームレビューのために推奨します。
 
-## How do I archive wrong memory?
+## 誤ったメモリをアーカイブするには?
 
 ```bash
 engram archive --reason "<why>" <id-or-file>
 ```
 
-The file leaves active routing only after approval and remains preserved under `archive/`. Use archive, not delete, for auditability.
+ファイルは承認後にだけアクティブなルーティングから外れ、`archive/` 配下に保存されたまま残ります。監査可能性のために、削除ではなくアーカイブを使ってください。
 
-## How do I move global memory?
+## グローバルメモリを移動するには?
 
 ```bash
 engram update-global-folder <new-path>
@@ -49,38 +49,38 @@ engram ugf <new-path>
 engram move global folder from <old-path> to <new-path>
 ```
 
-Add `--move-from-path <old-path>` when they also want Engram to move the whole old global root into the new location.
+古いグローバルルート全体も新しい場所へ移動したい場合は、`--move-from-path <old-path>` を追加します。
 
 
-## Legacy memory migration to schema v3
+## schema v3 へのレガシーメモリ移行
 
-`engram upgrade --latest` also migrates active v1/v2 memory files in the workspace and configured global roots to schema v3. Engram preserves each Markdown body exactly, creates `<memory-file>.pre-v3.bak`, fills only deterministic metadata, refreshes integrity hashes, and rebuilds the index, graph, and eligible vector sidecars. It never invents `evidence_refs`; a memory without verified trace links is marked `evidence_status: unverified`. Invalid memories are reported and skipped, archived memories are not rewritten, and a second run is idempotent.
+`engram upgrade --latest` は、ワークスペースと設定済みのグローバルルートにあるアクティブな v1/v2 メモリファイルも、schema v3 に移行します。Engram は各 Markdown 本文をそのまま保持し、`backups/schema-v3/<memory-file>.pre-v3.bak` を書き出し(Git 管理外のフォルダーです。メモリの隣に残っている古いバックアップは `engram repair --move-backups` で移動できます)、決定的なメタデータだけを補い、整合性ハッシュを更新し、インデックス、グラフ、対象となるベクトルサイドカーを再構築します。`evidence_refs` を勝手に作ることはなく、検証済みのトレースへのリンクがないメモリには `evidence_status: unverified` が付きます。無効なメモリは報告されてスキップされ、アーカイブ済みのメモリは書き換えられず、2 回目の実行は冪等です。
 
-Preview all changes without writing:
+書き込まずにすべての変更をプレビューします。
 
 ```bash
 engram upgrade --latest --plan
 ```
 
-Run only the memory migration, without overwriting linked agent artifacts:
+リンク済みのエージェント成果物を上書きせずに、メモリ移行だけを実行します。
 
 ```bash
 engram upgrade --migrate-memories
 ```
 
-Skip memory migration during a latest upgrade:
+最新へのアップグレード中にメモリ移行をスキップします。
 
 ```bash
 engram upgrade --latest --no-migrate-memories
 ```
 
-## Next steps
+## 次のステップ
 
-- [Troubleshooting](troubleshooting.md)
-- [Comparison and roadmap](../comparison/overview.md)
+- [トラブルシューティング](troubleshooting.md)
+- [比較とロードマップ](../comparison/overview.md)
 
 
 <!-- configuration-upgrade-inventory -->
-## Configuration upgrade inventory
+## 設定アップグレードのインベントリ
 
-After a package update, run `engram upgrade --latest --plan` before `engram upgrade --latest`. The shared inventory scans workspace and global Engram-managed memories, instructions, skillsets, configs, hooks, and plugins. User-authored bytes are preserved; ambiguous mixed files are reported as conflicts. See [Configuration upgrades](configuration-upgrades.md).
+パッケージ更新後は、`engram upgrade --latest` の前に `engram upgrade --latest --plan` を実行してください。共有インベントリは、ワークスペースとグローバルの Engram 管理下にあるメモリ、指示、スキルセット、設定、フック、プラグインをスキャンします。ユーザーが書いたバイト列は保持され、判別できない混在ファイルはコンフリクトとして報告されます。[設定アップグレード](configuration-upgrades.md) を参照してください。

@@ -1,37 +1,37 @@
 ---
-title: Review tab
+title: Review 탭
 sidebar_position: 5
-description: Resolve review findings, direct an AI agent, and explicitly confirm fallback memory writes.
+description: 검토 결과를 해결하고 AI 에이전트를 안내하며 대체 메모리 쓰기를 명시적으로 확인합니다.
 ---
 
 import RiskCallout from '@site/src/components/RiskCallout';
 
-# Review tab
+# Review 탭
 
-Review is the controlled path for findings and deferred candidates. It never calls an AI provider itself. You inspect context, copy a bounded prompt to an AI agent, then either let that agent save through its terminal or explicitly confirm a pasted response.
+Review는 검토 결과 및 보류된 후보 항목을 처리하는 통제된 경로입니다. 이 탭은 자체적으로 AI 제공업체를 호출하지 않습니다. 컨텍스트를 검사하고 AI 에이전트용 바운디드 프롬프트를 복사한 다음, 에이전트가 터미널을 통해 저장하도록 하거나 붙여넣은 응답을 명시적으로 확인합니다.
 
-## Queue and context
+## 대기열 및 컨텍스트
 
-The queue combines review findings and deferred inbox candidates. Select an item to inspect its summary, linked-memory metadata, and full content. Empty or unavailable linked files are reported without stopping review of the remaining queue.
+대기열은 검토 결과와 수신함의 보류 후보 항목을 함께 보여줍니다. 항목을 선택하여 요약, 연결된 메모리 메타데이터 및 전체 내용을 확인하세요. 비어 있거나 사용할 수 없는 연결 파일은 나머지 대기열 검토를 중단하지 않고 보고됩니다.
 
-## AI review prompt
+## AI 검토 프롬프트
 
-Choose any linked memory as a dependency or replacement, then use **Copy AI review prompt**. The prompt includes only the selected candidate, visible memory context, relation instructions, and the required write scope.
+연결된 메모리를 종속 항목 또는 교체 대상으로 선택한 후 **Copy AI review prompt**를 사용하세요. 프롬프트에는 선택한 후보, 표시되는 메모리 컨텍스트, 관계 지침 및 필수 쓰기 범위만 포함됩니다.
 
-When the AI agent has terminal access and approval to write, it should save the sanitized result with the command embedded in the prompt. The in-app path is a fallback, not an autonomous write path.
+AI 에이전트에 터미널 액세스 권한과 쓰기 승인이 있는 경우 프롬프트에 포함된 명령으로 정제된 결과를 저장해야 합니다. 인앱 경로는 대체 수단이며 자율 쓰기 경로가 아닙니다.
 
-## Paste, diff, and confirmation
+## 붙여넣기, Diff 및 확인
 
-Paste only the AI-reviewed memory proposal. Review shows a read-only line diff: removed lines are red and added lines are green. **Approve & write** opens a confirmation dialog before Engram validates and writes the proposal.
+AI가 검토한 메모리 제안만 붙여넣으세요. Review는 읽기 전용 라인 diff를 표시합니다. 제거된 라인은 빨간색, 추가된 라인은 초록색입니다. **Approve & write**는 Engram이 제안을 검증하고 쓰기 전에 확인 대화 상자를 엽니다.
 
 <RiskCallout level="risky">
-The confirmation writes to workspace or global memory immediately. Review the proposal, scope, and any replacement instruction before confirming.
+확인하면 워크스페이스 또는 글로벌 메모리에 즉시 기록됩니다. 확인하기 전에 제안, 범위 및 교체 지침을 검토하세요.
 </RiskCallout>
 
-Only one replacement relation may be selected. Dependencies can be selected independently. Refresh the queue after saving to load its current state.
+교체 관계는 하나만 선택할 수 있습니다. 종속 관계는 독립적으로 선택할 수 있습니다. 저장 후 대기열을 새로 고쳐 최신 상태를 로드하세요.
 
-## Next steps
+## 다음 단계
 
-- [Construct tab](construct.md)
-- [Memories tab](memories.md)
+- [Construct 탭](construct.md)
+- [Memories 탭](memories.md)
 - [CLI: save-session](../cli/save-session.md)

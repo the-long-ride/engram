@@ -1,16 +1,12 @@
 ---
-title: Configuration upgrades
+title: 設定のアップグレード
 sidebar_position: 3
-description: Preview, review, and safely upgrade Engram-managed memories and connected-agent configuration.
+description: Engram が管理するメモリと接続済みエージェントの設定を、プレビュー、レビューしたうえで安全にアップグレードします。
 ---
 
-# Configuration upgrades
+# 設定のアップグレード
 
-## Localized Updates summary
-
-Updates は **ステータスバナー** に `Workspace · Global · Conflicts` を表示し、項目を **テーブル** と 1 つの **横スクロール** にまとめます。**チェックボックス** は状態を区別し、**トースト** は成功を緑、エラーを赤で示し、Diff も削除を赤、追加を緑で表示します。**Force upgrade** の強制対象は所有権を証明できる **Engram ブロック** または **生成ファイル**だけで、一括操作は強制せず、書き込み後に収束を検証します。
-
-Engram uses one upgrade inventory engine for the CLI and Entry Web UI. It scans the configured **workspace** and **global** scopes, classifies Engram-managed artifacts, builds a deterministic plan, and uses hashes/fingerprints to prevent stale writes.
+Engram は CLI と Entry Web UI で 1 つのアップグレードインベントリエンジンを共有します。設定された**ワークスペース**と**グローバル**のスコープをスキャンし、Engram 管理下のアーティファクトを分類して決定的なプランを作成し、ハッシュとフィンガープリントで古い内容による書き込みを防ぎます。
 
 ```bash
 engram upgrade --latest --plan
@@ -20,63 +16,63 @@ engram upgrade --latest --yes
 engram upgrade --help
 ```
 
-`--plan` is read-only. Human-readable output is grouped by artifact kind in this order: Config, Instructions, Memories, Skillsets, Hooks, Plugins. `--plan --json` exposes the same grouped plan, its fingerprint, review states, and `pendingReviewCount`. UI kind tabs use the exact labels `All`, `Config`, `Instructions`, `Memories`, `Skillsets`, `Hooks`, `Plugins`.
+`--plan` は読み取り専用です。人間向けの出力は、アーティファクトの種類ごとに Config、Instructions、Memories、Skillsets、Hooks、Plugins の順でグループ化されます。`--plan --json` は同じグループ化されたプラン、そのフィンガープリント、レビュー状態、`pendingReviewCount` を出力します。UI の種類タブは、`All`、`Config`、`Instructions`、`Memories`、`Skillsets`、`Hooks`、`Plugins` という正確なラベルを使用します。
 
-## What Engram detects
+## Engram が検出するもの
 
-The inventory covers `memory`, `instruction`, `skillset`, `config`, `hook`, and `plugin` artifacts in known Engram locations or registered connected-agent installs. Workspace and global roots are scanned separately; Engram does not recursively crawl arbitrary home-directory trees.
+インベントリは、既知の Engram の場所または登録済みの接続済みエージェントのインストールにある `memory`、`instruction`、`skillset`、`config`、`hook`、`plugin` のアーティファクトを対象とします。ワークスペースとグローバルのルートは個別にスキャンされ、Engram は任意のホームディレクトリツリーを再帰的にクロールしません。
 
-Engram first trusts explicit schema/version metadata and registered install metadata. Legacy files without markers fall back to known managed structure and expected content. Each item is classified as `current`, `outdated`, `conflict`, or `invalid`.
+Engram はまず明示的なスキーマ/バージョンのメタデータと登録済みインストールのメタデータを信頼します。マーカーのない従来のファイルは、既知の管理構造と期待される内容に基づいて判定されます。各項目は `current`、`outdated`、`conflict`、`invalid` のいずれかに分類されます。
 
-## Type-aware replacement and merge
+## 型を考慮した置換とマージ
 
-A conflict means **review required**, not permanently blocked. Engram preserves user edits until the user confirms a replacement/merge decision.
+競合は**レビューが必要**という意味であり、永久にブロックされるわけではありません。Engram は、ユーザーが置換/マージの判断を確認するまでユーザーの編集内容を保持します。
 
-- **Instructions:** Engram proposes the latest managed block while preserving user text outside Engram markers. An Engram-owned whole instruction file can be replaced.
-- **Skillsets:** Engram proposes the latest Engram-managed content. Explicitly user-owned sections are preserved when the format supports them.
-- **Config:** Engram parses the configuration and proposes a merged migration: known Engram keys are upgraded, new defaults are added where required, and unrelated user keys/values are preserved.
-- **Memories:** Engram performs schema migration rather than template replacement.
-- **Hooks/plugins:** generated artifacts are replaced only when ownership is provable. Ambiguous user code stays review-only and can be confirmed as **Keep current**.
+- **Instructions:** Engram は Engram のマーカーの外側にあるユーザーのテキストを保持して、最新の管理ブロックを提案します。Engram が所有するファイル全体の instruction ファイルは置換できます。
+- **Skillsets:** Engram は Engram 管理下の最新コンテンツを提案します。ユーザーが所有すると明示されたセクションは、形式が対応している場合に保持されます。
+- **Config:** Engram は設定を解析してマージ済みの移行を提案します。既知の Engram キーはアップグレードされ、必要に応じて新しい既定値が追加され、関係のないユーザーのキーと値は保持されます。
+- **Memories:** Engram はテンプレートの置換ではなく、スキーマ移行を実行します。
+- **Hooks/plugins:** 生成されたアーティファクトは、所有権を証明できる場合に限って置換されます。所有者が曖昧なユーザーコードはレビューのみとなり、**Keep current** として確定できます。
 
-## Entry Web UI conflict review
+## Entry Web UI での競合レビュー
 
-The Updates page now uses a compact dashboard: a **status banner** reports whether configuration is current, needs an update, or requires conflict review; the **Workspace**, **Global**, and **Conflicts** summary cards show the important counts at a glance. After preview, every actionable item appears in one **actionable artifact table** with Artifact, Scope, Agent(s), Status, Review, and Actions columns. The table stays structurally intact on narrow screens and uses one shared **horizontal scroll** container instead of per-row scrollbars.
+Updates ページはコンパクトなダッシュボードを使用します。**ステータスバナー**が設定が最新であるか、更新が必要か、競合レビューが必要かを示し、**Workspace**、**Global**、**Conflicts** のサマリーカードが重要な件数を一目で示します。プレビュー後、対応可能なすべての項目が、Artifact、Scope、Agent(s)、Status、Review、Actions の列を持つ 1 つの**対応可能アーティファクトテーブル**に表示されます。テーブルは狭い画面でも構造が崩れず、行ごとのスクロールバーの代わりに 1 つの共有された**横スクロール**のコンテナーを使用します。
 
-Open `engram entry`, then **Settings → Updates**. The sidebar **copy command** action copies `engram upgrade --latest --plan` without navigating away. The preview has `All` plus only actionable kind tabs: `Config`, `Instructions`, `Memories`, `Skillsets`, `Hooks`, and `Plugins`.
+`engram entry` を開き、**Settings → Updates** を選択します。サイドバーの**コマンドのコピー**操作では、画面を遷移することなく `engram upgrade --latest --plan` をコピーできます。プレビューには `All` と、対応可能な種類のタブだけ（`Config`、`Instructions`、`Memories`、`Skillsets`、`Hooks`、`Plugins`）があります。
 
-Every conflict has a **Review** action. The modal provides **Current**, **Proposed**, and **Diff** views. **Current** is read-only. **Proposed** is editable for replaceable Config/Instruction/Skillset items and starts from Engram's type-aware merged/replacement result. **Diff** defaults to **Inline** and can switch to **Parallel**. Inline marks removed lines with `-` on a red background and added lines with `+` on a green background; Parallel aligns **Current** and **Proposed** rows with the same red/green highlighting. Use **Use latest**, **Reset proposed**, **Keep current**, or—when Engram can prove ownership—**Force upgrade**, then **Confirm change**.
+すべての競合に **Review** アクションがあります。モーダルには **Current**、**Proposed**、**Diff** のビューがあります。**Current** は読み取り専用です。**Proposed** は置換可能な Config/Instruction/Skillset の項目で編集でき、Engram の型を考慮したマージ/置換結果から始まります。**Diff** は既定で **Inline** で、**Parallel** に切り替えられます。Inline では削除された行を赤い背景で `-`、追加された行を緑の背景で `+` として示し、Parallel では **Current** と **Proposed** の行を揃え、同じ赤/緑のハイライトを適用します。**Use latest**、**Reset proposed**、**Keep current**、または Engram が所有権を証明できる場合は **Force upgrade** を使用し、その後、**Confirm change** を選択します。
 
-**Open in editor** opens the exact current artifact resolved by the server, using `$VISUAL`, then `$EDITOR`, then the platform fallback. The browser never supplies a filesystem path. For **Instructions**, **Proposed** contains only the managed `<!-- engram:start -->` block; the full global skillset stays in the companion `.agents/engram.md` guide. If the external edit changes the file, the preview/source hash becomes stale and the review must be refreshed before confirmation.
+**Open in editor** は、サーバーが解決した正確な現在のアーティファクトを、`$VISUAL`、次に `$EDITOR`、それでもなければプラットフォームのフォールバックで開きます。ブラウザーがファイルシステムのパスを渡すことはありません。**Instructions** では、**Proposed** には管理対象の `<!-- engram:start -->` ブロックだけが含まれ、グローバル skillset の全体は付属の `.agents/engram.md` ガイドに残ります。外部での編集によってファイルが変更されると、プレビュー/ソースのハッシュが古くなり、確定する前にレビューを更新する必要があります。
 
-Eligible pending replaceable conflicts have selection checkboxes. **Select all visible** selects eligible rows in the active kind tab; selection persists when switching tabs. **Confirm selected changes** accepts **Use latest** for the checked rows, while **Confirm all changes** accepts **Use latest** for every eligible pending conflict in the full preview. Non-replaceable, stale, and already-reviewed rows cannot be selected. The server validates the complete batch against the preview fingerprint, current source hashes, review states, and generated proposals before one atomic review-store write. If any selected item fails validation, zero batch decisions are saved.
+置換可能でレビュー待ちの対象の競合には選択用のチェックボックスがあります。**Select all visible** は、アクティブな種類タブ内の対象行を選択し、選択状態はタブを切り替えても維持されます。**Confirm selected changes** はチェックした行に対して **Use latest** を承認し、**Confirm all changes** はプレビュー全体の対象となるすべてのレビュー待ち競合に対して **Use latest** を承認します。置換できない行、古くなった行、すでにレビュー済みの行は選択できません。サーバーは、バッチ全体をプレビューのフィンガープリント、現在のソースハッシュ、レビュー状態、生成された提案に照らして検証してから、レビューストアへ 1 回のアトミックな書き込みを行います。選択した項目のいずれかが検証に失敗すると、バッチの決定は 1 件も保存されません。
 
-Entry uses the same custom checkbox treatment across upgrade review: checked, keyboard-focus, and disabled states are visibly distinct. Result toast feedback uses a green border/glow for success and a red border/glow for errors.
+Entry はアップグレードのレビュー全体で同じカスタムチェックボックスを使用し、チェック済み、キーボードフォーカス、無効の各状態をはっきり区別できるようにしています。結果のトーストは、成功時に緑の枠とグロー、エラー時に赤の枠とグローを使用します。
 
-The page shows review progress. The final Upgrade action remains disabled until every conflict is explicitly resolved as accepted latest, edited proposal, **Force upgrade**, or **Keep current**. A final confirmation summarizes automatic updates, accepted proposals, edited proposals, forced replacements, kept-current files, and backups.
+ページにはレビューの進捗が表示されます。最終の Upgrade アクションは、すべての競合が、最新の承認、編集済みの提案、**Force upgrade**、**Keep current** のいずれかとして明示的に解決されるまで無効のままです。最終確認では、自動更新、承認された提案、編集された提案、強制置換、現状維持としたファイル、バックアップが要約されます。
 
-## Ownership-aware force upgrade
+## 所有権を考慮した Force upgrade
 
-Engram canonicalizes connected-agent upgrade inventory by **physical file**, so a shared guide such as `.agents/engram.md` is represented once even when Codex, Claude, Gemini, or another registered host points at it. The host list remains visible as metadata, but one physical file receives one canonical renderer output and one write transaction.
+Engram は接続済みエージェントのアップグレードインベントリを**物理ファイル**単位で正規化するため、`.agents/engram.md` のような共有ガイドは、Codex、Claude、Gemini、または他の登録済みホストが指していても 1 つだけ表現されます。ホストの一覧はメタデータとして引き続き表示されますが、物理ファイル 1 つにつきレンダラーの正規出力と書き込みトランザクションはそれぞれ 1 つだけです。
 
-**Force upgrade** is intentionally narrower than **Use latest**. It appears only when Engram can prove an ownership boundary:
+**Force upgrade** は意図的に **Use latest** よりも限定的です。Engram が所有権の境界を証明できる場合に限って表示されます。
 
-- **Managed region:** Engram replaces only the marked Engram block and preserves all user-authored bytes outside it, including the file's CRLF/LF newline style.
-- **Generated file:** Engram may replace the whole registered/generated Engram file, including manual edits inside that Engram-owned file.
-- **Unknown ownership:** no Force upgrade action is offered; use **Keep current** or resolve the ownership ambiguity first.
+- **管理対象の領域:** Engram はマーカー付きの Engram ブロックだけを置換し、その外側にあるユーザーが記述したすべてのバイトを、ファイルの CRLF/LF という改行スタイルも含めて保持します。
+- **生成ファイル:** Engram は、登録済み/生成された Engram ファイル全体を、その Engram 所有のファイル内の手動編集も含めて置換することがあります。
+- **所有権不明:** Force upgrade のアクションは表示されません。**Keep current** を使うか、先に所有権の曖昧さを解消してください。
 
-Bulk controls never force. **Confirm selected changes** and **Confirm all changes** remain limited to safe **Use latest** decisions. Force decisions are reviewed one item at a time and are rejected if the source hash, ownership evidence, or force mode changed after preview.
+一括操作では強制は行いません。**Confirm selected changes** と **Confirm all changes** は、安全な **Use latest** の判断のみに限定されます。強制の判断は 1 項目ずつレビューされ、プレビュー後にソースハッシュ、所有権の証拠、または強制モードが変更された場合は拒否されます。
 
-After writes complete, Engram rescans the upgraded physical artifacts. Expected-updated items must converge to `current`; a failed or rolled-back transaction, or an item that remains `outdated`/`conflict`, makes the entire apply report an error instead of showing a success toast. Explicit **Keep current** items are excluded from that convergence requirement.
+書き込みが完了すると、Engram はアップグレードされた物理アーティファクトを再スキャンします。更新が期待される項目は `current` に収束しなければならず、トランザクションの失敗またはロールバック、あるいは `outdated`/`conflict` のまま残る項目がある場合、適用全体が成功のトーストではなくエラーとして報告されます。明示的な **Keep current** の項目は、この収束の要件から除外されます。
 
-## CLI conflict review
+## CLI での競合レビュー
 
-Run:
+次を実行します。
 
 ```bash
 engram upgrade --latest --review
 ```
 
-The interactive reviewer handles unresolved conflicts one at a time:
+対話型のレビュアーは、未解決の競合を 1 件ずつ処理します。
 
 ```text
 [V] View diff
@@ -86,31 +82,31 @@ The interactive reviewer handles unresolved conflicts one at a time:
 [Q] Save and quit
 ```
 
-`E` opens a temporary proposed file using `$VISUAL`, then `$EDITOR`, then a platform fallback. Engram validates the edited proposal before accepting it. Decisions are persisted under Engram state by plan fingerprint, so `Q` can stop the session and a later `--review` resumes the saved decisions.
+`E` は、`$VISUAL`、次に `$EDITOR`、それでもなければプラットフォームのフォールバックを使って一時的な提案ファイルを開きます。Engram は編集された提案を受け入れる前に検証します。決定内容はプランのフィンガープリントごとに Engram の状態領域へ保存されるため、`Q` でセッションを中断しても、後で `--review` を実行すると保存済みの決定から再開されます。
 
-For automation:
+自動化の場合は次のとおりです。
 
 ```bash
 engram upgrade --latest --yes
 ```
 
-`--yes` never invents conflict decisions. If any conflict remains pending or stale, Engram exits non-zero and asks you to run `engram upgrade --latest --review`.
+`--yes` は競合の判断を勝手に作成することはありません。未解決または古くなった競合が 1 件でも残っている場合、Engram はゼロ以外の終了コードで終了し、`engram upgrade --latest --review` の実行を促します。
 
-## Stale-review protection
+## 古いレビューの保護
 
-Every reviewed item records its source hash. Before apply, Engram compares the current source hash with the reviewed source hash. If the file changed after review, that decision becomes stale/pending and must be reviewed again. A plan fingerprint also prevents applying a different inventory than the one reviewed.
+レビューした各項目は、そのソースハッシュ（source hash）を記録します。適用する前に、Engram は現在のソースハッシュとレビュー時のソースハッシュを比較します。レビュー後にファイルが変更された場合、その判断は古い/レビュー待ちになり、再度レビューする必要があります。プランのフィンガープリントにより、レビューしたものとは異なるインベントリを適用することも防げます。
 
-## Transaction groups, backup, and rollback
+## トランザクショングループ、バックアップ、ロールバック
 
-Accepted replacements and merges use the same transaction path as safe automatic upgrades. Engram captures original bytes and permissions, creates backups where required, validates proposed content, writes through a temporary file, and atomically renames it into place. A failed durable transformation rolls back its transaction group. **Keep current** performs no write.
+承認された置換とマージは、安全な自動アップグレードと同じトランザクション経路を使用します。Engram は元のバイトとパーミッションを取得し、必要に応じてバックアップを作成し、提案内容を検証し、一時ファイル経由で書き込み、アトミックにリネームして所定の位置へ配置します。永続的な変換に失敗した場合は、そのトランザクショングループがロールバックされます。**Keep current** は書き込みを一切行いません。
 
-## Vector index is fail-open
+## ベクトルインデックスはフェイルオープン
 
-Vector search is an optional acceleration layer. Engram binds `sqlite-vec` `memory_vectors` primary keys with integer-compatible `BigInt` values. If vector rebuilding fails, Engram removes the incomplete vector sidecar/WAL/SHM, reports a degraded warning, and continues the durable lexical/graph upgrade. A vector-only failure cannot abort an otherwise valid configuration upgrade.
+ベクトル検索はオプションの高速化レイヤーです。Engram は `sqlite-vec` の `memory_vectors` のプライマリキーを、整数互換の `BigInt` 値でバインドします。ベクトルの再構築に失敗した場合、Engram は不完全なベクトルのサイドカー/WAL/SHM を削除し、縮退警告を報告して、永続的な字句/グラフのアップグレードを継続します。ベクトルだけの失敗が、それ以外は有効な設定アップグレードを中断させることはありません。
 
-## Package version vs configuration state
+## パッケージバージョンと設定状態の違い
 
-A new npm package and outdated local configuration are separate signals. Recommended release flow:
+新しい npm パッケージと古いローカル設定は別々のシグナルです。推奨されるリリースの手順は次のとおりです。
 
 ```bash
 npm install -g @the-long-ride/engram@latest
@@ -119,4 +115,4 @@ engram upgrade --latest --review
 engram upgrade --latest
 ```
 
-Re-running the upgrade is idempotent for current artifacts. Reviewed `Keep current` files remain untouched unless their state changes and requires a new review.
+アップグレードの再実行は、最新のアーティファクトに対して冕等です。レビュー済みの `Keep current` ファイルは、状態が変わって新たなレビューが必要にならない限り、そのまま維持されます。

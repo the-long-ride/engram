@@ -1,37 +1,37 @@
 ---
-title: Review tab
+title: Вкладка Review
 sidebar_position: 5
-description: Resolve review findings, direct an AI agent, and explicitly confirm fallback memory writes.
+description: Разрешайте результаты проверки, направляйте AI-агента и явно подтверждайте резервную запись воспоминаний.
 ---
 
 import RiskCallout from '@site/src/components/RiskCallout';
 
-# Review tab
+# Вкладка Review
 
-Review is the controlled path for findings and deferred candidates. It never calls an AI provider itself. You inspect context, copy a bounded prompt to an AI agent, then either let that agent save through its terminal or explicitly confirm a pasted response.
+Review — это контролируемый путь для результатов проверки и отложенных кандидатов. Сама вкладка никогда не обращается к AI-провайдеру. Вы просматриваете контекст, копируете ограниченный промпт для AI-агента, а затем либо позволяете агенту сохранить данные через терминал, либо явно подтверждаете вставленный ответ.
 
-## Queue and context
+## Очередь и контекст
 
-The queue combines review findings and deferred inbox candidates. Select an item to inspect its summary, linked-memory metadata, and full content. Empty or unavailable linked files are reported without stopping review of the remaining queue.
+Очередь объединяет результаты проверок и отложенных кандидатов из входящих. Выберите элемент для просмотра сводки, метаданных связанных воспоминаний и полного содержимого. Пустые или недоступные связанные файлы фиксируются без остановки проверки остальной очереди.
 
-## AI review prompt
+## Промпт для проверки AI
 
-Choose any linked memory as a dependency or replacement, then use **Copy AI review prompt**. The prompt includes only the selected candidate, visible memory context, relation instructions, and the required write scope.
+Выберите любое связанное воспоминание в качестве зависимости или замены, затем нажмите **Copy AI review prompt**. Промпт содержит только выбранного кандидата, видимый контекст памяти, инструкции по связям и требуемую область записи.
 
-When the AI agent has terminal access and approval to write, it should save the sanitized result with the command embedded in the prompt. The in-app path is a fallback, not an autonomous write path.
+Если у AI-агента есть доступ к терминалу и одобрение на запись, он должен сохранить очищенный результат с помощью команды, встроенной в промпт. Путь внутри приложения является запасным вариантом, а не автономным каналом записи.
 
-## Paste, diff, and confirmation
+## Вставка, diff и подтверждение
 
-Paste only the AI-reviewed memory proposal. Review shows a read-only line diff: removed lines are red and added lines are green. **Approve & write** opens a confirmation dialog before Engram validates and writes the proposal.
+Вставляйте только предложение памяти, проверенное AI. Review отображает построчный diff только для чтения: удаленные строки выделены красным, добавленные — зеленым. **Approve & write** открывает диалоговое окно подтверждения перед тем, как Engram проверит и запишет предложение.
 
 <RiskCallout level="risky">
-The confirmation writes to workspace or global memory immediately. Review the proposal, scope, and any replacement instruction before confirming.
+Подтверждение немедленно выполняет запись в память workspace или global. Перед подтверждением проверьте предложение, область действия и любые инструкции по замене.
 </RiskCallout>
 
-Only one replacement relation may be selected. Dependencies can be selected independently. Refresh the queue after saving to load its current state.
+Можно выбрать только одно отношение замены. Зависимости можно выбирать независимо. Обновите очередь после сохранения, чтобы загрузить текущее состояние.
 
-## Next steps
+## Следующие шаги
 
-- [Construct tab](construct.md)
-- [Memories tab](memories.md)
+- [Вкладка Construct](construct.md)
+- [Вкладка Memories](memories.md)
 - [CLI: save-session](../cli/save-session.md)

@@ -47,6 +47,7 @@ Each field lists:
 | Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
 | <span id="load-limit"></span>`load.limit` | number 1–32 | `8` | normal | Max memories returned by normal load. |
+| <span id="load-working-ttl-days"></span>`load.working_ttl_days` | number 1–365 | `14` | normal | Days a task-objective memory stays in the working tier. |
 
 ## Memory Limits {#memory-limits}
 
@@ -54,6 +55,7 @@ Each field lists:
 | --- | --- | --- | --- | --- |
 | <span id="memory-rule-line-target"></span>`memory.rule_line_target` | number 50–200, step 10 | `70` | normal | Recommended line count for rules. |
 | <span id="memory-rule-line-hard-limit"></span>`memory.rule_line_hard_limit` | number 50–200, step 10 | `100` | risky | Hard max line count for rules. |
+| <span id="memory-include-author-email"></span>`memory.include_author_email` | toggle | `false` | risky | Write `author_email` into new memory frontmatter (`author_name` is always written). |
 
 ## Graph {#graph}
 
@@ -85,7 +87,7 @@ Each field lists:
 | Config key | Control | Default | Risk | Notes |
 | --- | --- | --- | --- | --- |
 | <span id="live-sync-enabled"></span>`live_sync.enabled` | toggle | `false` | normal | Sync generated agent context files on save. |
-| <span id="live-sync-targets"></span>`live_sync.targets` | list | `agents-md`, `claude-md`, `cursorrules` | normal | Generated context targets refreshed by live sync. |
+| <span id="live-sync-targets"></span>`live_sync.targets` | list | `agents-md`, `claude-md`, `cursor-rules` | normal | Generated context targets refreshed by live sync. |
 
 ## Global Git {#global-git}
 

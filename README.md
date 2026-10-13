@@ -4,8 +4,6 @@
 
 ![Engram cover](https://raw.githubusercontent.com/the-long-ride/engram/main/media/cover/engram-cover.png)
 
-
-
 **Engram is a human-owned, file-first memory protocol for AI agents. Grow with you & your teams.**
 
 It gives agents memory without giving agents ownership of memory. Durable rules, workflows, and project knowledge live as plain Markdown, reviewed by humans, portable through Git, and usable by any agent.
@@ -19,18 +17,19 @@ Full documentation lives on the website: [@the-long-ride/engram docs-site](https
 - **Human in the Loop**: Direct CLI saves use A/B/C approval. AI-agent chat saves use an exact-candidate `yes` / `audit` / `cancel` loop before the agent writes with `save-session --force`. Every candidate preview carries one deterministic `Verdict:` line (`ADD`, `UPDATE <id>`, `SUPERSEDE <id>`, or `NOOP duplicate of <id>`); a `SUPERSEDE` is applied only after interactive approval, never by `--force` or autosave.
 - **Partial Force Safety**: `save-session --force` saves unrelated ready candidates, but defers candidates that need dependency or duplicate review with ID-only `engram load --id ...` guidance.
 - **Context-Optimized**: Routes meaningful task matches plus prerequisites into a compact pack (default: 8 files) to avoid context bloat.
-- **Tiered Load Disclosure**: Agents get the top `load.expand_top` hits (default 3) as bodies and every other selected hit as a one-line card, followed by `fetch: engram load --id <ids>`. Frontmatter, `## Context`, `## Example`, and `## Origin` are never rendered for agents; `--disclosure full`, `--full`, and `--all` keep the untiered output. On the routing-v2 benchmark, mean tokens per load fell from 904 to 389 with recall at 1.0 and no forbidden hits.
+- **Tiered Load Disclosure**: Agents get the top `load.expand_top` hits (default 3) as bodies and every other selected hit plus up to 5 omitted candidates as one-line cards, followed by `fetch: engram load --id <ids>`. Frontmatter, `## Context`, `## Example`, and `## Origin` are never rendered for agents; `--id`, `--disclosure full`, `--full`, and `--all` keep the untiered output. `--budget-tokens` caps the complete compact output, demoting bodies to cards before omitting the lowest-ranked cards. On the routing-v2 benchmark, mean tokens per load fell from 904 to 389 with recall at 1.0 and no forbidden hits.
 - **Ranked Retrieval**: BM25 with light stemming over id, tags, `directive`, summary, triggers, and content terms, scaled by lifecycle, staleness, confidence, and scope. Vector hits without a term overlap no longer admit a memory.
 - **Delta Hook Injection**: Hooks track the memory keys already delivered per session (`deliveredKeys`) and inject only new bodies; repeats collapse into one `already loaded: <ids>` line. `SessionStart` and `PreCompact` reset the set. Hook output stays under each host's payload cap (Codex 2,400 tokens, Claude 9,500 characters): over the cap, bodies demote to cards and are never cut mid-text.
 - **Host-Native Hooks**: Claude and Codex also register `SubagentStart`, so every subagent starts with the routed context under its own delivered set; Gemini registers `AfterTool` and `PreCompress`. `engram upgrade --latest` or `engram link <host>` adds the new events to an existing install.
 - **Path-Scoped Memory**: A memory with `applies_to` globs reaches the host just in time through the host's native mechanism: Claude loads a generated `.claude/rules/engram/<id>.md` rule file (Engram registers `InstructionsLoaded` so the load counts as delivered), Cursor loads `.cursor/rules/engram/<id>.mdc`, Gemini uses an `AfterTool` hook on `read_file|write_file|replace`, and Codex uses `PreToolUse` on `apply_patch` edits (at most 3 bodies per hook event). `hooks.path_rules hook` keeps the older Claude `PreToolUse` path.
 - **Working-Memory Tier**: `OBJECTIVE: task` candidates are saved to the gitignored `.agents/.engram/working/` with a `valid_until` TTL (`load.working_ttl_days`, default 14). Keep one with `engram promote <id>`; clear expired ones with `engram working prune`. `engram working note "<text>"` (or MCP `engram_note`) saves a redacted task note after one yes/cancel approval.
-- **Take-Control Beyond Docs**: `engram take-control --kind code|config|all` digests code (a per-directory repo map of symbol names and imports), config keys, and build manifests, `--objective "<text>"` asks for task-scoped and durable candidates, and `engram verify --sources` plus `take-control --refresh` keep code-derived memories fresh.
+- **Opt-In Transcript Capture**: `engram link claude --session-end` or `engram link codex --session-end` queues transcript paths locally. `engram observe --queue` sanitizes them into evidence traces and inbox wrappers; promotion still requires approval.
+- **Take-Control Beyond Docs**: `engram take-control --kind code|config|all` digests code (a per-directory repo map of symbol names and imports), config keys, and build manifests, `--objective "<text>"` asks for task-scoped and durable candidates, and `engram verify --sources` plus `engram take-control --refresh` detect changed sources and propose approved updates. Memories with sources omitted by scan limits remain stale instead of being refreshed from partial evidence.
 - **MCP Without a Shell**: The server speaks MCP `2026-07-28` and the legacy handshake (`2024-11-05` to `2025-11-25`) from one process and sends short `instructions`. Structured `engram_load`, `engram_search`, and `engram_route` results, memories as resources (`engram://index`, `engram://memory/{id}`), a `propose` prompt, and an `engram_commit` for hosts that only have MCP. `engram_commit` carries `_meta["anthropic/requiresUserInteraction"]` (Claude Code prompts on every call) and the managed Codex block sets its `approval_mode` to `approve`; keep that per-call prompt on, because the approval token proves a proposal exists, not that a human approved it. When the client supports elicitation, `engram_save` and `engram_save_session` ask the human in the host's own approval dialog instead (`engram-mcp --no-elicitation` opts out). MCP config is written where each host reads it.
 - **AGENTS.md-First Bootstrap**: `engram link claude` writes the managed block to `AGENTS.md` and adds a `CLAUDE.md` block only when a `CLAUDE.md` already exists. Generated `SKILL.md` files follow the Agent Skills spec, and `engram doctor` validates them and the AGENTS.md size against Codex's 32 KiB limit.
 - **Clean Repos**: New memories store `author_name` only (`memory.include_author_email` opts the email back in), migration backups go to the gitignored `backups/` folder, and the hashed vector layer is experimental and off by default for new configs.
 - **Git-Native & Portable**: Plain Markdown files stored in `.agents/.engram/` synced via Git—completely vendor-agnostic and offline-first.
-- **Privacy & Security Control**: Runs 100% locally and scans for PII/secrets before writing.
+- **Privacy & Security Control**: Stores and retrieves memory locally, scans for PII/secrets before writing, and keeps transcript queues and working notes out of Git. Optional remote sync requires configuration.
 - **Prerequisite Graphs**: Declares dependencies (`depends_on`) so agents load foundational rules before advanced tasks automatically.
 - **Evidence-Backed Provenance**: `observe` writes a sanitized immutable evidence trace plus an editable inbox review wrapper; approved schema v3 memories cite source traces through `evidence_refs`.
 - **Authority Separation**: Raw evidence is always `authority: evidence`; active memory is explicitly `instruction` or `reference`, preventing source material from silently becoming commands.
@@ -93,7 +92,7 @@ graph TD
         Proposal["Proposal / preview flows\n(save, save-session / propose,\ntake-control, metacognize,\nresolve-conflicts)"]:::action
         Observe["Observe sanitizes source\nand creates trace + wrapper"]:::action
         Scan["Safety checks\n(PII, secrets, prompt injection)"]:::action
-        Review["Human approval gate\n(A / B / C or yes / audit / cancel,\nplus explicit accept-all flows)"]:::action
+        Review["Human approval gate\n(A / B / C or yes / audit / cancel,\nplus explicit --force flows)"]:::action
         Persist["Write approved schema v3 memory\nwith evidence_refs"]:::action
         Rebuild["Refresh hashes, index, graph,\noptional sqlite-vec"]:::action
     end
@@ -150,7 +149,7 @@ graph TD
     Global --> Sync
 ```
 
-The working tier, `usage.json`, `stale.json`, and the hook cache stay local; only durable memory reaches Git.
+The working tier, `session-queue.json`, `usage.json`, `stale.json`, and the hook cache stay local; only durable memory reaches Git.
 
 ---
 
@@ -268,7 +267,7 @@ flowchart TD
 - **Agent adapters are convenience, not authority**.
 - **Runtime-capable hosts get bootstrap instructions** — short `AGENTS.md` (Claude Code also gets a `CLAUDE.md` block when that file already exists) or `GEMINI.md` text plus MCP tools and Agent Skills for the full workflow. Fallback targets get complete compact protocol.
 - **Strict rules govern agent output** to prevent context drift and hallucinations.
-- **SQLite config DB is optional** — if the DB cannot be opened or initialized, commands fall back to JSON config snapshots.
+- **SQLite config DB is optional** — if the DB cannot be opened or initialized, commands fall back to JSON config snapshots. `engram config set <key> <value>` validates supported keys and persists the user JSON snapshot when SQLite is unavailable.
 
 ### Git author metadata
 
@@ -312,6 +311,9 @@ Standard rule files get sent with every single message, bloating context, causin
 ## Installation & Setup
 
 ### 1. Install Engram CLI
+
+Requires Node.js 20 or newer. The repository checks the CLI on Node 20 and 24; SQLite and document conversion integrations are optional. Features listed under [Unreleased](CHANGELOG.md#unreleased) may require building from source before they reach npm.
+
 ```bash
 npm install -g @the-long-ride/engram
 ```
@@ -356,7 +358,7 @@ To migrate legacy v1/v2 memory files to schema v3 with `.pre-v3.bak` backups in 
 engram upgrade --migrate-memories
 ```
 
-Pass `--no-migrate-memories` alongside `engram upgrade --latest --no-migrate-memories` to upgrade configs without modifying legacy memories.
+Use `engram upgrade --latest --no-migrate-memories` to upgrade configurations without modifying legacy memories.
 
 The same inventory powers CLI and Entry Web UI. Config, instruction, and skillset
 conflicts receive a type-aware proposed replacement/merge. In Entry, review **Current**,
@@ -450,8 +452,36 @@ engram inject
 
 ---
 
+### Optional session-end evidence capture
+
+After initializing workspace memory, opt in for either supported host:
+
+```bash
+engram link claude --session-end
+# Or: engram link codex --session-end
+engram observe --queue --dry-run
+engram observe --queue --limit 10
+```
+
+The plain `SessionEnd` hook records transcript paths in the gitignored workspace `session-queue.json`, keeps the newest 50 entries, and injects no context. It is off by default, is not registered for Gemini, and is never added by `engram upgrade`; an existing registration is preserved. `engram unlink <host>` removes it.
+
+Draining checks that each transcript is a regular file, is not a symbolic or hard link, and is at most 5 MiB. Engram redacts sensitive text, removes injection-like lines, and stores a trace plus an inbox wrapper. Stored or skipped entries leave the queue; entries that hit inbox quotas or cannot be read or stored stay for a later run. A replacement queued while draining is preserved. Optional quotas come from `.agents/engram.transcripts.json`.
+
+Review the resulting wrapper before promoting it:
+
+```bash
+engram save-session --file .agents/.engram/inbox/<observation>.md
+```
+
+Queue draining writes no active memory and cannot be combined with `--propose`. Run it as a plain command, not from an async Codex hook.
+
+---
+
 ## AI-Agent Quickstart
-When you ask an AI agent to save memory, the agent should first show the refined `TYPE: ... | TEXT: ...` candidate and its `Verdict:` line. For rule memories it shows the balanced wording; Light and Strict are derived when the rule is rendered, unless the candidate carries custom `LIGHT:`/`BALANCED:`/`STRICT:` text. Reply `yes` to save the exact candidate, `audit` to revise it, or `cancel` to stop. After `yes`, the agent writes the exact shown candidate with `engram save-session --force`.
+
+When you ask an AI agent to save memory, the agent should first show the refined `TYPE: ... | TEXT: ...` candidate and its `Verdict:` line. For rule memories it shows the balanced wording; Light and Strict are derived when the rule is rendered, unless the candidate carries custom `LIGHT:`/`BALANCED:`/`STRICT:` text. Reply `yes` to save the exact candidate, `audit` to revise it, or `cancel` to stop. After `yes`, a shell-capable agent writes the exact shown candidate with `engram save-session --force`. Related-memory or supersession decisions can still require interactive review.
+
+MCP hosts use the approval dialog or the proposal token and `engram_commit` flow. On an MCP commit, Engram rechecks the pinned verdict kind and target; changed candidates are not written and must be proposed again.
 
 When the agent notices a durable rule, workflow, skill, or knowledge item during normal work, it should propose it at the end of its response only if it passes the value gate: durable, reusable, objective, triggerable, and not already covered by existing memory.
 
@@ -466,11 +496,40 @@ If the host exposes only one visible `/engram` command, send bare `/engram` firs
 - **Brainstorm proposed memories**: `/engram propose`
 - **Summarize & save session**: `/engram save-session` (or `--query-level 3`, or `ss -f last 50 sessions` to force-save approved candidates)
 - **Capture evidence before approval**: `engram observe --file session.md`, review the inbox wrapper, then run `engram save-session --file .agents/.engram/inbox/<observation>.md`
+- **Drain queued transcripts**: `engram observe --queue --dry-run`, then `engram observe --queue --limit 10`
 
 When an agent asks how to use Engram, run `engram llm`. It prints the packaged
 `llm.txt` AI-agent guide, which is safe to use before `engram inject`.
 
 When an AI agent proposes `TYPE: ... | TEXT: ...` memory candidates, it may add optional `CONTEXT: ...` when that helps explain why the memory exists. Simple facts can omit it and use the default approval context.
+
+---
+
+### Task notes
+
+Save a short task note with one yes/cancel approval:
+
+```bash
+engram working note "The ledger worker retries invoices twice" --objective "add billing export"
+engram working prune --dry-run
+engram promote workspace:<memory-id>
+```
+
+Notes are redacted, rejected if they contain instruction-like lines, and saved only in the gitignored working tier. They never match or update a durable memory. The default TTL is 14 days; configure `load.working_ttl_days` from 1 to 365 in Entry Construct or `engram.config.json` (this key is not accepted by `engram config set`). Promotion requires A/B/C approval and is the bridge to durable memory; expired notes cannot be promoted. MCP exposes the same note workflow through `engram_note`.
+
+At `SessionStart`, notes are included only when `ENGRAM_SESSION_OBJECTIVE` matches their objective. In other loads, a non-matching note appears as a card.
+
+### Refresh memories derived from files
+
+For memories derived from repository files:
+
+```bash
+engram verify --sources
+engram take-control --refresh --plan
+engram take-control --refresh
+```
+
+Refresh accepts only approved `UPDATE` candidates for eligible stale memories, preserving scope and tier. A source omitted by a scan limit defers the affected memory and keeps it stale; an approved complete refresh records the new source hashes and clears its stale entry. Missing or deliberately rejected sources can be dropped from the updated provenance. Global memories are refreshed only from the workspace recorded in their source origin.
 
 ---
 
@@ -489,6 +548,8 @@ When an AI agent proposes `TYPE: ... | TEXT: ...` memory candidates, it may add 
 | **Save Single Memory** | `engram save <type> "<text>"` | `/engram save <type> "<text>"` |
 | **Propose Memories** | `engram save-session` | `/engram propose` or `/engram ss` |
 | **Capture Evidence** | `engram observe --file <path>` | Ask the agent to observe a file or session note |
+| **Preview Queued Transcripts** | `engram observe --queue --dry-run` | Inspect the local SessionEnd queue |
+| **Drain Queued Transcripts** | `engram observe --queue --limit 10` | Store sanitized evidence, then review inbox wrappers |
 | **Promote Observed Evidence** | `engram save-session --file .agents/.engram/inbox/<observation>.md` | Review the wrapper, then approve exact candidates |
 | **Mine Recent Sessions** | `engram save-session --query-level <n>` | `/engram save-session --query-level <n>` |
 | **Force Saves** | `engram save-session --force` | `/engram ss -f` |
@@ -498,7 +559,7 @@ When an AI agent proposes `TYPE: ... | TEXT: ...` memory candidates, it may add 
 | **Check Source Freshness** | `engram verify --sources` | `/engram verify --sources` |
 | **Refresh Stale Memories** | `engram take-control --refresh` | `/engram take-control --refresh` |
 | **Keep a Working Memory** | `engram promote <id>` | `/engram promote <id>` |
-| **Save a Task Note** | `engram working note "<text>"` | `/engram working note "<text>"` |
+| **Save a Task Note** | `engram working note "<text>" --objective "<task>"` | `/engram working note "<text>"` |
 | **Prune Expired Working Memory** | `engram working prune --dry-run` | Run from terminal |
 | **See Memory Usage** | `engram stats --usage` | `/engram stats --usage` |
 | **Import & Metacognize** | `engram take-control --all --metacognize --force` | `/engram take control force metacognize` |
@@ -519,6 +580,7 @@ When an AI agent proposes `TYPE: ... | TEXT: ...` memory candidates, it may add 
 | **Configure Auto Read** | `engram set-read startup|auto|always|manual|off` | `/engram set-read auto` |
 | **Configure Proof Visibility** | `engram set-proof off|compact` | `/engram set-proof compact` |
 | **Install Agent Hooks** | `engram link codex|claude|gemini|opencode|cursor|windsurf` | Run once from terminal |
+| **Opt In to Transcript Queue** | `engram link claude --session-end` or `engram link codex --session-end` | Enable local evidence capture for one host |
 | **Update Global Path** | `engram update-global-folder <new-path>` | `/engram set global memory path to <new-path>` |
 | **Clone Memory** | `engram clone-memory <src> <dest>` | `/engram clone workspace memory to global` |
 | **Manage Workspaces** | `engram workspace list|info|set|unregister|link|unlink` | `/engram workspace list` |
@@ -560,14 +622,14 @@ When `engram set-role ...` or `engram set-rule-variant ...` succeeds, Engram now
 | Dimension | Engram | agentmemory |
 | --- | --- | --- |
 | Source of truth | Human-approved Markdown | Memory server/store |
-| Trust boundary | A/B/C approval before writes | Automatic capture |
+| Trust boundary | Human approval by default; reviewed policy for automation | Automatic capture |
 | Default shape | File protocol (no daemon) | Running service recommended |
 | Review model | Git diff and Markdown review | Viewer/API/session history |
 | Best for | Human-owned team memory | Automatic recall and replay |
 | Main risk | Requires save discipline | Invisible state |
 
 ### Compared With Tolaria
-[refactoringhq/tolaria](https://github.com/refactoringhq/tolaria) is a Markdown-first desktop app. Engram sits lower in the stack, providing a CLI, agent skillsets, and Git-native rules governance instead of a full GUI workspace.
+[refactoringhq/tolaria](https://github.com/refactoringhq/tolaria) is a Markdown-first desktop app. Engram provides a CLI, MCP tools, agent skillsets, a local Entry Web UI, and Git-native memory governance.
 
 | Dimension | Engram | Tolaria |
 | --- | --- | --- |
@@ -603,7 +665,7 @@ Built-in memory (ChatGPT, Claude Projects, Cursor rules) is siloed and invisible
 | Dimension | Engram | Built-In Agent Memory |
 | --- | --- | --- |
 | **Portability** | Plain Markdown readable by any agent | Locked to a single platform |
-| **Human Control** | Explicit A/B/C approval before writes | Silent background updates |
+| **Human Control** | Human approval by default; explicit policy opt-in for automation | Silent background updates |
 | **Collaboration** | Git-friendly team sharing | Single-user only |
 | **Security** | Local-first, scans for PII/secrets | Cloud-first, high risk of secret leakage |
 
@@ -612,6 +674,40 @@ Built-in memory (ChatGPT, Claude Projects, Cursor rules) is siloed and invisible
 ## Documentation
 
 Full documentation lives on the website: [https://the-long-ride.github.io/engram/](https://the-long-ride.github.io/engram/)
+
+## Development and dependency checks
+
+From the repository root, the npm workflow is:
+
+```bash
+npm ci
+npm run build
+npm run test:built
+npm run test:app
+npm run lint:lines
+```
+
+`npm run build` includes TypeScript compilation. For focused source checks, pass repository-relative paths to `npm run test:related -- <changed-file>`; use `npm run coverage` for the root coverage suite.
+
+The documentation CI uses Node 24 and pnpm 11.7.0. From `website/`:
+
+```bash
+pnpm install --frozen-lockfile
+pnpm typecheck
+pnpm test
+pnpm check:entry-fields
+pnpm build
+```
+
+`pnpm build` builds all eight configured locales; `pnpm build:fast` builds English only. Root and website dependencies have separate lockfiles. From the repository root, audit each dependency graph:
+
+```bash
+npm audit
+pnpm audit
+pnpm --dir website audit
+```
+
+Keep the website's local security overrides with its lockfile: [image-size-safe](website/vendor/image-size-safe/) restricts image parsing, and [braces-safe](website/vendor/braces-safe/README.md) bounds parser and AST traversal. The braces fork README records its upstream provenance, regression coverage, and criteria for returning to an upstream release.
 
 ## Roadmap & Companion Project
 

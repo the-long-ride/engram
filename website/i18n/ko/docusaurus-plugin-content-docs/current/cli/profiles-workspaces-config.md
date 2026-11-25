@@ -94,6 +94,8 @@ engram config set <key> <value>
 | `mcp.resource_limit` | 메모리 MCP `resources/list`가 `engram://index` 외에 반환하는 개수이며, 주입 + 가져오기 사용량 순으로 순위가 정해집니다(JSON 설정 전용이며 `engram config set`으로 지정하지 않음) | `20` | `0` ~ `200` |
 | `load.limit` | 일반 로드가 반환하는 최대 메모리 수 | `8` | `1` ~ `32` |
 | `hooks.path_rules` | `native`는 `applies_to` 메모리에 대해 Claude와 Cursor 규칙 파일을 기록하고 Claude `InstructionsLoaded`를 등록하며, `hook`은 Claude `PreToolUse` 훅을 유지합니다 | `native` | `native`, `hook` |
+| `learning.mode` | Option A 세션 학습을 제어합니다. `off`는 자동 학습을 비활성화하고, `working`은 만료되는 gitignore 대상 `working/` 메모리만 기록하며, `propose`는 지속 후보를 `inbox/r-*.json` 영수증으로 함께 스테이징합니다(`engram.config.json`의 JSON 설정 전용이며 `engram config set`이나 Construct에서 지정하지 않음) | `propose` | `off`, `working`, `propose` |
+| `learning.auto_drain` | 해당하는 학습 단계에서 대기열에 쌓인 `SessionEnd` 트랜스크립트를 자동으로 처리합니다(`engram.config.json`의 JSON 설정 전용이며 `engram config set`이나 Construct에서 지정하지 않음) | `false` | `true`, `false` |
 | `rule_variants.enabled` | 규칙 변형 생성 활성화 또는 비활성화 | `false` | `true`, `false` |
 | `rule_variants.active` | 활성 규칙 변형 모드 | `balanced` | `light`, `balanced`, `strict` |
 | `graph.enabled` | 그래프 인식 라우팅 활성화 또는 비활성화 | `true` | `true`, `false` |
@@ -105,7 +107,7 @@ engram config set <key> <value>
 | `global_git.remote` | 글로벌 동기화에 사용할 Git 원격 이름 | `origin` | 문자열 |
 | `global_git.branch` | 글로벌 동기화에 사용할 Git 브랜치 이름 | `main` | 문자열 |
 
-이 설정은 `engram entry`의 **Construct** 탭에서도 시각적으로 관리할 수 있습니다.
+JSON 설정 전용 키(`mcp.resource_limit`, `learning.mode`, `learning.auto_drain`)를 제외한 이 설정들은 `engram entry`의 **Construct** 탭에서도 시각적으로 관리할 수 있습니다.
 
 ## 다음 단계 {#next-steps}
 

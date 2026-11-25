@@ -94,9 +94,31 @@ Las memorias de trabajo nunca llegan a Git, y sus entradas de índice, grafo y h
 ```bash
 engram observe --file session.md
 engram save-session --file .agents/.engram/inbox/<note>.md
+engram observe --learn --file session.md
+engram observe --learn --git HEAD~10..HEAD
+engram observe --queue --learn
 ```
 
 `observe` almacena notas sin procesar saneadas en `inbox/`. Las notas del inbox no son memoria activa. Úselo cuando quiera conservar notas en bruto antes de decidir qué debe convertirse en memoria duradera.
+
+Añada `--learn` (`engram observe --learn [--file <path> | --git [range]]` o `engram observe --queue --learn`) para destilar aprendizajes de forma determinista en memorias de `working/` ignoradas por Git y con caducidad (con trazas saneadas `tr_sl_*`) y preparar candidatas duraderas de alta confianza como recibos no activos `inbox/r-*.json`. Inspeccione y apruebe los recibos duraderos preparados con `engram review inbox` y `engram review apply`; la memoria duradera activa nunca se escribe sin aprobación.
+
+## review
+
+```bash
+engram review inbox
+engram review triage
+engram review triage --interactive
+engram review apply <receipt-id>
+engram review dismiss <receipt-id>
+```
+
+Inspeccione y actúe sobre los recibos de aprendizaje no activos `inbox/r-*.json` preparados por el aprendizaje por correcciones en tiempo de prompt o por `engram observe --learn`:
+
+- `engram review inbox` — lista los recibos preparados con `id`, `scope`, `source`, `type` y el texto truncado de la candidata.
+- `engram review triage` / `engram review triage --interactive` — recorre los recibos pendientes de forma interactiva mostrando `[a]pprove / [d]ismiss / [s]kip / [q]uit` (sin opción de edición; los veredictos `SUPERSEDE` se aplazan a `engram review apply <receipt-id>`).
+- `engram review apply <receipt-id>` — requiere un `<receipt-id>` y envía ese recibo por la puerta de escritura para crear o actualizar memoria duradera activa.
+- `engram review dismiss <receipt-id>` — descarta un recibo sin escribir memoria activa.
 
 <!-- evidence-foundation:v3:start -->
 ## Memoria respaldada por evidencia

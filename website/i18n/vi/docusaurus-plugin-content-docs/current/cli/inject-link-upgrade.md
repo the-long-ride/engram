@@ -34,6 +34,8 @@ Dùng `engram update-global-folder <new-path>` hoặc `engram ugf <new-path>` đ
 ```bash
 engram link codex
 engram link claude
+engram link claude --session-end
+engram link codex --session-end
 engram link gemini
 engram link cursor
 engram link windsurf
@@ -46,7 +48,7 @@ engram unlink
 
 `engram link all` cài đặt tập đích công khai và báo cáo các lý do `SKIPPED` mang tính xác định cho các host chỉ được hỗ trợ một phần, trên các tệp hướng dẫn skillset, cấu hình MCP, slash adapter và hook của agent trong một lần cài đặt thống nhất. `engram unlink` gỡ tất cả những thứ này cùng lúc. `engram unlink --global <target>` chỉ gỡ plugin global do Engram sinh ra; tệp do con người viết được giữ nguyên trừ khi dùng `--force` tường minh.
 
-`engram link claude --session-end` (hoặc `codex`) còn đăng ký thêm một hook lệnh `SessionEnd` tùy chọn, xếp đường dẫn bản ghi phiên vào `session-queue.json` (nằm trong gitignore); mặc định tắt và `engram upgrade` không bao giờ thêm nó. Xử lý hàng đợi bằng `engram observe --queue`; xem [Hooks](../integrations/hooks.md).
+`engram link claude --session-end` và `engram link codex --session-end` còn đăng ký thêm một hook lệnh `SessionEnd` tùy chọn, xếp đường dẫn bản ghi phiên vào `session-queue.json` (nằm trong gitignore); mặc định tắt và `engram upgrade` không bao giờ thêm nó. Xử lý hàng đợi bằng `engram observe --queue` (hoặc `engram observe --queue --learn`); xem [Hooks](../integrations/hooks.md).
 
 ## upgrade
 

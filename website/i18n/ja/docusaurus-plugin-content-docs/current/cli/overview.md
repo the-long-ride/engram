@@ -6,14 +6,17 @@ description: Engram CLI の全コマンドと、それぞれの役割の一覧�
 
 # コマンド概要
 
-`engram -h` でコンパクトなコマンド一覧を表示します。`engram help <topic>` または `engram -h <topic>` で、コマンドごとの例とユースケースを表示します。
+`engram -h` または `engram help --compact` でコンパクトなコマンド一覧を表示します。`engram help <topic>` または `engram -h <topic>` で、コマンドごとの例とユースケースを表示します。
 
 ## コマンドマップ
 
 | 目的 | コマンド |
 | --- | --- |
+| ワークスペース・メモリの健全性を素早く確認する | `engram status`（エイリアス `engram stat`） |
+| コンパクトなコマンド一覧を表示する | `engram help --compact` |
 | タスクのメモリを読み込む | `engram load "<task>"` |
 | コンパクトなタスクメモリを読み込む | `engram load "<task>"` |
+| メモリがルーティングされた／除外された理由を説明する | `engram why <id> ["<query>"]` |
 | AI エージェント向けの使い方ガイドを表示する | `engram llm` |
 | ルーティングされるメモリファイルをプレビューする | `engram load --dry-run "<task>"` |
 | トークン上限を付けて読み込む | `engram load --budget-tokens 800 "<task>"` |
@@ -26,7 +29,9 @@ description: Engram CLI の全コマンドと、それぞれの役割の一覧�
 | セッション候補を強制保存する | `engram ss -f` |
 | 最近のチャットを抽出して強制保存する | `engram ss -f last 50 sessions` |
 | 生のノートを取り込む | `engram observe --file session.md` |
+| 学習内容を working メモリと inbox レシートへ抽出する | `engram observe --learn [--file <path> \| --git [range]]` |
 | オプトインの SessionEnd トランスクリプトキューを処理する | `engram observe --queue --dry-run` |
+| ステージングされた学習レシートをレビューする | `engram review inbox\|triage\|apply\|dismiss` |
 | 既存のドキュメントやガイダンスを変換する | `engram take-control --all` |
 | ソースの引き継ぎをプレビューする | `engram take-control --plan` |
 | コードや設定をダイジェスト化する | `engram take-control --kind code --objective "<text>"` |
@@ -35,10 +40,13 @@ description: Engram CLI の全コマンドと、それぞれの役割の一覧�
 | 作業メモリを残す | `engram promote <id>` |
 | タスクノートを保存する | `engram working note "<text>"` |
 | 期限切れの作業メモリを整理する | `engram working prune [--dry-run]` |
-| 取得数と注入数を確認する | `engram stats --usage` |
+| 取得数・注入数・結果数を確認する | `engram stats --usage` |
+| Git コミット履歴から利用テレメトリをバックフィルする | `engram stats --backfill [--git <range>] [--limit <n>]` |
 | 既存のメモリフォルダーを再構成する | `engram metacognize --workspace\|--global\|--all` |
 | コンフリクトを解決して metacognize する | `engram resolve-conflicts --metacognize` |
 | グラフのルーティングを確認する | `engram graph "<topic>"` |
+| 親子のグラフ依存関係をリンクする | `engram graph link <parent-id> <child-id...>` |
+| Git 履歴からベンチマークケースを生成する | `engram benchmark --from-git [--out <path>]` |
 | ハッシュを確認する | `engram verify` |
 | 壊れたメモリファイルを見つける | `engram repair` |
 | 誤ったメモリをアーカイブする | `engram archive --reason "<why>" <id-or-file>` |

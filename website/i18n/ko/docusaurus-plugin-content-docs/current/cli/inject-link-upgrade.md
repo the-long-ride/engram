@@ -34,6 +34,8 @@ engram inject --no-global
 ```bash
 engram link codex
 engram link claude
+engram link claude --session-end
+engram link codex --session-end
 engram link gemini
 engram link cursor
 engram link windsurf
@@ -46,7 +48,7 @@ engram unlink
 
 `engram link all`은 공개 대상 세트를 설치하며, 스킬셋 지침 파일, MCP 설정, 슬래시 어댑터, 에이전트 훅을 하나의 통합 설치로 처리하는 과정에서 일부만 지원하는 호스트에 대해서는 항상 같은 `SKIPPED` 사유를 보고합니다. `engram unlink`는 이 모든 항목을 함께 제거합니다. `engram unlink --global <target>`은 Engram이 생성한 글로벌 플러그인만 제거하며, 사람이 작성한 파일은 `--force`를 명시하지 않는 한 보존됩니다.
 
-`engram link claude --session-end`(또는 `codex`)는 추가로 선택 사항인 `SessionEnd` 명령 훅을 등록하며, 이 훅은 세션 트랜스크립트 경로를 gitignore된 `session-queue.json`에 대기열로 추가합니다. 기본값은 꺼짐이며 `engram upgrade`는 이를 추가하지 않습니다. `engram observe --queue`로 대기열을 처리하세요. 자세한 내용은 [훅](../integrations/hooks.md)을 참고하세요.
+`engram link claude --session-end`와 `engram link codex --session-end`는 추가로 선택 사항인 `SessionEnd` 명령 훅을 등록하며, 이 훅은 세션 트랜스크립트 경로를 gitignore된 `session-queue.json`에 대기열로 추가합니다. 기본값은 꺼짐이며 `engram upgrade`는 이를 추가하지 않습니다. `engram observe --queue`(또는 `engram observe --queue --learn`)로 대기열을 처리하세요. 자세한 내용은 [훅](../integrations/hooks.md)을 참고하세요.
 
 ## upgrade
 

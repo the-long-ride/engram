@@ -46,6 +46,15 @@ engram save-session --file .agents/.engram/inbox/<observation>.md
 El primer comando sanea la fuente y escribe una traza inmutable identificada por `trace_id`, más un envoltorio de inbox editable. El segundo comando resuelve el envoltorio hasta su traza, verifica el hash y el ámbito, y escribe únicamente memoria schema v3 aprobada por una persona, con `evidence_refs`. Editar `## Raw Note` no puede reemplazar la evidencia de la traza.
 <!-- evidence-foundation:v3:end -->
 
+## Aprendizaje de sesión
+
+El aprendizaje de sesión Opción A captura lecciones duraderas sin eludir la frontera de aprobación. Los hooks de eventos de prompt (aprendizaje de correcciones con fallo abierto) y las ejecuciones explícitas de `engram observe --learn` / `engram observe --queue --learn` destilan de forma determinista aprendizajes saneados en:
+
+- memorias `working/` con caducidad e ignoradas por Git (respaldadas por trazas saneadas `tr_sl_*`) para continuidad inmediata de la tarea; y
+- recibos de revisión no activos `inbox/r-*.json` cuando `learning.mode` es `propose` (el valor por defecto; configure `working` para omitir recibos u `off` para desactivarlo).
+
+Use `engram review inbox`, `engram review triage`, `engram review apply` y `engram review dismiss` para revisar los recibos preparados. `learning.auto_drain` (por defecto `false`) controla si las transcripciones encoladas de `SessionEnd` se vacían automáticamente. La memoria duradera activa nunca se escribe sin aprobación humana.
+
 ## Comprobaciones de seguridad al guardar
 
 - Validación del esquema

@@ -21,6 +21,15 @@ The search mode menu has two options:
 
 Clear the field to restore the full graph for the selected filters.
 
+## ルートシミュレーター
+
+**Simulate route** バーを使用して、エージェントがクエリを見る前に Engram がどのようにルーティングするかをテストできます。クエリを送信すると `/api/recall?simulate=true` が呼び出され、次の内訳が表示されます。
+
+- **Packed bodies** — ルーティングされたペイロードに全文が含まれるメモリ
+- **Cards** — 全文とともに含まれるコンパクトなメモリカード
+- **Omitted candidates** — ランキングまたは予算制限により除外された一致メモリ
+- **Token budget** — シミュレーションされたリコール応答全体のトークン予算使用量
+
 ## Scope chips {#scope-chips}
 
 Filter the graph by memory source. Compare workspace vs global memory. Start with the current workspace only when the graph feels noisy.
@@ -49,9 +58,16 @@ Sensitive local content may be visible in the browser. Treat the panel as open w
 
 Opens the file in an editor and copies the path. Use for manual correction or review. The source of truth is the Markdown file.
 
-## Archive memory
+## Working と Noisy バッジ
 
-Removes memory from active routing while preserving it under `archive/`. Use archive, not delete, for auditability.
+メモリカードと詳細パネルには、注意が必要なメモリを強調するステータスバッジが表示されます。
+
+- **Working** — Git 管理外の `working/` ティアに保存されているアクティブなメモリを示します。**Promote** ボタン（即座に `POST /api/memory/promote` を呼び出します）を使うと、CLI に切り替えずにアクティブな `working/` メモリを永続ストレージへ移行できます。
+- **Noisy** — 価値を加えずに頻繁に一致するメモリにフラグを立て、トリガーの絞り込み、編集、またはアーカイブを行えるようにします。
+
+## メモリのアーカイブ
+
+メモリをアクティブなルーティングから除外しつつ、`archive/` 配下に保持します。アーカイブをクリックすると **Delete memory?** 確認ダイアログが開きます（理由を入力するモーダルプロンプトはなく、既定値 `'Deleted from Memories graph view'` が記録されます）。監査可能性のため、手動削除ではなくアーカイブを使用してください。
 
 <RiskCallout level="caution">
 Archiving changes routing immediately. Use archive, not manual deletion, so history is preserved.
@@ -67,6 +83,8 @@ The detail panel mirrors CLI/index metadata. It shows `authority`, `revision`, `
 
 ```bash
 engram graph "<topic>"
+engram why <id> "<query>"
+engram promote <id>
 engram quality-check
 engram archive --reason "<why>" <id-or-file>
 ```

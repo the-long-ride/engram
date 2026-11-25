@@ -47,6 +47,13 @@ Pour les hôtes capables d’exécution, Engram installe de petites instructions
 La base de configuration SQLite d’Engram est une optimisation pour la gestion des workspaces/profils. Si la base ne peut pas être ouverte ou initialisée, les commandes normales de lecture/écriture se rabattent sur des instantanés de configuration JSON. Les commandes propres à la base signalent SQLite comme indisponible au lieu de bloquer l’usage normal de la mémoire.
 
 
+## Ce qui change dans la version 0.1.0 {#what-changes-in-0-1-0}
+
+- **Récupération et classement** : BM25F à 3 flux (`title`, `tags`, `body`), 24 clusters de concepts plus des ponts de cooccurrence du corpus lorsque les ancres exactes manquent, tokenisation Unicode/vietnamien/CJK, `knowledgeFreshnessBoost`, `orderForAgentConsumption`, et télémétrie des résultats en boucle fermée `usage.json` (`applied`, `corrected` et décroissance du bruit) avec `engram stats --backfill`.
+- **Hooks et sous-agents** : `hookStartupAuto` compresse les règles non-démarrage en cartes sur une ligne lors de `SessionStart` en mode `read: auto`, `SubagentStart` route un contexte ciblé sur la tâche (`subagentQueryText`), et les hooks de prompt enregistrent la télémétrie d’usage en boucle fermée tout en exécutant un apprentissage par correction en mode fail-open.
+- **Apprentissage de session et niveau de travail** : l’apprentissage déterministe Option A écrit des mémoires `working/` assainies et temporaires et prépare les candidats durables sous forme de reçus non actifs `inbox/r-*.json` (`engram review inbox|triage|apply|dismiss`), configuré via `learning.mode` (`off`, `working`, `propose`) et `learning.auto_drain`. Ajoute `engram working note`, l’outil MCP `engram_note` et la mise en file optionnelle `SessionEnd` (`engram link claude|codex --session-end`).
+- **CLI et UX Entry Web** : ajoute `engram status` (`engram stat`), `engram why <id> ["<query>"]`, `engram help --compact`, `engram graph link <parent-id> <child-id...>`, `engram review triage` et `engram benchmark --from-git`, accompagnés d’améliorations de l’interface web Entry et de dépendances sans vulnérabilité.
+
 ## Ce qui change dans la version native pour hôtes {#what-changes-in-the-host-native-release}
 
 Après `engram upgrade --latest` (ou `engram link <host>`) sur une installation existante :
@@ -57,7 +64,7 @@ Après `engram upgrade --latest` (ou `engram link <host>`) sur une installation 
 - **Fichiers de mémoire** : les nouvelles mémoires omettent `author_email` (exécutez `engram author migrate-memories --strip-email --confirm` pour nettoyer les anciennes), les règles ne stockent que leur Content, et les sauvegardes de migration se trouvent dans le dossier `backups/`, ignoré par Git (`engram repair --move-backups` déplace les plus anciennes).
 - **Configuration** : `vector.enabled` vaut `false` par défaut pour les nouvelles configurations ; une configuration qui stocke déjà `true` reste activée. `cursorrules` est un alias obsolète du format d’export `cursor-rules` pendant une version.
 
-Consultez la section Unreleased du [journal des modifications](changelog.md) pour la liste complète et pour ce qui n’est pas encore fait.
+Consultez le [journal des modifications](changelog.md) pour l’historique complet des versions.
 
 ## Migration des anciennes mémoires vers le schema v3 {#legacy-memory-migration-to-schema-v3}
 

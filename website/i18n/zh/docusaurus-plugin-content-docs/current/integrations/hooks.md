@@ -35,7 +35,9 @@ Hook 缓存存储哈希值、会话 ID、宿主、当前工作目录 (cwd) 以�
 
 ## 增量注入 (Delta injection) {#delta-injection}
 
-对于每个（宿主、cwd、会话），hook 会记录已交付的键。提示轮次仅注入尚未交付的主体，并以一行 `already loaded: <ids>` 结尾表示其余部分；没有任何新内容的轮次仅注入该行（启用证明时带有证明行），未路由到任何内容的轮次则不注入记忆。`SessionStart` 和 `PreCompact` 会重置该集合，因此在新会话或上下文压缩后，记忆会再次交付。超过 7 天的记录会被清理，最多保留 200 条。OpenCode 仅保留单个系统提示插槽，因此其插件会替换或保留当前插槽，而不是发送严格的增量。
+对于每个（宿主、cwd、会话），hook 会同时记录已交付的键以及启动时展示过的卡片（`carded` / `touched`）。在 `read: auto` 模式下，`SessionStart`（`hookStartupAuto`）会将非启动规则压缩为单行卡片而非完整主体。后续提示轮次仅注入尚未交付的主体（当提示转向对应主题时，将 `carded` 规则提升为完整主体），并以一行 `already loaded: <ids>` 结尾表示其余部分；没有任何新内容的轮次仅注入该行（启用证明时带有证明行），未路由到任何内容的轮次则不注入记忆。`SessionStart` 和 `PreCompact` 会重置已交付集合以及 `carded`/`touched` 集合，因此在新会话或上下文压缩后，记忆会再次交付。超过 7 天的记录会被清理，最多保留 200 条。OpenCode 仅保留单个系统提示插槽，因此其插件会替换或保留当前插槽，而不是发送严格的增量。
+
+提示事件 hook（`UserPromptSubmit`、`BeforeAgent`、`pre_user_prompt` 和 `chat.message`）还会运行故障开放（fail-open）的纠错学习和闭环结果遥测：用户的显式纠正会被提炼为经过脱敏、被 gitignore 且会过期的 `working/` 记忆，并暂存为非活动状态的 `inbox/r-*.json` 收据以待人工审批（`engram review inbox` / `engram review apply`），同时 `usage.json` 会为先前注入的记忆记录 `applied` 和 `corrected` 结果，使后续路由提升有用记忆并衰减噪声记忆。活动持久记忆绝不会自动写入。
 
 ## 有效负载上限 {#payload-caps}
 
@@ -56,7 +58,7 @@ Claude、Codex 和 Gemini 的 hook 安装还会注册路径触发器。Codex 始
 
 ## Subagent (子代理) {#subagents}
 
-Claude 和 Codex 的 hook 安装还会注册 `SubagentStart`（匹配器 `*`，所有代理类型）。它将路由的 `current session` 上下文作为附加上下文注入子代理，且从不返回决定。子代理 hook 携带父级的 `session_id`，因此子代理的已交付集合以 `<session_id>#agent:<agent_id>` 为键，父级的集合永远不会被触及；最多保留 100 条子代理记录，以确保它们不会逐出父会话。Codex 的 `SubagentStart` 输出省略了 `suppressOutput`，Codex 没有为该事件列出该属性。适用相同的有效负载上限。已知局限：Codex 未在 `PreToolUse` 上记录 `agent_id`，因此 Codex 子代理内部的路径触发器可能会记录在父级的已交付集合中。
+Claude 和 Codex 的 hook 安装还会注册 `SubagentStart`（匹配器 `*`，所有代理类型）。它会从子代理载荷派生任务作用域的路由查询（`subagentQueryText`，当没有任务文本时回退为 `current session`），将路由出的上下文作为附加上下文注入子代理，且从不返回决定。子代理 hook 携带父级的 `session_id`，因此子代理的已交付集合以 `<session_id>#agent:<agent_id>` 为键，父级的集合永远不会被触及；最多保留 100 条子代理记录，以确保它们不会逐出父会话。Codex 的 `SubagentStart` 输出省略了 `suppressOutput`，Codex 没有为该事件列出该属性。适用相同的有效负载上限。已知局限：Codex 未在 `PreToolUse` 上记录 `agent_id`，因此 Codex 子代理内部的路径触发器可能会记录在父级的已交付集合中。
 
 ## 会话转录队列（可选） {#session-transcript-queue-opt-in}
 

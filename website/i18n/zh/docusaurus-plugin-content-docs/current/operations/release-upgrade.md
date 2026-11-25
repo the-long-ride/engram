@@ -43,6 +43,13 @@ latest 升级清单会按物理文件对已注册的集成去重。如果多个�
 Engram 的 SQLite 配置数据库是针对工作区/资料管理的一项优化。如果该数据库无法打开或初始化，常规的读/写命令会回退到 JSON 配置快照。与数据库相关的命令会报告 SQLite 不可用，而不会阻碍正常的记忆使用。
 
 
+## 0.1.0 中的变化
+
+- **检索与排序**：三流 BM25F（`title`、`tags`、`body`）、缺少精确锚点时的 24 个概念簇与语料库共现桥接、Unicode/越南语/CJK 分词、`knowledgeFreshnessBoost`、`orderForAgentConsumption`，以及闭环 `usage.json` 结果遥测（`applied`、`corrected` 与噪声衰减）和 `engram stats --backfill`。
+- **Hook 与子代理**：`hookStartupAuto` 在 `read: auto` 模式的 `SessionStart` 将非启动规则压缩为单行卡片，`SubagentStart` 路由任务作用域上下文（`subagentQueryText`），提示 hook 记录闭环使用遥测并运行 fail-open 纠错学习。
+- **会话学习与工作层**：确定性方案 A 学习将经脱敏且会过期的记忆写入 `working/`，并将持久候选暂存为非活动状态的 `inbox/r-*.json` 收据（`engram review inbox|triage|apply|dismiss`），可通过 `learning.mode`（`off`、`working`、`propose`）和 `learning.auto_drain` 配置。新增 `engram working note`、`engram_note` MCP 工具及可选的 `SessionEnd` 入队（`engram link claude|codex --session-end`）。
+- **CLI 与 Entry Web 体验**：新增 `engram status`（`engram stat`）、`engram why <id> ["<query>"]`、`engram help --compact`、`engram graph link <parent-id> <child-id...>`、`engram review triage` 与 `engram benchmark --from-git`，同时升级 Entry Web UI 并实现零漏洞依赖。
+
 ## 宿主原生版本中的变化
 
 在现有安装上执行 `engram upgrade --latest`（或 `engram link <host>`）之后：
@@ -53,7 +60,7 @@ Engram 的 SQLite 配置数据库是针对工作区/资料管理的一项优化�
 - **记忆文件**：新记忆省略 `author_email`（运行 `engram author migrate-memories --strip-email --confirm` 可清理旧记忆），规则只存储其 Content，迁移备份存放在被 gitignore 的 `backups/` 文件夹中（`engram repair --move-backups` 可迁移较早的备份）。
 - **配置**：新配置中 `vector.enabled` 默认为 `false`；已存储 `true` 的配置保持开启。`cursorrules` 在一个版本内作为 `cursor-rules` 导出格式的已弃用别名。
 
-完整列表以及尚未完成的内容，请参阅[变更日志](changelog.md)中的 Unreleased 部分。
+完整发布历史请参阅[更新日志](changelog.md)。
 
 ## 旧版记忆迁移到 schema v3
 

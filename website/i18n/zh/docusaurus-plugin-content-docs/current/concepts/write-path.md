@@ -46,6 +46,15 @@ engram save-session --file .agents/.engram/inbox/<observation>.md
 第一条命令会清理来源，并写入一个由 `trace_id` 标识的不可变 trace，外加一个可编辑的 inbox 包装文件。第二条命令会将包装文件解析到其 trace，校验哈希和作用域，然后仅写入带有 `evidence_refs` 且经人类批准的 schema v3 记忆。编辑 `## Raw Note` 无法替换 trace 证据。
 <!-- evidence-foundation:v3:end -->
 
+## 会话学习
+
+方案 A 会话学习在不绕过审批边界的前提下捕获持久经验。提示事件 hook（fail-open 纠错学习）以及显式运行的 `engram observe --learn` / `engram observe --queue --learn` 会确定性地将经脱敏的学习内容提炼为：
+
+- 被 gitignore 且会过期的 `working/` 记忆（由经脱敏的 `tr_sl_*` trace 支撑），用于即时的任务连续性；以及
+- 当 `learning.mode` 为 `propose`（默认值；设为 `working` 可跳过收据，设为 `off` 可禁用）时，暂存为非活动状态的 `inbox/r-*.json` 审阅收据。
+
+使用 `engram review inbox`、`engram review triage`、`engram review apply` 和 `engram review dismiss` 审阅暂存收据。`learning.auto_drain`（默认 `false`）控制是否自动处理队列中的 `SessionEnd` 会话记录。未经人类批准，绝不会写入活动持久记忆。
+
 ## 保存时的安全检查
 
 - Schema 校验

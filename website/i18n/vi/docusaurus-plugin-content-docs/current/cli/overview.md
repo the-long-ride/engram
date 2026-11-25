@@ -6,14 +6,17 @@ description: Bản đồ mọi lệnh CLI của Engram và chức năng của t�
 
 # Tổng quan lệnh
 
-Chạy `engram -h` để xem bề mặt lệnh dạng gọn. Chạy `engram help <topic>` hoặc `engram -h <topic>` để xem ví dụ và các trường hợp sử dụng riêng của từng lệnh.
+Chạy `engram -h` hoặc `engram help --compact` để xem bề mặt lệnh dạng gọn. Chạy `engram help <topic>` hoặc `engram -h <topic>` để xem ví dụ và các trường hợp sử dụng riêng của từng lệnh.
 
 ## Bản đồ lệnh {#command-map}
 
 | Nhu cầu | Lệnh |
 | --- | --- |
+| Tóm tắt nhanh sức khỏe workspace/bộ nhớ | `engram status` (bí danh `engram stat`) |
+| Tóm tắt lệnh dạng gọn | `engram help --compact` |
 | Tải bộ nhớ cho tác vụ | `engram load "<task>"` |
 | Tải bộ nhớ tác vụ dạng gọn | `engram load "<task>"` |
+| Giải thích vì sao một bộ nhớ được hoặc không được định tuyến | `engram why <id> ["<query>"]` |
 | In hướng dẫn sử dụng dành cho AI agent | `engram llm` |
 | Xem trước các tệp bộ nhớ được định tuyến | `engram load --dry-run "<task>"` |
 | Tải với giới hạn token | `engram load --budget-tokens 800 "<task>"` |
@@ -26,7 +29,9 @@ Chạy `engram -h` để xem bề mặt lệnh dạng gọn. Chạy `engram help
 | Buộc lưu các ứng viên của phiên | `engram ss -f` |
 | Khai thác và buộc lưu các cuộc trò chuyện gần đây | `engram ss -f last 50 sessions` |
 | Ghi lại ghi chú thô | `engram observe --file session.md` |
+| Chắt lọc bài học vào bộ nhớ làm việc + biên nhận inbox | `engram observe --learn [--file <path> \| --git [range]]` |
 | Xử lý hàng đợi bản ghi SessionEnd (tùy chọn bật) | `engram observe --queue --dry-run` |
+| Rà soát các biên nhận học tập chờ duyệt | `engram review inbox\|triage\|apply\|dismiss` |
 | Chuyển đổi tài liệu/hướng dẫn hiện có | `engram take-control --all` |
 | Xem trước việc tiếp quản nguồn | `engram take-control --plan` |
 | Tóm lược mã hoặc cấu hình | `engram take-control --kind code --objective "<text>"` |
@@ -35,10 +40,13 @@ Chạy `engram -h` để xem bề mặt lệnh dạng gọn. Chạy `engram help
 | Giữ lại một bộ nhớ làm việc | `engram promote <id>` |
 | Lưu ghi chú tác vụ | `engram working note "<text>"` |
 | Dọn bộ nhớ làm việc đã hết hạn | `engram working prune [--dry-run]` |
-| Xem số lần lấy và chèn | `engram stats --usage` |
+| Xem số lần lấy, chèn và kết quả sử dụng | `engram stats --usage` |
+| Bổ sung dữ liệu đo lường sử dụng từ lịch sử commit Git | `engram stats --backfill [--git <range>] [--limit <n>]` |
 | Tái cấu trúc thư mục bộ nhớ hiện có | `engram metacognize --workspace\|--global\|--all` |
 | Giải quyết xung đột và metacognize | `engram resolve-conflicts --metacognize` |
 | Kiểm tra định tuyến đồ thị | `engram graph "<topic>"` |
+| Liên kết phụ thuộc cha/con trong đồ thị | `engram graph link <parent-id> <child-id...>` |
+| Tạo bộ kiểm thử benchmark từ lịch sử Git | `engram benchmark --from-git [--out <path>]` |
 | Kiểm tra hash | `engram verify` |
 | Tìm các tệp bộ nhớ bị lỗi định dạng | `engram repair` |
 | Lưu trữ bộ nhớ sai | `engram archive --reason "<why>" <id-or-file>` |

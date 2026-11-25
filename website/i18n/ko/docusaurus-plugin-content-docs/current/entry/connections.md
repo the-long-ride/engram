@@ -10,6 +10,10 @@ import RiskCallout from '@site/src/components/RiskCallout';
 
 Connections 탭은 컴퓨터에서 지원되는 AI 에이전트 환경을 스캔하고, 각 에이전트에 대해 워크스페이스 또는 글로벌 수준으로 Engram을 연결할 수 있게 해 줍니다.
 
+## Doctor 상태 배지
+
+Connections 헤더에는 `/api/doctor`의 통과/경고 검사 결과를 요약하는 **Doctor health badge**가 표시됩니다. 에이전트를 연결하거나 문제를 해결하기 전에 훅, 연결 또는 설정 경고를 한눈에 파악하는 데 활용하세요.
+
 ## 에이전트 스캔 {#agent-scan}
 
 이 탭에는 지원되는 에이전트마다 카드가 하나씩 표시됩니다. 각 카드는 감지됨 또는 누락됨 상태를 보여 줍니다.
@@ -32,6 +36,10 @@ Missing은 항상 미지원을 뜻하지는 않습니다. 이 컴퓨터에 앱�
 <RiskCallout level="risky">
 공유 컴퓨터에서는 글로벌 연결을 신중하게 사용하세요. Engram은 공유 지침 파일에 관리되는 블록을 기록합니다. 글로벌로 연결하기 전에 에이전트별로 Engram이 어떤 파일을 기록하는지 검토하세요.
 </RiskCallout>
+
+## SessionEnd 대기열 토글
+
+**Claude** 및 **Codex** 카드에는 검토용 세션 종료 학습 후보 대기열 등록을 켜거나 끌 수 있는 카드별 **`SessionEnd queue` 토글**(`engram link claude --session-end` 및 `engram link codex --session-end`에 해당)이 포함되어 있습니다.
 
 ## 에이전트별로 Engram이 기록하는 파일 {#what-files-engram-writes-per-agent}
 
@@ -61,7 +69,9 @@ Missing은 항상 미지원을 뜻하지는 않습니다. 이 컴퓨터에 앱�
 
 ```bash
 engram link codex
+engram link codex --session-end
 engram link claude
+engram link claude --session-end
 engram link --global opencode
 engram unlink
 ```

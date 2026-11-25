@@ -10,6 +10,10 @@ import RiskCallout from '@site/src/components/RiskCallout';
 
 Вкладка Connections сканирует вашу машину в поисках поддерживаемых поверхностей ИИ-агентов и позволяет подключить Engram к каждой из них на уровне рабочего пространства или глобально.
 
+## Индикатор состояния Doctor
+
+В заголовке Connections отображается **Doctor health badge**, сводящий результаты проверок pass/warn из `/api/doctor`. Используйте его, чтобы с первого взгляда заметить предупреждения по хукам, связям или конфигурации перед подключением или диагностикой агента.
+
 ## Сканирование агентов
 
 Вкладка показывает карточку для каждого поддерживаемого агента. Каждая карточка сообщает статус «обнаружен» или «отсутствует».
@@ -32,6 +36,10 @@ import RiskCallout from '@site/src/components/RiskCallout';
 <RiskCallout level="risky">
 Используйте глобальные связи осторожно на общих машинах. Engram записывает управляемые блоки в общие файлы инструкций. Перед глобальным подключением проверьте, какие файлы Engram записывает для каждого агента.
 </RiskCallout>
+
+## Переключатель очереди SessionEnd
+
+Карточки **Claude** и **Codex** содержат индивидуальный **переключатель `SessionEnd queue`**, который включает или отключает постановку в очередь кандидатов обучения при завершении сессии для проверки (соответствует `engram link claude --session-end` и `engram link codex --session-end`).
 
 ## Какие файлы Engram записывает для каждого агента
 
@@ -61,7 +69,9 @@ import RiskCallout from '@site/src/components/RiskCallout';
 
 ```bash
 engram link codex
+engram link codex --session-end
 engram link claude
+engram link claude --session-end
 engram link --global opencode
 engram unlink
 ```

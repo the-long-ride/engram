@@ -94,9 +94,31 @@ engram working prune
 ```bash
 engram observe --file session.md
 engram save-session --file .agents/.engram/inbox/<note>.md
+engram observe --learn --file session.md
+engram observe --learn --git HEAD~10..HEAD
+engram observe --queue --learn
 ```
 
 `observe` 会将经过清理的原始笔记存入 `inbox/`。Inbox 笔记不是活动记忆。当你想在决定哪些内容应成为持久记忆之前先保留粗略笔记时，请使用它。
+
+添加 `--learn`（`engram observe --learn [--file <path> | --git [range]]` 或 `engram observe --queue --learn`）可确定性地提炼学习内容，将其保存为被 gitignore 且会过期的 `working/` 记忆（附带经脱敏的 `tr_sl_*` trace），并将高置信度的持久候选暂存为非活动状态的 `inbox/r-*.json` 收据。使用 `engram review inbox` 与 `engram review apply` 审阅并批准已暂存的持久收据；未经批准绝不会写入活动持久记忆。
+
+## review
+
+```bash
+engram review inbox
+engram review triage
+engram review triage --interactive
+engram review apply <receipt-id>
+engram review dismiss <receipt-id>
+```
+
+查看并处理由提示时纠错学习或 `engram observe --learn` 暂存的非活动状态 `inbox/r-*.json` 学习收据：
+
+- `engram review inbox` — 列出暂存收据的 `id`、`scope`、`source`、`type` 以及截断后的候选文本。
+- `engram review triage` / `engram review triage --interactive` — 交互式逐条分拣待审收据，提示 `[a]pprove / [d]ismiss / [s]kip / [q]uit`（不提供编辑选项；`SUPERSEDE` 裁决会推迟给 `engram review apply <receipt-id>` 处理）。
+- `engram review apply <receipt-id>` — 需要提供 `<receipt-id>`，将该收据经写入审批关卡创建或更新为活动持久记忆。
+- `engram review dismiss <receipt-id>` — 丢弃收据且不写入活动记忆。
 
 <!-- evidence-foundation:v3:start -->
 ## 证据支持的记忆

@@ -10,6 +10,10 @@ import RiskCallout from '@site/src/components/RiskCallout';
 
 Connections 标签页会扫描你的机器上受支持的 AI agent 界面，并允许你在工作区或全局层级将 Engram 关联到每一个 agent。
 
+## Doctor 健康徽章
+
+Connections 顶部显示一个 **Doctor health badge**，汇总来自 `/api/doctor` 的 pass/warn 检查结果。在关联或排查 agent 之前，可用它一眼发现 hook、关联或配置警告。
+
 ## Agent 扫描
 
 该标签页为每个受支持的 agent 显示一张卡片。每张卡片都会报告已检测到或缺失的状态。
@@ -32,6 +36,10 @@ Connections 标签页会扫描你的机器上受支持的 AI agent 界面，并�
 <RiskCallout level="risky">
 在共享机器上请谨慎使用全局关联。Engram 会把受管块写入共享的指令文件。在进行全局关联之前，请先查看 Engram 为每个 agent 写入了哪些文件。
 </RiskCallout>
+
+## SessionEnd 队列开关
+
+**Claude** 和 **Codex** 卡片上都包含独立的 **`SessionEnd queue` toggle**，用于启用或禁用会话结束时将学习候选加入待审队列（对应 `engram link claude --session-end` 与 `engram link codex --session-end`）。
 
 ## Engram 为每个 agent 写入哪些文件
 
@@ -61,7 +69,9 @@ Connections 标签页会扫描你的机器上受支持的 AI agent 界面，并�
 
 ```bash
 engram link codex
+engram link codex --session-end
 engram link claude
+engram link claude --session-end
 engram link --global opencode
 engram unlink
 ```

@@ -6,14 +6,17 @@ description: Mapa de todos los comandos de la CLI de Engram y de lo que hace cad
 
 # Resumen de comandos
 
-Ejecute `engram -h` para ver la superficie compacta de comandos. Ejecute `engram help <topic>` o `engram -h <topic>` para ver ejemplos y casos de uso específicos de cada comando.
+Ejecute `engram -h` o `engram help --compact` para ver la superficie compacta de comandos. Ejecute `engram help <topic>` o `engram -h <topic>` para ver ejemplos y casos de uso específicos de cada comando.
 
 ## Mapa de comandos
 
 | Necesidad | Comando |
 | --- | --- |
+| Resumen rápido del estado del workspace/memoria | `engram status` (alias `engram stat`) |
+| Resumen compacto de comandos | `engram help --compact` |
 | Cargar la memoria de una tarea | `engram load "<task>"` |
 | Cargar la memoria compacta de una tarea | `engram load "<task>"` |
+| Explicar por qué una memoria se enrutó o no | `engram why <id> ["<query>"]` |
 | Imprimir la guía de uso para agentes de IA | `engram llm` |
 | Previsualizar los archivos de memoria enrutados | `engram load --dry-run "<task>"` |
 | Cargar con un límite de tokens | `engram load --budget-tokens 800 "<task>"` |
@@ -26,7 +29,9 @@ Ejecute `engram -h` para ver la superficie compacta de comandos. Ejecute `engram
 | Guardar a la fuerza las candidatas de la sesión | `engram ss -f` |
 | Extraer y guardar a la fuerza los chats recientes | `engram ss -f last 50 sessions` |
 | Capturar una nota sin procesar | `engram observe --file session.md` |
+| Destilar aprendizajes en memoria de trabajo + recibos de inbox | `engram observe --learn [--file <path> \| --git [range]]` |
 | Vaciar la cola opcional de transcripciones de SessionEnd | `engram observe --queue --dry-run` |
+| Revisar los recibos de aprendizaje preparados | `engram review inbox\|triage\|apply\|dismiss` |
 | Convertir documentos/guías existentes | `engram take-control --all` |
 | Previsualizar la toma de control de fuentes | `engram take-control --plan` |
 | Resumir código o configuración | `engram take-control --kind code --objective "<text>"` |
@@ -35,10 +40,13 @@ Ejecute `engram -h` para ver la superficie compacta de comandos. Ejecute `engram
 | Conservar una memoria de trabajo | `engram promote <id>` |
 | Guardar una nota de tarea | `engram working note "<text>"` |
 | Podar la memoria de trabajo caducada | `engram working prune [--dry-run]` |
-| Ver los recuentos de obtención e inyección | `engram stats --usage` |
+| Ver los recuentos de obtención, inyección y resultados | `engram stats --usage` |
+| Reconstruir la telemetría de uso desde el historial de commits de Git | `engram stats --backfill [--git <range>] [--limit <n>]` |
 | Reestructurar una carpeta de memoria existente | `engram metacognize --workspace\|--global\|--all` |
 | Resolver conflictos y metacognizar | `engram resolve-conflicts --metacognize` |
 | Inspeccionar el enrutamiento del grafo | `engram graph "<topic>"` |
+| Vincular dependencias padre/hijo en el grafo | `engram graph link <parent-id> <child-id...>` |
+| Generar casos de benchmark desde el historial de Git | `engram benchmark --from-git [--out <path>]` |
 | Comprobar hashes | `engram verify` |
 | Encontrar archivos de memoria mal formados | `engram repair` |
 | Archivar una memoria incorrecta | `engram archive --reason "<why>" <id-or-file>` |

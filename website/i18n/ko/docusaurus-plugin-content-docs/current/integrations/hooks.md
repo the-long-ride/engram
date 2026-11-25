@@ -35,7 +35,9 @@ engram set-proof compact
 
 ## 델타 주입 (Delta injection) {#delta-injection}
 
-각 (호스트, cwd, 세션)에 대해 훅은 전달한 키를 기록합니다. 프롬프트 턴은 아직 전달되지 않은 본문만 주입하고 나머지 항목에 대해 하나의 `already loaded: <ids>` 라인으로 끝납니다. 새로운 항목이 없는 턴은 해당 라인만 주입하고(증명이 켜져 있을 때는 증명 라인 포함), 아무것도 라우팅되지 않은 턴은 메모리를 주입하지 않습니다. `SessionStart` 및 `PreCompact`는 집합을 초기화하므로 새 세션이나 컨텍스트 압축 후에 메모리가 다시 전달됩니다. 7일보다 오래된 레코드는 정리되며 최대 200개가 유지됩니다. OpenCode는 단일 시스템 프롬프트 슬롯을 유지하므로 해당 플러그인은 엄격한 델타를 보내는 대신 현재 슬롯을 교체하거나 유지합니다.
+각 (호스트, cwd, 세션)에 대해 훅은 전달한 키와 시작 시 표시한 카드(`carded` / `touched`)를 모두 기록합니다. `read: auto` 모드에서는 `SessionStart`(`hookStartupAuto`)가 시작 대상이 아닌 규칙을 전체 본문 대신 한 줄 카드로 압축합니다. 이후 프롬프트 턴은 아직 전달되지 않은 본문만 주입하고(프롬프트가 해당 주제로 전환되면 `carded` 규칙을 전체 본문으로 승격), 나머지 항목에 대해 하나의 `already loaded: <ids>` 라인으로 끝납니다. 새로운 항목이 없는 턴은 해당 라인만 주입하고(증명이 켜져 있을 때는 증명 라인 포함), 아무것도 라우팅되지 않은 턴은 메모리를 주입하지 않습니다. `SessionStart` 및 `PreCompact`는 전달된 집합과 `carded`/`touched` 집합을 초기화하므로 새 세션이나 컨텍스트 압축 후에 메모리가 다시 전달됩니다. 7일보다 오래된 레코드는 정리되며 최대 200개가 유지됩니다. OpenCode는 단일 시스템 프롬프트 슬롯을 유지하므로 해당 플러그인은 엄격한 델타를 보내는 대신 현재 슬롯을 교체하거나 유지합니다.
+
+프롬프트 이벤트 훅(`UserPromptSubmit`, `BeforeAgent`, `pre_user_prompt`, `chat.message`)은 페일 오픈 방식의 교정 학습과 폐쇄 루프 결과 텔레메트리도 실행합니다. 사용자의 명시적인 교정은 정제되고 만료되는 gitignore 처리된 `working/` 메모리로 추출되며 사람 승인(`engram review inbox` / `engram review apply`)을 위한 비활성 `inbox/r-*.json` 영수증으로 스테이징되고, `usage.json`은 이전에 주입된 메모리의 `applied` 및 `corrected` 결과를 기록해 향후 라우팅에서 유용한 메모리를 높이고 노이즈가 많은 메모리를 감쇠시킵니다. 지속 활성 메모리는 자동으로 기록되지 않습니다.
 
 ## 페이로드 상한 {#payload-caps}
 
@@ -56,7 +58,7 @@ Claude, Codex 및 Gemini 훅 설치는 경로 트리거도 등록합니다. Code
 
 ## 서브에이전트 (Subagents) {#subagents}
 
-Claude 및 Codex 훅 설치는 `SubagentStart`(매처 `*`, 모든 에이전트 유형)도 등록합니다. 라우팅된 `current session` 컨텍스트를 추가 컨텍스트로 서브에이전트에 주입하며 결정을 반환하지 않습니다. 서브에이전트 훅은 부모 `session_id`를 전달하므로 서브에이전트의 전달된 집합은 `<session_id>#agent:<agent_id>`로 키가 지정되고 부모 집합은 변경되지 않습니다. 부모 세션을 축출하지 않도록 최대 100개의 서브에이전트 레코드가 유지됩니다. Codex `SubagentStart` 출력은 Codex가 해당 이벤트에 나열하지 않는 `suppressOutput`을 생략합니다. 동일한 페이로드 상한이 적용됩니다. 알려진 문제점: Codex는 `PreToolUse`에 `agent_id`를 문서화하지 않으므로 Codex 서브에이전트 내부의 경로 트리거가 부모의 전달된 집합에 기록될 수 있습니다.
+Claude 및 Codex 훅 설치는 `SubagentStart`(매처 `*`, 모든 에이전트 유형)도 등록합니다. 서브에이전트 페이로드에서 작업 범위 라우팅 쿼리(`subagentQueryText`, 작업 텍스트가 없으면 `current session`으로 대체)를 도출해 라우팅된 컨텍스트를 추가 컨텍스트로 서브에이전트에 주입하며 결정을 반환하지 않습니다. 서브에이전트 훅은 부모 `session_id`를 전달하므로 서브에이전트의 전달된 집합은 `<session_id>#agent:<agent_id>`로 키가 지정되고 부모 집합은 변경되지 않습니다. 부모 세션을 축출하지 않도록 최대 100개의 서브에이전트 레코드가 유지됩니다. Codex `SubagentStart` 출력은 Codex가 해당 이벤트에 나열하지 않는 `suppressOutput`을 생략합니다. 동일한 페이로드 상한이 적용됩니다. 알려진 문제점: Codex는 `PreToolUse`에 `agent_id`를 문서화하지 않으므로 Codex 서브에이전트 내부의 경로 트리거가 부모의 전달된 집합에 기록될 수 있습니다.
 
 ## 세션 트랜스크립트 큐 (옵트인) {#session-transcript-queue-opt-in}
 

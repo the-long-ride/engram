@@ -8,6 +8,16 @@ description: 维护命令——验证哈希、修复无效文件、检查质量�
 
 维护命令用于保持记忆健康。
 
+## status
+
+```bash
+engram status
+engram stat
+engram status --json
+```
+
+单屏输出工作区与全局记忆根目录、当前资料、已关联宿主、待审收据、工作层计数以及完整性/新鲜度健康状况的概览。`engram stat` 是简短别名，`--json` 则输出供脚本使用的结构化快照。
+
 ## verify
 
 ```bash
@@ -25,9 +35,10 @@ engram verify --sources --json
 ```bash
 engram stats
 engram stats --usage
+engram stats --backfill [--git <range>] [--limit <n>]
 ```
 
-`--usage` 会读取本地、被 gitignore 的 `.agents/.engram/usage.json`，并显示 agent 实际通过 `engram load --id` 获取了哪些记忆，以及哪些记忆被注入但在 30 天内从未被获取。
+`--usage` 会读取本地、被 gitignore 的 `.agents/.engram/usage.json`，显示获取次数（`engram load --id`）、闭环结果计数（`applied`、`corrected` 与 `noisy`/零效用注入），以及被注入但在 30 天内从未被获取的记忆。`--backfill` 会从 Git 提交历史（近期非合并提交，通过 `backfillUsageFromGit`，可选 `[--git <range>] [--limit <n>]`）回填历史使用遥测并写入 `usage.json`。
 
 ## repair
 
@@ -58,9 +69,10 @@ engram quality-check
 ```bash
 engram graph "package manager"
 engram graph --rebuild
+engram graph link <parent-id> <child-id...>
 ```
 
-在归档之前检查图路由。手动编辑之后运行 `engram graph --rebuild`。
+在归档之前检查图路由，使用 `engram graph link <parent-id> <child-id...>` 关联显式 `depends_on` 前置条件，或在手动编辑之后运行 `engram graph --rebuild`。
 
 ## archive
 
@@ -82,10 +94,13 @@ engram resolve-conflicts --metacognize
 ## benchmark
 
 ```bash
-engram benchmark
+engram benchmark <cases.json> --json
+engram benchmark <cases.json> --baseline <baseline.json> --fail-on forbidden,recall
+engram benchmark <cases.json> --write-report <report.json>
+engram benchmark --from-git [--out <path>]
 ```
 
-检索回归检查。
+运行带版本的检索回归套件，包括 `freshness-ordering`（新鲜度加成与注意力感知的正文排序）、`multi-turn-session`（跨轮次的 hook token 节省）和 `telemetry-loop`（`real-stacks-v1` 闭环结果遥测与噪声衰减）。使用 `--from-git [--out <path>]` 可从近期 Git 历史合成仓库本地基准用例，使用 `--baseline` 与已保存的指标进行对比，使用 `--write-report` 输出仅包含 ID 的 JSON 报告，使用 `--fail-on` 在特定回归出现时使 CI 失败。
 
 ## 后续步骤
 

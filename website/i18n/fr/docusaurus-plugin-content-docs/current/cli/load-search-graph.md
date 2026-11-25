@@ -21,7 +21,7 @@ engram load --id <id>,<id>
 engram load --exclude-keys workspace:rules/use-pnpm.md "<task>"
 ```
 
-`load` ancre d’abord le routage sur des termes de requête significatifs, en ignorant les mots génériques comme `rule`, `knowledge` et les stopwords courants. Il affine ensuite l’ensemble des candidats en un paquet de contexte compact. Une charge normale indique les décomptes sélectionnés et totaux associés, comme `loaded 8 memory files / 14 total related memories`.
+`load` tokenise les requêtes et les mémoires avec une tokenisation compatible Unicode/vietnamien/CJK, puis ancre le routage sur des termes de requête significatifs à l’aide des `rawStems` non étendus (`hasAnchorOverlap`), en ignorant les mots génériques comme `rule`, `knowledge` et les stopwords courants afin que l’expansion de synonymes ne puisse pas admettre de mémoires sans rapport. Lorsque les ancres exactes manquent, 24 clusters de concepts déterministes et des ponts de cooccurrence du corpus peuvent encore relier la terminologie apparentée. Les candidats sont notés avec un BM25F à 3 flux (`title`, `tags`, `body`) plus la télémétrie des résultats en boucle fermée de `usage.json` (bonus `applied`, pénalités `corrected` et décroissance du bruit pour les mémoires injectées à répétition sans utilité). Il affine ensuite l’ensemble des candidats en un paquet de contexte compact et ordonne les corps étendus avec `orderForAgentConsumption` (règles, instructions et prérequis `depends_on` en premier ; contexte durable plus ancien au milieu ; feuilles récentes `<=14d` ou du niveau `working` à la fin). Une charge normale indique les décomptes sélectionnés et totaux associés, comme `loaded 8 memory files / 14 total related memories`.
 
 - `load` par défaut — route étagée orientée agent : les meilleurs résultats selon `load.expand_top` (3 par défaut) sous forme de corps complets, chaque autre résultat sélectionné sous forme de carte sur une ligne, et une indication finale `fetch: engram load --id <ids>` ; chaque en-tête de corps porte l’`authority` de la mémoire, les champs de frontmatter tels que `evidence_refs`, `## Context`, `## Example` et `## Origin` ne sont pas affichés (utilisez `--full` pour les voir), et les règles affichent une variante sélectionnée.
 - `--id <id,...>` — récupère les corps complets pour les cartes ; les identifiants peuvent être séparés par des virgules, et une récupération explicite est comptabilisée dans `stats --usage`.
@@ -45,14 +45,25 @@ engram search --semantic "<topic>"
 
 La recherche par défaut est une recherche lexicale déterministe. `search --semantic` ajoute une similarité locale déterministe, et non une recherche sémantique basée sur des embeddings. Les résultats de `search --json` contiennent un champ `score`.
 
+## why
+
+```bash
+engram why <id>
+engram why <id> "<query>"
+engram why <id> "<query>" --json
+```
+
+Explique pourquoi une mémoire donnée a été incluse, classée ou omise pour une requête : indique `status` (`expanded_body`, `card`, `omitted_budget`, `omitted_limit`, `rejected_no_anchor`, `excluded_lifecycle`, `not_found`), `rank`, `score`, `matched_stems`, `missing_stems`, `budget` et `hint`. Passez `--json` pour obtenir des diagnostics structurés.
+
 ## graph
 
 ```bash
 engram graph "<topic>"
 engram graph --rebuild
+engram graph link <parent-id> <child-id...>
 ```
 
-Inspectez le routage du graphe. Exécutez `engram graph --rebuild` après des modifications manuelles. Le graphe indique les couches de dépendance, et `engram load` extrait les prérequis routés dans le même paquet compact avant les mémoires plus profondes.
+Inspectez le routage du graphe ou déclarez des arêtes de dépendance explicites. Exécutez `engram graph --rebuild` après des modifications manuelles, ou utilisez `engram graph link <parent-id> <child-id...>` pour ajouter des liens `depends_on` depuis des mémoires enfants vers un prérequis parent et actualiser le graphe. Le graphe indique les couches de dépendance, et `engram load` extrait les prérequis routés dans le même paquet compact avant les mémoires plus profondes.
 
 Les arêtes liées dans le graphe et les correspondances vectorielles ne chargent pas automatiquement des mémoires non liées ; elles aident seulement à reclasser ou étendre les mémoires qui correspondent déjà à des termes de requête significatifs. Les prérequis explicites `depends_on` peuvent toujours être chargés sans correspondre à leurs propres termes.
 

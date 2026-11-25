@@ -43,6 +43,13 @@ engram upgrade --latest
 Конфигурационная БД SQLite в Engram — это оптимизация для управления рабочими пространствами/профилями. Если БД не удаётся открыть или инициализировать, обычные команды чтения/записи переходят на JSON-снимки конфигурации. Команды, специфичные для БД, сообщают, что SQLite недоступна, а не блокируют обычное использование памяти.
 
 
+## Что меняется в 0.1.0
+
+- **Поиск и ранжирование**: трёхпотоковый BM25F (`title`, `tags`, `body`), 24 концептуальных кластера и мосты совместной встречаемости в корпусе при отсутствии точных якорей, токенизация Unicode/вьетнамского/CJK, `knowledgeFreshnessBoost`, `orderForAgentConsumption` и замкнутая телеметрия исходов `usage.json` (`applied`, `corrected` и затухание шума) с `engram stats --backfill`.
+- **Хуки и субагенты**: `hookStartupAuto` сжимает не-стартовые правила в однострочные карточки на `SessionStart` в режиме `read: auto`, `SubagentStart` маршрутизирует контекст в рамках задачи (`subagentQueryText`), а хуки промптов записывают замкнутую телеметрию использования и запускают отказоустойчивое (fail-open) обучение по исправлениям.
+- **Обучение сессий и уровень `working`**: детерминированное обучение Option A записывает очищенные истекающие воспоминания `working/` и подготавливает долговечные кандидаты как неактивные квитанции `inbox/r-*.json` (`engram review inbox|triage|apply|dismiss`), настраиваемые через `learning.mode` (`off`, `working`, `propose`) и `learning.auto_drain`. Добавлены `engram working note`, инструмент MCP `engram_note` и опциональная постановка в очередь `SessionEnd` (`engram link claude|codex --session-end`).
+- **CLI и Entry Web UX**: добавлены `engram status` (`engram stat`), `engram why <id> ["<query>"]`, `engram help --compact`, `engram graph link <parent-id> <child-id...>`, `engram review triage` и `engram benchmark --from-git`, а также обновления Entry Web UX и зависимости без известных уязвимостей.
+
 ## Что меняется в выпуске host-native
 
 После `engram upgrade --latest` (или `engram link <host>`) на существующей установке:
@@ -53,7 +60,7 @@ engram upgrade --latest
 - **Memory files**: новые воспоминания не содержат `author_email` (выполните `engram author migrate-memories --strip-email --confirm`, чтобы очистить старые), правила хранят только свой Content, а резервные копии миграции находятся в папке `backups/`, исключённой из Git (`engram repair --move-backups` переносит более старые).
 - **Config**: `vector.enabled` по умолчанию равно `false` для новых конфигураций; конфигурация, где уже сохранено `true`, остаётся включённой. `cursorrules` — устаревший псевдоним формата экспорта `cursor-rules` на один выпуск.
 
-Полный список и перечень того, что ещё не сделано, смотрите в разделе Unreleased [журнала изменений](changelog.md).
+Полную историю выпусков смотрите в [журнале изменений](changelog.md).
 
 ## Миграция устаревших воспоминаний на схему v3 (schema v3)
 

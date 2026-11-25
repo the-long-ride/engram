@@ -34,6 +34,8 @@ engram inject --no-global
 ```bash
 engram link codex
 engram link claude
+engram link claude --session-end
+engram link codex --session-end
 engram link gemini
 engram link cursor
 engram link windsurf
@@ -46,7 +48,7 @@ engram unlink
 
 `engram link all` 会安装公开的目标集合，并在一次统一安装中，针对 skillset 指令文件、MCP 配置、斜杠适配器和 agent hook 方面的部分支持宿主，报告确定性的 `SKIPPED` 原因。`engram unlink` 会将这些内容一并移除。`engram unlink --global <target>` 只移除由 Engram 生成的全局插件；人工编写的文件会被保留，除非显式指定 `--force`。
 
-`engram link claude --session-end`（或 `codex`）还会额外注册一个可选的 `SessionEnd` 命令 hook，它将会话记录（transcript）路径排入被 gitignore 的 `session-queue.json` 队列；该选项默认关闭，且 `engram upgrade` 绝不会添加它。使用 `engram observe --queue` 来处理该队列；参见 [Hooks](../integrations/hooks.md)。
+`engram link claude --session-end` 和 `engram link codex --session-end` 还会额外注册一个可选的 `SessionEnd` 命令 hook，它将会话记录（transcript）路径排入被 gitignore 的 `session-queue.json` 队列；该选项默认关闭，且 `engram upgrade` 绝不会添加它。使用 `engram observe --queue`（或 `engram observe --queue --learn`）来处理该队列；参见 [Hooks](../integrations/hooks.md)。
 
 ## upgrade
 

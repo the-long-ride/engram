@@ -47,6 +47,25 @@ For runtime-capable hosts, Engram installs small bootstrap instructions instead 
 Engram's SQLite config DB is an optimization for workspace/profile management. If the DB cannot be opened or initialized, normal read/write commands fall back to JSON config snapshots. DB-specific commands report SQLite as unavailable instead of blocking normal memory use.
 
 
+## Những thay đổi trong phiên bản 0.1.0
+
+- **Truy xuất và xếp hạng**: BM25F 3 luồng (`title`, `tags`, `body`), 24 cụm khái niệm kết hợp cầu nối đồng xuất hiện trong kho ngữ liệu khi thiếu mỏ neo chính xác, tách từ Unicode/Tiếng Việt/CJK, `knowledgeFreshnessBoost`, `orderForAgentConsumption`, và đo lường kết quả vòng kín `usage.json` (`applied`, `corrected` và suy giảm nhiễu) cùng `engram stats --backfill`.
+- **Hook và subagent**: `hookStartupAuto` nén các quy tắc không dùng lúc khởi động thành thẻ một dòng tại `SessionStart` trong chế độ `read: auto`, `SubagentStart` định tuyến ngữ cảnh theo phạm vi tác vụ (`subagentQueryText`), còn prompt hook ghi nhận đo lường sử dụng vòng kín và chạy học từ sửa lỗi theo chế độ fail-open.
+- **Học phiên và tầng làm việc**: cơ chế học Phương án A mang tính xác định ghi các bộ nhớ `working/` đã làm sạch và có thời hạn, đồng thời chuẩn bị các ứng viên bền vững dưới dạng biên nhận chưa kích hoạt `inbox/r-*.json` (`engram review inbox|triage|apply|dismiss`), được cấu hình qua `learning.mode` (`off`, `working`, `propose`) và `learning.auto_drain`. Bổ sung `engram working note`, công cụ MCP `engram_note` và hàng đợi `SessionEnd` tùy chọn bật (`engram link claude|codex --session-end`).
+- **CLI và giao diện Entry Web**: bổ sung `engram status` (`engram stat`), `engram why <id> ["<query>"]`, `engram help --compact`, `engram graph link <parent-id> <child-id...>`, `engram review triage` và `engram benchmark --from-git`, cùng các nâng cấp trải nghiệm Entry Web và danh sách phụ thuộc không có lỗ hổng bảo mật.
+
+## What changes in the host-native release
+
+After `engram upgrade --latest` (or `engram link <host>`) on an existing install:
+
+- **Hooks**: Claude and Codex gain `SubagentStart`, Gemini gains `AfterTool`, and the new hook entries respect each host's payload cap. Claude drops the managed `PreToolUse` entry and gains `InstructionsLoaded` plus generated `.claude/rules/engram/` rule files; run `engram config set hooks.path_rules hook && engram link claude` first to keep the old behaviour. Plain `engram upgrade` does not refresh hook configs.
+- **Instructions**: `link claude` writes the managed block to `AGENTS.md` and no longer creates `CLAUDE.md`; an existing `CLAUDE.md` block is kept. Generated `SKILL.md` files now follow the Agent Skills spec.
+- **MCP**: the server speaks MCP 2026-07-28 and the legacy handshake, and `engram_commit` requires a per-call confirmation in Claude Code and Codex (`engram upgrade` re-writes the managed Codex block).
+- **Memory files**: new memories omit `author_email` (run `engram author migrate-memories --strip-email --confirm` to clean old ones), rules store only their Content, and migration backups live in the gitignored `backups/` folder (`engram repair --move-backups` relocates older ones).
+- **Config**: `vector.enabled` defaults to `false` for new configs; a config that already stores `true` stays on. `cursorrules` is a deprecated alias of the `cursor-rules` export format for one release.
+
+Xem [nhật ký thay đổi](changelog.md) để biết toàn bộ lịch sử phát hành.
+
 ## Legacy memory migration to schema v3
 
 `engram upgrade --latest` also migrates active v1/v2 memory files in the workspace and configured global roots to schema v3. Engram preserves each Markdown body exactly, writes `backups/schema-v3/<memory-file>.pre-v3.bak` (a gitignored folder; `engram repair --move-backups` relocates older backups left beside memories), fills only deterministic metadata, refreshes integrity hashes, and rebuilds the index, graph, and eligible vector sidecars. It never invents `evidence_refs`; a memory without verified trace links is marked `evidence_status: unverified`. Invalid memories are reported and skipped, archived memories are not rewritten, and a second run is idempotent.

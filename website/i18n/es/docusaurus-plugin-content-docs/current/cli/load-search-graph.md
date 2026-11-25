@@ -21,7 +21,7 @@ engram load --id <id>,<id>
 engram load --exclude-keys workspace:rules/use-pnpm.md "<task>"
 ```
 
-`load` ancla primero el enrutamiento en términos de consulta significativos, ignorando palabras de memoria genéricas como `rule`, `knowledge` y palabras vacías comunes. Luego refina el conjunto de candidatos en un paquete de contexto compacto. La carga normal informa recuentos seleccionados y totales relacionados, como `loaded 8 memory files / 14 total related memories`.
+`load` tokeniza consultas y memorias con tokenización compatible con Unicode/vietnamita/CJK y luego ancla el enrutamiento en términos de consulta significativos usando `rawStems` sin expandir (`hasAnchorOverlap`), ignorando palabras de memoria genéricas como `rule`, `knowledge` y palabras vacías comunes para que la expansión de sinónimos no admita memorias no relacionadas. Cuando faltan anclas exactas, 24 clústeres de conceptos deterministas y puentes de coocurrencia del corpus aún pueden enlazar terminología relacionada. Las candidatas se puntúan con BM25F de 3 flujos (`title`, `tags`, `body`) más la telemetría de resultados de ciclo cerrado de `usage.json` (impulsos `applied`, penalizaciones `corrected` y decaimiento de ruido para memorias inyectadas repetidamente sin utilidad). Luego refina el conjunto de candidatos en un paquete de contexto compacto y ordena los cuerpos expandidos con `orderForAgentConsumption` (primero reglas, instrucciones y prerrequisitos de `depends_on`; en el medio contexto duradero más antiguo; al final hojas recientes `<=14d` o del nivel `working`). La carga normal informa recuentos seleccionados y totales relacionados, como `loaded 8 memory files / 14 total related memories`.
 
 - `load` por defecto — ruta escalonada orientada al agente: los mejores aciertos según `load.expand_top` (por defecto 3) como cuerpos completos, cada otro acierto seleccionado como una tarjeta de una sola línea y un aviso de cierre `fetch: engram load --id <ids>`; cada encabezado de cuerpo lleva la `authority` de la memoria, el frontmatter como `evidence_refs`, `## Context`, `## Example` y `## Origin` no se representan (use `--full` para verlos) y las reglas muestran una variante seleccionada.
 - `--id <id,...>` — obtiene cuerpos completos para tarjetas; los identificadores pueden estar separados por comas, y una obtención explícita cuenta para `stats --usage`.
@@ -45,14 +45,25 @@ engram search --semantic "<topic>"
 
 La búsqueda predeterminada es una búsqueda léxica determinista. `search --semantic` agrega similitud local determinista, no búsqueda semántica respaldada por embeddings. Los resultados de `search --json` incluyen un campo `score`.
 
+## why
+
+```bash
+engram why <id>
+engram why <id> "<query>"
+engram why <id> "<query>" --json
+```
+
+Explica por qué una memoria específica se incluyó, clasificó u omitió para una consulta: informa `status` (`expanded_body`, `card`, `omitted_budget`, `omitted_limit`, `rejected_no_anchor`, `excluded_lifecycle`, `not_found`), `rank`, `score`, `matched_stems`, `missing_stems`, `budget` y `hint`. Pase `--json` para obtener diagnósticos estructurados.
+
 ## graph
 
 ```bash
 engram graph "<topic>"
 engram graph --rebuild
+engram graph link <parent-id> <child-id...>
 ```
 
-Inspeccione el enrutamiento del grafo. Ejecute `engram graph --rebuild` tras ediciones manuales. El grafo informa capas de dependencia, y `engram load` incorpora los prerrequisitos enrutados en el mismo paquete compacto antes que las memorias más profundas.
+Inspeccione el enrutamiento del grafo o declare aristas de dependencia explícitas. Ejecute `engram graph --rebuild` tras ediciones manuales, o use `engram graph link <parent-id> <child-id...>` para añadir enlaces `depends_on` desde memorias hijas hacia un prerrequisito padre y actualizar el grafo. El grafo informa capas de dependencia, y `engram load` incorpora los prerrequisitos enrutados en el mismo paquete compacto antes que las memorias más profundas.
 
 Las aristas relacionadas en el grafo y las coincidencias vectoriales no cargan memorias no relacionadas automáticamente; solo ayudan a reclasificar o ampliar memorias que ya coinciden con términos de consulta significativos. Los prerrequisitos explícitos `depends_on` aún pueden cargarse sin coincidencias de términos propias.
 

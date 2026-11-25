@@ -47,6 +47,25 @@ For runtime-capable hosts, Engram installs small bootstrap instructions instead 
 Engram's SQLite config DB is an optimization for workspace/profile management. If the DB cannot be opened or initialized, normal read/write commands fall back to JSON config snapshots. DB-specific commands report SQLite as unavailable instead of blocking normal memory use.
 
 
+## Qué cambia en 0.1.0
+
+- **Recuperación y clasificación**: BM25F de 3 flujos (`title`, `tags`, `body`), 24 clústeres de conceptos más puentes de coocurrencia del corpus cuando faltan anclas exactas, tokenización Unicode/vietnamita/CJK, `knowledgeFreshnessBoost`, `orderForAgentConsumption` y telemetría de resultados de ciclo cerrado en `usage.json` (`applied`, `corrected` y decaimiento de ruido) con `engram stats --backfill`.
+- **Hooks y subagentes**: `hookStartupAuto` comprime las reglas que no son de inicio en tarjetas de una línea en `SessionStart` en modo `read: auto`, `SubagentStart` enruta contexto acotado a la tarea (`subagentQueryText`), y los hooks de prompt registran telemetría de uso de ciclo cerrado y ejecutan aprendizaje por correcciones a prueba de fallos.
+- **Aprendizaje de sesión y nivel de trabajo**: el aprendizaje determinista Opción A escribe memorias `working/` saneadas y con caducidad y prepara candidatas duraderas como recibos no activos `inbox/r-*.json` (`engram review inbox|triage|apply|dismiss`), configurado mediante `learning.mode` (`off`, `working`, `propose`) y `learning.auto_drain`. Añade `engram working note`, la herramienta MCP `engram_note` y el encolado opcional de `SessionEnd` (`engram link claude|codex --session-end`).
+- **CLI y experiencia de Entry Web**: añade `engram status` (`engram stat`), `engram why <id> ["<query>"]`, `engram help --compact`, `engram graph link <parent-id> <child-id...>`, `engram review triage` y `engram benchmark --from-git`, junto con mejoras de experiencia en Entry Web y dependencias sin vulnerabilidades.
+
+## What changes in the host-native release
+
+After `engram upgrade --latest` (or `engram link <host>`) on an existing install:
+
+- **Hooks**: Claude and Codex gain `SubagentStart`, Gemini gains `AfterTool`, and the new hook entries respect each host's payload cap. Claude drops the managed `PreToolUse` entry and gains `InstructionsLoaded` plus generated `.claude/rules/engram/` rule files; run `engram config set hooks.path_rules hook && engram link claude` first to keep the old behaviour. Plain `engram upgrade` does not refresh hook configs.
+- **Instructions**: `link claude` writes the managed block to `AGENTS.md` and no longer creates `CLAUDE.md`; an existing `CLAUDE.md` block is kept. Generated `SKILL.md` files now follow the Agent Skills spec.
+- **MCP**: the server speaks MCP 2026-07-28 and the legacy handshake, and `engram_commit` requires a per-call confirmation in Claude Code and Codex (`engram upgrade` re-writes the managed Codex block).
+- **Memory files**: new memories omit `author_email` (run `engram author migrate-memories --strip-email --confirm` to clean old ones), rules store only their Content, and migration backups live in the gitignored `backups/` folder (`engram repair --move-backups` relocates older ones).
+- **Config**: `vector.enabled` defaults to `false` for new configs; a config that already stores `true` stays on. `cursorrules` is a deprecated alias of the `cursor-rules` export format for one release.
+
+Consulte el [registro de cambios](changelog.md) para ver el historial completo de versiones.
+
 ## Legacy memory migration to schema v3
 
 `engram upgrade --latest` also migrates active v1/v2 memory files in the workspace and configured global roots to schema v3. Engram preserves each Markdown body exactly, writes `backups/schema-v3/<memory-file>.pre-v3.bak` (a gitignored folder; `engram repair --move-backups` relocates older backups left beside memories), fills only deterministic metadata, refreshes integrity hashes, and rebuilds the index, graph, and eligible vector sidecars. It never invents `evidence_refs`; a memory without verified trace links is marked `evidence_status: unverified`. Invalid memories are reported and skipped, archived memories are not rewritten, and a second run is idempotent.

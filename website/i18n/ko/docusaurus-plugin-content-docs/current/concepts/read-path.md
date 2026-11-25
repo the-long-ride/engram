@@ -18,9 +18,9 @@ description: Engram은 워크스페이스와 글로벌 인덱스를 로드하고
 
 ## 앵커, 순위, 정제 {#anchor-rank-and-refine}
 
-`load`는 먼저 의미 있는 질의어로 라우팅의 기준점(앵커)을 잡으며, `rule`, `knowledge` 같은 일반적인 메모리 단어와 흔한 불용어는 무시합니다. 그런 다음 id, 태그, `directive`, 요약, 트리거, 본문 용어에 대해 BM25(가벼운 어간 처리)로 후보의 순위를 매깁니다. 점수는 수명 주기(`review_due` x0.7), 오래됨 여부(x0.6), 신뢰도(`medium` x0.9), 범위(워크스페이스 x1.1)에 따라 조정되며, 에이전트가 가져온 적이 있는 메모리에는 작은 가산점이 붙습니다. `valid_until`이 지난 메모리는 `lifecycle`이라는 제외 사유로 빠집니다. 앵커가 네 개 이상인 질의는 앵커 일치가 두 번이거나, 강한 필드(id, 태그, `directive`, 또는 `applies_to` 경로)에서 한 번 일치해야 합니다. 용어가 겹치지 않는 벡터 일치만으로는 메모리가 채택되지 않습니다.
+`load`는 Unicode/베트남어/CJK를 인식하는 토큰화로 쿼리와 메모리를 분리한 뒤, 확장 전 `rawStems`(`hasAnchorOverlap`)를 사용해 의미 있는 질의어로 라우팅의 기준점(앵커)을 잡으며, `rule`, `knowledge` 같은 일반적인 메모리 단어와 흔한 불용어는 무시해 동의어 확장이 관련 없는 메모리를 채택하지 않도록 합니다. 정확한 앵커가 없을 때는 24개의 결정론적 개념 클러스터와 코퍼스 공기 브리지가 관련 용어를 연결할 수 있습니다. 그런 다음 id, 태그, `directive`, 요약, 트리거, 본문 용어에 대해 가벼운 어간 처리를 적용한 3-스트림 BM25F(`title`, `tags`, `body`)로 후보의 순위를 매깁니다. 점수는 수명 주기(`review_due` x0.7), 오래됨 여부(x0.6), 신뢰도(`medium` x0.9), 범위(워크스페이스 x1.1)에 따라 조정되며, 여기에 `knowledgeFreshnessBoost`(`last_confirmed`, `updated`, `valid_from` 기준 최신성 감쇠, `working` 계층 메모리 `+0.08` 가산, 상한이 있는 리비전 가산)와 폐쇄 루프 `usage.json` 결과 텔레메트리가 더해집니다. 가져왔거나 `applied`된 메모리는 상한이 있는 가산점을 받고, `corrected`된 메모리는 감점되며, 유용성 0으로 20회 이상 반복 주입된 메모리는 노이즈 감쇠가 적용됩니다. `valid_until`이 지난 메모리는 `lifecycle`이라는 제외 사유로 빠집니다. 앵커가 네 개 이상인 질의는 앵커 일치가 두 번이거나, 강한 필드(id, 태그, `directive`, 또는 `applies_to` 경로)에서 한 번 일치해야 합니다. 용어가 겹치지 않는 벡터 일치만으로는 메모리가 채택되지 않습니다.
 
-마지막으로 더 넓은 후보 풀을 간결한 컨텍스트 팩으로 정제합니다.
+마지막으로 더 넓은 후보 풀을 간결한 컨텍스트 팩으로 정제하고, 확장된 본문을 `orderForAgentConsumption`(주의 집중을 고려한 위상 정렬: 규칙·지침·`depends_on` 선행 항목을 앞에, 오래된 지속 컨텍스트를 중간에, 최신 `<=14d` 또는 `working` 계층 리프를 끝에 배치)으로 정렬합니다.
 
 일반 로드는 `loaded 8 memory files / 14 total related memories`처럼 선택된 개수와 전체 관련 개수를 보고합니다.
 
@@ -40,7 +40,7 @@ Frontmatter, `## Context`, `## Example`, `## Origin`은 에이전트에게 렌�
 
 ## 훅 델타와 경로 트리거 {#hook-delta-and-path-triggers}
 
-훅은 세션에서 이미 전달한 메모리 키를 기억합니다. 이후 프롬프트 턴에서는 새로 추가된 본문만 주입하고 나머지는 `already loaded: <ids>` 한 줄로 접습니다. `SessionStart`와 `PreCompact`는 이 집합을 초기화합니다. `applies_to` glob이 있는 메모리는 `PreToolUse` 파일 이벤트(Codex `apply_patch` 편집, 훅 모드의 Claude `Read`, `Edit`, `Write`, `MultiEdit`)와 Gemini `AfterTool` 이벤트(`read_file`, `write_file`, `replace`)에서도 필요한 시점에 주입되며, 이벤트당 본문은 최대 3개입니다. `hooks.path_rules native`(기본값)에서는 Claude와 Cursor가 대신 `.claude/rules/engram/`와 `.cursor/rules/engram/` 아래의 생성된 규칙 파일에서 이를 로드하고, Claude `InstructionsLoaded` 훅이 전달된 집합을 갱신합니다. Claude와 Codex 서브에이전트는 `SubagentStart`를 통해 라우팅된 컨텍스트로 시작하며, 훅 출력은 각 호스트의 페이로드 상한(Codex는 2,400 토큰, Claude는 9,500자) 아래로 유지됩니다. 상한을 넘으면 본문이 카드로 강등되며 텍스트 중간에서 잘리지 않습니다. [훅과 증명 줄](../integrations/hooks.md)을 참고하세요.
+훅은 세션에서 이미 전달한 메모리 키와 시작 카드(`carded` / `touched`)를 모두 기억합니다. `read: auto` 모드에서는 `SessionStart`(`hookStartupAuto`)가 시작 대상이 아닌 규칙을 전체 본문 대신 한 줄 카드로 확장하며, 이후 프롬프트가 해당 주제로 전환될 때 `carded` 규칙을 전체 본문으로 승격합니다. 이후 프롬프트 턴에서는 새로 추가된 본문만 주입하고 나머지는 `already loaded: <ids>` 한 줄로 접습니다. `SessionStart`와 `PreCompact`는 이 집합을 초기화합니다. `applies_to` glob이 있는 메모리는 `PreToolUse` 파일 이벤트(Codex `apply_patch` 편집, 훅 모드의 Claude `Read`, `Edit`, `Write`, `MultiEdit`)와 Gemini `AfterTool` 이벤트(`read_file`, `write_file`, `replace`)에서도 필요한 시점에 주입되며, 이벤트당 본문은 최대 3개입니다. `hooks.path_rules native`(기본값)에서는 Claude와 Cursor가 대신 `.claude/rules/engram/`와 `.cursor/rules/engram/` 아래의 생성된 규칙 파일에서 이를 로드하고, Claude `InstructionsLoaded` 훅이 전달된 집합을 갱신합니다. Claude와 Codex 서브에이전트는 `SubagentStart`를 통해 작업 범위의 라우팅된 컨텍스트로 시작하며(`subagentQueryText`로 서브에이전트의 작업 프롬프트에서 라우팅 쿼리를 도출하고, 없으면 `current session`으로 대체), 훅 출력은 각 호스트의 페이로드 상한(Codex는 2,400 토큰, Claude는 9,500자) 아래로 유지됩니다. 상한을 넘으면 본문이 카드로 강등되며 텍스트 중간에서 잘리지 않습니다. [훅과 증명 줄](../integrations/hooks.md)을 참고하세요.
 
 `workflow`와 `workflows`는 여전히 skill 메모리로 라우팅되지만, 일반적인 유형 단어만으로는 넓은 일치가 이루어지지 않습니다.
 

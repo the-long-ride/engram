@@ -10,6 +10,10 @@ import RiskCallout from '@site/src/components/RiskCallout';
 
 L’onglet Connections analyse votre machine à la recherche des surfaces d’agents IA pris en charge et vous permet de lier Engram à chacune au niveau du workspace ou au niveau global.
 
+## Badge de santé Doctor {#doctor-health-badge}
+
+L’en-tête de Connections affiche un **Doctor health badge** résumant les résultats pass/warn de `/api/doctor`. Utilisez-le pour repérer d’un coup d’œil les avertissements de hooks, de liens ou de configuration avant de lier ou de dépanner un agent.
+
 ## Analyse des agents {#agent-scan}
 
 L’onglet affiche une carte par agent pris en charge. Chaque carte indique un statut détecté ou manquant.
@@ -32,6 +36,10 @@ Lie Engram globalement pour cet agent. À utiliser pour la mémoire personnelle,
 <RiskCallout level="risky">
 Utilisez les liens globaux avec précaution sur les machines partagées. Engram écrit des blocs gérés dans des fichiers d’instructions partagés. Examinez les fichiers qu’Engram écrit pour chaque agent avant de lier globalement.
 </RiskCallout>
+
+## Bascule de file SessionEnd {#sessionend-queue-toggle}
+
+Les cartes **Claude** et **Codex** incluent une bascule dédiée **`SessionEnd queue` toggle** qui active ou désactive la mise en file des candidats d’apprentissage en fin de session pour relecture (correspondant à `engram link claude --session-end` et `engram link codex --session-end`).
 
 ## Fichiers qu’Engram écrit pour chaque agent {#what-files-engram-writes-per-agent}
 
@@ -61,7 +69,9 @@ Utilisez les liens globaux avec précaution sur les machines partagées. Engram 
 
 ```bash
 engram link codex
+engram link codex --session-end
 engram link claude
+engram link claude --session-end
 engram link --global opencode
 engram unlink
 ```

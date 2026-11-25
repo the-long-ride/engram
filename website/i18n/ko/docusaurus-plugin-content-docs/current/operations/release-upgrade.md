@@ -43,6 +43,13 @@ engram upgrade --latest
 Engram의 SQLite 설정 DB는 워크스페이스/프로필 관리를 위한 최적화입니다. DB를 열거나 초기화할 수 없으면 일반 읽기/쓰기 명령은 JSON 설정 스냅샷으로 대체됩니다. DB 전용 명령은 일반 메모리 사용을 막는 대신 SQLite를 사용할 수 없다고 보고합니다.
 
 
+## 0.1.0의 변경 사항
+
+- **검색 및 랭킹**: 3-스트림 BM25F(`title`, `tags`, `body`), 정확한 앵커가 없을 때 작동하는 24개 개념 클러스터와 코퍼스 공기 브리지, Unicode/베트남어/CJK 토큰화, `knowledgeFreshnessBoost`, `orderForAgentConsumption`, 그리고 `engram stats --backfill`을 포함한 폐쇄 루프 `usage.json` 결과 텔레메트리(`applied`, `corrected`, 노이즈 감쇠)가 추가되었습니다.
+- **훅 및 서브에이전트**: `hookStartupAuto`가 `read: auto` 모드의 `SessionStart`에서 비시작(non-startup) 규칙을 한 줄 카드로 압축하고, `SubagentStart`가 작업 범위 컨텍스트(`subagentQueryText`)를 라우팅하며, 프롬프트 훅이 폐쇄 루프 사용량 텔레메트리를 기록하고 fail-open 교정 학습을 실행합니다.
+- **세션 학습 및 working 계층**: 결정론적 Option A 학습이 정제되고 만료되는 `working/` 메모리를 기록하고 지속 후보를 비활성 `inbox/r-*.json` 영수증(`engram review inbox|triage|apply|dismiss`)으로 스테이징하며, `learning.mode`(`off`, `working`, `propose`) 및 `learning.auto_drain`으로 구성됩니다. `engram working note`, `engram_note` MCP 도구, 옵트인 `SessionEnd` 대기열(`engram link claude|codex --session-end`)이 추가되었습니다.
+- **CLI 및 Entry Web UX**: `engram status`(`engram stat`), `engram why <id> ["<query>"]`, `engram help --compact`, `engram graph link <parent-id> <child-id...>`, `engram review triage`, `engram benchmark --from-git`과 함께 Entry Web UX 업그레이드 및 취약점 제로 의존성이 반영되었습니다.
+
 ## 호스트 네이티브 릴리스의 변경 사항
 
 기존 설치에서 `engram upgrade --latest`(또는 `engram link <host>`)를 실행하면 다음이 적용됩니다.
@@ -53,7 +60,7 @@ Engram의 SQLite 설정 DB는 워크스페이스/프로필 관리를 위한 최�
 - **메모리 파일**: 새 메모리에는 `author_email`이 포함되지 않으며(기존 파일을 정리하려면 `engram author migrate-memories --strip-email --confirm` 실행), 규칙은 Content만 저장하고, 마이그레이션 백업은 gitignore된 `backups/` 폴더에 보관됩니다(`engram repair --move-backups`가 이전 백업을 옮겨 줍니다).
 - **설정**: 새 설정에서는 `vector.enabled`의 기본값이 `false`이며, 이미 `true`로 저장된 설정은 그대로 켜져 있습니다. `cursorrules`는 한 릴리스 동안 `cursor-rules` 내보내기 형식의 지원 중단 별칭입니다.
 
-전체 목록과 아직 완료되지 않은 항목은 [변경 로그](changelog.md)의 Unreleased 섹션을 참고하세요.
+전체 릴리스 이력은 [변경 이력](changelog.md)을 참고하세요.
 
 ## 스키마 v3로의 기존 메모리 마이그레이션
 

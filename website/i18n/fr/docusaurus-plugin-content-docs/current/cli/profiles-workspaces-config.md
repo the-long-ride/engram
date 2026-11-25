@@ -94,6 +94,8 @@ engram config set <key> <value>
 | `mcp.resource_limit` | Nombre de mémoires que `resources/list` du MCP renvoie en plus de `engram://index`, classées par usage injecté + récupéré (configuration JSON uniquement ; non définissable par `engram config set`) | `20` | `0` à `200` |
 | `load.limit` | Nombre maximal de mémoires renvoyées par un chargement normal | `8` | `1` à `32` |
 | `hooks.path_rules` | `native` écrit des fichiers de règles Claude et Cursor pour les mémoires `applies_to` et enregistre `InstructionsLoaded` côté Claude ; `hook` conserve le hook Claude `PreToolUse` | `native` | `native`, `hook` |
+| `learning.mode` | Contrôle l’apprentissage de session Option A : `off` désactive l’apprentissage automatique, `working` écrit uniquement des mémoires `working/` temporaires et ignorées par Git, `propose` prépare aussi des candidats durables en reçus `inbox/r-*.json` (configuration JSON uniquement dans `engram.config.json` ; non définissable par `engram config set` ni dans Construct) | `propose` | `off`, `working`, `propose` |
+| `learning.auto_drain` | Vide automatiquement les transcriptions `SessionEnd` en file lors des passes d’apprentissage éligibles (configuration JSON uniquement dans `engram.config.json` ; non définissable par `engram config set` ni dans Construct) | `false` | `true`, `false` |
 | `rule_variants.enabled` | Activer ou désactiver la génération des variantes de règle | `false` | `true`, `false` |
 | `rule_variants.active` | Mode de variante de règle actif | `balanced` | `light`, `balanced`, `strict` |
 | `graph.enabled` | Activer ou désactiver le routage par graphe | `true` | `true`, `false` |
@@ -105,7 +107,7 @@ engram config set <key> <value>
 | `global_git.remote` | Nom du dépôt distant Git pour la synchronisation globale | `origin` | Chaîne |
 | `global_git.branch` | Nom de la branche Git pour la synchronisation globale | `main` | Chaîne |
 
-Ces paramètres sont aussi modifiables visuellement dans l’onglet **Construct** de `engram entry`.
+À l’exception des clés uniquement définies en JSON (`mcp.resource_limit`, `learning.mode` et `learning.auto_drain`), ces paramètres sont aussi modifiables visuellement dans l’onglet **Construct** de `engram entry`.
 
 ## Étapes suivantes {#next-steps}
 

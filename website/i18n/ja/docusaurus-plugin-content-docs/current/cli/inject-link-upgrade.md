@@ -34,6 +34,8 @@ engram inject --no-global
 ```bash
 engram link codex
 engram link claude
+engram link claude --session-end
+engram link codex --session-end
 engram link gemini
 engram link cursor
 engram link windsurf
@@ -46,7 +48,7 @@ engram unlink
 
 `engram link all` は公開ターゲットセットをインストールし、スキルセットの指示ファイル、MCP 設定、スラッシュアダプター、エージェントフックを 1 回の統合インストールで扱い、一部のみ対応のホストについては決定的な `SKIPPED` の理由を報告します。`engram unlink` はこれらをまとめて削除します。`engram unlink --global <target>` は Engram が生成したグローバルプラグインだけを削除し、人間が書いたファイルは `--force` を明示しない限り保持されます。
 
-`engram link claude --session-end`(または `codex`)を使うと、オプトインの `SessionEnd` コマンドフックが追加で登録されます。このフックはセッションのトランスクリプトのパスを、Git 管理外の `session-queue.json` にキューとして記録します。既定ではオフで、`engram upgrade` がこれを追加することはありません。キューは `engram observe --queue` で処理します。詳しくは [フック](../integrations/hooks.md) を参照してください。
+`engram link claude --session-end` と `engram link codex --session-end` は、オプトインの `SessionEnd` コマンドフックを追加で登録します。このフックはセッションのトランスクリプトのパスを、Git 管理外の `session-queue.json` にキューとして記録します。既定ではオフで、`engram upgrade` がこれを追加することはありません。キューは `engram observe --queue`（または `engram observe --queue --learn`）で処理します。詳しくは [フック](../integrations/hooks.md) を参照してください。
 
 ## upgrade
 

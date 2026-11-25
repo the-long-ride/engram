@@ -34,6 +34,8 @@ engram inject --no-global
 ```bash
 engram link codex
 engram link claude
+engram link claude --session-end
+engram link codex --session-end
 engram link gemini
 engram link cursor
 engram link windsurf
@@ -46,7 +48,7 @@ engram unlink
 
 `engram link all` устанавливает публичный набор целей и сообщает детерминированные причины `SKIPPED` для частично поддерживаемых хостов по файлам инструкций skillset, конфигурации MCP, slash-адаптерам и хукам агентов в одной унифицированной установке. `engram unlink` удаляет всё это вместе. `engram unlink --global <target>` удаляет только глобальный плагин, сгенерированный Engram; файл, написанный человеком, сохраняется, если явно не указан `--force`.
 
-`engram link claude --session-end` (или `codex`) дополнительно регистрирует опциональный командный хук `SessionEnd`, который ставит путь к транскрипту сессии в очередь в исключённом из Git `session-queue.json`; по умолчанию он выключен, а `engram upgrade` его никогда не добавляет. Разберите очередь командой `engram observe --queue`; см. [Хуки](../integrations/hooks.md).
+`engram link claude --session-end` и `engram link codex --session-end` дополнительно регистрируют опциональный командный хук `SessionEnd`, который ставит путь к транскрипту сессии в очередь в исключённом из Git `session-queue.json`; по умолчанию он выключен, а `engram upgrade` его никогда не добавляет. Разберите очередь командой `engram observe --queue` (или `engram observe --queue --learn`); см. [Хуки](../integrations/hooks.md).
 
 ## upgrade
 

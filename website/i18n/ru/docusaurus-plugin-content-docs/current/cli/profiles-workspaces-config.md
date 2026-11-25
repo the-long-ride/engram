@@ -94,6 +94,8 @@ engram config set <key> <value>
 | `mcp.resource_limit` | Сколько воспоминаний MCP `resources/list` возвращает помимо `engram://index`, в порядке убывания использования (внедрено + получено) (только в JSON-конфигурации; `engram config set` это значение не задаёт) | `20` | от `0` до `200` |
 | `load.limit` | Максимум воспоминаний, возвращаемых обычной загрузкой | `8` | от `1` до `32` |
 | `hooks.path_rules` | `native` записывает файлы правил Claude и Cursor для воспоминаний с `applies_to` и регистрирует Claude `InstructionsLoaded`; `hook` сохраняет хук Claude `PreToolUse` | `native` | `native`, `hook` |
+| `learning.mode` | Управляет обучением сессий Option A: `off` отключает автоматическое обучение, `working` записывает только истекающие игнорируемые Git воспоминания `working/`, `propose` также подготавливает долговечные кандидаты как квитанции `inbox/r-*.json` (только в JSON-конфигурации `engram.config.json`; не задаётся через `engram config set` или Construct) | `propose` | `off`, `working`, `propose` |
+| `learning.auto_drain` | Автоматически разбирать поставленные в очередь транскрипты `SessionEnd` во время подходящих проходов обучения (только в JSON-конфигурации `engram.config.json`; не задаётся через `engram config set` или Construct) | `false` | `true`, `false` |
 | `rule_variants.enabled` | Включить или отключить генерацию вариантов правил | `false` | `true`, `false` |
 | `rule_variants.active` | Активный режим варианта правил | `balanced` | `light`, `balanced`, `strict` |
 | `graph.enabled` | Включить или отключить маршрутизацию с учётом графа | `true` | `true`, `false` |
@@ -105,7 +107,7 @@ engram config set <key> <value>
 | `global_git.remote` | Имя удалённого репозитория Git для глобальной синхронизации | `origin` | Строка |
 | `global_git.branch` | Имя ветки Git для глобальной синхронизации | `main` | Строка |
 
-Эти настройки также можно менять визуально на вкладке **Construct** в `engram entry`.
+За исключением ключей, доступных только в JSON-конфигурации (`mcp.resource_limit`, `learning.mode` и `learning.auto_drain`), эти настройки также можно менять визуально на вкладке **Construct** в `engram entry`.
 
 ## Дальнейшие шаги
 

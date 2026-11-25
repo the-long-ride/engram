@@ -12,11 +12,27 @@ Review es la vía controlada para hallazgos y candidatos diferidos. Nunca llama 
 
 ## Cola y contexto
 
-La cola combina hallazgos de revisión y candidatos diferidos de la bandeja de entrada. Seleccione un elemento para inspeccionar su resumen, metadatos de memoria vinculada y contenido completo. Los archivos vinculados vacíos o no disponibles se notifican sin detener la revisión de la cola restante.
+La cola combina recibos de aprendizaje de sesión, candidatos diferidos de la bandeja de entrada y hallazgos de revisión. Filtre la lista con las píldoras de filtro de cola: **All**, **Session learning**, **Deferred** y **Findings**.
+
+Seleccione un elemento para inspeccionar su resumen, metadatos de memoria vinculada y contenido completo. Los archivos vinculados vacíos o no disponibles se notifican sin detener la revisión de la cola restante.
+
+También puede clasificar desde el teclado:
+
+- `j` / `k` — moverse al elemento siguiente o anterior de la cola
+- `a` — aprobar el recibo seleccionado
+- `d` — descartar el elemento seleccionado
+
+## Aprobación y descarte de recibos
+
+Para los recibos `session-learning`, puede aplicar candidatos aprobados directamente sin copiar un prompt:
+
+- **Approve receipt** aplica el recibo `session-learning` seleccionado mediante `POST /api/review/apply`.
+- **Approve N** aprueba en lote todos los recibos de la bandeja de entrada **marcados** en una sola solicitud `POST /api/review/apply`.
+- **Dismiss** elimina un elemento de la cola sin escribir ninguna memoria.
 
 ## Prompt de revisión para IA
 
-Elija cualquier memoria vinculada como dependencia o reemplazo y use **Copy AI review prompt**. El prompt incluye únicamente el candidato seleccionado, el contexto de memoria visible, las instrucciones de relación y el ámbito de escritura requerido.
+La sección **02 Review prompt** es plegable para que pueda mantenerla cerrada durante el triaje rápido de recibos y expandirla cuando un elemento necesite revisión de un agente. Elija cualquier memoria vinculada como dependencia o reemplazo y use **Copy AI review prompt**. El prompt incluye únicamente el candidato seleccionado, el contexto de memoria visible, las instrucciones de relación y el ámbito de escritura requerido.
 
 Cuando el agente de IA tiene acceso a la terminal y aprobación para escribir, debe guardar el resultado saneado con el comando incrustado en el prompt. La vía dentro de la app es un respaldo, no una ruta de escritura autónoma.
 

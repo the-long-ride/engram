@@ -8,7 +8,14 @@ import os from 'node:os';
 import path from 'node:path';
 import { defaultConfig } from '../../dist/core/runtime/config.js';
 import { routeDetailed } from '../../dist/core/memory/routing.js';
-import { neverFetched, readUsage, recordUsage, usageBoost } from '../../dist/core/memory/usage.js';
+import {
+  NOISE_DECAY_MIN_INJECTIONS,
+  neverFetched,
+  noisyMemories,
+  readUsage,
+  recordUsage,
+  usageBoost
+} from '../../dist/core/memory/usage.js';
 import { writeJsonAtomic } from '../../dist/core/system/fsx.js';
 
 test('recordUsage accumulates counts per key and kind with an injectable clock', async () => {
@@ -119,4 +126,61 @@ test('writeJsonAtomic keeps the old file when the replace fails and retries a bu
     fsp.rename = original;
   }
   await rm(root, { recursive: true, force: true });
+});
+
+test('recordUsage tracks applied and corrected and omits zero optional keys in serialized JSON', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'engram-usage-ext-'));
+  const t1 = new Date('2026-03-01T00:00:00.000Z');
+  await recordUsage(root, ['workspace:plain.md'], 'injected', t1);
+  const rawPlain = JSON.parse(await readFile(path.join(root, 'usage.json'), 'utf8'));
+  assert.deepEqual(Object.keys(rawPlain['workspace:plain.md']).sort(), ['fetched', 'injected', 'last']);
+
+  await recordUsage(root, ['workspace:applied.md'], 'injected', t1);
+  await recordUsage(root, ['workspace:applied.md'], 'applied', t1);
+  await recordUsage(root, ['workspace:applied.md'], 'applied', t1);
+  await recordUsage(root, ['workspace:corrected.md'], 'corrected', t1);
+
+  const usage = await readUsage(root);
+  assert.deepEqual(usage['workspace:applied.md'], { injected: 1, fetched: 0, applied: 2, last: t1.toISOString() });
+  assert.deepEqual(usage['workspace:corrected.md'], { injected: 0, fetched: 0, corrected: 1, last: t1.toISOString() });
+
+  // Reading explicit zero optional fields normalizes them away.
+  await writeFile(
+    path.join(root, 'usage.json'),
+    JSON.stringify({ 'workspace:z.md': { injected: 2, fetched: 0, applied: 0, corrected: 0, last: t1.toISOString() } })
+  );
+  assert.deepEqual((await readUsage(root))['workspace:z.md'], { injected: 2, fetched: 0, last: t1.toISOString() });
+  await rm(root, { recursive: true, force: true });
+});
+
+test('noisyMemories filters 20+ injections with zero utility and sorts by injected desc then key asc', () => {
+  const usage = {
+    'workspace:b.md': { injected: NOISE_DECAY_MIN_INJECTIONS, fetched: 0, last: '2026-03-01T00:00:00.000Z' },
+    'workspace:a.md': { injected: NOISE_DECAY_MIN_INJECTIONS, fetched: 0, last: '2026-03-01T00:00:00.000Z' },
+    'workspace:top.md': { injected: 35, fetched: 0, corrected: 2, last: '2026-03-01T00:00:00.000Z' },
+    'workspace:fetched.md': { injected: 40, fetched: 1, last: '2026-03-01T00:00:00.000Z' },
+    'workspace:applied.md': { injected: 40, fetched: 0, applied: 1, last: '2026-03-01T00:00:00.000Z' },
+    'workspace:below.md': { injected: NOISE_DECAY_MIN_INJECTIONS - 1, fetched: 0, last: '2026-03-01T00:00:00.000Z' }
+  };
+  assert.deepEqual(
+    noisyMemories(usage).map((row) => row.key),
+    ['workspace:top.md', 'workspace:a.md', 'workspace:b.md']
+  );
+});
+
+test('usageBoost applies applied utility, noise decay, correction penalty, and clamps to [-0.15, 0.25]', () => {
+  // Applied contributes 0.5 utility each.
+  assert.ok(Math.abs(usageBoost({ fetched: 0, applied: 2 }) - 0.03 * Math.log(2)) < 1e-12);
+  // Utility > 0 suppresses noise decay and correction penalty.
+  assert.ok(Math.abs(usageBoost({ fetched: 1, injected: 50, corrected: 3 }) - 0.03 * Math.log(2)) < 1e-12);
+  // Noise decay triggers at 20+ injections with 0 utility.
+  assert.equal(usageBoost({ injected: 19, fetched: 0 }), 0);
+  const decay20 = usageBoost({ injected: 20, fetched: 0 });
+  assert.ok(decay20 < 0 && Math.abs(decay20 - (-0.03 * Math.log(1 + 1 / 5))) < 1e-12);
+  // Correction penalty subtracts 0.02 * min(3, corrected) when utility === 0.
+  assert.ok(Math.abs(usageBoost({ injected: 5, fetched: 0, corrected: 2 }) - (-0.04)) < 1e-12);
+  assert.ok(Math.abs(usageBoost({ injected: 5, fetched: 0, corrected: 9 }) - (-0.06)) < 1e-12);
+  // Combined decay + correction clamps at -0.15; massive utility clamps at +0.25.
+  assert.equal(usageBoost({ injected: 10000, fetched: 0, corrected: 5 }), -0.15);
+  assert.equal(usageBoost({ fetched: 1000000 }), 0.25);
 });

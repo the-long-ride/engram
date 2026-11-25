@@ -15,6 +15,10 @@ jest.mock('../../src/core/web/app/api-client.js', () => {
     postJson: jest.fn(),
     reviewQueue: jest.fn(),
     reviewInspect: jest.fn(),
+    reviewDismiss: jest.fn(),
+    reviewApplyReceipts: jest.fn(),
+    promoteMemory: jest.fn(),
+    simulateRecall: jest.fn(),
   };
 });
 
@@ -45,6 +49,7 @@ describe('App Component', () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
+    window.history.replaceState(null, '', '/');
     (api.getJson as jest.Mock).mockResolvedValue({ stats: { total: 0 }, nodes: [], links: [] });
     (api.reviewQueue as jest.Mock).mockResolvedValue({ data: { findings: [], receipts: [] } });
   });
@@ -123,5 +128,30 @@ describe('App Component', () => {
     await waitFor(() => {
       expect(api.saveConfigPatch).toHaveBeenCalledWith({ theme: 'light' });
     });
+  });
+
+  test('supports hash routing, Construct subview hash, Workspace section, and pendingReviewCount badge', async () => {
+    window.location.hash = '#config/profiles';
+    (api.loadPanelData as jest.Mock).mockResolvedValue({ ...mockPanelData, pendingReviewCount: 3 });
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Profiles' })).toBeInTheDocument();
+    });
+
+    expect(screen.getByText('Workspace')).toBeInTheDocument();
+    const reviewItem = document.querySelector('#sb-nav .nav-item[data-tab="review"]')!;
+    expect(reviewItem.querySelector('.nav-badge')).toHaveTextContent('3');
+    expect(document.querySelector('#sb-nav .nav-item[data-tab="config"]')).toHaveAttribute('title', 'Settings, profiles, workspaces, and runtime');
+    expect(document.querySelector('#sb-nav .nav-item[data-tab="maintain"]')).toHaveAttribute('title', 'Duplicate candidates and memory links');
+
+    fireEvent.click(reviewItem);
+    await waitFor(() => expect(api.reviewQueue).toHaveBeenCalledTimes(1));
+    expect(window.location.hash).toBe('#review');
+
+    window.location.hash = '#connect';
+    fireEvent(window, new Event('hashchange'));
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Connections' })).toBeInTheDocument());
   });
 });

@@ -6,17 +6,16 @@
       "id": "zero-nonsense-token",
       "query": "unrelated non-existent query term xyz1239999",
       "expected": [],
-      "routed": [
-        "workspace:knowledge/docker-compose-local-dev.md",
-        "workspace:knowledge/ef-core-migrations-workflow.md"
-      ],
+      "routed": [],
       "matched": [],
       "forbidden_hits": [],
       "missing": [],
       "dependencies_missing": [],
       "isolation_failures": [],
-      "zero_result_correct": false,
-      "tokens": 191
+      "zero_result_correct": true,
+      "tokens": 26,
+      "category": "zero-match",
+      "hook_tokens": 739
     },
     {
       "id": "zero-offtopic-cooking",
@@ -29,23 +28,24 @@
       "dependencies_missing": [],
       "isolation_failures": [],
       "zero_result_correct": true,
-      "tokens": 26
+      "tokens": 26,
+      "category": "zero-match",
+      "hook_tokens": 739
     },
     {
       "id": "zero-expired-soap-gateway",
       "query": "legacy soap gateway partner order submission endpoint",
       "expected": [],
-      "routed": [
-        "workspace:knowledge/docker-compose-local-dev.md",
-        "workspace:rules/api-layering-thin-controllers.md"
-      ],
+      "routed": [],
       "matched": [],
       "forbidden_hits": [],
       "missing": [],
       "dependencies_missing": [],
       "isolation_failures": [],
-      "zero_result_correct": false,
-      "tokens": 196
+      "zero_result_correct": true,
+      "tokens": 26,
+      "category": "zero-match",
+      "hook_tokens": 739
     },
     {
       "id": "paraphrase-install-packages",
@@ -65,7 +65,9 @@
       "dependencies_missing": [],
       "isolation_failures": [],
       "zero_result_correct": true,
-      "tokens": 163
+      "tokens": 163,
+      "category": "paraphrase",
+      "hook_tokens": 942
     },
     {
       "id": "paraphrase-refresh-login",
@@ -75,7 +77,6 @@
       ],
       "routed": [
         "workspace:knowledge/jwt-signing-key-rotation.md",
-        "global:knowledge/owasp-security-checklist.md",
         "workspace:knowledge/session-middleware-validates-auth-tokens.md",
         "workspace:knowledge/auth-token-refresh-flow.md"
       ],
@@ -87,7 +88,9 @@
       "dependencies_missing": [],
       "isolation_failures": [],
       "zero_result_correct": true,
-      "tokens": 390
+      "tokens": 309,
+      "category": "paraphrase",
+      "hook_tokens": 1109
     },
     {
       "id": "paraphrase-schema-change",
@@ -97,8 +100,7 @@
       ],
       "routed": [
         "workspace:knowledge/ef-core-migrations-workflow.md",
-        "workspace:knowledge/docker-compose-local-dev.md",
-        "global:knowledge/owasp-security-checklist.md"
+        "workspace:knowledge/docker-compose-local-dev.md"
       ],
       "matched": [
         "ef-core-migrations-workflow"
@@ -108,7 +110,9 @@
       "dependencies_missing": [],
       "isolation_failures": [],
       "zero_result_correct": true,
-      "tokens": 272
+      "tokens": 191,
+      "category": "paraphrase",
+      "hook_tokens": 971
     },
     {
       "id": "paraphrase-pdf-invoices",
@@ -117,7 +121,6 @@
         "billing-invoice-export-pdf"
       ],
       "routed": [
-        "global:knowledge/architecture-decision-record-template.md",
         "workspace:knowledge/billing-invoice-export-pdf.md",
         "workspace:knowledge/payment-retry-backoff-copy.md",
         "workspace:knowledge/payment-retry-backoff-policy.md"
@@ -130,7 +133,9 @@
       "dependencies_missing": [],
       "isolation_failures": [],
       "zero_result_correct": true,
-      "tokens": 309
+      "tokens": 264,
+      "category": "paraphrase",
+      "hook_tokens": 1060
     },
     {
       "id": "paraphrase-nuget-review-due",
@@ -149,7 +154,9 @@
       "dependencies_missing": [],
       "isolation_failures": [],
       "zero_result_correct": true,
-      "tokens": 108
+      "tokens": 108,
+      "category": "paraphrase",
+      "hook_tokens": 875
     },
     {
       "id": "negation-no-npm",
@@ -170,7 +177,9 @@
       "dependencies_missing": [],
       "isolation_failures": [],
       "zero_result_correct": true,
-      "tokens": 246
+      "tokens": 246,
+      "category": "negation",
+      "hook_tokens": 1036
     },
     {
       "id": "negation-no-console-log",
@@ -191,7 +200,9 @@
       "dependencies_missing": [],
       "isolation_failures": [],
       "zero_result_correct": true,
-      "tokens": 259
+      "tokens": 259,
+      "category": "negation",
+      "hook_tokens": 1055
     },
     {
       "id": "dependency-session-middleware",
@@ -201,16 +212,9 @@
       ],
       "routed": [
         "workspace:knowledge/jwt-signing-key-rotation.md",
-        "global:knowledge/owasp-security-checklist.md",
         "workspace:knowledge/session-middleware-validates-auth-tokens.md",
         "workspace:knowledge/auth-token-refresh-flow.md",
-        "workspace:rules/run-tests-before-commit.md",
-        "workspace:skills/write-xunit-tests-skill.md",
-        "workspace:rules/never-commit-secrets.md",
-        "workspace:rules/api-layering-thin-controllers.md",
-        "workspace:knowledge/workspace-startup-orientation.md",
-        "workspace:knowledge/docker-compose-local-dev.md",
-        "workspace:knowledge/release-pipeline-artifact-validation.md"
+        "workspace:knowledge/workspace-startup-orientation.md"
       ],
       "matched": [
         "session-middleware-validates-auth-tokens"
@@ -220,7 +224,9 @@
       "dependencies_missing": [],
       "isolation_failures": [],
       "zero_result_correct": true,
-      "tokens": 765
+      "tokens": 372,
+      "category": "dependency-chain",
+      "hook_tokens": 1135
     },
     {
       "id": "dependency-token-refresh-chain",
@@ -230,10 +236,8 @@
       ],
       "routed": [
         "workspace:knowledge/jwt-signing-key-rotation.md",
-        "global:knowledge/owasp-security-checklist.md",
         "workspace:knowledge/session-middleware-validates-auth-tokens.md",
-        "workspace:knowledge/auth-token-refresh-flow.md",
-        "workspace:rules/never-commit-secrets.md"
+        "workspace:knowledge/auth-token-refresh-flow.md"
       ],
       "matched": [
         "auth-token-refresh-flow"
@@ -243,7 +247,9 @@
       "dependencies_missing": [],
       "isolation_failures": [],
       "zero_result_correct": true,
-      "tokens": 447
+      "tokens": 309,
+      "category": "dependency-chain",
+      "hook_tokens": 1109
     },
     {
       "id": "isolation-workspace-only-reviews",
@@ -262,7 +268,9 @@
         "global:knowledge/git-branching-strategy.md"
       ],
       "zero_result_correct": false,
-      "tokens": 301
+      "tokens": 301,
+      "category": "profile-isolation",
+      "hook_tokens": 1031
     },
     {
       "id": "isolation-global-reviews",
@@ -286,7 +294,9 @@
         "workspace:skills/hotfix-deployment-skill.md"
       ],
       "zero_result_correct": true,
-      "tokens": 327
+      "tokens": 327,
+      "category": "profile-isolation",
+      "hook_tokens": 1031
     },
     {
       "id": "isolation-workspace-secrets",
@@ -295,11 +305,8 @@
         "never-commit-secrets"
       ],
       "routed": [
-        "workspace:knowledge/jwt-signing-key-rotation.md",
         "workspace:rules/never-commit-secrets.md",
         "workspace:rules/conventional-commit-messages.md",
-        "workspace:knowledge/session-middleware-validates-auth-tokens.md",
-        "workspace:knowledge/auth-token-refresh-flow.md",
         "workspace:rules/run-tests-before-commit.md",
         "workspace:rules/use-pnpm-for-installs.md",
         "workspace:rules/api-layering-thin-controllers.md",
@@ -311,11 +318,11 @@
       "forbidden_hits": [],
       "missing": [],
       "dependencies_missing": [],
-      "isolation_failures": [
-        "global:knowledge/owasp-security-checklist.md"
-      ],
+      "isolation_failures": [],
       "zero_result_correct": true,
-      "tokens": 750
+      "tokens": 442,
+      "category": "profile-isolation",
+      "hook_tokens": 1077
     },
     {
       "id": "duplicate-payment-retry",
@@ -336,7 +343,9 @@
       "dependencies_missing": [],
       "isolation_failures": [],
       "zero_result_correct": true,
-      "tokens": 259
+      "tokens": 259,
+      "category": "duplicate",
+      "hook_tokens": 1061
     },
     {
       "id": "duplicate-invoice-retry",
@@ -358,7 +367,9 @@
       "dependencies_missing": [],
       "isolation_failures": [],
       "zero_result_correct": true,
-      "tokens": 332
+      "tokens": 332,
+      "category": "duplicate",
+      "hook_tokens": 1128
     },
     {
       "id": "mixed-angular-and-tests",
@@ -371,7 +382,6 @@
         "workspace:rules/angular-standalone-components.md",
         "workspace:rules/run-tests-before-commit.md",
         "workspace:skills/write-xunit-tests-skill.md",
-        "workspace:rules/no-console-output-in-production.md",
         "workspace:knowledge/angular-http-interceptor-error-handling.md",
         "workspace:rules/conventional-commit-messages.md",
         "workspace:skills/hotfix-deployment-skill.md"
@@ -385,7 +395,9 @@
       "dependencies_missing": [],
       "isolation_failures": [],
       "zero_result_correct": true,
-      "tokens": 518
+      "tokens": 464,
+      "category": "mixed-intent",
+      "hook_tokens": 1085
     },
     {
       "id": "mixed-api-async-logging",
@@ -395,14 +407,12 @@
         "structured-logging-with-serilog"
       ],
       "routed": [
-        "workspace:knowledge/jwt-signing-key-rotation.md",
         "workspace:rules/dotnet-async-and-cancellation.md",
-        "workspace:knowledge/structured-logging-with-serilog.md",
+        "workspace:knowledge/jwt-signing-key-rotation.md",
         "workspace:knowledge/session-middleware-validates-auth-tokens.md",
         "workspace:knowledge/auth-token-refresh-flow.md",
-        "global:knowledge/owasp-security-checklist.md",
+        "workspace:knowledge/structured-logging-with-serilog.md",
         "workspace:rules/no-console-output-in-production.md",
-        "workspace:knowledge/docker-compose-local-dev.md",
         "workspace:rules/api-layering-thin-controllers.md"
       ],
       "matched": [
@@ -414,7 +424,9 @@
       "dependencies_missing": [],
       "isolation_failures": [],
       "zero_result_correct": true,
-      "tokens": 676
+      "tokens": 572,
+      "category": "mixed-intent",
+      "hook_tokens": 1203
     },
     {
       "id": "mixed-hotfix-commit",
@@ -441,7 +453,9 @@
       "dependencies_missing": [],
       "isolation_failures": [],
       "zero_result_correct": true,
-      "tokens": 483
+      "tokens": 483,
+      "category": "mixed-intent",
+      "hook_tokens": 1089
     },
     {
       "id": "disagreement-package-manager",
@@ -462,7 +476,9 @@
       "dependencies_missing": [],
       "isolation_failures": [],
       "zero_result_correct": true,
-      "tokens": 240
+      "tokens": 240,
+      "category": "disagreement",
+      "hook_tokens": 967
     },
     {
       "id": "disagreement-exact-id",
@@ -482,7 +498,9 @@
       "dependencies_missing": [],
       "isolation_failures": [],
       "zero_result_correct": true,
-      "tokens": 181
+      "tokens": 181,
+      "category": "disagreement",
+      "hook_tokens": 965
     },
     {
       "id": "security-secrets-in-config",
@@ -491,11 +509,10 @@
         "never-commit-secrets"
       ],
       "routed": [
-        "workspace:knowledge/jwt-signing-key-rotation.md",
         "workspace:rules/never-commit-secrets.md",
-        "workspace:knowledge/session-middleware-validates-auth-tokens.md",
-        "workspace:knowledge/auth-token-refresh-flow.md",
-        "global:knowledge/owasp-security-checklist.md"
+        "workspace:rules/no-console-output-in-production.md",
+        "workspace:knowledge/structured-logging-with-serilog.md",
+        "workspace:knowledge/nuget-feed-configuration.md"
       ],
       "matched": [
         "never-commit-secrets"
@@ -505,7 +522,9 @@
       "dependencies_missing": [],
       "isolation_failures": [],
       "zero_result_correct": true,
-      "tokens": 472
+      "tokens": 332,
+      "category": "security",
+      "hook_tokens": 1082
     },
     {
       "id": "security-owasp-injection",
@@ -514,14 +533,8 @@
         "owasp-security-checklist"
       ],
       "routed": [
-        "workspace:knowledge/jwt-signing-key-rotation.md",
-        "global:knowledge/owasp-security-checklist.md",
-        "workspace:knowledge/release-pipeline-artifact-validation.md",
-        "workspace:knowledge/session-middleware-validates-auth-tokens.md",
-        "workspace:rules/never-commit-secrets.md",
-        "global:rules/code-review-etiquette.md",
         "workspace:rules/angular-standalone-components.md",
-        "global:rules/dotnet-nullable-reference-types.md"
+        "global:knowledge/owasp-security-checklist.md"
       ],
       "matched": [
         "owasp-security-checklist"
@@ -531,7 +544,9 @@
       "dependencies_missing": [],
       "isolation_failures": [],
       "zero_result_correct": true,
-      "tokens": 579
+      "tokens": 206,
+      "category": "security",
+      "hook_tokens": 989
     },
     {
       "id": "security-token-logging",
@@ -541,9 +556,9 @@
       ],
       "routed": [
         "workspace:knowledge/jwt-signing-key-rotation.md",
-        "workspace:knowledge/structured-logging-with-serilog.md",
         "workspace:knowledge/session-middleware-validates-auth-tokens.md",
         "workspace:knowledge/auth-token-refresh-flow.md",
+        "workspace:knowledge/structured-logging-with-serilog.md",
         "global:knowledge/owasp-security-checklist.md",
         "workspace:rules/no-console-output-in-production.md"
       ],
@@ -555,7 +570,9 @@
       "dependencies_missing": [],
       "isolation_failures": [],
       "zero_result_correct": true,
-      "tokens": 501
+      "tokens": 501,
+      "category": "security",
+      "hook_tokens": 1263
     },
     {
       "id": "session-start-startup",
@@ -565,8 +582,8 @@
       ],
       "routed": [
         "workspace:knowledge/jwt-signing-key-rotation.md",
-        "workspace:knowledge/workspace-startup-orientation.md",
         "workspace:knowledge/session-middleware-validates-auth-tokens.md",
+        "workspace:knowledge/workspace-startup-orientation.md",
         "workspace:knowledge/auth-token-refresh-flow.md",
         "workspace:knowledge/ef-core-migrations-workflow.md",
         "workspace:knowledge/payment-retry-backoff-copy.md",
@@ -582,7 +599,9 @@
       "dependencies_missing": [],
       "isolation_failures": [],
       "zero_result_correct": true,
-      "tokens": 659
+      "tokens": 659,
+      "category": "session-start",
+      "hook_tokens": 1405
     },
     {
       "id": "session-start-current",
@@ -591,19 +610,19 @@
         "workspace-startup-orientation"
       ],
       "routed": [
-        "workspace:knowledge/jwt-signing-key-rotation.md",
-        "workspace:knowledge/workspace-startup-orientation.md",
-        "workspace:knowledge/session-middleware-validates-auth-tokens.md",
-        "workspace:knowledge/auth-token-refresh-flow.md",
         "workspace:rules/angular-standalone-components.md",
         "workspace:rules/api-layering-thin-controllers.md",
+        "workspace:knowledge/workspace-startup-orientation.md",
         "workspace:rules/conventional-commit-messages.md",
         "workspace:rules/dotnet-async-and-cancellation.md",
         "workspace:rules/never-commit-secrets.md",
         "workspace:rules/no-console-output-in-production.md",
         "workspace:rules/run-tests-before-commit.md",
         "workspace:rules/typescript-naming-conventions.md",
-        "workspace:rules/use-pnpm-for-installs.md"
+        "workspace:rules/use-pnpm-for-installs.md",
+        "global:rules/code-review-etiquette.md",
+        "global:rules/dotnet-nullable-reference-types.md",
+        "global:rules/error-handling-principles.md"
       ],
       "matched": [
         "workspace-startup-orientation"
@@ -613,19 +632,21 @@
       "dependencies_missing": [],
       "isolation_failures": [],
       "zero_result_correct": true,
-      "tokens": 860
+      "tokens": 819,
+      "category": "session-start",
+      "hook_tokens": 1032
     }
   ],
   "metrics": {
-    "precision_at_k": 0.202,
+    "precision_at_k": 0.26,
     "recall_at_k": 1,
     "forbidden_hits": 0,
     "dependency_failures": 0,
-    "isolation_failures": 6,
-    "zero_result_correctness": 0.25,
-    "tokens_mean": 389.259,
-    "tokens_p95": 765,
-    "hook_tokens_mean": 1183.926,
-    "hook_tokens_p95": 1441
+    "isolation_failures": 5,
+    "zero_result_correctness": 0.75,
+    "tokens_mean": 311.741,
+    "tokens_p95": 659,
+    "hook_tokens_mean": 1033.963,
+    "hook_tokens_p95": 1263
   }
 }

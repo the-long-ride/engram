@@ -1,0 +1,256 @@
+{
+  "version": 1,
+  "limit": 8,
+  "cases": [
+    {
+      "id": "freshness-cache-supersedes-stale",
+      "query": "cache invalidation ttl stampede fix",
+      "expected": [
+        "cache-invalidation-working-fix",
+        "cache-invalidation-current"
+      ],
+      "routed": [
+        "workspace:knowledge/cache-invalidation-legacy.md",
+        "workspace:knowledge/cache-invalidation-current.md",
+        "workspace:working/knowledge/cache-invalidation-working-fix.md"
+      ],
+      "matched": [
+        "cache-invalidation-working-fix",
+        "cache-invalidation-current"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 167,
+      "category": "freshness-ordering",
+      "expanded": [
+        "cache-invalidation-legacy",
+        "cache-invalidation-current",
+        "cache-invalidation-working-fix"
+      ],
+      "expansion_correct": true,
+      "order_correct": true,
+      "mrr": 0.5
+    },
+    {
+      "id": "ordering-rule-and-dependency-first",
+      "query": "checkout retry idempotency backoff",
+      "expected": [
+        "checkout-idempotency-rule",
+        "checkout-base-contract",
+        "checkout-retry-behavior"
+      ],
+      "routed": [
+        "workspace:rules/checkout-idempotency-rule.md",
+        "workspace:knowledge/checkout-base-contract.md",
+        "workspace:knowledge/checkout-retry-behavior.md"
+      ],
+      "matched": [
+        "checkout-idempotency-rule",
+        "checkout-base-contract",
+        "checkout-retry-behavior"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 161,
+      "category": "freshness-ordering",
+      "expanded": [
+        "checkout-idempotency-rule",
+        "checkout-base-contract",
+        "checkout-retry-behavior"
+      ],
+      "expansion_correct": true,
+      "order_correct": true,
+      "mrr": 1
+    },
+    {
+      "id": "multi-turn-task-shift-and-working-uptake",
+      "query": "cache invalidation ttl stampede fix",
+      "expected": [
+        "startup-session-charter",
+        "cache-invalidation-working-fix",
+        "queue-backpressure-guide"
+      ],
+      "routed": [
+        "workspace:rules/startup-session-charter.md",
+        "workspace:rules/checkout-idempotency-rule.md",
+        "global:rules/global-commit-hygiene.md",
+        "workspace:knowledge/cache-invalidation-legacy.md",
+        "workspace:knowledge/cache-invalidation-current.md",
+        "workspace:working/knowledge/cache-invalidation-working-fix.md",
+        "workspace:knowledge/checkout-base-contract.md",
+        "workspace:knowledge/queue-backpressure-guide.md",
+        "workspace:knowledge/checkout-retry-behavior.md"
+      ],
+      "matched": [
+        "startup-session-charter",
+        "cache-invalidation-working-fix",
+        "queue-backpressure-guide"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 602,
+      "category": "multi-turn-session",
+      "hook_tokens": 602,
+      "naive_tokens": 1569
+    },
+    {
+      "id": "multi-turn-checkout-repeat-delta",
+      "query": "checkout retry idempotency backoff",
+      "expected": [
+        "startup-session-charter",
+        "checkout-idempotency-rule",
+        "checkout-retry-behavior",
+        "release-canary-playbook"
+      ],
+      "routed": [
+        "workspace:rules/startup-session-charter.md",
+        "workspace:rules/checkout-idempotency-rule.md",
+        "global:rules/global-commit-hygiene.md",
+        "workspace:knowledge/checkout-base-contract.md",
+        "workspace:knowledge/checkout-retry-behavior.md",
+        "workspace:skills/release-canary-playbook.md"
+      ],
+      "matched": [
+        "startup-session-charter",
+        "checkout-idempotency-rule",
+        "checkout-retry-behavior",
+        "release-canary-playbook"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 428,
+      "category": "multi-turn-session",
+      "hook_tokens": 428,
+      "naive_tokens": 811
+    },
+    {
+      "id": "path-api-migration",
+      "query": "src/api/migrations/20261124_add_orders.ts",
+      "expected": [
+        "api-migration-path-rule"
+      ],
+      "routed": [
+        "workspace:rules/api-migration-path-rule.md"
+      ],
+      "matched": [
+        "api-migration-path-rule"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 37,
+      "category": "path-trigger"
+    },
+    {
+      "id": "expired-working-redis-probe",
+      "query": "redisprobe stalecluster failover drill",
+      "expected": [],
+      "routed": [],
+      "matched": [],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 26,
+      "category": "working-expired",
+      "omitted_lifecycle": [
+        "workspace:working/knowledge/expired-redis-probe.md"
+      ],
+      "omitted_correct": true
+    },
+    {
+      "id": "synonym-throttle-to-rate-limit",
+      "query": "endpoint throttling quota",
+      "expected": [
+        "ingress-rate-limit-policy"
+      ],
+      "routed": [
+        "workspace:knowledge/ingress-rate-limit-policy.md"
+      ],
+      "matched": [
+        "ingress-rate-limit-policy"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 69,
+      "category": "paraphrase",
+      "hook_tokens": 263
+    },
+    {
+      "id": "synonym-oauth-bearer-to-jwt",
+      "query": "oauth bearer auth",
+      "expected": [
+        "jwt-signing-validation"
+      ],
+      "routed": [
+        "workspace:knowledge/jwt-signing-validation.md"
+      ],
+      "matched": [
+        "jwt-signing-validation"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 64,
+      "category": "paraphrase",
+      "hook_tokens": 256
+    }
+  ],
+  "metrics": {
+    "precision_at_k": 1,
+    "recall_at_k": 1,
+    "forbidden_hits": 0,
+    "dependency_failures": 0,
+    "isolation_failures": 0,
+    "zero_result_correctness": 1,
+    "tokens_mean": 66.5,
+    "tokens_p95": 69,
+    "hook_tokens_mean": 259.5,
+    "hook_tokens_p95": 263
+  },
+  "path_trigger": {
+    "cases": 1,
+    "precision_at_k": 1,
+    "recall_at_k": 1,
+    "forbidden_hits": 0,
+    "tokens_mean": 37
+  },
+  "lifecycle": {
+    "cases": 1,
+    "omitted_correctness": 1
+  },
+  "ordering": {
+    "cases": 2,
+    "expansion_accuracy": 1,
+    "order_accuracy": 1,
+    "mrr": 0.75,
+    "tokens_mean": 164
+  },
+  "multi_turn": {
+    "cases": 2,
+    "recall_across_turns": 1,
+    "session_hook_tokens_mean": 515,
+    "naive_tokens_mean": 1190,
+    "token_savings_ratio": 0.567
+  }
+}

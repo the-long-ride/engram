@@ -232,3 +232,73 @@ test('benchmark rejects an absolute path-trigger query', async () => {
   assert.equal(body.error.code, 'ENG_USAGE');
   assert.match(body.error.message, /path-trigger query must be a workspace-relative path/);
 });
+
+const learningOrderingFixture = path.resolve('tests/fixtures/benchmark/learning-ordering-v1');
+
+async function learningOrderingWorkspace(prefix) {
+  const { cwd, env } = await tempWorkspace(prefix);
+  const init = await runEngram(cwd, env, ['inject', '--no-skillset']);
+  assert.equal(init.code, 0, init.stderr);
+  await cp(path.join(learningOrderingFixture, 'memories', 'workspace'), workspaceMemoryRoot(cwd), { recursive: true });
+  await cp(path.join(learningOrderingFixture, 'memories', 'global'), env.ENGRAM_GLOBAL_DIR, { recursive: true });
+  for (const args of [['rehash'], ['rebuild-index']]) {
+    const step = await runEngram(cwd, env, args);
+    assert.equal(step.code, 0, step.stderr);
+  }
+  return { cwd, env };
+}
+
+test('learning-ordering-v1 freshness-ordering and multi-turn-session do not regress vs baseline', async () => {
+  const { cwd, env } = await learningOrderingWorkspace('engram-benchmark-learning-ordering-');
+  const baseline = JSON.parse(await readFile(path.join(learningOrderingFixture, 'baseline.json'), 'utf8'));
+  const result = await runEngram(cwd, env, ['benchmark', path.join(learningOrderingFixture, 'cases.json'), '--json', '--fail-on', 'forbidden']);
+  assert.equal(result.code, 0, result.stdout || result.stderr);
+  const data = JSON.parse(result.stdout).data;
+  assert.equal(data.ordering.cases, baseline.ordering.cases);
+  assert.ok(data.ordering.expansion_accuracy >= baseline.ordering.expansion_accuracy, `expansion_accuracy ${data.ordering.expansion_accuracy}`);
+  assert.ok(data.ordering.order_accuracy >= baseline.ordering.order_accuracy, `order_accuracy ${data.ordering.order_accuracy}`);
+  assert.ok(data.ordering.mrr >= baseline.ordering.mrr, `mrr ${data.ordering.mrr}`);
+  assert.equal(data.multi_turn.cases, baseline.multi_turn.cases);
+  assert.ok(data.multi_turn.recall_across_turns >= baseline.multi_turn.recall_across_turns, `recall_across_turns ${data.multi_turn.recall_across_turns}`);
+  assert.ok(data.multi_turn.token_savings_ratio >= baseline.multi_turn.token_savings_ratio - 0.02, `token_savings_ratio ${data.multi_turn.token_savings_ratio} < baseline ${baseline.multi_turn.token_savings_ratio} - 0.02`);
+  assert.equal(data.path_trigger.cases, baseline.path_trigger.cases);
+  assert.equal(data.path_trigger.forbidden_hits, 0);
+  assert.equal(data.lifecycle.omitted_correctness, 1);
+});
+
+test('benchmark freshness-ordering and multi-turn-session cases do not move routed metrics', async () => {
+  const { cwd, env } = await routingWorkspace('engram-benchmark-separate-ordering-');
+  const routedCases = JSON.parse(await readFile(path.join(routingFixture, 'cases.json'), 'utf8'));
+  const extraCases = [
+    {
+      id: 'ordering-extra',
+      category: 'freshness-ordering',
+      query: 'session middleware validates auth tokens',
+      expect: ['session-middleware-validates-auth-tokens'],
+      expect_expanded: ['session-middleware-validates-auth-tokens'],
+      expect_body_order: ['jwt-signing-key-rotation', 'session-middleware-validates-auth-tokens']
+    },
+    {
+      id: 'multi-turn-extra',
+      category: 'multi-turn-session',
+      query: 'auth token refresh flow before expiry',
+      expect: ['auth-token-refresh-flow'],
+      turns: ['current session', 'auth token refresh flow before expiry', 'auth token refresh flow before expiry']
+    }
+  ];
+  const routedOnly = path.join(cwd, 'routed-only.json');
+  const combined = path.join(cwd, 'combined.json');
+  await writeFile(routedOnly, JSON.stringify(routedCases));
+  await writeFile(combined, JSON.stringify({ ...routedCases, cases: [...routedCases.cases, ...extraCases] }));
+  const first = await runEngram(cwd, env, ['benchmark', routedOnly, '--json']);
+  const second = await runEngram(cwd, env, ['benchmark', combined, '--json']);
+  assert.equal(first.code, 0, first.stderr);
+  assert.equal(second.code, 0, second.stderr);
+  const before = JSON.parse(first.stdout).data;
+  const after = JSON.parse(second.stdout).data;
+  assert.deepEqual(after.metrics, before.metrics);
+  assert.equal(after.ordering.cases, 1);
+  assert.equal(after.multi_turn.cases, 1);
+  assert.equal(before.ordering, undefined);
+  assert.equal(before.multi_turn, undefined);
+});

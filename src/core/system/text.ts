@@ -20,9 +20,14 @@ export function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+const CJK_RE = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u;
+
 /** Extract lowercase words for deterministic search and routing. */
 export function words(text: string): Set<string> {
-  return new Set((text.toLowerCase().match(/[a-z0-9][a-z0-9-]{1,}/g) ?? []).filter((w) => w.length > 2));
+  return new Set(
+    (text.toLowerCase().match(/[\p{L}\p{N}][\p{L}\p{N}-]{1,}/gu) ?? [])
+      .filter((w) => w.length > 2 || CJK_RE.test(w))
+  );
 }
 
 const ROUTING_STOPWORDS = new Set([
@@ -32,7 +37,8 @@ const ROUTING_STOPWORDS = new Set([
   'made', 'make', 'more', 'most', 'much', 'must', 'new', 'not', 'off', 'only',
   'original', 'other', 'over', 'same', 'some', 'such', 'take', 'than', 'that', 'the', 'their',
   'them', 'then', 'they', 'this', 'very', 'was', 'well', 'when', 'where', 'which',
-  'with', 'work', 'written', 'your'
+  'with', 'work', 'written', 'your',
+  'của', 'cho', 'với', 'trong', 'khi', 'chưa', 'bên', 'này', 'các', 'những', 'được'
 ]);
 
 const ROUTING_GENERIC_WORDS = new Set([
@@ -62,7 +68,7 @@ export function meaningfulWordList(text: string): string[] {
 }
 
 function isMeaningfulRoutingWord(word: string): boolean {
-  if (word.length <= 2) return false;
+  if (word.length <= 2 && !CJK_RE.test(word)) return false;
   if (/^\d+(?:-\d+)*$/.test(word)) return false;
   return !ROUTING_STOPWORDS.has(word) && !ROUTING_GENERIC_WORDS.has(word);
 }

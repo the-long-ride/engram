@@ -38,6 +38,10 @@ exports/
 
 # Migration backups (schema, author, upgrade); local only.
 backups/
+
+# Session learning evidence traces and staged inbox receipts.
+traces/tr_sl_*.jsonl
+inbox/r-*.json
 `;
 
 /**

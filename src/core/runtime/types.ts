@@ -6,7 +6,7 @@ export type Confidence = 'high' | 'medium' | 'low';
 export type RuleVariant = 'light' | 'balanced' | 'strict';
 export type ProfileSource = 'env' | 'workspace' | 'user' | 'none';
 export type Lifecycle = 'active' | 'review_due' | 'superseded' | 'archived';
-export type InboxReceiptSource = 'save' | 'save-session';
+export type InboxReceiptSource = 'save' | 'save-session' | 'session-learning';
 export type MemoryAuthority = 'instruction' | 'reference';
 export type EvidenceStatus = 'verified' | 'unverified';
 export type MemorySchemaVersion = 1 | 2 | 3;
@@ -107,6 +107,8 @@ export type EngramConfig = {
   mcp?: { resource_limit?: number };
   /** Host hook behaviour. */
   hooks?: { path_rules?: PathRulesMode };
+  /** Session learning capture mode and optional queue auto-drain. */
+  learning?: { mode?: 'auto' | 'inbox' | 'off'; auto_drain?: boolean };
 };
 
 export type IgnoreConfig = {

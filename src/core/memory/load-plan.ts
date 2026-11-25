@@ -3,7 +3,9 @@ import { loadSummary, type EngramContext } from './context.js';
 import type { MemoryEntry, EngramConfig, MemoryGraph } from '../runtime/types.js';
 import { memoryKey } from './memory-ref.js';
 import type { RouteDetail, RouteOptions } from './routing.js';
-import { loadEntries, noteMatchesObjective, routeDetailed, sessionObjectiveFromEnv } from './routing.js';
+import { hasExplicitStartupSignal, loadEntries, noteMatchesObjective, routeDetailed, sessionObjectiveFromEnv } from './routing.js';
+import { orderForAgentConsumption } from './ordering.js';
+import { today } from '../system/text.js';
 import type { VectorRouteHit } from './vector-db.js';
 import { vectorRouteHits } from './vector-db.js';
 import type { ProjectionSection } from './payload-plan.js';
@@ -79,7 +81,13 @@ export type PlanLoadOptions = RouteOptions & {
    * they still rank and occupy expansion slots; they are only left out of the rendered output.
    */
   deliveredKeys?: string[];
+  /** Keys the caller already saw as one-line cards in this session (suppresses repeat cards and enables task-shift promotion). */
+  cardedKeys?: string[];
+  /** Lean SessionStart in `auto` hook mode: only expand explicit startup memories as bodies; card untagged general rules. */
+  hookStartupAuto?: boolean;
 };
+
+export type LoadPlanOptions = PlanLoadOptions;
 
 const DEFAULT_EXPAND_TOP = 3;
 
@@ -139,7 +147,8 @@ export async function planLoad(
         candidatePool: options.candidatePool ?? ctx.config.vector.candidate_pool,
         intent,
         semanticRelaxed: forAgents,
-        stale
+        stale,
+        rawQuery: options.rawQuery ?? rawQuery
       },
       activeGraph
     );
@@ -161,7 +170,11 @@ export async function planLoad(
   const skippedRows = loaded.filter((row) => !row.content || row.flagged);
   const readableRows = loaded.filter((row) => Boolean(row.content) && !row.flagged);
   const disclosure: LoadDisclosure = tieredDisclosure ? 'auto' : 'full';
-  const omittedEntries = [...noteCards, ...(routed.candidateEntries ?? []).filter((e) => !entries.includes(e))];
+  const omittedEntries = [...noteCards, ...(routed.relevantEntries ?? routed.candidateEntries ?? []).filter((e) => !entries.includes(e))];
+  const delivered = new Set(targetIds.length > 0 ? [] : options.deliveredKeys ?? []);
+  const previouslyCarded = new Set(targetIds.length > 0 ? [] : options.cardedKeys ?? []);
+  const trackCarded = targetIds.length === 0 && options.cardedKeys !== undefined;
+  const score = new Map((routed.reasons ?? []).map((r) => [r.key, r.score ?? 0]));
 
   let payloadRows = readableRows;
   let cardRows: PlannedLoadRow[] = [];
@@ -172,21 +185,30 @@ export async function planLoad(
     const candidateRows = (await loadEntries(ctx.cwd, candidates, ctx.config, { forAgents })).filter((row) => Boolean(row.content) && !row.flagged);
     const dependencyKeys = new Set((routed.reasons ?? []).filter((r) => r.kind === 'dependency').map((r) => r.key));
     const candidateSet = new Set(candidateRows);
-    // Routed entries are in foundation-first order; expansion follows relevance instead.
-    const score = new Map((routed.reasons ?? []).map((r) => [r.key, r.score ?? -1]));
+    // Routed entries are in foundation-first order; expansion follows relevance (with startup/task-shift priority).
     const scoreOf = (row: PlannedLoadRow) => score.get(memoryKey(row.entry)) ?? -1;
-    const ranked = [...readableRows].sort((a, b) => scoreOf(b) - scoreOf(a));
+    const hasExplicitStartup = Boolean(options.hookStartupAuto) && readableRows.some((row) => hasExplicitStartupSignal(row.entry));
+    const slotGroup = (row: PlannedLoadRow): number => {
+      if (hasExplicitStartup) return hasExplicitStartupSignal(row.entry) ? 0 : 1;
+      if (delivered.size > 0 && trackCarded) {
+        const key = memoryKey(row.entry);
+        if (!delivered.has(key) && !previouslyCarded.has(key)) return 0;
+        if (delivered.has(key)) return 1;
+        return 2;
+      }
+      return 0;
+    };
+    const ranked = [...readableRows].sort((a, b) => slotGroup(a) - slotGroup(b) || scoreOf(b) - scoreOf(a));
     const tiered = packTiered([...ranked, ...candidateRows], {
       maxTokens: maxBudget,
       expandTop: expandTopOf(ctx.config),
       reserveRatio,
-      isDependency: (row) => dependencyKeys.has(memoryKey(row.entry)),
+      isDependency: (row) => dependencyKeys.has(memoryKey(row.entry)) || (hasExplicitStartup && !hasExplicitStartupSignal(row.entry)),
       isCandidate: (row) => candidateSet.has(row),
       card: (row) => renderAgentCard(row.entry, isStale(row.entry)),
       render: (rows, cards) => renderTiered(ctx, routed, rows, skippedRows, cards)
     });
-    // Bodies keep the foundation-first order so prerequisites read before dependents.
-    payloadRows = readableRows.filter((row) => tiered.expanded.includes(row));
+    payloadRows = orderForAgentConsumption(readableRows.filter((row) => tiered.expanded.includes(row)), activeGraph, score, today());
     cardRows = tiered.cards;
     used = tiered.used;
     // Selected rows shed to honour the cap; candidates already report as low-relevance.
@@ -194,19 +216,24 @@ export async function planLoad(
     budgetOmitted = tiered.omitted.filter((key) => selectedKeys.has(key));
   } else if (!bypassBudget) {
     const packed = packPayload(readableRows, maxBudget, { render: (rows) => renderCompactPayload(ctx, routed, rows, skippedRows) });
-    payloadRows = packed.rows;
+    payloadRows = orderForAgentConsumption(packed.rows, activeGraph, score, today());
     used = packed.used;
     budgetOmitted = packed.omitted;
+  } else {
+    payloadRows = orderForAgentConsumption(readableRows, activeGraph, score, today());
   }
 
   // Delivered rows keep the slots they won above; only their rendering is suppressed.
-  const delivered = new Set(targetIds.length > 0 ? [] : options.deliveredKeys ?? []);
   const isDelivered = (row: PlannedLoadRow) => delivered.has(memoryKey(row.entry));
+  const isPreviouslyCarded = (row: PlannedLoadRow) => previouslyCarded.has(memoryKey(row.entry));
   const deliveredHits = new Set([...payloadRows, ...cardRows].filter(isDelivered).map((row) => memoryKey(row.entry)));
-  if (deliveredHits.size) {
+  const cardDedupHits = cardRows.some(isPreviouslyCarded);
+  if (deliveredHits.size || cardDedupHits) {
     payloadRows = payloadRows.filter((row) => !isDelivered(row));
     // With no fresh body the caller already saw these cards on the turn that delivered the rest.
-    cardRows = payloadRows.length ? cardRows.filter((row) => !isDelivered(row)) : [];
+    cardRows = payloadRows.length
+      ? cardRows.filter((row) => !isDelivered(row) && !isPreviouslyCarded(row))
+      : (deliveredHits.size ? [] : cardRows.filter((row) => !isPreviouslyCarded(row)));
     used = !payloadRows.length && !cardRows.length ? 0 : estimateTokens(disclosure === 'auto'
       ? renderTiered(ctx, routed, payloadRows, skippedRows, cardRows.map((row) => renderAgentCard(row.entry, isStale(row.entry))))
       : renderCompactPayload(ctx, routed, payloadRows, skippedRows));

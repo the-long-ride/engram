@@ -240,7 +240,7 @@ function compactSkillInstructions(readMode = 'auto', hooks: HookMode = false): s
     '- `save-session` / `ss`: candidates from the current AI agent chat/session; `--query-level <n>` adds up to n recent accessible human-agent chat sessions (never invent history). `ss -f` = `save-session --force`. `propose` (or "what should we save to engram?") = `save-session` over the current chat.',
     '- `take-control`: `--plan` reports the source plan only; otherwise turn the source pack into candidates. With `--force`, keep the source pack token-light and never paste it into chat.',
     '- `metacognize --workspace|--global|--all`, `clone-memory --metacognize`, `resolve-conflicts --metacognize`: run the CLI first, then rerun the same scope with restructured `UPDATE`/`DEPENDS_ON` candidates.',
-    '- `observe` (`--propose`), `graph`/`quality-check` (contradictions), `repair`, `archive --reason <why> <id>`, `link --parent <id> --children <id>`, `profile status` (`--profile <name>` only when the human picks it; `profile merge <src> <dst> --dry-run` before merging).',
+    '- `status` (`stat`), `why <id> [query]`, `observe` (`--propose`, `--learn`, `--queue`), `review inbox|triage|apply <id>|dismiss <id>`, `graph`/`quality-check` (contradictions), `repair`, `archive --reason <why> <id>`, `link --parent <id> --children <id>`, `profile status` (`--profile <name>` only when the human picks it; `profile merge <src> <dst> --dry-run` before merging).',
     '',
     '## Candidates',
     '',

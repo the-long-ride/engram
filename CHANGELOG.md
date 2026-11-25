@@ -1,9 +1,53 @@
 # Changelog
 
-## Unreleased
+## 0.1.0
+
+### Retrieval, freshness, and ordering
+
+- Removed `'query'` from database task-intent keywords to stop false-positive database routing on generic prompts, and anchored `hasAnchorOverlap` on unexpanded `rawStems` so synonym expansion cannot admit unrelated memories.
+- Restricted `current session` scoring (`!all`) to explicit startup memories (`0.85 * validity`) plus untagged rules (`0.45 * validity`), preventing noisy startup packs.
+- Added `knowledgeFreshnessBoost` (exponential recency decay over `lastConfirmed`/`updated`/`validFrom`, `+0.08` boost for `working/` memories, and a bounded revision bonus) so recently confirmed and active task memories rank ahead of older notes.
+- Added `orderForAgentConsumption` (Kahn's priority topological sort) to order expanded bodies into three attention-aware buckets: Bucket 0 rules, instructions, and `depends_on` prerequisites -> Bucket 1 older durable context -> Bucket 2 fresh (`<=14d`) or `working/` leaves at the end of the pack.
+- Added `hookStartupAuto` (`SessionStart` rule-card compression in `read: auto` mode) plus `carded`/`touched` per-session tracking so cards shown at startup can promote to full bodies when a later prompt shifts onto their topic.
+- Upgraded lexical routing to 3-stream BM25F field weighting (`buildBm25F`: `title` weight `2.2` / `b = 0.65`, `tags` weight `2.0` / `b = 0.65`, `body` weight `1.0` / `b = 0.75`) and gated deterministic concept synonym fallback (`src/core/memory/concepts.ts`, 10 initial technical clusters expanded below to 24, `0.45 * synScores` gated by `hasStrongConceptOverlap` only when `exactAnchoredCount === 0`), reaching `1.0` recall and `1.0` precision (`tokens_mean: 66.5`, `hook_tokens_mean: 259.5`) on `learning-ordering-v1` paraphrase cases.
+- Extended local `usage.json` with closed-loop outcome telemetry (`applied` on `PreToolUse`/`AfterTool` path overlap against delivered keys, `corrected` on live prompt corrections against delivered keys), log noise decay (`NOISE_DECAY_MIN_INJECTIONS = 20`, up to `-0.12` for zero-utility injections) plus correction penalty (`-0.02 * min(3, corrected)`), and `noisy` memory reporting in `engram stats --usage`.
+- Expanded real-stacks and bilingual retrieval: upgraded `concepts.ts` to 24 technical/bilingual concept clusters plus corpus co-occurrence bridges (`buildCorpusConceptMap` when `>= 4` durable entries exist and `<= 35%` DF), switched `text.ts` (`words`, `ROUTING_STOPWORDS`) to Unicode-aware tokenization (preserving ASCII, Vietnamese, and `>= 2`-char CJK tokens with 11 Vietnamese filler stopwords), and added the 35-case `real-stacks-v1` benchmark plus `telemetry-loop` category (`recall_at_k: 1.0`, `precision_at_k: 0.608`, `noisy_demoted_rate: 1.0`).
+- Added Git-history bootstrapping for telemetry and benchmarks: `engram stats --backfill` (`backfillUsageFromGit` + `recordUsageCounts`) seeds `injected`/`applied` counters from recent non-merge commits, and `engram benchmark --from-git [--out <path>]` (`mineBenchmarkCasesFromGit`) mines redacted `version: 2` benchmark cases from Git history.
+
+### CLI ergonomics and Entry Web UX
+
+- Added CLI ergonomics commands and shortcuts: `engram status` (`stat`, one-screen dashboard of memories, review queue, stale/noisy health, linked hooks, and next actions), `engram why <id> [query]` (single-memory routing/budget/stem trace), `engram help --compact` (`renderCompactHelpTerminal`), `engram graph link <parent-id> <child-id...>`, and `engram review triage` / `engram review --interactive` for interactive inbox receipt triage.
+- Upgraded the Entry Web UI: `#hash` routing (`parseHash`) and mobile drawer close (`Escape` + `.sb-close`), `Workspace` sidebar divider with `pendingReviewCount` badge on **Review**, `ReviewTab` `j`/`k`/`a`/`d` keyboard triage + filter auto-selection + single-item `Dismiss` + collapsible `Review prompt`, `MemoriesTab`/`MemoryDetail` inline Route Simulator (`GET /api/recall?simulate=true`) + `Working`/`Noisy` badges + 1-click `Promote` (`POST /api/memory/promote`) + modal archive confirm, and `ConnectionsTab` Doctor health badge (`/api/doctor`) + `SessionEnd queue` toggle (`supportsSessionEnd`/`sessionEndLinked`).
+
+### Session learning (Option A)
+
+- Added deterministic session learning (`distillSessionLearnings` + prompt-event-only `isLivePromptCorrection` on `UserPromptSubmit`, `BeforeAgent`, `pre_user_prompt`, and `chat.message`): live prompt corrections and observed sources automatically save sanitized, expiring gitignored `working/` memories (with `tr_sl_*` sanitized traces and inferred `applies_to` globs) and stage high-confidence durable candidates as non-active `inbox/r-*.json` receipts (`source: 'session-learning'`, reviewed with `engram review inbox` and promoted via `engram review apply`).
+- Added `engram observe --learn [--file <path> | --git [range]]` and `engram observe --queue --learn` to distill learnings from files, git history, or queued `SessionEnd` transcripts, alongside optional `learning.mode` and `learning.auto_drain` config keys (deep-merged across config layers in `mergeConfig`).
+- Added Entry Web UI `session-learning` triage and `Construct` sub-views: `POST /api/review/apply` (`apiReviewApplyReceipts`), `engram review dismiss` purging `r-*` receipts across `[workspace, global]` roots, `ReviewTab` queue filter pills (`All`, `Session learning`, `Deferred`, `Findings`) with single/bulk `Approve`, and `ConfigTab` mounting `Configuration`, `Profiles`, `Workspaces`, and `Runtime` sub-views.
+- Updated shell completions (`completion.ts`) with `observe` (`--learn`, `--git`, `--json`) and `benchmark` flags while removing orphaned bash/zsh case bodies; fixed `website/src/components/EntryFieldTable.tsx` when `group` is omitted (`ENTRY_FIELDS`) and included `src/**/*.test.tsx` in `website/package.json` `test`; scoped `package.json` `"files"` to explicit published docs (`docs/AGENT_INTEGRATIONS.md`, `docs/SKILLSET_CONTRACT.md`).
+
+### Benchmarks
+
+- Measured `routing-v2` before and after Phase 1 retrieval and ordering improvements:
+
+  | Metric | Before | After | Delta |
+  | --- | --- | --- | --- |
+  | `tokens_mean` | 389.259 | 311.741 | -19.9% |
+  | `hook_tokens_mean` | 1183.926 | 1033.963 | -12.7% |
+  | `precision_at_k` | 0.202 | 0.26 | +28.7% |
+  | `zero_result_correctness` | 0.25 | 0.75 | 3x |
+  | `recall_at_k` | 1.0 | 1.0 | 0 |
+  | `forbidden_hits` | 0 | 0 | 0 |
+
+- Added the `freshness-ordering` and `multi-turn-session` benchmark categories (`learning-ordering-v1`): `order_accuracy` 1.0, `expansion_accuracy` 1.0, `mrr` 0.75, and `token_savings_ratio` 0.567 (515 hook tokens vs. 1190 naive).
+
+### Security and dependencies
+
+- Resolved all `npm audit` and `pnpm audit` vulnerabilities across the root package and `website/` (upgraded to Jest 30.5.2 and TypeScript 7.0.2, plus patched overrides including `dompurify`, `undici`, `fast-xml-parser`, `minimatch`, `glob`, `serialize-javascript`, `body-parser`, `qs`, `joi`, `katex`, and the local `braces`/`image-size` vendor shims).
 
 ### Hooks
 
+- Added task-scoped `SubagentStart` routing (`subagentQueryText` extracting task/prompt/description fields optionally prefixed with non-generic `agent_type`, falling back to `current session` when absent).
 - Added the opt-in `SessionEnd` transcript queue. `engram link claude --session-end` and `engram link codex --session-end` register a plain `SessionEnd` command hook (Claude timeout 5 s, Codex 3 s) that appends `{ transcript_path, host, session, at }` to the gitignored scope-root `session-queue.json` (under a file lock, deduped on host and session, newest 50 kept) and injects nothing; it answers `{}` and fails open. The flag is off by default, `engram upgrade` never adds it (an existing entry is kept), `engram unlink` removes it, and Gemini is not registered. Stored paths are absolute and name your OS user, so the file stays local; `session-queue.json`, its lock, and temp files are in the managed scope `.gitignore`.
 - Added `engram observe --queue [--dry-run] [--limit n]`, which drains that queue: each transcript must exist, be a regular file (not a symbolic or hard link), and be at most 5 MiB; it is redacted, stripped of injection-like lines, and stored as a trace plus an inbox wrapper without the absolute path. Skipped and stored entries leave the queue, entries that hit the inbox quota (`max_files` and `max_chars` from the optional `.agents/engram.transcripts.json`) stay, and no memory is written, so promotion still goes through `observe --propose` or `save-session`. Do not run `--queue` from an async Codex hook.
 

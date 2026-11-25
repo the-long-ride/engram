@@ -1,0 +1,851 @@
+{
+  "schema_version": 1,
+  "last_sync_commit": "4cc4f6a",
+  "last_full_scan_commit": "4cc4f6a",
+  "last_sync_at": "2026-11-25T07:13:36Z",
+  "inventory_complete": true,
+  "source_to_specs": {
+    "scripts/build-web.mjs": [
+      "workflow.build-test-and-release-scripts"
+    ],
+    "scripts/check-lines.mjs": [
+      "workflow.build-test-and-release-scripts"
+    ],
+    "scripts/check-release-version.mjs": [
+      "workflow.build-test-and-release-scripts"
+    ],
+    "scripts/check-web-assets.mjs": [
+      "workflow.build-test-and-release-scripts"
+    ],
+    "scripts/copy-assets.mjs": [
+      "workflow.build-test-and-release-scripts"
+    ],
+    "scripts/generate-version.mjs": [
+      "workflow.build-test-and-release-scripts"
+    ],
+    "scripts/run-related-tests.mjs": [
+      "workflow.build-test-and-release-scripts"
+    ],
+    "scripts/run-tests.mjs": [
+      "workflow.build-test-and-release-scripts"
+    ],
+    "scripts/test-shard-planner.mjs": [
+      "workflow.build-test-and-release-scripts"
+    ],
+    "src/bin/engram-mcp.ts": [
+      "interface.mcp-server-and-protocol"
+    ],
+    "src/bin/engram.ts": [
+      "interface.mcp-server-and-protocol"
+    ],
+    "src/cli.ts": [
+      "interface.cli-commands-and-dispatch"
+    ],
+    "src/cli/args.ts": [
+      "interface.cli-commands-and-dispatch"
+    ],
+    "src/commands/admin.ts": [
+      "interface.cli-commands-and-dispatch"
+    ],
+    "src/commands/author-cmd.ts": [
+      "interface.cli-commands-and-dispatch"
+    ],
+    "src/commands/autosave.ts": [
+      "interface.cli-commands-and-dispatch"
+    ],
+    "src/commands/capabilities.ts": [
+      "interface.cli-commands-and-dispatch"
+    ],
+    "src/commands/clone.ts": [
+      "interface.cli-commands-and-dispatch"
+    ],
+    "src/commands/config-cmd.ts": [
+      "interface.cli-commands-and-dispatch"
+    ],
+    "src/commands/core.ts": [
+      "interface.cli-commands-and-dispatch"
+    ],
+    "src/commands/init-plans.ts": [
+      "interface.cli-commands-and-dispatch"
+    ],
+    "src/commands/metacognize.ts": [
+      "interface.cli-commands-and-dispatch"
+    ],
+    "src/commands/observe-queue.ts": [
+      "interface.cli-commands-and-dispatch"
+    ],
+    "src/commands/observe.ts": [
+      "interface.cli-commands-and-dispatch"
+    ],
+    "src/commands/ops.ts": [
+      "interface.cli-commands-and-dispatch"
+    ],
+    "src/commands/policy.ts": [
+      "interface.cli-commands-and-dispatch"
+    ],
+    "src/commands/profile.ts": [
+      "interface.cli-commands-and-dispatch"
+    ],
+    "src/commands/read.ts": [
+      "interface.cli-commands-and-dispatch"
+    ],
+    "src/commands/review.ts": [
+      "interface.cli-commands-and-dispatch"
+    ],
+    "src/commands/skillset-link.ts": [
+      "interface.cli-commands-and-dispatch"
+    ],
+    "src/commands/status.ts": [
+      "interface.cli-commands-and-dispatch"
+    ],
+    "src/commands/upgrade-review.ts": [
+      "interface.cli-commands-and-dispatch"
+    ],
+    "src/commands/why.ts": [
+      "interface.cli-commands-and-dispatch"
+    ],
+    "src/commands/working-note.ts": [
+      "interface.cli-commands-and-dispatch"
+    ],
+    "src/commands/workspace.ts": [
+      "interface.cli-commands-and-dispatch"
+    ],
+    "src/commands/write.ts": [
+      "interface.cli-commands-and-dispatch"
+    ],
+    "src/core/analysis/quality.ts": [
+      "architecture.memory-schema-and-storage"
+    ],
+    "src/core/analysis/search.ts": [
+      "feature.retrieval-routing-and-ordering"
+    ],
+    "src/core/author/config.ts": [
+      "feature.ingest-author-and-benchmarks"
+    ],
+    "src/core/author/git-sync.ts": [
+      "feature.ingest-author-and-benchmarks"
+    ],
+    "src/core/author/migrate-memories.ts": [
+      "feature.ingest-author-and-benchmarks"
+    ],
+    "src/core/author/resolve.ts": [
+      "feature.ingest-author-and-benchmarks"
+    ],
+    "src/core/author/types.ts": [
+      "feature.ingest-author-and-benchmarks"
+    ],
+    "src/core/author/validate.ts": [
+      "feature.ingest-author-and-benchmarks"
+    ],
+    "src/core/benchmark/mine-git.ts": [
+      "feature.ingest-author-and-benchmarks"
+    ],
+    "src/core/benchmark/run.ts": [
+      "feature.ingest-author-and-benchmarks"
+    ],
+    "src/core/benchmark/schema.ts": [
+      "feature.ingest-author-and-benchmarks"
+    ],
+    "src/core/cli/banner.ts": [
+      "interface.cli-commands-and-dispatch"
+    ],
+    "src/core/cli/command-registry.ts": [
+      "interface.cli-commands-and-dispatch"
+    ],
+    "src/core/cli/completion-target.ts": [
+      "interface.cli-commands-and-dispatch"
+    ],
+    "src/core/cli/completion.ts": [
+      "interface.cli-commands-and-dispatch"
+    ],
+    "src/core/cli/format.ts": [
+      "interface.cli-commands-and-dispatch"
+    ],
+    "src/core/cli/help-topics.ts": [
+      "interface.cli-commands-and-dispatch"
+    ],
+    "src/core/cli/help.ts": [
+      "interface.cli-commands-and-dispatch"
+    ],
+    "src/core/cli/json-output.ts": [
+      "interface.cli-commands-and-dispatch"
+    ],
+    "src/core/config-db/migrate.ts": [
+      "workflow.upgrade-vcs-and-diagnostics"
+    ],
+    "src/core/config-db/queries.ts": [
+      "workflow.upgrade-vcs-and-diagnostics"
+    ],
+    "src/core/config-db/schema.ts": [
+      "workflow.upgrade-vcs-and-diagnostics"
+    ],
+    "src/core/contracts/result.ts": [
+      "interface.mcp-server-and-protocol"
+    ],
+    "src/core/diagnostics/agents-chain.ts": [
+      "workflow.upgrade-vcs-and-diagnostics"
+    ],
+    "src/core/diagnostics/doctor.ts": [
+      "workflow.upgrade-vcs-and-diagnostics"
+    ],
+    "src/core/diagnostics/skill-files.ts": [
+      "workflow.upgrade-vcs-and-diagnostics"
+    ],
+    "src/core/ingest/extractors/code.ts": [
+      "feature.ingest-author-and-benchmarks"
+    ],
+    "src/core/ingest/extractors/config.ts": [
+      "feature.ingest-author-and-benchmarks"
+    ],
+    "src/core/ingest/extractors/docs.ts": [
+      "feature.ingest-author-and-benchmarks"
+    ],
+    "src/core/ingest/extractors/host-memory.ts": [
+      "feature.ingest-author-and-benchmarks"
+    ],
+    "src/core/ingest/extractors/manifest.ts": [
+      "feature.ingest-author-and-benchmarks"
+    ],
+    "src/core/ingest/registry.ts": [
+      "feature.ingest-author-and-benchmarks"
+    ],
+    "src/core/ingest/repo-map.ts": [
+      "feature.ingest-author-and-benchmarks"
+    ],
+    "src/core/ingest/structured.ts": [
+      "feature.ingest-author-and-benchmarks"
+    ],
+    "src/core/ingest/text.ts": [
+      "feature.ingest-author-and-benchmarks"
+    ],
+    "src/core/ingest/types.ts": [
+      "feature.ingest-author-and-benchmarks"
+    ],
+    "src/core/integrations/agent-detect.ts": [
+      "feature.agent-hooks-and-skillsets"
+    ],
+    "src/core/integrations/agent-hook-runtime.ts": [
+      "feature.agent-hooks-and-skillsets"
+    ],
+    "src/core/integrations/agent-hooks.ts": [
+      "feature.agent-hooks-and-skillsets"
+    ],
+    "src/core/integrations/agent-paths.ts": [
+      "feature.agent-hooks-and-skillsets"
+    ],
+    "src/core/integrations/capabilities.ts": [
+      "feature.agent-hooks-and-skillsets"
+    ],
+    "src/core/integrations/claude-bootstrap.ts": [
+      "feature.agent-hooks-and-skillsets"
+    ],
+    "src/core/integrations/exporter.ts": [
+      "feature.agent-hooks-and-skillsets"
+    ],
+    "src/core/integrations/hook-caps.ts": [
+      "feature.agent-hooks-and-skillsets"
+    ],
+    "src/core/integrations/hook-session.ts": [
+      "feature.agent-hooks-and-skillsets"
+    ],
+    "src/core/integrations/hook-turn.ts": [
+      "feature.agent-hooks-and-skillsets"
+    ],
+    "src/core/integrations/markdown-them.ts": [
+      "feature.agent-hooks-and-skillsets"
+    ],
+    "src/core/integrations/mcp-config.ts": [
+      "feature.agent-hooks-and-skillsets"
+    ],
+    "src/core/integrations/native-rules.ts": [
+      "feature.agent-hooks-and-skillsets"
+    ],
+    "src/core/integrations/opencode-hook-plugin.ts": [
+      "feature.agent-hooks-and-skillsets"
+    ],
+    "src/core/integrations/session-end.ts": [
+      "feature.agent-hooks-and-skillsets"
+    ],
+    "src/core/integrations/skillset-render.ts": [
+      "feature.agent-hooks-and-skillsets"
+    ],
+    "src/core/integrations/skillset.ts": [
+      "feature.agent-hooks-and-skillsets"
+    ],
+    "src/core/learning/capture.ts": [
+      "workflow.session-learning-and-traces"
+    ],
+    "src/core/learning/distill.ts": [
+      "workflow.session-learning-and-traces"
+    ],
+    "src/core/memory/agent-proposal-protocol.ts": [
+      "feature.memory-save-and-take-control"
+    ],
+    "src/core/memory/agent-render.ts": [
+      "architecture.memory-schema-and-storage"
+    ],
+    "src/core/memory/archive.ts": [
+      "architecture.memory-schema-and-storage"
+    ],
+    "src/core/memory/backups.ts": [
+      "architecture.memory-schema-and-storage"
+    ],
+    "src/core/memory/concepts.ts": [
+      "feature.retrieval-routing-and-ordering"
+    ],
+    "src/core/memory/context.ts": [
+      "architecture.memory-schema-and-storage"
+    ],
+    "src/core/memory/freshness.ts": [
+      "feature.working-memory-and-freshness"
+    ],
+    "src/core/memory/frontmatter.ts": [
+      "architecture.memory-schema-and-storage"
+    ],
+    "src/core/memory/global-folder.ts": [
+      "architecture.memory-schema-and-storage"
+    ],
+    "src/core/memory/graph-route.ts": [
+      "feature.retrieval-routing-and-ordering"
+    ],
+    "src/core/memory/graph-vector.ts": [
+      "feature.retrieval-routing-and-ordering"
+    ],
+    "src/core/memory/graph.ts": [
+      "feature.retrieval-routing-and-ordering"
+    ],
+    "src/core/memory/host-memory-plan.ts": [
+      "feature.memory-save-and-take-control"
+    ],
+    "src/core/memory/host-memory.ts": [
+      "feature.memory-save-and-take-control"
+    ],
+    "src/core/memory/index.ts": [
+      "architecture.memory-schema-and-storage"
+    ],
+    "src/core/memory/link-memory.ts": [
+      "architecture.memory-schema-and-storage"
+    ],
+    "src/core/memory/load-plan.ts": [
+      "feature.retrieval-routing-and-ordering"
+    ],
+    "src/core/memory/memory-candidate.ts": [
+      "feature.memory-save-and-take-control"
+    ],
+    "src/core/memory/memory-ref.ts": [
+      "architecture.memory-schema-and-storage"
+    ],
+    "src/core/memory/memory-template.ts": [
+      "architecture.memory-schema-and-storage"
+    ],
+    "src/core/memory/migrate-schema.ts": [
+      "architecture.memory-schema-and-storage"
+    ],
+    "src/core/memory/observe.ts": [
+      "feature.working-memory-and-freshness"
+    ],
+    "src/core/memory/ordering.ts": [
+      "feature.retrieval-routing-and-ordering"
+    ],
+    "src/core/memory/path-anchors.ts": [
+      "feature.retrieval-routing-and-ordering"
+    ],
+    "src/core/memory/path-triggers.ts": [
+      "feature.retrieval-routing-and-ordering"
+    ],
+    "src/core/memory/payload-plan.ts": [
+      "feature.retrieval-routing-and-ordering"
+    ],
+    "src/core/memory/refresh.ts": [
+      "feature.working-memory-and-freshness"
+    ],
+    "src/core/memory/route-explain.ts": [
+      "feature.retrieval-routing-and-ordering"
+    ],
+    "src/core/memory/routing.ts": [
+      "feature.retrieval-routing-and-ordering"
+    ],
+    "src/core/memory/rule-variants.ts": [
+      "architecture.memory-schema-and-storage"
+    ],
+    "src/core/memory/save-plan.ts": [
+      "feature.memory-save-and-take-control"
+    ],
+    "src/core/memory/save-supersede.ts": [
+      "feature.memory-save-and-take-control"
+    ],
+    "src/core/memory/schema.ts": [
+      "architecture.memory-schema-and-storage"
+    ],
+    "src/core/memory/scope-gitignore.ts": [
+      "architecture.memory-schema-and-storage"
+    ],
+    "src/core/memory/session-queue.ts": [
+      "feature.working-memory-and-freshness"
+    ],
+    "src/core/memory/storage.ts": [
+      "architecture.memory-schema-and-storage"
+    ],
+    "src/core/memory/take-control-guards.ts": [
+      "feature.memory-save-and-take-control"
+    ],
+    "src/core/memory/take-control.ts": [
+      "feature.memory-save-and-take-control"
+    ],
+    "src/core/memory/task-classifier.ts": [
+      "feature.retrieval-routing-and-ordering"
+    ],
+    "src/core/memory/task-intent.ts": [
+      "feature.retrieval-routing-and-ordering"
+    ],
+    "src/core/memory/usage-backfill.ts": [
+      "feature.retrieval-routing-and-ordering"
+    ],
+    "src/core/memory/usage.ts": [
+      "feature.retrieval-routing-and-ordering"
+    ],
+    "src/core/memory/vector-db.ts": [
+      "feature.retrieval-routing-and-ordering"
+    ],
+    "src/core/memory/working-note.ts": [
+      "feature.working-memory-and-freshness"
+    ],
+    "src/core/memory/working-tier.ts": [
+      "feature.working-memory-and-freshness"
+    ],
+    "src/core/policy/audit.ts": [
+      "architecture.safety-policy-and-review"
+    ],
+    "src/core/policy/evaluate.ts": [
+      "architecture.safety-policy-and-review"
+    ],
+    "src/core/policy/load.ts": [
+      "architecture.safety-policy-and-review"
+    ],
+    "src/core/policy/rollback.ts": [
+      "architecture.safety-policy-and-review"
+    ],
+    "src/core/policy/schema.ts": [
+      "architecture.safety-policy-and-review"
+    ],
+    "src/core/policy/snapshot.ts": [
+      "architecture.safety-policy-and-review"
+    ],
+    "src/core/review/actions.ts": [
+      "architecture.safety-policy-and-review"
+    ],
+    "src/core/review/findings.ts": [
+      "architecture.safety-policy-and-review"
+    ],
+    "src/core/review/inbox.ts": [
+      "architecture.safety-policy-and-review"
+    ],
+    "src/core/review/records.ts": [
+      "architecture.safety-policy-and-review"
+    ],
+    "src/core/runtime/auto-upgrade.ts": [
+      "architecture.runtime-config-and-profiles"
+    ],
+    "src/core/runtime/config.ts": [
+      "architecture.runtime-config-and-profiles"
+    ],
+    "src/core/runtime/constants.ts": [
+      "architecture.runtime-config-and-profiles"
+    ],
+    "src/core/runtime/docs-site.ts": [
+      "architecture.runtime-config-and-profiles"
+    ],
+    "src/core/runtime/entry.ts": [
+      "architecture.runtime-config-and-profiles"
+    ],
+    "src/core/runtime/exit-codes.ts": [
+      "architecture.runtime-config-and-profiles"
+    ],
+    "src/core/runtime/load-limit.ts": [
+      "architecture.runtime-config-and-profiles"
+    ],
+    "src/core/runtime/profile-migration.ts": [
+      "architecture.runtime-config-and-profiles"
+    ],
+    "src/core/runtime/types.ts": [
+      "architecture.runtime-config-and-profiles"
+    ],
+    "src/core/runtime/version.ts": [
+      "architecture.runtime-config-and-profiles"
+    ],
+    "src/core/safety/approval.ts": [
+      "architecture.safety-policy-and-review"
+    ],
+    "src/core/safety/encryption.ts": [
+      "architecture.safety-policy-and-review"
+    ],
+    "src/core/safety/hash.ts": [
+      "architecture.safety-policy-and-review"
+    ],
+    "src/core/safety/ignore.ts": [
+      "architecture.safety-policy-and-review"
+    ],
+    "src/core/safety/safe-read.ts": [
+      "architecture.safety-policy-and-review"
+    ],
+    "src/core/safety/security.ts": [
+      "architecture.safety-policy-and-review"
+    ],
+    "src/core/system/bm25.ts": [
+      "architecture.runtime-config-and-profiles"
+    ],
+    "src/core/system/editor.ts": [
+      "architecture.runtime-config-and-profiles"
+    ],
+    "src/core/system/fsx.ts": [
+      "architecture.runtime-config-and-profiles"
+    ],
+    "src/core/system/text.ts": [
+      "architecture.runtime-config-and-profiles"
+    ],
+    "src/core/system/warnings.ts": [
+      "architecture.runtime-config-and-profiles"
+    ],
+    "src/core/traces/codec.ts": [
+      "workflow.session-learning-and-traces"
+    ],
+    "src/core/traces/migrate.ts": [
+      "workflow.session-learning-and-traces"
+    ],
+    "src/core/traces/sanitize.ts": [
+      "workflow.session-learning-and-traces"
+    ],
+    "src/core/traces/storage.ts": [
+      "workflow.session-learning-and-traces"
+    ],
+    "src/core/transcripts/ingest.ts": [
+      "workflow.session-learning-and-traces"
+    ],
+    "src/core/transcripts/types.ts": [
+      "workflow.session-learning-and-traces"
+    ],
+    "src/core/upgrade/executor.ts": [
+      "workflow.upgrade-vcs-and-diagnostics"
+    ],
+    "src/core/upgrade/fingerprint.ts": [
+      "workflow.upgrade-vcs-and-diagnostics"
+    ],
+    "src/core/upgrade/integration-scanner.ts": [
+      "workflow.upgrade-vcs-and-diagnostics"
+    ],
+    "src/core/upgrade/inventory.ts": [
+      "workflow.upgrade-vcs-and-diagnostics"
+    ],
+    "src/core/upgrade/managed-block.ts": [
+      "workflow.upgrade-vcs-and-diagnostics"
+    ],
+    "src/core/upgrade/memory-scanner.ts": [
+      "workflow.upgrade-vcs-and-diagnostics"
+    ],
+    "src/core/upgrade/planner.ts": [
+      "workflow.upgrade-vcs-and-diagnostics"
+    ],
+    "src/core/upgrade/proposals.ts": [
+      "workflow.upgrade-vcs-and-diagnostics"
+    ],
+    "src/core/upgrade/review-policy.ts": [
+      "workflow.upgrade-vcs-and-diagnostics"
+    ],
+    "src/core/upgrade/review-store.ts": [
+      "workflow.upgrade-vcs-and-diagnostics"
+    ],
+    "src/core/upgrade/types.ts": [
+      "workflow.upgrade-vcs-and-diagnostics"
+    ],
+    "src/core/vcs/conflict.ts": [
+      "workflow.upgrade-vcs-and-diagnostics"
+    ],
+    "src/core/vcs/git.ts": [
+      "workflow.upgrade-vcs-and-diagnostics"
+    ],
+    "src/core/vcs/submodule.ts": [
+      "workflow.upgrade-vcs-and-diagnostics"
+    ],
+    "src/core/web/api.ts": [
+      "interface.entry-web-api"
+    ],
+    "src/core/web/app/App.tsx": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/api-client.ts": [
+      "interface.entry-web-api"
+    ],
+    "src/core/web/app/components/Badge.tsx": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/components/Button.tsx": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/components/Card.tsx": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/components/CommandHelp.tsx": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/components/CompareModal.tsx": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/components/ConfigFieldGroupEditor.tsx": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/components/ConfirmModal.tsx": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/components/DependencyPicker.tsx": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/components/HelpLink.tsx": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/components/Loading.tsx": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/components/MemoryDiff.tsx": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/components/MemoryPreviewContent.tsx": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/components/MemoryPropertiesGrid.tsx": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/components/Modal.tsx": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/components/MultiChoice.tsx": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/components/ScopeChips.tsx": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/components/SectionHeader.tsx": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/components/Toast.tsx": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/components/Toggle.tsx": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/components/UpgradeConflictDiff.tsx": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/components/UpgradeConflictReviewModal.tsx": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/components/upgrade-conflict-diff-model.ts": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/data/policy-fields.ts": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/layout/InitBanner.tsx": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/layout/MobileHeader.tsx": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/layout/Sidebar.tsx": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/main.tsx": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/memories/MemoryDetail.tsx": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/memories/MemoryGraph.tsx": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/memories/graph-layout.ts": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/memories/graph-types.ts": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/tabs/AuthorTab.tsx": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/tabs/ConfigTab.tsx": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/tabs/ConnectionsTab.tsx": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/tabs/CoreTab.tsx": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/tabs/MemoriesTab.tsx": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/tabs/ProfilesTab.tsx": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/tabs/ReviewTab.tsx": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/tabs/RuntimeTab.tsx": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/tabs/UpgradeTab.tsx": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/tabs/WorkspacesTab.tsx": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/types.ts": [
+      "interface.entry-web-api"
+    ],
+    "src/core/web/app/utils/clipboard.ts": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/utils/config.ts": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/utils/docs.ts": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/utils/format.ts": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/app/utils/html.ts": [
+      "feature.entry-web-ui"
+    ],
+    "src/core/web/config-schema.ts": [
+      "interface.entry-web-api"
+    ],
+    "src/core/web/entry-server.ts": [
+      "interface.entry-web-api"
+    ],
+    "src/core/web/memories-search.ts": [
+      "interface.entry-web-api"
+    ],
+    "src/core/web/path-utils.ts": [
+      "interface.entry-web-api"
+    ],
+    "src/mcp/approval-flow.ts": [
+      "interface.mcp-server-and-protocol"
+    ],
+    "src/mcp/approval-tokens.ts": [
+      "interface.mcp-server-and-protocol"
+    ],
+    "src/mcp/elicitation.ts": [
+      "interface.mcp-server-and-protocol"
+    ],
+    "src/mcp/protocol.ts": [
+      "interface.mcp-server-and-protocol"
+    ],
+    "src/mcp/resources.ts": [
+      "interface.mcp-server-and-protocol"
+    ],
+    "src/mcp/server.ts": [
+      "interface.mcp-server-and-protocol"
+    ],
+    "src/node-shims.d.ts": [
+      "workflow.upgrade-vcs-and-diagnostics"
+    ],
+    "website/scripts/check-entry-field-docs.mjs": [
+      "architecture.docs-website-and-field-sync"
+    ],
+    "website/scripts/generate-i18n-docs.mjs": [
+      "architecture.docs-website-and-field-sync"
+    ],
+    "website/scripts/sync-all-i18n-docs.mjs": [
+      "architecture.docs-website-and-field-sync"
+    ],
+    "website/src/components/DocPageCopyButton.test.tsx": [
+      "architecture.docs-website-and-field-sync"
+    ],
+    "website/src/components/DocPageCopyButton.tsx": [
+      "architecture.docs-website-and-field-sync"
+    ],
+    "website/src/components/DocPageCopyNavbarItem.test.tsx": [
+      "architecture.docs-website-and-field-sync"
+    ],
+    "website/src/components/DocPageCopyNavbarItemView.tsx": [
+      "architecture.docs-website-and-field-sync"
+    ],
+    "website/src/components/EntryFieldCard.tsx": [
+      "architecture.docs-website-and-field-sync"
+    ],
+    "website/src/components/EntryFieldTable.test.tsx": [
+      "architecture.docs-website-and-field-sync"
+    ],
+    "website/src/components/EntryFieldTable.tsx": [
+      "architecture.docs-website-and-field-sync"
+    ],
+    "website/src/components/HomepageFeatures/index.tsx": [
+      "architecture.docs-website-and-field-sync"
+    ],
+    "website/src/components/RiskCallout.tsx": [
+      "architecture.docs-website-and-field-sync"
+    ],
+    "website/src/config.test.ts": [
+      "architecture.docs-website-and-field-sync"
+    ],
+    "website/src/data/entryFields.ts": [
+      "architecture.docs-website-and-field-sync"
+    ],
+    "website/src/data/translations.ts": [
+      "architecture.docs-website-and-field-sync"
+    ],
+    "website/src/dependencyLock.test.ts": [
+      "architecture.docs-website-and-field-sync"
+    ],
+    "website/src/pages/index.tsx": [
+      "architecture.docs-website-and-field-sync"
+    ],
+    "website/src/security/braces-safe.test.ts": [
+      "architecture.docs-website-and-field-sync"
+    ],
+    "website/src/theme/DocItem/Layout/index.tsx": [
+      "architecture.docs-website-and-field-sync"
+    ],
+    "website/src/theme/Footer/Copyright/index.tsx": [
+      "architecture.docs-website-and-field-sync"
+    ],
+    "website/src/theme/Footer/index.tsx": [
+      "architecture.docs-website-and-field-sync"
+    ],
+    "website/src/theme/Logo/index.tsx": [
+      "architecture.docs-website-and-field-sync"
+    ],
+    "website/src/theme/Navbar/Content/index.tsx": [
+      "architecture.docs-website-and-field-sync"
+    ],
+    "website/src/theme/Navbar/MobileSidebar/PrimaryMenu/index.tsx": [
+      "architecture.docs-website-and-field-sync"
+    ],
+    "website/src/theme/Navbar/MobileSidebar/SecondaryMenu/index.tsx": [
+      "architecture.docs-website-and-field-sync"
+    ],
+    "website/src/theme/NavbarItem/LocaleDropdownNavbarItem/index.tsx": [
+      "architecture.docs-website-and-field-sync"
+    ],
+    "website/src/theme/NavbarItem/LocaleDropdownNavbarItem/localeUtils.test.ts": [
+      "architecture.docs-website-and-field-sync"
+    ],
+    "website/src/theme/NavbarItem/LocaleDropdownNavbarItem/localeUtils.ts": [
+      "architecture.docs-website-and-field-sync"
+    ],
+    "website/src/utils/rawDocSource.test.ts": [
+      "architecture.docs-website-and-field-sync"
+    ],
+    "website/src/utils/rawDocSource.ts": [
+      "architecture.docs-website-and-field-sync"
+    ]
+  },
+  "uncovered_source_paths": [],
+  "skipped_source_paths": [
+    "website/vendor/braces-safe/index.js",
+    "website/vendor/image-size-safe/index.cjs"
+  ],
+  "notes": [
+    "Full repository discovery at HEAD 4cc4f6a including uncommitted working-tree changes; per-spec source_fingerprint hashes capture inspected working-tree bytes."
+  ]
+}

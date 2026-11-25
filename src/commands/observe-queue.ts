@@ -1,5 +1,6 @@
 /** `engram observe --queue`: drain the opt-in SessionEnd transcript queue into sanitized traces. Writes no memory. */
 import path from 'node:path';
+import { learnFromQueueOutcomes } from '../core/learning/capture.js';
 import { getContext } from '../core/memory/context.js';
 import { drainSessionQueue, SESSION_QUEUE_MAX } from '../core/memory/session-queue.js';
 import type { SessionQueueOutcome } from '../core/memory/session-queue.js';
@@ -11,7 +12,7 @@ import type { TranscriptIngestOptions } from '../core/transcripts/types.js';
  * Drain `session-queue.json`. Each entry is checked (exists, regular file, not a link, at most 5 MiB), sanitized through
  * `ingestTranscript`, and stored as a trace plus an inbox wrapper. Inbox and size quotas come from the optional
  * `.agents/engram.transcripts.json` (`max_files`, `max_chars`, `sensitivity`, `retention`); without it the transcript
- * defaults apply. Promotion to memory stays with `observe --propose` or `save-session`.
+ * defaults apply. Promotion to memory stays with `observe --propose` or `save-session`, unless `--learn` is passed.
  */
 export async function cmdObserveQueue(args: string[], flags: Record<string, any>): Promise<string> {
   if (args.length || flags.file !== undefined || flags.f !== undefined || flags.propose === true) {
@@ -22,9 +23,13 @@ export async function cmdObserveQueue(args: string[], flags: Record<string, any>
   const root = ctx.roots.workspace;
   if (!root) throw new EngramError('ENG_USAGE', 'observe --queue needs workspace memory; run engram inject first', 2);
   const dryRun = flags['dry-run'] === true;
+  const learn = flags.learn === true;
   const ingest = await readJson<TranscriptIngestOptions>(path.join(process.cwd(), '.agents', 'engram.transcripts.json'), {});
   const outcomes = await drainSessionQueue(root, { dryRun, limit, ingest });
-  return render(outcomes, dryRun);
+  if (!learn || dryRun) return render(outcomes, dryRun);
+
+  const learned = await learnFromQueueOutcomes(process.cwd(), root, outcomes);
+  return render(outcomes, dryRun, learned);
 }
 
 function parseLimit(value: unknown): number | undefined {
@@ -36,7 +41,7 @@ function parseLimit(value: unknown): number | undefined {
   return parsed;
 }
 
-function render(outcomes: SessionQueueOutcome[], dryRun: boolean): string {
+function render(outcomes: SessionQueueOutcome[], dryRun: boolean, learned?: { workingCount: number; receiptCount: number }): string {
   if (!outcomes.length) return 'Session queue is empty.';
   const count = (status: SessionQueueOutcome['status']) => outcomes.filter((item) => item.status === status).length;
   const summary = dryRun
@@ -48,5 +53,8 @@ function render(outcomes: SessionQueueOutcome[], dryRun: boolean): string {
     if (item.status === 'would-store') return `- would store ${label}`;
     return `- ${item.status} ${label}: ${item.reason ?? 'unknown'}`;
   });
+  if (learned) {
+    return [summary, ...lines, `Learned: ${learned.workingCount} working memories active, ${learned.receiptCount} durable receipts staged (run engram review inbox).`].join('\n');
+  }
   return [summary, ...lines, 'No memory written. Review inbox files, then run engram save-session --file <inbox file>.'].join('\n');
 }

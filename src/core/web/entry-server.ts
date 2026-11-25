@@ -16,6 +16,7 @@ import {
   apiPolicyUpdate,
   apiReviewPreview,
   apiReviewWrite,
+  apiReviewApplyReceipts,
   apiWorkspaceAdd,
   apiWorkspaceRemove,
   apiWorkspaceLink,
@@ -32,6 +33,7 @@ import {
   apiMemoriesGraphData,
   apiResolveMemoryFile,
   apiArchiveMemory,
+  apiMemoryPromote,
   apiAuthorState,
   apiAuthorSet,
   apiAuthorUnset,
@@ -51,6 +53,9 @@ import { cmdCapabilities } from '../../commands/capabilities.js';
 import { cmdPolicy } from '../../commands/policy.js';
 import { cmdReview } from '../../commands/review.js';
 import { cmdDoctor, cmdLoad } from '../../commands/read.js';
+import { getContext } from '../memory/context.js';
+import { planLoad, renderLoadPlan } from '../memory/load-plan.js';
+import { estimateTokens } from '../memory/payload-plan.js';
 
 // ── Infrastructure ──────────────────────────────────────────────────────────
 
@@ -438,6 +443,22 @@ async function handleApiRequest(req: any, res: any, ctx: RequestContext, url: st
     try {
       const parsed = new URL(req.url, 'http://localhost');
       const query = parsed.searchParams.get('query') || 'current session';
+      if (parsed.searchParams.get('simulate') === 'true') {
+        const ctx = await getContext(cwd);
+        const plan = await planLoad(ctx, query);
+        json(200, {
+          ok: true,
+          data: {
+            query,
+            tokens: estimateTokens(renderLoadPlan(ctx, plan)),
+            budgetTokens: ctx.config.load.max_tokens ?? 1200,
+            bodyIds: plan.payload_rows.map((r) => r.entry.id),
+            cardIds: plan.card_rows.map((r) => r.entry.id),
+            omittedIds: plan.omitted.map((o: any) => o.id || o.key)
+          }
+        });
+        return;
+      }
       const explain = parsed.searchParams.get('explain') === 'true';
       json(200, JSON.parse(await cmdLoad([query], { json: true, cwd, ...(explain ? { explain: true } : {}) })));
     } catch (e: any) { json(500, { error: e.message }); }
@@ -515,6 +536,11 @@ async function handleApiRequest(req: any, res: any, ctx: RequestContext, url: st
       json(200, { ok: true, data: result });
       return;
     }
+    if (url === '/api/memory/promote') {
+      const result = await apiMemoryPromote(cwd, String(body.id || ''), body.confirmed === true);
+      json(200, { ok: true, data: result });
+      return;
+    }
     if (url === '/api/core') {
       const data = await apiCoreData(cwd, {
         semantic: body.semantic === true,
@@ -549,6 +575,11 @@ async function handleApiRequest(req: any, res: any, ctx: RequestContext, url: st
       json(200, { ok: errors.length === 0 && ids.length > 0, data: { dismissed, errors: errors.length ? errors : undefined } });
       return;
     }
+    if (url === '/api/review/apply') {
+      const data = await apiReviewApplyReceipts(cwd, body);
+      json(200, { ok: true, data });
+      return;
+    }
     if (url === '/api/policy') {
       const message = await apiPolicyUpdate(body.patch ?? body.policy ?? body, cwd);
       json(200, { ok: true, message });
@@ -572,7 +603,7 @@ async function handleApiRequest(req: any, res: any, ctx: RequestContext, url: st
     else if (url === '/api/profile/add') message = await apiProfileAdd(body.name, body.globalPath, body.scope || 'global');
     else if (url === '/api/profile/remove') message = await apiProfileRemove(body.name);
     else if (url === '/api/profile/activate') message = await apiProfileActivate(body.name);
-    else if (url === '/api/agents/link') message = await apiAgentLink(cwd, body.agentId, Boolean(body.global));
+    else if (url === '/api/agents/link') message = await apiAgentLink(cwd, body.agentId, Boolean(body.global), Boolean(body.sessionEnd));
     else if (url === '/api/agents/unlink') message = await apiAgentUnlink(cwd, body.agentId, Boolean(body.global));
     else { endError(res, 404, 'ENG_HTTP_NOT_FOUND', 'Not found'); return; }
     json(200, { ok: true, message });

@@ -16,9 +16,24 @@ import { ReviewTab } from './tabs/ReviewTab.js';
 import { AuthorTab } from './tabs/AuthorTab.js';
 import { UpgradeTab } from './tabs/UpgradeTab.js';
 
+type ConfigSubView = 'config' | 'profiles' | 'workspaces' | 'runtime';
+const VALID_TABS: readonly TabName[] = ['config', 'author', 'upgrade', 'recall', 'review', 'maintain', 'connect'];
+
+function parseHash(): { tab: TabName; subView?: ConfigSubView } {
+  if (typeof window === 'undefined') return { tab: 'config' };
+  const raw = window.location.hash.replace(/^#\/?/, '').trim();
+  if (!raw) return { tab: 'config' };
+  const [head, sub] = raw.split('/');
+  const tab = (VALID_TABS as readonly string[]).includes(head) ? (head as TabName) : 'config';
+  const subView = tab === 'config' && (sub === 'config' || sub === 'profiles' || sub === 'workspaces' || sub === 'runtime') ? sub : undefined;
+  return { tab, subView };
+}
+
 export function App() {
+  const initialHash = useMemo(() => parseHash(), []);
   const [data, setData] = useState<PanelData | null>(null);
-  const [active, setActiveState] = useState<TabName>('config');
+  const [active, setActiveState] = useState<TabName>(initialHash.tab);
+  const [configSubView, setConfigSubView] = useState<ConfigSubView | undefined>(initialHash.subView);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [toastState, setToastState] = useState<ToastState | null>(null);
   const [modal, setModal] = useState<ModalState | null>(null);
@@ -44,8 +59,31 @@ export function App() {
 
   useEffect(() => { void reload(); }, [reload]);
   useEffect(() => { document.documentElement.classList.toggle('light', !dark); }, [dark]);
+  useEffect(() => {
+    const onHashChange = () => {
+      const parsed = parseHash();
+      setActiveState(parsed.tab);
+      setConfigSubView(parsed.subView);
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setSidebarOpen(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [sidebarOpen]);
 
-  const setActive = (tab: TabName) => { setActiveState(tab); setSidebarOpen(false); };
+  const setActive = (tab: TabName) => {
+    setActiveState(tab);
+    setSidebarOpen(false);
+    if (typeof window !== 'undefined' && window.history?.replaceState) {
+      window.history.replaceState(null, '', '#' + tab);
+    }
+  };
   const toggleTheme = async () => {
     if (!data) return;
     const nextTheme = dark ? 'light' : 'dark';
@@ -59,14 +97,14 @@ export function App() {
     if (active === 'review') return <ReviewTab active toast={toast} modal={modalApi} />;
     if (active === 'maintain') return <CoreTab active toast={toast} modal={modalApi} />;
     if (active === 'connect') return <ConnectionsTab active toast={toast} modal={modalApi} />;
-    if (active === 'config') return data ? <ConfigTab data={data} reload={reload} toast={toast} /> : null;
+    if (active === 'config') return data ? <ConfigTab data={data} reload={reload} toast={toast} initialSubView={configSubView} /> : null;
     if (active === 'author') return data ? <AuthorTab data={data} reload={reload} toast={toast} modal={modalApi} /> : null;
     if (active === 'upgrade') return data ? <UpgradeTab data={data} reload={reload} toast={toast} modal={modalApi} /> : null;
     return <MemoriesTab active toast={toast} modal={modalApi} />;
-  }, [data, active, reload, toast, modalApi]);
+  }, [data, active, configSubView, reload, toast, modalApi]);
 
   return <div className={'app' + (sidebarOpen ? ' sb-open' : '')}>
-    <Sidebar data={data} active={active} setActive={setActive} dark={dark} toggleTheme={toggleTheme} shutdown={shutdown} toast={toast} />
+    <Sidebar data={data} active={active} setActive={setActive} dark={dark} toggleTheme={toggleTheme} shutdown={shutdown} toast={toast} onClose={() => setSidebarOpen(false)} />
     <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />
     <div className="main" id="main"><MobileHeader toggleSidebar={() => setSidebarOpen((open) => !open)} />
       <InitBanner show={Boolean(data && data.isInitialized === false)} init={init} />

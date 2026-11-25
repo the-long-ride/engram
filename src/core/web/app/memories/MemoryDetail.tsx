@@ -12,12 +12,14 @@ export function MemoryDetail({
   view,
   editMemoryFromGraph,
   archiveMemoryFromGraph,
+  promoteMemoryFromGraph,
   toast
 }: {
   node: MemoryNode | null;
   view: (node: MemoryNode) => void;
   editMemoryFromGraph: (node: MemoryNode) => void;
   archiveMemoryFromGraph: (node: MemoryNode) => void;
+  promoteMemoryFromGraph?: (node: MemoryNode) => void;
   toast: ShowToast;
 }) {
   const [content, setContent] = useState<string>('');
@@ -60,11 +62,14 @@ export function MemoryDetail({
         <Badge>{node.scope || node.sourceScope}</Badge>
         {node.authority ? <Badge tone={node.authority === 'instruction' ? 'blue' : undefined}>{node.authority}</Badge> : null}
         {node.workspaceName ? <Badge tone="blue">{node.workspaceName}</Badge> : null}
+        {node.tier === 'working' ? <Badge tone="amber">{node.expired ? 'Working (expired)' : `Working${node.validUntil ? ` · ${node.validUntil}` : ''}`}</Badge> : null}
+        {node.noisy ? <Badge tone="neg">Noisy ({node.injected ?? 0} inj / 0 utility)</Badge> : null}
       </div>
       <h2>{node.memoryId}</h2>
 
       <div className="memory-provenance" aria-label="Memory provenance">
         {node.revision !== undefined ? <div><strong>Revision {node.revision}</strong></div> : null}
+        {(node.injected ?? 0) > 0 ? <div className="memory-usage-line">Usage: {node.injected} injected · {node.fetched ?? 0} fetched · {node.applied ?? 0} applied</div> : null}
         {node.evidenceRefs?.length ? <div><strong>Evidence</strong><div className="mono">{node.evidenceRefs.map((ref) => <div key={ref}>{ref}</div>)}</div></div> : null}
         {node.derivedFrom?.length ? <div><strong>Derived from</strong><div className="mono">{node.derivedFrom.map((ref) => <div key={ref}>{ref}</div>)}</div></div> : null}
         {node.supersedes?.length ? <div><strong>Supersedes</strong><div className="mono">{node.supersedes.map((ref) => <div key={ref}>{ref}</div>)}</div></div> : null}
@@ -86,6 +91,9 @@ export function MemoryDetail({
         <div className="memory-detail-actions">
           <Button data-action="view-memory-preview" onClick={() => view(node)}>Preview</Button>
           <Button data-action="view-memory" onClick={() => copyText(content || node.summary || '', toast, 'Copied memory')}>Copy</Button>
+          {node.tier === 'working' && !node.expired && promoteMemoryFromGraph ? (
+            <Button variant="primary" data-action="promote-memory" onClick={() => promoteMemoryFromGraph(node)}>Promote</Button>
+          ) : null}
           <Button data-action="edit-memory" disabled={!node.canEdit} onClick={() => editMemoryFromGraph(node)}>Edit</Button>
           <Button variant="danger" data-action="delete-memory" disabled={!node.canDelete} onClick={() => archiveMemoryFromGraph(node)}>Delete</Button>
         </div>

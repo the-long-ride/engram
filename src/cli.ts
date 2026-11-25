@@ -13,6 +13,8 @@ import { cmdMetacognize } from './commands/metacognize.js';
 import { cmdProfile } from './commands/profile.js';
 import { cmdWorkspace } from './commands/workspace.js';
 import { cmdReview } from './commands/review.js';
+import { cmdStatus } from './commands/status.js';
+import { cmdWhy } from './commands/why.js';
 import { cmdPolicy } from './commands/policy.js';
 import { cmdAutosave } from './commands/autosave.js';
 import { cmdCapabilities } from './commands/capabilities.js';
@@ -36,13 +38,15 @@ export async function runCli(argv: string[]): Promise<string> {
       const topic = command === 'author' && subtopic
         ? `author ${subtopic}`
         : (command !== '-h' && command !== '--help' && command !== 'help') ? command : subtopic;
-      return await cmdHelp(topic);
+      return await cmdHelp(topic, flags);
     }
     if (flags.version || flags.v || command === '--version' || command === '-v' || command === 'version') return VERSION;
     await maybeAutoUpgrade(process.cwd(), command, flags);
     switch (command) {
       case 'inject': return await cmdInject(flags);
-      case 'help': return await cmdHelp(rest[0]);
+      case 'help': return await cmdHelp(rest[0], flags);
+      case 'status': return await cmdStatus(flags);
+      case 'why': return await cmdWhy(rest, flags);
       case 'llm': return await cmdLlm();
       case 'completion': return await cmdCompletion(rest[0]);
       case 'profile': return await cmdProfile(rest, flags);

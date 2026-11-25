@@ -188,8 +188,8 @@ export async function loadForAgentWithContext(ctx: EngramContext, query: string,
   return agentLoadResult(ctx, plan);
 }
 
-/** One rendering path shared by `cmdLoad` and `loadForAgent`. */
-function agentLoadResult(ctx: EngramContext, plan: LoadPlan): AgentLoad {
+/** One rendering path shared by `cmdLoad`, `loadForAgent`, hooks, and benchmarks. */
+export function agentLoadResult(ctx: EngramContext, plan: LoadPlan): AgentLoad {
   const routed = plan.routeDetail?.entries ?? [];
   const already = new Set(plan.already_loaded);
   const shed = new Set(plan.omitted.filter((item) => item.reason === 'budget').map((item) => item.key));

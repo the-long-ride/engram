@@ -1,4 +1,5 @@
-/** Review command: list/inspect/dismiss/verify/supersede/archive findings derived from index+graph and merged with persisted status; inspect/apply also handle deferred-save inbox receipts; never exposes memory bodies or authors. */
+/** Review command: list/inspect/dismiss/verify/supersede/archive findings derived from index+graph and merged with persisted status; inspect/apply/triage also handle deferred-save inbox receipts; never exposes memory bodies or authors. */
+import readline from 'node:readline';
 import type { EngramContext } from '../core/memory/context.js';
 import { getContext } from '../core/memory/context.js';
 import { visibleEntries } from '../core/memory/routing.js';
@@ -32,13 +33,16 @@ export async function cmdReview(args: string[], flags: Record<string, any> = {})
     case 'supersede': return cmdReviewSupersede(ctx, rest, flags);
     case 'archive': return cmdReviewArchive(ctx, rest, flags);
     case 'apply': return await cmdReviewApply(ctx, rest, flags);
+    case 'triage': return await cmdReviewTriage(ctx, flags);
     case 'cleanup': return await cmdReviewCleanup(ctx, rest, flags);
     case 'inbox': return await cmdReviewInbox(ctx, rest, flags);
     case '':
+      if (flags.interactive === true) return await cmdReviewTriage(ctx, flags);
+      return reviewHelp();
     case 'help':
       return reviewHelp();
     default:
-      throw new EngramError('ENG_USAGE', `review: unknown subcommand '${sub}'. Try: list, inspect, dismiss, verify, supersede, archive, apply, inbox, cleanup.`, 2);
+      throw new EngramError('ENG_USAGE', `review: unknown subcommand '${sub}'. Try: list, inspect, dismiss, verify, supersede, archive, apply, triage, inbox, cleanup.`, 2);
   }
 }
 
@@ -110,6 +114,18 @@ async function cmdReviewDismiss(ctx: EngramContext, rest: string[], flags: Recor
 
   if (!all && !kindFilter) {
     if (!fingerprint) throw new EngramError('ENG_USAGE', 'review dismiss requires a finding id (or use --all / --kind to bulk dismiss)', 2);
+    if (isReceiptId(fingerprint)) {
+      const roots = [ctx.roots.workspace, ctx.roots.global].filter((r): r is string => Boolean(r));
+      for (const root of roots) {
+        if (await loadReceipt(root, fingerprint)) {
+          await purgeReceipt(root, fingerprint);
+          return isJsonMode(flags) ? jsonOk({ dismissed: fingerprint }) : `Dismissed receipt ${fingerprint}.`;
+        }
+      }
+      const message = `receipt not found or expired: ${fingerprint}`;
+      if (isJsonMode(flags)) return throwJson(message);
+      return message;
+    }
     const result = await dismissFindingAction(ctx, fingerprint, note);
     if (isJsonMode(flags)) {
       return result.ok ? jsonOk({ dismissed: fingerprint }) : throwJson(result.message);
@@ -289,6 +305,96 @@ async function cmdReviewApply(ctx: EngramContext, rest: string[], flags: Record<
   return `Applied receipt ${id}.\n\n${saveResult}${relatedSummary}`;
 }
 
+async function cmdReviewTriage(ctx: EngramContext, flags: Record<string, any>): Promise<string> {
+  const items: Array<{ scope: Scope; root: string; receipt: NonNullable<Awaited<ReturnType<typeof loadReceipt>>> }> = [];
+  for (const scope of ['workspace', 'global'] as Scope[]) {
+    const root = ctx.roots[scope];
+    if (!root) continue;
+    for (const receipt of await listReceipts(root)) items.push({ scope, root, receipt });
+  }
+  if (!items.length) {
+    return isJsonMode(flags) ? jsonOk({ approved: 0, dismissed: 0, skipped: 0 }) : 'No pending receipts to triage.';
+  }
+
+  let approved = 0;
+  let dismissed = 0;
+  let skipped = 0;
+  let resolvedAuthor: Awaited<ReturnType<typeof requireResolvedAuthor>> | undefined;
+  const json = isJsonMode(flags);
+  const rl = readline.createInterface({ input: process.stdin, terminal: false });
+  const iter = rl[Symbol.asyncIterator]();
+
+  try {
+    for (let index = 0; index < items.length; index += 1) {
+      const { scope, root, receipt } = items[index];
+      if (!json) {
+        process.stdout.write(
+          `\n[${index + 1}/${items.length}] ${receipt.id} [${scope}] (${receipt.source})\n` +
+          `  ${receipt.candidate.type}: ${receipt.candidate.text}\n` +
+          '[a]pprove / [d]ismiss / [s]kip / [q]uit > '
+        );
+      }
+      const next = await iter.next();
+      if (next.done) break;
+      const answer = String(next.value ?? '').trim().toLowerCase();
+      if (answer === 'q' || answer === 'quit') break;
+      if (answer === 'd' || answer === 'dismiss') {
+        await purgeReceipt(root, receipt.id);
+        dismissed += 1;
+        continue;
+      }
+      if (answer === 'a' || answer === 'approve') {
+        const candidate = parseMemoryCandidate(serializeCandidateForApply(receipt.candidate));
+        if (!resolvedAuthor) resolvedAuthor = await requireResolvedAuthor(ctx.cwd);
+        const task = candidate.objective === 'task';
+        const plans = await planMemorySave({
+          ctx,
+          text: candidate.text,
+          type: candidate.type,
+          scopes: [receipt.candidate.scope],
+          authorName: resolvedAuthor.name,
+          authorEmail: resolvedAuthor.email,
+          role: candidate.role,
+          context: candidate.context,
+          triggers: candidate.triggers,
+          dependsOn: candidate.dependsOn,
+          level: candidate.level,
+          updateId: candidate.updateId,
+          parent: candidate.parent,
+          variants: candidate.variants,
+          directive: candidate.directive,
+          appliesTo: candidate.appliesTo,
+          working: task ? workingTierMeta(ctx.config, today()) : undefined
+        });
+        if (plans.some((plan) => plan.verdict.kind === 'SUPERSEDE')) {
+          skipped += 1;
+          if (!json) process.stdout.write(`  Skipped ${receipt.id}: SUPERSEDE requires 'engram review apply ${receipt.id}'.\n`);
+          continue;
+        }
+        const writable = plans.filter((plan) => plan.verdict.kind !== 'NOOP');
+        for (const plan of writable) {
+          await writeApprovedMemory({
+            cwd: ctx.cwd,
+            scope: plan.scope,
+            file: plan.file,
+            content: plan.content,
+            message: plan.message
+          });
+        }
+        await purgeReceipt(root, receipt.id);
+        approved += 1;
+        continue;
+      }
+      skipped += 1;
+    }
+  } finally {
+    rl.close();
+  }
+
+  if (json) return jsonOk({ approved, dismissed, skipped });
+  return `Triage complete: ${approved} approved, ${dismissed} dismissed, ${skipped} skipped.`;
+}
+
 async function cmdReviewCleanup(ctx: EngramContext, _rest: string[], flags: Record<string, any>): Promise<string> {
   let removed = 0;
   for (const scope of ['workspace', 'global'] as Scope[]) {
@@ -337,6 +443,7 @@ function reviewHelp(): string {
     '  engram review inbox [--json]            List pending deferred-save receipts',
     '  engram review inspect <id> [--json]     Finding fingerprint OR receipt id (r-xxxxx)',
     '  engram review apply <receipt-id> [--force]   Rerun the candidate through the save flow',
+    '  engram review triage [--json]           Interactively approve, dismiss, or skip inbox receipts',
     '  engram review dismiss <finding-id> [--note text] [--all] [--kind duplicate|stale|..] [--force]',
     '  engram review verify <memory-id>',
     '  engram review supersede <old-id> <new-id>',

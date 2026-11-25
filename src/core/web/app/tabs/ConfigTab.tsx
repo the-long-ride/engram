@@ -12,6 +12,9 @@ import { HelpLink } from '../components/HelpLink.js';
 import { clientValidationError, groupFields, gv, parseFieldValue, uiValue } from '../utils/config.js';
 import { entryConfigFieldDoc, entryDoc, entryFieldGroupDoc } from '../utils/docs.js';
 import { policyFieldMeta, type PolicyFieldPath } from '../data/policy-fields.js';
+import { ProfilesTab } from './ProfilesTab.js';
+import { WorkspacesTab } from './WorkspacesTab.js';
+import { RuntimeTab } from './RuntimeTab.js';
 
 const DEFAULT_POLICY_DRAFT = {
   version: 1 as const,
@@ -33,7 +36,9 @@ const POLICY_TYPE_OPTIONS = ['rule', 'skill', 'workflow', 'knowledge'];
 const POLICY_SCOPE_OPTIONS = ['workspace', 'global'];
 const POLICY_SOURCE_OPTIONS = ['autosave', 'agent-hook', 'cli', 'mcp'];
 
-export function ConfigTab({ data, reload, toast }: { data: PanelData; reload: () => Promise<void>; toast: ShowToast }) {
+export function ConfigTab({ data, reload, toast, initialSubView }: { data: PanelData; reload: () => Promise<void>; toast: ShowToast; initialSubView?: 'config' | 'profiles' | 'workspaces' | 'runtime' }) {
+  const [subView, setSubView] = useState<'config' | 'profiles' | 'workspaces' | 'runtime'>(initialSubView || 'config');
+  useEffect(() => { if (initialSubView) setSubView(initialSubView); }, [initialSubView]);
   const fields = (data.configFields || []).filter((field) => !field.key.startsWith('global_git.'));
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [dirty, setDirty] = useState<Record<string, boolean>>({});
@@ -131,17 +136,6 @@ export function ConfigTab({ data, reload, toast }: { data: PanelData; reload: ()
     return <MultiChoice label={key.replaceAll('_', ' ')} options={options} value={Array.isArray(value) && value.length ? value : [options[0]]} onChange={(next: string[]) => changePolicyAuto(key, next)} />;
   }
 
-  function changePolicyList(key: 'allowed_types' | 'allowed_scopes' | 'allowed_sources', value: string) {
-    changePolicyAuto(key, value.split(',').map((item) => item.trim()).filter(Boolean));
-  }
-
-  function renderPolicyList(key: 'allowed_types' | 'allowed_scopes' | 'allowed_sources', options: string[]) {
-    const value = policyDraft.autonomous_writes[key];
-    const selected = Array.isArray(value) && value.length ? value[0] : options[0];
-    const available = [...new Set([...options, ...(Array.isArray(value) ? value : [])])];
-    return <select className="cfg-select" value={selected} aria-label={key.replaceAll('_', ' ')} onChange={(event) => changePolicyAuto(key, [event.target.value])}>{available.map((option) => <option key={option} value={option}>{option}</option>)}</select>;
-  }
-
   function changePolicyReview(key: keyof PolicyDraft['review'], value: unknown) {
     setPolicyDraft((prev) => ({ ...prev, review: { ...prev.review, [key]: value } }));
     setPolicyError('');
@@ -200,7 +194,30 @@ export function ConfigTab({ data, reload, toast }: { data: PanelData; reload: ()
     </>;
   }
 
-  return <>
+  return <div className="tab-content">
+    <div className="subview-tabs" role="tablist" aria-label="Construct sections" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
+      {([
+        ['config', 'Configuration'],
+        ['profiles', 'Profiles'],
+        ['workspaces', 'Workspaces'],
+        ['runtime', 'Runtime'],
+      ] as const).map(([key, label]) => (
+        <button
+          key={key}
+          type="button"
+          role="tab"
+          aria-selected={subView === key}
+          className={'btn ' + (subView === key ? 'btn-primary' : 'btn-outline')}
+          onClick={() => setSubView(key)}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+    {subView === 'profiles' ? <ProfilesTab data={data} reload={reload} toast={toast} />
+      : subView === 'workspaces' ? <WorkspacesTab data={data} reload={reload} toast={toast} />
+      : subView === 'runtime' ? <RuntimeTab data={data} toast={toast} />
+      : <>
   <SectionHeader title="Construct" copy="Settings shared across workspaces." helpHref={entryDoc('construct')} />
     {!data.sqliteAvailable ? <div className="banner banner-info">Running in JSON mode. Profiles/workspaces require SQLite.</div> : null}
     {dirtyKeys.length ? <div className={'config-actions' + (saveHeaderPulse ? ' enter' : '')}><span><strong>{dirtyKeys.length}</strong> unsaved {dirtyKeys.length === 1 ? 'change' : 'changes'}</span><div className="config-actions-btns"><Button onClick={() => { validationSeq.current += 1; const reset: Record<string, string> = {}; fields.forEach((field) => { reset[field.key] = uiValue(field, gv(data.config, field.key)); }); setDraft(reset); setDirty({}); setErrors({}); }}>Reset</Button><Button variant="primary" onClick={openCfgReview}>Save changes</Button></div></div> : null}
@@ -234,5 +251,6 @@ export function ConfigTab({ data, reload, toast }: { data: PanelData; reload: ()
     </Card>
     <div className="grid-2">{Object.entries(grouped).reduce<any[][]>((cols, [group, groupFields], idx) => { cols[idx % 2].push(<Card key={group} title={group} helpHref={entryFieldGroupDoc(group)}>{groupFields.map((field) => <div key={field.key} className={'cfg-row' + (dirty[field.key] ? ' dirty' : '')} data-key={field.key}><div className="cfg-lbl">{fieldLabel(field)}</div><div className="cfg-ctl">{renderControl(field)}{dirty[field.key] ? <button className="cfg-reset" onClick={() => resetField(field)}>Reset</button> : null}</div></div>)}</Card>); return cols; }, [[], []]).map((col, idx) => <div key={idx} className="grid-col">{col}</div>)}</div>
     {reviewOpen ? <div className="modal-backdrop"><div className="modal-panel"><div className="modal-hdr"><h2>Review config changes</h2><button onClick={() => setReviewOpen(false)}>&times;</button></div><div className="modal-body"><table className="review-table"><thead><tr><th>Key</th><th>Value</th></tr></thead><tbody>{Object.entries(patch).map(([key, value]) => <tr key={key}><td className="mono">{key}</td><td>{Array.isArray(value) ? value.join(', ') : String(value)}</td></tr>)}</tbody></table>{serverRiskyKeys.length ? <label className="confirm-line"><input type="checkbox" checked={riskyConfirmed} onChange={(event) => setRiskyConfirmed(event.target.checked)} /> I reviewed risky changes: {serverRiskyKeys.join(', ')}</label> : null}</div><div className="modal-actions"><Button onClick={() => setReviewOpen(false)}>Cancel</Button><Button variant="primary" disabled={!riskyConfirmed} onClick={confirmCfgSave}>Save changes</Button></div></div></div> : null}
-  </>;
+  </>}
+  </div>;
 }

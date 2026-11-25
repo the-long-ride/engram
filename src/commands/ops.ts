@@ -33,7 +33,11 @@ import { runBenchmark } from '../core/benchmark/run.js';
 import { serializeResult, fail } from '../core/contracts/result.js';
 import { writeJson } from '../core/system/fsx.js';
 import { loadPolicy } from '../core/policy/load.js';
-import { neverFetched, readUsage } from '../core/memory/usage.js';
+import { neverFetched, noisyMemories, readUsage } from '../core/memory/usage.js';
+import { backfillUsageFromGit } from '../core/memory/usage-backfill.js';
+import { mineBenchmarkCasesFromGit } from '../core/benchmark/mine-git.js';
+import { linkMemoryChildren } from '../core/memory/link-memory.js';
+import { flagValues } from '../cli/args.js';
 import { nativeRuleSummary, refreshAllLinkedNativeRules } from '../core/integrations/native-rules.js';
 
 /** Return memory health summary. */
@@ -110,14 +114,59 @@ export async function cmdQuality(flags: Record<string, any> = {}): Promise<strin
   return rows.length ? formatRecords(`Quality check (${rows.length})`, rows) : 'No memories';
 }
 
-/** Show the derived layered memory graph and optional query matches. */
+/** Show the derived layered memory graph and optional query matches, or link parent/child memories. */
 export async function cmdGraph(args: string[], flags: Record<string, any> = {}): Promise<string> {
+  if (args[0] === 'link') {
+    const parentId = String(args[1] || flags.parent || '').trim();
+    const childIds = [
+      ...args.slice(2),
+      ...flagValues(flags, 'children'),
+      ...flagValues(flags, 'child')
+    ].flatMap((value) => String(value).split(',')).map((value) => value.trim()).filter(Boolean);
+    if (!parentId || !childIds.length) {
+      throw new EngramError('ENG_USAGE', 'graph link requires <parent-id> <child-id...> (or --parent and --children)', ExitCode.UsageError);
+    }
+    const ctx = await getContext(process.cwd());
+    const summary = await linkMemoryChildren({ ctx, parentId, childIds, findParent: true });
+    if (isJsonMode(flags)) return jsonOk(summary);
+    const lines: string[] = [
+      `Parent: ${summary.parent ?? parentId}${summary.parent ? '' : ' (not found in visible memories)'}`,
+      `Updated: ${summary.updated} | Skipped: ${summary.skipped} | Missing: ${summary.missing}`
+    ];
+    if (summary.results.length) {
+      lines.push('');
+      for (const r of summary.results) {
+        const tag = r.status === 'updated' ? '+' : r.status === 'skipped' ? '=' : r.status === 'missing' ? '!' : '?';
+        const where = r.file ? `${r.scope}/${r.file}` : r.id;
+        lines.push(`  [${tag}] ${where}${r.reason ? ` — ${r.reason}` : ''}`);
+      }
+    }
+    return lines.join('\n');
+  }
   const ctx = await getContext(process.cwd(), { rebuild: flags.rebuild === true });
   return renderGraphReport(ctx.graph, args.join(' '));
 }
 
-/** Run a versioned retrieval regression benchmark. */
+/** Run a versioned retrieval regression benchmark, or mine cases from git history. */
 export async function cmdBenchmark(args: string[], flags: Record<string, any> = {}): Promise<string> {
+  if (flags['from-git'] !== undefined && flags['from-git'] !== false) {
+    const ctx = await getContext();
+    const range = typeof flags['from-git'] === 'string' ? flags['from-git'] : undefined;
+    const maxCases = flags.max !== undefined ? Number(flags.max) : undefined;
+    const doc = await mineBenchmarkCasesFromGit(ctx, {
+      ...(range ? { range } : {}),
+      ...(maxCases !== undefined && Number.isFinite(maxCases) ? { maxCases } : {})
+    });
+    const outPath = typeof flags.out === 'string' && flags.out
+      ? flags.out
+      : typeof flags['write-report'] === 'string' && flags['write-report']
+        ? flags['write-report']
+        : '';
+    if (outPath) await writeJson(path.resolve(outPath), doc);
+    if (isJsonMode(flags)) return jsonOk(doc);
+    const dest = outPath ? ` -> ${path.resolve(outPath)}` : '';
+    return `Mined ${doc.cases.length} benchmark ${doc.cases.length === 1 ? 'case' : 'cases'} from git history${dest}.`;
+  }
   const file = args[0];
   if (!file) throw new EngramError('ENG_USAGE', 'benchmark requires cases.json', ExitCode.UsageError);
   const parsed = parseBenchmarkDocument(await readJson<any>(path.resolve(file), undefined));
@@ -328,23 +377,45 @@ async function writePlans(plans: SavePlan[], edits?: string): Promise<void> {
 export async function cmdStats(flags: Record<string, any> = {}): Promise<string> {
   const ctx = await getContext();
   const entries = visibleEntries(ctx.index.entries, ctx.config, false, ctx.ignorePatterns);
-  if (flags.usage !== true) return isJsonMode(flags) ? jsonOk(statsData(entries, ctx.config)) : stats(entries, ctx.config);
+  const backfill = flags.backfill === true
+    ? await backfillUsageFromGit(ctx, {
+        range: typeof flags.git === 'string' ? flags.git : undefined,
+        limit: flags.limit !== undefined && Number.isFinite(Number(flags.limit)) ? Number(flags.limit) : undefined
+      })
+    : undefined;
+  const backfillLine = backfill
+    ? `Backfilled usage from ${backfill.commits_scanned} commits (${backfill.injected_events} injected, ${backfill.applied_events} applied).`
+    : '';
+  if (flags.usage !== true) {
+    if (isJsonMode(flags)) return jsonOk({ ...statsData(entries, ctx.config), ...(backfill ? { backfill } : {}) });
+    return backfillLine ? `${stats(entries, ctx.config)}\n\n${backfillLine}` : stats(entries, ctx.config);
+  }
   const usage = ctx.roots.workspace ? await readUsage(ctx.roots.workspace) : {};
   const stale = neverFetched(usage);
-  if (isJsonMode(flags)) return jsonOk({ ...statsData(entries, ctx.config), usage: { memories: usage, never_fetched: stale } });
+  const noisy = noisyMemories(usage);
+  if (isJsonMode(flags)) return jsonOk({ ...statsData(entries, ctx.config), ...(backfill ? { backfill } : {}), usage: { memories: usage, never_fetched: stale, noisy } });
   const never = stale.length
     ? stale.map((item) => `  ${item.key} (injected ${item.injected}, last ${item.last.slice(0, 10)})`)
     : ['  none'];
   const tracked = Object.entries(usage).sort(([a], [b]) => a.localeCompare(b));
-  return [
+  const lines = [
     stats(entries, ctx.config),
+    ...(backfillLine ? ['', backfillLine] : []),
     '',
     'Usage (injected / fetched):',
     ...(tracked.length ? tracked.map(([key, row]) => `  ${key}: ${row.injected} / ${row.fetched}`) : ['  none']),
     '',
     'Never fetched:',
     ...never
-  ].join('\n');
+  ];
+  if (noisy.length > 0) {
+    lines.push(
+      '',
+      'Noisy memories (20+ injections, 0 utility):',
+      ...noisy.map((item) => `  ${item.key} (injected ${item.injected}, last ${item.last.slice(0, 10)})`)
+    );
+  }
+  return lines.join('\n');
 }
 
 export async function cmdEntry(flags: Record<string, any> = {}): Promise<string> {

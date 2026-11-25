@@ -1,9 +1,10 @@
 // Memories tab for graph exploration and memory actions.
 import { useEffect, useRef, useState } from 'react';
 import type { ModalController, ShowToast } from '../types.js';
-import { getJson, postJson } from '../api-client.js';
+import { getJson, postJson, promoteMemory, simulateRecall } from '../api-client.js';
 import { Button } from '../components/Button.js';
 import { Badge } from '../components/Badge.js';
+import { ConfirmActions, ConfirmBody } from '../components/ConfirmModal.js';
 import { ScopeChips } from '../components/ScopeChips.js';
 import { SectionHeader } from '../components/SectionHeader.js';
 import { Toggle } from '../components/Toggle.js';
@@ -15,9 +16,14 @@ import { copyText } from '../utils/clipboard.js';
 import { MemoryPreviewContent } from '../components/MemoryPreviewContent.js';
 import { entryDoc } from '../utils/docs.js';
 
-export function MemoriesTab({ active, toast, modal }: { active: boolean; toast: ShowToast; modal: ModalController }) {
+type SimulationResult = { query: string; tokens: number; budgetTokens: number; bodyIds: string[]; cardIds: string[]; omittedIds: string[] };
+
+export function MemoriesTab({ active, toast, modal }: { active: boolean; toast: ShowToast; modal?: ModalController }) {
   const [data, setData] = useState<any>(null);
   const [selectedId, setSelectedId] = useState('');
+  const [simQuery, setSimQuery] = useState('');
+  const [simLoading, setSimLoading] = useState(false);
+  const [simResult, setSimResult] = useState<SimulationResult | null>(null);
   const requestId = useRef(0);
   const [options, setOptions] = useState({ scopes: ['profile', 'global', 'workspace'], types: ['rule', 'skill', 'workflow', 'knowledge'], semantic: true, limit: 100, search: '', searchMode: 'direct' as 'direct' | 'related' });
   async function loadMemories(rebuild = false) {
@@ -39,11 +45,77 @@ export function MemoriesTab({ active, toast, modal }: { active: boolean; toast: 
   function toggleList(key: 'scopes' | 'types', value: string) { setOptions((prev) => { const list = prev[key]; const next = list.includes(value) ? (list.length > 1 ? list.filter((item) => item !== value) : list) : [...list, value]; return { ...prev, [key]: next }; }); }
   const nodes: MemoryNode[] = data?.nodes || [];
   const selected = nodes.find((node) => node.id === selectedId) || nodes[0] || null;
-  async function openMemoryPreview(node: MemoryNode) { try { const res: any = await getJson('/api/memory?profile=' + encodeURIComponent(node.profile || '') + '&scope=' + encodeURIComponent(node.scope || node.sourceScope || 'global') + '&file=' + encodeURIComponent(node.file || '')); modal.open({ title: node.memoryId || node.file, copyContent: res.content || '', copyLabel: 'Copied content', className: 'modal-panel memory-preview-modal', content: <MemoryPreviewContent content={res.content || ''} properties={res.properties} />, actions: <Button variant="primary" onClick={modal.close}>Close</Button> }); } catch (e: any) { toast(e.message, false); } }
+  async function openMemoryPreview(node: MemoryNode) { if (!modal) return; try { const res: any = await getJson('/api/memory?profile=' + encodeURIComponent(node.profile || '') + '&scope=' + encodeURIComponent(node.scope || node.sourceScope || 'global') + '&file=' + encodeURIComponent(node.file || '')); modal.open({ title: node.memoryId || node.file, copyContent: res.content || '', copyLabel: 'Copied content', className: 'modal-panel memory-preview-modal', content: <MemoryPreviewContent content={res.content || ''} properties={res.properties} />, actions: <Button variant="primary" onClick={modal.close}>Close</Button> }); } catch (e: any) { toast(e.message, false); } }
   async function editMemoryFromGraph(node: MemoryNode) { try { const res: any = await getJson('/api/memory/file?profile=' + encodeURIComponent(node.profile || '') + '&scope=' + encodeURIComponent(node.scope || node.sourceScope || 'global') + '&file=' + encodeURIComponent(node.file || '')); window.open(res.data.editorUrl, '_blank', 'noopener,noreferrer'); await copyText(res.data.path, toast, 'Opening editor. Path copied.'); } catch (e: any) { toast(e.message, false); } }
-  async function archiveMemoryFromGraph(node: MemoryNode) { if (!window.confirm('Delete memory? Remove ' + node.memoryId + ' from active routing? Preserved under archive.')) return; try { const res: any = await postJson('/api/memory/archive', { profile: node.profile, scope: node.scope || node.sourceScope, file: node.file, id: node.memoryId, reason: 'Deleted from Memories graph view' }); toast(res.data?.message || 'Memory archived'); setSelectedId(''); await loadMemories(true); } catch (e: any) { toast(e.message, false); } }
+  async function performArchive(node: MemoryNode) {
+    try {
+      const res: any = await postJson('/api/memory/archive', { profile: node.profile, scope: node.scope || node.sourceScope, file: node.file, id: node.memoryId, reason: 'Deleted from Memories graph view' });
+      toast(res.data?.message || 'Memory archived');
+      setSelectedId('');
+      await loadMemories(true);
+    } catch (e: any) { toast(e.message, false); }
+  }
+  function archiveMemoryFromGraph(node: MemoryNode) {
+    const message = 'Remove ' + node.memoryId + ' from active routing? Preserved under archive.';
+    if (!modal) {
+      if (typeof window !== 'undefined' && window.confirm && !window.confirm('Delete memory? ' + message)) return;
+      void performArchive(node);
+      return;
+    }
+    modal.open({
+      title: 'Delete memory?',
+      className: 'modal-panel confirm-panel',
+      content: <ConfirmBody message={message} />,
+      actions: <ConfirmActions cancel={modal.close} confirm={() => { modal.close(); void performArchive(node); }} confirmText="Delete memory" danger />
+    });
+  }
+  async function promoteMemoryFromGraph(node: MemoryNode) {
+    try {
+      const res: any = await promoteMemory(node.memoryId);
+      toast(res.data?.message || res.message || 'Promoted to durable memory');
+      await loadMemories(true);
+    } catch (e: any) { toast(e.message || 'Promote failed', false); }
+  }
+  async function runSimulation(event?: any) {
+    if (event?.preventDefault) event.preventDefault();
+    const q = simQuery.trim();
+    if (!q) { setSimResult(null); return; }
+    setSimLoading(true);
+    try {
+      const res = await simulateRecall(q);
+      setSimResult(res.data || null);
+    } catch (e: any) {
+      toast(e.message || 'Simulation failed', false);
+    } finally {
+      setSimLoading(false);
+    }
+  }
+  function selectByMemoryId(memoryId: string) {
+    const match = nodes.find((node) => node.memoryId === memoryId);
+    if (match) setSelectedId(match.id);
+  }
 
   return <><SectionHeader title="Memories" copy="Explore routed memories and their links." className="memories-hdr" helpHref={entryDoc('memories')} actions={<Button onClick={() => loadMemories(true)}>Refresh</Button>} />
     <div className="memories-toolbar"><div className="memories-search-controls"><label className="toolbar-label" htmlFor="memories-search">Search memories</label><input id="memories-search" type="search" aria-label="Search memories" placeholder="Search memories..." value={options.search} onChange={(event) => setOptions((prev) => ({ ...prev, search: event.target.value }))} /><label className="toolbar-label" htmlFor="memories-search-mode">Search mode</label><select id="memories-search-mode" aria-label="Search mode" value={options.searchMode} onChange={(event) => setOptions((prev) => ({ ...prev, searchMode: event.target.value as 'direct' | 'related' }))}><option value="direct">Text matches only</option><option value="related">Text matches + related memories</option></select></div><div className="toolbar-group"><span className="toolbar-label label-with-help"><span>Scopes</span><HelpLink href={entryDoc('memories', 'scope-chips')} label="Open Memories scope docs" /></span><ScopeChips values={[[ 'profile', 'Profile' ], [ 'global', 'Global' ], [ 'workspace', 'Workspace' ]]} active={options.scopes} onToggle={(value) => toggleList('scopes', value)} /></div><div className="toolbar-group"><span className="toolbar-label label-with-help"><span>Types</span><HelpLink href={entryDoc('memories', 'type-chips')} label="Open Memories type docs" /></span><ScopeChips values={[[ 'rule', 'Rule' ], [ 'skill', 'Skills' ], [ 'workflow', 'Workflow' ], [ 'knowledge', 'Knowledge' ]]} active={options.types} onToggle={(value) => toggleList('types', value)} /></div><div className="core-check" onClick={() => setOptions((prev) => ({ ...prev, semantic: !prev.semantic }))}><span className="label-with-help"><span>Semantic links</span><HelpLink href={entryDoc('memories', 'semantic-links-toggle')} label="Open semantic link docs" /></span><Toggle on={options.semantic} /></div>{data?.stats ? <Badge>{data.stats.total || nodes.length} memories</Badge> : null}</div>
-    <div className="memories-shell"><MemoryGraph nodes={nodes} links={data?.links || []} selectedId={selected?.id || ''} select={setSelectedId} /><MemoryDetail node={selected} view={openMemoryPreview} editMemoryFromGraph={editMemoryFromGraph} archiveMemoryFromGraph={archiveMemoryFromGraph} toast={toast} /></div></>;
+    <form className="memories-simulator" onSubmit={runSimulation}>
+      <label className="toolbar-label" htmlFor="memories-sim-input">Route simulator</label>
+      <input id="memories-sim-input" type="text" aria-label="Simulate prompt" placeholder="Simulate a prompt to see routed bodies & cards..." value={simQuery} onChange={(event) => setSimQuery(event.target.value)} />
+      <Button type="submit" variant="primary" disabled={simLoading || !simQuery.trim()}>{simLoading ? 'Simulating…' : 'Simulate'}</Button>
+      {simQuery || simResult ? <Button type="button" onClick={() => { setSimQuery(''); setSimResult(null); }}>Clear</Button> : null}
+    </form>
+    {simResult ? (
+      <div className="memories-sim-strip" aria-label="Route simulation results">
+        <Badge tone="blue">{simResult.tokens}/{simResult.budgetTokens} tokens</Badge>
+        <div className="memories-sim-group">
+          <span className="toolbar-label">Bodies ({simResult.bodyIds.length})</span>
+          {simResult.bodyIds.map((id) => <button key={'b:' + id} type="button" className="btn btn-outline btn-xs mono" onClick={() => selectByMemoryId(id)}>{id}</button>)}
+        </div>
+        <div className="memories-sim-group">
+          <span className="toolbar-label">Cards ({simResult.cardIds.length})</span>
+          {simResult.cardIds.map((id) => <button key={'c:' + id} type="button" className="btn btn-outline btn-xs mono" onClick={() => selectByMemoryId(id)}>{id}</button>)}
+        </div>
+        {simResult.omittedIds.length ? <span className="muted">{simResult.omittedIds.length} omitted</span> : null}
+      </div>
+    ) : null}
+    <div className="memories-shell"><MemoryGraph nodes={nodes} links={data?.links || []} selectedId={selected?.id || ''} select={setSelectedId} /><MemoryDetail node={selected} view={openMemoryPreview} editMemoryFromGraph={editMemoryFromGraph} archiveMemoryFromGraph={archiveMemoryFromGraph} promoteMemoryFromGraph={promoteMemoryFromGraph} toast={toast} /></div></>;
 }

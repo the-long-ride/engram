@@ -9,8 +9,8 @@ export function listFlag(value: unknown): string[] {
 }
 
 const booleanFlags = new Set([
-  'all', 'auto', 'confirm', 'configs-only', 'dry-run', 'explain', 'force', 'full', 'h', 'help',
-  'global', 'global-only', 'global-skillsets-only', 'inbox', 'json', 'latest', 'low-confidence', 'memory-only', 'migrate-memories', 'move-backups', 'no-auto-upgrade', 'no-global', 'no-migrate-memories', 'no-skillset',
+  'all', 'auto', 'backfill', 'compact', 'confirm', 'configs-only', 'dry-run', 'explain', 'force', 'full', 'h', 'help',
+  'global', 'global-only', 'global-skillsets-only', 'inbox', 'interactive', 'json', 'latest', 'learn', 'low-confidence', 'memory-only', 'migrate-memories', 'move-backups', 'no-auto-upgrade', 'no-global', 'no-migrate-memories', 'no-skillset',
   'no-submodule', 'no-version-check', 'plan', 'propose', 'queue', 'refresh', 'review', 'yes', 'rebuild', 'metacognize', 'restructure', 'self', 'semantic', 'session-end', 'show-rule-variants', 'skip-task-type-prompt', 'sources', 'stale', 'strict', 'strip-email',
   'submodule', 'use', 'usage', 'user', 'v', 'version', 'workspace', 'host-only'
 ]);

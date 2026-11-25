@@ -18,6 +18,12 @@ export interface MemoryNode {
   validFrom?: string;
   validUntil?: string;
   lastConfirmed?: string;
+  tier?: 'working' | 'durable';
+  expired?: boolean;
+  injected?: number;
+  fetched?: number;
+  applied?: number;
+  noisy?: boolean;
   canEdit?: boolean;
   canDelete?: boolean;
 }

@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import type { ModalController, ShowToast } from '../types.js';
 import { getJson, postJson } from '../api-client.js';
+import { Badge } from '../components/Badge.js';
 import { Button } from '../components/Button.js';
 import { Toggle } from '../components/Toggle.js';
 import { SectionHeader } from '../components/SectionHeader.js';
@@ -12,6 +13,7 @@ export function ConnectionsTab({ active, toast, modal }: { active: boolean; toas
   const [agents, setAgents] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [doctor, setDoctor] = useState<{ failed: number; warned: number } | null>(null);
 
   async function scanAgents() {
     setLoading(true);
@@ -23,10 +25,20 @@ export function ConnectionsTab({ active, toast, modal }: { active: boolean; toas
     } finally {
       setLoading(false);
     }
+    try {
+      const docRes: any = await getJson('/api/doctor');
+      const doc = docRes?.data ?? docRes;
+      if (doc && typeof doc === 'object' && !Array.isArray(doc) && (typeof doc.failed === 'number' || typeof doc.warned === 'number' || Array.isArray(doc.checks))) {
+        setDoctor({ failed: Number(doc.failed) || 0, warned: Number(doc.warned) || 0 });
+      }
+    } catch {
+      // Best-effort health indicator.
+    }
   }
 
-  async function linkAgent(agentId: string, isGlobal: boolean) {
-    const res: any = await postJson('/api/agents/link', { agentId, global: isGlobal });
+  async function linkAgent(agentId: string, isGlobal: boolean, sessionEnd?: boolean) {
+    const payload = sessionEnd === undefined ? { agentId, global: isGlobal } : { agentId, global: isGlobal, sessionEnd };
+    const res: any = await postJson('/api/agents/link', payload);
     toast(res.message || 'Connected');
     await scanAgents();
   }
@@ -79,13 +91,24 @@ export function ConnectionsTab({ active, toast, modal }: { active: boolean; toas
     if (active) void scanAgents();
   }, [active]);
 
+  const issueCount = doctor ? doctor.failed + doctor.warned : 0;
+
   return (
     <>
       <SectionHeader
         title="Connections"
         copy="Connect Engram to local AI agents."
         helpHref={entryDoc('connections')}
-        actions={<Button onClick={scanAgents}>{loading ? 'Scanning...' : 'Refresh'}</Button>}
+        actions={
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            {doctor ? (
+              <Badge tone={issueCount === 0 ? 'pos' : doctor.failed > 0 ? 'neg' : 'amber'}>
+                {issueCount === 0 ? 'Healthy' : `${issueCount} ${issueCount === 1 ? 'issue' : 'issues'}`}
+              </Badge>
+            ) : null}
+            <Button onClick={scanAgents}>{loading ? 'Scanning...' : 'Refresh'}</Button>
+          </div>
+        }
       />
       <div className="conn-grid">
         {agents.map((agent) => {
@@ -143,6 +166,16 @@ export function ConnectionsTab({ active, toast, modal }: { active: boolean; toas
                   <span>Global</span>
                   <Toggle on={Boolean(agent.globalLinked)} onClick={() => agent.globalLinked ? unlinkAgent(agent, true) : linkAgent(agent.id, true)} />
                 </div>
+                {agent.supportsSessionEnd ? (
+                  <div className="conn-row">
+                    <span>SessionEnd queue</span>
+                    <Toggle
+                      on={Boolean(agent.sessionEndLinked)}
+                      title={`SessionEnd queue for ${agent.name}`}
+                      onClick={() => linkAgent(agent.id, false, !agent.sessionEndLinked)}
+                    />
+                  </div>
+                ) : null}
               </div>
             </div>
           );

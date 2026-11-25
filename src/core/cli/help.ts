@@ -37,6 +37,37 @@ export function renderHelp(): string {
   return md;
 }
 
+/** Render a compact ~22-line quick-reference terminal help menu. */
+export function renderCompactHelpTerminal(): string {
+  const lines = [
+    `\x1b[1m# Engram v${VERSION} — Quick Reference\x1b[0m`,
+    '',
+    '\x1b[1;37m## Daily\x1b[0m',
+    `  ${highlightUsage('engram status')}          ${gray('One-screen dashboard of memories, review queue, and hooks')}`,
+    `  ${highlightUsage('engram load <query>')}    ${gray('Route compact relevant memories for the current task')}`,
+    `  ${highlightUsage('engram why <id> [q]')}    ${gray('Explain why a memory matched, carded, or missed a query')}`,
+    `  ${highlightUsage('engram save [text]')}     ${gray('Propose and save a durable rule, skill, or knowledge memory')}`,
+    `  ${highlightUsage('engram search <query>')}  ${gray('Search visible indexed memories')}`,
+    '',
+    '\x1b[1;37m## Learn & Maintain\x1b[0m',
+    `  ${highlightUsage('engram observe --learn')} ${gray('Distill session or git learnings into working/inbox memory')}`,
+    `  ${highlightUsage('engram review triage')}   ${gray('Interactively approve, dismiss, or skip inbox receipts')}`,
+    `  ${highlightUsage('engram take-control')}    ${gray('Import workspace guidance, code maps, or host memories')}`,
+    `  ${highlightUsage('engram graph link')}      ${gray('Inspect memory graph or link parent/child dependencies')}`,
+    `  ${highlightUsage('engram stats --usage')}   ${gray('Inspect memory counts, fetch utility, and git backfill')}`,
+    `  ${highlightUsage('engram doctor')}          ${gray('Run composed health, hash, index, and host checks')}`,
+    '',
+    '\x1b[1;37m## Configure & Connect\x1b[0m',
+    `  ${highlightUsage('engram inject')}          ${gray('Initialize Engram memory roots in this workspace')}`,
+    `  ${highlightUsage('engram link [target]')}   ${gray('Connect AI host skillsets, MCP servers, and hooks')}`,
+    `  ${highlightUsage('engram entry')}           ${gray('Open local web UI for config, profiles, and status')}`,
+    `  ${highlightUsage('engram profile list')}    ${gray('Manage isolated global memory profiles')}`,
+    '',
+    gray('Run `engram help` for the full command reference or `engram help <topic>` for examples.')
+  ];
+  return lines.join('\n');
+}
+
 /** Render beautifully colored terminal help menu. */
 export function renderHelpTerminal(topic = ''): string {
   const detail = topic ? detailForTopic(topic) : undefined;

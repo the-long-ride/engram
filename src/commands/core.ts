@@ -4,7 +4,7 @@ import { stdout as output } from 'node:process';
 import path from 'node:path';
 import { initWorkspace } from '../core/memory/storage.js';
 import { loadConfig, parseSaveTarget, scopeRootsForConfig } from '../core/runtime/config.js';
-import { renderHelpTerminal } from '../core/cli/help.js';
+import { renderCompactHelpTerminal, renderHelpTerminal } from '../core/cli/help.js';
 import { INIT_WORDMARK, renderInitWordmark } from '../core/cli/banner.js';
 import { completionScript } from '../core/cli/completion.js';
 import { detectCompletionTarget } from '../core/cli/completion-target.js';
@@ -87,7 +87,8 @@ function summarizeSkillsetInstall(results: InstallResult[]): string {
 }
 
 /** Show cached help or refresh it. */
-export async function cmdHelp(topic = ''): Promise<string> {
+export async function cmdHelp(topic = '', flags: Record<string, any> = {}): Promise<string> {
+  if (flags.compact === true && !topic) return renderCompactHelpTerminal();
   return renderHelpTerminal(topic);
 }
 

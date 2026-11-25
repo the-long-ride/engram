@@ -21,6 +21,15 @@ The search mode menu has two options:
 
 Clear the field to restore the full graph for the selected filters.
 
+## Simulador de rutas
+
+Use la barra **Simulate route** para probar cómo enruta Engram una consulta antes de que un agente la vea. Al enviar una consulta se llama a `/api/recall?simulate=true` y se desglosa:
+
+- **Packed bodies** — memorias incluidas completas en la carga enrutada
+- **Cards** — tarjetas compactas de memoria incluidas junto a los cuerpos completos
+- **Omitted candidates** — memorias coincidentes excluidas por clasificación o límites de presupuesto
+- **Token budget** — uso del presupuesto de tokens en toda la respuesta simulada de recuperación
+
 ## Scope chips {#scope-chips}
 
 Filter the graph by memory source. Compare workspace vs global memory. Start with the current workspace only when the graph feels noisy.
@@ -49,9 +58,16 @@ Sensitive local content may be visible in the browser. Treat the panel as open w
 
 Opens the file in an editor and copies the path. Use for manual correction or review. The source of truth is the Markdown file.
 
-## Archive memory
+## Insignias Working y Noisy
 
-Removes memory from active routing while preserving it under `archive/`. Use archive, not delete, for auditability.
+Las tarjetas y el panel de detalles muestran insignias de estado para resaltar memorias que requieren atención:
+
+- **Working** — marca memorias activas almacenadas en el nivel `working/` (ignorado por Git). Use el botón **Promote** (que llama inmediatamente a `POST /api/memory/promote`) para mover una memoria activa de `working/` al almacenamiento duradero sin cambiar a la CLI.
+- **Noisy** — señala memorias que coinciden con frecuencia sin aportar valor para que pueda ajustar sus disparadores, editarlas o archivarlas.
+
+## Archivar memoria
+
+Retira la memoria del enrutamiento activo conservándola en `archive/`. Al hacer clic en archivar se abre el diálogo de confirmación **Delete memory?** (sin campo modal para introducir un motivo; registra por defecto `'Deleted from Memories graph view'`). Use archivar, no eliminar manualmente, para mantener la auditabilidad.
 
 <RiskCallout level="caution">
 Archiving changes routing immediately. Use archive, not manual deletion, so history is preserved.
@@ -67,6 +83,8 @@ The detail panel mirrors CLI/index metadata. It shows `authority`, `revision`, `
 
 ```bash
 engram graph "<topic>"
+engram why <id> "<query>"
+engram promote <id>
 engram quality-check
 engram archive --reason "<why>" <id-or-file>
 ```

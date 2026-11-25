@@ -94,9 +94,31 @@ engram working prune
 ```bash
 engram observe --file session.md
 engram save-session --file .agents/.engram/inbox/<note>.md
+engram observe --learn --file session.md
+engram observe --learn --git HEAD~10..HEAD
+engram observe --queue --learn
 ```
 
 `observe` сохраняет очищенные сырые заметки во `inbox/`. Заметки во входящих не являются активной памятью. Используйте её, когда хотите сохранить черновые заметки до решения, что должно стать постоянным воспоминанием.
+
+Добавьте `--learn` (`engram observe --learn [--file <path> | --git [range]]` или `engram observe --queue --learn`), чтобы детерминированно извлекать уроки в исключённые из Git временные воспоминания `working/` (с очищенными следами `tr_sl_*`) и подготавливать кандидатов в постоянную память с высокой уверенностью как неактивные квитанции `inbox/r-*.json`. Просматривайте и подтверждайте подготовленные квитанции командами `engram review inbox` и `engram review apply`; активная постоянная память никогда не записывается без подтверждения.
+
+## review
+
+```bash
+engram review inbox
+engram review triage
+engram review triage --interactive
+engram review apply <receipt-id>
+engram review dismiss <receipt-id>
+```
+
+Просмотр и обработка неактивных квитанций обучения `inbox/r-*.json`, подготовленных обучением по исправлениям на этапе промпта или командой `engram observe --learn`:
+
+- `engram review inbox` — вывести список подготовленных квитанций с полями `id`, `scope`, `source`, `type` и усечённым текстом кандидата.
+- `engram review triage` / `engram review triage --interactive` — интерактивно пройти по ожидающим квитанциям с подсказкой `[a]pprove / [d]ismiss / [s]kip / [q]uit` (без опции редактирования; вердикты `SUPERSEDE` откладываются для `engram review apply <receipt-id>`).
+- `engram review apply <receipt-id>` — требует указания `<receipt-id>` и проводит эту квитанцию через шлюз записи для создания или обновления постоянной активной памяти.
+- `engram review dismiss <receipt-id>` — отклонить квитанцию без записи активной памяти.
 
 <!-- evidence-foundation:v3:start -->
 ## Память, подкреплённая доказательствами

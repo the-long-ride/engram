@@ -6,14 +6,17 @@ description: Карта всех команд Engram CLI и того, что о�
 
 # Обзор команд
 
-Запустите `engram -h`, чтобы увидеть компактный список команд. Запустите `engram help <topic>` или `engram -h <topic>`, чтобы получить примеры и сценарии использования конкретной команды.
+Запустите `engram -h` или `engram help --compact`, чтобы увидеть компактный список команд. Запустите `engram help <topic>` или `engram -h <topic>`, чтобы получить примеры и сценарии использования конкретной команды.
 
 ## Карта команд
 
 | Задача | Команда |
 | --- | --- |
+| Краткая сводка состояния рабочего пространства и памяти | `engram status` (псевдоним `engram stat`) |
+| Компактная сводка команд | `engram help --compact` |
 | Загрузить память для задачи | `engram load "<task>"` |
 | Загрузить компактную память для задачи | `engram load "<task>"` |
+| Объяснить, почему воспоминание попало или не попало в маршрут | `engram why <id> ["<query>"]` |
 | Вывести руководство по использованию для ИИ-агента | `engram llm` |
 | Предпросмотр маршрутизируемых файлов памяти | `engram load --dry-run "<task>"` |
 | Загрузить с лимитом токенов | `engram load --budget-tokens 800 "<task>"` |
@@ -26,7 +29,9 @@ description: Карта всех команд Engram CLI и того, что о�
 | Принудительно сохранить кандидатов сессии | `engram ss -f` |
 | Извлечь из недавних чатов и принудительно сохранить | `engram ss -f last 50 sessions` |
 | Зафиксировать сырую заметку | `engram observe --file session.md` |
+| Извлечь знания в рабочую память и квитанции inbox | `engram observe --learn [--file <path> \| --git [range]]` |
 | Разобрать опциональную очередь транскриптов SessionEnd | `engram observe --queue --dry-run` |
+| Проверить подготовленные квитанции обучения | `engram review inbox\|triage\|apply\|dismiss` |
 | Преобразовать существующую документацию/рекомендации | `engram take-control --all` |
 | Предпросмотр перехвата источников | `engram take-control --plan` |
 | Построить дайджест кода или конфигурации | `engram take-control --kind code --objective "<text>"` |
@@ -35,10 +40,13 @@ description: Карта всех команд Engram CLI и того, что о�
 | Сохранить рабочее воспоминание | `engram promote <id>` |
 | Сохранить заметку к задаче | `engram working note "<text>"` |
 | Удалить истёкшие рабочие воспоминания | `engram working prune [--dry-run]` |
-| Посмотреть счётчики выдачи и инъекций | `engram stats --usage` |
+| Посмотреть счётчики выдачи, инъекций и исходов | `engram stats --usage` |
+| Дозаполнить телеметрию использования из истории коммитов Git | `engram stats --backfill [--git <range>] [--limit <n>]` |
 | Перестроить существующую папку памяти | `engram metacognize --workspace\|--global\|--all` |
 | Разрешить конфликты и выполнить metacognize | `engram resolve-conflicts --metacognize` |
 | Проверить маршрутизацию по графу | `engram graph "<topic>"` |
+| Связать родительские/дочерние зависимости в графе | `engram graph link <parent-id> <child-id...>` |
+| Сгенерировать кейсы бенчмарка из истории Git | `engram benchmark --from-git [--out <path>]` |
 | Проверить хеши | `engram verify` |
 | Найти некорректные файлы памяти | `engram repair` |
 | Архивировать ошибочное воспоминание | `engram archive --reason "<why>" <id-or-file>` |

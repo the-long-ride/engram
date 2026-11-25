@@ -549,3 +549,44 @@
 .memories-canvas.dragging .memory-node {
   cursor: grabbing;
 }
+.memories-simulator {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+.memories-simulator input {
+  flex: 1;
+  min-width: 200px;
+  height: 32px;
+  border: 1px solid var(--g300);
+  border-radius: var(--r6);
+  background: var(--bg);
+  color: var(--g1000);
+  font: inherit;
+  font-size: 12px;
+  padding: 0 8px;
+}
+.memories-sim-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 8px 12px;
+  border: 1px solid var(--g200);
+  border-radius: var(--r6);
+  background: var(--bg);
+}
+.memories-sim-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.memory-usage-line {
+  font-size: 11px;
+  color: var(--g700);
+  font-family: var(--mono);
+}

@@ -24,6 +24,10 @@ jest.mock('../../src/core/web/app/api-client.js', () => {
     reviewInspect: jest.fn(),
     reviewPreview: jest.fn(),
     reviewWrite: jest.fn(),
+    reviewDismiss: jest.fn(),
+    reviewApplyReceipts: jest.fn(),
+    promoteMemory: jest.fn(),
+    simulateRecall: jest.fn(),
   };
 });
 
@@ -32,6 +36,8 @@ describe('ReviewTab', () => {
     jest.resetAllMocks();
     (api.reviewPreview as jest.Mock).mockResolvedValue({ data: { previews: [] } });
     (api.reviewWrite as jest.Mock).mockResolvedValue({ data: { written: [{ id: 'saved-memory' }], message: 'Memory written' } });
+    (api.reviewDismiss as jest.Mock).mockResolvedValue({ data: { dismissed: [] } });
+    (api.reviewApplyReceipts as jest.Mock).mockResolvedValue({ data: { applied: [], skipped: [], deferred: [], errors: [], message: 'Applied 1 receipt.' } });
   });
 
   test('keeps the latest selected finding when inspect responses resolve out of order', async () => {
@@ -101,7 +107,7 @@ describe('ReviewTab', () => {
     render(<ReviewTab active={true} toast={toast} />);
 
     expect(await screen.findByRole('button', { name: /receipt-a/ })).toBeInTheDocument();
-    expect((await screen.findAllByText('autosave: workflow candidate awaiting relation review')).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText('[workflow] Rotate release signer after build')).length).toBeGreaterThan(0);
     expect(screen.getByText('TYPE: workflow | TEXT: Rotate release signer after build | ORIGIN: release runbook | TRIGGERS: release, signing | DEPENDS_ON: dep-1 | UPDATE: existing-memory')).toBeInTheDocument();
     expect(screen.getByText('2 related memories')).toBeInTheDocument();
     expect(screen.getByText('No relation selected.')).toBeInTheDocument();
@@ -215,6 +221,108 @@ describe('ReviewTab', () => {
     expect(screen.getByText('First memory content')).toBeInTheDocument();
     expect(screen.getByText('Second memory content')).toBeInTheDocument();
   });
+
+  test('filters session-learning receipts vs findings and confirms batch Approve', async () => {
+    const receipt = {
+      id: 'r-learn01',
+      source: 'session-learning',
+      scope: 'workspace',
+      related_ids: [],
+      candidate: { type: 'knowledge', text: 'Prefer pnpm scripts over npm' }
+    };
+    const finding = { id: 'finding-dup', kind: 'duplicate', safe_summary: 'Duplicate finding', memory_ids: ['m-1'] };
+    (api.reviewQueue as jest.Mock).mockResolvedValue({ data: { findings: [finding], receipts: [receipt] } });
+    (api.reviewInspect as jest.Mock).mockImplementation((id: string) => Promise.resolve(
+      id === 'r-learn01' ? { data: { receipt } } : { data: { finding } }
+    ));
+    (api.reviewApplyReceipts as jest.Mock).mockResolvedValue({
+      data: { applied: [{ id: 'r-learn01' }], skipped: [], deferred: [], errors: [], message: 'Applied 1 receipt.' }
+    });
+    const modal = { open: jest.fn(), close: jest.fn() };
+
+    render(<ReviewTab active={true} toast={jest.fn()} modal={modal} />);
+
+    expect(await screen.findByRole('button', { name: /r-learn01/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /finding-dup/ })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: /Session learning/ }));
+    expect(screen.getByRole('button', { name: /r-learn01/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /finding-dup/ })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: /Findings/ }));
+    expect(screen.getByRole('button', { name: /finding-dup/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /r-learn01/ })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: /Session learning/ }));
+    const checkbox = screen.getByRole('checkbox');
+    fireEvent.click(checkbox);
+    fireEvent.click(screen.getByRole('button', { name: 'Approve 1' }));
+
+    expect(modal.open).toHaveBeenCalledWith(expect.objectContaining({ title: 'Approve receipt?' }));
+    const confirmation = modal.open.mock.calls[0][0];
+    const modalView = render(confirmation.actions);
+    fireEvent.click(modalView.container.querySelector('.btn-primary') as HTMLButtonElement);
+
+    await waitFor(() => expect(api.reviewApplyReceipts).toHaveBeenCalledWith({
+      ids: ['r-learn01'],
+      scope: 'workspace',
+      confirmed: true
+    }));
+  });
+
+  test('supports j/k/a/d keyboard shortcuts and ignores them inside inputs', async () => {
+    const receipt = {
+      id: 'r-kb01',
+      source: 'session-learning',
+      scope: 'workspace',
+      related_ids: [],
+      candidate: { type: 'knowledge', text: 'Use strict tsconfig' }
+    };
+    const finding = { id: 'finding-kb', kind: 'stale', safe_summary: 'Stale finding', memory_ids: ['m-1'] };
+    (api.reviewQueue as jest.Mock).mockResolvedValue({ data: { findings: [finding], receipts: [receipt] } });
+    (api.reviewInspect as jest.Mock).mockImplementation((id: string) => Promise.resolve(
+      id === 'r-kb01' ? { data: { receipt } } : { data: { finding } }
+    ));
+    (api.reviewDismiss as jest.Mock).mockResolvedValue({ data: { dismissed: ['finding-kb'] } });
+
+    render(<ReviewTab active={true} toast={jest.fn()} />);
+
+    expect(await screen.findByRole('button', { name: /r-kb01/ })).toBeInTheDocument();
+    // Initially finding-kb is selected; press j to move to r-kb01, then k back, then j again
+    fireEvent.keyDown(window, { key: 'j' });
+    await waitFor(() => {
+      expect(document.querySelector('details.review-proposal')).not.toHaveAttribute('open');
+    });
+    fireEvent.keyDown(window, { key: 'k' });
+    await waitFor(() => {
+      expect(document.querySelector('details.review-proposal')).toHaveAttribute('open');
+    });
+    fireEvent.keyDown(window, { key: 'j' });
+    await waitFor(() => {
+      expect(document.querySelector('details.review-proposal')).not.toHaveAttribute('open');
+    });
+
+    // Press a to approve inbox receipt (without modal, approves immediately and refreshes queue back to finding-kb)
+    fireEvent.keyDown(window, { key: 'a' });
+    await waitFor(() => expect(api.reviewApplyReceipts).toHaveBeenCalledWith({
+      ids: ['r-kb01'],
+      scope: 'workspace',
+      confirmed: true
+    }));
+
+    // After refreshQueue selects finding-kb, press d to dismiss it
+    await waitFor(() => {
+      expect(document.querySelector('details.review-proposal')).toHaveAttribute('open');
+    });
+    fireEvent.keyDown(window, { key: 'd' });
+    await waitFor(() => expect(api.reviewDismiss).toHaveBeenCalledWith(['finding-kb']));
+
+    // Ignore shortcuts when typing inside textarea
+    const callsBefore = (api.reviewDismiss as jest.Mock).mock.calls.length;
+    const textarea = screen.getByLabelText('Paste AI output');
+    fireEvent.keyDown(textarea, { key: 'd' });
+    expect((api.reviewDismiss as jest.Mock).mock.calls.length).toBe(callsBefore);
+  });
 });
 
 describe('ConfigTab', () => {
@@ -290,6 +398,33 @@ describe('ConfigTab', () => {
     const { container } = render(<ConfigTab data={mockData} reload={jest.fn()} toast={jest.fn()} />);
     expect(container.querySelector('[data-key="global_git.branch"]')).toBeNull();
     expect(screen.queryByText('Global Git')).not.toBeInTheDocument();
+  });
+
+  test('switches Construct sub-views between Configuration, Profiles, Workspaces, and Runtime', () => {
+    const fullData = {
+      ...mockData,
+      profiles: [{ name: 'work', globalPath: '/path/work', active: true }],
+      workspaces: [{ name: 'repo-a', path: '/repo/a', linked: true }],
+      runtime: [{ group: 'Load', rows: [['load.limit', 12]] }],
+    } as any;
+
+    render(<ConfigTab data={fullData} reload={jest.fn()} toast={jest.fn()} />);
+    expect(screen.getByRole('heading', { name: 'Construct' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Profiles' }));
+    expect(screen.getByRole('heading', { name: 'Profiles' })).toBeInTheDocument();
+    expect(screen.getByText('work')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Workspaces' }));
+    expect(screen.getByRole('heading', { name: 'Workspaces' })).toBeInTheDocument();
+    expect(screen.getByText('/repo/a')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Runtime' }));
+    expect(screen.getByRole('heading', { name: 'Runtime' })).toBeInTheDocument();
+    expect(screen.getByText('12')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Configuration' }));
+    expect(screen.getByRole('heading', { name: 'Construct' })).toBeInTheDocument();
   });
 });
 
@@ -554,6 +689,86 @@ describe('MemoriesTab', () => {
       className: 'modal-panel memory-preview-modal'
     })));
   });
+
+  test('renders Route Simulator, Working/Noisy badges, Promote action, and modal delete confirmation', async () => {
+    const richData = {
+      stats: { total: 2 },
+      nodes: [
+        {
+          id: 'n-1',
+          memoryId: 'mem-work',
+          label: 'Mem Work',
+          profile: 'default',
+          scope: 'workspace',
+          sourceScope: 'workspace',
+          file: 'working/knowledge/mem-work.md',
+          summary: 'Working task note',
+          tier: 'working',
+          validUntil: '2026-12-31',
+          expired: false,
+          injected: 25,
+          fetched: 0,
+          applied: 0,
+          noisy: true,
+          canEdit: true,
+          canDelete: true
+        },
+        {
+          id: 'n-2',
+          memoryId: 'mem-durable',
+          label: 'Mem Durable',
+          profile: 'default',
+          scope: 'workspace',
+          sourceScope: 'workspace',
+          file: 'knowledge/mem-durable.md',
+          summary: 'Durable memory',
+          tier: 'durable',
+          canEdit: true,
+          canDelete: true
+        }
+      ],
+      links: []
+    };
+    (api.getJson as jest.Mock).mockResolvedValue(richData);
+    (api.postJson as jest.Mock).mockResolvedValue(richData);
+    (api.simulateRecall as jest.Mock).mockResolvedValue({
+      ok: true,
+      data: {
+        query: 'deploy pipeline',
+        tokens: 180,
+        budgetTokens: 1200,
+        bodyIds: ['mem-durable'],
+        cardIds: ['mem-work'],
+        omittedIds: []
+      }
+    });
+    (api.promoteMemory as jest.Mock).mockResolvedValue({ ok: true, data: { promoted: true, message: 'Promoted -> workspace:knowledge/mem-work.md' } });
+
+    const toastMock = jest.fn();
+    const modalMock = { open: jest.fn(), close: jest.fn() };
+    render(<MemoriesTab active={true} toast={toastMock} modal={modalMock} />);
+
+    await waitFor(() => expect(screen.getByText('Working · 2026-12-31')).toBeInTheDocument());
+    expect(screen.getByText('Noisy (25 inj / 0 utility)')).toBeInTheDocument();
+    expect(screen.getByText('Usage: 25 injected · 0 fetched · 0 applied')).toBeInTheDocument();
+
+    // Promote working memory
+    fireEvent.click(screen.getByRole('button', { name: 'Promote' }));
+    await waitFor(() => expect(api.promoteMemory).toHaveBeenCalledWith('mem-work'));
+
+    // Modal delete confirm (not window.confirm)
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    expect(modalMock.open).toHaveBeenCalledWith(expect.objectContaining({ title: 'Delete memory?' }));
+
+    // Route Simulator
+    fireEvent.change(screen.getByLabelText('Simulate prompt'), { target: { value: 'deploy pipeline' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Simulate' }));
+    await waitFor(() => expect(api.simulateRecall).toHaveBeenCalledWith('deploy pipeline'));
+    expect(screen.getByText('180/1200 tokens')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'mem-durable' }));
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'mem-durable' })).toBeInTheDocument());
+  });
 });
 
 describe('ProfilesTab', () => {
@@ -762,6 +977,40 @@ describe('ConnectionsTab', () => {
     // Click again to collapse
     fireEvent.click(expandBtn);
     expect(screen.queryByText('/home/user/.antigravity/skills/engram/SKILL.md')).not.toBeInTheDocument();
+  });
+
+  test('renders Doctor health badge and SessionEnd queue toggle on supported agents', async () => {
+    (api.getJson as jest.Mock).mockImplementation((url: string) => {
+      if (url === '/api/doctor') return Promise.resolve({ data: { checks: [], passed: 5, warned: 0, failed: 0, skipped: 0 } });
+      return Promise.resolve({
+        data: [
+          {
+            id: 'claude',
+            name: 'Anthropic Claude',
+            detected: true,
+            workspaceLinked: true,
+            globalLinked: false,
+            supportsSessionEnd: true,
+            sessionEndLinked: false
+          }
+        ]
+      });
+    });
+    (api.postJson as jest.Mock).mockResolvedValue({ message: 'Connected claude in this workspace.' });
+
+    const toastMock = jest.fn();
+    render(<ConnectionsTab active={true} toast={toastMock} />);
+
+    await waitFor(() => expect(screen.getByText('Anthropic Claude')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Healthy')).toBeInTheDocument());
+    expect(screen.getByText('SessionEnd queue')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTitle('SessionEnd queue for Anthropic Claude'));
+    await waitFor(() => expect(api.postJson).toHaveBeenCalledWith('/api/agents/link', {
+      agentId: 'claude',
+      global: false,
+      sessionEnd: true
+    }));
   });
 });
 

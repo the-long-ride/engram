@@ -94,6 +94,8 @@ engram config set <key> <value>
 | `mcp.resource_limit` | Memories MCP `resources/list` returns besides `engram://index`, ranked by injected + fetched usage (JSON config only; not set by `engram config set`) | `20` | `0` to `200` |
 | `load.limit` | Max memories returned by normal load | `8` | `1` to `32` |
 | `hooks.path_rules` | `native` writes Claude and Cursor rule files for `applies_to` memories and registers Claude `InstructionsLoaded`; `hook` keeps the Claude `PreToolUse` hook | `native` | `native`, `hook` |
+| `learning.mode` | Controls Option A session learning: `off` disables automatic learning, `working` writes only expiring gitignored `working/` memories, `propose` also stages durable candidates as `inbox/r-*.json` receipts (JSON config only; not set via `engram config set` or Construct) | `propose` | `off`, `working`, `propose` |
+| `learning.auto_drain` | Automatically drain queued `SessionEnd` transcripts during eligible learning passes (JSON config only; not set via `engram config set` or Construct) | `false` | `true`, `false` |
 | `rule_variants.enabled` | Enable or disable rule variants generation | `false` | `true`, `false` |
 | `rule_variants.active` | Active rule variant mode | `balanced` | `light`, `balanced`, `strict` |
 | `graph.enabled` | Enable or disable graph-aware routing | `true` | `true`, `false` |
@@ -105,7 +107,7 @@ engram config set <key> <value>
 | `global_git.remote` | Git remote name for global sync | `origin` | String |
 | `global_git.branch` | Git branch name for global sync | `main` | String |
 
-These settings are also manageable visually under the **Construct** tab in `engram entry`.
+Settings outside JSON-only keys (`mcp.resource_limit`, `learning.mode`, `learning.auto_drain`) are also manageable visually under the **Construct** tab in `engram entry`.
 
 ## Next steps
 

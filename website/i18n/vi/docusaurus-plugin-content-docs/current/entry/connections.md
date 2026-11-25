@@ -10,6 +10,10 @@ import RiskCallout from '@site/src/components/RiskCallout';
 
 Tab Connections quét máy của bạn để tìm các bề mặt tác nhân AI được hỗ trợ và cho phép bạn liên kết Engram với từng tác nhân ở cấp độ không gian làm việc (workspace) hoặc toàn cục (global).
 
+## Huy hiệu sức khỏe Doctor
+
+Phần tiêu đề của Connections hiển thị **Doctor health badge** tóm tắt kết quả kiểm tra pass/warn từ `/api/doctor`. Dùng nó để nhanh chóng phát hiện các cảnh báo về hook, liên kết hoặc cấu hình trước khi liên kết hoặc xử lý sự cố cho một tác nhân.
+
 ## Quét tác nhân (Agent scan)
 
 Tab này hiển thị một thẻ cho mỗi tác nhân được hỗ trợ. Mỗi thẻ báo cáo trạng thái phát hiện được (detected) hoặc bị thiếu (missing).
@@ -32,6 +36,10 @@ Liên kết Engram trên toàn cục cho tác nhân đó. Sử dụng cho bộ n
 <RiskCallout level="risky">
 Sử dụng liên kết toàn cục cẩn thận trên các máy tính dùng chung. Engram viết các khối được quản lý vào các tệp hướng dẫn dùng chung. Hãy xem xét các tệp Engram viết cho từng tác nhân trước khi liên kết toàn cục.
 </RiskCallout>
+
+## Nút bật tắt hàng đợi SessionEnd
+
+Các thẻ **Claude** và **Codex** có thêm **`SessionEnd queue` toggle** riêng trên từng thẻ để bật hoặc tắt việc xếp hàng các ứng viên học tập khi kết thúc phiên chờ rà soát (tương ứng với `engram link claude --session-end` và `engram link codex --session-end`).
 
 ## Các tệp Engram viết cho mỗi tác nhân
 
@@ -61,7 +69,9 @@ Sử dụng liên kết toàn cục cẩn thận trên các máy tính dùng chu
 
 ```bash
 engram link codex
+engram link codex --session-end
 engram link claude
+engram link claude --session-end
 engram link --global opencode
 engram unlink
 ```

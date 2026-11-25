@@ -8,6 +8,16 @@ description: 유지 관리 명령 — 해시 검증, 유효하지 않은 파일 
 
 유지 관리 명령은 메모리를 건강한 상태로 유지합니다.
 
+## status
+
+```bash
+engram status
+engram stat
+engram status --json
+```
+
+워크스페이스와 글로벌 메모리 루트, 활성 프로필, 연결된 호스트, 대기 중인 검토 영수증, working 계층 개수, 무결성/신선도 상태를 한 화면에 요약해 출력합니다. `engram stat`은 짧은 별칭이며, `--json`은 스크립트용 구조화 스냅샷을 출력합니다.
+
 ## verify
 
 ```bash
@@ -25,9 +35,10 @@ engram verify --sources --json
 ```bash
 engram stats
 engram stats --usage
+engram stats --backfill [--git <range>] [--limit <n>]
 ```
 
-`--usage`는 로컬의 gitignore된 `.agents/.engram/usage.json`을 읽어, 에이전트가 `engram load --id`로 실제로 가져오는 메모리와 30일 동안 주입되었지만 한 번도 가져오지 않은 메모리를 보여 줍니다.
+`--usage`는 로컬의 gitignore된 `.agents/.engram/usage.json`을 읽어 가져오기 횟수(`engram load --id`), 폐쇄 루프 결과 카운터(`applied`, `corrected`, 그리고 `noisy` / 유용성 0 주입), 그리고 30일 동안 주입되었지만 한 번도 가져오지 않은 메모리를 보여 줍니다. `--backfill`은 Git 커밋 기록(`backfillUsageFromGit`을 통해 최근 비병합 커밋 분석, 선택적 `[--git <range>] [--limit <n>]`)에서 과거 사용량 텔레메트리를 `usage.json`으로 백필합니다.
 
 ## repair
 
@@ -58,9 +69,10 @@ engram quality-check
 ```bash
 engram graph "package manager"
 engram graph --rebuild
+engram graph link <parent-id> <child-id...>
 ```
 
-아카이브하기 전에 그래프 라우팅을 점검하세요. 수동 편집 후에는 `engram graph --rebuild`를 실행하세요.
+아카이브하기 전에 그래프 라우팅을 점검하거나, `engram graph link <parent-id> <child-id...>`로 명시적 `depends_on` 선행 항목을 연결하거나, 수동 편집 후 `engram graph --rebuild`를 실행하세요.
 
 ## archive
 
@@ -82,10 +94,13 @@ Engram이 소유한 워크스페이스 메모리 충돌만 미리 보거나 해�
 ## benchmark
 
 ```bash
-engram benchmark
+engram benchmark <cases.json> --json
+engram benchmark <cases.json> --baseline <baseline.json> --fail-on forbidden,recall
+engram benchmark <cases.json> --write-report <report.json>
+engram benchmark --from-git [--out <path>]
 ```
 
-검색 회귀 점검입니다.
+버전 관리된 검색 회귀 테스트 모음을 실행합니다. 여기에는 `freshness-ordering`(최신성 가산 및 주의 집중 기반 본문 정렬), `multi-turn-session`(여러 턴에 걸친 훅 토큰 절감), 그리고 `telemetry-loop`(`real-stacks-v1` 폐쇄 루프 결과 텔레메트리 및 노이즈 감쇠)가 포함됩니다. `--from-git [--out <path>]`로 최근 Git 기록에서 저장소 로컬 벤치마크 케이스를 생성하고, `--baseline`으로 저장된 지표와 비교하며, `--write-report`로 ID만 포함된 JSON 보고서를 작성하고, `--fail-on`으로 특정 회귀 발생 시 CI가 실패하도록 설정할 수 있습니다.
 
 ## 다음 단계 {#next-steps}
 

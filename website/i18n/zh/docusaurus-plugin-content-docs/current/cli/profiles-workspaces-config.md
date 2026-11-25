@@ -94,6 +94,8 @@ engram config set <key> <value>
 | `mcp.resource_limit` | 除 `engram://index` 之外，记忆 MCP `resources/list` 按注入与获取使用量排序所返回的条数（仅限 JSON 配置；不能通过 `engram config set` 设置） | `20` | `0` 到 `200` |
 | `load.limit` | 正常加载返回的最大记忆数 | `8` | `1` 到 `32` |
 | `hooks.path_rules` | `native` 会为带有 `applies_to` 的记忆写入 Claude 和 Cursor 规则文件，并注册 Claude 的 `InstructionsLoaded`；`hook` 则保留 Claude 的 `PreToolUse` hook | `native` | `native`, `hook` |
+| `learning.mode` | 控制方案 A 会话学习：`off` 禁用自动学习，`working` 仅写入被 gitignore 且会过期的 `working/` 记忆，`propose` 还会将持久候选暂存为 `inbox/r-*.json` 收据（仅限 `engram.config.json` 中的 JSON 配置；不能通过 `engram config set` 或 Construct 设置） | `propose` | `off`, `working`, `propose` |
+| `learning.auto_drain` | 在符合条件的学习过程中自动处理队列中的 `SessionEnd` 会话记录（仅限 `engram.config.json` 中的 JSON 配置；不能通过 `engram config set` 或 Construct 设置） | `false` | `true`, `false` |
 | `rule_variants.enabled` | 启用或禁用规则变体生成 | `false` | `true`, `false` |
 | `rule_variants.active` | 当前的规则变体模式 | `balanced` | `light`, `balanced`, `strict` |
 | `graph.enabled` | 启用或禁用图感知路由 | `true` | `true`, `false` |
@@ -105,7 +107,7 @@ engram config set <key> <value>
 | `global_git.remote` | 用于全局同步的 Git 远程名称 | `origin` | 字符串 |
 | `global_git.branch` | 用于全局同步的 Git 分支名称 | `main` | 字符串 |
 
-这些设置也可以在 `engram entry` 的 **Construct** 标签页中以可视化方式管理。
+除仅限 JSON 配置的键（`mcp.resource_limit`、`learning.mode` 和 `learning.auto_drain`）外，这些设置也可以在 `engram entry` 的 **Construct** 标签页中以可视化方式管理。
 
 ## 后续步骤
 

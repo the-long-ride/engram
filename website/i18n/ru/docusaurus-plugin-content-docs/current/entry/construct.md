@@ -14,6 +14,15 @@ The Construct tab exposes Engram runtime config fields grouped like the UI, exce
 Fields marked **risky** can disable Engram, change save targets, change Git behavior, or affect memory security. Read the warning before changing them.
 </RiskCallout>
 
+## Подразделы
+
+Construct разделён на четыре подраздела:
+
+- **Configuration** — редактирование настроек среды выполнения для рабочего пространства и глобального уровня, сгруппированных по категориям (подробнее ниже).
+- **Profiles** — просмотр и управление именованными профилями Engram, а также выбор профиля по умолчанию.
+- **Workspaces** — просмотр зарегистрированных рабочих пространств, корневых путей и контекста соотношения рабочего пространства и глобальной области.
+- **Runtime** — просмотр итоговой конфигурации среды выполнения, фактических путей и диагностики текущего окружения.
+
 ## Core group
 
 ### Enabled
@@ -168,6 +177,30 @@ Hard maximum for rule memories.
 Raising this can increase context bloat and reduce routing quality. Keep rules concise.
 </RiskCallout>
 
+### Write Author Email
+
+**Config key:** `memory.include_author_email`  
+**Control:** toggle  
+**Default:** `false`  
+**Risk:** risky
+
+When on, new and updated memories also write `author_email` next to `author_name`. Off by default so committed memory files carry no email address; your email stays in the author profile and in Engram-created Git commits.
+
+<RiskCallout level="risky">
+Turning this on writes email addresses into committed memory files. Turn it off again and run `engram author migrate-memories --strip-email --confirm` to remove them.
+</RiskCallout>
+
+## Hooks group
+
+### hooks.path_rules
+
+**Config key:** `hooks.path_rules`  
+**Control:** select - `native`, `hook`  
+**Default:** `native`  
+**Risk:** normal
+
+`native` writes generated rule files for `applies_to` memories (Claude `.claude/rules/engram/`, Cursor `.cursor/rules/engram/`) and registers Claude `InstructionsLoaded`. `hook` keeps the Engram `PreToolUse` hook for Claude and removes the Claude rule files. Codex always uses `PreToolUse`.
+
 ## Graph group
 
 ### graph.enabled
@@ -207,10 +240,10 @@ Selects the local vector provider. `sqlite-vec` is the only supported provider.
 ### vector.enabled
 
 **Control:** toggle  
-**Default:** `true`  
+**Default:** `false`  
 **Risk:** normal
 
-Enables optional local vector routing. No cloud dependency.
+Experimental. Enables optional local vector routing built on hashed 64-dimension vectors, which are not semantic embeddings. Off by default; a workspace config that already stores `true` stays on. No cloud dependency.
 
 ### vector.auto_threshold
 
@@ -244,7 +277,7 @@ Embedding dimensions for the local vector sidecar. Changing this requires a rebu
 **Default:** `false`  
 **Risk:** normal
 
-Enables role/strictness variants. Use when teams need light/balanced/strict routing.
+Renders light and strict wording derived from each rule's Content at load time (off renders the balanced Content). Rule files store a `## Rule Variants` section only for custom wording.
 
 ### rule_variants.active
 
@@ -275,7 +308,7 @@ Comma-separated generated context targets refreshed when live sync runs.
 
 Global Git configuration no longer appears in Construct. Open **Git → Global** to edit the existing `global_git.*` settings with the same validation and risk-review backend. The Workspace tab under Git never exposes these global controls.
 
-For key-by-key details, use the [field reference](field-reference.md#global-git-enabled) or the [Git settings guide](../operations/git-author-settings.md#global-git-configuration).
+For key-by-key details, use the [field reference](field-reference.md#global-git) or the [Git settings guide](../operations/git-author-settings.md#global-git-configuration).
 
 ## Pattern Mining group
 

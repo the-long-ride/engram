@@ -1,0 +1,134 @@
+{
+  "version": 2,
+  "cases": [
+    {
+      "id": "freshness-cache-supersedes-stale",
+      "category": "freshness-ordering",
+      "query": "cache invalidation ttl stampede fix",
+      "expect": [
+        "cache-invalidation-working-fix",
+        "cache-invalidation-current"
+      ],
+      "expect_expanded": [
+        "cache-invalidation-working-fix",
+        "cache-invalidation-current"
+      ],
+      "expect_body_order": [
+        "cache-invalidation-current",
+        "cache-invalidation-working-fix"
+      ],
+      "forbid": [],
+      "depends_on": []
+    },
+    {
+      "id": "ordering-rule-and-dependency-first",
+      "category": "freshness-ordering",
+      "query": "checkout retry idempotency backoff",
+      "expect": [
+        "checkout-idempotency-rule",
+        "checkout-base-contract",
+        "checkout-retry-behavior"
+      ],
+      "expect_expanded": [
+        "checkout-idempotency-rule",
+        "checkout-base-contract",
+        "checkout-retry-behavior"
+      ],
+      "expect_body_order": [
+        "checkout-base-contract",
+        "checkout-retry-behavior"
+      ],
+      "forbid": [],
+      "depends_on": [
+        "checkout-base-contract"
+      ]
+    },
+    {
+      "id": "multi-turn-task-shift-and-working-uptake",
+      "category": "multi-turn-session",
+      "query": "cache invalidation ttl stampede fix",
+      "turns": [
+        "current session",
+        "cache invalidation ttl stampede fix",
+        "cache invalidation ttl stampede fix",
+        "queue backpressure deadletter consumer retries",
+        "cache invalidation ttl stampede fix"
+      ],
+      "expect": [
+        "startup-session-charter",
+        "cache-invalidation-working-fix",
+        "queue-backpressure-guide"
+      ],
+      "forbid": [],
+      "depends_on": []
+    },
+    {
+      "id": "multi-turn-checkout-repeat-delta",
+      "category": "multi-turn-session",
+      "query": "checkout retry idempotency backoff",
+      "turns": [
+        "current session",
+        "checkout retry idempotency backoff",
+        "checkout retry idempotency backoff",
+        "canary release rollout verification"
+      ],
+      "expect": [
+        "startup-session-charter",
+        "checkout-idempotency-rule",
+        "checkout-retry-behavior",
+        "release-canary-playbook"
+      ],
+      "forbid": [],
+      "depends_on": []
+    },
+    {
+      "id": "path-api-migration",
+      "category": "path-trigger",
+      "query": "src/api/migrations/20261124_add_orders.ts",
+      "expect": [
+        "api-migration-path-rule"
+      ],
+      "forbid": [
+        "checkout-idempotency-rule"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "expired-working-redis-probe",
+      "category": "working-expired",
+      "query": "redisprobe stalecluster failover drill",
+      "expect": [],
+      "expect_omitted": [
+        "expired-redis-probe"
+      ],
+      "forbid": [
+        "expired-redis-probe"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "synonym-throttle-to-rate-limit",
+      "category": "paraphrase",
+      "query": "endpoint throttling quota",
+      "expect": [
+        "ingress-rate-limit-policy"
+      ],
+      "forbid": [
+        "checkout-idempotency-rule"
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "synonym-oauth-bearer-to-jwt",
+      "category": "paraphrase",
+      "query": "oauth bearer auth",
+      "expect": [
+        "jwt-signing-validation"
+      ],
+      "forbid": [
+        "cache-invalidation-current"
+      ],
+      "depends_on": []
+    }
+  ]
+}

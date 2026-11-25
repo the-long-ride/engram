@@ -21,6 +21,15 @@ The search mode menu has two options:
 
 Clear the field to restore the full graph for the selected filters.
 
+## Route Simulator
+
+Use the **Simulate route** bar to test how Engram routes a query before an agent sees it. Submitting a query calls `/api/recall?simulate=true` and breaks down:
+
+- **Packed bodies** — memories included in full in the routed payload
+- **Cards** — compact memory cards included alongside packed bodies
+- **Omitted candidates** — matching memories excluded by ranking or budget limits
+- **Token budget** — budget usage across the simulated recall response
+
 ## Scope chips {#scope-chips}
 
 Filter the graph by memory source. Compare workspace vs global memory. Start with the current workspace only when the graph feels noisy.
@@ -49,9 +58,16 @@ Sensitive local content may be visible in the browser. Treat the panel as open w
 
 Opens the file in an editor and copies the path. Use for manual correction or review. The source of truth is the Markdown file.
 
+## Working and Noisy badges
+
+Memory cards and details surface status badges to highlight memories that need attention:
+
+- **Working** — marks active memories stored in the gitignored `working/` tier. Clicking **Promote** triggers immediate promotion via `POST /api/memory/promote` to move an active `working/` memory into durable storage without switching to the CLI.
+- **Noisy** — flags memories that frequently match without adding value so you can tighten their triggers, edit them, or archive them.
+
 ## Archive memory
 
-Removes memory from active routing while preserving it under `archive/`. Use archive, not delete, for auditability.
+Removes memory from active routing while preserving it under `archive/`. Clicking archive opens a **`Delete memory?` confirmation dialog** (there is no modal reason input; it records the default reason `'Deleted from Memories graph view'`). Use archive, not delete, for auditability.
 
 <RiskCallout level="caution">
 Archiving changes routing immediately. Use archive, not manual deletion, so history is preserved.
@@ -67,6 +83,8 @@ The detail panel mirrors CLI/index metadata. It shows `authority`, `revision`, `
 
 ```bash
 engram graph "<topic>"
+engram why <id> "<query>"
+engram promote <id>
 engram quality-check
 engram archive --reason "<why>" <id-or-file>
 ```

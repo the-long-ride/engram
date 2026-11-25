@@ -45,6 +45,10 @@ export function shutdownServer(): Promise<void> {
 }
 export function browseDirectories(path: string): Promise<ApiResult> { return postJson('/api/browse', { path }); }
 export function recall(query: string, explain = false): Promise<ApiResult> { return getJson(`/api/recall?query=${encodeURIComponent(query)}&explain=${String(explain)}`); }
+export function simulateRecall(query: string): Promise<ApiResult<{ query: string; tokens: number; budgetTokens: number; bodyIds: string[]; cardIds: string[]; omittedIds: string[] }>> {
+  return getJson(`/api/recall?query=${encodeURIComponent(query)}&simulate=true`);
+}
+export function promoteMemory(id: string): Promise<ApiResult> { return postJson('/api/memory/promote', { id, confirmed: true }); }
 export function reviewQueue(): Promise<ApiResult> { return getJson(`/api/review`); }
 export function reviewInspect(id: string): Promise<ApiResult> { return getJson(`/api/review/inspect?id=${encodeURIComponent(id)}`); }
 export function reviewPreview(id: string, memoryIds: string[] = []): Promise<ApiResult> {
@@ -54,6 +58,7 @@ export function reviewPreview(id: string, memoryIds: string[] = []): Promise<Api
 }
 export function reviewWrite(body: { proposal: string; scope: 'workspace' | 'global'; relations: Array<{ id: string; reason: 'DEPENDS_ON' | 'UPDATE' }>; confirmed: true }): Promise<ApiResult> { return postJson('/api/review/write', body); }
 export function reviewDismiss(ids: string[]): Promise<ApiResult> { return postJson('/api/review/dismiss', { ids }); }
+export function reviewApplyReceipts(body: { ids: string[]; scope?: 'workspace' | 'global'; confirmed: true }): Promise<ApiResult> { return postJson('/api/review/apply', body); }
 export function policyStatus(): Promise<ApiResult> { return getJson('/api/policy'); }
 export function savePolicyPatch(patch: Record<string, unknown>): Promise<ApiResult> { return postJson('/api/policy', { patch }); }
 export function capabilities(): Promise<ApiResult> { return getJson('/api/capabilities'); }

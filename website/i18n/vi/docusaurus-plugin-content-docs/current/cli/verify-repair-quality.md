@@ -8,6 +8,16 @@ description: Các lệnh bảo trì — xác minh hash, sửa tệp không hợp
 
 Các lệnh bảo trì giúp bộ nhớ luôn khỏe mạnh.
 
+## status
+
+```bash
+engram status
+engram stat
+engram status --json
+```
+
+In ra màn hình tổng quan duy nhất về thư mục gốc bộ nhớ workspace và global, profile đang hoạt động, các host đã liên kết, các biên nhận chờ duyệt, số lượng tầng làm việc và tình trạng toàn vẹn/độ mới. `engram stat` là bí danh ngắn, còn `--json` xuất bản chụp có cấu trúc cho script.
+
 ## verify
 
 ```bash
@@ -25,9 +35,10 @@ Kiểm tra hash để đảm bảo tính toàn vẹn. Hãy chạy sau khi chỉn
 ```bash
 engram stats
 engram stats --usage
+engram stats --backfill [--git <range>] [--limit <n>]
 ```
 
-`--usage` đọc `.agents/.engram/usage.json` (cục bộ, nằm trong gitignore) và cho biết agent thực sự lấy những bộ nhớ nào bằng `engram load --id`, cũng như những bộ nhớ đã được chèn nhưng không bao giờ được lấy trong 30 ngày.
+`--usage` đọc `.agents/.engram/usage.json` (cục bộ, nằm trong gitignore) và hiển thị số lần lấy (`engram load --id`), các bộ đếm kết quả vòng kín (`applied`, `corrected` và `noisy` / các lần chèn không mang lại giá trị), cũng như những bộ nhớ đã được chèn nhưng không bao giờ được lấy trong 30 ngày. `--backfill` bổ sung dữ liệu đo lường sử dụng lịch sử từ lịch sử commit Git (các commit không phải merge gần đây, qua `backfillUsageFromGit`, có thể giới hạn bằng `[--git <range>] [--limit <n>]`) vào `usage.json`.
 
 ## repair
 
@@ -58,9 +69,10 @@ Báo cáo gọn các ứng viên mâu thuẫn. Việc phát hiện mâu thuẫn 
 ```bash
 engram graph "package manager"
 engram graph --rebuild
+engram graph link <parent-id> <child-id...>
 ```
 
-Kiểm tra định tuyến đồ thị trước khi lưu trữ. Chạy `engram graph --rebuild` sau khi chỉnh sửa thủ công.
+Kiểm tra định tuyến đồ thị trước khi lưu trữ, liên kết các điều kiện tiên quyết `depends_on` tường minh bằng `engram graph link <parent-id> <child-id...>`, hoặc chạy `engram graph --rebuild` sau khi chỉnh sửa thủ công.
 
 ## archive
 
@@ -82,10 +94,13 @@ Xem trước hoặc giải quyết chỉ các xung đột bộ nhớ workspace d
 ## benchmark
 
 ```bash
-engram benchmark
+engram benchmark <cases.json> --json
+engram benchmark <cases.json> --baseline <baseline.json> --fail-on forbidden,recall
+engram benchmark <cases.json> --write-report <report.json>
+engram benchmark --from-git [--out <path>]
 ```
 
-Kiểm tra hồi quy truy xuất.
+Chạy các bộ kiểm tra hồi quy truy xuất có quản lý phiên bản, bao gồm `freshness-ordering` (tăng điểm độ mới và sắp xếp phần thân nhận biết chú ý), `multi-turn-session` (tiết kiệm token của hook qua nhiều lượt) và `telemetry-loop` (đo lường kết quả vòng kín `real-stacks-v1` và suy giảm nhiễu). Dùng `--from-git [--out <path>]` để tổng hợp các trường hợp benchmark cục bộ cho repo từ lịch sử Git gần đây, `--baseline` để so sánh với các chỉ số đã lưu, `--write-report` để ghi báo cáo JSON chỉ chứa ID, và `--fail-on` để làm thất bại CI khi gặp các hồi quy cụ thể.
 
 ## Bước tiếp theo {#next-steps}
 

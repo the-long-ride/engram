@@ -46,6 +46,15 @@ engram save-session --file .agents/.engram/inbox/<observation>.md
 Lệnh đầu tiên làm sạch nguồn và ghi một dấu vết bất biến được định danh bằng `trace_id` cùng một lớp bọc inbox có thể chỉnh sửa. Lệnh thứ hai đối chiếu lớp bọc về dấu vết của nó, xác minh hash và phạm vi, rồi chỉ ghi bộ nhớ schema v3 đã được con người phê duyệt kèm `evidence_refs`. Chỉnh sửa `## Raw Note` không thể thay thế bằng chứng là dấu vết.
 <!-- evidence-foundation:v3:end -->
 
+## Học phiên (Session learning) {#session-learning}
+
+Cơ chế học phiên Phương án A ghi nhận các bài học bền vững mà không vượt qua ranh giới phê duyệt. Các hook sự kiện prompt (học từ chỉnh sửa theo kiểu fail-open) và các lần chạy `engram observe --learn` / `engram observe --queue --learn` tường minh chắt lọc một cách xác định các bài học đã làm sạch thành:
+
+- các bộ nhớ `working/` có thời hạn và nằm trong gitignore (được hậu thuẫn bởi các dấu vết `tr_sl_*` đã làm sạch) để duy trì tính liên tục của tác vụ ngay lập tức; và
+- các biên nhận rà soát chưa kích hoạt `inbox/r-*.json` khi `learning.mode` là `propose` (mặc định; đặt `working` để bỏ qua biên nhận hoặc `off` để tắt).
+
+Dùng `engram review inbox`, `engram review triage`, `engram review apply` và `engram review dismiss` để rà soát các biên nhận chờ duyệt. `learning.auto_drain` (mặc định `false`) điều khiển việc tự động xử lý hàng đợi bản ghi `SessionEnd`. Bộ nhớ bền vững đang hoạt động không bao giờ bị ghi mà không có sự phê duyệt của con người.
+
 ## Các kiểm tra an toàn khi lưu {#safety-checks-at-save-time}
 
 - Kiểm tra schema

@@ -94,9 +94,31 @@ engram working prune
 ```bash
 engram observe --file session.md
 engram save-session --file .agents/.engram/inbox/<note>.md
+engram observe --learn --file session.md
+engram observe --learn --git HEAD~10..HEAD
+engram observe --queue --learn
 ```
 
 `observe` はサニタイズした生のノートを `inbox/` に保存します。inbox のノートはアクティブなメモリではありません。何を永続メモリにするか決める前に、大まかなノートを残しておきたいときに使います。
+
+`--learn`（`engram observe --learn [--file <path> | --git [range]]` または `engram observe --queue --learn`）を付けると、学習内容を決定論的に抽出し、Git 管理外で有効期限のある `working/` メモリ（サニタイズ済み `tr_sl_*` トレース付き）として保存しつつ、高信頼の永続候補を非アクティブな `inbox/r-*.json` レシートとしてステージングします。ステージングされた永続レシートは `engram review inbox` と `engram review apply` で確認・承認できます。永続アクティブメモリが承認なしで書き込まれることはありません。
+
+## review
+
+```bash
+engram review inbox
+engram review triage
+engram review triage --interactive
+engram review apply <receipt-id>
+engram review dismiss <receipt-id>
+```
+
+プロンプト時の訂正学習や `engram observe --learn` によってステージングされた非アクティブな `inbox/r-*.json` 学習レシートを確認・処理します。
+
+- `engram review inbox` — ステージングされたレシートの `id`、`scope`、`source`、`type`、および省略された候補テキストを一覧表示します。
+- `engram review triage` / `engram review triage --interactive` — 保留中のレシートを対話的に順に取り扱い、`[a]pprove / [d]ismiss / [s]kip / [q]uit` のプロンプトを表示します（編集オプションはなく、`SUPERSEDE` の判定は `engram review apply <receipt-id>` に委ねられます）。
+- `engram review apply <receipt-id>` — `<receipt-id>` の指定が必要で、そのレシートを書き込みゲートに通し、永続アクティブメモリを作成または更新します。
+- `engram review dismiss <receipt-id>` — アクティブメモリを書き込まずにレシートを破棄します。
 
 <!-- evidence-foundation:v3:start -->
 ## 証拠に基づくメモリ

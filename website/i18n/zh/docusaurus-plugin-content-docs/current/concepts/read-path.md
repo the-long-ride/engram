@@ -18,9 +18,9 @@ description: Engram 加载工作区和全局索引，应用忽略规则和角色
 
 ## 锚定、排序与精选
 
-`load` 首先以有意义的查询词作为路由锚点，忽略 `rule`、`knowledge` 之类的通用记忆词汇以及常见停用词。然后它使用 BM25（轻度词干提取）对 id、标签、`directive`、摘要、触发词和内容词汇的候选进行排序。得分会按生命周期（`review_due` x0.7）、过时程度（x0.6）、置信度（`medium` x0.9）和作用域（工作区 x1.1）进行缩放，并为 agent 获取过的记忆加上一个小幅加成。`valid_until` 已过的记忆会被排除，省略原因为 `lifecycle`。拥有四个或更多锚点的查询需要命中两个锚点，或在某个强字段（id、标签、`directive` 或 `applies_to` 路径）上命中一次。没有词项重叠的向量命中绝不会使某条记忆入选。
+`load` 使用支持 Unicode/越南语/CJK 的分词器对查询和记忆进行分词，再基于未扩展的 `rawStems`（`hasAnchorOverlap`）以有意义的查询词作为路由锚点，忽略 `rule`、`knowledge` 之类的通用记忆词汇以及常见停用词，防止同义词扩展引入无关记忆。当缺少精确锚点时，24 个确定性概念簇与语料库共现桥接仍可关联相关术语。然后它使用三流 BM25F（`title`、`tags`、`body`）（轻度词干提取）对 id、标签、`directive`、摘要、触发词和内容词汇的候选进行排序。得分会按生命周期（`review_due` x0.7）、过时程度（x0.6）、置信度（`medium` x0.9）和作用域（工作区 x1.1）进行缩放，并加上 `knowledgeFreshnessBoost`（基于 `last_confirmed`、`updated` 或 `valid_from` 的新鲜度衰减、`working` 层记忆的 `+0.08` 加成以及有上限的修订加成）以及闭环 `usage.json` 结果遥测：已获取且 `applied` 的记忆获得有上限的加成，`corrected` 记忆受到惩罚，而重复注入但零效用的记忆在 20 次零效用注入后会产生噪声衰减。`valid_until` 已过的记忆会被排除，省略原因为 `lifecycle`。拥有四个或更多锚点的查询需要命中两个锚点，或在某个强字段（id、标签、`directive` 或 `applies_to` 路径）上命中一次。没有词项重叠的向量命中绝不会使某条记忆入选。
 
-最后，它会把更大的候选池精选为一个精简的上下文包。
+最后，它会把更大的候选池精选为一个精简的上下文包，并使用 `orderForAgentConsumption` 对展开的正文进行注意力感知的拓扑排序（规则、指令与 `depends_on` 前置条件排在最前；较旧的持久上下文居中；`<=14d` 的较新记忆或 `working` 层叶子节点排在末尾）。
 
 正常加载会报告选中数量和相关总数，例如 `loaded 8 memory files / 14 total related memories`。
 
@@ -40,7 +40,7 @@ Frontmatter、`## Context`、`## Example` 和 `## Origin` 绝不会渲染给 age
 
 ## Hook 增量与路径触发
 
-Hook 会记住它们在会话中已经交付过的记忆键。之后的提示轮次只注入新增的正文，并把其余内容折叠成一行 `already loaded: <ids>`。`SessionStart` 和 `PreCompact` 会重置该集合。带有 `applies_to` glob 的记忆还会在 `PreToolUse` 文件事件（Codex 的 `apply_patch` 编辑；hook 模式下 Claude 的 `Read`、`Edit`、`Write`、`MultiEdit`）以及 Gemini 的 `AfterTool` 事件（`read_file`、`write_file`、`replace`）上被即时注入，每个事件最多 3 条正文。当 `hooks.path_rules native`（默认）时，Claude 和 Cursor 转而从 `.claude/rules/engram/` 和 `.cursor/rules/engram/` 下生成的规则文件中加载它们，并由 Claude 的 `InstructionsLoaded` hook 来更新已交付集合。Claude 和 Codex 的子 agent 通过 `SubagentStart` 以路由出的上下文启动，并且 hook 输出保持在各宿主的载荷上限之内（Codex 为 2,400 个 token，Claude 为 9,500 个字符）：超出上限时，正文会降级为卡片，绝不会在文本中途被截断。参见 [Hooks 与证明行](../integrations/hooks.md)。
+Hook 会同时记住会话中已交付的记忆键与启动时展示的卡片（`carded` / `touched`）。在 `read: auto` 模式下，`SessionStart`（`hookStartupAuto`）会将非启动规则折叠为单行卡片而非完整正文，并在后续提示转向对应主题时将 `carded` 规则提升为完整正文。之后的提示轮次只注入新增的正文，并把其余内容折叠成一行 `already loaded: <ids>`。`SessionStart` 和 `PreCompact` 会重置该集合。带有 `applies_to` glob 的记忆还会在 `PreToolUse` 文件事件（Codex 的 `apply_patch` 编辑；hook 模式下 Claude 的 `Read`、`Edit`、`Write`、`MultiEdit`）以及 Gemini 的 `AfterTool` 事件（`read_file`、`write_file`、`replace`）上被即时注入，每个事件最多 3 条正文。当 `hooks.path_rules native`（默认）时，Claude 和 Cursor 转而从 `.claude/rules/engram/` 和 `.cursor/rules/engram/` 下生成的规则文件中加载它们，并由 Claude 的 `InstructionsLoaded` hook 来更新已交付集合。Claude 和 Codex 的子 agent 通过 `SubagentStart` 以任务作用域的路由上下文启动（通过 `subagentQueryText` 从子 agent 的任务提示派生路由查询，缺失时回退为 `current session`），并且 hook 输出保持在各宿主的载荷上限之内（Codex 为 2,400 个 token，Claude 为 9,500 个字符）：超出上限时，正文会降级为卡片，绝不会在文本中途被截断。参见 [Hooks 与证明行](../integrations/hooks.md)。
 
 `workflow` 和 `workflows` 仍然会路由到技能记忆，但通用的类型词本身不会形成宽泛的匹配。
 

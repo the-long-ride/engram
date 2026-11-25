@@ -57,10 +57,17 @@ Generated JSON helps agents find memory faster, but it is not the authority. If 
 
 Memory files may declare `depends_on: [...]` in frontmatter when one rule,
 skill, or knowledge item needs another as a prerequisite. The graph derives
-foundation-to-deep layers from those dependencies, and default `engram load` keeps
-prerequisites before dependent memories inside the compact agent-facing route.
-SessionStart hooks call that routed load path at startup and inject only changed
-context, while prompt-turn hooks reuse or skip unchanged routes.
+foundation-to-deep layers from those dependencies, and default `engram load`
+ranks candidates with `knowledgeFreshnessBoost` (`last_confirmed`/`updated`/`valid_from`
+recency decay and `working/` boost) and orders expanded bodies with
+`orderForAgentConsumption` (rules, instructions, and `depends_on` prerequisites
+first; older durable context in the middle; fresh `<=14d` or `working/` leaves at
+the end) inside the compact agent-facing route.
+SessionStart hooks call that routed load path at startup (compressing non-startup
+rules to one-line `carded` entries in `read: auto` mode via `hookStartupAuto`),
+while later prompt turns promote relevant cards, skip already-delivered bodies,
+and capture explicit prompt corrections as expiring gitignored `working/` notes
+plus staged `inbox/r-*.json` durable receipts for human review.
 
 ## Compact Output By Default
 

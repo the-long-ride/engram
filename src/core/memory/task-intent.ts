@@ -20,7 +20,7 @@ const DOMAIN_SIGNALS: Record<string, string[]> = {
   frontend: ['form', 'page', 'component', 'responsive', 'tailwind', 'react', 'css', 'html', 'vue', 'angular', 'svelte', 'button', 'modal', 'dialog', 'dropdown', 'sidebar', 'navbar', 'layout', 'viewport', 'animation', 'transition'],
   ui: ['ui', 'user interface', 'ux', 'interaction', 'design system', 'theme', 'glassmorphism', 'neumorphism', 'material', 'skeuomorphic'],
   backend: ['api', 'endpoint', 'server', 'middleware', 'controller', 'handler', 'route', 'rest', 'graphql'],
-  database: ['db', 'database', 'sql', 'query', 'schema', 'migration', 'index', 'orm', 'prisma', 'drizzle'],
+  database: ['db', 'database', 'sql', 'schema', 'migration', 'index', 'orm', 'prisma', 'drizzle'],
   auth: ['auth', 'login', 'signup', 'register', 'password', 'token', 'jwt', 'session', 'oauth', 'sso', 'credential'],
   ai_agent: ['agent', 'skill', 'mcp', 'tool', 'prompt', 'workflow', 'memory', 'rag', 'llm', 'chatbot', 'assistant'],
   devops: ['deploy', 'ci', 'cd', 'pipeline', 'docker', 'kubernetes', 'infra', 'terraform', 'cloud'],

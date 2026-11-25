@@ -241,7 +241,8 @@ export function mergeConfig(base: EngramConfig, found: Partial<EngramConfig>): E
     encryption: { ...base.encryption, ...(found.encryption ?? {}) },
     memory: { ...base.memory, ...(found.memory ?? {}) },
     mcp: { ...(base.mcp ?? {}), ...(found.mcp ?? {}) },
-    ...(base.hooks || found.hooks ? { hooks: { ...(base.hooks ?? {}), ...(found.hooks ?? {}) } } : {})
+    ...(base.hooks || found.hooks ? { hooks: { ...(base.hooks ?? {}), ...(found.hooks ?? {}) } } : {}),
+    ...(base.learning || found.learning ? { learning: { ...(base.learning ?? {}), ...(found.learning ?? {}) } } : {})
   };
 }
 

@@ -24,29 +24,44 @@ L'interface Entry Web UI est le panneau de contrôle local pour Engram. Utilisez
 Le panneau s'exécute sur votre machine. Ce n'est pas un service cloud. Fermez le serveur lorsque vous avez terminé pour des raisons d'hygiène de sécurité.
 
 <RiskCallout level="risky">
-Le panneau Entry est exclusivement local. Traitez-le comme ouvert pendant la configuration de la mémoire, puis fermez le serveur depuis l'onglet Runtime lorsque vous avez terminé.
+Le panneau Entry est exclusivement local. Traitez-le comme ouvert pendant la configuration de la mémoire, puis fermez le serveur depuis le pied de la barre latérale lorsque vous avez terminé.
 </RiskCallout>
 
 ## Relation avec les commandes CLI
 
 Chaque contrôle visible correspond à une commande CLI ou à une clé de configuration. Lorsqu'un équivalent CLI existe, la référence du champ le répertorie. La CLI reste la source de vérité pour les scripts et l'automatisation.
 
+## Navigation et routage d'URL
+
+L'interface Entry Web UI utilise le routage d'URL `#hash` afin que chaque onglet puisse être mis en favori, rechargé ou parcouru via l'historique du navigateur :
+
+- `#config` — Construct
+- `#author` — Git
+- `#upgrade` — Updates
+- `#recall` — Memories
+- `#review` — Review
+- `#maintain` — Core
+- `#connect` — Connections
+
+La barre latérale comprend une section **Workspace** pour les contrôles liés à l'espace de travail et affiche un badge de décompte sur **Review** dès que des constats, des candidats différés ou des reçus attendent un triage. Sur les écrans étroits, la barre latérale se replie dans un tiroir mobile que vous pouvez fermer avec le bouton de fermeture ou la touche `Escape`.
+
 ## Onglets en un coup d'œil
 
-| Onglet | Rôle |
-| --- | --- |
-| [Connections](connections.md) | Détecter et lier les agents IA pris en charge |
-| [Construct](construct.md) | Configurer chaque champ d'exécution d'Engram |
-| [Profiles](profiles.md) | Gérer les profils de mémoire globale isolés |
-| [Workspaces](workspaces.md) | Enregistrer et lier les dépôts de projet |
-| [Core](core.md) | Examiner les mémoires en doublon et en conflit |
-| [Memories](memories.md) | Inspecter le graphe de mémoire et archiver les mémoires |
-| [Runtime](runtime.md) | Configuration résolue et chemins en lecture seule |
+| Onglet | Hash | Rôle |
+| --- | --- | --- |
+| [Construct](construct.md) | `#config` | Configurer les champs d'exécution, profils, espaces de travail et l'état d'exécution d'Engram |
+| [Git](../operations/git-author-settings.md) | `#author` | Gérer l'identité d'auteur et la configuration Git globale |
+| [Updates](../operations/configuration-upgrades.md) | `#upgrade` | Vérifier les mises à jour du paquet et appliquer les mises à niveau de configuration |
+| [Memories](memories.md) | `#recall` | Rechercher, simuler le routage, inspecter, promouvoir et archiver la mémoire active |
+| [Review](review.md) | `#review` | Trier les reçus d'apprentissage de session, constats et écritures différées |
+| [Core](core.md) | `#maintain` | Examiner les mémoires en doublon et en conflit |
+| [Connections](connections.md) | `#connect` | Vérifier la santé Doctor, détecter les agents et lier les agents IA pris en charge |
 
 ## Étapes suivantes
 
 - [Lancement du panneau de contrôle](launch.md)
 - [Onglet Construct](construct.md)
+- [Onglet Core](core.md)
 - [Référence complète des champs](field-reference.md)
 
 

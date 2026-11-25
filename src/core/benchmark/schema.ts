@@ -14,7 +14,10 @@ export type BenchmarkCategory =
   | 'security'
   | 'session-start'
   | 'path-trigger'
-  | 'working-expired';
+  | 'working-expired'
+  | 'freshness-ordering'
+  | 'multi-turn-session'
+  | 'telemetry-loop';
 
 export type BenchmarkCase = {
   id: string;
@@ -29,13 +32,22 @@ export type BenchmarkCase = {
   category?: BenchmarkCategory;
   /** Ids that must be reported as omitted (lifecycle) and must not be routed. */
   expect_omitted?: string[];
+  /** Ids expected to be expanded as full bodies (not just cards). */
+  expect_expanded?: string[];
+  /** Ids expected to appear as an in-order subsequence in expanded body order. */
+  expect_body_order?: string[];
+  /** Sequence of prompt queries for `multi-turn-session` or `telemetry-loop` cases. */
+  turns?: string[];
+  /** Ids credited as applied when selected during a `telemetry-loop` simulation. */
+  applied_ids?: string[];
 };
 
 export type BenchmarkDocument = { version: 1 | 2; cases: BenchmarkCase[] };
 export type BenchmarkDiagnostic = { path: string; message: string };
 const BENCHMARK_CATEGORIES = new Set<BenchmarkCategory>([
   'zero-match', 'paraphrase', 'negation', 'dependency-chain', 'profile-isolation',
-  'duplicate', 'mixed-intent', 'disagreement', 'security', 'session-start', 'path-trigger', 'working-expired'
+  'duplicate', 'mixed-intent', 'disagreement', 'security', 'session-start', 'path-trigger', 'working-expired',
+  'freshness-ordering', 'multi-turn-session', 'telemetry-loop'
 ]);
 
 export function parseBenchmarkDocument(value: unknown): { document?: BenchmarkDocument; diagnostics: BenchmarkDiagnostic[] } {
@@ -74,6 +86,10 @@ export function parseBenchmarkDocument(value: unknown): { document?: BenchmarkDo
       : undefined;
     if (item.category !== undefined && !category) diagnostics.push({ path: `${path}.category`, message: 'category must be a supported benchmark category' });
     if (category === 'path-trigger' && query && isAbsolutePath(query)) diagnostics.push({ path: `${path}.query`, message: 'path-trigger query must be a workspace-relative path' });
+    const expectExpanded = validateStringArray(item.expect_expanded, `${path}.expect_expanded`, diagnostics);
+    const expectBodyOrder = validateStringArray(item.expect_body_order, `${path}.expect_body_order`, diagnostics);
+    const turns = validateStringArray(item.turns, `${path}.turns`, diagnostics, true);
+    const appliedIds = validateStringArray(item.applied_ids, `${path}.applied_ids`, diagnostics);
     cases.push({
       id,
       query,
@@ -85,11 +101,25 @@ export function parseBenchmarkDocument(value: unknown): { document?: BenchmarkDo
       ...(item.limit ? { limit: item.limit } : {}),
       ...(maxTokens !== undefined ? { max_tokens: maxTokens } : {}),
       ...(category ? { category } : {}),
-      ...(expectOmitted.length ? { expect_omitted: expectOmitted } : {})
+      ...(expectOmitted.length ? { expect_omitted: expectOmitted } : {}),
+      ...(expectExpanded?.length ? { expect_expanded: expectExpanded } : {}),
+      ...(expectBodyOrder?.length ? { expect_body_order: expectBodyOrder } : {}),
+      ...(turns?.length ? { turns } : {}),
+      ...(appliedIds?.length ? { applied_ids: appliedIds } : {})
     });
   }
   const version = (input.version === 2 ? 2 : 1) as 1 | 2;
   return diagnostics.length ? { diagnostics } : { document: { version, cases }, diagnostics };
+}
+
+/** Validate an optional array of non-empty strings. */
+function validateStringArray(value: unknown, fieldPath: string, diagnostics: BenchmarkDiagnostic[], requireNonEmpty = false): string[] | undefined {
+  if (value === undefined) return undefined;
+  if (!Array.isArray(value) || (requireNonEmpty && value.length === 0) || value.some((entry) => typeof entry !== 'string' || !entry.trim())) {
+    diagnostics.push({ path: fieldPath, message: `${fieldPath.split('.').pop()} must be a${requireNonEmpty ? ' non-empty' : 'n'} array of non-empty strings` });
+    return undefined;
+  }
+  return value.map((entry) => entry.trim());
 }
 
 /** POSIX, Windows drive, or UNC absolute path. */

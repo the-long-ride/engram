@@ -8,6 +8,16 @@ description: Commandes de maintenance — vérifier les hachages, réparer les f
 
 Les commandes de maintenance gardent la mémoire en bonne santé.
 
+## status
+
+```bash
+engram status
+engram stat
+engram status --json
+```
+
+Affiche sur un seul écran une vue d’ensemble des racines de mémoire workspace et globale, du profil actif, des hôtes liés, des reçus en attente de relecture, des compteurs du niveau de travail et de l’état d’intégrité/fraîcheur. `engram stat` est un alias court et `--json` produit l’instantané structuré pour les scripts.
+
 ## verify
 
 ```bash
@@ -25,9 +35,10 @@ Vérifie l’intégrité par les hachages. À exécuter après des modifications
 ```bash
 engram stats
 engram stats --usage
+engram stats --backfill [--git <range>] [--limit <n>]
 ```
 
-`--usage` lit le fichier local `.agents/.engram/usage.json`, ignoré par Git, et montre quelles mémoires les agents récupèrent réellement avec `engram load --id` et lesquelles ont été injectées sans jamais être récupérées en 30 jours.
+`--usage` lit le fichier local `.agents/.engram/usage.json`, ignoré par Git, et affiche les compteurs de récupération (`engram load --id`), les compteurs de résultats en boucle fermée (`applied`, `corrected` et `noisy` / injections sans utilité) et les mémoires injectées mais jamais récupérées en 30 jours. `--backfill` reconstitue la télémétrie historique d’usage dans `usage.json` à partir de l’historique des commits Git (commits récents sans fusion via `backfillUsageFromGit`, avec `[--git <range>] [--limit <n>]` facultatifs).
 
 ## repair
 
@@ -58,9 +69,10 @@ Signale de façon compacte les candidats à une contradiction. La détection des
 ```bash
 engram graph "package manager"
 engram graph --rebuild
+engram graph link <parent-id> <child-id...>
 ```
 
-Inspectez le routage par graphe avant d’archiver. Exécutez `engram graph --rebuild` après des modifications manuelles.
+Inspectez le routage par graphe avant d’archiver, liez des prérequis `depends_on` explicites avec `engram graph link <parent-id> <child-id...>`, ou exécutez `engram graph --rebuild` après des modifications manuelles.
 
 ## archive
 
@@ -82,10 +94,13 @@ Prévisualise ou résout uniquement les conflits de mémoire de l’espace de tr
 ## benchmark
 
 ```bash
-engram benchmark
+engram benchmark <cases.json> --json
+engram benchmark <cases.json> --baseline <baseline.json> --fail-on forbidden,recall
+engram benchmark <cases.json> --write-report <report.json>
+engram benchmark --from-git [--out <path>]
 ```
 
-Contrôles de régression de la récupération.
+Exécute des suites versionnées de régression de récupération, dont `freshness-ordering` (bonus de fraîcheur et ordre des corps sensible à l’attention), `multi-turn-session` (économies de tokens des hooks sur plusieurs tours) et `telemetry-loop` (télémétrie des résultats en boucle fermée `real-stacks-v1` et décroissance du bruit). Utilisez `--from-git [--out <path>]` pour synthétiser des cas de benchmark locaux au dépôt depuis l’historique Git récent, `--baseline` pour comparer aux métriques enregistrées, `--write-report` pour écrire un rapport JSON contenant uniquement les identifiants, et `--fail-on` pour faire échouer la CI sur des régressions précises.
 
 ## Étapes suivantes {#next-steps}
 

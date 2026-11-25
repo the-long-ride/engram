@@ -1,0 +1,755 @@
+{
+  "version": 1,
+  "limit": 8,
+  "cases": [
+    {
+      "id": "tauri-ipc-invoke",
+      "query": "tauri ipc invoke command boundary payload",
+      "expected": [
+        "tauri-ipc-command-boundaries"
+      ],
+      "routed": [
+        "workspace:rules/tauri-ipc-command-boundaries.md",
+        "workspace:rules/tokio-mutex-never-across-await.md"
+      ],
+      "matched": [
+        "tauri-ipc-command-boundaries"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 219,
+      "hook_tokens": 264
+    },
+    {
+      "id": "tauri-webview2-cleanup",
+      "query": "webview2 desktop memory bloat heap diagnostics",
+      "expected": [
+        "webview2-heap-memory-diagnostics"
+      ],
+      "routed": [
+        "workspace:rules/tauri-ipc-command-boundaries.md",
+        "workspace:knowledge/webview2-heap-memory-diagnostics.md",
+        "workspace:knowledge/a-webview2-diagnostics-legacy.md"
+      ],
+      "matched": [
+        "webview2-heap-memory-diagnostics"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 306,
+      "hook_tokens": 368
+    },
+    {
+      "id": "tauri-ipc-paraphrase",
+      "query": "webview invoke command serialization",
+      "expected": [
+        "tauri-ipc-command-boundaries"
+      ],
+      "routed": [
+        "workspace:rules/tauri-ipc-command-boundaries.md"
+      ],
+      "matched": [
+        "tauri-ipc-command-boundaries"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 122,
+      "category": "paraphrase",
+      "hook_tokens": 151
+    },
+    {
+      "id": "tokio-mutex-await",
+      "query": "tokio mutex deadlock across await",
+      "expected": [
+        "tokio-mutex-never-across-await"
+      ],
+      "routed": [
+        "workspace:rules/tokio-mutex-never-across-await.md"
+      ],
+      "matched": [
+        "tokio-mutex-never-across-await"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 123,
+      "hook_tokens": 155
+    },
+    {
+      "id": "tokio-starvation",
+      "query": "tokio task starvation concurrency lock",
+      "expected": [
+        "tokio-mutex-never-across-await"
+      ],
+      "routed": [
+        "workspace:rules/tokio-mutex-never-across-await.md",
+        "workspace:skills/postgres-zero-downtime-ddl.md"
+      ],
+      "matched": [
+        "tokio-mutex-never-across-await"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 219,
+      "category": "paraphrase",
+      "hook_tokens": 265
+    },
+    {
+      "id": "tokio-std-mutex",
+      "query": "avoid holding std sync mutex across await",
+      "expected": [
+        "tokio-mutex-never-across-await"
+      ],
+      "routed": [
+        "workspace:rules/tokio-mutex-never-across-await.md"
+      ],
+      "matched": [
+        "tokio-mutex-never-across-await"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 123,
+      "category": "negation",
+      "hook_tokens": 155
+    },
+    {
+      "id": "angular-signals-zoneless",
+      "query": "angular signals zoneless change detection",
+      "expected": [
+        "angular-signals-zoneless-ssr"
+      ],
+      "routed": [
+        "workspace:rules/angular-signals-zoneless-ssr.md"
+      ],
+      "matched": [
+        "angular-signals-zoneless-ssr"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 128,
+      "hook_tokens": 158
+    },
+    {
+      "id": "angular-ssr-hydration",
+      "query": "ssr hydration mismatch prerender window",
+      "expected": [
+        "angular-signals-zoneless-ssr"
+      ],
+      "routed": [
+        "workspace:rules/angular-signals-zoneless-ssr.md"
+      ],
+      "matched": [
+        "angular-signals-zoneless-ssr"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 128,
+      "category": "paraphrase",
+      "hook_tokens": 158
+    },
+    {
+      "id": "angular-rxjs-concept",
+      "query": "rxjs zoneless angular state",
+      "expected": [
+        "angular-signals-zoneless-ssr"
+      ],
+      "routed": [
+        "workspace:rules/angular-signals-zoneless-ssr.md"
+      ],
+      "matched": [
+        "angular-signals-zoneless-ssr"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 128,
+      "category": "paraphrase",
+      "hook_tokens": 158
+    },
+    {
+      "id": "wcag-focus-trap",
+      "query": "wcag modal focus trap keyboard navigation",
+      "expected": [
+        "wcag-modal-focus-trap"
+      ],
+      "routed": [
+        "workspace:rules/wcag-modal-focus-trap.md"
+      ],
+      "matched": [
+        "wcag-modal-focus-trap"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 122,
+      "hook_tokens": 149
+    },
+    {
+      "id": "a11y-aria-dialog",
+      "query": "a11y aria dialog restore focus",
+      "expected": [
+        "wcag-modal-focus-trap"
+      ],
+      "routed": [
+        "workspace:rules/wcag-modal-focus-trap.md"
+      ],
+      "matched": [
+        "wcag-modal-focus-trap"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 122,
+      "category": "paraphrase",
+      "hook_tokens": 149
+    },
+    {
+      "id": "responsive-viewport-overflow",
+      "query": "responsive viewport overflow modal",
+      "expected": [
+        "wcag-modal-focus-trap"
+      ],
+      "routed": [
+        "workspace:rules/wcag-modal-focus-trap.md"
+      ],
+      "matched": [
+        "wcag-modal-focus-trap"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 122,
+      "category": "paraphrase",
+      "hook_tokens": 149
+    },
+    {
+      "id": "supabase-rls-policy",
+      "query": "supabase rls row-level-security auth uid",
+      "expected": [
+        "supabase-rls-least-privilege"
+      ],
+      "routed": [
+        "workspace:rules/supabase-rls-least-privilege.md",
+        "workspace:skills/oauth-pkce-login-hardening.md",
+        "workspace:skills/csp-xss-input-sanitization.md",
+        "workspace:knowledge/deno-edge-function-cold-starts.md",
+        "workspace:skills/postgres-zero-downtime-ddl.md"
+      ],
+      "matched": [
+        "supabase-rls-least-privilege"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 408,
+      "hook_tokens": 465
+    },
+    {
+      "id": "postgrest-rbac-permission",
+      "query": "postgrest rbac permission least privilege",
+      "expected": [
+        "supabase-rls-least-privilege"
+      ],
+      "routed": [
+        "workspace:rules/supabase-rls-least-privilege.md"
+      ],
+      "matched": [
+        "supabase-rls-least-privilege"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 120,
+      "category": "paraphrase",
+      "hook_tokens": 149
+    },
+    {
+      "id": "supabase-no-service-role",
+      "query": "avoid leaking service role key with rls",
+      "expected": [
+        "supabase-rls-least-privilege"
+      ],
+      "routed": [
+        "workspace:rules/supabase-rls-least-privilege.md",
+        "workspace:knowledge/webview2-heap-memory-diagnostics.md"
+      ],
+      "matched": [
+        "supabase-rls-least-privilege"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 215,
+      "category": "negation",
+      "hook_tokens": 262
+    },
+    {
+      "id": "postgres-ddl-lock",
+      "query": "postgres ddl migration lock timeout",
+      "expected": [
+        "postgres-zero-downtime-ddl"
+      ],
+      "routed": [
+        "workspace:skills/postgres-zero-downtime-ddl.md",
+        "workspace:rules/supabase-rls-least-privilege.md",
+        "workspace:knowledge/pgvector-hnsw-cosine-tuning.md"
+      ],
+      "matched": [
+        "postgres-zero-downtime-ddl"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 314,
+      "hook_tokens": 372
+    },
+    {
+      "id": "alter-table-zero-downtime",
+      "query": "alter-table index concurrently zero downtime",
+      "expected": [
+        "postgres-zero-downtime-ddl"
+      ],
+      "routed": [
+        "workspace:skills/postgres-zero-downtime-ddl.md",
+        "workspace:knowledge/pgvector-hnsw-cosine-tuning.md"
+      ],
+      "matched": [
+        "postgres-zero-downtime-ddl"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 221,
+      "category": "paraphrase",
+      "hook_tokens": 264
+    },
+    {
+      "id": "postgres-expand-contract",
+      "query": "postgres migration expand contract ddl",
+      "expected": [
+        "postgres-zero-downtime-ddl"
+      ],
+      "routed": [
+        "workspace:skills/postgres-zero-downtime-ddl.md",
+        "workspace:rules/supabase-rls-least-privilege.md",
+        "workspace:knowledge/pgvector-hnsw-cosine-tuning.md"
+      ],
+      "matched": [
+        "postgres-zero-downtime-ddl"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 314,
+      "hook_tokens": 372
+    },
+    {
+      "id": "xss-csp-sanitize",
+      "query": "xss csp sanitize headers",
+      "expected": [
+        "csp-xss-input-sanitization"
+      ],
+      "routed": [
+        "workspace:skills/csp-xss-input-sanitization.md"
+      ],
+      "matched": [
+        "csp-xss-input-sanitization"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 121,
+      "category": "security",
+      "hook_tokens": 150
+    },
+    {
+      "id": "csrf-samesite-security",
+      "query": "csrf samesite content security policy",
+      "expected": [
+        "csp-xss-input-sanitization"
+      ],
+      "routed": [
+        "workspace:skills/csp-xss-input-sanitization.md",
+        "workspace:rules/supabase-rls-least-privilege.md"
+      ],
+      "matched": [
+        "csp-xss-input-sanitization"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 214,
+      "category": "security",
+      "hook_tokens": 257
+    },
+    {
+      "id": "oauth-pkce-jwt",
+      "query": "oauth pkce jwt bearer login",
+      "expected": [
+        "oauth-pkce-login-hardening"
+      ],
+      "routed": [
+        "workspace:skills/oauth-pkce-login-hardening.md"
+      ],
+      "matched": [
+        "oauth-pkce-login-hardening"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 105,
+      "category": "security",
+      "hook_tokens": 134
+    },
+    {
+      "id": "pgvector-hnsw-cosine",
+      "query": "pgvector hnsw cosine embedding indexing",
+      "expected": [
+        "pgvector-hnsw-cosine-tuning"
+      ],
+      "routed": [
+        "workspace:knowledge/pgvector-hnsw-cosine-tuning.md"
+      ],
+      "matched": [
+        "pgvector-hnsw-cosine-tuning"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 125,
+      "hook_tokens": 154
+    },
+    {
+      "id": "pgvector-ef-search",
+      "query": "pgvector embedding ef search tuning",
+      "expected": [
+        "pgvector-hnsw-cosine-tuning"
+      ],
+      "routed": [
+        "workspace:knowledge/pgvector-hnsw-cosine-tuning.md"
+      ],
+      "matched": [
+        "pgvector-hnsw-cosine-tuning"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 125,
+      "category": "paraphrase",
+      "hook_tokens": 154
+    },
+    {
+      "id": "deno-edge-cold-start",
+      "query": "deno edge-function cold start bundle",
+      "expected": [
+        "deno-edge-function-cold-starts"
+      ],
+      "routed": [
+        "workspace:knowledge/deno-edge-function-cold-starts.md"
+      ],
+      "matched": [
+        "deno-edge-function-cold-starts"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 114,
+      "hook_tokens": 145
+    },
+    {
+      "id": "supabase-deno-polyfills",
+      "query": "deno edge-function avoid heavy node polyfills",
+      "expected": [
+        "deno-edge-function-cold-starts"
+      ],
+      "routed": [
+        "workspace:knowledge/deno-edge-function-cold-starts.md"
+      ],
+      "matched": [
+        "deno-edge-function-cold-starts"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 114,
+      "category": "negation",
+      "hook_tokens": 145
+    },
+    {
+      "id": "vi-oauth-login",
+      "query": "fix lỗi xác thực đăng nhập oauth",
+      "expected": [
+        "oauth-pkce-login-hardening"
+      ],
+      "routed": [
+        "workspace:skills/oauth-pkce-login-hardening.md"
+      ],
+      "matched": [
+        "oauth-pkce-login-hardening"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 105,
+      "category": "paraphrase",
+      "hook_tokens": 134
+    },
+    {
+      "id": "vi-tauri-webview2-memory",
+      "query": "tauri ngốn bộ nhớ webview2",
+      "expected": [
+        "webview2-heap-memory-diagnostics"
+      ],
+      "routed": [
+        "workspace:rules/tauri-ipc-command-boundaries.md",
+        "workspace:knowledge/webview2-heap-memory-diagnostics.md",
+        "workspace:knowledge/a-webview2-diagnostics-legacy.md",
+        "workspace:rules/tokio-mutex-never-across-await.md"
+      ],
+      "matched": [
+        "webview2-heap-memory-diagnostics"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 369,
+      "category": "paraphrase",
+      "hook_tokens": 430
+    },
+    {
+      "id": "vi-supabase-permission",
+      "query": "kiểm tra quyền truy cập supabase",
+      "expected": [
+        "supabase-rls-least-privilege"
+      ],
+      "routed": [
+        "workspace:rules/supabase-rls-least-privilege.md",
+        "workspace:skills/postgres-zero-downtime-ddl.md",
+        "workspace:knowledge/deno-edge-function-cold-starts.md"
+      ],
+      "matched": [
+        "supabase-rls-least-privilege"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 303,
+      "category": "paraphrase",
+      "hook_tokens": 363
+    },
+    {
+      "id": "vi-pure-auth-concept",
+      "query": "xác thực đăng nhập",
+      "expected": [
+        "oauth-pkce-login-hardening"
+      ],
+      "routed": [
+        "workspace:skills/oauth-pkce-login-hardening.md"
+      ],
+      "matched": [
+        "oauth-pkce-login-hardening"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 105,
+      "category": "paraphrase",
+      "hook_tokens": 134
+    },
+    {
+      "id": "vi-pure-memory-bloat",
+      "query": "ngốn",
+      "expected": [
+        "webview2-heap-memory-diagnostics"
+      ],
+      "routed": [
+        "workspace:knowledge/webview2-heap-memory-diagnostics.md"
+      ],
+      "matched": [
+        "webview2-heap-memory-diagnostics"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 121,
+      "category": "paraphrase",
+      "hook_tokens": 152
+    },
+    {
+      "id": "vi-pure-permission",
+      "query": "quyền",
+      "expected": [
+        "supabase-rls-least-privilege"
+      ],
+      "routed": [
+        "workspace:rules/supabase-rls-least-privilege.md"
+      ],
+      "matched": [
+        "supabase-rls-least-privilege"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 120,
+      "category": "paraphrase",
+      "hook_tokens": 149
+    },
+    {
+      "id": "zero-nonsense",
+      "query": "qxzwvplm nonexistent gibberish 998877",
+      "expected": [],
+      "routed": [],
+      "matched": [],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 26,
+      "category": "zero-match",
+      "hook_tokens": 0
+    },
+    {
+      "id": "zero-cooking",
+      "query": "sourdough starter recipe baking oven temperature",
+      "expected": [],
+      "routed": [],
+      "matched": [],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 26,
+      "category": "zero-match",
+      "hook_tokens": 0
+    },
+    {
+      "id": "zero-vietnamese-offtopic",
+      "query": "cách nấu phở bò hà nội ngon",
+      "expected": [],
+      "routed": [],
+      "matched": [],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 26,
+      "category": "zero-match",
+      "hook_tokens": 0
+    },
+    {
+      "id": "telemetry-loop-webview2-diagnostics",
+      "query": "webview2 diagnostics",
+      "expected": [
+        "webview2-heap-memory-diagnostics"
+      ],
+      "routed": [
+        "workspace:knowledge/webview2-heap-memory-diagnostics.md",
+        "workspace:knowledge/a-webview2-diagnostics-legacy.md",
+        "workspace:rules/tauri-ipc-command-boundaries.md"
+      ],
+      "matched": [
+        "webview2-heap-memory-diagnostics"
+      ],
+      "forbidden_hits": [],
+      "missing": [],
+      "dependencies_missing": [],
+      "isolation_failures": [],
+      "zero_result_correct": true,
+      "tokens": 169,
+      "category": "telemetry-loop",
+      "initial_tokens": 169,
+      "final_tokens": 169,
+      "noisy_demoted": true
+    }
+  ],
+  "metrics": {
+    "precision_at_k": 0.608,
+    "recall_at_k": 1,
+    "forbidden_hits": 0,
+    "dependency_failures": 0,
+    "isolation_failures": 0,
+    "zero_result_correctness": 1,
+    "tokens_mean": 163.912,
+    "tokens_p95": 369,
+    "hook_tokens_mean": 196,
+    "hook_tokens_p95": 430
+  },
+  "telemetry_loop": {
+    "cases": 1,
+    "noisy_demoted_rate": 1,
+    "initial_tokens_mean": 169,
+    "final_tokens_mean": 169
+  }
+}

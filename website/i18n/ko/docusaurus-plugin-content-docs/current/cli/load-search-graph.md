@@ -21,7 +21,7 @@ engram load --id <id>,<id>
 engram load --exclude-keys workspace:rules/use-pnpm.md "<task>"
 ```
 
-`load`는 먼저 의미 있는 쿼리 용어에 라우팅을 고정하며, `rule`, `knowledge` 같은 일반 메모리 단어와 흔한 불용어는 무시합니다. 그런 다음 더 넓은 후보 풀을 압축된 컨텍스트 팩으로 구체화합니다. 일반 로드는 선택된 개수와 총 관련 개수를 보고합니다 (예: `loaded 8 memory files / 14 total related memories`).
+`load`는 Unicode/베트남어/CJK를 인식하는 토큰화로 쿼리와 메모리를 분리한 뒤, 확장 전 `rawStems`(`hasAnchorOverlap`)를 사용해 의미 있는 쿼리 용어에 라우팅을 고정하며, `rule`, `knowledge` 같은 일반 메모리 단어와 흔한 불용어는 무시해 동의어 확장이 관련 없는 메모리를 채택하지 않도록 합니다. 정확한 앵커가 없을 때는 24개의 결정론적 개념 클러스터와 코퍼스 공기 브리지가 관련 용어를 연결할 수 있습니다. 후보는 3-스트림 BM25F(`title`, `tags`, `body`)와 폐쇄 루프 `usage.json` 결과 텔레메트리(`applied` 가산, `corrected` 감점, 유용성 0으로 반복 주입된 메모리의 노이즈 감쇠)로 점수화됩니다. 그런 다음 더 넓은 후보 풀을 압축된 컨텍스트 팩으로 구체화하고, 확장된 본문을 `orderForAgentConsumption`(규칙·지침·`depends_on` 선행 항목을 앞에, 오래된 지속 컨텍스트를 중간에, 최신 `<=14d` 또는 `working` 계층 리프를 끝에 배치)으로 정렬합니다. 일반 로드는 선택된 개수와 총 관련 개수를 보고합니다 (예: `loaded 8 memory files / 14 total related memories`).
 
 - 기본 `load` — 계층형 에이전트 라우트: `load.expand_top` 기준 상위 히트(기본 3개)는 본문으로 표시되고, 다른 모든 선택 항목은 한 줄 카드(card)로 표시되며, 끝에 `fetch: engram load --id <ids>` 힌트가 붙습니다. 각 본문 헤더에는 메모리의 `authority`가 표시되며, `evidence_refs`, `## Context`, `## Example`, `## Origin` 같은 프론트매터는 렌더링되지 않고(`--full`로 확인 가능), 규칙은 선택된 변체 하나만 표시됩니다.
 - `--id <id,...>` — 카드에 대한 전체 본문을 가져옵니다. ID는 쉼표로 구분할 수 있으며, 명시적 가져오기는 `stats --usage`에 반영됩니다.
@@ -45,14 +45,25 @@ engram search --semantic "<topic>"
 
 기본 검색은 결정론적 어휘 검색입니다. `search --semantic`은 임베딩 기반 의미 검색이 아니라 결정론적 로컬 유사성을 추가합니다. `search --json` 결과에는 `score` 필드가 포함됩니다.
 
+## why
+
+```bash
+engram why <id>
+engram why <id> "<query>"
+engram why <id> "<query>" --json
+```
+
+특정 메모리가 쿼리에 대해 포함되었거나 순위가 매겨졌거나 제외된 이유를 설명합니다. `status`(`expanded_body`, `card`, `omitted_budget`, `omitted_limit`, `rejected_no_anchor`, `excluded_lifecycle`, `not_found`), `rank`, `score`, `matched_stems`, `missing_stems`, `budget` 및 `hint`를 보고합니다. 구조화된 진단 결과를 얻으려면 `--json`을 전달하세요.
+
 ## graph
 
 ```bash
 engram graph "<topic>"
 engram graph --rebuild
+engram graph link <parent-id> <child-id...>
 ```
 
-그래프 라우팅을 검사합니다. 수동 편집 후 `engram graph --rebuild`를 실행하세요. 그래프는 종속성 계층을 보고하며, `engram load`는 더 깊은 메모리보다 먼저 라우팅된 필수 구성 요소를 동일한 압축 팩으로 가져옵니다.
+그래프 라우팅을 검사하거나 명시적 종속성 엣지를 선언합니다. 수동 편집 후 `engram graph --rebuild`를 실행하거나, `engram graph link <parent-id> <child-id...>`를 사용해 자식 메모리에서 부모 선행 항목으로 `depends_on` 링크를 추가하고 그래프를 갱신하세요. 그래프는 종속성 계층을 보고하며, `engram load`는 더 깊은 메모리보다 먼저 라우팅된 필수 구성 요소를 동일한 압축 팩으로 가져옵니다.
 
 그래프의 관련 엣지와 벡터 일치는 관련 없는 메모리를 자동으로 로드하지 않습니다. 의미 있는 쿼리 용어와 이미 일치하는 메모리를 재정렬하거나 확장하는 데만 도움을 줍니다. 명시적인 `depends_on` 전제 조건은 자체 용어 일치 없이도 로드될 수 있습니다.
 

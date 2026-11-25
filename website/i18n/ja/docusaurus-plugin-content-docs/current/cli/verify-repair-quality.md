@@ -8,6 +8,16 @@ description: メンテナンス系のコマンド。ハッシュの検証、無�
 
 メンテナンス系のコマンドは、メモリを健全な状態に保ちます。
 
+## status
+
+```bash
+engram status
+engram stat
+engram status --json
+```
+
+ワークスペースとグローバルのメモリルート、アクティブなプロファイル、リンク済みホスト、保留中のレビューレシート、working 層の件数、整合性・鮮度の健全性を 1 画面で一覧表示します。`engram stat` は短縮エイリアスで、`--json` はスクリプト向けの構造化スナップショットを出力します。
+
 ## verify
 
 ```bash
@@ -25,9 +35,10 @@ engram verify --sources --json
 ```bash
 engram stats
 engram stats --usage
+engram stats --backfill [--git <range>] [--limit <n>]
 ```
 
-`--usage` は、ローカルで Git 管理外の `.agents/.engram/usage.json` を読み取り、エージェントが `engram load --id` で実際に取得しているメモリと、注入されたものの 30 日間一度も取得されなかったメモリを表示します。
+`--usage` は、ローカルで Git 管理外の `.agents/.engram/usage.json` を読み取り、取得回数（`engram load --id`）、クローズドループの結果カウンター（`applied`、`corrected`、`noisy` / 有用性ゼロ注入）、および注入されたものの 30 日間一度も取得されなかったメモリを表示します。`--backfill` は Git コミット履歴（`backfillUsageFromGit` による最近の非マージコミット、任意の `[--git <range>] [--limit <n>]`）から過去の利用テレメトリを `usage.json` にバックフィルします。
 
 ## repair
 
@@ -58,9 +69,10 @@ engram quality-check
 ```bash
 engram graph "package manager"
 engram graph --rebuild
+engram graph link <parent-id> <child-id...>
 ```
 
-アーカイブする前にグラフのルーティングを確認します。手動で編集したあとは `engram graph --rebuild` を実行してください。
+アーカイブする前にグラフのルーティングを確認するか、`engram graph link <parent-id> <child-id...>` で明示的な `depends_on` 前提条件をリンクするか、手動編集後に `engram graph --rebuild` を実行してください。
 
 ## archive
 
@@ -82,10 +94,13 @@ Engram が所有するワークスペースのメモリコンフリクトだけ�
 ## benchmark
 
 ```bash
-engram benchmark
+engram benchmark <cases.json> --json
+engram benchmark <cases.json> --baseline <baseline.json> --fail-on forbidden,recall
+engram benchmark <cases.json> --write-report <report.json>
+engram benchmark --from-git [--out <path>]
 ```
 
-検索の回帰チェックです。
+バージョン管理された検索回帰スイートを実行します。`freshness-ordering`（鮮度ブーストとアテンション指向の本文並べ替え）、`multi-turn-session`（複数ターンにわたるフックのトークン削減）、`telemetry-loop`（`real-stacks-v1` のクローズドループ結果テレメトリとノイズ減衰）が含まれます。`--from-git [--out <path>]` で最近の Git 履歴からリポジトリローカルのベンチマークケースを合成し、`--baseline` で保存済みメトリクスと比較し、`--write-report` で ID のみの JSON レポートを出力し、`--fail-on` で特定の回帰発生時に CI を失敗させられます。
 
 ## 次のステップ
 

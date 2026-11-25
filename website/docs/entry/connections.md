@@ -10,6 +10,10 @@ import RiskCallout from '@site/src/components/RiskCallout';
 
 The Connections tab scans your machine for supported AI agent surfaces and lets you link Engram to each one at the workspace or global level.
 
+## Doctor health badge
+
+The Connections header displays a **Doctor health badge** summarizing the pass/warn check results from `/api/doctor`. Use it to spot hook, link, or configuration warnings at a glance before linking or troubleshooting an agent.
+
 ## Agent scan
 
 The tab shows a card per supported agent. Each card reports a detected or missing status.
@@ -32,6 +36,10 @@ Links Engram globally for that agent. Use for personal memory, cross-project wor
 <RiskCallout level="risky">
 Use global links carefully on shared machines. Engram writes managed blocks into shared instruction files. Review what files Engram writes per agent before linking globally.
 </RiskCallout>
+
+## SessionEnd queue toggle
+
+The **Claude** and **Codex** cards include a per-card **`SessionEnd queue` toggle** that enables or disables queueing session-end learning candidates for review (matching `engram link claude --session-end` and `engram link codex --session-end`).
 
 ## What files Engram writes per agent
 
@@ -61,7 +69,9 @@ Use global links carefully on shared machines. Engram writes managed blocks into
 
 ```bash
 engram link codex
+engram link codex --session-end
 engram link claude
+engram link claude --session-end
 engram link --global opencode
 engram unlink
 ```

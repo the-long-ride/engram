@@ -6,14 +6,17 @@ description: 所有 Engram CLI 命令及其用途的一览表。
 
 # 命令概览
 
-运行 `engram -h` 可查看精简的命令列表。运行 `engram help <topic>` 或 `engram -h <topic>` 可查看特定命令的示例和使用场景。
+运行 `engram -h` 或 `engram help --compact` 可查看精简的命令列表。运行 `engram help <topic>` 或 `engram -h <topic>` 可查看特定命令的示例和使用场景。
 
 ## 命令一览
 
 | 需求 | 命令 |
 | --- | --- |
+| 快速查看工作区/记忆健康摘要 | `engram status`（别名 `engram stat`） |
+| 精简命令摘要 | `engram help --compact` |
 | 加载任务记忆 | `engram load "<task>"` |
 | 加载精简的任务记忆 | `engram load "<task>"` |
+| 解释为何某条记忆被路由或未被路由 | `engram why <id> ["<query>"]` |
 | 打印 AI agent 使用指南 | `engram llm` |
 | 预览经过路由的记忆文件 | `engram load --dry-run "<task>"` |
 | 带 token 上限加载 | `engram load --budget-tokens 800 "<task>"` |
@@ -26,7 +29,9 @@ description: 所有 Engram CLI 命令及其用途的一览表。
 | 强制保存会话候选 | `engram ss -f` |
 | 挖掘并强制保存最近的聊天 | `engram ss -f last 50 sessions` |
 | 捕获原始笔记 | `engram observe --file session.md` |
+| 将学习内容提炼到工作记忆 + inbox 收据 | `engram observe --learn [--file <path> \| --git [range]]` |
 | 处理可选的 SessionEnd 会话记录队列 | `engram observe --queue --dry-run` |
+| 审阅暂存的学习收据 | `engram review inbox\|triage\|apply\|dismiss` |
 | 转换现有文档/指导内容 | `engram take-control --all` |
 | 预览来源接管 | `engram take-control --plan` |
 | 摘要代码或配置 | `engram take-control --kind code --objective "<text>"` |
@@ -35,10 +40,13 @@ description: 所有 Engram CLI 命令及其用途的一览表。
 | 保留一条工作记忆 | `engram promote <id>` |
 | 保存任务笔记 | `engram working note "<text>"` |
 | 清理已过期的工作记忆 | `engram working prune [--dry-run]` |
-| 查看获取与注入次数 | `engram stats --usage` |
+| 查看获取、注入与结果计数 | `engram stats --usage` |
+| 从 Git 提交历史回填使用遥测 | `engram stats --backfill [--git <range>] [--limit <n>]` |
 | 重构现有记忆文件夹 | `engram metacognize --workspace\|--global\|--all` |
 | 解决冲突并执行 metacognize | `engram resolve-conflicts --metacognize` |
 | 检查图路由 | `engram graph "<topic>"` |
+| 关联父/子图依赖 | `engram graph link <parent-id> <child-id...>` |
+| 从 Git 历史生成基准测试用例 | `engram benchmark --from-git [--out <path>]` |
 | 检查哈希 | `engram verify` |
 | 查找格式错误的记忆文件 | `engram repair` |
 | 归档错误的记忆 | `engram archive --reason "<why>" <id-or-file>` |

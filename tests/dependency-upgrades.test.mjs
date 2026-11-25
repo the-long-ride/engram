@@ -70,3 +70,78 @@ test('website replaces vulnerable image-size registry package with bounded local
   assert.equal(shim.version, '2.0.3-engram-safe.1');
   assert.equal(shim.private, true);
 });
+
+function parseMinSemver(range) {
+  assert.equal(typeof range, 'string', `Expected semver range string, got ${typeof range}`);
+  const match = range.trim().match(/^(?:\^|>=)?(\d+)\.(\d+)\.(\d+)/);
+  assert.ok(match, `Unable to parse semver floor from "${range}"`);
+  return match.slice(1, 4).map(Number);
+}
+
+function assertMinVersion(actualRange, minVersion, label) {
+  const actual = parseMinSemver(actualRange);
+  const expected = minVersion.split('.').map(Number);
+  const isAtLeast =
+    actual[0] > expected[0] ||
+    (actual[0] === expected[0] &&
+      (actual[1] > expected[1] || (actual[1] === expected[1] && actual[2] >= expected[2])));
+  assert.ok(isAtLeast, `${label} expected >= ${minVersion}, got "${actualRange}"`);
+}
+
+function parseYamlOverrides(yaml) {
+  const section = yaml.match(/^overrides:\n((?:[ \t]+.*\n?)*)/m);
+  assert.ok(section, 'Expected overrides: section in pnpm-workspace.yaml');
+  const map = {};
+  for (const line of section[1].split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const match = trimmed.match(/^(['"]?[^:'"]+['"]?):\s*['"]?([^'"]+)['"]?$/);
+    if (match) {
+      map[match[1].replace(/^['"]|['"]$/g, '')] = match[2].trim();
+    }
+  }
+  return map;
+}
+
+test('security override minimum ranges are enforced across root and website manifests', async () => {
+  const rootPkg = JSON.parse(await text('package.json'));
+  const rootWorkspace = parseYamlOverrides(await text('pnpm-workspace.yaml'));
+  const websitePkg = JSON.parse(await text('website/package.json'));
+  const websiteWorkspace = parseYamlOverrides(await text('website/pnpm-workspace.yaml'));
+
+  const rootMins = {
+    glob: '14.0.6',
+    minimatch: '11.0.9',
+    'fast-xml-parser': '5.12.1',
+    dompurify: '3.5.0',
+    'fast-uri': '3.1.9',
+    undici: '7.30.1',
+  };
+
+  for (const [pkg, min] of Object.entries(rootMins)) {
+    assertMinVersion(rootPkg.overrides?.[pkg], min, `package.json overrides.${pkg}`);
+    assertMinVersion(rootWorkspace[pkg], min, `pnpm-workspace.yaml overrides.${pkg}`);
+  }
+
+  const websiteMins = {
+    'follow-redirects': '1.16.3',
+    'launch-editor': '2.14.2',
+    dompurify: '3.5.0',
+    'body-parser': '1.20.9',
+    undici: '7.30.1',
+    'serialize-javascript': '7.1.4',
+    'fast-uri': '3.1.9',
+    qs: '6.17.1',
+    joi: '17.13.9',
+  };
+
+  for (const [pkg, min] of Object.entries(websiteMins)) {
+    assertMinVersion(websiteWorkspace[pkg], min, `website/pnpm-workspace.yaml overrides.${pkg}`);
+  }
+
+  assertMinVersion(
+    websitePkg.overrides?.['serialize-javascript'],
+    '7.1.4',
+    'website/package.json overrides.serialize-javascript',
+  );
+});

@@ -775,7 +775,7 @@ test('global shared guide plus managed instruction converge in one upgrade pass 
     assert.equal(plan.review?.pendingReviewCount, 0);
     const result = await apiUpgradeApply(cwd, { fingerprint: plan.fingerprint, confirmed: true });
     assert.equal(result.conflicts.length, 0);
-    const guideBackup = `${guideFile}.engram-upgrade-0.0.29.bak`;
+    const guideBackup = `${guideFile}.engram-upgrade-0.1.0.bak`;
     assert.equal(await readFile(guideBackup, 'utf8'), '# User manually edited shared guide\n');
 
     const after = await apiUpgradePlan(cwd);

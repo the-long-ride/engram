@@ -94,6 +94,8 @@ engram config set <key> <value>
 | `mcp.resource_limit` | Số bộ nhớ mà `resources/list` của MCP trả về ngoài `engram://index`, xếp hạng theo lượt chèn + lượt lấy (chỉ cấu hình JSON; không đặt được bằng `engram config set`) | `20` | `0` đến `200` |
 | `load.limit` | Số bộ nhớ tối đa mà lần load thông thường trả về | `8` | `1` đến `32` |
 | `hooks.path_rules` | `native` ghi các tệp quy tắc của Claude và Cursor cho các bộ nhớ có `applies_to` và đăng ký `InstructionsLoaded` của Claude; `hook` giữ hook `PreToolUse` của Claude | `native` | `native`, `hook` |
+| `learning.mode` | Điều khiển học phiên Phương án A: `off` tắt học tự động, `working` chỉ ghi các bộ nhớ `working/` có thời hạn nằm trong gitignore, `propose` còn chuẩn bị thêm các ứng viên bền vững dưới dạng biên nhận `inbox/r-*.json` (chỉ cấu hình JSON trong `engram.config.json`; không đặt được bằng `engram config set` hay trong Construct) | `propose` | `off`, `working`, `propose` |
+| `learning.auto_drain` | Tự động xử lý các bản ghi `SessionEnd` trong hàng đợi ở các lượt học đủ điều kiện (chỉ cấu hình JSON trong `engram.config.json`; không đặt được bằng `engram config set` hay trong Construct) | `false` | `true`, `false` |
 | `rule_variants.enabled` | Bật hoặc tắt việc sinh các biến thể quy tắc | `false` | `true`, `false` |
 | `rule_variants.active` | Chế độ biến thể quy tắc đang dùng | `balanced` | `light`, `balanced`, `strict` |
 | `graph.enabled` | Bật hoặc tắt định tuyến nhận biết đồ thị | `true` | `true`, `false` |
@@ -105,7 +107,7 @@ engram config set <key> <value>
 | `global_git.remote` | Tên remote Git dùng cho đồng bộ global | `origin` | Chuỗi |
 | `global_git.branch` | Tên nhánh Git dùng cho đồng bộ global | `main` | Chuỗi |
 
-Các cài đặt này cũng có thể quản lý trực quan trong tab **Construct** của `engram entry`.
+Ngoại trừ các khóa chỉ cấu hình JSON (`mcp.resource_limit`, `learning.mode` và `learning.auto_drain`), các cài đặt này cũng có thể quản lý trực quan trong tab **Construct** của `engram entry`.
 
 ## Bước tiếp theo {#next-steps}
 

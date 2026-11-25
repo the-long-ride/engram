@@ -94,9 +94,31 @@ Les mémoires de travail n’atteignent jamais Git, et leurs entrées d’index,
 ```bash
 engram observe --file session.md
 engram save-session --file .agents/.engram/inbox/<note>.md
+engram observe --learn --file session.md
+engram observe --learn --git HEAD~10..HEAD
+engram observe --queue --learn
 ```
 
 `observe` stocke des notes brutes assainies dans `inbox/`. Les notes de la boîte de réception ne sont pas de la mémoire active. Utilisez-le pour conserver des notes brutes avant de décider ce qui doit devenir de la mémoire durable.
+
+Ajoutez `--learn` (`engram observe --learn [--file <path> | --git [range]]` ou `engram observe --queue --learn`) pour distiller de façon déterministe les apprentissages en mémoires `working/` ignorées par Git et temporaires (avec des traces assainies `tr_sl_*`) et préparer les candidats durables à forte confiance sous forme de reçus non actifs `inbox/r-*.json`. Inspectez et approuvez les reçus durables préparés avec `engram review inbox` et `engram review apply` ; la mémoire durable active n’est jamais écrite sans approbation.
+
+## review
+
+```bash
+engram review inbox
+engram review triage
+engram review triage --interactive
+engram review apply <receipt-id>
+engram review dismiss <receipt-id>
+```
+
+Inspectez et traitez les reçus d’apprentissage non actifs `inbox/r-*.json` préparés par l’apprentissage par correction au moment du prompt ou par `engram observe --learn` :
+
+- `engram review inbox` — liste les reçus préparés avec `id`, `scope`, `source`, `type` et le texte tronqué du candidat.
+- `engram review triage` / `engram review triage --interactive` — parcourt de manière interactive les reçus en attente en proposant `[a]pprove / [d]ismiss / [s]kip / [q]uit` (sans option d’édition ; les verdicts `SUPERSEDE` sont renvoyés vers `engram review apply <receipt-id>`).
+- `engram review apply <receipt-id>` — requiert un `<receipt-id>` et fait passer ce reçu par la porte d’écriture pour créer ou mettre à jour une mémoire durable active.
+- `engram review dismiss <receipt-id>` — rejette un reçu sans écrire de mémoire active.
 
 <!-- evidence-foundation:v3:start -->
 ## Mémoire étayée par des preuves {#evidence-backed-memory}

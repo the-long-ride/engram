@@ -6,14 +6,17 @@ description: Map of every Engram CLI command and what it does.
 
 # Command overview
 
-Run `engram -h` for the compact command surface. Run `engram help <topic>` or `engram -h <topic>` for command-specific examples and use cases.
+Run `engram -h` or `engram help --compact` for the compact command surface. Run `engram help <topic>` or `engram -h <topic>` for command-specific examples and use cases.
 
 ## Command map
 
 | Need | Command |
 | --- | --- |
+| Quick workspace/memory health summary | `engram status` (alias `engram stat`) |
+| Compact command summary | `engram help --compact` |
 | Load task memory | `engram load "<task>"` |
 | Load compact task memory | `engram load "<task>"` |
+| Explain why a memory did or did not route | `engram why <id> ["<query>"]` |
 | Print AI-agent usage guide | `engram llm` |
 | Preview routed memory files | `engram load --dry-run "<task>"` |
 | Load with a token cap | `engram load --budget-tokens 800 "<task>"` |
@@ -26,7 +29,9 @@ Run `engram -h` for the compact command surface. Run `engram help <topic>` or `e
 | Force-save session candidates | `engram ss -f` |
 | Mine and force-save recent chats | `engram ss -f last 50 sessions` |
 | Capture raw note | `engram observe --file session.md` |
+| Distill learnings into working memory + inbox receipts | `engram observe --learn [--file <path> \| --git [range]]` |
 | Drain the opt-in SessionEnd transcript queue | `engram observe --queue --dry-run` |
+| Review staged learning receipts | `engram review inbox\|triage\|apply\|dismiss` |
 | Convert existing docs/guidance | `engram take-control --all` |
 | Preview source takeover | `engram take-control --plan` |
 | Digest code or config | `engram take-control --kind code --objective "<text>"` |
@@ -35,10 +40,13 @@ Run `engram -h` for the compact command surface. Run `engram help <topic>` or `e
 | Keep a working memory | `engram promote <id>` |
 | Save a task note | `engram working note "<text>"` |
 | Prune expired working memory | `engram working prune [--dry-run]` |
-| See fetch and inject counts | `engram stats --usage` |
+| See fetch, inject, and outcome counts | `engram stats --usage` |
+| Backfill usage telemetry from Git commit history | `engram stats --backfill [--git <range>] [--limit <n>]` |
 | Restructure existing memory folder | `engram metacognize --workspace\|--global\|--all` |
 | Resolve conflicts and metacognize | `engram resolve-conflicts --metacognize` |
 | Inspect graph routing | `engram graph "<topic>"` |
+| Link parent/child graph dependencies | `engram graph link <parent-id> <child-id...>` |
+| Generate benchmark cases from git history | `engram benchmark --from-git [--out <path>]` |
 | Check hashes | `engram verify` |
 | Find malformed memory files | `engram repair` |
 | Archive wrong memory | `engram archive --reason "<why>" <id-or-file>` |

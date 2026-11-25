@@ -31,15 +31,31 @@ The Entry panel is local-only. Treat it as open while you are configuring memory
 
 Every visible control maps to a CLI command or config key. Where a CLI equivalent exists, the field reference lists it. The CLI remains the source of truth for scripting and automation.
 
+## Navigation and URL routing
+
+The Entry Web UI uses URL `#hash` routing so each tab can be bookmarked, reloaded, or navigated with browser history:
+
+- `#config` — Construct
+- `#author` — Git
+- `#upgrade` — Updates
+- `#recall` — Memories
+- `#review` — Review
+- `#maintain` — Core
+- `#connect` — Connections
+
+The sidebar includes a **Workspace** section for workspace-scoped controls and displays a pending review count badge on **Review** whenever findings, deferred candidates, or receipts await triage. On narrow viewports, the sidebar collapses into a mobile drawer that you can dismiss with the close button or by pressing `Escape`.
+
 ## Tabs at a glance
 
-| Tab | Job |
-| --- | --- |
-| [Construct](construct.md) | Configure every Engram runtime field |
-| [Memories](memories.md) | Search, inspect, and archive active memory |
-| [Review](review.md) | Resolve findings and confirm reviewed memory writes |
-| [Core](core.md) | Review duplicate and conflicting memories |
-| [Connections](connections.md) | Detect and link supported AI agents |
+| Tab | Hash | Job |
+| --- | --- | --- |
+| [Construct](construct.md) | `#config` | Configure Engram runtime fields, profiles, workspaces, and runtime state |
+| [Git](../operations/git-author-settings.md) | `#author` | Manage author identity and Global Git configuration |
+| [Updates](../operations/configuration-upgrades.md) | `#upgrade` | Check package updates and apply configuration upgrades |
+| [Memories](memories.md) | `#recall` | Search, simulate routes, inspect, promote, and archive active memory |
+| [Review](review.md) | `#review` | Triage session-learning receipts, findings, and deferred memory writes |
+| [Core](core.md) | `#maintain` | Review duplicate and conflicting memories |
+| [Connections](connections.md) | `#connect` | Check Doctor health, detect agents, and link supported AI agents |
 
 ## Next steps
 

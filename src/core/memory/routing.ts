@@ -4,7 +4,8 @@ import { readGuardedMemory } from '../safety/safe-read.js';
 import { isIgnored } from '../safety/ignore.js';
 import { pathAnchorHit, queryPaths, type QueryPath } from './path-anchors.js';
 import { meaningfulWordList, meaningfulWords, today, words } from '../system/text.js';
-import { buildBm25, stem } from '../system/bm25.js';
+import { buildBm25F, stem, type Bm25FieldSpec } from '../system/bm25.js';
+import { buildCorpusConceptMap, expandConceptStems, hasStrongConceptOverlap } from './concepts.js';
 import { dependencyContextEntries, routeWithGraph } from './graph.js';
 import type { VectorRouteHit } from './vector-db.js';
 import { normalizeLoadLimit } from '../runtime/load-limit.js';
@@ -14,15 +15,15 @@ import type { StaleMap } from './freshness.js';
 import { isExpired, memoryKey } from './memory-ref.js';
 
 /** `stale` is the D17 `stale.json` map (`scope:file` keys); a listed memory gets the D5 stale factor. */
-export type RouteOptions = { all?: boolean; ignorePatterns?: string[]; vectorHits?: VectorRouteHit[]; candidatePool?: number; limit?: number; intent?: TaskIntent; semanticRelaxed?: boolean; usage?: UsageMap; stale?: StaleMap; sessionObjective?: string };
+export type RouteOptions = { all?: boolean; ignorePatterns?: string[]; vectorHits?: VectorRouteHit[]; candidatePool?: number; limit?: number; intent?: TaskIntent; semanticRelaxed?: boolean; usage?: UsageMap; stale?: StaleMap; sessionObjective?: string; rawQuery?: string };
 export type RouteFacet = { tag: string; count: number };
-/** `anchors` are the raw query words; `stems` their stemmed forms used for matching and BM25; `paths` the file paths the query names (D9). */
-type RouteContext = { query: string; anchors: Set<string>; stems: Set<string>; paths: QueryPath[]; fields: Map<string, EntryFields>; scores: Map<string, number>; usage?: UsageMap };
+/** `anchors` are the raw query words; `stems` their stemmed forms used for matching and BM25; `rawStems` come from the unexpanded query for gating; `paths` the file paths the query names (D9). */
+type RouteContext = { query: string; anchors: Set<string>; stems: Set<string>; rawStems: Set<string>; paths: QueryPath[]; fields: Map<string, EntryFields>; scores: Map<string, number>; day: string; usage?: UsageMap; stale?: StaleMap; allowConceptFallback?: boolean; corpusConcepts?: Map<string, Set<string>> };
 /**
  * Stemmed routing terms per entry; `strong` fields (id, tags, directive, applies_to) gate and weigh double.
  * `pathHit` is set when a query path matches an `applies_to` glob (D9), which counts as a strong anchor.
  */
-type EntryFields = { strong: Set<string>; all: Set<string>; bm25: string[]; pathHit: boolean };
+type EntryFields = { strong: Set<string>; all: Set<string>; title: string[]; tags: string[]; body: string[]; pathHit: boolean };
 type CandidateRow = { entry: MemoryEntry; score: number; contributions: Set<string> };
 export type RouteReason = {
   key: string;
@@ -42,6 +43,8 @@ export type RouteDetail = {
   facets: RouteFacet[];
   reasons?: RouteReason[];
   candidateEntries?: MemoryEntry[];
+  /** Candidates that cleared the relevance floor (`score >= minScore`), plus any selected entries. */
+  relevantEntries?: MemoryEntry[];
   /** Matching memories left out because their `valid_until` has passed. */
   lifecycleOmitted?: MemoryEntry[];
 };
@@ -89,10 +92,31 @@ export function visibleEntries(entries: MemoryEntry[], config: EngramConfig, man
   });
 }
 
+const EXPLICIT_START_TAGS = new Set(['session-start', 'always-load', 'start-session', 'always']);
+const EXPLICIT_START_PHRASE = /\bsession[\s-]+start(?:up)?\b|\bstart(?:up)?[\s-]+session\b/i;
+
+/** True when a memory explicitly declares that it belongs on SessionStart. */
+export function hasExplicitStartupSignal(entry: MemoryEntry): boolean {
+  if (entry.tags.some((t) => EXPLICIT_START_TAGS.has(t.toLowerCase()))) return true;
+  return EXPLICIT_START_PHRASE.test(`${entry.id} ${entry.summary}`);
+}
+
+function isSessionEligible(entry: MemoryEntry): boolean {
+  return hasExplicitStartupSignal(entry) || (entry.type === 'rule' && !entry.appliesTo?.length);
+}
+
+function currentSessionScore(entry: MemoryEntry, routeCtx: RouteContext): number {
+  const explicit = hasExplicitStartupSignal(entry);
+  const generalRule = entry.type === 'rule' && !entry.appliesTo?.length;
+  if (!explicit && !generalRule) return 0;
+  const factor = validityFactor(entry, Boolean(routeCtx.stale?.[memoryKey(entry)]?.length), routeCtx.day);
+  if (factor === 'exclude') return 0;
+  const base = directScore(entry, routeCtx);
+  return Math.max((explicit ? 0.85 : 0.45) * factor, base);
+}
+
 function isStartSession(entry: MemoryEntry): boolean {
-  if (entry.type === 'rule') return true;
-  const startTags = ['session-start', 'always-load', 'start-session', 'always'];
-  return entry.tags.some((t) => startTags.includes(t.toLowerCase()));
+  return entry.type === 'rule' || hasExplicitStartupSignal(entry);
 }
 
 /** Select the configured compact set of most relevant entries using lexical similarity. */
@@ -121,7 +145,7 @@ export function routeDetailed(index: MemoryIndex, query: string, config: EngramC
   // SessionStart never carries a task note unless the session objective names it; `all` is an explicit full listing.
   const sessionStart = query.trim().toLowerCase() === 'current session' && options.all !== true;
   const entries = sessionStart ? prefiltered.filter((entry) => noteMatchesObjective(entry, options.sessionObjective ?? sessionObjectiveFromEnv())) : prefiltered;
-  const routeCtx = routeContext(query, entries, day, options.usage, options.stale);
+  const routeCtx = routeContext(query, entries, day, options.usage, options.stale, options.rawQuery);
   const routed = routeEntries(entries, routeCtx, config, options, graph);
   // Expired memories that would have matched are reported, never routed.
   const expired = visibleEntries(index.entries, config, manual, options.ignorePatterns)
@@ -159,10 +183,7 @@ function routeEntries(entries: MemoryEntry[], routeCtx: RouteContext, config: En
     return selectDetailed(candidates, routeCtx, max, activeGraph, entries, intentTerms);
   }
   const scored: CandidateRow[] = entries.map((entry) => {
-    let score = directScore(entry, routeCtx);
-    if (isCurrentSession && isStartSession(entry)) {
-      score = Math.max(0.5, score);
-    }
+    const score = isCurrentSession ? currentSessionScore(entry, routeCtx) : directScore(entry, routeCtx);
     return { entry, score, contributions: new Set(['lexical']) };
   });
   return selectDetailed(scored.filter((row) => row.score > 0), routeCtx, max, activeGraph, entries, options.intent ? new Set(options.intent.retrievalTerms) : undefined);
@@ -172,10 +193,7 @@ function lexicalRoute(entries: MemoryEntry[], query: string, max: number, routeC
   const isCurrentSession = query.trim().toLowerCase() === 'current session';
   return entries
     .map((entry) => {
-      let score = directScore(entry, routeCtx);
-      if (isCurrentSession && isStartSession(entry)) {
-        score = Math.max(0.5, score);
-      }
+      const score = isCurrentSession ? currentSessionScore(entry, routeCtx) : directScore(entry, routeCtx);
       return { entry, score };
     })
     .filter((row) => row.score > 0)
@@ -206,19 +224,17 @@ function blendCandidateRows(
     }
   };
   const isCurrentSession = query.trim().toLowerCase() === 'current session';
+  const eligible = (entry: MemoryEntry) => !isCurrentSession || isSessionEligible(entry);
   for (const entry of lexical) {
-    let baseLexicalScore = directScore(entry, routeCtx);
-    if (isCurrentSession && isStartSession(entry)) {
-      baseLexicalScore = Math.max(0.5, baseLexicalScore);
-    }
-    bump(entry, baseLexicalScore + 0.22, 'lexical');
+    const baseLexicalScore = isCurrentSession ? currentSessionScore(entry, routeCtx) : directScore(entry, routeCtx);
+    if (baseLexicalScore > 0) bump(entry, baseLexicalScore + 0.22, 'lexical');
   }
   // D6: graph and vector hits must pass the same anchor gate; hashed vectors are not semantic.
   graph
-    .filter((entry) => hasAnchorOverlap(entry, routeCtx))
+    .filter((entry) => eligible(entry) && hasAnchorOverlap(entry, routeCtx))
     .forEach((entry, index) => bump(entry, 0.4 * rankScore(index, graph.length), 'graph'));
   vector
-    .filter((hit) => hasAnchorOverlap(hit.entry, routeCtx))
+    .filter((hit) => eligible(hit.entry) && hasAnchorOverlap(hit.entry, routeCtx))
     .forEach((hit, index) => bump(hit.entry, 0.36 * Math.max(hit.score, rankScore(index, vector.length) * 0.75), 'vector'));
   return [...scores.values()];
 }
@@ -229,14 +245,16 @@ function selectDetailed(candidates: CandidateRow[], routeCtx: RouteContext, max:
   // For small pools (< 2× max), keep all entries — the floor is only for large pools.
   const topScore = ranked[0]?.score ?? 0;
   const minScore = ranked.length > max * 2 ? topScore * 0.40 : 0;
-  const relevant = ranked.filter((row) => row.score >= minScore).slice(0, max);
+  const relevantRows = ranked.filter((row) => row.score >= minScore);
+  const relevant = relevantRows.slice(0, max);
   let selected = relevant.map((row) => row.entry);
   const primarySelected = selected;
   if (graph) selected = dependencyContextEntries(selected, visible ?? ranked.map((row) => row.entry), graph, max);
   const candidateEntries = withSelected(ranked.map((row) => row.entry), selected);
+  const relevantEntries = withSelected(relevantRows.map((row) => row.entry), selected);
   const contributions = new Map<string, Set<string>>(ranked.map((row) => [memoryKey(row.entry), row.contributions]));
   const scores = new Map<string, number>(ranked.map((row) => [memoryKey(row.entry), row.score]));
-  return detail(selected, candidateEntries, routeCtx.query, candidateEntries.length > max, reasonMap(selected, routeCtx, primarySelected, intentRetrievalTerms, contributions, scores));
+  return detail(selected, candidateEntries, routeCtx.query, candidateEntries.length > max, reasonMap(selected, routeCtx, primarySelected, intentRetrievalTerms, contributions, scores), relevantEntries);
 }
 
 function rankRows(rows: CandidateRow[], routeCtx: RouteContext): CandidateRow[] {
@@ -250,10 +268,10 @@ function refinementScore(entry: MemoryEntry, routeCtx: RouteContext): number {
   // Title-derived tags repeat the id; only authored tags earn the boost.
   const tagHits = entry.autoTags ? 0 : entry.tags.filter((tag) => tagMatchesStems(tag, routeCtx.stems)).length;
   // Boost entries with tag overlap, don't penalize — the floor handles filtering in large pools.
-  return tagHits * 0.15 + recencyScore(entry.updated) * 0.01 + usageBoost(routeCtx.usage?.[memoryKey(entry)]);
+  return tagHits * 0.15 + knowledgeFreshnessBoost(entry, routeCtx.day) + usageBoost(routeCtx.usage?.[memoryKey(entry)]);
 }
 
-function detail(selected: MemoryEntry[], candidates: MemoryEntry[], query: string, refined: boolean, reasons?: Map<string, RouteReason>): RouteDetail {
+function detail(selected: MemoryEntry[], candidates: MemoryEntry[], query: string, refined: boolean, reasons?: Map<string, RouteReason>, relevantEntries?: MemoryEntry[]): RouteDetail {
   return {
     entries: selected,
     candidates: candidates.length,
@@ -262,6 +280,7 @@ function detail(selected: MemoryEntry[], candidates: MemoryEntry[], query: strin
     refined,
     facets: suggestedFacets(candidates, selected, query),
     candidateEntries: candidates,
+    ...(relevantEntries ? { relevantEntries } : {}),
     ...(reasons?.size ? { reasons: selected.map((entry) => reasons.get(memoryKey(entry))).filter((reason): reason is RouteReason => Boolean(reason)) } : {})
   };
 }
@@ -298,27 +317,80 @@ function tagMatchesStems(tag: string, stems: Set<string>): boolean {
   return [normalized, ...normalized.split('-')].some((part) => stems.has(stem(part)));
 }
 
-function recencyScore(updated: string): number {
-  const time = Date.parse(updated);
-  if (!Number.isFinite(time)) return 0;
-  const ageDays = Math.max(0, (Date.now() - time) / 864e5);
-  return 1 / (1 + ageDays / 90);
+/** Return the most recent valid timestamp (ms) across lastConfirmed, updated, and validFrom. */
+export function freshestTimestamp(entry: MemoryEntry): number | undefined {
+  const times = [entry.lastConfirmed, entry.updated, entry.validFrom]
+    .map((value) => (value ? Date.parse(value) : Number.NaN))
+    .filter((time) => Number.isFinite(time));
+  return times.length ? Math.max(...times) : undefined;
+}
+
+function knowledgeFreshnessBoost(entry: MemoryEntry, day: string): number {
+  let boost = 0;
+  const latestTime = freshestTimestamp(entry);
+  const refTime = Date.parse(day);
+  if (latestTime !== undefined && Number.isFinite(refTime)) {
+    const ageDays = Math.max(0, (refTime - latestTime) / 864e5);
+    boost += 0.12 * (1 / (1 + ageDays / 30));
+  }
+  if (entry.tier === 'working') boost += 0.08;
+  boost += 0.02 * Math.min(3, Math.max(0, (entry.revision ?? 1) - 1));
+  return boost;
 }
 
 function rankScore(index: number, total: number): number {
   return total ? (total - index) / total : 0;
 }
 
-/** Build the per-query context: stemmed anchors plus BM25 scores normalised to the best hit, times the validity factor. */
-function routeContext(query: string, entries: MemoryEntry[], day: string, usage?: UsageMap, stale?: StaleMap): RouteContext {
+const BM25F_SPECS: Bm25FieldSpec[] = [
+  { name: 'title', weight: 2.2, b: 0.65 },
+  { name: 'tags', weight: 2.0, b: 0.65 },
+  { name: 'body', weight: 1.0, b: 0.75 }
+];
+const CONCEPT_SYNONYM_WEIGHT = 0.45;
+
+/** Build the per-query context: stemmed anchors plus BM25F & concept scores normalised to the best hit, times the validity factor. */
+function routeContext(query: string, entries: MemoryEntry[], day: string, usage?: UsageMap, stale?: StaleMap, rawQuery?: string): RouteContext {
   const anchors = meaningfulWords(query);
-  const ctx: RouteContext = { query, anchors, stems: new Set([...anchors].map(stem)), paths: queryPaths(query), fields: new Map(), scores: new Map(), ...(usage ? { usage } : {}) };
+  const rawAnchors = meaningfulWords(rawQuery ?? query);
+  const ctx: RouteContext = {
+    query,
+    anchors,
+    stems: new Set([...anchors].map(stem)),
+    rawStems: new Set([...rawAnchors].map(stem)),
+    paths: queryPaths(rawQuery ?? query),
+    fields: new Map(),
+    scores: new Map(),
+    day,
+    ...(usage ? { usage } : {}),
+    ...(stale ? { stale } : {})
+  };
   if (!anchors.size) return ctx;
-  const raw = buildBm25(entries.map((entry) => ({ key: memoryKey(entry), terms: entryFields(entry, ctx).bm25 }))).score([...ctx.stems]);
-  const max = Math.max(0, ...raw.values());
+  const bm25f = buildBm25F(
+    entries.map((entry) => {
+      const f = entryFields(entry, ctx);
+      return { key: memoryKey(entry), fields: { title: f.title, tags: f.tags, body: f.body } };
+    }),
+    BM25F_SPECS
+  );
+  const exactAnchoredCount = entries.filter(
+    (entry) => validityFactor(entry, Boolean(stale?.[memoryKey(entry)]?.length), day) !== 'exclude' && hasExactAnchorOverlap(entry, ctx)
+  ).length;
+  ctx.allowConceptFallback = exactAnchoredCount === 0;
+  if (ctx.allowConceptFallback) ctx.corpusConcepts = buildCorpusConceptMap(entries);
+  const raw = bm25f.score([...ctx.stems]);
+  const conceptStems = ctx.allowConceptFallback ? expandConceptStems(ctx.rawStems.size ? ctx.rawStems : ctx.stems, ctx.corpusConcepts) : new Set<string>();
+  const synScores = conceptStems.size ? bm25f.score([...conceptStems]) : undefined;
+  const combined = new Map<string, number>(raw);
+  if (synScores?.size) {
+    for (const [key, synScore] of synScores) {
+      if (synScore > 0) combined.set(key, (combined.get(key) ?? 0) + CONCEPT_SYNONYM_WEIGHT * synScore);
+    }
+  }
+  const max = Math.max(0, ...combined.values());
   if (!max) return ctx;
   for (const entry of entries) {
-    const score = raw.get(memoryKey(entry));
+    const score = combined.get(memoryKey(entry));
     const factor = validityFactor(entry, Boolean(stale?.[memoryKey(entry)]?.length), day);
     if (score && factor !== 'exclude') ctx.scores.set(memoryKey(entry), (score / max) * factor);
   }
@@ -340,17 +412,27 @@ function directScore(entry: MemoryEntry, routeCtx: RouteContext): number {
 }
 
 /** D6 candidate gate: any anchor hit for short queries; longer ones need two hits or one strong-field hit. */
-function hasAnchorOverlap(entry: MemoryEntry, routeCtx: RouteContext): boolean {
+function hasExactAnchorOverlap(entry: MemoryEntry, routeCtx: RouteContext): boolean {
   const { all, strong, pathHit } = entryFields(entry, routeCtx);
   if (pathHit) return true;
-  if (!routeCtx.stems.size) return false;
+  const gateStems = routeCtx.rawStems.size ? routeCtx.rawStems : routeCtx.stems;
+  if (!gateStems.size) return false;
   let hits = 0;
-  for (const anchor of routeCtx.stems) {
+  for (const anchor of gateStems) {
     if (!all.has(anchor)) continue;
     hits += 1;
-    if (routeCtx.stems.size < GATE_MIN_ANCHORS || strong.has(anchor) || hits >= 2) return true;
+    if (gateStems.size < GATE_MIN_ANCHORS || strong.has(anchor) || hits >= 2) return true;
   }
   return false;
+}
+
+/** D6 candidate gate with strong-field concept synonym fallback when exact queries find zero matches. */
+function hasAnchorOverlap(entry: MemoryEntry, routeCtx: RouteContext): boolean {
+  if (hasExactAnchorOverlap(entry, routeCtx)) return true;
+  if (!routeCtx.allowConceptFallback) return false;
+  const { all, strong } = entryFields(entry, routeCtx);
+  const gateStems = routeCtx.rawStems.size ? routeCtx.rawStems : routeCtx.stems;
+  return hasStrongConceptOverlap(gateStems, strong, all, routeCtx.corpusConcepts);
 }
 
 function entryFields(entry: MemoryEntry, routeCtx: RouteContext): EntryFields {
@@ -359,10 +441,20 @@ function entryFields(entry: MemoryEntry, routeCtx: RouteContext): EntryFields {
   if (cached) return cached;
   // Title-derived tags (no frontmatter `tags`) are ordinary terms, not a strong field.
   const tags = entry.tags ?? [];
-  const strong = stemmedTerms([entry.id, ...(entry.autoTags ? [] : tags), entry.directive ?? '', ...(entry.appliesTo ?? [])]);
-  const normal = stemmedTerms([...typeRoutingTerms(entry), ...(entry.autoTags ? tags : []), entry.summary ?? '', ...(entry.routingTerms ?? [])]);
+  const title = stemmedTerms([entry.id, entry.directive ?? '', ...(entry.appliesTo ?? [])]);
+  const authoredTags = entry.autoTags ? [] : stemmedTerms(tags);
+  const tagTerms = stemmedTerms([...(entry.autoTags ? [] : tags), ...(entry.routingTerms ?? [])]);
+  const body = stemmedTerms([...typeRoutingTerms(entry), ...(entry.autoTags ? tags : []), entry.summary ?? '']);
+  const strong = [...title, ...authoredTags];
   const pathHit = pathAnchorHit(routeCtx.paths, entry.appliesTo);
-  const fields = { strong: new Set(strong), all: new Set([...strong, ...normal]), bm25: [...strong, ...strong, ...normal], pathHit };
+  const fields = {
+    strong: new Set(strong),
+    all: new Set([...strong, ...tagTerms, ...body]),
+    title,
+    tags: tagTerms,
+    body,
+    pathHit
+  };
   routeCtx.fields.set(key, fields);
   return fields;
 }

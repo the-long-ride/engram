@@ -27,3 +27,45 @@ test('benchmark schema rejects invalid token budgets and categories', () => {
   assert.ok(parsed.diagnostics.some((item) => item.path === 'cases[0].max_tokens'));
   assert.ok(parsed.diagnostics.some((item) => item.path === 'cases[0].category'));
 });
+
+test('benchmark schema validates freshness-ordering and multi-turn-session fields', () => {
+  const valid = parseBenchmarkDocument({
+    version: 2,
+    cases: [
+      {
+        id: 'fresh-order',
+        category: 'freshness-ordering',
+        query: 'cache invalidation',
+        expect: ['cache-current'],
+        expect_expanded: ['cache-current'],
+        expect_body_order: ['cache-rule', 'cache-current']
+      },
+      {
+        id: 'multi-turn',
+        category: 'multi-turn-session',
+        query: 'cache invalidation',
+        expect: ['cache-current'],
+        turns: ['current session', 'cache invalidation', 'cache invalidation']
+      }
+    ]
+  });
+  assert.equal(valid.diagnostics.length, 0);
+  assert.deepEqual(valid.document?.cases[0].expect_expanded, ['cache-current']);
+  assert.deepEqual(valid.document?.cases[0].expect_body_order, ['cache-rule', 'cache-current']);
+  assert.equal(valid.document?.cases[1].turns?.length, 3);
+
+  const invalid = parseBenchmarkDocument({
+    version: 2,
+    cases: [{
+      id: 'bad-fields',
+      category: 'multi-turn-session',
+      query: 'cache',
+      expect_expanded: [''],
+      expect_body_order: 'not-an-array',
+      turns: []
+    }]
+  });
+  assert.ok(invalid.diagnostics.some((item) => item.path === 'cases[0].expect_expanded'));
+  assert.ok(invalid.diagnostics.some((item) => item.path === 'cases[0].expect_body_order'));
+  assert.ok(invalid.diagnostics.some((item) => item.path === 'cases[0].turns'));
+});

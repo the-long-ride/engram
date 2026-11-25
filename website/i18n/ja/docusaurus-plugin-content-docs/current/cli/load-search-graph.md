@@ -21,7 +21,7 @@ engram load --id <id>,<id>
 engram load --exclude-keys workspace:rules/use-pnpm.md "<task>"
 ```
 
-`load` は、まず `rule` や `knowledge` などの一般的なメモリ単語や一般的なストップワードを無視し、意味のあるクエリ用語にルーティングを固定します。次に、より広い候補プールをコンパクトなコンテキスト パックに絞り込みます。通常の読み込みでは、選択された件数と関連する総件数が `loaded 8 memory files / 14 total related memories` のように報告されます。
+`load` は Unicode / ベトナム語 / CJK 対応のトークン化でクエリとメモリを分割した上で、展開前の `rawStems`（`hasAnchorOverlap`）を使って、`rule` や `knowledge` などの一般的なメモリ単語や一般的なストップワードを無視し、意味のあるクエリ用語にルーティングを固定するため、同義語展開で無関係なメモリが採用されることはありません。完全一致アンカーがない場合でも、24 個の決定論的な概念クラスターとコーパス共起ブリッジが関連用語を橋渡しできます。候補は 3 ストリーム BM25F（`title`、`tags`、`body`）とクローズドループの `usage.json` 結果テレメトリ（`applied` 加点、`corrected` 減点、有用性ゼロで繰り返し注入されるメモリのノイズ減衰）でスコア付けされます。次に、より広い候補プールをコンパクトなコンテキスト パックに絞り込み、展開された本文を `orderForAgentConsumption`（ルール・指示・`depends_on` 前提条件を先頭、古い永続コンテキストを中間、`<=14d` の新しいメモリや `working` ティアのリーフを末尾）で並べ替えます。通常の読み込みでは、選択された件数と関連する総件数が `loaded 8 memory files / 14 total related memories` のように報告されます。
 
 - デフォルトの `load` — 階層化されたエージェント向けルート: `load.expand_top`（デフォルト 3）による上位ヒットが本文として展開され、その他の選択されたヒットは 1 行のカード（card）として表示され、末尾に `fetch: engram load --id <ids>` ヒントが付きます。各本文ヘッダーにはメモリの `authority` が表示され、`evidence_refs`、`## Context`、`## Example`、`## Origin` などのフロントマターはレンダリングされず（`--full` で確認可能）、ルールは選択されたバリアントが 1 つだけ表示されます。
 - `--id <id,...>` — カードの完全な本文を取得します。ID はカンマ区切りで指定でき、明示的な取得は `stats --usage` にカウントされます。
@@ -45,14 +45,25 @@ engram search --semantic "<topic>"
 
 デフォルトの検索は決定論的な字句検索です。`search --semantic` は、埋め込みベースのセマンティック検索ではなく、決定論的なローカル類似性を追加します。`search --json` の結果には `score` フィールドが含まれます。
 
+## why
+
+```bash
+engram why <id>
+engram why <id> "<query>"
+engram why <id> "<query>" --json
+```
+
+特定のメモリがクエリに対して含まれた、ランク付けされた、または除外された理由を説明します。`status`（`expanded_body`、`card`、`omitted_budget`、`omitted_limit`、`rejected_no_anchor`、`excluded_lifecycle`、`not_found`）、`rank`、`score`、`matched_stems`、`missing_stems`、`budget`、および `hint` を報告します。構造化された診断結果を得るには `--json` を渡してください。
+
 ## graph
 
 ```bash
 engram graph "<topic>"
 engram graph --rebuild
+engram graph link <parent-id> <child-id...>
 ```
 
-グラフ ルーティングを検査します。手動編集後は `engram graph --rebuild` を実行してください。グラフは依存関係レイヤーを報告し、`engram load` は、より深いメモリの前にルーティングされた前提条件を同じコンパクト パックに引き込みます。
+グラフ ルーティングを検査するか、明示的な依存エッジを宣言します。手動編集後は `engram graph --rebuild` を実行するか、`engram graph link <parent-id> <child-id...>` を使って子メモリから親前提条件への `depends_on` リンクを追加してグラフを更新してください。グラフは依存関係レイヤーを報告し、`engram load` は、より深いメモリの前にルーティングされた前提条件を同じコンパクト パックに引き込みます。
 
 グラフ内の関連エッジやベクトル一致によって無関係なメモリが自動的に読み込まれることはありません。意味のあるクエリ用語にすでに一致しているメモリを再ランク付けまたは拡張するのに役立つだけです。明示的な `depends_on` 前提条件は、独自の用語の一致がなくても読み込まれます。
 

@@ -94,9 +94,31 @@ Các bộ nhớ làm việc không bao giờ đến Git, và các mục chỉ m�
 ```bash
 engram observe --file session.md
 engram save-session --file .agents/.engram/inbox/<note>.md
+engram observe --learn --file session.md
+engram observe --learn --git HEAD~10..HEAD
+engram observe --queue --learn
 ```
 
 `observe` lưu các ghi chú thô đã được làm sạch vào `inbox/`. Ghi chú trong inbox không phải bộ nhớ đang hoạt động. Dùng cách này khi muốn giữ lại các ghi chú sơ lược trước khi quyết định cái gì nên trở thành bộ nhớ bền vững.
+
+Thêm `--learn` (`engram observe --learn [--file <path> | --git [range]]` hoặc `engram observe --queue --learn`) để chắt lọc bài học một cách xác định thành các bộ nhớ `working/` có thời hạn và nằm trong gitignore (kèm dấu vết `tr_sl_*` đã làm sạch), đồng thời chuẩn bị các ứng viên bền vững có độ tin cậy cao dưới dạng biên nhận chưa kích hoạt `inbox/r-*.json`. Kiểm tra và phê duyệt các biên nhận bền vững đã chuẩn bị bằng `engram review inbox` và `engram review apply`; bộ nhớ bền vững đang hoạt động không bao giờ bị ghi nếu chưa có phê duyệt.
+
+## review
+
+```bash
+engram review inbox
+engram review triage
+engram review triage --interactive
+engram review apply <receipt-id>
+engram review dismiss <receipt-id>
+```
+
+Kiểm tra và xử lý các biên nhận học tập chưa kích hoạt `inbox/r-*.json` được tạo bởi cơ chế học từ sửa lỗi tại thời điểm prompt hoặc `engram observe --learn`:
+
+- `engram review inbox` — liệt kê các biên nhận đang chờ kèm `id`, `scope`, `source`, `type` và văn bản ứng viên rút gọn.
+- `engram review triage` / `engram review triage --interactive` — duyệt từng biên nhận chờ một cách tương tác với lời nhắc `[a]pprove / [d]ismiss / [s]kip / [q]uit` (không có tùy chọn chỉnh sửa; các kết luận `SUPERSEDE` được chuyển sang `engram review apply <receipt-id>`).
+- `engram review apply <receipt-id>` — yêu cầu mã biên nhận `<receipt-id>` và đưa biên nhận đó qua cổng ghi để tạo hoặc cập nhật bộ nhớ bền vững đang hoạt động.
+- `engram review dismiss <receipt-id>` — loại bỏ biên nhận mà không ghi bộ nhớ đang hoạt động.
 
 <!-- evidence-foundation:v3:start -->
 ## Bộ nhớ có bằng chứng {#evidence-backed-memory}

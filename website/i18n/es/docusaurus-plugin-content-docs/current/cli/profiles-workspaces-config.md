@@ -94,6 +94,8 @@ engram config set <key> <value>
 | `mcp.resource_limit` | Memorias que devuelve `resources/list` de MCP además de `engram://index`, ordenadas por uso inyectado + obtenido (solo en la configuración JSON; `engram config set` no lo establece) | `20` | `0` a `200` |
 | `load.limit` | Máximo de memorias devueltas por una carga normal | `8` | `1` a `32` |
 | `hooks.path_rules` | `native` escribe archivos de reglas de Claude y Cursor para las memorias con `applies_to` y registra `InstructionsLoaded` de Claude; `hook` mantiene el hook `PreToolUse` de Claude | `native` | `native`, `hook` |
+| `learning.mode` | Controla el aprendizaje de sesión Opción A: `off` desactiva el aprendizaje automático, `working` escribe solo memorias `working/` con caducidad e ignoradas por Git, `propose` además prepara candidatas duraderas como recibos `inbox/r-*.json` (solo configuración JSON en `engram.config.json`; no se establece con `engram config set` ni en Construct) | `propose` | `off`, `working`, `propose` |
+| `learning.auto_drain` | Vacía automáticamente las transcripciones encoladas de `SessionEnd` durante pasadas de aprendizaje elegibles (solo configuración JSON en `engram.config.json`; no se establece con `engram config set` ni en Construct) | `false` | `true`, `false` |
 | `rule_variants.enabled` | Activa o desactiva la generación de variantes de reglas | `false` | `true`, `false` |
 | `rule_variants.active` | Modo de variante de regla activo | `balanced` | `light`, `balanced`, `strict` |
 | `graph.enabled` | Activa o desactiva el enrutamiento basado en el grafo | `true` | `true`, `false` |
@@ -105,7 +107,7 @@ engram config set <key> <value>
 | `global_git.remote` | Nombre del remoto Git para la sincronización global | `origin` | Cadena |
 | `global_git.branch` | Nombre de la rama Git para la sincronización global | `main` | Cadena |
 
-Estos ajustes también pueden gestionarse visualmente en la pestaña **Construct** de `engram entry`.
+Salvo las claves que solo existen en configuración JSON (`mcp.resource_limit`, `learning.mode` y `learning.auto_drain`), estos ajustes también pueden gestionarse visualmente en la pestaña **Construct** de `engram entry`.
 
 ## Próximos pasos
 

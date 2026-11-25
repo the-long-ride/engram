@@ -57,7 +57,7 @@ export function resolveDocPathnameAssetCandidates(
     locales = [],
     defaultLocale = 'en',
     currentVersionPath = 'future',
-    publishedVersionName = 'version-0.0.29',
+    publishedVersionName = 'version-0.1.0',
   }: PathResolverOptions = {},
 ): string[] {
   const normalizedBase = normalizeBaseUrl(baseUrl);

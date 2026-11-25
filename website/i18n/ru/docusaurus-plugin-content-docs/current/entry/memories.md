@@ -21,6 +21,15 @@ The search mode menu has two options:
 
 Clear the field to restore the full graph for the selected filters.
 
+## Симулятор маршрутизации
+
+Используйте панель **Simulate route**, чтобы проверить, как Engram маршрутизирует запрос, ещё до того, как его увидит агент. Отправка запроса вызывает `/api/recall?simulate=true` и показывает разбивку:
+
+- **Packed bodies** — воспоминания, полностью включённые в маршрутизируемый пакет
+- **Cards** — компактные карточки воспоминаний, включённые вместе с полными телами
+- **Omitted candidates** — совпавшие воспоминания, исключённые из-за ранжирования или лимита бюджета
+- **Token budget** — расход бюджета токенов в симулированном ответе выборки
+
 ## Scope chips {#scope-chips}
 
 Filter the graph by memory source. Compare workspace vs global memory. Start with the current workspace only when the graph feels noisy.
@@ -49,9 +58,16 @@ Sensitive local content may be visible in the browser. Treat the panel as open w
 
 Opens the file in an editor and copies the path. Use for manual correction or review. The source of truth is the Markdown file.
 
-## Archive memory
+## Значки Working и Noisy
 
-Removes memory from active routing while preserving it under `archive/`. Use archive, not delete, for auditability.
+Карточки и панель подробностей отображают значки состояния для воспоминаний, требующих внимания:
+
+- **Working** — отмечает активные воспоминания, хранящиеся в исключённом из Git уровне `working/`. Нажмите кнопку **Promote** (которая сразу отправляет `POST /api/memory/promote`), чтобы перенести активное воспоминание из `working/` в постоянное хранилище без переключения в CLI.
+- **Noisy** — помечает воспоминания, которые часто совпадают, но не приносят пользы, чтобы вы могли сузить их триггеры, отредактировать или архивировать их.
+
+## Архивация воспоминания
+
+Удаляет воспоминание из активной маршрутизации, сохраняя его в `archive/`. Нажатие на архивацию открывает диалог подтверждения **Delete memory?** (без модального поля для ввода причины; по умолчанию записывается `'Deleted from Memories graph view'`). Для аудируемости используйте архивацию, а не ручное удаление.
 
 <RiskCallout level="caution">
 Archiving changes routing immediately. Use archive, not manual deletion, so history is preserved.
@@ -67,6 +83,8 @@ The detail panel mirrors CLI/index metadata. It shows `authority`, `revision`, `
 
 ```bash
 engram graph "<topic>"
+engram why <id> "<query>"
+engram promote <id>
 engram quality-check
 engram archive --reason "<why>" <id-or-file>
 ```

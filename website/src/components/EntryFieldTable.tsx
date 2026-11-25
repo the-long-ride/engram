@@ -1,5 +1,5 @@
 import React from 'react';
-import {entryFieldsByGroup} from '../data/entryFields';
+import {ENTRY_FIELDS, entryFieldsByGroup} from '../data/entryFields';
 
 type Props = {
   group?: string;
@@ -8,7 +8,7 @@ type Props = {
 export default function EntryFieldTable({group}: Props) {
   const fields = group
     ? entryFieldsByGroup(group)
-    : Object.values(entryFieldsByGroup).flat();
+    : ENTRY_FIELDS;
   return (
     <table>
       <thead>

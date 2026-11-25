@@ -6,14 +6,17 @@ description: 모든 Engram CLI 명령과 그 역할을 한눈에 보여 주는 �
 
 # 명령 개요
 
-간결한 명령 목록은 `engram -h`로 확인하세요. 명령별 예시와 사용 사례는 `engram help <topic>` 또는 `engram -h <topic>`으로 볼 수 있습니다.
+간결한 명령 목록은 `engram -h` 또는 `engram help --compact`로 확인하세요. 명령별 예시와 사용 사례는 `engram help <topic>` 또는 `engram -h <topic>`으로 볼 수 있습니다.
 
 ## 명령 지도
 
 | 필요한 작업 | 명령 |
 | --- | --- |
+| 빠른 워크스페이스/메모리 상태 요약 | `engram status` (별칭 `engram stat`) |
+| 간결한 명령 요약 | `engram help --compact` |
 | 작업용 메모리 로드 | `engram load "<task>"` |
 | 간결한 작업용 메모리 로드 | `engram load "<task>"` |
+| 메모리가 라우팅되었거나 제외된 이유 설명 | `engram why <id> ["<query>"]` |
 | AI 에이전트 사용 가이드 출력 | `engram llm` |
 | 라우팅된 메모리 파일 미리 보기 | `engram load --dry-run "<task>"` |
 | 토큰 상한을 두고 로드 | `engram load --budget-tokens 800 "<task>"` |
@@ -26,7 +29,9 @@ description: 모든 Engram CLI 명령과 그 역할을 한눈에 보여 주는 �
 | 세션 후보 강제 저장 | `engram ss -f` |
 | 최근 채팅을 분석해 강제 저장 | `engram ss -f last 50 sessions` |
 | 원시 노트 캡처 | `engram observe --file session.md` |
+| 학습 내용을 working 메모리와 inbox 영수증으로 추출 | `engram observe --learn [--file <path> \| --git [range]]` |
 | 선택 사항인 SessionEnd 트랜스크립트 대기열 처리 | `engram observe --queue --dry-run` |
+| 스테이징된 학습 영수증 검토 | `engram review inbox\|triage\|apply\|dismiss` |
 | 기존 문서/지침 변환 | `engram take-control --all` |
 | 소스 인수 미리 보기 | `engram take-control --plan` |
 | 코드 또는 설정 요약 | `engram take-control --kind code --objective "<text>"` |
@@ -35,10 +40,13 @@ description: 모든 Engram CLI 명령과 그 역할을 한눈에 보여 주는 �
 | 작업 메모리 유지 | `engram promote <id>` |
 | 작업 노트 저장 | `engram working note "<text>"` |
 | 만료된 작업 메모리 정리 | `engram working prune [--dry-run]` |
-| 가져오기 및 주입 횟수 확인 | `engram stats --usage` |
+| 가져오기, 주입 및 결과 횟수 확인 | `engram stats --usage` |
+| Git 커밋 기록에서 사용량 텔레메트리 백필 | `engram stats --backfill [--git <range>] [--limit <n>]` |
 | 기존 메모리 폴더 재구성 | `engram metacognize --workspace\|--global\|--all` |
 | 충돌 해결 및 metacognize | `engram resolve-conflicts --metacognize` |
 | 그래프 라우팅 점검 | `engram graph "<topic>"` |
+| 부모/자식 그래프 종속성 연결 | `engram graph link <parent-id> <child-id...>` |
+| Git 기록에서 벤치마크 케이스 생성 | `engram benchmark --from-git [--out <path>]` |
 | 해시 확인 | `engram verify` |
 | 잘못된 형식의 메모리 파일 찾기 | `engram repair` |
 | 잘못된 메모리 아카이브 | `engram archive --reason "<why>" <id-or-file>` |

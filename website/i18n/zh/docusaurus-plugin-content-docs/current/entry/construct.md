@@ -14,6 +14,15 @@ Construct 标签页按 UI 的分组方式展示 Engram 的运行时配置字段�
 标记为 **risky** 的字段可能会禁用 Engram、更改保存目标、更改 Git 行为，或影响记忆的安全性。更改之前请先阅读警告。
 </RiskCallout>
 
+## 子视图 {#sub-views}
+
+Construct 分为四个子视图：
+
+- **Configuration** — 按领域分组编辑工作区与全局运行时设置（详见下文）。
+- **Profiles** — 查看并管理命名的 Engram 资料及默认资料选择。
+- **Workspaces** — 查看已注册的工作区、根路径以及工作区到全局作用域的上下文。
+- **Runtime** — 检查解析后的运行时配置、生效路径与实时环境诊断信息。
+
 ## Core 分组
 
 ### Enabled

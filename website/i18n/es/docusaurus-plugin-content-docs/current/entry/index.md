@@ -24,29 +24,44 @@ La interfaz Entry Web UI es el panel de control local para Engram. Úselo para c
 El panel se ejecuta en su máquina. No es un servicio en la nube. Cierre el servidor cuando termine por motivos de higiene de seguridad.
 
 <RiskCallout level="risky">
-El panel de Entry es local. Trátelo como abierto mientras configura la memoria, luego cierre el servidor desde la pestaña Runtime al finalizar.
+El panel de Entry es local. Trátelo como abierto mientras configura la memoria, luego cierre el servidor desde el pie de la barra lateral al finalizar.
 </RiskCallout>
 
 ## Relación con los comandos de CLI
 
 Cada control visible se asigna a un comando de la CLI o clave de configuración. En los casos en que exista un equivalente de CLI, la referencia del campo lo indica. La CLI sigue siendo la fuente de verdad para la automatización y los scripts.
 
+## Navegación y enrutamiento por URL
+
+Entry Web UI usa enrutamiento `#hash` en la URL para que cada pestaña se pueda guardar en marcadores, recargar o navegar con el historial del navegador:
+
+- `#config` — Construct
+- `#author` — Git
+- `#upgrade` — Updates
+- `#recall` — Memories
+- `#review` — Review
+- `#maintain` — Core
+- `#connect` — Connections
+
+La barra lateral incluye una sección **Workspace** para controles de ámbito de workspace y muestra una insignia con el recuento pendiente en **Review** siempre que haya hallazgos, candidatos diferidos o recibos pendientes de triaje. En pantallas estrechas, la barra lateral se pliega en un cajón móvil que puede cerrar con el botón de cierre o pulsando `Escape`.
+
 ## Pestañas de un vistazo
 
-| Pestaña | Propósito |
-| --- | --- |
-| [Connections](connections.md) | Detecte y vincule agentes de IA compatibles |
-| [Construct](construct.md) | Configure cada campo de ejecución de Engram |
-| [Profiles](profiles.md) | Administre perfiles de memoria global aislados |
-| [Workspaces](workspaces.md) | Registre y vincule repositorios de proyectos |
-| [Core](core.md) | Revise memorias duplicadas y en conflicto |
-| [Memories](memories.md) | Inspeccione el grafo de memoria y archívelas |
-| [Runtime](runtime.md) | Rutas y configuraciones resueltas de solo lectura |
+| Pestaña | Hash | Propósito |
+| --- | --- | --- |
+| [Construct](construct.md) | `#config` | Configure campos de ejecución, perfiles, espacios de trabajo y estado en tiempo de ejecución de Engram |
+| [Git](../operations/git-author-settings.md) | `#author` | Gestione la identidad de autor y la configuración de Git global |
+| [Updates](../operations/configuration-upgrades.md) | `#upgrade` | Compruebe actualizaciones del paquete y aplique actualizaciones de configuración |
+| [Memories](memories.md) | `#recall` | Busque, simule rutas, inspeccione, promueva y archive memoria activa |
+| [Review](review.md) | `#review` | Clasifique recibos de aprendizaje de sesión, hallazgos y escrituras diferidas |
+| [Core](core.md) | `#maintain` | Revise memorias duplicadas y en conflicto |
+| [Connections](connections.md) | `#connect` | Compruebe la salud de Doctor, detecte agentes y vincule agentes de IA compatibles |
 
 ## Siguientes pasos
 
 - [Inicio del panel de control](launch.md)
 - [Pestaña Construct](construct.md)
+- [Pestaña Core](core.md)
 - [Referencia completa de campos](field-reference.md)
 
 

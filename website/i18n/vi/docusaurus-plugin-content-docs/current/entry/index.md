@@ -24,29 +24,44 @@ Entry Web UI là bảng điều khiển chỉ dành cho cục bộ cho Engram. S
 Bảng điều khiển chạy trực tiếp trên máy của bạn. Nó không phải là một dịch vụ đám mây. Hãy đóng máy chủ khi bạn làm việc xong để đảm bảo vệ sinh an ninh.
 
 <RiskCallout level="risky">
-Bảng điều khiển Entry chỉ khả dụng cục bộ. Hãy coi nó là mở trong khi bạn đang định cấu hình bộ nhớ, sau đó đóng máy chủ từ tab Runtime khi hoàn thành.
+Bảng điều khiển Entry chỉ khả dụng cục bộ. Hãy coi nó là mở trong khi bạn đang định cấu hình bộ nhớ, sau đó đóng máy chủ từ chân thanh bên khi hoàn thành.
 </RiskCallout>
 
 ## Mối quan hệ với các lệnh CLI
 
 Mỗi điều khiển hiển thị tương ứng với một lệnh CLI hoặc khóa cấu hình. Khi có cấu hình CLI tương đương, tài liệu tham khảo trường sẽ liệt kê nó. CLI vẫn là nguồn dữ liệu chuẩn cho việc viết kịch bản và tự động hóa.
 
+## Điều hướng và định tuyến URL
+
+Entry Web UI sử dụng định tuyến `#hash` trên URL để mỗi tab có thể được đánh dấu trang, tải lại hoặc điều hướng bằng lịch sử trình duyệt:
+
+- `#config` — Construct
+- `#author` — Git
+- `#upgrade` — Updates
+- `#recall` — Memories
+- `#review` — Review
+- `#maintain` — Core
+- `#connect` — Connections
+
+Thanh bên bao gồm mục **Workspace** cho các điều khiển theo phạm vi workspace và hiển thị huy hiệu đếm số mục chờ rà soát trên **Review** mỗi khi có phát hiện, ứng viên bị hoãn hoặc biên nhận đang chờ phân loại. Trên màn hình hẹp, thanh bên thu gọn thành ngăn kéo di động mà bạn có thể đóng bằng nút đóng hoặc nhấn `Escape`.
+
 ## Sơ lược về các tab
 
-| Tab | Nhiệm vụ |
-| --- | --- |
-| [Connections](connections.md) | Phát hiện và liên kết các tác nhân AI được hỗ trợ |
-| [Construct](construct.md) | Cấu hình mọi trường thời gian chạy của Engram |
-| [Profiles](profiles.md) | Quản lý các hồ sơ bộ nhớ toàn cục bị cô lập |
-| [Workspaces](workspaces.md) | Đăng ký và liên kết các kho lưu trữ dự án |
-| [Core](core.md) | Xem xét các bộ nhớ trùng lặp và xung đột |
-| [Memories](memories.md) | Kiểm tra đồ thị bộ nhớ và lưu trữ bộ nhớ |
-| [Runtime](runtime.md) | Cấu hình và các đường dẫn được giải quyết chỉ đọc |
+| Tab | Hash | Nhiệm vụ |
+| --- | --- | --- |
+| [Construct](construct.md) | `#config` | Cấu hình các trường thời gian chạy, hồ sơ, không gian làm việc và trạng thái thời gian chạy của Engram |
+| [Git](../operations/git-author-settings.md) | `#author` | Quản lý danh tính tác giả và cấu hình Global Git |
+| [Updates](../operations/configuration-upgrades.md) | `#upgrade` | Kiểm tra cập nhật gói và áp dụng nâng cấp cấu hình |
+| [Memories](memories.md) | `#recall` | Tìm kiếm, mô phỏng định tuyến, kiểm tra, thăng hạng và lưu trữ bộ nhớ đang hoạt động |
+| [Review](review.md) | `#review` | Phân loại biên nhận học phiên, phát hiện rà soát và các lần ghi bộ nhớ bị hoãn |
+| [Core](core.md) | `#maintain` | Xem xét các bộ nhớ trùng lặp và xung đột |
+| [Connections](connections.md) | `#connect` | Kiểm tra sức khỏe Doctor, phát hiện tác nhân và liên kết các tác nhân AI được hỗ trợ |
 
 ## Các bước tiếp theo
 
 - [Khởi chạy bảng điều khiển](launch.md)
 - [Tab Construct](construct.md)
+- [Tab Core](core.md)
 - [Tài liệu tham khảo trường đầy đủ](field-reference.md)
 
 

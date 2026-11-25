@@ -12,11 +12,27 @@ Review est la voie contrôlée pour traiter les constats et candidats différés
 
 ## File d’attente et contexte
 
-La file combine les constats de révision et les candidats différés de la boîte de réception. Sélectionnez un élément pour inspecter son résumé, les métadonnées de mémoire liée et l’intégralité du contenu. Les fichiers liés vides ou indisponibles sont signalés sans interrompre la révision du reste de la file.
+La file combine les reçus d’apprentissage de session, les candidats différés de la boîte de réception et les constats de révision. Filtrez la liste à l’aide des pastilles de filtre : **All**, **Session learning**, **Deferred** et **Findings**.
+
+Sélectionnez un élément pour inspecter son résumé, les métadonnées de mémoire liée et l’intégralité du contenu. Les fichiers liés vides ou indisponibles sont signalés sans interrompre la révision du reste de la file.
+
+Vous pouvez aussi trier au clavier :
+
+- `j` / `k` — passer à l’élément suivant ou précédent de la file
+- `a` — approuver le reçu sélectionné
+- `d` — écarter l’élément sélectionné
+
+## Approbation et rejet des reçus
+
+Pour les reçus `session-learning`, vous pouvez appliquer directement les candidats approuvés sans copier d’invite :
+
+- **Approve receipt** applique le reçu `session-learning` sélectionné via `POST /api/review/apply`.
+- **Approve N** approuve en lot tous les reçus de la boîte de réception **cochés** en une seule requête `POST /api/review/apply`.
+- **Dismiss** retire un élément de la file sans écrire de mémoire.
 
 ## Invite de révision pour IA
 
-Choisissez une mémoire liée comme dépendance ou remplacement, puis utilisez **Copy AI review prompt**. L’invite ne contient que le candidat sélectionné, le contexte de mémoire visible, les instructions de relation et la portée d’écriture requise.
+La section **02 Review prompt** est repliable afin de la garder fermée lors d’un triage rapide de reçus et de la déplier lorsqu’un élément nécessite une relecture par agent. Choisissez une mémoire liée comme dépendance ou remplacement, puis utilisez **Copy AI review prompt**. L’invite ne contient que le candidat sélectionné, le contexte de mémoire visible, les instructions de relation et la portée d’écriture requise.
 
 Lorsque l’agent IA dispose d’un accès au terminal et de l’approbation d’écrire, il doit enregistrer le résultat nettoyé à l’aide de la commande intégrée dans l’invite. La voie intégrée à l’application est un repli, pas une voie d’écriture autonome.
 

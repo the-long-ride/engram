@@ -4,7 +4,8 @@ import { exists, FileLockTimeoutError, readJson, readJsonForUpdate, withFileLock
 import { ensureScopeGitignore } from '../memory/scope-gitignore.js';
 import { workspaceRoot } from '../runtime/config.js';
 
-export type HookSessionRecord = { delivered: string[]; updated: string };
+export type HookSessionRecord = { delivered: string[]; updated: string; carded?: string[]; touched?: string[] };
+export type HookSessionExtra = { carded?: string[]; touched?: string[] };
 export type HookCache = { records: Record<string, HookSessionRecord> };
 
 export const HOOK_CACHE_FILE = 'agent-hook-cache.json';
@@ -29,7 +30,7 @@ export async function readSession(cwd: string, key: string): Promise<HookSession
  * Engram folder is left alone (the hook never creates `.agents/.engram`). The read-modify-write runs under a file lock so
  * parallel hooks never drop each other's sessions; when the lock is busy past the timeout the write is skipped.
  */
-export async function writeSession(cwd: string, key: string, delivered: string[]): Promise<void> {
+export async function writeSession(cwd: string, key: string, delivered: string[], extra?: HookSessionExtra): Promise<void> {
   const root = workspaceRoot(cwd);
   if (!(await exists(root))) return;
   const file = cacheFile(cwd);
@@ -38,7 +39,14 @@ export async function writeSession(cwd: string, key: string, delivered: string[]
     await withFileLock(file, async () => {
       const now = new Date();
       const cache = validCache(await readJsonForUpdate<Partial<HookCache>>(file, {}));
-      cache.records[key] = { delivered: [...new Set(delivered)], updated: now.toISOString() };
+      const carded = extra?.carded?.length ? [...new Set(extra.carded)] : undefined;
+      const touched = extra?.touched?.length ? [...new Set(extra.touched)] : undefined;
+      cache.records[key] = {
+        delivered: [...new Set(delivered)],
+        updated: now.toISOString(),
+        ...(carded ? { carded } : {}),
+        ...(touched ? { touched } : {})
+      };
       await writeJsonAtomic(file, pruneSessions(cache, now));
     }, { timeoutMs: HOOK_LOCK_TIMEOUT_MS });
   } catch (error) {
@@ -76,12 +84,17 @@ function cacheFile(cwd: string): string {
   return path.join(workspaceRoot(cwd), HOOK_CACHE_FILE);
 }
 
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item: unknown) => typeof item === 'string');
+}
+
 function isRecord(value: unknown): value is HookSessionRecord {
   if (!isObject(value)) return false;
-  return Array.isArray(value.delivered)
-    && value.delivered.every((item: unknown) => typeof item === 'string')
+  return isStringArray(value.delivered)
     && typeof value.updated === 'string'
-    && Number.isFinite(Date.parse(value.updated));
+    && Number.isFinite(Date.parse(value.updated))
+    && (value.carded === undefined || isStringArray(value.carded))
+    && (value.touched === undefined || isStringArray(value.touched));
 }
 
 function isObject(value: unknown): value is Record<string, any> {

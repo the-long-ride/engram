@@ -8,6 +8,16 @@ description: Maintenance commands — verify hashes, repair invalid files, check
 
 Maintenance commands keep memory healthy.
 
+## status
+
+```bash
+engram status
+engram stat
+engram status --json
+```
+
+Prints a single-screen overview of workspace and global memory roots, active profile, linked hosts, pending review receipts, working-tier counts, and integrity/freshness health. `engram stat` is a short alias, and `--json` outputs the structured snapshot for scripts.
+
 ## verify
 
 ```bash
@@ -25,9 +35,10 @@ Checks hashes for integrity. Run after manual edits or imports.
 ```bash
 engram stats
 engram stats --usage
+engram stats --backfill [--git <range>] [--limit <n>]
 ```
 
-`--usage` reads the local, gitignored `.agents/.engram/usage.json` and shows which memories agents actually fetch with `engram load --id` and which were injected but never fetched in 30 days.
+`--usage` reads the local, gitignored `.agents/.engram/usage.json` and shows fetch counts (`engram load --id`), closed-loop outcome counters (`applied`, `corrected`, and `noisy` / zero-utility injections), and memories that were injected but never fetched in 30 days. `--backfill` seeds `injected`/`applied` counters from recent non-merge Git commit history (`backfillUsageFromGit`, optional `[--git <range>] [--limit <n>]`) into `usage.json`.
 
 ## repair
 
@@ -58,9 +69,10 @@ Reports contradiction candidates compactly. Contradiction detection is heuristic
 ```bash
 engram graph "package manager"
 engram graph --rebuild
+engram graph link <parent-id> <child-id...>
 ```
 
-Inspect graph routing before archiving. Run `engram graph --rebuild` after manual edits.
+Inspect graph routing before archiving, link explicit `depends_on` prerequisites with `engram graph link <parent-id> <child-id...>`, or run `engram graph --rebuild` after manual edits.
 
 ## archive
 
@@ -82,10 +94,13 @@ Preview or resolve only Engram-owned workspace memory conflicts. Add `--metacogn
 ## benchmark
 
 ```bash
-engram benchmark
+engram benchmark <cases.json> --json
+engram benchmark <cases.json> --baseline <baseline.json> --fail-on forbidden,recall
+engram benchmark <cases.json> --write-report <report.json>
+engram benchmark --from-git [--out <path>]
 ```
 
-Retrieval regression checks.
+Runs versioned retrieval regression suites, including `freshness-ordering` (freshness boost and attention-aware body ordering), `multi-turn-session` (hook token savings across turns), and `telemetry-loop` (`real-stacks-v1` closed-loop outcome telemetry and noise decay). Use `--from-git [--out <path>]` to synthesize repo-local benchmark cases from recent Git history, `--baseline` to compare against saved metrics, `--write-report` to write an ID-only JSON report, and `--fail-on` to fail CI on specific regressions.
 
 ## Next steps
 

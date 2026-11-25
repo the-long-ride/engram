@@ -63,3 +63,60 @@ export function buildBm25(docs: Array<{ key: string; terms: string[] }>): Bm25In
     }
   };
 }
+
+export type Bm25FieldSpec = { name: string; weight: number; b: number };
+
+/** Build a field-weighted BM25F (Robertson/Zaragoza, k1=1.2) index; `score` returns only positive-score documents. */
+export function buildBm25F(
+  docs: Array<{ key: string; fields: Record<string, string[]> }>,
+  specs: Bm25FieldSpec[]
+): Bm25Index {
+  const fieldTotals = specs.map(() => 0);
+  const documentFrequency = new Map<string, number>();
+  const indexed = docs.map((doc) => {
+    const docTerms = new Set<string>();
+    const fields = specs.map((spec, idx) => {
+      const terms = doc.fields[spec.name] ?? [];
+      const tf = new Map<string, number>();
+      for (const term of terms) {
+        tf.set(term, (tf.get(term) ?? 0) + 1);
+        docTerms.add(term);
+      }
+      fieldTotals[idx] = (fieldTotals[idx] ?? 0) + terms.length;
+      return { tf, length: terms.length };
+    });
+    for (const term of docTerms) documentFrequency.set(term, (documentFrequency.get(term) ?? 0) + 1);
+    return { key: doc.key, fields };
+  });
+  const count = indexed.length;
+  const avgLengths = fieldTotals.map((total) => (count ? total / count : 0));
+  const idf = (term: string) => {
+    const n = documentFrequency.get(term) ?? 0;
+    return Math.log(1 + (count - n + 0.5) / (n + 0.5));
+  };
+  return {
+    score(query: string[]): Map<string, number> {
+      const out = new Map<string, number>();
+      const terms = [...new Set(query)].filter((term) => documentFrequency.has(term));
+      for (const doc of indexed) {
+        let total = 0;
+        for (const term of terms) {
+          let pseudoTf = 0;
+          for (let i = 0; i < specs.length; i += 1) {
+            const spec = specs[i];
+            const field = doc.fields[i];
+            if (!spec || !field) continue;
+            const tf = field.tf.get(term);
+            if (!tf) continue;
+            const avgLen = avgLengths[i] ?? 0;
+            const norm = avgLen ? field.length / avgLen : 1;
+            pseudoTf += (spec.weight * tf) / (1 - spec.b + spec.b * norm);
+          }
+          if (pseudoTf > 0) total += idf(term) * ((pseudoTf * (K1 + 1)) / (pseudoTf + K1));
+        }
+        if (total > 0) out.set(doc.key, total);
+      }
+      return out;
+    }
+  };
+}

@@ -14,6 +14,15 @@ La pestaña Construct expone los campos de configuración en tiempo de ejecució
 Los campos marcados como **risky** pueden desactivar Engram, cambiar los destinos de guardado, cambiar el comportamiento de Git o afectar a la seguridad de la memoria. Lea la advertencia antes de cambiarlos.
 </RiskCallout>
 
+## Subvistas {#sub-views}
+
+Construct se organiza en cuatro subvistas:
+
+- **Configuration** — Edite ajustes en tiempo de ejecución del workspace y globales agrupados por dominio (detallados abajo).
+- **Profiles** — Inspeccione y gestione perfiles de Engram con nombre y la selección del perfil por defecto.
+- **Workspaces** — Vea los workspaces registrados, rutas raíz y el contexto de ámbito entre workspace y global.
+- **Runtime** — Inspeccione la configuración resuelta en tiempo de ejecución, rutas efectivas y diagnósticos del entorno en vivo.
+
 ## Grupo Core {#core-group}
 
 ### Enabled

@@ -18,9 +18,9 @@ description: Engram はワークスペースとグローバルのインデック
 
 ## アンカー、ランク付け、絞り込み
 
-`load` はまず、`rule`、`knowledge` のような一般的なメモリ用語や一般的なストップワードを無視して、意味のあるクエリ用語でルーティングのアンカーを決めます。次に、id、タグ、`directive`、要約、トリガー、本文の用語に対して BM25(軽いステミング)で候補をランク付けします。スコアは、ライフサイクル(`review_due` は x0.7)、鮮度(古い場合は x0.6)、確信度(`medium` は x0.9)、スコープ(ワークスペースは x1.1)で調整され、エージェントが取得したことのあるメモリには小さな加点があります。`valid_until` を過ぎたメモリは、省略理由 `lifecycle` で除外されます。アンカーが 4 つ以上あるクエリでは、アンカーの一致が 2 つ、または強いフィールド(id、タグ、`directive`、`applies_to` のパス)での一致が 1 つ必要です。用語の重なりがないベクトルのヒットだけでは、メモリは採用されません。
+`load` は Unicode / ベトナム語 / CJK 対応のトークン化でクエリとメモリを分割した上で、展開前の `rawStems`（`hasAnchorOverlap`）を使って、`rule`、`knowledge` のような一般的なメモリ用語や一般的なストップワードを無視し、意味のあるクエリ用語でルーティングのアンカーを決めるため、同義語展開によって無関係なメモリが採用されることはありません。完全一致アンカーがない場合でも、24 個の決定論的な概念クラスターとコーパス共起ブリッジが関連用語を橋渡しできます。次に、id、タグ、`directive`、要約、トリガー、本文の用語に対して軽いステミングを用いた 3 ストリーム BM25F（`title`、`tags`、`body`）で候補をランク付けします。スコアは、ライフサイクル（`review_due` は x0.7）、鮮度（古い場合は x0.6）、確信度（`medium` は x0.9）、スコープ（ワークスペースは x1.1）で調整され、さらに `knowledgeFreshnessBoost`（`last_confirmed`、`updated`、`valid_from` に基づく鮮度減衰、`working` ティアメモリへの `+0.08` 加点、上限付きリビジョン加点）とクローズドループの `usage.json` 結果テレメトリが加わります。取得済みや `applied` のメモリには上限付きの加点、`corrected` のメモリには減点が適用され、有用性ゼロで 20 回を超えて繰り返し注入されたメモリにはノイズ減衰が適用されます。`valid_until` を過ぎたメモリは、省略理由 `lifecycle` で除外されます。アンカーが 4 つ以上あるクエリでは、アンカーの一致が 2 つ、または強いフィールド（id、タグ、`directive`、`applies_to` のパス）での一致が 1 つ必要です。用語の重なりがないベクトルのヒットだけでは、メモリは採用されません。
 
-最後に、より広い候補プールをコンパクトなコンテキストパックへ絞り込みます。
+最後に、より広い候補プールをコンパクトなコンテキストパックへ絞り込み、展開された本文を `orderForAgentConsumption`（アテンション指向のトポロジカルソート：ルール・指示・`depends_on` の前提条件を先頭、古い永続コンテキストを中間、`<=14d` の新しいメモリや `working` ティアのリーフを末尾に配置）で並べ替えます。
 
 通常のロードでは、`loaded 8 memory files / 14 total related memories` のように、選択された件数と関連する総件数が報告されます。
 
@@ -40,7 +40,7 @@ description: Engram はワークスペースとグローバルのインデック
 
 ## フックの差分とパストリガー
 
-フックは、セッション中にすでに配信したメモリのキーを記憶します。以降のプロンプトのターンでは、新しい本文だけを注入し、残りは 1 行の `already loaded: <ids>` にまとめます。`SessionStart` と `PreCompact` はこの集合をリセットします。`applies_to` の glob を持つメモリは、`PreToolUse` のファイルイベント(Codex の `apply_patch` による編集。フックモードでは Claude の `Read`、`Edit`、`Write`、`MultiEdit`)や、Gemini の `AfterTool` イベント(`read_file`、`write_file`、`replace`)でも、必要なタイミングで注入されます。1 イベントにつき最大 3 件の本文です。`hooks.path_rules native`(既定)では、Claude と Cursor は代わりに `.claude/rules/engram/` と `.cursor/rules/engram/` 配下の生成されたルールファイルからそれらを読み込み、Claude の `InstructionsLoaded` フックが配信済みの集合を更新します。Claude と Codex のサブエージェントは `SubagentStart` を通じてルーティング済みのコンテキストとともに起動し、フックの出力は各ホストのペイロード上限(Codex は 2,400 トークン、Claude は 9,500 文字)以内に収まります。上限を超える場合、本文はカードに格下げされ、途中で切られることはありません。[フックとプルーフ行](../integrations/hooks.md) を参照してください。
+フックは、セッション中に配信済みのメモリキーと起動時カード（`carded` / `touched`）の両方を記憶します。`read: auto` モードでは、`SessionStart`（`hookStartupAuto`）が起動対象外のルールを完全な本文ではなく 1 行カードとして展開し、後のプロンプトで話題がそのルールに移ったときに `carded` ルールを完全な本文へ昇格させます。以降のプロンプトのターンでは、新しい本文だけを注入し、残りは 1 行の `already loaded: <ids>` にまとめます。`SessionStart` と `PreCompact` はこの集合をリセットします。`applies_to` の glob を持つメモリは、`PreToolUse` のファイルイベント(Codex の `apply_patch` による編集。フックモードでは Claude の `Read`、`Edit`、`Write`、`MultiEdit`)や、Gemini の `AfterTool` イベント(`read_file`、`write_file`、`replace`)でも、必要なタイミングで注入されます。1 イベントにつき最大 3 件の本文です。`hooks.path_rules native`(既定)では、Claude と Cursor は代わりに `.claude/rules/engram/` と `.cursor/rules/engram/` 配下の生成されたルールファイルからそれらを読み込み、Claude の `InstructionsLoaded` フックが配信済みの集合を更新します。Claude と Codex のサブエージェントは `SubagentStart` を通じてタスクスコープのルーティング済みコンテキストとともに起動し（`subagentQueryText` でサブエージェントのタスクプロンプトからルーティングクエリを導出し、不在時は `current session` にフォールバック）、フックの出力は各ホストのペイロード上限(Codex は 2,400 トークン、Claude は 9,500 文字)以内に収まります。上限を超える場合、本文はカードに格下げされ、途中で切られることはありません。[フックとプルーフ行](../integrations/hooks.md) を参照してください。
 
 `workflow` と `workflows` は引き続きスキルメモリにルーティングされますが、一般的なタイプ名だけで広い一致になることはありません。
 

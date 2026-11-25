@@ -94,6 +94,8 @@ engram config set <key> <value>
 | `mcp.resource_limit` | メモリ MCP の `resources/list` が `engram://index` のほかに返す件数。注入数と取得数による使用量でランク付けされます(JSON 設定のみ。`engram config set` では設定できません) | `20` | `0` から `200` |
 | `load.limit` | 通常のロードで返すメモリの最大数 | `8` | `1` から `32` |
 | `hooks.path_rules` | `native` は `applies_to` メモリ用の Claude と Cursor のルールファイルを書き込み、Claude の `InstructionsLoaded` を登録します。`hook` は Claude の `PreToolUse` フックを維持します | `native` | `native`, `hook` |
+| `learning.mode` | Option A セッション学習を制御します。`off` は自動学習を無効化し、`working` は期限付きの gitignore 対象 `working/` メモリのみを書き込み、`propose` は永続候補も `inbox/r-*.json` レシートとしてステージングします（`engram.config.json` の JSON 設定のみ。`engram config set` や Construct では設定できません） | `propose` | `off`, `working`, `propose` |
+| `learning.auto_drain` | 対象となる学習パス中に、キュー登録された `SessionEnd` トランスクリプトを自動で処理します（`engram.config.json` の JSON 設定のみ。`engram config set` や Construct では設定できません） | `false` | `true`, `false` |
 | `rule_variants.enabled` | ルールバリアントの生成を有効または無効にする | `false` | `true`, `false` |
 | `rule_variants.active` | 有効なルールバリアントモード | `balanced` | `light`, `balanced`, `strict` |
 | `graph.enabled` | グラフを使ったルーティングを有効または無効にする | `true` | `true`, `false` |
@@ -105,7 +107,7 @@ engram config set <key> <value>
 | `global_git.remote` | グローバル同期に使う Git リモート名 | `origin` | 文字列 |
 | `global_git.branch` | グローバル同期に使う Git ブランチ名 | `main` | 文字列 |
 
-これらの設定は、`engram entry` の **Construct** タブからも視覚的に管理できます。
+JSON 設定専用のキー（`mcp.resource_limit`、`learning.mode`、`learning.auto_drain`）を除き、これらの設定は `engram entry` の **Construct** タブからも視覚的に管理できます。
 
 ## 次のステップ
 

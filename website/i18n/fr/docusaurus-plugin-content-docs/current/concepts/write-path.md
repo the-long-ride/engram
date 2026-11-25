@@ -46,6 +46,15 @@ engram save-session --file .agents/.engram/inbox/<observation>.md
 La première commande assainit la source et écrit une trace immuable identifiée par `trace_id`, ainsi qu’une enveloppe de boîte de réception modifiable. La seconde commande résout l’enveloppe vers sa trace, vérifie le hachage et la portée, puis n’écrit que de la mémoire schema v3 approuvée par un humain, avec `evidence_refs`. Modifier `## Raw Note` ne peut pas remplacer la preuve de la trace.
 <!-- evidence-foundation:v3:end -->
 
+## Apprentissage de session {#session-learning}
+
+L’apprentissage de session Option A capture des leçons durables sans contourner la frontière d’approbation. Les hooks d’événement d’invite (apprentissage par correction en mode fail-open) et les exécutions explicites de `engram observe --learn` / `engram observe --queue --learn` distillent de façon déterministe des apprentissages assainis en :
+
+- mémoires `working/` temporaires et ignorées par Git (étayées par des traces assainies `tr_sl_*`) pour la continuité immédiate de la tâche ; et
+- reçus de relecture non actifs `inbox/r-*.json` lorsque `learning.mode` vaut `propose` (valeur par défaut ; définissez `working` pour ignorer les reçus ou `off` pour désactiver).
+
+Utilisez `engram review inbox`, `engram review triage`, `engram review apply` et `engram review dismiss` pour examiner les reçus préparés. `learning.auto_drain` (`false` par défaut) contrôle si les transcriptions `SessionEnd` en file sont vidées automatiquement. La mémoire durable active n’est jamais écrite sans approbation humaine.
+
 ## Contrôles de sûreté à l’enregistrement {#safety-checks-at-save-time}
 
 - Validation du schéma

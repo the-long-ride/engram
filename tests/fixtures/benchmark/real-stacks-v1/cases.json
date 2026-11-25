@@ -1,0 +1,101 @@
+{
+  "version": 2,
+  "cases": [
+    { "id": "tauri-ipc-invoke", "query": "tauri ipc invoke command boundary payload", "expect": ["tauri-ipc-command-boundaries"], "forbid": ["supabase-rls-least-privilege"], "depends_on": [] },
+    { "id": "tauri-webview2-cleanup", "query": "webview2 desktop memory bloat heap diagnostics", "expect": ["webview2-heap-memory-diagnostics"], "forbid": ["postgres-zero-downtime-ddl"], "depends_on": [] },
+    { "id": "tauri-ipc-paraphrase", "category": "paraphrase", "query": "webview invoke command serialization", "expect": ["tauri-ipc-command-boundaries"], "forbid": [], "depends_on": [] },
+
+    { "id": "tokio-mutex-await", "query": "tokio mutex deadlock across await", "expect": ["tokio-mutex-never-across-await"], "forbid": ["angular-signals-zoneless-ssr"], "depends_on": [] },
+    { "id": "tokio-starvation", "category": "paraphrase", "query": "tokio task starvation concurrency lock", "expect": ["tokio-mutex-never-across-await"], "forbid": [], "depends_on": [] },
+    { "id": "tokio-std-mutex", "category": "negation", "query": "avoid holding std sync mutex across await", "expect": ["tokio-mutex-never-across-await"], "forbid": [], "depends_on": [] },
+
+    { "id": "angular-signals-zoneless", "query": "angular signals zoneless change detection", "expect": ["angular-signals-zoneless-ssr"], "forbid": ["tokio-mutex-never-across-await"], "depends_on": [] },
+    { "id": "angular-ssr-hydration", "category": "paraphrase", "query": "ssr hydration mismatch prerender window", "expect": ["angular-signals-zoneless-ssr"], "forbid": [], "depends_on": [] },
+    { "id": "angular-rxjs-concept", "category": "paraphrase", "query": "rxjs zoneless angular state", "expect": ["angular-signals-zoneless-ssr"], "forbid": [], "depends_on": [] },
+
+    { "id": "wcag-focus-trap", "query": "wcag modal focus trap keyboard navigation", "expect": ["wcag-modal-focus-trap"], "forbid": ["supabase-rls-least-privilege"], "depends_on": [] },
+    { "id": "a11y-aria-dialog", "category": "paraphrase", "query": "a11y aria dialog restore focus", "expect": ["wcag-modal-focus-trap"], "forbid": [], "depends_on": [] },
+    { "id": "responsive-viewport-overflow", "category": "paraphrase", "query": "responsive viewport overflow modal", "expect": ["wcag-modal-focus-trap"], "forbid": [], "depends_on": [] },
+
+    { "id": "supabase-rls-policy", "query": "supabase rls row-level-security auth uid", "expect": ["supabase-rls-least-privilege"], "forbid": ["tauri-ipc-command-boundaries"], "depends_on": [] },
+    { "id": "postgrest-rbac-permission", "category": "paraphrase", "query": "postgrest rbac permission least privilege", "expect": ["supabase-rls-least-privilege"], "forbid": [], "depends_on": [] },
+    { "id": "supabase-no-service-role", "category": "negation", "query": "avoid leaking service role key with rls", "expect": ["supabase-rls-least-privilege"], "forbid": [], "depends_on": [] },
+
+    { "id": "postgres-ddl-lock", "query": "postgres ddl migration lock timeout", "expect": ["postgres-zero-downtime-ddl"], "forbid": ["wcag-modal-focus-trap"], "depends_on": [] },
+    { "id": "alter-table-zero-downtime", "category": "paraphrase", "query": "alter-table index concurrently zero downtime", "expect": ["postgres-zero-downtime-ddl"], "forbid": [], "depends_on": [] },
+    { "id": "postgres-expand-contract", "query": "postgres migration expand contract ddl", "expect": ["postgres-zero-downtime-ddl"], "forbid": [], "depends_on": [] },
+
+    { "id": "xss-csp-sanitize", "category": "security", "query": "xss csp sanitize headers", "expect": ["csp-xss-input-sanitization"], "forbid": ["pgvector-hnsw-cosine-tuning"], "depends_on": [] },
+    { "id": "csrf-samesite-security", "category": "security", "query": "csrf samesite content security policy", "expect": ["csp-xss-input-sanitization"], "forbid": [], "depends_on": [] },
+    { "id": "oauth-pkce-jwt", "category": "security", "query": "oauth pkce jwt bearer login", "expect": ["oauth-pkce-login-hardening"], "forbid": ["deno-edge-function-cold-starts"], "depends_on": [] },
+
+    { "id": "pgvector-hnsw-cosine", "query": "pgvector hnsw cosine embedding indexing", "expect": ["pgvector-hnsw-cosine-tuning"], "forbid": ["csp-xss-input-sanitization"], "depends_on": [] },
+    { "id": "pgvector-ef-search", "category": "paraphrase", "query": "pgvector embedding ef search tuning", "expect": ["pgvector-hnsw-cosine-tuning"], "forbid": [], "depends_on": [] },
+    { "id": "deno-edge-cold-start", "query": "deno edge-function cold start bundle", "expect": ["deno-edge-function-cold-starts"], "forbid": ["tokio-mutex-never-across-await"], "depends_on": [] },
+    { "id": "supabase-deno-polyfills", "category": "negation", "query": "deno edge-function avoid heavy node polyfills", "expect": ["deno-edge-function-cold-starts"], "forbid": [], "depends_on": [] },
+
+    { "id": "vi-oauth-login", "category": "paraphrase", "query": "fix lỗi xác thực đăng nhập oauth", "expect": ["oauth-pkce-login-hardening"], "forbid": ["postgres-zero-downtime-ddl"], "depends_on": [] },
+    { "id": "vi-tauri-webview2-memory", "category": "paraphrase", "query": "tauri ngốn bộ nhớ webview2", "expect": ["webview2-heap-memory-diagnostics"], "forbid": ["supabase-rls-least-privilege"], "depends_on": [] },
+    { "id": "vi-supabase-permission", "category": "paraphrase", "query": "kiểm tra quyền truy cập supabase", "expect": ["supabase-rls-least-privilege"], "forbid": ["tauri-ipc-command-boundaries"], "depends_on": [] },
+    { "id": "vi-pure-auth-concept", "category": "paraphrase", "query": "xác thực đăng nhập", "expect": ["oauth-pkce-login-hardening"], "forbid": ["wcag-modal-focus-trap"], "depends_on": [] },
+    { "id": "vi-pure-memory-bloat", "category": "paraphrase", "query": "ngốn", "expect": ["webview2-heap-memory-diagnostics"], "forbid": ["deno-edge-function-cold-starts"], "depends_on": [] },
+    { "id": "vi-pure-permission", "category": "paraphrase", "query": "quyền", "expect": ["supabase-rls-least-privilege"], "forbid": ["tokio-mutex-never-across-await"], "depends_on": [] },
+
+    { "id": "zero-nonsense", "category": "zero-match", "query": "qxzwvplm nonexistent gibberish 998877", "expect": [], "forbid": [], "depends_on": [] },
+    { "id": "zero-cooking", "category": "zero-match", "query": "sourdough starter recipe baking oven temperature", "expect": [], "forbid": [], "depends_on": [] },
+    { "id": "zero-vietnamese-offtopic", "category": "zero-match", "query": "cách nấu phở bò hà nội ngon", "expect": [], "forbid": [], "depends_on": [] },
+
+    {
+      "id": "telemetry-loop-webview2-diagnostics",
+      "category": "telemetry-loop",
+      "query": "webview2 diagnostics",
+      "expect": ["webview2-heap-memory-diagnostics"],
+      "forbid": ["a-webview2-diagnostics-legacy"],
+      "applied_ids": ["webview2-heap-memory-diagnostics"],
+      "max_tokens": 225,
+      "depends_on": [],
+      "turns": [
+        "webview2 diagnostics",
+        "webview2 diagnostics",
+        "webview2 diagnostics",
+        "webview2 diagnostics",
+        "webview2 diagnostics",
+        "webview2 diagnostics",
+        "webview2 diagnostics",
+        "webview2 diagnostics",
+        "webview2 diagnostics",
+        "webview2 diagnostics",
+        "webview2 diagnostics",
+        "webview2 diagnostics",
+        "webview2 diagnostics",
+        "webview2 diagnostics",
+        "webview2 diagnostics",
+        "webview2 diagnostics",
+        "webview2 diagnostics",
+        "webview2 diagnostics",
+        "webview2 diagnostics",
+        "webview2 diagnostics",
+        "webview2 diagnostics",
+        "webview2 diagnostics",
+        "webview2 diagnostics",
+        "webview2 diagnostics",
+        "webview2 diagnostics",
+        "webview2 diagnostics",
+        "webview2 diagnostics",
+        "webview2 diagnostics",
+        "webview2 diagnostics",
+        "webview2 diagnostics",
+        "webview2 diagnostics",
+        "webview2 diagnostics",
+        "webview2 diagnostics",
+        "webview2 diagnostics",
+        "webview2 diagnostics",
+        "webview2 diagnostics",
+        "webview2 diagnostics",
+        "webview2 diagnostics",
+        "webview2 diagnostics",
+        "webview2 diagnostics"
+      ]
+    }
+  ]
+}

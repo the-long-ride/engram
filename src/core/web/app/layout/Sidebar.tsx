@@ -14,6 +14,10 @@ const taskTabs: Array<[TabName, string]> = [
   ["maintain", "Core"],
   ["connect", "Connect"],
 ];
+const TAB_TITLES: Partial<Record<TabName, string>> = {
+  config: "Settings, profiles, workspaces, and runtime",
+  maintain: "Duplicate candidates and memory links",
+};
 
 function NavIcon({ tab }: { tab: TabName }) {
   const common = {
@@ -83,6 +87,7 @@ export function Sidebar({
   toggleTheme,
   shutdown,
   toast,
+  onClose,
 }: {
   data: PanelData | null;
   active: TabName;
@@ -91,6 +96,7 @@ export function Sidebar({
   toggleTheme: () => void;
   shutdown: () => void;
   toast: ShowToast;
+  onClose?: () => void;
 }) {
   const upgrade =
     "npm i -g @the-long-ride/engram@latest\nengram upgrade --latest";
@@ -120,6 +126,11 @@ export function Sidebar({
         >
           {data?.version || ""}
         </button>
+        {onClose ? (
+          <button type="button" className="sb-close" aria-label="Close menu" onClick={onClose}>
+            &times;
+          </button>
+        ) : null}
       </div>
       <button
         className="sb-upgrade"
@@ -148,13 +159,17 @@ export function Sidebar({
       <ul className="sb-nav" id="sb-nav">
         <li className="nav-section" aria-disabled="true">Settings</li>
         {settingsTabs.map(([tab, label]) => (
-          <li key={tab} className={"nav-item" + (active === tab ? " active" : "")} data-tab={tab} onClick={() => setActive(tab)}>
+          <li key={tab} className={"nav-item" + (active === tab ? " active" : "")} data-tab={tab} title={TAB_TITLES[tab]} onClick={() => setActive(tab)}>
             <NavIcon tab={tab} />{label}
           </li>
         ))}
+        <li className="nav-section" aria-disabled="true">Workspace</li>
         {taskTabs.map(([tab, label]) => (
-          <li key={tab} className={"nav-item" + (active === tab ? " active" : "")} data-tab={tab} onClick={() => setActive(tab)}>
+          <li key={tab} className={"nav-item" + (active === tab ? " active" : "")} data-tab={tab} title={TAB_TITLES[tab]} onClick={() => setActive(tab)}>
             <NavIcon tab={tab} />{label}
+            {tab === "review" && (data?.pendingReviewCount ?? 0) > 0 ? (
+              <span className="nav-badge">{data!.pendingReviewCount}</span>
+            ) : null}
           </li>
         ))}
       </ul>

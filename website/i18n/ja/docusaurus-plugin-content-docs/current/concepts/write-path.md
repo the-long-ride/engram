@@ -46,6 +46,15 @@ engram save-session --file .agents/.engram/inbox/<observation>.md
 最初のコマンドはソースをサニタイズし、`trace_id` で識別される変更不可のトレースと、編集可能な inbox ラッパーを書き出します。2 番目のコマンドはラッパーをそのトレースに解決し、ハッシュとスコープを検証したうえで、人間が承認した schema v3 のメモリだけを `evidence_refs` 付きで書き込みます。`## Raw Note` を編集しても、トレースの証拠を置き換えることはできません。
 <!-- evidence-foundation:v3:end -->
 
+## セッション学習
+
+Option A セッション学習は、承認境界を迂回することなく永続的な学びを取り込みます。プロンプトイベントフック（フェイルオープンの訂正学習）および明示的な `engram observe --learn` / `engram observe --queue --learn` の実行は、サニタイズ済みの学びを決定論的に次へ抽出します。
+
+- 直近のタスク継続性のための、Git 管理外で有効期限のある `working/` メモリ（サニタイズ済み `tr_sl_*` トレースに裏付け）、および
+- `learning.mode` が `propose`（既定。レシートを省く場合は `working`、無効化する場合は `off`）のときに生成される非アクティブな `inbox/r-*.json` レビューレシート。
+
+ステージングされたレシートのレビューには `engram review inbox`、`engram review triage`、`engram review apply`、`engram review dismiss` を使用します。`learning.auto_drain`（既定 `false`）は、キュー登録された `SessionEnd` トランスクリプトを自動で処理するかどうかを制御します。永続アクティブメモリが人間の承認なしで書き込まれることはありません。
+
 ## 保存時の安全性チェック
 
 - スキーマの検証

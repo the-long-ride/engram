@@ -94,9 +94,31 @@ engram working prune
 ```bash
 engram observe --file session.md
 engram save-session --file .agents/.engram/inbox/<note>.md
+engram observe --learn --file session.md
+engram observe --learn --git HEAD~10..HEAD
+engram observe --queue --learn
 ```
 
 `observe`는 정제된 원시 노트를 `inbox/`에 저장합니다. 인박스 노트는 활성 메모리가 아닙니다. 무엇을 지속 메모리로 만들지 결정하기 전에 거친 노트를 보존하고 싶을 때 사용하세요.
+
+`--learn`(`engram observe --learn [--file <path> | --git [range]]` 또는 `engram observe --queue --learn`)을 추가하면 학습 내용을 결정론적으로 추출해 gitignore 처리되고 만료되는 `working/` 메모리(정제된 `tr_sl_*` 추적 포함)로 저장하고, 신뢰도가 높은 지속 메모리 후보는 비활성 `inbox/r-*.json` 영수증으로 스테이징합니다. 스테이징된 지속 영수증은 `engram review inbox`와 `engram review apply`로 검토하고 승인할 수 있으며, 승인 없이 지속 활성 메모리가 기록되는 일은 없습니다.
+
+## review
+
+```bash
+engram review inbox
+engram review triage
+engram review triage --interactive
+engram review apply <receipt-id>
+engram review dismiss <receipt-id>
+```
+
+프롬프트 시점 교정 학습이나 `engram observe --learn`으로 스테이징된 비활성 `inbox/r-*.json` 학습 영수증을 검토하고 처리합니다.
+
+- `engram review inbox` — 스테이징된 영수증의 `id`, `scope`, `source`, `type` 및 축약된 후보 텍스트를 나열합니다.
+- `engram review triage` / `engram review triage --interactive` — 대기 중인 영수증을 대화형으로 하나씩 검토하며 `[a]pprove / [d]ismiss / [s]kip / [q]uit` 프롬프트를 표시합니다(편집 옵션은 없으며, `SUPERSEDE` 판정은 `engram review apply <receipt-id>`로 미뤄집니다).
+- `engram review apply <receipt-id>` — `<receipt-id>`가 필요하며, 해당 영수증을 쓰기 게이트로 보내 지속 활성 메모리를 생성하거나 업데이트합니다.
+- `engram review dismiss <receipt-id>` — 활성 메모리를 기록하지 않고 영수증을 폐기합니다.
 
 <!-- evidence-foundation:v3:start -->
 ## 증거 기반 메모리

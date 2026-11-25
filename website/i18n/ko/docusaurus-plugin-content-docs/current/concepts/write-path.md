@@ -46,6 +46,15 @@ engram save-session --file .agents/.engram/inbox/<observation>.md
 첫 번째 명령은 소스를 정제하고, `trace_id`로 식별되는 변경 불가능한 추적과 편집 가능한 인박스 래퍼를 기록합니다. 두 번째 명령은 래퍼를 해당 추적으로 확인하고 해시와 범위를 검증한 다음, 사람이 승인한 스키마 v3 메모리만 `evidence_refs`와 함께 기록합니다. `## Raw Note`를 편집해도 추적의 증거는 바뀌지 않습니다.
 <!-- evidence-foundation:v3:end -->
 
+## 세션 학습 {#session-learning}
+
+Option A 세션 학습은 승인 경계를 우회하지 않고도 지속 가능한 교훈을 포착합니다. 프롬프트 이벤트 훅(fail-open 교정 학습)과 명시적 `engram observe --learn` / `engram observe --queue --learn` 실행은 정제된 학습 내용을 결정론적으로 다음으로 추출합니다.
+
+- 즉각적인 작업 연속성을 위한 gitignore 처리되고 만료되는 `working/` 메모리(정제된 `tr_sl_*` 추적 기반), 그리고
+- `learning.mode`가 `propose`(기본값; 영수증을 건너뛰려면 `working`, 비활성화하려면 `off`)일 때 생성되는 비활성 `inbox/r-*.json` 검토 영수증.
+
+스테이징된 영수증을 검토하려면 `engram review inbox`, `engram review triage`, `engram review apply`, `engram review dismiss`를 사용하세요. `learning.auto_drain`(기본값 `false`)은 대기열에 쌓인 `SessionEnd` 트랜스크립트를 자동으로 처리할지 제어합니다. 지속 활성 메모리는 사람의 승인 없이 기록되지 않습니다.
+
 ## 저장 시점의 안전성 검사 {#safety-checks-at-save-time}
 
 - 스키마 검증

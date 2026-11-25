@@ -14,10 +14,15 @@ import { loadIndex, rebuildIndex } from '../memory/index.js';
 import { parseMemory } from '../memory/schema.js';
 import { parseMemoryCandidate } from '../memory/memory-candidate.js';
 import { planMemorySave, type SaveVerdict } from '../memory/save-plan.js';
-import { workingTierMeta } from '../memory/working-tier.js';
+import { promoteWorking, workingTierMeta } from '../memory/working-tier.js';
+import { readUsage, noisyMemories, type UsageMap } from '../memory/usage.js';
+import { isExpired, memoryKey } from '../memory/memory-ref.js';
 import { today } from '../system/text.js';
 import { writeApprovedMemory } from '../memory/storage.js';
-import { getAuthorState, requireResolvedAuthor } from '../author/resolve.js';
+import { deriveFindings } from '../review/findings.js';
+import { applyPersistedStatus, loadReviewStore } from '../review/records.js';
+import { isReceiptId, listReceipts, loadReceipt, purgeReceipt, serializeCandidateForApply } from '../review/inbox.js';
+import { getAuthorState, requireResolvedAuthor, resolveAuthor } from '../author/resolve.js';
 import { setAuthorProfile, unsetAuthorProfile } from '../author/config.js';
 import { planGlobalGitAuthorSync, syncGlobalGitAuthor } from '../author/git-sync.js';
 import { migrateMemoryAuthors, planAuthorMemoryMigration } from '../author/migrate-memories.js';
@@ -32,7 +37,6 @@ import { archiveMemory, planArchiveSet } from '../memory/archive.js';
 import { filterMemoryGraph, type MemoriesSearchMode } from './memories-search.js';
 import { loadPolicy, writePolicy } from '../policy/load.js';
 import { DEFAULT_POLICY } from '../policy/schema.js';
-import { isReceiptId, loadReceipt } from '../review/inbox.js';
 
 import {
   configFieldsForPanel,
@@ -65,6 +69,29 @@ export interface PanelData {
   policy: Awaited<ReturnType<typeof loadPolicy>>;
   author: AuthorState;
   upgradePlan?: UpgradePlan;
+  pendingReviewCount: number;
+}
+
+async function countPendingReviews(cwd: string): Promise<number> {
+  try {
+    const ctx = await getContext(cwd);
+    const entries = visibleEntries(ctx.index.entries, ctx.config);
+    const derived = deriveFindings(entries, ctx.graph);
+    const now = Date.now();
+    let count = 0;
+    for (const scope of ['workspace', 'global'] as Scope[]) {
+      const root = ctx.roots[scope];
+      if (!root) continue;
+      const store = await loadReviewStore(root);
+      const merged = applyPersistedStatus(derived.filter((f) => f.scope === scope), store);
+      count += merged.filter((f) => f.status === 'pending').length;
+      const receipts = await listReceipts(root);
+      count += receipts.filter((r) => !r.expires_at || Date.parse(r.expires_at) > now).length;
+    }
+    return count;
+  } catch {
+    return 0;
+  }
 }
 
 export async function loadPanelData(cwd: string, entryText: string): Promise<PanelData> {
@@ -93,13 +120,14 @@ export async function loadPanelData(cwd: string, entryText: string): Promise<Pan
     // Entry remains usable when an inventory source is temporarily unreadable.
     upgradePlan = undefined;
   }
+  const pendingReviewCount = await countPendingReviews(cwd);
   const dbh = await openConfigDb();
   if (!dbh) {
-    return { config, policy, author, upgradePlan, workspaces: [], profiles: [], entry, sqliteAvailable: false, cwd, version, isInitialized, latestVersion, configFields: configFieldsForPanel() };
+    return { config, policy, author, upgradePlan, pendingReviewCount, workspaces: [], profiles: [], entry, sqliteAvailable: false, cwd, version, isInitialized, latestVersion, configFields: configFieldsForPanel() };
   }
   try {
     if (!isConfigDbUsable(dbh.db)) {
-      return { config, policy, author, upgradePlan, workspaces: [], profiles: [], entry, sqliteAvailable: false, cwd, version, isInitialized, latestVersion, configFields: configFieldsForPanel() };
+      return { config, policy, author, upgradePlan, pendingReviewCount, workspaces: [], profiles: [], entry, sqliteAvailable: false, cwd, version, isInitialized, latestVersion, configFields: configFieldsForPanel() };
     }
     const q = await importQueries();
     return {
@@ -107,6 +135,7 @@ export async function loadPanelData(cwd: string, entryText: string): Promise<Pan
       policy,
       author,
       upgradePlan,
+      pendingReviewCount,
       workspaces: q.listWorkspaces(dbh.db),
       profiles: q.listProfiles(dbh.db),
       entry,
@@ -405,6 +434,133 @@ export async function apiReviewWrite(cwd: string, request: ReviewWriteRequest): 
   return { written, message: `Wrote ${written.length} memor${written.length === 1 ? 'y' : 'ies'} from the reviewed proposal.` };
 }
 
+export interface ReviewApplyReceiptsRequest {
+  ids: string[];
+  scope?: 'workspace' | 'global';
+  confirmed?: boolean;
+}
+
+export interface ReviewApplyReceiptsResult {
+  applied: Array<{ id: string; memoryId: string; file: string; action: string; verdict: SaveVerdict }>;
+  skipped: Array<{ id: string; reason: string }>;
+  deferred: Array<{ id: string; reason: string }>;
+  errors: string[];
+  message: string;
+}
+
+/** Explicitly confirmed batch apply for inbox receipts (e.g. session-learning candidates). */
+export async function apiReviewApplyReceipts(cwd: string, request: ReviewApplyReceiptsRequest): Promise<ReviewApplyReceiptsResult> {
+  if (request?.confirmed !== true) throw new Error('Applying receipts requires explicit confirmation');
+  const rawIds = Array.isArray(request.ids) ? request.ids.map((id) => String(id).trim()).filter(Boolean) : [];
+  if (!rawIds.length) throw new Error('Select at least one receipt to apply');
+  if (request.scope !== undefined && request.scope !== 'workspace' && request.scope !== 'global') {
+    throw new Error('A valid memory scope is required');
+  }
+
+  const ids = [...new Set(rawIds)];
+  const resolvedAuthor = await resolveAuthor(cwd);
+  const authorName = resolvedAuthor.complete ? resolvedAuthor.name : 'Engram User';
+  const authorEmail = resolvedAuthor.complete ? resolvedAuthor.email : undefined;
+
+  const applied: ReviewApplyReceiptsResult['applied'] = [];
+  const skipped: ReviewApplyReceiptsResult['skipped'] = [];
+  const deferred: ReviewApplyReceiptsResult['deferred'] = [];
+  const errors: string[] = [];
+
+  for (const id of ids) {
+    if (!isReceiptId(id)) {
+      errors.push(`${id}: not a valid receipt id`);
+      continue;
+    }
+    try {
+      const ctx = await getContext(cwd);
+      let receipt: Awaited<ReturnType<typeof loadReceipt>> | undefined;
+      let receiptRoot: string | undefined;
+      for (const scope of ['workspace', 'global'] as Scope[]) {
+        const root = ctx.roots[scope];
+        if (!root) continue;
+        const loaded = await loadReceipt(root, id);
+        if (loaded) {
+          receipt = loaded;
+          receiptRoot = root;
+          break;
+        }
+      }
+      if (!receipt || !receiptRoot) {
+        errors.push(`${id}: receipt not found or expired`);
+        continue;
+      }
+
+      const candidate = parseMemoryCandidate(serializeCandidateForApply(receipt.candidate));
+      const targetScope: Scope = request.scope ?? receipt.scope ?? receipt.candidate.scope;
+      const task = candidate.objective === 'task';
+      const plans = await planMemorySave({
+        ctx,
+        text: candidate.text,
+        type: candidate.type,
+        scopes: [targetScope],
+        authorName,
+        authorEmail,
+        role: candidate.role,
+        context: candidate.context,
+        triggers: candidate.triggers,
+        dependsOn: candidate.dependsOn,
+        level: candidate.level,
+        updateId: candidate.updateId,
+        parent: candidate.parent,
+        variants: candidate.variants,
+        confidence: candidate.confidence,
+        directive: candidate.directive,
+        appliesTo: candidate.appliesTo,
+        working: task ? workingTierMeta(ctx.config, today()) : undefined
+      });
+
+      const supersedePlan = plans.find((plan) => plan.verdict.kind === 'SUPERSEDE');
+      if (supersedePlan) {
+        deferred.push({ id, reason: `Requires manual review: supersedes ${supersedePlan.verdict.target ?? 'existing memory'}` });
+        continue;
+      }
+
+      const dependsOn = new Set((candidate.dependsOn ?? []).map((ref) => ref.trim().toLowerCase()));
+      const updateId = candidate.updateId?.trim().toLowerCase();
+      const missingRelations = plans.flatMap((plan) => (plan.related ?? []).flatMap((hint) => {
+        if (hint.declaredChild) return [];
+        if (hint.action === 'possible-duplicate' && !updateId) return [`Possible duplicate ${hint.id}`];
+        if (hint.action === 'suggested-dependency' && !dependsOn.has(hint.id.trim().toLowerCase())) return [`Suggested dependency ${hint.id}`];
+        return [];
+      }));
+      if (missingRelations.length) {
+        deferred.push({ id, reason: `Needs relation review: ${missingRelations.join('; ')}` });
+        continue;
+      }
+
+      const allNoop = plans.length > 0 && plans.every((plan) => plan.verdict.kind === 'NOOP');
+      if (allNoop) {
+        await purgeReceipt(receiptRoot, id);
+        skipped.push({ id, reason: 'Already covered by an existing memory (NOOP)' });
+        continue;
+      }
+
+      for (const plan of plans) {
+        if (plan.verdict.kind === 'NOOP') continue;
+        const file = await writeApprovedMemory({ cwd, scope: plan.scope, file: plan.file, content: plan.content, message: `review apply ${plan.message}` });
+        applied.push({ id, memoryId: plan.id, file, action: plan.action, verdict: plan.verdict });
+      }
+      await purgeReceipt(receiptRoot, id);
+    } catch (error: any) {
+      errors.push(`${id}: ${error?.message || String(error)}`);
+    }
+  }
+
+  const parts: string[] = [];
+  if (applied.length) parts.push(`Applied ${applied.length} receipt${applied.length === 1 ? '' : 's'}`);
+  if (skipped.length) parts.push(`${skipped.length} already covered`);
+  if (deferred.length) parts.push(`${deferred.length} deferred for manual review`);
+  if (errors.length) parts.push(`${errors.length} failed`);
+  const message = parts.length ? `${parts.join(', ')}.` : 'No receipts applied.';
+  return { applied, skipped, deferred, errors, message };
+}
+
 function formatPreviewValue(value: unknown): string {
   return Array.isArray(value) ? value.join(', ') : String(value ?? '');
 }
@@ -665,6 +821,8 @@ export interface AgentUiInfo {
   globalLinked: boolean;
   targets: string[];
   globalTargets?: string[];
+  supportsSessionEnd?: boolean;
+  sessionEndLinked?: boolean;
 }
 
 const AGENT_TARGET_MAP: Record<string, string[]> = {
@@ -741,6 +899,20 @@ async function isTargetLinkedGlobal(agentId: string): Promise<boolean> {
   return false;
 }
 
+async function isSessionEndLinkedWorkspace(cwd: string, agentId: string): Promise<boolean> {
+  const rel = agentId === 'claude' ? path.join('.claude', 'settings.json') : agentId === 'codex' ? path.join('.codex', 'hooks.json') : '';
+  if (!rel) return false;
+  try {
+    const raw = await readText(path.join(cwd, rel));
+    if (!raw) return false;
+    const parsed = JSON.parse(raw);
+    const list = parsed?.hooks?.SessionEnd;
+    return Array.isArray(list) && list.length > 0;
+  } catch {
+    return false;
+  }
+}
+
 export async function apiAgentsScan(cwd: string): Promise<AgentUiInfo[]> {
   const detected = detectInstalledAgents();
   const agents = [
@@ -761,6 +933,8 @@ export async function apiAgentsScan(cwd: string): Promise<AgentUiInfo[]> {
     const wsLinked = await isTargetLinkedWorkspace(cwd, agent.id);
     const glLinked = await isTargetLinkedGlobal(agent.id);
     const plans = globalInstallPlans(agent.id).filter((p) => !p.reason && p.file && p.file !== '<manual>');
+    const supportsSessionEnd = agent.id === 'claude' || agent.id === 'codex';
+    const sessionEndLinked = supportsSessionEnd ? await isSessionEndLinkedWorkspace(cwd, agent.id) : false;
     result.push({
       id: agent.id,
       name: agent.name,
@@ -770,6 +944,8 @@ export async function apiAgentsScan(cwd: string): Promise<AgentUiInfo[]> {
       globalLinked: glLinked,
       targets: AGENT_TARGET_MAP[agent.id] ?? [agent.id],
       globalTargets: plans.map((p) => p.file),
+      supportsSessionEnd,
+      sessionEndLinked,
     });
   }
   return result;
@@ -793,7 +969,7 @@ function agentPath(agentId: string): string {
   return paths[agentId] || configHome;
 }
 
-export async function apiAgentLink(cwd: string, agentId: string, global: boolean): Promise<string> {
+export async function apiAgentLink(cwd: string, agentId: string, global: boolean, sessionEnd = false): Promise<string> {
   if (global) {
     const results = await installGlobalSkillset(agentId, { force: true, hookHosts: hookHostsForTarget(skillsetHookTarget(agentId)) });
     const anyWritten = results.some((r) => r.action === 'written' || r.action === 'updated');
@@ -804,7 +980,7 @@ export async function apiAgentLink(cwd: string, agentId: string, global: boolean
     }
     const hookTarget = skillsetHookTarget(agentId);
     if (hookTarget) {
-      await applyAgentHookAction('install', hookTarget, { global: true, force: true, cwd });
+      await applyAgentHookAction('install', hookTarget, { global: true, force: true, cwd, sessionEnd });
     }
     return `Connected ${agentId} globally.${anyWritten ? '' : ' (already linked)'}`;
   } else {
@@ -821,7 +997,7 @@ export async function apiAgentLink(cwd: string, agentId: string, global: boolean
     }
     const hookTarget = skillsetHookTarget(agentId);
     if (hookTarget) {
-      await applyAgentHookAction('install', hookTarget, { global: false, force: true, cwd });
+      await applyAgentHookAction('install', hookTarget, { global: false, force: true, cwd, sessionEnd });
     }
     return `Connected ${agentId} in this workspace.${anyWritten ? '' : ' (already linked)'}`;
   }
@@ -907,6 +1083,12 @@ export interface MemoriesGraphNode {
   validFrom?: string;
   validUntil?: string;
   lastConfirmed?: string;
+  tier?: 'working' | 'durable';
+  expired?: boolean;
+  injected?: number;
+  fetched?: number;
+  applied?: number;
+  noisy?: boolean;
   dependencyDepth?: number;
   canView: boolean;
   canDelete: boolean;
@@ -1184,8 +1366,17 @@ function memoriesNodeId(entry: PanelMemoryEntry): string {
   return `memory:${entry.profile}:${entry.scope}:${entry.originalFile}`;
 }
 
-function memoryGraphNode(entry: PanelMemoryEntry, activeProfile: string, workspaceName?: string): MemoriesGraphNode {
+function memoryGraphNode(
+  entry: PanelMemoryEntry,
+  activeProfile: string,
+  workspaceName: string | undefined,
+  usage: UsageMap,
+  noisyKeys: Set<string>,
+  day: string
+): MemoriesGraphNode {
   const sourceScope = memoriesSourceScope(entry, activeProfile);
+  const key = memoryKey({ scope: entry.scope, file: entry.originalFile });
+  const rec = usage[key];
   return {
     id: memoriesNodeId(entry),
     memoryId: entry.id,
@@ -1207,6 +1398,12 @@ function memoryGraphNode(entry: PanelMemoryEntry, activeProfile: string, workspa
     validFrom: entry.validFrom,
     validUntil: entry.validUntil,
     lastConfirmed: entry.lastConfirmed,
+    tier: entry.tier === 'working' ? 'working' : 'durable',
+    expired: isExpired(entry.validUntil, day),
+    injected: rec?.injected,
+    fetched: rec?.fetched,
+    applied: rec?.applied,
+    noisy: noisyKeys.has(key),
     dependencyDepth: entry.dependencyDepth,
     canView: true,
     canDelete: sourceScope !== 'profile' || entry.scope === 'global',
@@ -1265,7 +1462,10 @@ export async function apiMemoriesGraphData(
     workspaceName = cwd.split(/[\\/]/).pop() || 'workspace';
   }
 
-  const allNodes = pack.entries.map((entry) => memoryGraphNode(entry, pack.activeProfile, workspaceName));
+  const usage = pack.ctx.roots.workspace ? await readUsage(pack.ctx.roots.workspace) : {};
+  const noisyKeys = new Set(noisyMemories(usage).map((row) => row.key));
+  const day = today();
+  const allNodes = pack.entries.map((entry) => memoryGraphNode(entry, pack.activeProfile, workspaceName, usage, noisyKeys, day));
   const visibleNodesByFilter = allNodes.filter((node) => enabledScopes.includes(node.sourceScope) && enabledTypes.includes(getMemoryType(node)));
   let visibleNodes = visibleNodesByFilter;
   const visibleIds = new Set(visibleNodes.map((node) => node.id));
@@ -1689,4 +1889,12 @@ export async function apiArchiveMemory(cwd: string, body: ArchiveMemoryRequest):
     message: `Archived -> ${archivedPath}`,
     path: archivedPath
   };
+}
+
+export async function apiMemoryPromote(cwd: string, id: string, confirmed: boolean): Promise<{ promoted: true; message: string }> {
+  if (!confirmed) throw new Error('Confirmation required to promote working memory');
+  const trimmed = String(id || '').trim();
+  if (!trimmed) throw new Error('Memory id is required');
+  const message = await promoteWorking(cwd, trimmed, async () => ({ accepted: true }));
+  return { promoted: true, message };
 }

@@ -8,6 +8,16 @@ description: Команды обслуживания — проверка хеш
 
 Команды обслуживания поддерживают память в здоровом состоянии.
 
+## status
+
+```bash
+engram status
+engram stat
+engram status --json
+```
+
+Выводит сводку на одном экране: корни памяти рабочего пространства и глобальный корень, активный профиль, подключённые хосты, ожидающие квитанции проверки, количество записей уровня `working` и состояние целостности/актуальности. `engram stat` — короткий псевдоним, а `--json` выводит структурированный снимок для скриптов.
+
 ## verify
 
 ```bash
@@ -25,9 +35,10 @@ engram verify --sources --json
 ```bash
 engram stats
 engram stats --usage
+engram stats --backfill [--git <range>] [--limit <n>]
 ```
 
-`--usage` читает локальный, исключённый из Git `.agents/.engram/usage.json` и показывает, какие воспоминания агенты действительно получают через `engram load --id`, а какие были внедрены, но ни разу не получены за 30 дней.
+`--usage` читает локальный, исключённый из Git `.agents/.engram/usage.json` и показывает счётчики выборок (`engram load --id`), замкнутые счётчики исходов (`applied`, `corrected` и `noisy` / бесполезные инъекции), а также воспоминания, которые были внедрены, но ни разу не получены за 30 дней. `--backfill` дозаполняет историческую телеметрию использования в `usage.json` из истории коммитов Git (недавние не-merge коммиты через `backfillUsageFromGit`, с опциональными `[--git <range>] [--limit <n>]`).
 
 ## repair
 
@@ -58,9 +69,10 @@ engram quality-check
 ```bash
 engram graph "package manager"
 engram graph --rebuild
+engram graph link <parent-id> <child-id...>
 ```
 
-Проверяйте маршрутизацию по графу перед архивированием. Запускайте `engram graph --rebuild` после ручных правок.
+Проверяйте маршрутизацию по графу перед архивированием, связывайте явные предварительные условия `depends_on` командой `engram graph link <parent-id> <child-id...>` или запускайте `engram graph --rebuild` после ручных правок.
 
 ## archive
 
@@ -82,10 +94,13 @@ engram resolve-conflicts --metacognize
 ## benchmark
 
 ```bash
-engram benchmark
+engram benchmark <cases.json> --json
+engram benchmark <cases.json> --baseline <baseline.json> --fail-on forbidden,recall
+engram benchmark <cases.json> --write-report <report.json>
+engram benchmark --from-git [--out <path>]
 ```
 
-Проверки регрессии извлечения.
+Запускает версионированные наборы регрессионных проверок извлечения, включая `freshness-ordering` (бонус свежести и упорядочивание тел с учётом внимания), `multi-turn-session` (экономия токенов хуков между репликами) и `telemetry-loop` (замкнутая телеметрия исходов `real-stacks-v1` и затухание шума). Используйте `--from-git [--out <path>]` для синтеза локальных кейсов бенчмарка из недавней истории Git, `--baseline` для сравнения с сохранёнными метриками, `--write-report` для записи JSON-отчёта только с идентификаторами и `--fail-on` для падения CI при конкретных регрессиях.
 
 ## Дальнейшие шаги
 

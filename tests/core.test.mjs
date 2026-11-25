@@ -80,25 +80,25 @@ test('agent paths honor Engram home and config-home overrides', () => {
 import { tempWorkspace } from './helpers.mjs';
 
 
-test('v0.0.29 package and docs metadata are published together', async () => {
+test('v0.1.0 package and docs metadata are published together', async () => {
   const manifest = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
   const versions = JSON.parse(await readFile(new URL('../website/versions.json', import.meta.url), 'utf8'));
-  assert.equal(manifest.version, '0.0.29');
-  assert.deepEqual(versions, ['0.0.25', '0.0.27', '0.0.28', '0.0.29']);
-  assert.equal(VERSION, '0.0.29');
-  assert.equal(DOCS_SITE_LATEST_VERSION, '0.0.29');
-  assert.deepEqual([...DOCS_SITE_VERSIONS], ['0.0.25', '0.0.27', '0.0.28', '0.0.29']);
+  assert.equal(manifest.version, '0.1.0');
+  assert.deepEqual(versions, ['0.0.25', '0.0.27', '0.0.28', '0.0.29', '0.1.0']);
+  assert.equal(VERSION, '0.1.0');
+  assert.equal(DOCS_SITE_LATEST_VERSION, '0.1.0');
+  assert.deepEqual([...DOCS_SITE_VERSIONS], ['0.0.25', '0.0.27', '0.0.28', '0.0.29', '0.1.0']);
 });
 
-test('v0.0.29 English and localized docs snapshots exist', async () => {
-  await access(new URL('../website/versioned_docs/version-0.0.29/entry/policy.md', import.meta.url));
-  await access(new URL('../website/versioned_sidebars/version-0.0.29-sidebars.json', import.meta.url));
+test('v0.1.0 English and localized docs snapshots exist', async () => {
+  await access(new URL('../website/versioned_docs/version-0.1.0/entry/policy.md', import.meta.url));
+  await access(new URL('../website/versioned_sidebars/version-0.1.0-sidebars.json', import.meta.url));
   for (const locale of ['vi', 'es', 'fr', 'zh', 'ko', 'ja', 'ru']) {
-    await access(new URL(`../website/i18n/${locale}/docusaurus-plugin-content-docs/version-0.0.29/entry/policy.md`, import.meta.url));
+    await access(new URL(`../website/i18n/${locale}/docusaurus-plugin-content-docs/version-0.1.0/entry/policy.md`, import.meta.url));
   }
 
   const config = await readFile(new URL('../website/docusaurus.config.ts', import.meta.url), 'utf8');
-  assert.match(config, /publishedVersionLabel:\s*'0\.0\.29'/);
+  assert.match(config, /publishedVersionLabel:\s*'0\.1\.0'/);
   assert.match(config, /'0\.0\.27':\s*\{[\s\S]*?path:\s*'version-0\.0\.27'/);
   assert.match(config, /\[docsCopy\.publishedVersionLabel\]:\s*\{[\s\S]*?path:\s*'\/'/);
 });

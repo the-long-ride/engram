@@ -188,3 +188,25 @@ test('load --id is listed in the usage line, the load help topic, and every comp
   assert.match((await runEngram(cwd, env, ['completion', 'powershell'])).stdout, /\{ \$_ -in @\('load', 'ld'\) \} \{ @\('--id', /);
   await rm(cwd, { recursive: true, force: true });
 });
+
+test('completion exposes observe and benchmark flags and has no orphaned case bodies', async () => {
+  const { cwd, env } = await tempWorkspace('engram-cli-observe-bm-');
+  const bash = await runEngram(cwd, env, ['completion', 'bash']);
+  assert.equal(bash.code, 0, bash.stderr);
+  assert.match(bash.stdout, /observe\|o\)\r?\n\s+COMPREPLY=\( \$\(compgen -W "[^"]*--learn[^"]*--git[^"]*--json/);
+  assert.match(bash.stdout, /benchmark\|bm\)\r?\n\s+COMPREPLY=\( \$\(compgen -W "--json --baseline --write-report --fail-on --from-git --out"/);
+  assert.doesNotMatch(bash.stdout, /;;\s*\r?\n\s*COMPREPLY=/);
+
+  const zsh = await runEngram(cwd, env, ['completion', 'zsh']);
+  assert.equal(zsh.code, 0, zsh.stderr);
+  assert.match(zsh.stdout, /observe\|o\)\r?\n\s+_arguments [^\r\n]*--learn[^\r\n]*--git[^\r\n]*--json/);
+  assert.match(zsh.stdout, /benchmark\|bm\)\r?\n\s+_arguments [^\r\n]*--baseline[^\r\n]*--fail-on/);
+  assert.doesNotMatch(zsh.stdout, /;;\s*\r?\n\s*_arguments/);
+
+  const powershell = await runEngram(cwd, env, ['completion', 'powershell']);
+  assert.equal(powershell.code, 0, powershell.stderr);
+  assert.match(powershell.stdout, /\$engramObserveArgs = @\([^\r\n]*'--learn', '--git', '--json'/);
+  assert.match(powershell.stdout, /\{ \$_ -in @\('benchmark', 'bm'\) \} \{ @\('--json', '--baseline', '--write-report', '--fail-on', '--from-git', '--out'\); break \}/);
+
+  await rm(cwd, { recursive: true, force: true });
+});

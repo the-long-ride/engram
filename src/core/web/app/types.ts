@@ -83,6 +83,7 @@ export interface PanelData {
   configFields?: ConfigField[];
   author?: AuthorStateDto;
   upgradePlan?: UpgradePlanDto;
+  pendingReviewCount?: number;
   policy?: {
     path: string;
     exists: boolean;

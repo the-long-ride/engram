@@ -34,6 +34,8 @@ Use `engram update-global-folder <new-path>` o `engram ugf <new-path>` para actu
 ```bash
 engram link codex
 engram link claude
+engram link claude --session-end
+engram link codex --session-end
 engram link gemini
 engram link cursor
 engram link windsurf
@@ -46,7 +48,7 @@ engram unlink
 
 `engram link all` instala el conjunto de destinos públicos e informa motivos `SKIPPED` deterministas para los hosts parciales en los archivos de instrucciones del skillset, la configuración MCP, los adaptadores slash y los hooks del agente, todo en una instalación unificada. `engram unlink` los elimina todos juntos. `engram unlink --global <target>` elimina solo el plugin global generado por Engram; un archivo escrito por una persona se conserva salvo que se indique `--force` explícitamente.
 
-`engram link claude --session-end` (o `codex`) registra además un hook de comando `SessionEnd` opcional que pone en cola la ruta de la transcripción de la sesión en el archivo `session-queue.json`, ignorado por Git; está desactivado por defecto y `engram upgrade` nunca lo añade. Vacíe la cola con `engram observe --queue`; consulte [Hooks](../integrations/hooks.md).
+`engram link claude --session-end` y `engram link codex --session-end` registran además un hook de comando `SessionEnd` opcional que pone en cola la ruta de la transcripción de la sesión en el archivo `session-queue.json`, ignorado por Git; está desactivado por defecto y `engram upgrade` nunca lo añade. Vacíe la cola con `engram observe --queue` (o `engram observe --queue --learn`); consulte [Hooks](../integrations/hooks.md).
 
 ## upgrade
 

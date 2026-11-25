@@ -10,6 +10,10 @@ import RiskCallout from '@site/src/components/RiskCallout';
 
 La pestaña Connections analiza su máquina en busca de superficies de agentes de IA compatibles y le permite vincular Engram a cada una en el nivel de workspace o global.
 
+## Insignia de salud de Doctor
+
+El encabezado de Connections muestra una **Doctor health badge** que resume los resultados pass/warn de `/api/doctor`. Úsela para detectar de un vistazo advertencias de hooks, vínculos o configuración antes de vincular o diagnosticar un agente.
+
 ## Análisis de agentes
 
 La pestaña muestra una tarjeta por cada agente compatible. Cada tarjeta informa de un estado de detectado o ausente.
@@ -32,6 +36,10 @@ Vincula Engram globalmente para ese agente. Úselo para memoria personal, flujos
 <RiskCallout level="risky">
 Use los vínculos globales con cuidado en máquinas compartidas. Engram escribe bloques gestionados en archivos de instrucciones compartidos. Revise qué archivos escribe Engram por agente antes de vincular globalmente.
 </RiskCallout>
+
+## Interruptor de cola SessionEnd
+
+Las tarjetas **Claude** y **Codex** incluyen un interruptor por tarjeta **`SessionEnd queue` toggle** que activa o desactiva el encolado de candidatos de aprendizaje al finalizar la sesión para su revisión (equivalente a `engram link claude --session-end` y `engram link codex --session-end`).
 
 ## Qué archivos escribe Engram por agente
 
@@ -61,7 +69,9 @@ Use los vínculos globales con cuidado en máquinas compartidas. Engram escribe 
 
 ```bash
 engram link codex
+engram link codex --session-end
 engram link claude
+engram link claude --session-end
 engram link --global opencode
 engram unlink
 ```

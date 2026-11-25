@@ -10,6 +10,10 @@ import RiskCallout from '@site/src/components/RiskCallout';
 
 Connections タブは、サポートされている AI エージェントのインターフェースをスキャンし、ワークスペースまたはグローバルレベルで Engram をそれぞれにリンクできるようにします。
 
+## Doctor ヘルスバッジ
+
+Connections のヘッダーには、`/api/doctor` のパス／警告チェック結果を要約する **Doctor health badge** が表示されます。エージェントをリンクしたりトラブルシューティングしたりする前に、フック・リンク・設定の警告をひと目で確認できます。
+
 ## エージェントスキャン (Agent scan)
 
 このタブには、サポートされているエージェントごとにカードが表示されます。各カードは、検出（detected）または未検出（missing）のステータスを報告します。
@@ -32,6 +36,10 @@ Connections タブは、サポートされている AI エージェントのイ�
 <RiskCallout level="risky">
 共有マシンではグローバルリンクを慎重に使用してください。Engram は共有指示ファイルに管理ブロックを書き込みます。グローバルにリンクする前に、エージェントごとに Engram が書き込むファイルを確認してください。
 </RiskCallout>
+
+## SessionEnd キューのトグル
+
+**Claude** および **Codex** のカードには、レビュー用のセッション終了時学習候補のキュー登録を有効・無効にするカード単位の **`SessionEnd queue` トグル**（`engram link claude --session-end` および `engram link codex --session-end` に対応）が含まれています。
 
 ## エージェントごとに Engram が書き込むファイル
 
@@ -61,7 +69,9 @@ Connections タブは、サポートされている AI エージェントのイ�
 
 ```bash
 engram link codex
+engram link codex --session-end
 engram link claude
+engram link claude --session-end
 engram link --global opencode
 engram unlink
 ```

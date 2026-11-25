@@ -24,29 +24,44 @@ Entry Web UI は、Engram 用のローカル専用コントロールパネルで
 このパネルはローカルの PC 内で実行されます。クラウドサービスではありません。セキュリティ上の理由から、構成作業が完了したらサーバーを停止してください。
 
 <RiskCallout level="risky">
-Entry パネルはローカル単独で実行されます。メモリを設定している間のみ稼働させ、終了したら Runtime タブからすぐにサーバーを停止してください。
+Entry パネルはローカル単独で実行されます。メモリを設定している間のみ稼働させ、終了したらサイドバーのフッターからサーバーを停止してください。
 </RiskCallout>
 
 ## CLI コマンドとの関係
 
 UI に表示されるすべてのコントロールは、CLI コマンドまたは設定キーに対応しています。対応する CLI コマンドは、フィールドリファレンスガイドに記載されています。自動化やスクリプト作成の基準となるのは、常に CLI 環境です。
 
+## ナビゲーションと URL ルーティング
+
+Entry Web UI は URL の `#hash` ルーティングを使用しており、各タブをブックマーク、再読み込み、ブラウザー履歴で移動できます。
+
+- `#config` — Construct
+- `#author` — Git
+- `#upgrade` — Updates
+- `#recall` — Memories
+- `#review` — Review
+- `#maintain` — Core
+- `#connect` — Connections
+
+サイドバーにはワークスペース単位のコントロール用の **Workspace** セクションがあり、検出結果・保留候補・レシートがトリアージ待ちのときは **Review** に保留件数バッジが表示されます。狭いビューポートではサイドバーがモバイルドロワーに折りたたまれ、閉じるボタンまたは `Escape` キーで閉じられます。
+
 ## タブの要約
 
-| タブ | 役割 |
-| --- | --- |
-| [Connections](connections.md) | サポートされている AI エージェントの検出とリンク |
-| [Construct](construct.md) | すべての Engram 実行時フィールドの構成 |
-| [Profiles](profiles.md) | 分離されたグローバルメモリプロファイルの管理 |
-| [Workspaces](workspaces.md) | プロジェクトリポジトリの登録とリンク状態の管理 |
-| [Core](core.md) | 重複するメモリや競合するメモリの確認 |
-| [Memories](memories.md) | メモリグラフの検査とメモリのアーカイブ |
-| [Runtime](runtime.md) | 最終解決された構成情報と物理パスの表示（読み取り専用） |
+| タブ | ハッシュ | 役割 |
+| --- | --- | --- |
+| [Construct](construct.md) | `#config` | Engram の実行時フィールド、プロファイル、ワークスペース、ランタイム状態を構成 |
+| [Git](../operations/git-author-settings.md) | `#author` | 作成者 ID と Global Git 設定を管理 |
+| [Updates](../operations/configuration-upgrades.md) | `#upgrade` | パッケージ更新の確認と設定アップグレードの適用 |
+| [Memories](memories.md) | `#recall` | アクティブメモリの検索、ルートシミュレーション、検査、昇格、アーカイブ |
+| [Review](review.md) | `#review` | セッション学習レシート、検出結果、保留中メモリ書き込みのトリアージ |
+| [Core](core.md) | `#maintain` | 重複するメモリや競合するメモリの確認 |
+| [Connections](connections.md) | `#connect` | Doctor ヘルス確認、エージェント検出、対応 AI エージェントのリンク |
 
 ## 次のステップ
 
 - [コントロールパネルの起動](launch.md)
 - [Construct タブ](construct.md)
+- [Core タブ](core.md)
 - [完全なフィールドリファレンス](field-reference.md)
 
 

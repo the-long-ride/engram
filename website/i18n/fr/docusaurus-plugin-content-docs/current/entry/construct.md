@@ -14,6 +14,15 @@ L’onglet Construct expose les champs de configuration d’exécution d’Engra
 Les champs marqués **risky** peuvent désactiver Engram, modifier les cibles d’enregistrement, changer le comportement de Git ou affecter la sécurité de la mémoire. Lisez l’avertissement avant de les modifier.
 </RiskCallout>
 
+## Sous-vues {#sub-views}
+
+Construct s’organise en quatre sous-vues :
+
+- **Configuration** — Modifier les paramètres d’exécution du workspace et globaux regroupés par domaine (détaillés ci-dessous).
+- **Profiles** — Inspecter et gérer les profils Engram nommés ainsi que la sélection du profil par défaut.
+- **Workspaces** — Consulter les espaces de travail enregistrés, les chemins racines et le contexte de portée workspace/global.
+- **Runtime** — Inspecter la configuration d’exécution résolue, les chemins effectifs et les diagnostics d’environnement en direct.
+
 ## Groupe Core {#core-group}
 
 ### Enabled

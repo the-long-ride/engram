@@ -42,6 +42,13 @@ engram upgrade --latest
 
 Engram の SQLite 設定 DB は、ワークスペース/プロファイル管理のための最適化です。DB を開けない、または初期化できない場合、通常の読み取り/書き込みコマンドは JSON 設定スナップショットにフォールバックします。DB 固有のコマンドは、通常のメモリの利用を妨げるのではなく、SQLite が利用できないことを報告します。
 
+## 0.1.0 で変更されること
+
+- **検索とランキング**: 3 ストリーム BM25F（`title`、`tags`、`body`）、完全一致アンカーがない場合に機能する 24 個の概念クラスターとコーパス共起ブリッジ、Unicode / ベトナム語 / CJK のトークン化、`knowledgeFreshnessBoost`、`orderForAgentConsumption`、`engram stats --backfill` を含むクローズドループの `usage.json` 結果テレメトリ（`applied`、`corrected`、ノイズ減衰）が追加されました。
+- **フックとサブエージェント**: `hookStartupAuto` が `read: auto` モードの `SessionStart` で非スタートアップルールを 1 行カードに圧縮し、`SubagentStart` がタスクスコープのコンテキスト（`subagentQueryText`）をルーティングし、プロンプトフックがクローズドループの利用テレメトリを記録してフェイルオープンの訂正学習を実行します。
+- **セッション学習と working 層**: 決定論的な Option A 学習が、サニタイズされた期限付きの `working/` メモリを書き込み、永続化候補を非アクティブな `inbox/r-*.json` レシート（`engram review inbox|triage|apply|dismiss`）としてステージングします。`learning.mode`（`off`、`working`、`propose`）と `learning.auto_drain` で設定できます。`engram working note`、`engram_note` MCP ツール、オプトインの `SessionEnd` キュー登録（`engram link claude|codex --session-end`）も追加されました。
+- **CLI と Entry Web UX**: `engram status`（`engram stat`）、`engram why <id> ["<query>"]`、`engram help --compact`、`engram graph link <parent-id> <child-id...>`、`engram review triage`、`engram benchmark --from-git` を追加し、Entry Web UX の強化と脆弱性ゼロの依存関係更新を行いました。
+
 ## ホストネイティブリリースで変更されること
 
 既存のインストールで `engram upgrade --latest`（または `engram link <host>`）を実行した後の変更点は次のとおりです。
@@ -52,7 +59,7 @@ Engram の SQLite 設定 DB は、ワークスペース/プロファイル管理
 - **メモリファイル**: 新しいメモリは `author_email` を含めないようになり（古いものを整理するには `engram author migrate-memories --strip-email --confirm` を実行します）、ルールは Content のみを保存し、移行バックアップは gitignore 対象の `backups/` フォルダーに保存されます（`engram repair --move-backups` で古いものを移動できます）。
 - **Config**: `vector.enabled` は新しい設定では既定で `false` になります。すでに `true` を保存している設定はオンのままです。`cursorrules` は 1 リリースの間、`cursor-rules` エクスポート形式の非推奨エイリアスとして残ります。
 
-完全な一覧と未対応の項目については、[changelog](changelog.md) の Unreleased セクションをご覧ください。
+完全なリリース履歴については、[変更履歴](changelog.md)をご覧ください。
 
 ## 従来のメモリのスキーマ v3 (schema v3) への移行
 

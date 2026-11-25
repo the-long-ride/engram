@@ -15,12 +15,15 @@ test('npm publish metadata declares a package README', async () => {
   assert.ok(readme.length > 1000);
   assert.ok(manifest.files.includes('README.md'));
   assert.ok(manifest.files.includes('llm.txt'));
+  assert.ok(manifest.files.includes('docs/AGENT_INTEGRATIONS.md'));
+  assert.ok(manifest.files.includes('docs/SKILLSET_CONTRACT.md'));
+  assert.ok(!manifest.files.includes('docs'));
   assert.ok(!manifest.files.includes('media'));
   assert.ok(!manifest.files.includes('prompts'));
   assert.ok(!manifest.files.includes('website'));
   assert.match(npmignore, /^website\/$/m);
   assert.match(websiteManifest.packageManager, /^pnpm@\d+\.\d+\.\d+$/);
-  assert.equal(websiteManifest.scripts.test, 'pnpm exec tsx --test "src/**/*.test.ts"');
+  assert.equal(websiteManifest.scripts.test, 'pnpm exec tsx --test "src/**/*.test.ts" "src/**/*.test.tsx"');
   assert.ok(Object.hasOwn(websiteManifest.devDependencies, 'tsx'));
   assert.equal(websiteManifest.pnpm, undefined);
   assert.match(websitePnpmWorkspace, /^packages:\n  - '\.'\n\nonlyBuiltDependencies:\n  - '@swc\/core'\n  - core-js\n  - esbuild\n$/m);

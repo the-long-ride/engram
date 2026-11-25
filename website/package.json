@@ -16,7 +16,7 @@
     "write-translations": "docusaurus write-translations",
     "write-heading-ids": "docusaurus write-heading-ids",
     "typecheck": "tsc",
-    "test": "pnpm exec tsx --test \"src/**/*.test.ts\"",
+    "test": "pnpm exec tsx --test \"src/**/*.test.ts\" \"src/**/*.test.tsx\"",
     "check:entry-fields": "node scripts/check-entry-field-docs.mjs",
     "sync-i18n-docs": "node scripts/sync-all-i18n-docs.mjs",
     "version": "docusaurus docs:version"
@@ -37,7 +37,7 @@
     "react-dom": "^19.2.8"
   },
   "overrides": {
-    "serialize-javascript": "^7.0.5",
+    "serialize-javascript": "^7.1.4",
     "uuid": "^11.1.1"
   },
   "devDependencies": {

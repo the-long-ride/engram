@@ -1,6 +1,8 @@
 # Exclude Docusaurus website source code and builds from the published npm package
 website/
 documentation/
+docs/specs/
+docs/superpowers/
 
 # Exclude local development and test assets
 coverage/

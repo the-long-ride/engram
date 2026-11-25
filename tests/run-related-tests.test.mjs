@@ -23,6 +23,7 @@ test('related test selection covers current workflow and website changes', async
     'tests/website-mobile-sidebar.test.mjs',
     'website/src/components/DocPageCopyButton.test.tsx',
     'website/src/components/DocPageCopyNavbarItem.test.tsx',
+    'website/src/components/EntryFieldTable.test.tsx',
     'website/src/config.test.ts',
     'website/src/dependencyLock.test.ts',
     'website/src/security/braces-safe.test.ts',

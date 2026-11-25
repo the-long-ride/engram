@@ -14,6 +14,15 @@ The Construct tab exposes Engram runtime config fields grouped like the UI, exce
 Fields marked **risky** can disable Engram, change save targets, change Git behavior, or affect memory security. Read the warning before changing them.
 </RiskCallout>
 
+## Sub-views
+
+Construct is organized into four sub-views:
+
+- **Configuration** — Edit workspace and global runtime settings grouped by domain (detailed below).
+- **Profiles** — Inspect and manage named Engram profiles and default profile selection.
+- **Workspaces** — View registered workspaces, root paths, and workspace-to-global scope context.
+- **Runtime** — Inspect resolved runtime configuration, effective paths, and live environment diagnostics.
+
 ## Core group
 
 ### Enabled

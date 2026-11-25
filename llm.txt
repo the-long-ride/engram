@@ -75,11 +75,16 @@ Primary read commands:
 - `engram route "<task>"`: classify a task into the stable task type used by
   routing and save tags
 - `engram graph "<query>"`: inspect dependency layers and contradiction hints
+- `engram graph link <parent-id> <child-id...>`: link explicit `depends_on` prerequisites
+- `engram status` (`engram stat`): one-screen dashboard of memories, review queue, stale/noisy health, linked hooks, and next actions
+- `engram why <id> [query]`: trace routing, token budget, and stem matching for a single memory
+- `engram help --compact`: print a compact terminal command overview
 - `engram verify`: verify memory hashes before trusting files
 - `engram repair`: report malformed memory files
-- `engram entry`: show active roots, profile, and runtime configuration
+- `engram entry`: show active roots, profile, and runtime configuration, or launch Entry Web UI (`#hash` routes, Route Simulator, `Session learning` filter & approve, 1-click `Promote`, Doctor badge, `SessionEnd queue` toggle)
 - `engram stats`, `engram health`, `engram quality-check`: inspect memory health
-- `engram stats --usage`: show which memories agents fetch and which are injected but never fetched
+- `engram stats --usage`: show which memories agents fetch, which are noisy, and which are injected but never fetched
+- `engram stats --backfill`: seed `injected`/`applied` usage counters from recent non-merge Git commits
 - `engram verify --sources`: re-hash the source files of take-control memories and record stale ones
 
 How routing works
@@ -96,15 +101,20 @@ agents. For rules, one selected variant is rendered.
 
 `engram load` does not blindly load all memory. It:
 
-1. Anchors on meaningful query terms.
+1. Anchors on meaningful query terms using unexpanded `rawStems` (`hasAnchorOverlap`) so synonym expansion cannot admit unrelated memories.
 2. Ranks candidates with BM25 over id, tags, `directive`, summary, triggers, and
    content terms (light stemming), then scales by lifecycle (`review_due`),
-   staleness, confidence, and scope, with a small boost for memories agents
-   fetch. Expired `valid_until` memories are left out (reason `lifecycle`).
+   staleness, confidence, scope, and `knowledgeFreshnessBoost` (recency decay over
+   `last_confirmed`/`updated`/`valid_from`, `+0.08` for `working/` memories, and
+   revision bonus), with a small boost for memories agents fetch. Expired
+   `valid_until` memories are left out (reason `lifecycle`).
    A query with 4 or more anchors needs 2 anchor hits or one hit on a strong
    field (id, tag, directive, `applies_to` path). Vector hits alone never admit a
    memory.
-3. Refines results to a compact context pack within the token budget.
+3. Refines results to a compact context pack within the token budget and orders
+   expanded bodies with `orderForAgentConsumption` (Kahn's priority topological
+   sort: rules, instructions, and `depends_on` prerequisites first; older durable
+   context in the middle; fresh `<=14d` or `working/` leaves at the end).
 4. Reports selected memory count and total related matches.
 
 If memory files declare `depends_on: [...]`, routed prerequisites are kept before
@@ -126,7 +136,7 @@ Hook-capable hosts can use:
 Meaning:
 
 - `startup`: inject only at session start
-- `auto`: inject at session start and later turns, delivering only memory bodies not yet delivered in this session (`already loaded: <ids>` marks the rest)
+- `auto`: inject at session start and later turns; `SessionStart` (`hookStartupAuto`) compresses non-startup rules into one-line cards (`carded`), and later prompt turns deliver only undelivered bodies (promoting `carded` rules when the prompt shifts onto them, marking repeats with `already loaded: <ids>`). Prompt-event hooks (`UserPromptSubmit`, `BeforeAgent`, `pre_user_prompt`, `chat.message`) also capture explicit corrections as expiring gitignored `working/` memories plus staged `inbox/r-*.json` durable receipts.
 - `always`: inject on every eligible prompt
 - `manual`: disable automatic hook reads but keep manual `engram load`
 - `off`: suppress automatic read surfaces
@@ -135,8 +145,8 @@ Diagnostics, review, and safe automation
 
 - `engram doctor --strict --json`: run deterministic CI diagnostics; strict mode fails on warnings or failures.
 - `engram load --explain --json "<task>"`: expose selected IDs, ranking evidence, dependencies, and omissions without memory bodies.
-- `engram review list|inspect|dismiss|verify|supersede|archive`: inspect and approve lifecycle findings; actions remain human-controlled.
-- `engram benchmark <cases.json> --json --fail-on forbidden,recall`: run versioned retrieval regression cases; reports contain IDs and metrics only.
+- `engram review list|inspect|dismiss|verify|supersede|archive|inbox|apply|triage` (`--interactive`): inspect, interactively triage, and approve lifecycle findings and staged session-learning receipts (`inbox/r-*.json`); durable writes remain human-controlled.
+- `engram benchmark <cases.json> --json --fail-on forbidden,recall` and `engram benchmark --from-git [--out <path>]`: run versioned retrieval regression cases (including `freshness-ordering` and `multi-turn-session`, with `--baseline` and `--write-report`) or mine redacted `version: 2` cases from Git history; reports contain IDs and metrics only.
 - `engram policy init|show|validate|rollback`: manage the local deny-by-default team policy and audit rollback receipts.
 - `engram autosave --policy --dry-run "TYPE: knowledge | TEXT: ..."`: preview policy-gated automation. Autonomous writes require an explicit reviewed policy and quota.
 - `engram capabilities --json`: inspect host-specific instruction, MCP, hook, proof, and transcript capabilities.
@@ -224,7 +234,12 @@ New memories store `author_name` only (not the email) unless
 memories.
 
 `engram observe` writes sanitized raw notes into inbox only. It does not create
-active memory unless routed through proposal flows later.
+active memory unless routed through proposal flows later. Adding `--learn`
+(`engram observe --learn [--file <path> | --git [range]]` or
+`engram observe --queue --learn`) deterministically distills learnings into
+gitignored, expiring `working/` memories (with `tr_sl_*` traces) and stages
+high-confidence durable candidates as `inbox/r-*.json` receipts for human
+approval via `engram review inbox` and `engram review apply`.
 
 `engram take-control` converts existing guidance, notes, and docs into Engram
 memory candidates. `--kind code|config|all` (default `docs`) also digests code

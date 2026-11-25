@@ -34,6 +34,8 @@ Use `engram update-global-folder <new-path>` or `engram ugf <new-path>` to updat
 ```bash
 engram link codex
 engram link claude
+engram link claude --session-end
+engram link codex --session-end
 engram link gemini
 engram link cursor
 engram link windsurf
@@ -46,7 +48,7 @@ engram unlink
 
 `engram link all` installs the public target set and reports deterministic `SKIPPED` reasons for partial hosts across skillset instruction files, MCP config, slash adapters, and agent hooks in one unified install. `engram unlink` removes all of these together. `engram unlink --global <target>` removes only the Engram-generated global plugin; a human-authored file is preserved unless `--force` is explicit.
 
-`engram link claude --session-end` (or `codex`) additionally registers an opt-in `SessionEnd` command hook that queues the session transcript path in the gitignored `session-queue.json`; it is off by default and `engram upgrade` never adds it. Drain it with `engram observe --queue`; see [Hooks](../integrations/hooks.md).
+`engram link claude --session-end` and `engram link codex --session-end` additionally register an opt-in `SessionEnd` command hook that queues the session transcript path in the gitignored `session-queue.json`; it is off by default and `engram upgrade` never adds it. Drain it with `engram observe --queue` (or `engram observe --queue --learn`); see [Hooks](../integrations/hooks.md).
 
 ## upgrade
 

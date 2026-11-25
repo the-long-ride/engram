@@ -46,6 +46,15 @@ engram save-session --file .agents/.engram/inbox/<observation>.md
 The first command sanitizes the source and writes an immutable trace identified by `trace_id` plus an editable inbox wrapper. The second command resolves the wrapper to its trace, verifies hash and scope, then writes only human-approved schema v3 memory with `evidence_refs`. Editing `## Raw Note` cannot replace the trace evidence.
 <!-- evidence-foundation:v3:end -->
 
+## Session learning
+
+Option A session learning captures durable lessons without bypassing the approval boundary. Prompt-event hooks (fail-open correction learning) and explicit `engram observe --learn` / `engram observe --queue --learn` runs deterministically distill sanitized learnings into:
+
+- gitignored, expiring `working/` memories (backed by sanitized `tr_sl_*` traces) for immediate task continuity; and
+- non-active `inbox/r-*.json` review receipts when `learning.mode` is `propose` (the default; set `working` to skip receipts or `off` to disable).
+
+Use `engram review inbox`, `engram review triage`, `engram review apply`, and `engram review dismiss` to review staged receipts. `learning.auto_drain` (default `false`) controls whether queued `SessionEnd` transcripts are drained automatically. Durable active memory is never written without human approval.
+
 ## Safety checks at save time
 
 - Schema validation

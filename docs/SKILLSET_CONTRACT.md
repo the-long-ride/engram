@@ -44,9 +44,14 @@ Hosts that support custom slash commands can also load generated `/engram` adapt
 - Never load all memory blindly; route by task intent and summarize relevant
   IDs/rules instead of pasting raw output to reduce token usage.
 - When more memories match a load query than the configured load limit allows,
-  first require direct overlap with meaningful query terms, then refine the
-  candidate pool with lexical, tag, recency, graph, and vector signals. Normal
-  load reports selected and total related counts. Use `load --dry-run` to report
+  first require direct overlap with meaningful query terms on unexpanded
+  `rawStems` (`hasAnchorOverlap`), then refine the candidate pool with lexical,
+  tag, `knowledgeFreshnessBoost` (`last_confirmed`/`updated`/`valid_from`
+  recency decay, `+0.08` `working/` boost, revision bonus), graph, and vector
+  signals, and order expanded bodies with `orderForAgentConsumption` (rules,
+  instructions, and `depends_on` prerequisites first; older durable context in
+  the middle; fresh `<=14d` or `working/` leaves at the end). Normal load
+  reports selected and total related counts. Use `load --dry-run` to report
   candidate counts, narrowing tags, and match reasons; use `--all` only when
   broad context is explicitly requested.
 - Preserve `depends_on: [...]` memory frontmatter when present. Graph routing
@@ -122,9 +127,16 @@ Hosts that support custom slash commands can also load generated `/engram` adapt
   deterministic conflict behavior, then use the appended pack to generate
   concise `TYPE/TEXT` candidates when needed.
 - Treat `engram observe` as raw inbox capture, not active memory. It may write a
-  sanitized `inbox/` note, but converting that note into memory requires
+  sanitized `inbox/` note, but converting that note into durable memory requires
   `observe --propose` or `save-session --file` and the normal approval flow unless
-  the human explicitly passed `--force`.
+  the human explicitly passed `--force`. With Option A session learning
+  (`engram observe --learn [--file <path> | --git [range]]`, `engram observe --queue --learn`,
+  or prompt-event hook correction capture on `UserPromptSubmit`, `BeforeAgent`,
+  `pre_user_prompt`, and `chat.message`), Engram may automatically save sanitized,
+  expiring `working/` memories (with `tr_sl_*` traces) and stage high-confidence
+  durable candidates as non-active `inbox/r-*.json` receipts for human approval
+  (`engram review inbox` / `engram review apply`). Durable active memory still
+  requires explicit human approval.
 - Treat `engram graph` and `engram quality-check` contradiction rows as advisory
   wrong-memory signals. Wrong or superseded memory should leave active routing
   only through `engram archive --reason <why> <id-or-file>` after approval.
@@ -460,9 +472,11 @@ MCP protocol notes:
 | --- | --- |
 | `engram inject [--global-only] [--scope workspace|global|both] [--no-skillset] [--skillset target] [--submodule] [--no-global] [--global-path path] [--global-remote <git-url>]` | Create or reconcile memory roots, install compact Codex skillset by default, optionally create `.agents/.engram` as a submodule, initialize global memory Git when configured, choose the default save target, or create only global memory with `--global-only` |
 | `engram --version` / `engram -v` | Print the installed CLI version |
-| `engram help [topic]` | Show compact help or detailed command-specific examples and use cases |
+| `engram help [--compact] [topic]` | Show compact help (`--compact` prints a condensed terminal overview) or detailed command-specific examples and use cases |
+| `engram status` / `engram stat` | Show a one-screen dashboard of active memories, review queue, stale/noisy health, linked hooks, and next actions |
+| `engram why <id> [query]` | Trace single-memory routing, token budget, and stem matching for an optional query |
 | `engram llm` | Print the packaged `llm.txt` AI-agent usage guide; read-only and safe before `engram inject` |
-| `engram entry` | Print resolved flags, active profile, paths, and detected global Git state |
+| `engram entry` | Print resolved flags, active profile, paths, and detected global Git state, or launch the Entry Web UI (`#hash` routes, Route Simulator, `Session learning` filter & approve, 1-click `Promote`, Doctor badge, and `SessionEnd queue` toggle) |
 | `engram profile status|list|create|use|remove|merge` / `engram pf ...` | Manage isolated global memory profiles, including user defaults for uninitialized folders, workspace defaults for initialized repositories, one-off `--profile <name>` command routing, and profile-to-profile merge previews with duplicate reporting |
 | `engram set-save-target workspace|global|both|status` | Configure where normal saves write by default; per-command `--scope workspace|global|both` still overrides this setting |
 | `engram set-load-limit 1..32|status|reset` / `engram ll ...` | Configure how many related memories normal load returns; default is 8 and `--all` still bypasses the cap |
@@ -472,17 +486,18 @@ MCP protocol notes:
 | Startup auto-upgrade | After npm package updates, normal commands quietly reconcile already-initialized roots once per Engram version, including release-to-release memory schema/index refreshes from v0.0.8 onward; skip with `--no-auto-upgrade` or `ENGRAM_NO_AUTO_UPGRADE=1`. The package must not rely on npm `postinstall` for migrations |
 | `engram load [--profile name] [--all] [--budget-tokens n] [--disclosure auto|full] [--exclude-keys keys] [--id ids] [--dry-run] "<task>"` | Load a refined compact context pack from meaningful direct query matches plus explicit prerequisites; `--profile` selects a global profile for one command, `--budget-tokens` caps the complete rendered output from 200 to 16000 tokens, `--disclosure auto` (default, or `load.disclosure`) expands the top `load.expand_top` hits as bodies and lists the rest as one-line cards with a `fetch: engram load --id <ids>` hint while `full` prints every packed body, `--exclude-keys <scope:file,...>` drops memories the caller already holds (reported as `already_loaded` in JSON), `--id <id,...>` fetches full bodies and counts as a usage fetch, `--all` bypasses compact limits, and `--dry-run` previews routed files, related counts, narrowing tags, and match reasons without printing contents |
 | `engram search "<query>"` | Search visible memory by query |
-| `engram graph [--rebuild] ["<query>"]` | Inspect the derived layered JSON graph, dependency layers, and contradiction candidates |
+| `engram graph [--rebuild] ["<query>"]` / `engram graph link <parent-id> <child-id...>` | Inspect the derived layered JSON graph, dependency layers, and contradiction candidates, or link explicit `depends_on` prerequisites between memories |
 | `engram save [rule|skill|workflow|knowledge] [--profile name] [--scope workspace|global|both] [--role role] "<text>"` | Propose one memory and write after A/B/C approval; `--profile` can save to another profile global root without changing the workspace default |
 | `engram save-session [--file transcript.md] [--role role] [--query-level n] [--force] [session-summary]` / `engram ss` | Propose multiple memories from one or more recent sessions and write only after numbered A/B/C approval, or save every candidate when the human passed `--force` |
-| `engram observe [--file session.md] [--propose] [--queue [--dry-run] [--limit n]] [note]` | Write sanitized raw notes into inbox; `--propose` mines them through save-session; `--queue` drains the opt-in SessionEnd transcript queue into sanitized inbox traces and writes no memory |
+| `engram observe [--file session.md] [--propose] [--learn [--file <path> \| --git [range]]] [--queue [--dry-run] [--limit n] [--learn]] [note]` | Write sanitized raw notes into inbox; `--propose` mines them through save-session; `--queue` drains the opt-in SessionEnd transcript queue into sanitized inbox traces; `--learn` distills expiring `working/` memories and stages `inbox/r-*.json` durable receipts without writing active durable memory |
+| `engram review list\|inspect\|dismiss\|verify\|supersede\|archive\|inbox\|apply\|triage` / `engram review --interactive` | Inspect and resolve lifecycle findings or interactively triage and approve staged `inbox/r-*.json` session-learning receipts |
 | `engram take-control [--plan] [--file path] [--dir path] [--from claude-auto-memory|codex-memories] [--include glob] [--exclude glob] [--max-sources n] [--max-chars n] [--budget-tokens n] [--kind docs|code|config|all] [--objective text] [--refresh] [--json] [--all] [--force] [--metacognize]` | Explore existing workspace guidance, notes, docs, code, and config with agent help, preview source plans (`--plan`, `--json`), and consume approved candidates as Engram memory; `--kind` (default `docs`) selects digest extractors (code: per-directory repo map of symbol names and imports; config: keys plus allowlisted values; default `--max-sources 40` and `--budget-tokens 6000` for code and config), `--objective` asks for both `OBJECTIVE: task` and durable candidates, `--refresh` proposes `UPDATE: <id>` only for memories marked stale by `verify --sources`, `--from` imports a host-local Claude auto memory or Codex memories store read-only through the same approval gate, and `--metacognize` enables related-memory restructuring pauses on force writes |
 | `engram promote [workspace:|global:]<memory-id>` | Move a working-tier memory (an approved `OBJECTIVE: task` candidate, stored gitignored under `working/<type-dir>/` with `tier: working` and `valid_until` = today + `load.working_ttl_days`, default 14) to durable memory after A/B/C approval; drops `tier` and `valid_until`, keeps `objective`, bumps `revision` |
 | `engram working note "<text>" [--objective text] [--type knowledge|rule] [--scope workspace|global]` | Save one working-tier task note (`source: note`, default type `knowledge`, redacted, injection lines refused, never matches a durable memory) after a single Y/C approval; writes nothing on cancel |
 | `engram working prune [--dry-run]` | Delete expired working-tier memories (`valid_until` before today) and list them; never touches durable memory or follows symlinks |
 | `engram metacognize --workspace|--global|--all [--force] [--dry-run]` / `engram mc ...` | Let an agent review an existing memory folder and return restructuring candidates with `UPDATE` or `DEPENDS_ON`; writes use save-session-style approval and force no-write related-memory pauses |
 | `engram archive [--reason text] <memory-id|file>` | Move wrong or superseded memory out of active routing after approval |
-| `engram benchmark <cases.json>` | Run a read-only hit@<load-limit> routing benchmark over query/expected-memory cases |
+| `engram benchmark <cases.json>` / `engram benchmark --from-git [--out <path>]` | Run a read-only hit@<load-limit> routing benchmark over query/expected-memory cases, or mine redacted `version: 2` benchmark cases from Git history |
 | `engram set-role <role...>` | Configure active developer roles for routing role-scoped memory and return an `Agent action:` reload cue for Engram-aware hosts |
 | `engram set-rule-variant light|balanced|strict|off` | Configure compact rule output for agents and return an `Agent action:` reload cue for Engram-aware hosts |
 | `engram set-read startup|auto|always|manual|off|status` | Configure hook and manual read behavior |
@@ -492,7 +507,7 @@ MCP protocol notes:
 | `engram export [--format agents-md|claude-md|cursor-rules] [--out <file>]` | Export visible durable memory to an instruction format or a JSON bundle; `cursorrules` is a deprecated alias of `cursor-rules` for one release; without `--out`, the JSON bundle goes to the gitignored `.agents/.engram/exports/` |
 | `engram rebuild-index [workspace|global]` | Explicitly rebuild memory indexes, graph files, and eligible vector sidecars |
 | `engram resolve-conflicts [--dry-run] [--metacognize] [--force]` | Resolve and stage only `.agents/.engram/` conflicts, optionally appending a workspace metacognize source pack |
-| `engram stats [--usage]` | Show visible memory counts, scope mix, and author ownership; `--usage` adds fetch and inject counts from the local `usage.json` |
+| `engram stats [--usage] [--backfill]` | Show visible memory counts, scope mix, and author ownership; `--usage` adds fetch, inject, and noisy counts from the local `usage.json`; `--backfill` seeds `injected`/`applied` counters from recent non-merge Git commits |
 | `engram link [all|list|target] [--global] [--force] [--session-end] [--all-supported]` | Link skillset, MCP, slash adapters, and agent hooks to an AI agent; reports skipped reasons for partial hosts; `--session-end` also registers the opt-in Claude/Codex SessionEnd transcript-queue hook |
 | `engram unlink [all|target] [--global] [--force]` | Remove skillset, MCP, managed blocks, and agent hooks |
 | `engram agent-hook --host codex|claude|gemini|opencode|cursor|windsurf` | Internal hook runtime; reads hook payload from stdin and emits host-compatible JSON to stdout; the OpenCode host emits retain/replace/clear directives, the Cursor host emits `additional_context` on `sessionStart`, and the Windsurf host processes `pre_user_prompt` input |

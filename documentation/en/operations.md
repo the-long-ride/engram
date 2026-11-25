@@ -18,6 +18,9 @@ This page holds detailed usage so the README can stay short.
 | Load every packed body (no cards) | `engram load --disclosure full "<task>"` |
 | Fetch cards by id | `engram load --id <id,...>` |
 | Print AI-agent usage guide | `engram llm` |
+| Compact command overview | `engram help --compact` |
+| One-screen workspace dashboard | `engram status` or `engram stat` |
+| Trace routing for one memory | `engram why <id> [query]` |
 | Preview routed memory files | `engram load --dry-run "<task>"` |
 | Search memory | `engram search "<topic>"` |
 | Save one memory | `engram save [rule|workflow|knowledge] "<text>"` |
@@ -27,6 +30,9 @@ This page holds detailed usage so the README can stay short.
 | Mine and force-save recent chats | `engram ss -f last 50 sessions` |
 | Capture raw note | `engram observe --file session.md` |
 | Drain the opt-in SessionEnd transcript queue | `engram observe --queue --dry-run` |
+| Distill session learnings (`working/` + receipts) | `engram observe --learn [--file <path> \| --git [range]]` |
+| Drain queue and distill learnings | `engram observe --queue --learn` |
+| Review and apply staged learning receipts | `engram review inbox` / `engram review apply` / `engram review triage` (`--interactive`) |
 | Convert existing docs/guidance | `engram take-control --all` |
 | Preview source takeover | `engram take-control --plan` |
 | Digest code or config (repo map) | `engram take-control --kind code\|config\|all [--objective "<text>"]` |
@@ -36,11 +42,13 @@ This page holds detailed usage so the README can stay short.
 | Keep a working memory | `engram promote <id>` |
 | Save a task note | `engram working note "<text>"` |
 | Prune expired working memory | `engram working prune [--dry-run]` |
-| See fetch and inject counts | `engram stats --usage` |
+| See fetch, inject, and noisy counts | `engram stats --usage` |
+| Seed usage telemetry from Git history | `engram stats --backfill` |
+| Mine redacted benchmark cases from Git | `engram benchmark --from-git [--out <path>]` |
 | Import and metacognize guidance | `engram take-control --all --metacognize --force` |
 | Restructure existing memory folder | `engram metacognize --workspace\|--global\|--all` |
 | Resolve conflicts and metacognize | `engram resolve-conflicts --metacognize` |
-| Inspect graph routing | `engram graph "<topic>"` |
+| Inspect graph routing or link prerequisites | `engram graph "<topic>"` / `engram graph link <parent-id> <child-id...>` |
 | Check hashes | `engram verify` |
 | Find malformed memory files | `engram repair` |
 | Archive wrong memory | `engram archive --reason "<why>" <id-or-file>` |
@@ -58,12 +66,18 @@ Use `--query-level <n>` when the human wants the agent to mine up to n recent ac
 
 Use `load --dry-run` when you want to inspect which memory files would route
 without printing their contents.
-Default `load` is the AI-agent context route and uses tiered disclosure: the top
-`load.expand_top` hits (default 3) print as bodies under
+Default `load` is the AI-agent context route and uses tiered disclosure with
+attention-aware ordering (`orderForAgentConsumption`): the top `load.expand_top`
+hits (default 3) print as bodies ordered into Bucket 0 (rules, instructions, and
+`depends_on` prerequisites), Bucket 1 (older durable context), and Bucket 2
+(fresh `<=14d` or `working/` leaves at the end), under
 `### <id> [<type>, <authority>]` (plus `requires: <ids>` when the memory has
-`depends_on`), every other selected hit and up to 5 omitted candidates print as
-one-line cards `- <id> [<type>] <directive-or-summary>` (with ` (stale)` when its
-sources changed), and the output ends with `fetch: engram load --id <ids>`.
+`depends_on`). Ranking combines BM25 anchored on unexpanded `rawStems`
+(`hasAnchorOverlap`) with `knowledgeFreshnessBoost` (`last_confirmed`/`updated`/`valid_from`
+recency decay, `+0.08` `working/` boost, and revision bonus). Every other selected
+hit and up to 5 omitted candidates print as one-line cards
+`- <id> [<type>] <directive-or-summary>` (with ` (stale)` when its sources changed),
+and the output ends with `fetch: engram load --id <ids>`.
 Frontmatter, `## Context`, `## Example`, and `## Origin` are not rendered, and
 rules show one selected variant. Set `load.disclosure` to `full`, or pass
 `--disclosure full`, `--full`, or `--all`, to skip tiering. `--budget-tokens`
@@ -71,9 +85,14 @@ caps the complete output; cards are shed last-ranked-first only when the cards
 alone exceed the cap, and shed ids are listed as `omitted_ids` in MCP results.
 The MCP `engram_load` method uses the same output by default, and `full: true`
 opts into the broader output. SessionStart hooks call the same routed load path
-at startup; later prompt turns inject only memory bodies not yet delivered in the
-session and end with `already loaded: <ids>`. `SessionStart` and `PreCompact`
-reset the delivered set. Memories with `applies_to` globs are also injected on
+at startup; in `read: auto` mode (`hookStartupAuto`), non-startup rules compress
+to one-line cards (`carded`) and later prompt turns inject only memory bodies not
+yet delivered in the session (promoting `carded` rules when the prompt shifts onto
+them) and end with `already loaded: <ids>`. `SessionStart` and `PreCompact`
+reset the delivered and `carded`/`touched` sets. Prompt-event hooks
+(`UserPromptSubmit`, `BeforeAgent`, `pre_user_prompt`, `chat.message`) also run
+fail-open correction capture, writing sanitized expiring `working/` memories and
+staging durable `inbox/r-*.json` receipts. Memories with `applies_to` globs are also injected on
 `PreToolUse` file events (Claude `Read|Edit|Write|MultiEdit`, Codex `apply_patch`),
 at most 3 bodies per event. Under `hooks.path_rules native` (the default) Claude and
 Cursor load those memories as generated rule files instead: `engram link claude`
@@ -389,9 +408,14 @@ candidates.
 ```bash
 engram observe --file session.md
 engram save-session --file .agents/.engram/inbox/<note>.md
+engram observe --learn --file session.md
+engram observe --learn --git HEAD~10..HEAD
+engram observe --queue --learn
+engram review inbox
+engram review apply <receipt-id>
 ```
 
-Use this when you want to preserve rough notes before deciding what should become durable memory.
+Use plain `observe` when you want to preserve rough notes before deciding what should become durable memory. Add `--learn` (or `--queue --learn`) to deterministically distill learnings into gitignored, expiring `working/` memories (with `tr_sl_*` sanitized traces) and stage high-confidence durable candidates as `inbox/r-*.json` receipts for human approval via `engram review inbox` and `engram review apply`.
 
 ## Configuration
 
@@ -438,7 +462,7 @@ The Construct tab also edits `.agents/engram.policy.json`, including autonomous-
 
 ## Entry review queue
 
-The Entry **Review** tab is a manual, confirmation-gated workflow for findings and deferred candidates. It previews linked memory, copies a prompt for an AI agent, and offers a pasted-response fallback. The fallback shows a read-only diff and requires explicit confirmation before it writes a sanitized, validated proposal. It does not invoke an AI provider or bypass the autonomous-write policy.
+The Entry Web UI supports `#hash` routes across tabs. The Entry **Review** tab is a manual, confirmation-gated workflow for findings, deferred candidates, and staged `Session learning` receipts (with queue filters, `j`/`k`/`a`/`d` keyboard triage, single-item dismiss, and single or bulk **Approve**). It previews linked memory, copies a prompt for an AI agent, and offers a pasted-response fallback. The fallback shows a read-only diff and requires explicit confirmation before it writes a sanitized, validated proposal. It does not invoke an AI provider or bypass the autonomous-write policy. Elsewhere in Entry, **Memories** includes an inline Route Simulator, `Working`/`Noisy` badges, and 1-click **Promote**, while **Connect** surfaces a live Doctor health badge and a per-host `SessionEnd queue` toggle.
 
 ## Repair And Review
 

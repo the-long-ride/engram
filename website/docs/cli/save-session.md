@@ -94,9 +94,31 @@ Working memories never reach Git, and their index, graph, and hash entries stay 
 ```bash
 engram observe --file session.md
 engram save-session --file .agents/.engram/inbox/<note>.md
+engram observe --learn --file session.md
+engram observe --learn --git HEAD~10..HEAD
+engram observe --queue --learn
 ```
 
 `observe` stores sanitized raw notes in `inbox/`. Inbox notes are not active memory. Use this when you want to preserve rough notes before deciding what should become durable memory.
+
+Add `--learn` (`engram observe --learn [--file <path> | --git [range]]` or `engram observe --queue --learn`) to deterministically distill learnings into gitignored, expiring `working/` memories (with sanitized `tr_sl_*` traces) and stage high-confidence durable candidates as non-active `inbox/r-*.json` receipts. Inspect and approve staged durable receipts with `engram review inbox` and `engram review apply`; durable active memory is never written without approval.
+
+## review
+
+```bash
+engram review inbox
+engram review triage
+engram review triage --interactive
+engram review apply <receipt-id>
+engram review dismiss <receipt-id>
+```
+
+Inspect and act on non-active `inbox/r-*.json` learning receipts staged by prompt-time correction learning or `engram observe --learn`:
+
+- `engram review inbox` — list staged receipts with `id`, `scope`, `source`, `type`, and truncated candidate text.
+- `engram review triage` / `engram review triage --interactive` — step through pending receipts interactively with `[a]pprove / [d]ismiss / [s]kip / [q]uit` (`SUPERSEDE` receipts skip with guidance to run `engram review apply <receipt-id>`).
+- `engram review apply <receipt-id>` — route one receipt through the write gate to create or update durable active memory.
+- `engram review dismiss <receipt-id...>` — discard receipts without writing active memory.
 
 <!-- evidence-foundation:v3:start -->
 ## Evidence-backed memory

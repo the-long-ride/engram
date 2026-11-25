@@ -43,6 +43,13 @@ For runtime-capable hosts, Engram installs small bootstrap instructions instead 
 Engram's SQLite config DB is an optimization for workspace/profile management. If the DB cannot be opened or initialized, normal read/write commands fall back to JSON config snapshots. DB-specific commands report SQLite as unavailable instead of blocking normal memory use.
 
 
+## What changes in 0.1.0
+
+- **Retrieval and ranking**: 3-stream BM25F (`title`, `tags`, `body`), 24 concept clusters plus corpus co-occurrence bridges when exact anchors are absent, Unicode/Vietnamese/CJK tokenization, `knowledgeFreshnessBoost`, `orderForAgentConsumption`, and closed-loop `usage.json` outcome telemetry (`applied`, `corrected`, and noise decay) with `engram stats --backfill`.
+- **Hooks and subagents**: `hookStartupAuto` compresses non-startup rules into one-line cards at `SessionStart` in `read: auto` mode, `SubagentStart` routes task-scoped context (`subagentQueryText`), and prompt hooks record closed-loop usage telemetry and run fail-open correction learning.
+- **Session learning and working tier**: deterministic Option A learning writes sanitized, expiring `working/` memories and stages durable candidates as non-active `inbox/r-*.json` receipts (`engram review inbox|triage|apply|dismiss`), configured via `learning.mode` (`off`, `working`, `propose`) and `learning.auto_drain`. Adds `engram working note`, the `engram_note` MCP tool, and opt-in `SessionEnd` queueing (`engram link claude|codex --session-end`).
+- **CLI and Entry Web UX**: adds `engram status` (`engram stat`), `engram why <id> ["<query>"]`, `engram help --compact`, `engram graph link <parent-id> <child-id...>`, `engram review triage`, and `engram benchmark --from-git`, alongside Entry Web UX upgrades and zero-vulnerability dependencies.
+
 ## What changes in the host-native release
 
 After `engram upgrade --latest` (or `engram link <host>`) on an existing install:
@@ -53,7 +60,7 @@ After `engram upgrade --latest` (or `engram link <host>`) on an existing install
 - **Memory files**: new memories omit `author_email` (run `engram author migrate-memories --strip-email --confirm` to clean old ones), rules store only their Content, and migration backups live in the gitignored `backups/` folder (`engram repair --move-backups` relocates older ones).
 - **Config**: `vector.enabled` defaults to `false` for new configs; a config that already stores `true` stays on. `cursorrules` is a deprecated alias of the `cursor-rules` export format for one release.
 
-See the Unreleased section of the [changelog](changelog.md) for the full list and for what is not done yet.
+See the [changelog](changelog.md) for the full release history.
 
 ## Legacy memory migration to schema v3
 

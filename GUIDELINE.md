@@ -62,7 +62,12 @@ npm run lint:lines
 - Add a short file summary and concise function summaries.
 - Do not add runtime dependencies unless they remove real operational risk.
 - Never bypass the A/B/C approval gate on write paths except the explicit
-  `engram autosave --accept-all` path.
+  `engram autosave --accept-all` path. Option A session learning
+  (`captureSessionLearnings` via `engram observe --learn`, `engram observe --queue --learn`,
+  or prompt-event `agent-hook` corrections) is permitted to write sanitized,
+  expiring `working/` memories and non-active `inbox/r-*.json` receipts
+  automatically, while durable active writes remain strictly gated by human
+  approval (`A/B/C`, `engram review apply`, or `yes`/`--force`).
 - `engram save` is the one-memory path. It may omit text only for
   agent-assisted capture, must collect one durable candidate first,
   automatically choose whether to update an existing memory or add a new one,

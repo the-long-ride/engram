@@ -1,6 +1,6 @@
 # Agent Integrations
 
-Engram supports two integration layers:
+Engram supports four integration layers:
 
 - **Skill files:** generated instructions for agents that read project context.
 - **Slash adapters:** generated `/engram` command prompts for agents that
@@ -23,16 +23,15 @@ not require an injected workspace.
 
 This creates `.agents/.engram/` and installs the compact Codex target by default:
 `AGENTS.md` plus `.agents/skills/engram/SKILL.md`. The generated instructions
-For runtime-capable hosts (Codex, Claude, Cursor, Gemini), `AGENTS.md` now contains
-short bootstrap instructions that rely on MCP tools and hooks for detailed protocol;
-the companion guide (`.agents/engram.md` or the host's guide file) carries the full
-write/approval workflow once, and `SKILL.md` files and slash adapters are thin
-pointers to it. With Engram hooks installed, the guide says context is auto-injected
-instead of asking the agent to load at session start. Fallback targets without
-reliable runtime context injection still receive compact manual instructions.
-
 tell agents to load memory, keep Engram replies short, ask only for required
-confirmation, and report what changed.
+confirmation, and report what changed. For runtime-capable hosts (Codex, Claude,
+Cursor, Gemini), `AGENTS.md` contains short bootstrap instructions that rely on
+MCP tools and hooks for detailed protocol; the companion guide (`.agents/engram.md`
+or the host's guide file) carries the full write/approval workflow once, and
+`SKILL.md` files and slash adapters are thin pointers to it. With Engram hooks
+installed, the guide says context is auto-injected instead of asking the agent to
+load at session start. Fallback targets without reliable runtime context injection
+still receive compact manual instructions.
 
 Use `engram inject --no-skillset` to skip agent files, or
 `engram inject --skillset all` to install every supported adapter during inject.
@@ -126,11 +125,17 @@ engram set-proof compact
 
 Use `--global` for user-level config and `engram unlink` to remove
 only Engram-managed hook entries. `engram set-read startup|auto|always|manual|off`
-controls runtime behavior. `auto` loads on session start and on later prompt turns, but
-each turn injects only memory bodies not yet delivered in the session and ends with an
-`already loaded: <ids>` line for the rest; `SessionStart` and `PreCompact` reset the
-delivered set. The hook cache stores hashes,
-session ids, host, cwd, and delivered memory keys, never raw prompt text.
+controls runtime behavior. `auto` loads on session start (`hookStartupAuto` compresses
+non-startup rules into one-line cards tracked in `carded`) and on later prompt turns,
+injecting only memory bodies not yet delivered in the session (promoting `carded` rules
+to full bodies when a prompt shifts onto them) and ending with an `already loaded: <ids>`
+line for the rest; `SessionStart` and `PreCompact` reset the delivered and `carded`/`touched`
+sets. Prompt-event hooks (`UserPromptSubmit`, `BeforeAgent`, `pre_user_prompt`,
+`chat.message`) also run fail-open Option A correction capture, saving sanitized expiring
+`working/` memories (with `tr_sl_*` traces) and staging high-confidence durable candidates
+as `inbox/r-*.json` receipts (`engram review inbox` / `engram review apply`). The hook
+cache stores hashes, session ids, host, cwd, and delivered/`carded` memory keys, never
+raw prompt text.
 `engram set-proof off|compact` controls whether supported hooks also append a
 compact `Engram proof:` line on each eligible turn. Proof visibility is
 separate from `set-read`: `compact` can report loaded, reused, or skipped turns
@@ -174,10 +179,11 @@ Opt-in transcript queue: `engram link claude|codex --session-end` also registers
 fails open, and appends `{ transcript_path, host, session, at }` to the gitignored scope-root
 `session-queue.json` under a file lock (deduped on host and session, newest 50 kept). The flag
 is off by default and `upgrade` never adds it; Gemini is not registered. `engram observe --queue
-[--dry-run] [--limit n]` drains it: each transcript must exist, be a regular file (not a
+[--dry-run] [--limit n] [--learn]` drains it: each transcript must exist, be a regular file (not a
 link), and be at most 5 MiB; it is redacted, stripped of injection-like lines, and stored as a
-trace plus an inbox wrapper. No memory is written, and `--queue` must not run from an async
-Codex hook.
+trace plus an inbox wrapper (with `--learn`, it also distills expiring `working/` memories and
+stages `inbox/r-*.json` durable receipts for review). No durable active memory is written
+automatically, and `--queue` must not run from an async Codex hook.
 
 On Gemini, an `AfterTool` hook (matcher `read_file|write_file|replace`, timeout in milliseconds)
 injects up to 3 not-yet-delivered memories whose `applies_to` globs match the file the tool
